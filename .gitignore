@@ -47,6 +47,8 @@ local.properties
 [Rr]elease/
 x64/
 build/
+build-test/
+deploy/
 [Bb]in/
 [Oo]bj/
 
@@ -96,6 +98,7 @@ ipch/
 
 # ReSharper is a .NET coding add-in
 _ReSharper*/
+src/_ReSharper*/
 *.[Rr]e[Ss]harper
 
 # TeamCity is a build add-in
@@ -130,7 +133,8 @@ publish/
 
 # NuGet Packages Directory
 ## TODO: If you have NuGet Package Restore enabled, uncomment the next line
-#packages/
+packages/
+src/packages/
 
 # Windows Azure Build Output
 csx

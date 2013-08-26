@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Settings version="1">
+  <HttpPort>9800</HttpPort>
+  <RequestLogger Enabled="true" RollingLogCapacity="1000" WriteLogToDisk="false"/>
+</Settings>

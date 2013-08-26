@@ -1,0 +1,1 @@
+﻿This is the default configuration folder for FlexSearch. All index settings files along with related configuration should go here.

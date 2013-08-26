@@ -1,0 +1,1 @@
+﻿This is the plugins folder for FlexSearch. All third party plugins should be placed under this folder.

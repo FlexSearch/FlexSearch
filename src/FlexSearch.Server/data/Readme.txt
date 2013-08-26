@@ -1,0 +1,1 @@
+﻿This is the default data folder location for FlexSearch. All indexing data will be stored under this folder.

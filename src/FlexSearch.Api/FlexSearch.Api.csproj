@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{C8C424A3-DC16-4527-B5A2-FB65F1DD5BF1}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>FlexSearch.Api</RootNamespace>
+    <AssemblyName>FlexSearch.Api</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ServiceStack.Interfaces">
+      <HintPath>C:\Seemant\Personal\flexsearch\build-debug\ServiceStack.Interfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Analysis\Analyze.cs" />
+    <Compile Include="Analysis\AnalyzeResponse.cs" />
+    <Compile Include="ApiDescription.cs" />
+    <Compile Include="Document\DestroyDocumentResponse.cs" />
+    <Compile Include="Document\CreateDocument.cs" />
+    <Compile Include="Document\CreateDocumentResponse.cs" />
+    <Compile Include="Document\DestroyDocument.cs" />
+    <Compile Include="Index\IndexExists.cs" />
+    <Compile Include="Index\IndexExistsResponse.cs" />
+    <Compile Include="Job\GetStatus.cs" />
+    <Compile Include="Job\GetStatusResponse.cs" />
+    <Compile Include="Job\StatusType.cs" />
+    <Compile Include="Types\HighlightOption.cs" />
+    <Compile Include="Types\Index.cs" />
+    <Compile Include="Index\OnlineResponse.cs" />
+    <Compile Include="Index\CreateIndexResponse.cs" />
+    <Compile Include="Index\DestroyIndexResponse.cs" />
+    <Compile Include="Index\OfflineResponse.cs" />
+    <Compile Include="Index\ShowIndexResponse.cs" />
+    <Compile Include="Index\UpdateAnalyzersResponse.cs" />
+    <Compile Include="Index\UpdateConfiguration.cs" />
+    <Compile Include="Index\UpdateConfigurationResponse.cs" />
+    <Compile Include="Index\UpdateIndexFieldsResponse.cs" />
+    <Compile Include="Index\UpdateScriptsResponse.cs" />
+    <Compile Include="Index\UpdateSearchProfilesResponse.cs" />
+    <Compile Include="Types\FilterType.cs" />
+    <Compile Include="Types\FlexDocument.cs" />
+    <Compile Include="Document\ShowDocument.cs" />
+    <Compile Include="Document\ShowDocumentResponse.cs" />
+    <Compile Include="Types\AnalyzerProperties.cs" />
+    <Compile Include="Index\Online.cs" />
+    <Compile Include="Index\CreateIndex.cs" />
+    <Compile Include="Index\DestroyIndex.cs" />
+    <Compile Include="Types\DirectoryType.cs" />
+    <Compile Include="Types\FieldTermVector.cs" />
+    <Compile Include="Types\FieldType.cs" />
+    <Compile Include="Types\Filter.cs" />
+    <Compile Include="Types\IndexConfiguration.cs" />
+    <Compile Include="Types\IndexFieldProperties.cs" />
+    <Compile Include="Types\ScriptProperties.cs" />
+    <Compile Include="Types\ScriptOption.cs" />
+    <Compile Include="Types\ScriptType.cs" />
+    <Compile Include="Types\SearchProfileProperties.cs" />
+    <Compile Include="Index\Offline.cs" />
+    <Compile Include="Index\ShowIndex.cs" />
+    <Compile Include="Index\UpdateAnalyzers.cs" />
+    <Compile Include="Index\UpdateIndexFields.cs" />
+    <Compile Include="Index\UpdateScripts.cs" />
+    <Compile Include="Index\UpdateSearchProfiles.cs" />
+    <Compile Include="Types\MissingValueOption.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Types\SearchCondition.cs" />
+    <Compile Include="Types\SearchFilter.cs" />
+    <Compile Include="Types\SearchProfileQuery.cs" />
+    <Compile Include="Search\SearchProfileQueryResponse.cs" />
+    <Compile Include="Types\SearchQuery.cs" />
+    <Compile Include="Search\SearchQueryResponse.cs" />
+    <Compile Include="Types\SearchResults.cs" />
+    <Compile Include="Document\UpdateDocument.cs" />
+    <Compile Include="Document\UpdateDocumentResponse.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
