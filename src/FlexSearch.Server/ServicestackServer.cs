@@ -26,7 +26,7 @@ namespace FlexSearch.Server
     using ServiceStack.Text;
     using ServiceStack.WebHost.Endpoints;
 
-    internal class ServicestackServer : AppHostHttpListenerLongRunningBase
+    public class ServicestackServer : AppHostHttpListenerLongRunningBase
     {
         #region Fields
 

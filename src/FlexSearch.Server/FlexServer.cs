@@ -6,7 +6,7 @@ namespace FlexSearch.Server
 
     using ServiceStack.Logging;
 
-    internal class FlexServer
+    public class FlexServer
     {
         #region Fields
 

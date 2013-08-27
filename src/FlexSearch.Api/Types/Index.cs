@@ -81,6 +81,9 @@
         public string IndexName { get; set; }
 
         [DataMember(Order = 5)]
+        public bool Online { get; set; }
+
+        [DataMember(Order = 6)]
         public Dictionary<string, ScriptProperties> Scripts
         {
             get
@@ -98,7 +101,7 @@
             }
         }
 
-        [DataMember(Order = 6)]
+        [DataMember(Order = 7)]
         public Dictionary<string, SearchProfileProperties> SearchProfiles
         {
             get
