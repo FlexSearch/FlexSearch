@@ -4,7 +4,7 @@
 
     using ServiceStack.ServiceInterface.ServiceModel;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class ShowIndexResponse
     {
         #region Public Properties

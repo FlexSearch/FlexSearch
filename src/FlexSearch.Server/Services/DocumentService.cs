@@ -86,7 +86,7 @@ namespace FlexSearch.Server.Services
         private ShowDocumentResponse ProcessGetDocumentRequest(ShowDocument request)
         {
             var searchQuery = new SearchQuery();
-            searchQuery.Columns = new[] { "*" };
+            searchQuery.Columns = new StringList { "*" };
             searchQuery.IndexName = request.IndexName;
             searchQuery.Count = 1;
             searchQuery.Query = new SearchFilter
@@ -102,7 +102,7 @@ namespace FlexSearch.Server.Services
                                         Operator = "term_match",
                                         MissingValueOption = MissingValueOption.ThrowError,
                                         Params = null,
-                                        Values = new[] { request.Id }
+                                        Values = new StringList { request.Id }
                                     }
                             }
                 };

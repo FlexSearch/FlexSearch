@@ -3,7 +3,7 @@
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchCondition
     {
         #region Fields
@@ -18,7 +18,7 @@
         {
         }
 
-        public SearchCondition(string fieldName, string operatorName, string[] values)
+        public SearchCondition(string fieldName, string operatorName, StringList values)
         {
             this.FieldName = fieldName;
             this.Operator = operatorName;
@@ -52,10 +52,10 @@
         public string Operator { get; set; }
 
         [DataMember(Order = 5)]
-        public Dictionary<string, string> Params { get; set; }
+        public KeyValuePairs Params { get; set; }
 
         [DataMember(Order = 6)]
-        public string[] Values { get; set; }
+        public StringList Values { get; set; }
 
         #endregion
     }

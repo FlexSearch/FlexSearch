@@ -3,7 +3,7 @@ namespace FlexSearch.Api.Types
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchResults
     {
         #region Constructors and Destructors

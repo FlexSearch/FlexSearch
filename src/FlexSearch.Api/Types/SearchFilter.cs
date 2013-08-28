@@ -2,7 +2,7 @@ namespace FlexSearch.Api.Types
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchFilter
     {
         #region Fields

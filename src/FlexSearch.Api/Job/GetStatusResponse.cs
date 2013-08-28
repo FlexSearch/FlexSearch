@@ -5,7 +5,7 @@
 
     using ServiceStack.ServiceInterface.ServiceModel;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class GetStatusResponse
     {
         #region Public Properties

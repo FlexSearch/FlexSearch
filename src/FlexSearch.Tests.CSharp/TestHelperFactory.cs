@@ -38,7 +38,7 @@ namespace FlexSearch.Tests.CSharp
             var index = new Api.Types.Index();
             index.IndexName = "contact";
             index.Configuration.DirectoryType = DirectoryType.Ram;
-            index.Fields = new Dictionary<string, IndexFieldProperties>(StringComparer.InvariantCultureIgnoreCase);
+            index.Fields = new FieldDictionary();
 
             index.Fields.Add("gender", new IndexFieldProperties { FieldType = FieldType.ExactText });
             index.Fields.Add("title", new IndexFieldProperties { FieldType = FieldType.ExactText });

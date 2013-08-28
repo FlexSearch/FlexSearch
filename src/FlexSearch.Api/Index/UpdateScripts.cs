@@ -15,7 +15,7 @@
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/updatescripts", "POST", Summary = @"Update the scripts associated with an existing index",
         Notes = "Index should be offline to perform any settings update.")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class UpdateScripts
     {
         #region Public Properties
@@ -26,7 +26,7 @@
 
         [DataMember(Order = 2)]
         [Description(ApiDescriptionGlobalTypes.Scripts)]
-        public Dictionary<string, ScriptProperties> Scripts { get; set; }
+        public ScriptDictionary Scripts { get; set; }
 
         #endregion
     }

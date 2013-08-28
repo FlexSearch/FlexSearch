@@ -10,7 +10,7 @@ namespace FlexSearch.Api.Document
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/document/destroy", "POST", Summary = @"Delete a document in the index", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class DestroyDocument
     {
         #region Public Properties

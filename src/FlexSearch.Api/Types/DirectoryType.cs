@@ -2,13 +2,16 @@
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public enum DirectoryType
     {
+        [EnumMember]
         FileSystem,
 
+        [EnumMember]
         MemoryMapped,
 
+        [EnumMember]
         Ram
     }
 }

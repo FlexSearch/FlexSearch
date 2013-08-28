@@ -2,13 +2,16 @@
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public enum ScriptOption
     {
+        [EnumMember]
         SingleLine,
 
+        [EnumMember]
         MultiLine,
 
+        [EnumMember]
         FileBased
     }
 }

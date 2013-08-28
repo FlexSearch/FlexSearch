@@ -12,7 +12,7 @@
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/analysis/analyze", "POST", Summary = @"Analyze the text using an analyzer",
         Notes = "This will analyze the sample text using the specified analyzer. This is helpful in determining if an analyzer is producing the desired tokens.")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class Analyze
     {
         #region Public Properties

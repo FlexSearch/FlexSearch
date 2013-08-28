@@ -126,8 +126,8 @@ module SearchDsl =
                 if search.Highlight <> null then
                     match search.Highlight.HighlightedFields with
                     | null -> None
-                    | [|fieldName|] -> 
-                        match flexIndex.IndexSetting.FieldsLookup.TryGetValue(fieldName)  with
+                    | x when x.Count = 1 -> 
+                        match flexIndex.IndexSetting.FieldsLookup.TryGetValue(x.First())  with
                         | (true, field) -> 
                             let htmlFormatter = new SimpleHTMLFormatter(search.Highlight.PreTag, search.Highlight.PostTag)
                             Some(field, new Highlighter(htmlFormatter, new QueryScorer(query)))
@@ -146,14 +146,14 @@ module SearchDsl =
                     flexDocument.Index <- document.get("type")
                     flexDocument.LastModified <- document.get("lastmodified")
                     flexDocument.Score <- float(hit.score)
-                    flexDocument.Fields <- new Dictionary<string, string>()          
+                    flexDocument.Fields <- new KeyValuePairs()          
  
                     match search.Columns with
                     // Return no other columns when nothing is passed
                     | null -> ()
 
                     // Return all columns when *
-                    | [|"*"|] -> 
+                    | x when search.Columns.First() = "*" -> 
                         for field in flexIndex.IndexSetting.Fields do
                             let value = document.get(field.FieldName)
                             if value <> null then flexDocument.Fields.Add(field.FieldName, value)
@@ -168,7 +168,7 @@ module SearchDsl =
                         let(field, highlighter) = highlighterOptions.Value
                         let text = document.get(field.FieldName)
                         if text <> null then
-                            flexDocument.Highlights <- new List<string>()
+                            flexDocument.Highlights <- new StringList()
 
                             let tokenStream = TokenSources.getAnyTokenStream(indexSearchers.[hit.shardIndex].getIndexReader(), hit.doc, field.FieldName, flexIndex.IndexSetting.SearchAnalyzer)
                             let frags = highlighter.getBestTextFragments(tokenStream, text, false, search.Highlight.FragmentsToReturn) 
@@ -187,7 +187,7 @@ module SearchDsl =
         // ----------------------------------------------------------------------------
         // Method responsible for generating top level boolean query for the search query
         // ---------------------------------------------------------------------------- 
-        let rec GenerateQueryFromFilter(flexIndex: FlexIndex, filter: SearchFilter, isProfileBased: Dictionary<string, string> option) =
+        let rec GenerateQueryFromFilter(flexIndex: FlexIndex, filter: SearchFilter, isProfileBased: KeyValuePairs option) =
             let query = new BooleanQuery()
             let occur = 
                 if (filter.FilterType = FlexSearch.Api.Types.FilterType.And) then
@@ -216,7 +216,7 @@ module SearchDsl =
 
                         if ignoreCondition = false then
                             // Perform all check if the specified value is correct or not
-                            if (condition.Values = null || condition.Values.Length = 0 || System.String.IsNullOrWhiteSpace(condition.Values.[0])) then 
+                            if (condition.Values = null || condition.Values.Count = 0 || System.String.IsNullOrWhiteSpace(condition.Values.[0])) then 
                                 failwithf "The specified condition: %s for the field %s does not have any values specified." condition.Operator condition.FieldName
                             
                             // Pre query generation validation
@@ -318,7 +318,7 @@ module SearchDsl =
 
     // Quick check to see if an array is null or empty
     let inline CheckCondition(condition: SearchCondition) =
-        if (condition.Values <> null && condition.Values.Length > 0) then true else false
+        if (condition.Values <> null && condition.Values.Count > 0) then true else false
 
 
     // THese are needed to satsfy certain lucene query requirements

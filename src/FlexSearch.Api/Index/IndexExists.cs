@@ -11,7 +11,7 @@
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/exists", "POST,GET", Summary = @"Check if a particular index exists",
         Notes = "This will return if the index exists irrespective of the fact that it is online or not.")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class IndexExists
     {
         #region Public Properties

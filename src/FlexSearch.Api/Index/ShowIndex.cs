@@ -10,7 +10,7 @@
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/show", "POST", Summary = @"Get an existing index", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class ShowIndex
     {
         #region Public Properties

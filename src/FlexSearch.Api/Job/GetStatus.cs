@@ -12,7 +12,7 @@
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/job/getstatus", "GET,POST", Summary = @"Get the status of a job by Id",
         Notes = "The job id a guid and is returned by some long running services to implement long polling.")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class GetStatus
     {
         #region Public Properties

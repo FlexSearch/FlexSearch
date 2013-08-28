@@ -1,8 +1,9 @@
 ﻿namespace FlexSearch.Api.Types
 {
+    using System;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class IndexConfiguration
     {
         #region Fields

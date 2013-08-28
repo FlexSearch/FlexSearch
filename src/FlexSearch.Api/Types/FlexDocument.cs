@@ -3,14 +3,14 @@
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class Document
     {
         #region Constructors and Destructors
 
         public Document()
         {
-            this.Fields = new Dictionary<string, string>();
+            this.Fields = new KeyValuePairs();
         }
 
         #endregion
@@ -18,10 +18,10 @@
         #region Public Properties
 
         [DataMember(Order = 1)]
-        public Dictionary<string, string> Fields { get; set; }
+        public KeyValuePairs Fields { get; set; }
 
         [DataMember(Order = 2)]
-        public List<string> Highlights { get; set; }
+        public StringList Highlights { get; set; }
 
         [DataMember(Order = 3)]
         public string Id { get; set; }

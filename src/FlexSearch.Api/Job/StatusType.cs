@@ -2,21 +2,28 @@
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public enum StatusType
     {
+        [EnumMember]
         Preparing,
 
+        [EnumMember]
         Started,
 
+        [EnumMember]
         InProgress,
 
+        [EnumMember]
         Error,
 
+        [EnumMember]
         FinshedWithSuccess,
 
+        [EnumMember]
         FinishedWithErrors,
 
+        [EnumMember]
         TerminatedOnRequest
     }
 }

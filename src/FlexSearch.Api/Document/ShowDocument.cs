@@ -10,7 +10,7 @@ namespace FlexSearch.Api.Document
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/document/show", Verbs = "GET,POST", Summary = @"Show an existing document in the index", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class ShowDocument
     {
         #region Public Properties

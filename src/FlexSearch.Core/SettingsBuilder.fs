@@ -158,7 +158,7 @@ module SettingsBuilder =
                 match factoryCollection.FilterFactory.GetModuleByName(filter.FilterName) with
                 | Some(a) -> 
                     if filter.Parameters = null then 
-                        filter.Parameters <- new Dictionary<string,string>()                        
+                        filter.Parameters <- new KeyValuePairs()                        
                     a.Initialize(filter.Parameters) |> ignore
                     filters.Add(a)
                 | _  -> failwithf "The specified filter is not valid: %s" filter.FilterName 

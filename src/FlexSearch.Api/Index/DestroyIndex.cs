@@ -10,7 +10,7 @@
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/destroy", "POST", Summary = @"Delete an existing index", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class DestroyIndex
     {
         #region Public Properties

@@ -16,7 +16,7 @@
     [Route("/index/updatesearchprofiles", "POST",
         Summary = @"Update the search profiles associated with an existing index",
         Notes = "Index should be offline to perform any settings update.")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class UpdateSearchProfiles
     {
         #region Public Properties
@@ -27,7 +27,7 @@
 
         [DataMember(Order = 2)]
         [Description(ApiDescriptionGlobalTypes.SearchProfile)]
-        public Dictionary<string, SearchProfileProperties> SearchProfiles { get; set; }
+        public SearchProfileDictionary SearchProfiles { get; set; }
 
         #endregion
     }

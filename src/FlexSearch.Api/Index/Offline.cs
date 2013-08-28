@@ -10,7 +10,7 @@
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/offline", "POST", Summary = @"Check if an index is offline", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class Offline
     {
         #region Public Properties

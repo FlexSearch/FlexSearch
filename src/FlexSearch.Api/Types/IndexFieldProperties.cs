@@ -2,7 +2,7 @@
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class IndexFieldProperties
     {
         #region Fields

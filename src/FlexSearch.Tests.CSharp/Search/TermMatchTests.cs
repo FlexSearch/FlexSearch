@@ -43,7 +43,7 @@ namespace FlexSearch.Tests.CSharp.Search
                         new TestCaseData(
                             new SearchFilter(
                                 FilterType.And,
-                                new[] { new SearchCondition("givenname", "term_match", new[] { "Aaron" }) }),
+                                new[] { new SearchCondition("givenname", "term_match", new StringList { "Aaron" }) }),
                             TestDataFactory.GetContactTestData()
                                 .Count(x => string.Equals(x.GivenName, "Aaron", StringComparison.OrdinalIgnoreCase)),
                             100).SetName("Term match where given name has Aaron");
@@ -54,8 +54,8 @@ namespace FlexSearch.Tests.CSharp.Search
                                 FilterType.And,
                                 new[]
                                 {
-                                    new SearchCondition("givenname", "term_match", new[] { "Aaron" }),
-                                    new SearchCondition("surname", "term_match", new[] { "Hewitt" })
+                                    new SearchCondition("givenname", "term_match", new StringList { "Aaron" }),
+                                    new SearchCondition("surname", "term_match", new StringList { "Hewitt" })
                                 }),
                             TestDataFactory.GetContactTestData()
                                 .Count(
@@ -68,15 +68,15 @@ namespace FlexSearch.Tests.CSharp.Search
                         new TestCaseData(
                             new SearchFilter(
                                 FilterType.And,
-                                new[] { new SearchCondition("givenname", "term_match", new[] { "Aaron" }) },
+                                new[] { new SearchCondition("givenname", "term_match", new StringList { "Aaron" }) },
                                 new[]
                                 {
                                     new SearchFilter(
                                         FilterType.Or,
                                         new[]
                                         {
-                                            new SearchCondition("surname", "term_match", new[] { "Garner" }),
-                                            new SearchCondition("surname", "term_match", new[] { "Hewitt" })
+                                            new SearchCondition("surname", "term_match", new StringList { "Garner" }),
+                                            new SearchCondition("surname", "term_match", new StringList { "Hewitt" })
                                         })
                                 }),
                             TestDataFactory.GetContactTestData()
@@ -92,7 +92,7 @@ namespace FlexSearch.Tests.CSharp.Search
                         new TestCaseData(
                             new SearchFilter(
                                 FilterType.And,
-                                new[] { new SearchCondition("cvv2", "term_match", new[] { "991" }) }),
+                                new[] { new SearchCondition("cvv2", "term_match", new StringList { "991" }) }),
                             6,
                             100).SetName("Term match where cvv2 = 991");
 
@@ -100,7 +100,7 @@ namespace FlexSearch.Tests.CSharp.Search
                         new TestCaseData(
                             new SearchFilter(
                                 FilterType.And,
-                                new[] { new SearchCondition("id", "term_match", new[] { "1" }) }),
+                                new[] { new SearchCondition("id", "term_match", new StringList { "1" }) }),
                             TestDataFactory.GetContactTestData().Count(x => x.Number == 1),
                             100).SetName("Term match where id = 1");
 
@@ -108,7 +108,7 @@ namespace FlexSearch.Tests.CSharp.Search
                         new TestCaseData(
                             new SearchFilter(
                                 FilterType.And,
-                                new[] { new SearchCondition("type", "term_match", new[] { "contact" }) }),
+                                new[] { new SearchCondition("type", "term_match", new StringList { "contact" }) }),
                             TestDataFactory.GetContactTestData().Count(),
                             3000).SetName("Term match where type = contact");
                 }

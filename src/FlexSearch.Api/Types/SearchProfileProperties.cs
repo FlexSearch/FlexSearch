@@ -2,7 +2,7 @@
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchProfileProperties
     {
         #region Public Properties

@@ -20,7 +20,7 @@
         public void Dynamically_generated_fields_are_searchable()
         {
             var searchQuery = new SearchQuery(
-                new[] { "fullname" },
+                new StringList { "fullname" },
                 "contact",
                 10,
                 new SearchFilter(
@@ -30,7 +30,7 @@
                         new SearchCondition(
                             "fullname",
                             "term_match",
-                            new[]
+                            new StringList
                             {
                                 TestDataFactory.GetContactTestData()[0].GivenName + " "
                                 + TestDataFactory.GetContactTestData()[0].Surname
@@ -47,10 +47,10 @@
         public void Fullname_is_generated_dynamically()
         {
             var searchQuery = new SearchQuery(
-                new[] { "fullname" },
+                new StringList { "fullname" },
                 "contact",
                 10,
-                new SearchFilter(FilterType.And, new[] { new SearchCondition("id", "term_match", new[] { "1" }) }));
+                new SearchFilter(FilterType.And, new[] { new SearchCondition("id", "term_match", new StringList { "1" }) }));
             SearchResults results = this.indexService.PerformQuery("contact", IndexQuery.NewSearchQuery(searchQuery));
             Assert.AreEqual(
                 TestDataFactory.GetContactTestData()[0].GivenName + " "

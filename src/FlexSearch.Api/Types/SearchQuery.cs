@@ -11,7 +11,7 @@ namespace FlexSearch.Api.Types
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/search/", "POST,GET", Summary = "Search for documents in the index", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchQuery
     {
         #region Fields
@@ -22,7 +22,7 @@ namespace FlexSearch.Api.Types
 
         #region Constructors and Destructors
 
-        public SearchQuery(string[] columns, string indexName, int count, SearchFilter query)
+        public SearchQuery(StringList columns, string indexName, int count, SearchFilter query)
         {
             this.Columns = columns;
             this.IndexName = indexName;
@@ -40,7 +40,7 @@ namespace FlexSearch.Api.Types
 
         [DataMember(Order = 1)]
         [Description("Columns to return")]
-        public string[] Columns { get; set; }
+        public StringList Columns { get; set; }
 
         [DataMember(Order = 2)]
         [ApiMember(Description = "Number of records to return", ParameterType = "query", IsRequired = true)]

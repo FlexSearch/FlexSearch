@@ -2,7 +2,7 @@ namespace FlexSearch.Api.Types
 {
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class HighlightOption
     {
         #region Fields
@@ -32,7 +32,7 @@ namespace FlexSearch.Api.Types
         }
 
         [DataMember(Order = 2)]
-        public string[] HighlightedFields { get; set; }
+        public StringList HighlightedFields { get; set; }
 
         [DataMember(Order = 3)]
         public string PostTag

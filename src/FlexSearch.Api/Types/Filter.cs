@@ -3,7 +3,7 @@
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class Filter
     {
         #region Public Properties
@@ -12,7 +12,7 @@
         public string FilterName { get; set; }
 
         [DataMember(Order = 2)]
-        public Dictionary<string, string> Parameters { get; set; }
+        public KeyValuePairs Parameters { get; set; }
 
         #endregion
     }

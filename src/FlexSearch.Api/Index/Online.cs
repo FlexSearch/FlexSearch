@@ -10,7 +10,7 @@
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/online", "POST", Summary = @"Check if an index is online or not", Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class Online
     {
         #region Public Properties

@@ -3,7 +3,7 @@
     using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class AnalyzerProperties
     {
         #region Constants

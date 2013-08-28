@@ -13,14 +13,14 @@ namespace FlexSearch.Api.Types
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/search/profile", "POST,GET", Summary = "Search for documents in the index using a search profile",
         Notes = "")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchProfileQuery
     {
         #region Public Properties
 
         [DataMember(Order = 1)]
         [Description(ApiDescriptionGlobalTypes.Fields)]
-        public Dictionary<string, string> Fields { get; set; }
+        public KeyValuePairs Fields { get; set; }
 
         [DataMember(Order = 2)]
         [ApiMember(Description = ApiDescriptionGlobalTypes.IndexName, ParameterType = "query", IsRequired = true)]

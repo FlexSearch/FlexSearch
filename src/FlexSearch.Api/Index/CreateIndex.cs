@@ -14,7 +14,7 @@
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/create", "POST", Summary = @"Create a new index",
         Notes = "This will not create a new index if there is already an index with the same name.")]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class CreateIndex
     {
         #region Public Properties

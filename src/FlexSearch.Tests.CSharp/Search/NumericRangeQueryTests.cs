@@ -45,10 +45,10 @@ namespace FlexSearch.Tests.CSharp.Search
                                 FilterType.And, 
                                 new[]
                                     {
-                                        new SearchCondition("cvv2", "numeric_range", new[] { "1", "5" })
+                                        new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
                                                 Params =
-                                                    new Dictionary<string, string>
+                                                    new KeyValuePairs
                                                         {
                                                            { "includelower", "true" }, { "includeupper", "true" } 
                                                         }
@@ -63,10 +63,9 @@ namespace FlexSearch.Tests.CSharp.Search
                                 FilterType.And, 
                                 new[]
                                     {
-                                        new SearchCondition("cvv2", "numeric_range", new[] { "1", "5" })
+                                        new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
-                                                Params =
-                                                    new Dictionary<string, string>
+                                                Params = new KeyValuePairs
                                                         {
                                                            { "includelower", "false" }, { "includeupper", "false" } 
                                                         }
@@ -81,10 +80,10 @@ namespace FlexSearch.Tests.CSharp.Search
                                 FilterType.And, 
                                 new[]
                                     {
-                                        new SearchCondition("cvv2", "numeric_range", new[] { "1", "5" })
+                                        new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
                                                 Params =
-                                                    new Dictionary<string, string>
+                                                    new KeyValuePairs
                                                         {
                                                            { "includelower", "false" }, { "includeupper", "true" } 
                                                         }
@@ -99,10 +98,10 @@ namespace FlexSearch.Tests.CSharp.Search
                                 FilterType.And, 
                                 new[]
                                     {
-                                        new SearchCondition("cvv2", "numeric_range", new[] { "1", "5" })
+                                        new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
                                                 Params =
-                                                    new Dictionary<string, string>
+                                                    new KeyValuePairs
                                                         {
                                                            { "includelower", "true" }, { "includeupper", "false" } 
                                                         }

@@ -1,34 +1,28 @@
 ﻿namespace FlexSearch.Api.Types
 {
-    using System;
-    using System.Collections.Generic;
     using System.Runtime.Serialization;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class Index
     {
         #region Fields
 
-        private Dictionary<string, AnalyzerProperties> analyzers =
-            new Dictionary<string, AnalyzerProperties>(StringComparer.OrdinalIgnoreCase);
+        private AnalyzerDictionary analyzers = new AnalyzerDictionary();
 
         private IndexConfiguration configuration = new IndexConfiguration();
 
-        private Dictionary<string, IndexFieldProperties> fields =
-            new Dictionary<string, IndexFieldProperties>(StringComparer.OrdinalIgnoreCase);
+        private FieldDictionary fields = new FieldDictionary();
 
-        private Dictionary<string, ScriptProperties> scripts =
-            new Dictionary<string, ScriptProperties>(StringComparer.OrdinalIgnoreCase);
+        private ScriptDictionary scripts = new ScriptDictionary();
 
-        private Dictionary<string, SearchProfileProperties> searchProfiles =
-            new Dictionary<string, SearchProfileProperties>(StringComparer.OrdinalIgnoreCase);
+        private SearchProfileDictionary searchProfiles = new SearchProfileDictionary();
 
         #endregion
 
         #region Public Properties
 
         [DataMember(Order = 1)]
-        public Dictionary<string, AnalyzerProperties> Analyzers
+        public AnalyzerDictionary Analyzers
         {
             get
             {
@@ -38,7 +32,7 @@
             {
                 if (value == null)
                 {
-                    this.analyzers = new Dictionary<string, AnalyzerProperties>(StringComparer.OrdinalIgnoreCase);
+                    this.analyzers = new AnalyzerDictionary();
                     return;
                 }
 
@@ -60,7 +54,7 @@
         }
 
         [DataMember(Order = 3)]
-        public Dictionary<string, IndexFieldProperties> Fields
+        public FieldDictionary Fields
         {
             get
             {
@@ -70,7 +64,7 @@
             {
                 if (value == null)
                 {
-                    this.fields = new Dictionary<string, IndexFieldProperties>(StringComparer.OrdinalIgnoreCase);
+                    this.fields = new FieldDictionary();
                     return;
                 }
                 this.fields = value;
@@ -84,7 +78,7 @@
         public bool Online { get; set; }
 
         [DataMember(Order = 6)]
-        public Dictionary<string, ScriptProperties> Scripts
+        public ScriptDictionary Scripts
         {
             get
             {
@@ -94,7 +88,7 @@
             {
                 if (value == null)
                 {
-                    this.scripts = new Dictionary<string, ScriptProperties>(StringComparer.OrdinalIgnoreCase);
+                    this.scripts = new ScriptDictionary();
                     return;
                 }
                 this.scripts = value;
@@ -102,7 +96,7 @@
         }
 
         [DataMember(Order = 7)]
-        public Dictionary<string, SearchProfileProperties> SearchProfiles
+        public SearchProfileDictionary SearchProfiles
         {
             get
             {
@@ -112,8 +106,8 @@
             {
                 if (value == null)
                 {
-                    this.searchProfiles =
-                        new Dictionary<string, SearchProfileProperties>(StringComparer.OrdinalIgnoreCase);
+                    this.searchProfiles = new SearchProfileDictionary();
+
                     return;
                 }
                 this.searchProfiles = value;

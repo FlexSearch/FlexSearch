@@ -33,7 +33,7 @@ namespace FlexSearch.Tests.CSharp
                 var indexDocument = new Document();
                 indexDocument.Id = contactRecord.Number.ToString(CultureInfo.InvariantCulture);
                 indexDocument.Index = "contact";
-                indexDocument.Fields = new Dictionary<string, string>();
+                indexDocument.Fields = new KeyValuePairs();
 
                 indexDocument.Fields.Add("gender", contactRecord.Gender);
                 indexDocument.Fields.Add("title", contactRecord.Title);

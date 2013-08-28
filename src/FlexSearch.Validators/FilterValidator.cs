@@ -29,7 +29,7 @@
                         factoryCollection.FilterFactory.GetModuleByName(filter.FilterName);
                     if (filter.Parameters == null)
                     {
-                        filter.Parameters = new Dictionary<string, string>();
+                        filter.Parameters = new KeyValuePairs();
                     }
 
                     try

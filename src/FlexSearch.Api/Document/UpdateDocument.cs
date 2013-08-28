@@ -5,6 +5,8 @@ namespace FlexSearch.Api.Document
     using System.Net;
     using System.Runtime.Serialization;
 
+    using FlexSearch.Api.Types;
+
     using ServiceStack.ServiceHost;
 
     [Api("Document")]
@@ -16,14 +18,14 @@ namespace FlexSearch.Api.Document
         Notes =
             "This will create a new document if the document does not exist. It is better to use create api for document creation when creating a huge number of documents."
         )]
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class UpdateDocument
     {
         #region Public Properties
 
         [DataMember(Order = 1)]
         [Description(ApiDescriptionGlobalTypes.Fields)]
-        public Dictionary<string, string> Fields { get; set; }
+        public KeyValuePairs Fields { get; set; }
 
         [DataMember(Order = 2)]
         [ApiMember(Description = ApiDescriptionGlobalTypes.Id, ParameterType = "query", IsRequired = true)]

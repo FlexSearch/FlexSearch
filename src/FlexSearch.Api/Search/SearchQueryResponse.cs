@@ -7,7 +7,7 @@ namespace FlexSearch.Api.Search
 
     using ServiceStack.ServiceInterface.ServiceModel;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class SearchQueryResponse
     {
         #region Public Properties

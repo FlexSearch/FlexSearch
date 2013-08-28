@@ -4,7 +4,7 @@ namespace FlexSearch.Api.Document
 
     using ServiceStack.ServiceInterface.ServiceModel;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class UpdateDocumentResponse
     {
         #region Public Properties

@@ -6,7 +6,7 @@ namespace FlexSearch.Api.Document
 
     using ServiceStack.ServiceInterface.ServiceModel;
 
-    [DataContract]
+    [DataContract(Namespace = "")]
     public class ShowDocumentResponse
     {
         #region Public Properties

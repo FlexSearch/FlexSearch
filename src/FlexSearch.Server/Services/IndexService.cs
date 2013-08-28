@@ -128,7 +128,7 @@
         public UpdateConfigurationResponse Post(UpdateConfiguration request)
         {
             this.UpdateIndexSettingsComponents(
-                new Index { IndexName = request.IndexName, Configuration = request.Configuration },
+                new Index { IndexName = request.IndexName, Configuration = request.IndexConfiguration },
                 IndexComponent.Configuration);
             return new UpdateConfigurationResponse();
         }
