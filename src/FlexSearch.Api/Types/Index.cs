@@ -26,7 +26,7 @@
         {
             get
             {
-                return this.analyzers;
+                return this.analyzers ?? (this.analyzers = new AnalyzerDictionary());
             }
             set
             {
@@ -45,10 +45,16 @@
         {
             get
             {
-                return this.configuration;
+                return this.configuration ?? (this.configuration = new IndexConfiguration());
             }
             set
             {
+                if (value == null)
+                {
+                    this.configuration = new IndexConfiguration();
+                    return;
+                }
+
                 this.configuration = value;
             }
         }
@@ -58,7 +64,7 @@
         {
             get
             {
-                return this.fields;
+                return this.fields ?? (this.fields = new FieldDictionary());
             }
             set
             {
@@ -68,6 +74,15 @@
                     return;
                 }
                 this.fields = value;
+            }
+        }
+
+        [IgnoreDataMember]
+        public string Id
+        {
+            get
+            {
+                return this.IndexName;
             }
         }
 
@@ -82,7 +97,7 @@
         {
             get
             {
-                return this.scripts;
+                return this.scripts ?? (this.scripts = new ScriptDictionary());
             }
             set
             {
@@ -100,7 +115,7 @@
         {
             get
             {
-                return this.searchProfiles;
+                return this.searchProfiles ?? (this.searchProfiles = new SearchProfileDictionary());
             }
             set
             {
