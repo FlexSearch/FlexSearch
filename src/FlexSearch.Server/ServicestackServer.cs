@@ -1,6 +1,7 @@
 namespace FlexSearch.Server
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel.Composition.Hosting;
 
     using FlexSearch.Api.Types;
@@ -15,7 +16,6 @@ namespace FlexSearch.Server
     using ServiceStack.CacheAccess;
     using ServiceStack.CacheAccess.Providers;
     using ServiceStack.Common;
-    using ServiceStack.Common.Utils;
     using ServiceStack.Logging;
     using ServiceStack.OrmLite;
     using ServiceStack.Plugins.MsgPack;
@@ -23,7 +23,6 @@ namespace FlexSearch.Server
     using ServiceStack.ServiceInterface.Admin;
     using ServiceStack.ServiceInterface.Cors;
     using ServiceStack.ServiceInterface.Validation;
-    using ServiceStack.Text;
     using ServiceStack.WebHost.Endpoints;
 
     public class ServicestackServer : AppHostHttpListenerLongRunningBase
@@ -48,7 +47,7 @@ namespace FlexSearch.Server
 
         public override void Configure(Container container)
         {
-            var logger = LogManager.GetLogger("Init");
+            ILog logger = LogManager.GetLogger("Init");
 
             // Don't send debug information
             this.SetConfig(new EndpointHostConfig { DebugMode = false, });
@@ -83,9 +82,7 @@ namespace FlexSearch.Server
             container.DefaultReuse = ReuseScope.Container;
             container.RegisterValidators(typeof(IndexValidator).Assembly);
 
-            var dbFactory = new OrmLiteConnectionFactory(
-                "~/Conf/{0}.sqlite".Fmt("conf").MapHostAbsolutePath(),
-                SqliteDialect.Provider);
+            var dbFactory = new OrmLiteConnectionFactory(Constants.ConfFolder + "/conf.sqlite", SqliteDialect.Provider);
             dbFactory.OpenDbConnection().Run(db => db.CreateTable<Index>(false));
             container.Register<IDbConnectionFactory>(dbFactory);
 
@@ -111,8 +108,8 @@ namespace FlexSearch.Server
                 new FlexIndexModule.IndexService(parser, searchService, dbFactory, true));
 
             // Loading plugins after everything else is successful
-            var plugins = factoryCollection.PluginsFactory.GetAllModules();
-            foreach (var pluginName in this.serverSettings.PluginsToLoad())
+            Dictionary<string, IPlugin> plugins = factoryCollection.PluginsFactory.GetAllModules();
+            foreach (string pluginName in this.serverSettings.PluginsToLoad())
             {
                 IPlugin plugin;
                 if (plugins.TryGetValue(pluginName, out plugin))
@@ -127,7 +124,7 @@ namespace FlexSearch.Server
 
         public void StopServer()
         {
-            var logger = LogManager.GetLogger("Init");
+            ILog logger = LogManager.GetLogger("Init");
             logger.Info("Received shutdown request");
             var iindexService = this.Container.Resolve<Interface.IIndexService>();
             iindexService.ShutDown();
