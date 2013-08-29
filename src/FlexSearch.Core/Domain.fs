@@ -153,8 +153,6 @@ type IndexState =
     | Online
     | Offline
     | Closing
-    | Closed
-    | BulkDelete
 
 
 // ----------------------------------------------------------------------------
