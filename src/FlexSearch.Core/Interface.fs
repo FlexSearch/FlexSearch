@@ -195,10 +195,10 @@ module Interface =
 
         abstract member UpdateIndex                 :   FlexSearch.Api.Types.Index -> bool * string
 
-        // Just closes the index
+        abstract member OpenIndex                   :   string -> bool * string
+
         abstract member CloseIndex                  :   string -> bool * string
 
-        // Deletes it forever
         abstract member DeleteIndex                 :   string -> bool * string
 
         abstract member IndexExists                 :   string -> bool
