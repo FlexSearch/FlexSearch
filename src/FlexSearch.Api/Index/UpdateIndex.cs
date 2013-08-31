@@ -13,14 +13,14 @@
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
     [Route("/index/create", "POST", Summary = @"Create a new index",
-        Notes = "This will not create a new index if there is already an index with the same name.")]
+        Notes = "This will update an existing index.")]
     [DataContract(Namespace = "")]
-    public class CreateIndex
+    public class UpdateIndex
     {
         #region Public Properties
 
         [DataMember(Order = 1)]
-        [Description("Bring the newly created index online.")]
+        [Description("Bring the updated index online.")]
         public bool OpenIndex { get; set; }
 
         [DataMember(Order = 2)]

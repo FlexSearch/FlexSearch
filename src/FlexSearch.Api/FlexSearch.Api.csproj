@@ -53,6 +53,8 @@
     <Compile Include="Document\DestroyDocument.cs" />
     <Compile Include="Index\IndexExists.cs" />
     <Compile Include="Index\IndexExistsResponse.cs" />
+    <Compile Include="Index\UpdateIndex.cs" />
+    <Compile Include="Index\UpdateIndexResponse.cs" />
     <Compile Include="Job\GetStatus.cs" />
     <Compile Include="Job\GetStatusResponse.cs" />
     <Compile Include="Job\StatusType.cs" />
@@ -60,10 +62,10 @@
     <Compile Include="Types\FieldDictionary.cs" />
     <Compile Include="Types\HighlightOption.cs" />
     <Compile Include="Types\Index.cs" />
-    <Compile Include="Index\OnlineResponse.cs" />
+    <Compile Include="Index\OpenIndexResponse.cs" />
     <Compile Include="Index\CreateIndexResponse.cs" />
     <Compile Include="Index\DestroyIndexResponse.cs" />
-    <Compile Include="Index\OfflineResponse.cs" />
+    <Compile Include="Index\CloseIndexResponse.cs" />
     <Compile Include="Index\ShowIndexResponse.cs" />
     <Compile Include="Index\UpdateAnalyzersResponse.cs" />
     <Compile Include="Index\UpdateConfiguration.cs" />
@@ -76,7 +78,7 @@
     <Compile Include="Document\ShowDocument.cs" />
     <Compile Include="Document\ShowDocumentResponse.cs" />
     <Compile Include="Types\AnalyzerProperties.cs" />
-    <Compile Include="Index\Online.cs" />
+    <Compile Include="Index\OpenIndex.cs" />
     <Compile Include="Index\CreateIndex.cs" />
     <Compile Include="Index\DestroyIndex.cs" />
     <Compile Include="Types\DirectoryType.cs" />
@@ -92,7 +94,7 @@
     <Compile Include="Types\ScriptType.cs" />
     <Compile Include="Types\SearchProfileDictionary.cs" />
     <Compile Include="Types\SearchProfileProperties.cs" />
-    <Compile Include="Index\Offline.cs" />
+    <Compile Include="Index\CloseIndex.cs" />
     <Compile Include="Index\ShowIndex.cs" />
     <Compile Include="Index\UpdateAnalyzers.cs" />
     <Compile Include="Index\UpdateIndexFields.cs" />

@@ -5,7 +5,7 @@
     using ServiceStack.ServiceInterface.ServiceModel;
 
     [DataContract(Namespace = "")]
-    public class OfflineResponse
+    public class OpenIndexResponse
     {
         #region Public Properties
 

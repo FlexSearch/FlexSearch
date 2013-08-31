@@ -89,10 +89,10 @@
         [DataMember(Order = 4)]
         public string IndexName { get; set; }
 
-        [DataMember(Order = 5)]
+        [IgnoreDataMember]
         public bool Online { get; set; }
 
-        [DataMember(Order = 6)]
+        [DataMember(Order = 5)]
         public ScriptDictionary Scripts
         {
             get
@@ -110,7 +110,7 @@
             }
         }
 
-        [DataMember(Order = 7)]
+        [DataMember(Order = 6)]
         public SearchProfileDictionary SearchProfiles
         {
             get

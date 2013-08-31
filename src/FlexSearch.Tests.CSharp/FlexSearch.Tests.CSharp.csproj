@@ -143,7 +143,11 @@
     </Reference>
     <Reference Include="ServiceStack.OrmLite, Version=3.9.58.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\src\packages\ServiceStack.OrmLite.SqlServer.3.9.58\lib\ServiceStack.OrmLite.dll</HintPath>
+      <HintPath>..\packages\ServiceStack.OrmLite.Sqlite64.3.9.58\lib\net40\ServiceStack.OrmLite.dll</HintPath>
+    </Reference>
+    <Reference Include="ServiceStack.OrmLite.SqliteNET, Version=3.9.58.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\ServiceStack.OrmLite.Sqlite64.3.9.58\lib\net40\ServiceStack.OrmLite.SqliteNET.dll</HintPath>
     </Reference>
     <Reference Include="ServiceStack.OrmLite.SqlServer, Version=3.9.58.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -164,6 +168,12 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.SQLite">
+      <HintPath>..\packages\System.Data.SQLite.x64.1.0.88.0\lib\net45\System.Data.SQLite.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.SQLite.Linq">
+      <HintPath>..\packages\System.Data.SQLite.x64.1.0.88.0\lib\net45\System.Data.SQLite.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />

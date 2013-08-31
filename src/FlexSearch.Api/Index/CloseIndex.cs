@@ -9,9 +9,9 @@
     [ApiResponse(HttpStatusCode.BadRequest, ApiDescriptionHttpResponse.BadRequest)]
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]
     [ApiResponse(HttpStatusCode.OK, ApiDescriptionHttpResponse.Ok)]
-    [Route("/index/offline", "POST", Summary = @"Check if an index is offline", Notes = "")]
+    [Route("/index/closeindex", "POST", Summary = @"Check if an index is offline", Notes = "")]
     [DataContract(Namespace = "")]
-    public class Offline
+    public class CloseIndex
     {
         #region Public Properties
 

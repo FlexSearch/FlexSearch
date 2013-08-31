@@ -5,11 +5,11 @@
     using ServiceStack.ServiceInterface.ServiceModel;
 
     [DataContract(Namespace = "")]
-    public class OnlineResponse
+    public class UpdateIndexResponse
     {
         #region Public Properties
 
-        [DataMember]
+        [DataMember(Order = 1)]
         public ResponseStatus ResponseStatus { get; set; }
 
         #endregion

@@ -35,6 +35,7 @@ open org.apache.lucene.store
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
+open System.Data
 open System.IO
 open System.Threading
 open System.Threading.Tasks
@@ -104,13 +105,6 @@ module IO =
     
     // Logger 
     let logger = LogManager.GetLogger("Settings")  
-//    
-//    let DirectoryFromString(value) = 
-//        match value with
-//        | InvariantEqual "FileSystem"       -> FileSystem
-//        | InvariantEqual "MemoryMapped"     -> MemoryMapped
-//        | InvariantEqual "RAM"              -> Ram
-//        |  _                                -> FileSystem
      
     // ----------------------------------------------------------------------------     
     // Creates lucene index writer config from flex index setting 
@@ -155,6 +149,27 @@ module IO =
 [<RequireQualifiedAccess>]
 module FlexIndex =
     
+    // ----------------------------------------------------------------------------   
+    // List of exceptions which can be thrown by manager
+    // ----------------------------------------------------------------------------   
+    let indexAlreadyExistsMessage = "The requested index already exist."
+    exception IndexAlreadyExistsException of string
+
+    let indexDoesNotExistMessage = "The requested index does not exist."
+    exception IndexDoesNotExistException of string
+
+    let indexIsOfflineMessage = "The index is offline or closing. Please bring the index online to use it."
+    exception IndexIsOfflineException of string
+
+    let indexIsOpeningMessage = "The index is in opening state. Please wait some time before making another request."
+    exception IndexIsOpeningException of string
+
+    let indexRegisterationMissingMessage = "Registeration information associated with the index is missing."
+    exception IndexRegisterationMissingException of string
+
+    // ----------------------------------------------------------------------------   
+
+
     // Represents a dummy lucene document. There will be one per index stored in a
     // dictionary
     type threadLocalDocument =
@@ -172,7 +187,7 @@ module FlexIndex =
     // loadAllIndex - This is used to bypass loading of index at initialization time.
     // Helpful for testing
     // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, dbFactory: OrmLiteConnectionFactory, loadAllIndex: bool) =
+    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, dbFactory: IDbConnection, loadAllIndex: bool) =
         
         let indexLogger = LogManager.GetLogger("IndexService")
 
@@ -413,6 +428,9 @@ module FlexIndex =
             Success(true)
 
 
+        // ----------------------------------------------------------------------------
+        // Close an open index
+        // ----------------------------------------------------------------------------
         let closeIndex (flexIndex: FlexIndex) =
             try
                 indexRegisteration.TryRemove(flexIndex.IndexSetting.IndexName) |> ignore
@@ -429,7 +447,26 @@ module FlexIndex =
             with
             | e -> logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
             
-            indexStatus.TryUpdate(flexIndex.IndexSetting.IndexName, IndexState.Closed, IndexState.Closing) |> ignore 
+            indexStatus.TryUpdate(flexIndex.IndexSetting.IndexName, IndexState.Offline, IndexState.Closing) |> ignore 
+        
+
+        // ----------------------------------------------------------------------------
+        // Utility method to return index registeration information
+        // ----------------------------------------------------------------------------
+        let getIndexRegisteration(indexName) =
+            match indexStatus.TryGetValue(indexName) with
+                    | (true, status) ->
+                        match status with
+                        | IndexState.Online ->
+                            match indexRegisteration.TryGetValue(indexName) with
+                            | (true, flexIndex) -> flexIndex
+                            | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
+                        | IndexState.Opening ->
+                            raise(IndexIsOpeningException indexIsOpeningMessage)
+                        | IndexState.Offline 
+                        | IndexState.Closing ->
+                            raise(IndexIsOfflineException indexIsOfflineMessage)
+                    | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
 
 
         // ----------------------------------------------------------------------------
@@ -439,65 +476,63 @@ module FlexIndex =
             indexLogger.Info("Index loading: Operation Start")
 
             if loadAllIndex then
-                dbFactory.OpenDbConnection().Select<Index>()
+                dbFactory.Select<Index>()
                 |> Seq.iter(fun x ->
-                    try
-                        let flexIndexSetting = settingsParser.BuildSetting(x)
-                        let res = addIndex(flexIndexSetting) 
-                        match res with
-                        | Success(_) -> indexLogger.Info("Index loaded successfully.")
-                        | Error(e) -> indexLogger.Error("Index could not be loaded. " + e)
-                     with
-                        | ex -> 
-                            indexLogger.Error("Loading index from file failed.", ex)
+                    if x.Online then
+                        try
+                            let flexIndexSetting = settingsParser.BuildSetting(x)
+                            let res = addIndex(flexIndexSetting) 
+                            match res with
+                            | Success(_) -> indexLogger.Info("Index loaded successfully.")
+                            | Error(e) -> indexLogger.Error("Index could not be loaded. " + e)
+                         with
+                            | ex -> 
+                                indexLogger.Error("Loading index from file failed.", ex)
+                    else
+                        indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
+                        indexStatus.TryAdd(x.IndexName, IndexState.Offline) |> ignore    
                 )                
             else
                 indexLogger.Info("Index loading bypassed. LoadIndex parameter is false. (Testing mode)")
             
 
+        // ----------------------------------------------------------------------------
+        // Interface implementation
+        // ----------------------------------------------------------------------------
         interface IIndexService with
             member this.PerformCommandAsync(indexName, indexMessage, replyChannel) = 
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex: FlexIndex) -> replyChannel.Reply(processItem(indexMessage, flexIndex))
-                | _ -> replyChannel.Reply(false, "Index does not exist.")
-
+                let flexIndex = getIndexRegisteration(indexName)
+                replyChannel.Reply(processItem(indexMessage, flexIndex))
+                
 
             member this.PerformCommand(indexName, indexMessage) = 
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex: FlexIndex) -> processItem(indexMessage, flexIndex)
-                | _ -> (false, "Index does not exist.")
-            
+                let flexIndex = getIndexRegisteration(indexName)
+                processItem(indexMessage, flexIndex)
+                
 
             member this.SendCommandToQueue(indexName, indexMessage) = async { 
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex: FlexIndex) -> 
-                    let! res = Async.AwaitTask(queue.SendAsync((indexMessage, flexIndex)))
-                    ()
-                | _ -> ()
+                let flexIndex = getIndexRegisteration(indexName)
+                let! res = Async.AwaitTask(queue.SendAsync((indexMessage, flexIndex)))
                 ()
                 }
             
 
             member this.PerformQuery(indexName, indexQuery) =
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex) -> 
-                    match indexQuery with
-                    | SearchQuery(a) -> searchService.Search(flexIndex, a)
-                    | SearchProfileQuery(a) -> searchService.SearchProfile(flexIndex, a)
-                | _ -> failwithf "The requested index does not exist: %s" indexName
+                let flexIndex = getIndexRegisteration(indexName)      
+                match indexQuery with
+                | SearchQuery(a) -> searchService.Search(flexIndex, a)
+                | SearchProfileQuery(a) -> searchService.SearchProfile(flexIndex, a)
 
 
             member this.PerformQueryAsync(indexName, indexQuery, replyChannel) =
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex) -> 
-                    match indexQuery with
-                    | SearchQuery(a) -> replyChannel.Reply(searchService.Search(flexIndex, a))
-                    | SearchProfileQuery(a) -> replyChannel.Reply(searchService.SearchProfile(flexIndex, a))
-                | _ -> failwithf "The requested index does not exist: %s" indexName
+                let flexIndex = getIndexRegisteration(indexName)           
+                match indexQuery with
+                | SearchQuery(a) -> replyChannel.Reply(searchService.Search(flexIndex, a))
+                | SearchProfileQuery(a) -> replyChannel.Reply(searchService.SearchProfile(flexIndex, a))
 
 
             member this.IndexExists(indexName) =
-                match indexRegisteration.TryGetValue(indexName) with
+                match indexStatus.TryGetValue(indexName) with
                 | (true, _) -> true
                 | _ -> false
 
@@ -505,32 +540,62 @@ module FlexIndex =
             member this.IndexStatus(indexName) = 
                 match indexStatus.TryGetValue(indexName) with
                 | (true, status) -> status
-                | _ -> failwithf "Index does not exist."
+                | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
             
 
             member this.AddIndex flexIndex = 
-                let settings = settingsParser.BuildSetting(flexIndex)
+                 match indexStatus.TryGetValue(flexIndex.IndexName) with
+                    | (true, _) -> raise(IndexAlreadyExistsException indexAlreadyExistsMessage)
+                    | _ ->
+                        let settings = settingsParser.BuildSetting(flexIndex)
+                        dbFactory.Insert(flexIndex)  
+                        if flexIndex.Online then
+                            let res = addIndex(settings)
+                            match res with
+                            | Success(_) -> (true , "Index added successfully")
+                            | Error(e) -> (false, e) 
+                        else
+                            indexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
+                            (true, "")
+
+
+            member this.UpdateIndex index = 
+                let flexIndex = getIndexRegisteration(index.IndexName)  
+                let settings = settingsParser.BuildSetting(index)
+                closeIndex(flexIndex)
                 let res = addIndex(settings)  
+                dbFactory.Update(index)  |> ignore
+
                 match res with
                 | Success(_) -> (true , "Index added successfully")
                 | Error(e) -> (false, e) 
 
 
             member this.DeleteIndex indexName = 
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex) ->
-                    closeIndex(flexIndex)
-                    Directory.Delete(flexIndex.IndexSetting.BaseFolder)
-                    (true, "Index deleted from the system") 
-                | _ -> (false, "Unable to delete index")
+                let flexIndex = getIndexRegisteration(indexName) 
+                closeIndex(flexIndex)
+                dbFactory.Delete<Index>("IndexName={0}", indexName)
+                Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
+                (true, "Index deleted from the system") 
 
 
             member this.CloseIndex indexName = 
-                match indexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex) ->
-                    closeIndex(flexIndex)
-                    (true, "Index closed successfully") 
-                | _ -> (false, "Unable to close the index")
+                let flexIndex = getIndexRegisteration(indexName) 
+                closeIndex(flexIndex)
+                Directory.Delete(flexIndex.IndexSetting.BaseFolder)
+                (true, "Index deleted from the system") 
+
+            member this.OpenIndex indexName = 
+                let flexIndex = getIndexRegisteration(indexName)
+                let index = dbFactory.GetById<Index>(indexName)
+                let settings = settingsParser.BuildSetting(index)
+                let res = addIndex(settings)  
+                index.Online <- true
+                dbFactory.Update(index)  |> ignore
+
+                match res with
+                | Success(_) -> (true , "Index opened successfully")
+                | Error(e) -> (false, e) 
 
 
             member this.ShutDown() = 

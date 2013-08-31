@@ -105,7 +105,7 @@ namespace FlexSearch.Server
             container.Register(factoryCollection);
             container.Register(this.serverSettings);
             container.Register<Interface.IIndexService>(
-                new FlexIndexModule.IndexService(parser, searchService, dbFactory, true));
+                new FlexIndexModule.IndexService(parser, searchService, dbFactory.Open(), true));
 
             // Loading plugins after everything else is successful
             Dictionary<string, IPlugin> plugins = factoryCollection.PluginsFactory.GetAllModules();
