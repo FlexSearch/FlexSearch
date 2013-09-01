@@ -56,7 +56,6 @@
 
         public UpdateIndexResponse Post(UpdateIndex request)
         {
-            request.Index.Online = request.OpenIndex;
             this.IndexingService.UpdateIndex(request.Index);
             return new UpdateIndexResponse();
         }

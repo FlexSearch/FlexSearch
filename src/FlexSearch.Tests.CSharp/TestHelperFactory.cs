@@ -11,6 +11,9 @@ namespace FlexSearch.Tests.CSharp
     using FlexSearch.Core.Index;
     using FlexSearch.Validators;
 
+    using ServiceStack.Common;
+    using ServiceStack.OrmLite;
+
     public static class TestHelperFactory
     {
         public static readonly Interface.IFactoryCollection FactoryCollection;
@@ -25,7 +28,9 @@ namespace FlexSearch.Tests.CSharp
         {
             var settingsBuilder = SettingsBuilder.SettingsBuilder(FactoryCollection, new IndexValidator(FactoryCollection, new IndexValidationParameters(true)));
             var searchService = new SearchDsl.SearchService(FactoryCollection.SearchQueryFactory.GetAllModules());
-            Interface.IIndexService indexservice = new FlexIndexModule.IndexService(settingsBuilder, searchService, null, false);
+            var dbFactory = new OrmLiteConnectionFactory(Constants.ConfFolder.Value + "//conf.sqlite", SqliteDialect.Provider);
+            dbFactory.OpenDbConnection().Run(db => db.CreateTable<Api.Types.Index>(true));
+            Interface.IIndexService indexservice = new FlexIndexModule.IndexService(settingsBuilder, searchService, dbFactory.Open(), false);
             return indexservice;
         }
 
@@ -37,6 +42,7 @@ namespace FlexSearch.Tests.CSharp
         {
             var index = new Api.Types.Index();
             index.IndexName = "contact";
+            index.Online = true;
             index.Configuration.DirectoryType = DirectoryType.Ram;
             index.Fields = new FieldDictionary();
 

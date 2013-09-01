@@ -191,15 +191,15 @@ module Interface =
         // all possible search variations
         abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
         
-        abstract member AddIndex                    :   FlexSearch.Api.Types.Index -> bool * string
+        abstract member AddIndex                    :   FlexSearch.Api.Types.Index -> unit
 
-        abstract member UpdateIndex                 :   FlexSearch.Api.Types.Index -> bool * string
+        abstract member UpdateIndex                 :   FlexSearch.Api.Types.Index -> unit
 
-        abstract member OpenIndex                   :   string -> bool * string
+        abstract member OpenIndex                   :   string -> unit
 
-        abstract member CloseIndex                  :   string -> bool * string
+        abstract member CloseIndex                  :   string -> unit
 
-        abstract member DeleteIndex                 :   string -> bool * string
+        abstract member DeleteIndex                 :   string -> unit
 
         abstract member IndexExists                 :   string -> bool
 

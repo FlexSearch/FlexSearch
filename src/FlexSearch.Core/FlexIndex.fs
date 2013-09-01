@@ -424,8 +424,8 @@ module FlexIndex =
 
             // Add the index to the registeration
             indexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore                 
-            indexStatus.TryUpdate(flexIndex.IndexSetting.IndexName, IndexState.Online, IndexState.Opening) |> ignore
-            Success(true)
+            indexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
+            ()
 
 
         // ----------------------------------------------------------------------------
@@ -436,7 +436,7 @@ module FlexIndex =
                 indexRegisteration.TryRemove(flexIndex.IndexSetting.IndexName) |> ignore
 
                 // Update status from online to closing
-                indexStatus.TryUpdate(flexIndex.IndexSetting.IndexName, IndexState.Closing, IndexState.Online) |> ignore
+                indexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Closing
 
                 flexIndex.Token.Cancel()
                 flexIndex.Shards |> Array.iter(fun x -> 
@@ -447,7 +447,7 @@ module FlexIndex =
             with
             | e -> logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
             
-            indexStatus.TryUpdate(flexIndex.IndexSetting.IndexName, IndexState.Offline, IndexState.Closing) |> ignore 
+            indexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Offline
         
 
         // ----------------------------------------------------------------------------
@@ -455,18 +455,18 @@ module FlexIndex =
         // ----------------------------------------------------------------------------
         let getIndexRegisteration(indexName) =
             match indexStatus.TryGetValue(indexName) with
-                    | (true, status) ->
-                        match status with
-                        | IndexState.Online ->
-                            match indexRegisteration.TryGetValue(indexName) with
-                            | (true, flexIndex) -> flexIndex
-                            | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
-                        | IndexState.Opening ->
-                            raise(IndexIsOpeningException indexIsOpeningMessage)
-                        | IndexState.Offline 
-                        | IndexState.Closing ->
-                            raise(IndexIsOfflineException indexIsOfflineMessage)
-                    | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+            | (true, status) ->
+                match status with
+                | IndexState.Online ->
+                    match indexRegisteration.TryGetValue(indexName) with
+                    | (true, flexIndex) -> flexIndex
+                    | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
+                | IndexState.Opening ->
+                    raise(IndexIsOpeningException indexIsOpeningMessage)
+                | IndexState.Offline 
+                | IndexState.Closing ->
+                    raise(IndexIsOfflineException indexIsOfflineMessage)
+            | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
 
 
         // ----------------------------------------------------------------------------
@@ -481,10 +481,8 @@ module FlexIndex =
                     if x.Online then
                         try
                             let flexIndexSetting = settingsParser.BuildSetting(x)
-                            let res = addIndex(flexIndexSetting) 
-                            match res with
-                            | Success(_) -> indexLogger.Info("Index loaded successfully.")
-                            | Error(e) -> indexLogger.Error("Index could not be loaded. " + e)
+                            addIndex(flexIndexSetting) 
+                            indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
                          with
                             | ex -> 
                                 indexLogger.Error("Loading index from file failed.", ex)
@@ -544,59 +542,92 @@ module FlexIndex =
             
 
             member this.AddIndex flexIndex = 
-                 match indexStatus.TryGetValue(flexIndex.IndexName) with
-                    | (true, _) -> raise(IndexAlreadyExistsException indexAlreadyExistsMessage)
-                    | _ ->
-                        let settings = settingsParser.BuildSetting(flexIndex)
-                        dbFactory.Insert(flexIndex)  
-                        if flexIndex.Online then
-                            let res = addIndex(settings)
-                            match res with
-                            | Success(_) -> (true , "Index added successfully")
-                            | Error(e) -> (false, e) 
-                        else
-                            indexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
-                            (true, "")
+                match indexStatus.TryGetValue(flexIndex.IndexName) with
+                | (true, _) -> raise(IndexAlreadyExistsException indexAlreadyExistsMessage)
+                | _ ->
+                    let settings = settingsParser.BuildSetting(flexIndex)
+                    dbFactory.Insert(flexIndex)  
+                    if flexIndex.Online then
+                        addIndex(settings)  
+                    else
+                        indexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
+                ()
 
 
             member this.UpdateIndex index = 
-                let flexIndex = getIndexRegisteration(index.IndexName)  
-                let settings = settingsParser.BuildSetting(index)
-                closeIndex(flexIndex)
-                let res = addIndex(settings)  
-                dbFactory.Update(index)  |> ignore
+                match indexStatus.TryGetValue(index.IndexName) with
+                | (true, status) ->
+                    match status with
+                    | IndexState.Online ->
+                        match indexRegisteration.TryGetValue(index.IndexName) with
+                        | (true, flexIndex) -> 
+                            let settings = settingsParser.BuildSetting(index)
+                            closeIndex(flexIndex)
+                            addIndex(settings)
+                            dbFactory.Update(index)  |> ignore     
+                        | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
 
-                match res with
-                | Success(_) -> (true , "Index added successfully")
-                | Error(e) -> (false, e) 
-
+                    | IndexState.Opening ->
+                        raise(IndexIsOpeningException indexIsOpeningMessage)
+                    | IndexState.Offline 
+                    | IndexState.Closing ->
+                        let settings = settingsParser.BuildSetting(index)
+                        dbFactory.Update(index)  |> ignore     
+                | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+                
 
             member this.DeleteIndex indexName = 
-                let flexIndex = getIndexRegisteration(indexName) 
-                closeIndex(flexIndex)
-                dbFactory.Delete<Index>("IndexName={0}", indexName)
-                Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
-                (true, "Index deleted from the system") 
+                match indexStatus.TryGetValue(indexName) with
+                | (true, status) ->
+                    match status with
+                    | IndexState.Online ->
+                        match indexRegisteration.TryGetValue(indexName) with
+                        | (true, flexIndex) -> 
+                            closeIndex(flexIndex) 
+                            dbFactory.Delete<Index>("IndexName={0}", indexName)
+                            // It is possible that directory might not exist if the index has never been opened
+                            if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then
+                                Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
+
+                        | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
+
+                    | IndexState.Opening ->
+                        raise(IndexIsOpeningException indexIsOpeningMessage)
+                    | IndexState.Offline 
+                    | IndexState.Closing -> 
+                        dbFactory.Delete<Index>("IndexName={0}", indexName)
+                        
+                        // It is possible that directory might not exist if the index has never been opened
+                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then
+                            Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
+
+                | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
 
 
             member this.CloseIndex indexName = 
                 let flexIndex = getIndexRegisteration(indexName) 
                 closeIndex(flexIndex)
-                Directory.Delete(flexIndex.IndexSetting.BaseFolder)
-                (true, "Index deleted from the system") 
+                let index = dbFactory.GetById<Index>(indexName) 
+                index.Online <- false
+                dbFactory.Update<Index>(index) |> ignore
+
 
             member this.OpenIndex indexName = 
-                let flexIndex = getIndexRegisteration(indexName)
-                let index = dbFactory.GetById<Index>(indexName)
-                let settings = settingsParser.BuildSetting(index)
-                let res = addIndex(settings)  
-                index.Online <- true
-                dbFactory.Update(index)  |> ignore
-
-                match res with
-                | Success(_) -> (true , "Index opened successfully")
-                | Error(e) -> (false, e) 
-
+                match indexStatus.TryGetValue(indexName) with
+                    | (true, status) ->
+                        match status with
+                        | IndexState.Online
+                        | IndexState.Opening ->
+                            raise(IndexIsOpeningException indexIsOpeningMessage)
+                        | IndexState.Offline 
+                        | IndexState.Closing ->
+                            let index = dbFactory.GetById<Index>(indexName)
+                            let settings = settingsParser.BuildSetting(index)
+                            let res = addIndex(settings)  
+                            index.Online <- true
+                            dbFactory.Update<Index>(index)  |> ignore    
+                    | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+                
 
             member this.ShutDown() = 
                 for index in indexRegisteration do
