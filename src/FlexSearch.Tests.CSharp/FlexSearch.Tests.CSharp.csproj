@@ -204,6 +204,7 @@
     <Compile Include="ComplierServiceTest.cs" />
     <Compile Include="Index\IndexCreationTests.cs" />
     <Compile Include="Index\IndexingTests.cs" />
+    <Compile Include="Integration\IndexCreationTests.cs" />
     <Compile Include="TestDataFactory.cs" />
     <Compile Include="TestHelperFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -242,7 +243,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Integration\" />
     <Folder Include="WebService\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FlexSearch.Tests.CSharp
+﻿namespace FlexSearch.Tests.CSharp
 {
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
     using FlexSearch.Core.Index;
+    using FlexSearch.Server;
     using FlexSearch.Validators;
 
     using ServiceStack.Common;
@@ -16,7 +11,17 @@ namespace FlexSearch.Tests.CSharp
 
     public static class TestHelperFactory
     {
+        #region Static Fields
+
         public static readonly Interface.IFactoryCollection FactoryCollection;
+
+        private static bool serverRunning = false;
+
+        private static FlexServer server;
+
+        #endregion
+
+        #region Constructors and Destructors
 
         static TestHelperFactory()
         {
@@ -24,15 +29,9 @@ namespace FlexSearch.Tests.CSharp
             FactoryCollection = new Factories.FactoryCollection(pluginContainer);
         }
 
-        public static Interface.IIndexService GetDefaultIndexService()
-        {
-            var settingsBuilder = SettingsBuilder.SettingsBuilder(FactoryCollection, new IndexValidator(FactoryCollection, new IndexValidationParameters(true)));
-            var searchService = new SearchDsl.SearchService(FactoryCollection.SearchQueryFactory.GetAllModules());
-            var dbFactory = new OrmLiteConnectionFactory(Constants.ConfFolder.Value + "//conf.sqlite", SqliteDialect.Provider);
-            dbFactory.OpenDbConnection().Run(db => db.CreateTable<Api.Types.Index>(true));
-            Interface.IIndexService indexservice = new FlexIndexModule.IndexService(settingsBuilder, searchService, dbFactory.Open(), false);
-            return indexservice;
-        }
+        #endregion
+
+        #region Public Methods and Operators
 
         /// <summary>
         /// Helper implemention of contact based index settings
@@ -78,9 +77,50 @@ namespace FlexSearch.Tests.CSharp
             index.Fields.Add("timestamp", new IndexFieldProperties { FieldType = FieldType.DateTime });
 
             // Computed fields
-            index.Fields.Add("fullname", new IndexFieldProperties{FieldType = FieldType.Text, ScriptName = "fullname"});
-            index.Scripts.Add("fullname", new ScriptProperties { ScriptOption = ScriptOption.SingleLine, ScriptType = ScriptType.ComputedField, ScriptSource = "fields[\"givenname\"] + \" \" + fields[\"surname\"]" });
+            index.Fields.Add(
+                "fullname",
+                new IndexFieldProperties { FieldType = FieldType.Text, ScriptName = "fullname" });
+            index.Scripts.Add(
+                "fullname",
+                new ScriptProperties
+                {
+                    ScriptOption = ScriptOption.SingleLine,
+                    ScriptType = ScriptType.ComputedField,
+                    ScriptSource = "fields[\"givenname\"] + \" \" + fields[\"surname\"]"
+                });
             return index;
         }
+
+        public static Interface.IIndexService GetDefaultIndexService()
+        {
+            var settingsBuilder = SettingsBuilder.SettingsBuilder(
+                FactoryCollection,
+                new IndexValidator(FactoryCollection, new IndexValidationParameters(true)));
+            var searchService = new SearchDsl.SearchService(FactoryCollection.SearchQueryFactory.GetAllModules());
+            var dbFactory = new OrmLiteConnectionFactory(
+                Constants.ConfFolder.Value + "//conf.sqlite",
+                SqliteDialect.Provider);
+            dbFactory.OpenDbConnection().Run(db => db.CreateTable<Api.Types.Index>(true));
+            Interface.IIndexService indexservice = new FlexIndexModule.IndexService(
+                settingsBuilder,
+                searchService,
+                dbFactory.Open(),
+                false);
+            return indexservice;
+        }
+
+        public static void StartTestServer()
+        {
+            if (server != null)
+            {
+                return;
+            }
+
+            server = new FlexServer();
+            server.Start();
+        }
+
+
+        #endregion
     }
 }
