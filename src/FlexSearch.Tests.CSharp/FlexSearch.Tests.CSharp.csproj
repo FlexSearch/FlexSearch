@@ -201,6 +201,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Analysis\FiltersTest.cs" />
+    <Compile Include="Analysis\TokenizersTest.cs" />
     <Compile Include="ComplierServiceTest.cs" />
     <Compile Include="Index\IndexCreationTests.cs" />
     <Compile Include="Index\IndexingTests.cs" />

@@ -35,6 +35,10 @@ open System.Linq
 // ----------------------------------------------------------------------------
 type CustomAnalyzer(tokenizerFactory: IFlexTokenizerFactory, filterFactories: IFlexFilterFactory[]) =
     inherit Analyzer()
+    do
+        if filterFactories.Count() = 0 then
+            failwithf "Atleast 1 filter must be specified"
+
     override this.createComponents(fieldName: string, reader: Reader) =
         let source = tokenizerFactory.Create(reader)
         let mutable result = filterFactories.First().Create(source)

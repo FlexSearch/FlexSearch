@@ -217,7 +217,7 @@ module Filters =
                     | (true, a) -> 
                         match System.Int32.TryParse(a) with
                         | (true, b) -> b
-                        | _ -> failwithf "message=For Length filter'min' property should be an integer." 
+                        | _ -> failwithf "message=For Length filter 'min' property should be an integer." 
                     | _ -> failwithf "message='min' property is required by the Length filter."
                 
                 max <-

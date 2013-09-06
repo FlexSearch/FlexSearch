@@ -63,6 +63,20 @@ module Tokenizers =
 
 
     // ----------------------------------------------------------------------------
+    // Classic Tokenizer
+    // ---------------------------------------------------------------------------- 
+    [<Export(typeof<IFlexTokenizerFactory>)>]
+    [<PartCreationPolicy(CreationPolicy.NonShared)>]
+    [<ExportMetadata("Name", "ClassicTokenizer")>]
+    type ClassicTokenizerFactory() =
+        interface IFlexTokenizerFactory with
+            member this.Initialize(parameters: Dictionary<string,string>) =
+                true
+            member this.Create(reader: Reader) =
+                new ClassicTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer
+
+
+    // ----------------------------------------------------------------------------
     // Lowercase Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Export(typeof<IFlexTokenizerFactory>)>]
