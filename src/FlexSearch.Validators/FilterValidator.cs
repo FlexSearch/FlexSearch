@@ -34,14 +34,7 @@
 
                     try
                     {
-                        if (!filterInstance.Value.Initialize(filter.Parameters))
-                        {
-                            return new ValidationFailure(
-                                "FilterName",
-                                "Filter cannot be initialized.",
-                                "FilterInitError",
-                                filter);
-                        }
+                        filterInstance.Value.Initialize(filter.Parameters, factoryCollection.ResourceLoader);
                     }
                     catch (Exception e)
                     {
