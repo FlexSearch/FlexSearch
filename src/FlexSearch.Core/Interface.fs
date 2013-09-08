@@ -48,6 +48,29 @@ open System.Threading
 module Interface =
     
     // ---------------------------------------------------------------------------- 
+    // General Interface to offload all resource loading resposibilities. This will
+    // be used to parse settings, load text files etc. This will enable easy mocking 
+    // and central management of all such activities
+    // ---------------------------------------------------------------------------- 
+    type IResourceLoader =
+        // Reads the resource from the location and returns all the content as a string
+        abstract member LoadResourceAsString    :   string -> string
+
+        // Reads the resource and returns it as a List<string>. Also ignores
+        // any blank lines or lines starting with #. Mostly used by filters
+        abstract member LoadResourceAsList      :   string -> List<string>
+
+        // Reads the resource and returns it as a List<string[]>. This is used to load 
+        // settings files in the below format
+        // test:test1,test2
+        // Here all the colon & comma separated stuff will be returned as the member of the array.
+        // This is used by certain filters to load map kind of data where first field maps to
+        // a number of secondary fields. Also ignores
+        // any blank lines or lines starting with #. Mostly used by filters
+        abstract member LoadResourceAsMap       :   string -> List<string[]>
+        
+
+    // ---------------------------------------------------------------------------- 
     // General fatory Interface for all mef based factories
     // ---------------------------------------------------------------------------- 
     type IFlexFactory<'a> = 
@@ -60,7 +83,7 @@ module Interface =
     // Interface class from which all tokenizers will derive
     // ---------------------------------------------------------------------------- 
     type IFlexTokenizerFactory = 
-        abstract member Initialize  :   Dictionary<string,string> -> bool
+        abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
         abstract member Create      :   Reader -> Tokenizer
     
 
@@ -68,7 +91,7 @@ module Interface =
     // Interface from which all filters will derive
     // ----------------------------------------------------------------------------     
     type IFlexFilterFactory = 
-        abstract member Initialize  :   Dictionary<string,string> -> bool
+        abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
         abstract member Create      :   TokenStream -> TokenStream
 
 
@@ -164,6 +187,7 @@ module Interface =
          abstract member ComputationOpertionFactory :   IFlexFactory<IComputationOperation>
          abstract member PluginsFactory             :   IFlexFactory<IPlugin>
          abstract member ScriptFactoryCollection    :   IScriptFactoryCollection
+         abstract member ResourceLoader             :   IResourceLoader
 
     // ---------------------------------------------------------------------------- 
     // Interface which exposes all index related operations
