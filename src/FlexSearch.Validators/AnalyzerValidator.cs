@@ -12,10 +12,7 @@
         public AnalyzerValidator(Interface.IFactoryCollection factoryCollection)
         {
             this.CascadeMode = CascadeMode.StopOnFirstFailure;
-            this.RuleFor(x => x.TokenizerName).SetValidator(new PropertyNameValidator("TokenizerName"));
-            this.RuleFor(x => x.TokenizerName)
-                .Must(x => factoryCollection.TokenizerFactory.ModuleExists(x))
-                .WithMessage("Tokenizer does not exist.");
+            this.RuleFor(x => x.Tokenizer).SetValidator(new TokenizerValidator(factoryCollection));
             this.RuleFor(x => x.Filters).SetCollectionValidator(new FilterValidator(factoryCollection));
         }
 

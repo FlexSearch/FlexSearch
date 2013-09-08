@@ -24,7 +24,7 @@
             this.Custom(
                 filter =>
                 {
-                    for (int index = 0; index < filter.Conditions.Length; index++)
+                    for (int index = 0; index < filter.Conditions.Count; index++)
                     {
                         int index1 = index;
                         this.RuleFor(x => x.Conditions[index1]).SetValidator(new SearchConditionValidator(fields));

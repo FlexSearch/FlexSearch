@@ -169,6 +169,7 @@
     <Compile Include="SearchConditionValidator.cs" />
     <Compile Include="SearchFilterValidator.cs" />
     <Compile Include="SearchProfileValidator.cs" />
+    <Compile Include="TokenizerValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
