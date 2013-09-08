@@ -148,9 +148,10 @@ module SettingsBuilder =
         let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
         for analyzer in analyzersDict do
             let tokenizer =
-                match factoryCollection.TokenizerFactory.GetModuleByName(analyzer.Value.TokenizerName) with
-                | Some(a)   -> a
-                | _         -> failwithf "The specified tokenizer is not valid: %s" analyzer.Value.TokenizerName 
+                match factoryCollection.TokenizerFactory.GetModuleByName(analyzer.Value.Tokenizer.TokenizerName) with
+                | Some(a)   -> a.Initialize(analyzer.Value.Tokenizer.Parameters, factoryCollection.ResourceLoader) |> ignore
+                               a 
+                | _         -> failwithf "The specified tokenizer is not valid: %s" analyzer.Value.Tokenizer.TokenizerName 
 
             let filters = new ResizeArray<IFlexFilterFactory>()
 
@@ -159,7 +160,7 @@ module SettingsBuilder =
                 | Some(a) -> 
                     if filter.Parameters = null then 
                         filter.Parameters <- new KeyValuePairs()                        
-                    a.Initialize(filter.Parameters) |> ignore
+                    a.Initialize(filter.Parameters, factoryCollection.ResourceLoader) |> ignore
                     filters.Add(a)
                 | _  -> failwithf "The specified filter is not valid: %s" filter.FilterName 
 

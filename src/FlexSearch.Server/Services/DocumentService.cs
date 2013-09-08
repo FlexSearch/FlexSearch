@@ -94,14 +94,14 @@ namespace FlexSearch.Server.Services
                     FilterType = FilterType.And,
                     SubFilters = null,
                     Conditions =
-                        new[]
+                        new List<SearchCondition>
                             {
                                 new SearchCondition
                                     {
                                         FieldName = "id",
                                         Operator = "term_match",
                                         MissingValueOption = MissingValueOption.ThrowError,
-                                        Params = null,
+                                        Parameters = null,
                                         Values = new StringList { request.Id }
                                     }
                             }

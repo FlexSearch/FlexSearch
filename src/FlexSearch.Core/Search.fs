@@ -187,7 +187,7 @@ module SearchDsl =
         // ----------------------------------------------------------------------------
         // Method responsible for generating top level boolean query for the search query
         // ---------------------------------------------------------------------------- 
-        let rec GenerateQueryFromFilter(flexIndex: FlexIndex, filter: SearchFilter, isProfileBased: KeyValuePairs option) =
+        let rec GenerateQueryFromFilter(flexIndex: FlexIndex, filter: SearchFilter, isTopLevelQuery, isProfileBased: KeyValuePairs option) =
             let query = new BooleanQuery()
             let occur = 
                 if (filter.FilterType = FlexSearch.Api.Types.FilterType.And) then
@@ -238,10 +238,10 @@ module SearchDsl =
             
             if filter.SubFilters <> null then
                 for subFilter in filter.SubFilters do
-                    let subQuery = GenerateQueryFromFilter(flexIndex, subFilter, isProfileBased)
+                    let subQuery = GenerateQueryFromFilter(flexIndex, subFilter, false, isProfileBased)
                     query.add(new BooleanClause(subQuery, occur))
             
-            if filter.ConstantScore > 1 then
+            if filter.ConstantScore > 1 && isTopLevelQuery = false then
                 let constantScoreQuery = new ConstantScoreQuery(query)
                 constantScoreQuery.setBoost(float32(filter.ConstantScore))
                 constantScoreQuery :> Query 
@@ -271,13 +271,13 @@ module SearchDsl =
                 | (true, b) -> b
                 | _ -> failwithf  "The requested search profile selector does not exist."
             
-            let query = GenerateQueryFromFilter(flexIndex, searchProfile.SearchQuery.Query, Some(searchProfileQuery.Fields))
+            let query = GenerateQueryFromFilter(flexIndex, searchProfile.SearchQuery.Query, true, Some(searchProfileQuery.Fields))
             (query, searchProfile.SearchQuery)
            
 
         interface ISearchService with
             member x.Search(flexIndex: FlexIndex, search: SearchQuery) =
-                let query = GenerateQueryFromFilter(flexIndex, search.Query, None)
+                let query = GenerateQueryFromFilter(flexIndex, search.Query, true, None)
                 SearchQuery(flexIndex, query, search)
             
             member this.SearchProfile(flexIndex: FlexIndex, searchProfile: SearchProfileQuery) =
@@ -387,7 +387,7 @@ module SearchDsl =
                 let terms = GetTerms(flexIndexField, condition.Values.[0])
                 
                 let slop =
-                        match condition.Params.TryGetValue("slop") with
+                        match condition.Parameters.TryGetValue("slop") with
                         | (true, value) -> 
                             match System.Int32.TryParse(value) with
                             | (true, result) -> result
@@ -395,7 +395,7 @@ module SearchDsl =
                         | _ -> 1     
 
                 let prefixLength =
-                        match condition.Params.TryGetValue("prefixlength")  with
+                        match condition.Parameters.TryGetValue("prefixlength")  with
                         | (true, value) -> 
                             match System.Int32.TryParse(value) with
                             | (true, result) -> result
@@ -430,7 +430,7 @@ module SearchDsl =
                     query.add(new Term(flexIndexField.FieldName, term))
 
                 let slop =
-                        match condition.Params.TryGetValue("slop")  with
+                        match condition.Parameters.TryGetValue("slop")  with
                         | (true, value) -> 
                             match System.Int32.TryParse(value) with
                             | (true, result) -> result
@@ -481,7 +481,7 @@ module SearchDsl =
                 let term2 = GetTerms(flexIndexField, condition.Values.[1])
 
                 let includeLower =
-                    match condition.Params.TryGetValue("includelower")  with
+                    match condition.Parameters.TryGetValue("includelower")  with
                     | (true, value) -> 
                         match System.Boolean.TryParse(value) with
                         | (true, result) -> result
@@ -489,7 +489,7 @@ module SearchDsl =
                     | _ -> false      
 
                 let includeUpper =
-                    match condition.Params.TryGetValue("includeupper")  with
+                    match condition.Parameters.TryGetValue("includeupper")  with
                     | (true, value) -> 
                         match System.Boolean.TryParse(value) with
                         | (true, result) -> result
@@ -515,7 +515,7 @@ module SearchDsl =
                 let term2 = condition.Values.[1]
 
                 let includeLower =
-                    match condition.Params.TryGetValue("includelower")  with
+                    match condition.Parameters.TryGetValue("includelower")  with
                     | (true, value) -> 
                         match System.Boolean.TryParse(value) with
                         | (true, result) -> result
@@ -523,7 +523,7 @@ module SearchDsl =
                     | _ -> false      
 
                 let includeUpper =
-                    match condition.Params.TryGetValue("includeupper")  with
+                    match condition.Parameters.TryGetValue("includeupper")  with
                     | (true, value) -> 
                         match System.Boolean.TryParse(value) with
                         | (true, result) -> result

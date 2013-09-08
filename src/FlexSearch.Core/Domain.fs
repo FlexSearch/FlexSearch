@@ -218,24 +218,6 @@ type CaseInsensitiveKeywordAnalyzer() =
 
 
 // ----------------------------------------------------------------------------
-// Initialization related records. These are used to populate init loger. 
-// Init logging is helpful for end users to debug initialization and configuratiom
-// related errors.
-// These logs are not written to disk as these are usually related to configuration
-// and meant for debugging. 
-// ----------------------------------------------------------------------------
-type InitEntry =
-    {
-        Operation           :   string
-        Step                :   string
-        HasError            :   bool
-        Error               :   string
-    }
-    static member Create(operation, step, hasError, error) =
-        {Operation = operation; Step = step; HasError = hasError; Error = error}
-
-
-// ----------------------------------------------------------------------------
 // Indexing related message. The model could be considered similiar to
 // Command–query separation pattern where are side effect free queries are 
 // kept seperate from side effect based command. Also side effect operations

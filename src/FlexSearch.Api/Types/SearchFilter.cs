@@ -1,11 +1,14 @@
 namespace FlexSearch.Api.Types
 {
+    using System.Collections.Generic;
     using System.Runtime.Serialization;
 
     [DataContract(Namespace = "")]
     public class SearchFilter
     {
         #region Fields
+
+        private List<SearchCondition> conditions;
 
         private FilterType filterType = FilterType.And;
 
@@ -17,14 +20,14 @@ namespace FlexSearch.Api.Types
         {
         }
 
-        public SearchFilter(FilterType filterType, SearchCondition[] conditions, SearchFilter[] subFilters)
+        public SearchFilter(FilterType filterType, List<SearchCondition> conditions, List<SearchFilter> subFilters)
         {
             this.FilterType = filterType;
             this.Conditions = conditions;
             this.SubFilters = subFilters;
         }
 
-        public SearchFilter(FilterType filterType, SearchCondition[] conditions)
+        public SearchFilter(FilterType filterType, List<SearchCondition> conditions)
         {
             this.FilterType = filterType;
             this.Conditions = conditions;
@@ -35,7 +38,22 @@ namespace FlexSearch.Api.Types
         #region Public Properties
 
         [DataMember(Order = 1)]
-        public SearchCondition[] Conditions { get; set; }
+        public List<SearchCondition> Conditions
+        {
+            get
+            {
+                return this.conditions ?? (this.conditions = new List<SearchCondition>());
+            }
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                this.conditions = value;
+            }
+        }
 
         [DataMember(Order = 2)]
         public int ConstantScore { get; set; }
@@ -54,7 +72,7 @@ namespace FlexSearch.Api.Types
         }
 
         [DataMember(Order = 4)]
-        public SearchFilter[] SubFilters { get; set; }
+        public List<SearchFilter> SubFilters { get; set; }
 
         #endregion
     }

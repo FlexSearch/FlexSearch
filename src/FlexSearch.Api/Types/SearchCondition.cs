@@ -10,6 +10,8 @@
 
         private MissingValueOption missingValueOption = MissingValueOption.ThrowError;
 
+        private KeyValuePairs parameters = new KeyValuePairs();
+
         #endregion
 
         #region Constructors and Destructors
@@ -52,7 +54,23 @@
         public string Operator { get; set; }
 
         [DataMember(Order = 5)]
-        public KeyValuePairs Params { get; set; }
+        public KeyValuePairs Parameters
+        {
+            get
+            {
+                return this.parameters;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    this.parameters = new KeyValuePairs();
+                    return;
+                }
+
+                this.parameters = value;
+            }
+        }
 
         [DataMember(Order = 6)]
         public StringList Values { get; set; }

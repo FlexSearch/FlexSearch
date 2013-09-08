@@ -25,18 +25,12 @@ open System.Reflection
 module CompilerService =
     
     let private codeBaseProfileSelector = lazy (
-        let path = 
-            match Helpers.GenerateAbsolutePath(".\Conf\Scripts\_ProfileSelectorScriptTemplate.cs") with
-            | Success(s) -> s
-            | Error(e) -> failwithf "%s" e
+        let path = Helpers.GenerateAbsolutePath(".\Conf\Scripts\_ProfileSelectorScriptTemplate.cs")
         Helpers.LoadFile(path)
         )
 
     let private codeBaseComputedField = lazy (
-        let path = 
-            match Helpers.GenerateAbsolutePath(".\Conf\Scripts\_ComputedFieldScriptTemplate.cs") with
-            | Success(s) -> s
-            | Error(e) -> failwithf "%s" e
+        let path = Helpers.GenerateAbsolutePath(".\Conf\Scripts\_ComputedFieldScriptTemplate.cs")
         Helpers.LoadFile(path)
         )
    

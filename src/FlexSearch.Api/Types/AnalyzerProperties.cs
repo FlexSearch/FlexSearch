@@ -6,40 +6,52 @@
     [DataContract(Namespace = "")]
     public class AnalyzerProperties
     {
-        #region Constants
-
-        private const string DefaultTokenizerName = "standardtokenizer";
-
-        #endregion
-
         #region Fields
 
-        private string tokenizerName = DefaultTokenizerName;
+        private List<Filter> filters = new List<Filter>();
+
+        private Tokenizer tokenizer = new Tokenizer();
 
         #endregion
 
         #region Public Properties
 
         [DataMember(Order = 1)]
-        public List<Filter> Filters { get; set; }
-
-        [DataMember(Order = 2)]
-        public string TokenizerName
+        public List<Filter> Filters
         {
             get
             {
-                return this.tokenizerName;
+                return this.filters;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    this.filters = new List<Filter>();
+                    return;
+                }
+
+                this.filters = value;
+            }
+        }
+
+        [DataMember(Order = 2)]
+        public Tokenizer Tokenizer
+        {
+            get
+            {
+                return this.tokenizer;
             }
 
             set
             {
-                if (string.IsNullOrWhiteSpace(value))
+                if (value == null)
                 {
-                    this.tokenizerName = DefaultTokenizerName;
+                    this.tokenizer = new Tokenizer();
                     return;
                 }
 
-                this.tokenizerName = value;
+                this.tokenizer = value;
             }
         }
 

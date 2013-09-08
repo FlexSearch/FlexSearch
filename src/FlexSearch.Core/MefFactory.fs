@@ -59,6 +59,39 @@ module Factories =
 
     
     // ----------------------------------------------------------------------------
+    // Concerete implementation of IResourceLoader
+    // ----------------------------------------------------------------------------   
+    type ResourceLoader() =
+        interface IResourceLoader with
+            member this.LoadResourceAsString(resourceName) =
+                let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
+                Utility.Helpers.LoadFile(path)
+
+            member this.LoadResourceAsList(resourceName) =
+                let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
+                let readLines = System.IO.File.ReadLines(path)
+                let result = new List<string>()
+
+                for line in readLines do
+                    if System.String.IsNullOrWhiteSpace(line) = false && line.StartsWith("#") = false then
+                        result.Add(line.Trim().ToLowerInvariant())
+                result
+            
+            member this.LoadResourceAsMap(resourceName) =
+                let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
+                let readLines = System.IO.File.ReadLines(path)
+                let result = new List<string[]>()
+
+                for line in readLines do
+                    if System.String.IsNullOrWhiteSpace(line) = false && line.StartsWith("#") = false then
+                        let lineLower = line.ToLowerInvariant()
+                        let values = lineLower.Split([|":"; ","|], System.StringSplitOptions.RemoveEmptyEntries)
+                        if values.Length > 1 then
+                            result.Add(values)
+                result
+
+
+    // ----------------------------------------------------------------------------
     // Concerete implementation of IFlexFactory
     // ----------------------------------------------------------------------------    
     type FlexFactory<'a>(container: CompositionContainer, moduleType) as self = 
@@ -106,6 +139,7 @@ module Factories =
         let computationOpertionFactory = new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
         let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
         let scriptFactory = new CompilerService.ScriptFactoryCollection() :> IScriptFactoryCollection
+        let resourceLoader = new ResourceLoader() :> IResourceLoader
 
         interface IFactoryCollection with 
             member this.FilterFactory = filterFactory
@@ -115,3 +149,4 @@ module Factories =
             member this.ComputationOpertionFactory = computationOpertionFactory           
             member this.PluginsFactory = pluginsFactory
             member this.ScriptFactoryCollection = scriptFactory
+            member this.ResourceLoader = resourceLoader

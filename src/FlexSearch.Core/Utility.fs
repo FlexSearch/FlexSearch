@@ -93,8 +93,8 @@ module Helpers =
     open System.Reflection
 
     // Returns current date time in Flex compatible format
-    let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmss"))
-    
+    let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmss"))      
+
     // Utility method to load a file into text string
     let LoadFile(filePath: string) =
         if File.Exists(filePath) = false then
@@ -114,63 +114,47 @@ module Helpers =
 
     let GenerateAbsolutePath (path: string) =
         if String.IsNullOrWhiteSpace(path) then
-            Error(sprintf "internalmessage=No path is specified.")
+            failwith "internalmessage=No path is specified."
         else            
             let dataPath = 
                 if path.StartsWith(".") then
-                    //let mainDirectory = Path.GetDirectoryName(Path.GetFullPath(Assembly.GetExecutingAssembly().Location))
                     let mainDirectory = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-                    System.Diagnostics.Trace.WriteLine("Main Directory: " + mainDirectory)
-                    //let mainDirectory = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory)
                     let restPath = path.Substring(2)
                     Path.Combine(mainDirectory, restPath)
                 else path
             
             if File.Exists(dataPath) then 
-                Success(dataPath)        
+                dataPath        
             else
-                Error(sprintf "message=The specified path does not exist.; path=%s" dataPath)
-        
-            
+                failwithf "message=The specified path does not exist.; path=%s" dataPath
+    
+
+    // Wrapper around dict lookup. Useful for validation in tokenizers and filters
+    let inline KeyExists(key, dict: Dictionary<string, string>) =
+        match dict.TryGetValue(key) with
+        | (true, value) -> value
+        | _ -> failwithf "'%s' is required." key
+             
+
+    // Helper method to check if the passed key exists in the dictionary and if it does then the
+    // specified value is in the enum list
+    let inline ValidateIsInList(key ,param : Dictionary<string, string>, enumValues :HashSet<string>) =
+        let value = KeyExists(key, param)
+        match enumValues.Contains(value) with
+        | true -> value
+        | _ -> failwithf "'%s' is not a valid value for '%s'." value key
+
+
+    let inline ParseValueAsInteger(key ,param : Dictionary<string, string>) =
+        let value = KeyExists(key, param)
+        match Int32.TryParse(value) with
+        | (true, value) -> value
+        | _ -> failwithf "%s should be of integer type." key
+         
+
     let inline AddorUpdate(dict: Dictionary<string,string>, key, value) =
         match dict.ContainsKey(key) with
         | true -> dict.[key] <- value
         | _ -> dict.Add(key, value)
              
-
-// ----------------------------------------------------------------------------
-// Contains various general purpose helpers
-// ----------------------------------------------------------------------------
-[<AutoOpen>]
-module DUnionHelpers =
-    open Microsoft.FSharp.Reflection
-
-    let toString (x:'a) = 
-        match FSharpValue.GetUnionFields(x, typeof<'a>) with
-        | case, _ -> case.Name
-
-    let fromString (t:System.Type) (s:string) =
-        match FSharpType.GetUnionCases t |> Array.filter (fun case -> case.Name = s) with
-        |[|case|] -> Some(FSharpValue.MakeUnion(case,[||]))
-        |_ -> None
-
-// Usage:
-// type A = X|Y|Z with
-//     member this.toString = toString this
-//     static member fromString s = fromString typeof<A> s
-
-// > X.toString;;
-// val it : string = "X"
-
-// > A.fromString "X";;
-// val it : obj option = Some X
-
-// > A.fromString "W";;
-// val it : obj option = None
-
-// > toString X;;
-// val it : string = "X"
-
-// > fromString typeof<A> "X";;
-// val it : obj option = Some X
 
