@@ -42,12 +42,12 @@ namespace FlexSearch.Tests.CSharp.Search
                     yield return
                         new TestCaseData(
                             new SearchFilter(
-                                FilterType.And, 
-                                new[]
+                                FilterType.And,
+                                new List<SearchCondition>
                                     {
                                         new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
-                                                Params =
+                                                Parameters =
                                                     new KeyValuePairs
                                                         {
                                                            { "includelower", "true" }, { "includeupper", "true" } 
@@ -60,12 +60,12 @@ namespace FlexSearch.Tests.CSharp.Search
                     yield return
                         new TestCaseData(
                             new SearchFilter(
-                                FilterType.And, 
-                                new[]
+                                FilterType.And,
+                                new List<SearchCondition>
                                     {
                                         new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
-                                                Params = new KeyValuePairs
+                                                Parameters = new KeyValuePairs
                                                         {
                                                            { "includelower", "false" }, { "includeupper", "false" } 
                                                         }
@@ -77,12 +77,12 @@ namespace FlexSearch.Tests.CSharp.Search
                     yield return
                         new TestCaseData(
                             new SearchFilter(
-                                FilterType.And, 
-                                new[]
+                                FilterType.And,
+                                new List<SearchCondition>
                                     {
                                         new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
-                                                Params =
+                                                Parameters =
                                                     new KeyValuePairs
                                                         {
                                                            { "includelower", "false" }, { "includeupper", "true" } 
@@ -95,12 +95,12 @@ namespace FlexSearch.Tests.CSharp.Search
                     yield return
                         new TestCaseData(
                             new SearchFilter(
-                                FilterType.And, 
-                                new[]
+                                FilterType.And,
+                                new List<SearchCondition>
                                     {
                                         new SearchCondition("cvv2", "numeric_range", new StringList { "1", "5" })
                                             {
-                                                Params =
+                                                Parameters =
                                                     new KeyValuePairs
                                                         {
                                                            { "includelower", "true" }, { "includeupper", "false" } 

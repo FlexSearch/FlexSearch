@@ -112,6 +112,7 @@
     <Compile Include="Document\UpdateDocument.cs" />
     <Compile Include="Document\UpdateDocumentResponse.cs" />
     <Compile Include="Types\StringList.cs" />
+    <Compile Include="Types\Tokenizer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

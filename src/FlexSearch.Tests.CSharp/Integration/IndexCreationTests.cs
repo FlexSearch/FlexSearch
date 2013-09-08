@@ -21,6 +21,25 @@
         #region Public Methods and Operators
 
         [Test]
+        public void Create_index_with_custom_analyzer()
+        {
+            var indexName = Guid.NewGuid().ToString("N");
+            Index index = new Index { IndexName = indexName };
+
+            index.Fields.Add(
+                "firstname",
+                new IndexFieldProperties { FieldType = FieldType.Text, IndexAnalyzer = "firstnameanalyzer" });
+
+            var analyzerProperties = new AnalyzerProperties();
+            analyzerProperties.Filters.Add(new Filter { FilterName = "standardfilter" });
+            analyzerProperties.Filters.Add(new Filter { FilterName = "lowercasefilter" });
+            index.Analyzers.Add("firstnameanalyzer", analyzerProperties);
+            var response = this.client.Send<CreateIndexResponse>(new CreateIndex { Index = index });
+            Assert.IsNull(response.ResponseStatus);
+            this.client.Send<DestroyIndexResponse>(new DestroyIndex { IndexName = indexName });
+        }
+
+        [Test]
         public void Create_index_with_dynamic_fields()
         {
             var indexName = Guid.NewGuid().ToString("N");
@@ -29,9 +48,7 @@
             FieldDictionary fields = new FieldDictionary();
             fields.Add("firstname", new IndexFieldProperties { FieldType = FieldType.Text });
             fields.Add("lastname", new IndexFieldProperties { FieldType = FieldType.Text });
-            fields.Add(
-                "fullname",
-                new IndexFieldProperties { FieldType = FieldType.Text, ScriptName = "fullname" });
+            fields.Add("fullname", new IndexFieldProperties { FieldType = FieldType.Text, ScriptName = "fullname" });
 
             index.Scripts.Add(
                 "fullname",

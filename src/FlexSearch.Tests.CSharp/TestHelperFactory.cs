@@ -15,8 +15,6 @@
 
         public static readonly Interface.IFactoryCollection FactoryCollection;
 
-        private static bool serverRunning = false;
-
         private static FlexServer server;
 
         #endregion
@@ -63,6 +61,7 @@
             index.Fields.Add("cctype", new IndexFieldProperties { FieldType = FieldType.ExactText });
             index.Fields.Add("ccnumber", new IndexFieldProperties { FieldType = FieldType.ExactText });
 
+            index.Fields.Add("occupation", new IndexFieldProperties { FieldType = FieldType.Text });
             index.Fields.Add("cvv2", new IndexFieldProperties { FieldType = FieldType.Int });
             index.Fields.Add("nationalid", new IndexFieldProperties { FieldType = FieldType.ExactText });
             index.Fields.Add("ups", new IndexFieldProperties { FieldType = FieldType.ExactText });
@@ -119,7 +118,6 @@
             server = new FlexServer();
             server.Start();
         }
-
 
         #endregion
     }

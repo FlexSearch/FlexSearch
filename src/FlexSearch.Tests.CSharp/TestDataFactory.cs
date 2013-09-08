@@ -47,6 +47,7 @@ namespace FlexSearch.Tests.CSharp
                 indexDocument.Fields.Add("country", contactRecord.Country);
                 indexDocument.Fields.Add("countryfull", contactRecord.CountryFull);
                 indexDocument.Fields.Add("emailaddress", contactRecord.EmailAddress);
+                indexDocument.Fields.Add("occupation", contactRecord.Occupation);
                 indexDocument.Fields.Add("username", contactRecord.Username);
                 indexDocument.Fields.Add("password", contactRecord.Password);
                 indexDocument.Fields.Add("cctype", contactRecord.CCType);

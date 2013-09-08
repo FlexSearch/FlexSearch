@@ -23,7 +23,7 @@
             // Creating a dummy filter which won't do anything so that we can test the effect of tokenizer 
             // in a stand alone manner
             Interface.IFlexFilterFactory filter = new Filters.PatternReplaceFilterFactory();
-            filter.Initialize(new Dictionary<string, string> { { "pattern", "1" }, { "replacementtext", "" } });
+            filter.Initialize(new Dictionary<string, string> { { "pattern", "1" }, { "replacementtext", "" } }, new Factories.ResourceLoader());
             var filters = new List<Interface.IFlexFilterFactory> { filter };
             var analyzer = new CustomAnalyzer(tokenizerFactory, filters.ToArray());
             List<string> actual = SearchDsl.ParseTextUsingAnalyzer(analyzer, "test", parseString);
