@@ -17,6 +17,7 @@ namespace FlexSearch.Core
 open FlexSearch.Api.Types
 open FlexSearch.Core.Index
 open FlexSearch.Core
+open FlexSearch.Utility.DataType
 
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.core
@@ -90,9 +91,13 @@ module SearchDsl =
             for i in 0 .. flexIndex.Shards.Length - 1 do
                 let searcher = (flexIndex.Shards.[i].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
                 indexSearchers.Add(searcher)
-                    
-            let searchResults = ConcurrentDictionary<int, TopDocs>()
             
+            // Each thread only works on a separate part of the array and as no parts are shared across
+            // multiple threads the belows variables are thread safe. The cost of using blockingcollection vs 
+            // array per search is high
+            let topDocsCollection: TopDocs array = Array.zeroCreate indexSearchers.Count
+            let searchCount: int array = Array.zeroCreate indexSearchers.Count
+
             let sort =
                 match search.OrderBy with
                 | null -> Sort.RELEVANCE
@@ -106,16 +111,15 @@ module SearchDsl =
                 // This is to enable proper sorting
                 let topFieldCollector = TopFieldCollector.create(sort, search.Count, true, true, true, true) 
                 indexSearchers.[x.ShardNumber].search(query, topFieldCollector)
-                searchResults.TryAdd(x.ShardNumber, topFieldCollector.topDocs()) |> ignore
+                topDocsCollection.[x.ShardNumber] <-  topFieldCollector.topDocs()
+                searchCount.[x.ShardNumber] <- topFieldCollector.getTotalHits()                
             )
-
-            // TODO: optimize this code to use a f# pattern
-            let topDocsCollection =
-                searchResults 
-                |> Seq.sortBy(fun x -> x.Key)
-                |> Seq.map(fun x -> x.Value)
-                |> Seq.toArray
-
+            
+            // Total records from all the index
+            let mutable totalRecords = 0
+            for count in searchCount do 
+                totalRecords <- totalRecords + count
+                
             let totalDocs = TopDocs.merge(sort, search.Count, topDocsCollection)
             let hits = totalDocs.scoreDocs
 
@@ -151,6 +155,9 @@ module SearchDsl =
                     match search.Columns with
                     // Return no other columns when nothing is passed
                     | null -> ()
+
+                    // Return no other columns when nothing is passed
+                    | x when search.Columns.Count = 0 -> ()
 
                     // Return all columns when *
                     | x when search.Columns.First() = "*" -> 
@@ -351,7 +358,6 @@ module SearchDsl =
     [<ExportMetadata("Name", "term_match")>]
     type FlexTermQuery() =
         interface IFlexQuery with
-            //member this.QueryName() = [|"term_match"|]
             member this.GetQuery(flexIndexField, condition) =  
                 match IsNumericField(flexIndexField) with
                 | true -> Some(NumericTermQuery(flexIndexField, condition.Values.[0]).Value)
@@ -367,9 +373,16 @@ module SearchDsl =
                     | 1 -> Some(new TermQuery(new Term(flexIndexField.FieldName, terms.[0]))  :> Query)
                     | _ ->
                         // Generate boolean query
+                        let boolClause = match condition.Parameters.TryGetValue("clausetype") with
+                            | (true, value) -> 
+                                match value with
+                                | InvariantEqual "or" -> BooleanClause.Occur.SHOULD
+                                | _ -> BooleanClause.Occur.MUST
+                            | _ -> BooleanClause.Occur.MUST
+
                         let boolQuery = new BooleanQuery()
                         for term in terms do
-                            boolQuery.add(new BooleanClause(new TermQuery(new Term(flexIndexField.FieldName, term)), BooleanClause.Occur.MUST))
+                            boolQuery.add(new BooleanClause(new TermQuery(new Term(flexIndexField.FieldName, term)), boolClause))
                         Some(boolQuery :> Query)
 
 
@@ -381,7 +394,6 @@ module SearchDsl =
     [<ExportMetadata("Name", "fuzzy_match")>]
     type FlexFuzzyQuery() =
         interface IFlexQuery with
-            //member this.QueryName() = [|"fuzzy_match"|]
             member this.GetQuery(flexIndexField, condition) =
                
                 let terms = GetTerms(flexIndexField, condition.Values.[0])
