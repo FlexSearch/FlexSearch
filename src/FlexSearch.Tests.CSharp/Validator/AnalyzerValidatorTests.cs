@@ -5,9 +5,6 @@
 
     using NUnit.Framework;
 
-    using ServiceStack.FluentValidation;
-    using ServiceStack.FluentValidation.TestHelper;
-
     [TestFixture]
     public class AnalyzerValidatorTests
     {
