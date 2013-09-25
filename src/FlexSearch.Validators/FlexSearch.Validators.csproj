@@ -156,10 +156,8 @@
   <ItemGroup>
     <Compile Include="AnalyzerValidator.cs" />
     <Compile Include="FilterValidator.cs" />
-    <Compile Include="IIndexNameValidator.cs" />
     <Compile Include="IndexConfigurationValidator.cs" />
     <Compile Include="IndexFieldValidator.cs" />
-    <Compile Include="IndexNameValidator.cs" />
     <Compile Include="IndexValidationParameters.cs" />
     <Compile Include="IndexValidator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

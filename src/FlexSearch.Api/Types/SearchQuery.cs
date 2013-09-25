@@ -30,8 +30,16 @@ namespace FlexSearch.Api.Types
             this.Query = query;
         }
 
+        public SearchQuery(string indexName, SearchFilter query)
+        {
+            this.IndexName = indexName;
+            this.Query = query;
+            this.Columns = new StringList();
+        }
+
         public SearchQuery()
         {
+            this.Columns = new StringList();
         }
 
         #endregion

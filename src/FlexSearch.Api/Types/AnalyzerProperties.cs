@@ -8,11 +8,17 @@
     {
         #region Fields
 
-        private List<Filter> filters = new List<Filter>();
+        private List<Filter> filters;
 
-        private Tokenizer tokenizer = new Tokenizer();
+        private Tokenizer tokenizer;
 
         #endregion
+
+        public AnalyzerProperties()
+        {
+            filters = new List<Filter>();
+            tokenizer = new Tokenizer();
+        }
 
         #region Public Properties
 

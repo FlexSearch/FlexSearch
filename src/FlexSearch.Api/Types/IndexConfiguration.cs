@@ -8,15 +8,24 @@
     {
         #region Fields
 
-        private int commitTimeSec = 60;
+        private int commitTimeSec;
 
-        private DirectoryType directoryType = DirectoryType.FileSystem;
+        private DirectoryType directoryType;
 
-        private int ramBufferSizeMb = 500;
+        private int ramBufferSizeMb;
 
-        private int refreshTimeMilliSec = 25;
+        private int refreshTimeMilliSec;
 
-        private int shards = 1;
+        private int shards;
+
+        public IndexConfiguration()
+        {
+            commitTimeSec = 60;
+            directoryType = DirectoryType.FileSystem;
+            ramBufferSizeMb = 500;
+            refreshTimeMilliSec = 25;
+            shards = 1;
+        }
 
         #endregion
 

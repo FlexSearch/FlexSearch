@@ -1,7 +1,6 @@
 ﻿namespace FlexSearch.Validators
 {
     using System;
-    using System.Collections.Generic;
 
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
@@ -27,11 +26,6 @@
                 {
                     FSharpOption<Interface.IFlexFilterFactory> filterInstance =
                         factoryCollection.FilterFactory.GetModuleByName(filter.FilterName);
-                    if (filter.Parameters == null)
-                    {
-                        filter.Parameters = new KeyValuePairs();
-                    }
-
                     try
                     {
                         filterInstance.Value.Initialize(filter.Parameters, factoryCollection.ResourceLoader);

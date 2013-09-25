@@ -7,21 +7,33 @@
     {
         #region Fields
 
-        private bool analyze = true;
+        private bool analyze;
 
-        private FieldTermVector fieldTermVector = FieldTermVector.StoreTermVectorsWithPositionsandOffsets;
+        private FieldTermVector fieldTermVector;
 
-        private FieldType fieldType = FieldType.Text;
+        private FieldType fieldType;
 
-        private bool index = true;
+        private bool index;
 
-        private string indexAnalyzer = "standardanalyzer";
+        private string indexAnalyzer;
 
-        private string searchAnalyzer = "standardanalyzer";
+        private string searchAnalyzer;
 
-        private bool store = true;
+        private bool store;
 
         #endregion
+
+        public IndexFieldProperties()
+        {
+            analyze = true;
+            index = true;
+            store = true;
+            fieldTermVector = FieldTermVector.StoreTermVectorsWithPositionsandOffsets;
+            fieldType = FieldType.Text;
+            indexAnalyzer = "standardanalyzer";
+            searchAnalyzer = "standardanalyzer";
+
+        }
 
         #region Public Properties
 

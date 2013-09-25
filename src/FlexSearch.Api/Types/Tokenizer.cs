@@ -15,7 +15,17 @@
 
         private KeyValuePairs parameters;
 
-        private string tokenizerName = DefaultTokenizerName;
+        private string tokenizerName;
+
+        #endregion
+
+        #region Constructors and Destructors
+
+        public Tokenizer()
+        {
+            this.parameters = new KeyValuePairs();
+            this.tokenizerName = DefaultTokenizerName;
+        }
 
         #endregion
 

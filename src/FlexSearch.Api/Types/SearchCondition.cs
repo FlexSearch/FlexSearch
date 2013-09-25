@@ -1,6 +1,6 @@
 ﻿namespace FlexSearch.Api.Types
 {
-    using System.Collections.Generic;
+    using System.Globalization;
     using System.Runtime.Serialization;
 
     [DataContract(Namespace = "")]
@@ -25,6 +25,13 @@
             this.FieldName = fieldName;
             this.Operator = operatorName;
             this.Values = values;
+        }
+
+        public SearchCondition(string fieldName, string operatorName, string value)
+        {
+            this.FieldName = fieldName;
+            this.Operator = operatorName;
+            this.Values = new StringList { value };
         }
 
         #endregion
@@ -74,6 +81,85 @@
 
         [DataMember(Order = 6)]
         public StringList Values { get; set; }
+
+        #endregion
+
+        #region Public Methods and Operators
+
+        public static SearchCondition GetNumericRangeCondition(
+            string fieldName,
+            string lowerBound,
+            string upperBound,
+            bool includeLowerBound,
+            bool includeUpperBound)
+        {
+            return new SearchCondition(fieldName, "numeric_range", new StringList { lowerBound, upperBound })
+                   {
+                       Parameters
+                           =
+                           new KeyValuePairs
+                           {
+                               {
+                                   "includelower",
+                                   includeLowerBound
+                                   .ToString
+                                   (
+                                       )
+                               },
+                               {
+                                   "includeupper",
+                                   includeUpperBound
+                                   .ToString
+                                   (
+                                       )
+                               }
+                           }
+                   };
+        }
+
+        public static SearchCondition GetPhraseMatchCondition(string fieldName, string value)
+        {
+            return new SearchCondition(fieldName, "phrase_match", new StringList { value });
+        }
+
+        public static SearchCondition GetPhraseMatchCondition(string fieldName, string value, int slop)
+        {
+            return new SearchCondition(fieldName, "phrase_match", new StringList { value })
+                   {
+                       Parameters =
+                           new KeyValuePairs
+                           {
+                               {
+                                   "slop",
+                                   slop
+                                   .ToString
+                                   (
+                                       CultureInfo
+                                   .InvariantCulture)
+                               }
+                           }
+                   };
+        }
+
+        public static SearchCondition GetFuzzyMatchCondition(string fieldName, string value, int slop)
+        {
+            return new SearchCondition(fieldName, "fuzzy_match", new StringList { value })
+                   {
+                       Parameters =
+                           new KeyValuePairs
+                           {
+                               {
+                                   "slop",
+                                   slop.ToString(CultureInfo.InvariantCulture)
+                               }
+                           }
+                   };
+        }
+
+        public static SearchCondition GetTermMatchCondition(string fieldName, string value)
+        {
+            return new SearchCondition(fieldName, "term_match", new StringList { value });
+        }
 
         #endregion
     }

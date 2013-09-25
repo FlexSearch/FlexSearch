@@ -214,7 +214,6 @@
     <Compile Include="Index\IndexCreationTests.cs" />
     <Compile Include="Index\IndexingTests.cs" />
     <Compile Include="Integration\IndexCreationTests.cs" />
-    <Compile Include="Search\ConstantScoreFilterTest.cs" />
     <Compile Include="Search\PhraseQueryTests.cs" />
     <Compile Include="TestDataFactory.cs" />
     <Compile Include="TestHelperFactory.cs" />
