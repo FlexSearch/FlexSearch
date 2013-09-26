@@ -192,6 +192,7 @@
     <Compile Include="IntegrationTests\Search\FuzzyMatchSpec.cs" />
     <Compile Include="IntegrationTests\Search\HighlightingSpec.cs" />
     <Compile Include="IntegrationTests\Search\NumericRangeSpec.cs" />
+    <Compile Include="IntegrationTests\Search\PagingSpec.cs" />
     <Compile Include="IntegrationTests\Search\PhraseMatchSpec.cs" />
     <Compile Include="IntegrationTests\Search\SortingSpec.cs" />
     <Compile Include="UnitTests\Analysis\FilterAnalysisSpec.cs" />

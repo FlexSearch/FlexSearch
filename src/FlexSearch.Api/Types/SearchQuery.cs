@@ -27,6 +27,7 @@ namespace FlexSearch.Api.Types
             this.Columns = columns;
             this.IndexName = indexName;
             this.Count = count;
+            this.Skip = 0;
             this.Query = query;
         }
 
@@ -40,6 +41,7 @@ namespace FlexSearch.Api.Types
         public SearchQuery()
         {
             this.Columns = new StringList();
+            this.Skip = 0;
         }
 
         #endregion

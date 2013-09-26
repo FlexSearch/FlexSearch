@@ -23,6 +23,9 @@ namespace FlexSearch.Api.Types
         [DataMember(Order = 2)]
         public int RecordsReturned { get; set; }
 
+        [DataMember(Order = 3)]
+        public int TotalAvailable { get; set; }
+
         #endregion
     }
 }

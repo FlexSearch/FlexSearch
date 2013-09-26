@@ -96,7 +96,6 @@ module SearchDsl =
             // multiple threads the belows variables are thread safe. The cost of using blockingcollection vs 
             // array per search is high
             let topDocsCollection: TopDocs array = Array.zeroCreate indexSearchers.Count
-            let searchCount: int array = Array.zeroCreate indexSearchers.Count
 
             let sort =
                 match search.OrderBy with
@@ -105,26 +104,25 @@ module SearchDsl =
                         | (true, field) -> 
                             new Sort(new SortField(field.FieldName, FlexField.SortField(field)))
                         | _ -> Sort.RELEVANCE
-
+            
+            let count =
+                match search.Count with
+                | 0 -> 10 + search.Skip
+                | _ -> search.Count + search.Skip
 
             flexIndex.Shards |> Array.Parallel.iter(fun x ->
                 // This is to enable proper sorting
-                let topFieldCollector = TopFieldCollector.create(sort, search.Count, true, true, true, true) 
+                let topFieldCollector = TopFieldCollector.create(sort, count, true, true, true, true) 
                 indexSearchers.[x.ShardNumber].search(query, topFieldCollector)
-                topDocsCollection.[x.ShardNumber] <-  topFieldCollector.topDocs()
-                searchCount.[x.ShardNumber] <- topFieldCollector.getTotalHits()                
+                topDocsCollection.[x.ShardNumber] <-  topFieldCollector.topDocs()              
             )
-            
-            // Total records from all the index
-            let mutable totalRecords = 0
-            for count in searchCount do 
-                totalRecords <- totalRecords + count
                 
-            let totalDocs = TopDocs.merge(sort, search.Count, topDocsCollection)
+            let totalDocs = TopDocs.merge(sort, count, topDocsCollection)
             let hits = totalDocs.scoreDocs
 
             let searchResults = new SearchResults()
-            searchResults.RecordsReturned <- totalDocs.totalHits
+            searchResults.RecordsReturned <- totalDocs.scoreDocs.Count() - search.Skip
+            searchResults.TotalAvailable <- totalDocs.totalHits
 
             let highlighterOptions = 
                 if search.Highlight <> null then
