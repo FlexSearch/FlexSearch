@@ -197,6 +197,7 @@
     <Compile Include="IntegrationTests\Search\SortingSpec.cs" />
     <Compile Include="UnitTests\Analysis\FilterAnalysisSpec.cs" />
     <Compile Include="UnitTests\Analysis\TokenizerAnalysisSpec.cs" />
+    <Compile Include="UnitTests\CompilerServiceSpec.cs" />
     <Compile Include="UnitTests\Domain\AnalyzerSpec.cs" />
     <Compile Include="UnitTests\Domain\FilterSpec.cs" />
     <Compile Include="UnitTests\Domain\IndexConfigurationSpec.cs" />

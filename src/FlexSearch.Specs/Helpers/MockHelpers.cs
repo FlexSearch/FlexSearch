@@ -189,6 +189,8 @@
             resourceLoader.Setup(x => x.LoadResourceAsMap("synonymlist.txt"))
                 .Returns(new List<string[]> { { new[] { "easy", "simple", "clear" } } });
 
+            Interface.IScriptFactoryCollection scriptFactory = new CompilerService.ScriptFactoryCollection();
+            UnitFixture.Register(() => scriptFactory);
             UnitFixture.Register(() => resourceLoader.Object);
             UnitFixture.Register(() => factoryCollection.Object);
             return UnitFixture;
