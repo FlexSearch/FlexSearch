@@ -186,6 +186,7 @@
     <Compile Include="Helpers\IntegrationAutoFixture.cs" />
     <Compile Include="Helpers\IntegrationInlineAutoFixture.cs" />
     <Compile Include="Helpers\UnitInlineAutoFixture.cs" />
+    <Compile Include="IntegrationTests\Search\ColumnsSpec.cs" />
     <Compile Include="IntegrationTests\Search\FuzzyMatchSpec.cs" />
     <Compile Include="IntegrationTests\Search\HighlightingSpec.cs" />
     <Compile Include="IntegrationTests\Search\NumericRangeSpec.cs" />
@@ -207,6 +208,7 @@
     <Compile Include="Helpers\SubSpec\SubSpec.cs" />
     <Compile Include="Helpers\SubSpec\SubSpec.Thesis.cs" />
     <Compile Include="Helpers\SubSpec\SubSpecUtils.cs" />
+    <Compile Include="IntegrationTests\Index\IndexCreationSpec.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -234,7 +236,6 @@
     <Content Include="Helpers\SubSpec\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="IntegrationTests\Index\" />
     <Folder Include="IntegrationTests\WebServiceTests\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
