@@ -122,6 +122,24 @@
                 () => validator.ShouldNotHaveValidationErrorFor(x => x.SearchAnalyzer, indexFieldProperties));
         }
 
+        [Thesis, UnitAutoFixture]
+        public void StorePropertyCanbeSetToFalse(IndexFieldValidator validator)
+        {
+            IndexFieldProperties indexFieldProperties = null;
+            "Given an index field validator and index field properties".Given(
+                () =>
+                {
+                    indexFieldProperties = new IndexFieldProperties();
+                    indexFieldProperties.FieldType = FieldType.Text;
+                    indexFieldProperties.Store = false;
+                });
+
+                "when a field is validated".When(() => { });
+
+            "then there should be no validation error for 'Store'".Then(
+                () => validator.ShouldNotHaveValidationErrorFor(x => x.Store, indexFieldProperties));
+        }
+
         #endregion
     }
 }

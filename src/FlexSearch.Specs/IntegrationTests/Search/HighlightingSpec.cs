@@ -54,7 +54,6 @@ id,topic,abstract
                                               }
                                       };
                     results = indexService.PerformQuery(index.IndexName, IndexQuery.NewSearchQuery(searchQuery));
-                    string a;
                 });
 
             "it will return 1 result".Observation(() => results.RecordsReturned.Should().Be(1));

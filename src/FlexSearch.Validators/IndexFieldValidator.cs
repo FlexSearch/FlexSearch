@@ -18,7 +18,7 @@
         {
             this.CascadeMode = CascadeMode.StopOnFirstFailure;
             this.RuleFor(x => x.FieldType).NotNull();
-            this.RuleFor(x => x.Store).NotNull().NotEmpty();
+            this.RuleFor(x => x.Store).NotNull();
             this.When(
                 x => !string.IsNullOrEmpty(x.ScriptName),
                 () => this.RuleFor(x => x.ScriptName).Must(scripts.ContainsKey).WithMessage("Script does not exist"));

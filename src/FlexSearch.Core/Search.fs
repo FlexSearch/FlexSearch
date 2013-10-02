@@ -371,7 +371,8 @@ module SearchDsl =
                     | 1 -> Some(new TermQuery(new Term(flexIndexField.FieldName, terms.[0]))  :> Query)
                     | _ ->
                         // Generate boolean query
-                        let boolClause = match condition.Parameters.TryGetValue("clausetype") with
+                        let boolClause = 
+                            match condition.Parameters.TryGetValue("clausetype") with
                             | (true, value) -> 
                                 match value with
                                 | InvariantEqual "or" -> BooleanClause.Occur.SHOULD

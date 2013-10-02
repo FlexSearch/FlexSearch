@@ -340,9 +340,6 @@ module FlexIndex =
                     flexIndex.Shards.[i].IndexWriter.commit() 
                 (true, "")
 
-                               
-        
-        let processQueueItem(indexMessage: IndexCommand, flexIndex) = processItem(indexMessage, flexIndex) |> ignore
 
         // Default buffering queue
         // This is TPL Dataflow based approach. Can replace it with parallel.foreach
@@ -350,7 +347,7 @@ module FlexIndex =
         // Advantages - Faster, EnumerablePartitionerOptions.NoBuffering takes care of the
         // older .net partitioner bug, Can reduce the number of lucene documents which will be
         // generated 
-        let queue = new ActionBlock<IndexCommand * FlexIndex>(processQueueItem)
+        let mutable queue : ActionBlock<string * IndexCommand> = null
 
         // Index auto commit changes job
         let commitJob(flexIndex: FlexIndex) = 
@@ -469,12 +466,21 @@ module FlexIndex =
             | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
 
 
+        // Process index queue requests
+        let processQueueItem(indexName, indexMessage: IndexCommand) = 
+            let flexIndex = getIndexRegisteration(indexName)
+            processItem(indexMessage, flexIndex) |> ignore
+        
         // ----------------------------------------------------------------------------
         // Load all index configuration data on start of application
         // ----------------------------------------------------------------------------
         do
             indexLogger.Info("Index loading: Operation Start")
-
+            let executionBlockOption = new ExecutionDataflowBlockOptions()
+            executionBlockOption.MaxDegreeOfParallelism <- -1
+            executionBlockOption.BoundedCapacity <- 1000
+            queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
+            
             if loadAllIndex then
                 dbFactory.Select<Index>()
                 |> Seq.iter(fun x ->
@@ -507,13 +513,11 @@ module FlexIndex =
                 let flexIndex = getIndexRegisteration(indexName)
                 processItem(indexMessage, flexIndex)
                 
-
-            member this.SendCommandToQueue(indexName, indexMessage) = async { 
-                let flexIndex = getIndexRegisteration(indexName)
-                let! res = Async.AwaitTask(queue.SendAsync((indexMessage, flexIndex)))
-                ()
-                }
-            
+            member this.CommandQueue() = queue
+//            member this.SendCommandToQueue(indexName, indexMessage) =  
+//                let flexIndex = getIndexRegisteration(indexName)
+//                Async.AwaitTask(queue.SendAsync((indexMessage, flexIndex)))
+                
 
             member this.PerformQuery(indexName, indexQuery) =
                 let flexIndex = getIndexRegisteration(indexName)      

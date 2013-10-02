@@ -37,6 +37,7 @@ open System
 open System.ComponentModel.Composition
 open System.Collections.Generic
 open System.IO
+open System.Threading.Tasks.Dataflow
 open System.Reflection
 open System.Threading
 
@@ -205,7 +206,7 @@ module Interface =
         // Index queue which is used for async operations. This is useful for
         // bulk indexing tasks where the producer can send more than one record
         // to the buffer queue.
-        abstract member SendCommandToQueue          :   string * IndexCommand -> Async<unit>
+        abstract member CommandQueue                :   unit -> ActionBlock<string * IndexCommand> //string * IndexCommand -> unit
 
         // Default Search operation. The associated search object will encapsulate
         // all possible search variations
