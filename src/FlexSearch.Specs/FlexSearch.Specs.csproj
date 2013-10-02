@@ -186,6 +186,7 @@
     <Compile Include="Helpers\IntegrationAutoFixture.cs" />
     <Compile Include="Helpers\IntegrationInlineAutoFixture.cs" />
     <Compile Include="Helpers\UnitInlineAutoFixture.cs" />
+    <Compile Include="IntegrationTests\Index\DynamicFieldSpecs.cs" />
     <Compile Include="IntegrationTests\Search\ColumnsSpec.cs" />
     <Compile Include="IntegrationTests\Search\FuzzyMatchSpec.cs" />
     <Compile Include="IntegrationTests\Search\HighlightingSpec.cs" />
