@@ -20,8 +20,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Api", "FlexSearc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Validators", "FlexSearch.Validators\FlexSearch.Validators.csproj", "{02332AFF-FFCB-4995-B2D1-67686E8510AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Tests.CSharp", "FlexSearch.Tests.CSharp\FlexSearch.Tests.CSharp.csproj", "{676583E4-6A43-4C66-9708-0FB9035ADF5B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Specs", "FlexSearch.Specs\FlexSearch.Specs.csproj", "{48EB0B88-5EC1-4C26-A559-476E296EE598}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Benchmark", "FlexSearch.Benchmark\FlexSearch.Benchmark.csproj", "{1D6707A1-96CE-4147-867E-7B7A976DA419}"
@@ -48,10 +46,6 @@ Global
 		{02332AFF-FFCB-4995-B2D1-67686E8510AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02332AFF-FFCB-4995-B2D1-67686E8510AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{02332AFF-FFCB-4995-B2D1-67686E8510AC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{676583E4-6A43-4C66-9708-0FB9035ADF5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{676583E4-6A43-4C66-9708-0FB9035ADF5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{676583E4-6A43-4C66-9708-0FB9035ADF5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{676583E4-6A43-4C66-9708-0FB9035ADF5B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Release|Any CPU.ActiveCfg = Release|Any CPU
