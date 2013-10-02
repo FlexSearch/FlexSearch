@@ -15,13 +15,13 @@ using System.Runtime.InteropServices;
 
 [assembly: ComVisible(false)]
 [assembly: CLSCompliant(false)]
-[assembly: Guid("5a563fad-40bf-4fc0-9eb0-fab33b7cc979")]
+[assembly: Guid("a11200ec-31b2-4bfb-af1c-4b8dd66b81b6")]
 [assembly: AssemblyTitle("FlexSearch Validators")]
 [assembly: AssemblyDescription("FlexSearch Validators")]
 [assembly: AssemblyProduct("FlexSearch")]
 [assembly: AssemblyCopyright("(c) Seemant Rajvanshi, 2013")]
-[assembly: AssemblyVersion("0.4.0.0")]
-[assembly: AssemblyFileVersion("0.4.0.0")]
+[assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyFileVersion("0.2.0.0")]
 [assembly: AssemblyDelaySign(false)]
 
 

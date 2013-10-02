@@ -16,7 +16,7 @@ exception ReturnNoneException183c26a427ae489c8fd92ec21a0c9a59
 
 [<assembly: CLSCompliant (false)>]
 
-[<assembly: Guid ("5a563fad-40bf-4fc0-9eb0-fab33b7cc979")>]
+[<assembly: Guid ("a11200ec-31b2-4bfb-af1c-4b8dd66b81b6")>]
 
 [<assembly: AssemblyTitle ("FlexSearch Core Library")>]
 
@@ -26,9 +26,9 @@ exception ReturnNoneException183c26a427ae489c8fd92ec21a0c9a59
 
 [<assembly: AssemblyCopyright ("(c) Seemant Rajvanshi, 2013")>]
 
-[<assembly: AssemblyVersion ("0.4.0.0")>]
+[<assembly: AssemblyVersion ("0.2.0.0")>]
 
-[<assembly: AssemblyFileVersion ("0.4.0.0")>]
+[<assembly: AssemblyFileVersion ("0.2.0.0")>]
 
 [<assembly: AssemblyDelaySign (false)>]
 

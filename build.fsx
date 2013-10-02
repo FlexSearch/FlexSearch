@@ -6,8 +6,8 @@ open System.IO
 RestorePackages()
 
 // Version information
-let version = "0.4.0.0"
-let fileVersion = "0.4.0.0"
+let version = "0.2.0.0"
+let fileVersion = "0.2.0.0"
  
 // Properties
 let buildDir = @".\build\"
@@ -17,8 +17,8 @@ let packagesDir = @".\src\packages"
 
 
 // tools
-let nunitVersion = GetPackageVersion packagesDir "NUnit.Runners"
-let nunitPath = sprintf @"./src/packages/NUnit.Runners.%s/tools/" nunitVersion
+let xunitVersion = GetPackageVersion packagesDir "xunit.runners"
+let xunitPath = sprintf @".\src\packages\xunit.runners.%s\tools\" xunitVersion
 
 
 let moveFiles() =
@@ -31,8 +31,10 @@ let moveFiles() =
 
     // Delete unit test files
     File.Delete(src + @"\FlexTestDataPeople.csv")
-    File.Delete(src + @"\FlexSearch.Tests.CSharp.dll")
-    File.Delete(src + @"\FlexSearch.Tests.CSharp.dll.config")
+    File.Delete(src + @"\FlexSearch.Specs.dll")
+    File.Delete(src + @"\FlexSearch.Specs.dll.config")
+    File.Delete(src + @"\FlexSearch.Benchmark.exe")
+    File.Delete(src + @"\FlexSearch.Benchmark.exe.config")
 
     // Move all non flex related files to lib folder
     for file in Directory.GetFiles(src) do
@@ -106,18 +108,19 @@ Target "BuildApp" (fun _ ->
 )
  
 Target "BuildTest" (fun _ ->
-    !! @"src\FlexSearch.Tests.CSharp\*.csproj"
+    !! @"src\FlexSearch.Specs\*.csproj"
       |> MSBuildDebug testDir "Build"
       |> Log "TestBuild-Output: "
 )
  
 Target "Test" (fun _ ->
-    !! (testDir + @"\FlexSearch.Tests.CSharp.dll") 
-      |> NUnit (fun p ->
-          {p with
-             ToolPath = nunitPath;
-             DisableShadowCopy = true;
-             OutputFile = testDir + @"TestResults.xml" })
+    !! (testDir + @"\FlexSearch.Specs.dll") 
+      |> xUnit (fun p ->
+          {p with             
+            ShadowCopy = false;
+            //HtmlOutput = true;
+            XmlOutput = true;
+            OutputDir = testDir })
 )
  
 Target "Default" (fun _ ->
