@@ -21,7 +21,7 @@
 
         public ShowIndexResponse Any(ShowIndex request)
         {
-            var indexRecord = this.Db.Single<Index>("IndexName={0}", request.IndexName);
+            var indexRecord = this.Db.FirstOrDefault<Index>("IndexName={0}", request.IndexName);
             if (indexRecord == null)
             {
                 throw new Exception("Index does not exist.");
