@@ -1,11 +1,13 @@
 ﻿namespace FlexSearch.Server.Services
 {
     using System;
+    using System.Net;
 
     using FlexSearch.Api.Index;
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
 
+    using ServiceStack.Common.Web;
     using ServiceStack.OrmLite;
     using ServiceStack.ServiceInterface;
 
@@ -24,7 +26,7 @@
             var indexRecord = this.Db.FirstOrDefault<Index>("IndexName={0}", request.IndexName);
             if (indexRecord == null)
             {
-                throw new Exception("Index does not exist.");
+                throw new HttpError(HttpStatusCode.NotFound, "IndexNotFound", "Index does not exist.");
             }
 
             return new ShowIndexResponse { IndexSettings = indexRecord };
