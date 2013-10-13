@@ -160,8 +160,11 @@ module SearchDsl =
                     // Return all columns when *
                     | x when search.Columns.First() = "*" -> 
                         for field in flexIndex.IndexSetting.Fields do
-                            let value = document.get(field.FieldName)
-                            if value <> null then flexDocument.Fields.Add(field.FieldName, value)
+                            if field.FieldName = "id" || field.FieldName = "type" || field.FieldName = "lastmodified" then
+                                ()
+                            else
+                                let value = document.get(field.FieldName)
+                                if value <> null then flexDocument.Fields.Add(field.FieldName, value)
                 
                     // Return only the requested columns
                     | _ ->    
