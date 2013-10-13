@@ -46,7 +46,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">
-      <HintPath>..\packages\FlexLucene.4.4.0.0\lib\net40\FlexLucene.dll</HintPath>
+      <HintPath>..\packages\FlexLucene.4.5.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
