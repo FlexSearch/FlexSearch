@@ -16,6 +16,8 @@ There are a number of features which are in progress:
 - Proper Http status codes support (Dropping support for SOAP as it is screwing up the REST endpoint). Hopefully once this work is done then the whole API will be very easy to understand.
 - Complete documentation and a testing tool
 - Configuration UI
+- Upgrading to F# 3.1 (some specific features are of particular interest)
+- Move toward NancyFx
 
 Please see the [Future Roadmap](roadmap) for more details and timelines. 
 
