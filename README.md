@@ -7,7 +7,9 @@ FlexSearch is written in F# & C# 5.0 (.net framework 4.5). It exposes REST, SOAP
 More information is available at http://www.flexsearch.net/
 
 
-This is a pre-release version and subjected to major changes. Ther are a number of features which are in progress:
+**This is a pre-release version and subjected to major changes.** 
+
+There are a number of features which are in progress:
 
 - Optimistic concurrency
 - PerField Postings Format support
