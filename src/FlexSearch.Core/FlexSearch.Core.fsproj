@@ -50,6 +50,10 @@
       <HintPath>..\packages\FlexLucene.4.5.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FluentValidation">
+      <HintPath>..\packages\FluentValidation.4.0.0.1\lib\Net40\FluentValidation.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
@@ -260,6 +264,7 @@
     <Compile Include="Filters.fs" />
     <Compile Include="Tokenizers.fs" />
     <Compile Include="Search.fs" />
+    <Compile Include="Validator.fs" />
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="AssemblyInfo.fs" />
