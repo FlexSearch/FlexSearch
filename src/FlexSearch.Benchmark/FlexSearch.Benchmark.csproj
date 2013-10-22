@@ -184,10 +184,6 @@
       <Project>{06f48daa-3928-458d-af20-5ffb55e23d74}</Project>
       <Name>FlexSearch.Server</Name>
     </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Validators\FlexSearch.Validators.csproj">
-      <Project>{02332aff-ffcb-4995-b2d1-67686e8510ac}</Project>
-      <Name>FlexSearch.Validators</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

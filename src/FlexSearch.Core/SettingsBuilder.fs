@@ -190,10 +190,10 @@ module SettingsBuilder =
     // ----------------------------------------------------------------------------
     // Top level settings builder   
     // ----------------------------------------------------------------------------   
-    let public SettingsBuilder(factoryCollection: IFactoryCollection, indexValidator: AbstractValidator<Index>) =  {
+    let public SettingsBuilder (factoryCollection: IFactoryCollection) (indexValidator: IIndexValidator) =  {
         new ISettingsBuilder with
             member x.BuildSetting (index) =
-                indexValidator.ValidateAndThrow(index)
+                indexValidator.Validate(index) |> ignore
                 let analyzers = buildAnalyzers(index.Analyzers, factoryCollection)
                 let fields =  buildFields(index.Fields, analyzers, index.Scripts, factoryCollection) 
                 let fieldsArray: FlexField array = Array.zeroCreate fields.Count

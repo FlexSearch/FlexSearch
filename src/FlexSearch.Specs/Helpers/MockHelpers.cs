@@ -10,7 +10,6 @@
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
     using FlexSearch.Core.Index;
-    using FlexSearch.Validators;
 
     using Microsoft.FSharp.Core;
 
@@ -134,7 +133,7 @@
             Interface.IFactoryCollection factoryCollection = new Factories.FactoryCollection(pluginContainer);
             Interface.ISettingsBuilder settingsBuilder = SettingsBuilder.SettingsBuilder(
                 factoryCollection,
-                new IndexValidator(factoryCollection, new IndexValidationParameters(true)));
+                new Validator.IndexValidator(factoryCollection));
             var searchService = new SearchDsl.SearchService(factoryCollection.SearchQueryFactory.GetAllModules());
             var dbFactory = new OrmLiteConnectionFactory(
                 Constants.ConfFolder.Value + "//conf.sqlite",

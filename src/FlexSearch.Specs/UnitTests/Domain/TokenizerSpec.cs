@@ -1,11 +1,13 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
     using FlexSearch.Api.Types;
+    using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
-    using FlexSearch.Validators;
 
     using FluentAssertions;
+
+    using Xunit;
 
     public class TokenizerSpec
     {
@@ -59,7 +61,7 @@
 
         [Thesis]
         [UnitAutoFixture]
-        public void TokenizerValidatorRelated(TokenizerValidator sut)
+        public void TokenizerValidatorRelated(Interface.IFactoryCollection factory)
         {
             "Given a new tokenizer validator".Given(() => { });
 
@@ -67,7 +69,7 @@
                 () =>
                 {
                     var tokenizer = new Tokenizer { TokenizerName = "test" };
-                    sut.Validate(tokenizer).IsValid.Should().BeFalse();
+                    Assert.Throws<Validator.ValidationException>(() => Validator.TokenizerValidator(factory, tokenizer));
                 });
 
             "Setting valid 'TokenizerName' should pass validation".Then(
@@ -75,7 +77,7 @@
                 {
                     // standardtokenizer is the default tokenizer
                     var tokenizer = new Tokenizer();
-                    sut.Validate(tokenizer).IsValid.Should().BeTrue();
+                    Assert.DoesNotThrow(() => Validator.TokenizerValidator(factory, tokenizer));
                 });
         }
 

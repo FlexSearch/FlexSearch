@@ -1,11 +1,13 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
     using FlexSearch.Api.Types;
+    using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
-    using FlexSearch.Validators;
 
     using FluentAssertions;
+
+    using Xunit;
 
     public class AnalyzerSpec
     {
@@ -36,15 +38,15 @@
 
         [Thesis]
         [UnitAutoFixture]
-        public void AnalyzerValidatorRelated(AnalyzerValidator sut)
+        public void AnalyzerValidatorRelated(Interface.IFactoryCollection factory)
         {
             "Given a new analyzer validator".Given(() => { });
-
             "Atleast one filter should be specified".Then(
                 () =>
                 {
                     var analyzerProperties = new AnalyzerProperties();
-                    sut.Validate(analyzerProperties).IsValid.Should().BeFalse();
+                    Assert.Throws<Validator.ValidationException>(
+                        () => Validator.AnalyzerValidator(factory, "", analyzerProperties));
                 });
         }
 

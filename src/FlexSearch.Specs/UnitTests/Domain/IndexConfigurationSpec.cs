@@ -1,13 +1,13 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
     using FlexSearch.Api.Types;
+    using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
-    using FlexSearch.Validators;
 
     using FluentAssertions;
 
-    using ServiceStack.FluentValidation.TestHelper;
+    using Xunit;
 
     public class IndexConfigurationSpec
     {
@@ -28,37 +28,44 @@
 
         [Thesis]
         [UnitAutoFixture]
-        public void IndexConfigurationValidatorTest(
-            IndexConfiguration indexConfiguration,
-            IndexConfigurationValidator sut)
+        public void IndexConfigurationValidatorTest()
         {
-            "Given new index field properties & index configuration validator".Given(() => { });
+            IndexConfiguration indexConfiguration = null;
+            "Given new index field properties & index configuration validator".Given(
+                () =>
+                {
+                    indexConfiguration = new IndexConfiguration();
+                });
+
             "'CommitTimeSec' cannot be less than '60'".Then(
                 () =>
                 {
                     indexConfiguration.CommitTimeSec = 59;
-                    sut.ShouldHaveValidationErrorFor(x => x.CommitTimeSec, indexConfiguration);
+                    Assert.Throws<Validator.ValidationException>(() => Validator.IndexConfigurationValidator("", indexConfiguration));
                 });
 
             "'RefreshTimeMilliSec' cannot be less than '25'".Then(
                 () =>
                 {
                     indexConfiguration.RefreshTimeMilliSec = 24;
-                    sut.ShouldHaveValidationErrorFor(x => x.RefreshTimeMilliSec, indexConfiguration);
+                    Assert.Throws<Validator.ValidationException>(
+                        () => Validator.IndexConfigurationValidator("", indexConfiguration));
                 });
 
             "'Shards' cannot be less than '1'".Then(
                 () =>
                 {
                     indexConfiguration.Shards = 0;
-                    sut.ShouldHaveValidationErrorFor(x => x.Shards, indexConfiguration);
+                    Assert.Throws<Validator.ValidationException>(
+                        () => Validator.IndexConfigurationValidator("", indexConfiguration));
                 });
 
             "'RamBufferSizeMb' cannot be less than '100'".Then(
                 () =>
                 {
                     indexConfiguration.RamBufferSizeMb = 99;
-                    sut.ShouldHaveValidationErrorFor(x => x.RamBufferSizeMb, indexConfiguration);
+                    Assert.Throws<Validator.ValidationException>(
+                        () => Validator.IndexConfigurationValidator("", indexConfiguration));
                 });
         }
 

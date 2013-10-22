@@ -7,9 +7,10 @@ namespace FlexSearch.Server
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
     using FlexSearch.Core.Index;
-    using FlexSearch.Validators;
 
     using Funq;
+
+    using Microsoft.FSharp.Core;
 
     using ServiceStack;
     using ServiceStack.Api.Swagger;
@@ -80,7 +81,7 @@ namespace FlexSearch.Server
             logger.Info("Validation feature enabled");
 
             container.DefaultReuse = ReuseScope.Container;
-            container.RegisterValidators(typeof(IndexValidator).Assembly);
+            //container.RegisterValidators(typeof(IndexValidator).Assembly);
 
             var dbFactory = new OrmLiteConnectionFactory(Constants.ConfFolder + "/conf.sqlite", SqliteDialect.Provider);
             dbFactory.OpenDbConnection().Run(db => db.CreateTable<Index>(false));
@@ -98,9 +99,7 @@ namespace FlexSearch.Server
             CompositionContainer pluginContainer = Factories.PluginContainer(false).Value;
             Interface.IFactoryCollection factoryCollection = new Factories.FactoryCollection(pluginContainer);
             var searchService = new SearchDsl.SearchService(factoryCollection.SearchQueryFactory.GetAllModules());
-            Interface.ISettingsBuilder parser = SettingsBuilder.SettingsBuilder(
-                factoryCollection,
-                new IndexValidator(factoryCollection, new IndexValidationParameters(true)));
+            Interface.ISettingsBuilder parser = SettingsBuilder.SettingsBuilder(factoryCollection, new Validator.IndexValidator(factoryCollection));
 
             container.Register(factoryCollection);
             container.Register(this.serverSettings);

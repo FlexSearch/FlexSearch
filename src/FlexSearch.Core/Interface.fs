@@ -113,6 +113,16 @@ module Interface =
 
 
     // ----------------------------------------------------------------------------     
+    // Flex Index validator interface
+    // This will validate all index settings. This could be easily replaced by 
+    // a higher order function but it makes C# to F# interoperability a bit 
+    // difficult
+    // ----------------------------------------------------------------------------  
+    type IIndexValidator =
+        abstract Validate               :   Index -> Unit
+
+
+    // ----------------------------------------------------------------------------     
     // FlexQuery interface
     // ----------------------------------------------------------------------------     
     type IFlexQuery =

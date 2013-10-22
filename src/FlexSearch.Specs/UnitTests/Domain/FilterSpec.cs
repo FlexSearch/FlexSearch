@@ -1,11 +1,13 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
     using FlexSearch.Api.Types;
+    using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
-    using FlexSearch.Validators;
 
     using FluentAssertions;
+
+    using Xunit;
 
     public class FilterSpec
     {
@@ -53,7 +55,7 @@
 
         [Thesis]
         [UnitAutoFixture]
-        public void FilterValidatorRelated(FilterValidator sut)
+        public void FilterValidatorRelated(Interface.IFactoryCollection factory)
         {
             "Given a new filter validator".Given(() => { });
 
@@ -61,7 +63,7 @@
                 () =>
                 {
                     var filter = new Filter { FilterName = "test" };
-                    sut.Validate(filter).IsValid.Should().BeFalse();
+                    Assert.Throws<Validator.ValidationException>(() => Validator.FilterValidator(factory, filter));
                 });
 
             "Setting valid 'FilterName' should pass validation".Then(
@@ -69,7 +71,7 @@
                 {
                     // standardfilter is the default filter
                     var filter = new Filter();
-                    sut.Validate(filter).IsValid.Should().BeTrue();
+                    Assert.DoesNotThrow(() => Validator.FilterValidator(factory, filter));
                 });
         }
 

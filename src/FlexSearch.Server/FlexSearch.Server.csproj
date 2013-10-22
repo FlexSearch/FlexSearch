@@ -264,10 +264,6 @@
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
       <Name>FlexSearch.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Validators\FlexSearch.Validators.csproj">
-      <Project>{02332aff-ffcb-4995-b2d1-67686e8510ac}</Project>
-      <Name>FlexSearch.Validators</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Content\css\" />
