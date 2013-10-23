@@ -14,8 +14,6 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-open FluentValidation
-open FluentValidation.Results
 open FlexSearch.Api.Types
 open FlexSearch.Core
 open System.Linq
