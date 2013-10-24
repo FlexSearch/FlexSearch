@@ -1,17 +1,20 @@
 ﻿namespace FlexSearch.Server.Services
 {
-    using System;
-    using System.Net;
+    using System.Data;
 
     using FlexSearch.Api.Index;
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
 
+    using Nancy;
+
     using ServiceStack.Common.Web;
     using ServiceStack.OrmLite;
     using ServiceStack.ServiceInterface;
 
-    public class IndexService : Service
+    using HttpStatusCode = System.Net.HttpStatusCode;
+
+    public class IndexService1 : Service
     {
         #region Public Properties
 

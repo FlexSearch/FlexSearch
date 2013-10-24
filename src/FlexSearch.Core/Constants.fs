@@ -53,7 +53,11 @@ module Constants =
 
     // Lucene version to be used across the application
     let LuceneVersion = org.apache.lucene.util.Version.LUCENE_44
-    
+    let IdField = "id"
+    let LastModifiedField = "lastmodified"
+    let TypeField = "type"
+    let VersionField = "version"
+
     // Flex root folder path
     let private rootFolder = lazy AppDomain.CurrentDomain.SetupInformation.ApplicationBase
 

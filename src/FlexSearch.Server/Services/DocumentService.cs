@@ -8,17 +8,12 @@ namespace FlexSearch.Server.Services
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
-    using FlexSearch.Api;
+
     using FlexSearch.Api.Document;
-    using FlexSearch.Api.Search;
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
-    using ServiceStack.ServiceHost;
+
     using ServiceStack.ServiceInterface;
-    using ServiceStack.ServiceInterface.ServiceModel;
-
-
 
     public class DocumentService : Service
     {

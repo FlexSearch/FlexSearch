@@ -43,18 +43,6 @@ open System.Linq
 // ----------------------------------------------------------------------------
 // Contains all the indexing related datatype definitions 
 // ----------------------------------------------------------------------------
-// Lucene's field postings format
-type FieldPostingFormat = 
-    | Direct
-    | Memory
-    | Bloom
-    | Pulsing
-
-// Represents Lucene's similarity models
-type FieldSimilarity =
-    | BM25
-    | TDF
-
 
 // Represents details about field storage related option
 type FieldStoreInformation = 
@@ -174,10 +162,8 @@ type FlexIndexSetting =
         FieldsLookup            :   Dictionary<string, FlexField>
         SearchProfiles          :   Dictionary<string, SearchProfileProperties>
         ScriptsManager          :   ScriptsManager   
-        //SearchProfileSelectors  :   Dictionary<string, SearchProfileSelector>
         IndexConfig             :   IndexConfiguration
         BaseFolder              :   string
-        //DirectoryType           :   DirectoryType
     }
     
 

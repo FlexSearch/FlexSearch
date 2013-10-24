@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using ServiceStack.Common.Net30;
-using ServiceStack.Common.Web;
-using ServiceStack.ServiceHost;
-using ServiceStack.ServiceInterface.ServiceModel;
+
 using ServiceStack.ServiceModel;
 
 namespace FlexSearch.Server.Loggers

@@ -10,10 +10,7 @@ namespace FlexSearch.Server
 
     using Funq;
 
-    using Microsoft.FSharp.Core;
-
     using ServiceStack;
-    using ServiceStack.Api.Swagger;
     using ServiceStack.CacheAccess;
     using ServiceStack.CacheAccess.Providers;
     using ServiceStack.Common;
@@ -65,9 +62,6 @@ namespace FlexSearch.Server
 
             this.Plugins.Add(new ProtoBufFormat());
             logger.Info("Protobuffer support enabled");
-
-            this.Plugins.Add(new SwaggerFeature());
-            logger.Info("Swagger enabled");
 
             Tuple<bool, int, bool> requestLoggerProperties = this.serverSettings.LoggerProperties();
             if (requestLoggerProperties.Item1)

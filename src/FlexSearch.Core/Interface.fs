@@ -184,11 +184,11 @@ module Interface =
 
 
     // ---------------------------------------------------------------------------- 
-    // Interface which exposes all top level factories
-    // Could have exposed all these through a simple dictionary over IFlexFactory
-    // but then we would have to perform a look up to get each factory instace.
-    // This is fairly easy to manage as all the logic is in IFlexFactory.
-    // Also reduces passing of parameters.
+    /// Interface which exposes all top level factories
+    /// Could have exposed all these through a simple dictionary over IFlexFactory
+    /// but then we would have to perform a look up to get each factory instace.
+    /// This is fairly easy to manage as all the logic is in IFlexFactory.
+    /// Also reduces passing of parameters.
     // ---------------------------------------------------------------------------- 
     type IFactoryCollection =
          abstract member FilterFactory              :   IFlexFactory<IFlexFilterFactory>
@@ -200,13 +200,28 @@ module Interface =
          abstract member ScriptFactoryCollection    :   IScriptFactoryCollection
          abstract member ResourceLoader             :   IResourceLoader
 
+
     // ---------------------------------------------------------------------------- 
-    // Interface which exposes all index related operations
+    /// General key value based settings store used across Flex to store all settings
+    /// Do not use this as a cache store
+    // ---------------------------------------------------------------------------- 
+    type ISettingsStore =
+        abstract member GetIndexSetting     :   string -> Index
+        abstract member DeleteIndexSetting  :   string -> bool
+        abstract member UpdateIndexSetting  :   Index -> bool
+        abstract member GetAllIndexSettings :   unit -> List<Index>
+        abstract member GetItem<'T>         :   string -> 'T
+        abstract member UpdateItem<'T>      :   string * 'T -> bool
+        abstract member DeleteItem          :   string  -> bool
+
+
+    // ---------------------------------------------------------------------------- 
+    /// Interface which exposes all index related operations
     // ---------------------------------------------------------------------------- 
     type IIndexService =
 
-        // This method is for synchronous index operations. This will return the 
-        // operation status along with a description message.
+        /// This method is for synchronous index operations. This will return the 
+        /// operation status along with a description message.
         abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<bool * string> -> unit
 
         // This method is for synchronous index operations. This will return the 

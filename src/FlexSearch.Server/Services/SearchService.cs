@@ -5,7 +5,6 @@
 // --------------------------------------------------------------------------------------------------------------------
 namespace FlexSearch.Server.Services
 {
-    using FlexSearch.Api;
     using FlexSearch.Api.Search;
     using FlexSearch.Api.Types;
     using FlexSearch.Core;
