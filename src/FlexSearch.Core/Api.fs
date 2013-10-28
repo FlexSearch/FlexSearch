@@ -10,6 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 open System.Runtime.Serialization
+open System.Collections.Generic
 
 module Api =
     // Represents Lucene's similarity models
@@ -81,15 +82,126 @@ module Api =
         [<DataMember(Order = 6)>] member val Shards = 1 with get, set
 
  
-    type IndexFieldProperties() =
-        member val Analyze = true with get, set
-        member val Index = true with get, set
-        member val store = true with get, set
-        member val IndexAnalyzer = "standardanalyzer" with get, set
-        member val SearchAnalyzer = "standardanalyzer" with get, set
-        member val FieldType = FieldType.Text with get, set
-        member val FieldPostingsFormat = FieldPostingsFormat.Lucene41PostingsFormat with get, set
-        member val FieldIndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions with get, set
-        member val FieldTermVector = FieldTermVector.StoreTermVectorsWithPositions with get, set
-        member val OmitNorms = true with get, set
+    type [<DataContract(Namespace = "")>] IndexFieldProperties() =
+        [<DataMember(Order = 1)>] member val Analyze = true with get, set
+        [<DataMember(Order = 2)>] member val Index = true with get, set
+        [<DataMember(Order = 3)>] member val store = true with get, set
+        [<DataMember(Order = 4)>] member val IndexAnalyzer = "standardanalyzer" with get, set
+        [<DataMember(Order = 5)>] member val SearchAnalyzer = "standardanalyzer" with get, set
+        [<DataMember(Order = 6)>] member val FieldType = FieldType.Text with get, set
+        [<DataMember(Order = 7)>] member val FieldPostingsFormat = FieldPostingsFormat.Lucene41PostingsFormat with get, set
+        [<DataMember(Order = 8)>] member val FieldIndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions with get, set
+        [<DataMember(Order = 9)>] member val FieldTermVector = FieldTermVector.StoreTermVectorsWithPositions with get, set
+        [<DataMember(Order = 10)>] member val OmitNorms = true with get, set
+    
 
+    [<CollectionDataContract(Namespace = "", ItemName = "Field", KeyName = "FieldName", ValueName = "Properties")>]
+    type FieldDictionary() =
+        inherit Dictionary<string, IndexFieldProperties>()
+
+
+    [<CollectionDataContract(Namespace = "", ItemName = "KeyValuePair", KeyName = "Key", ValueName = "Value")>]
+    type KeyValuePairs() =
+        inherit Dictionary<string, string>()
+
+
+    type [<DataContract(Namespace = "")>] TokenFilter() =
+        [<DataMember(Order = 1)>] member val FilterName = "standardfilter" with get, set
+        [<DataMember(Order = 2)>] member val Parameters = new KeyValuePairs() with get, set
+
+
+    type [<DataContract(Namespace = "")>] Tokenizer() =
+        [<DataMember(Order = 1)>] member val TokenizerName = "standardtokenizer" with get, set
+        [<DataMember(Order = 2)>] member val Parameters = new KeyValuePairs() with get, set
+
+
+    type [<DataContract(Namespace = "")>] AnalyzerProperties() = 
+        [<DataMember(Order = 1)>] member val Filters = new List<TokenFilter>() with get, set
+        [<DataMember(Order = 2)>] member val Tokenizer = new Tokenizer() with get, set
+
+
+    [<CollectionDataContract(Namespace = "", ItemName = "Analyzer", KeyName = "AnalyzerName", ValueName = "Properties")>]
+    type AnalyzerDictionary() =
+        inherit Dictionary<string, AnalyzerProperties>()
+
+    type ScriptOption =
+        | SingleLine = 1
+        | MultiLine = 2
+        | FileBased = 3
+
+    type ScriptType =
+        | SearchProfileSelector = 1
+        | CustomScoring = 2
+        | ComputedField = 3
+
+
+    type ScriptProperties() =
+         member val ScriptOption = ScriptOption.SingleLine with get, set
+         member val ScriptSource = "" with get, set
+         member val ScriptType = ScriptType.ComputedField with get, set
+    
+
+    [<CollectionDataContract(Namespace = "", ItemName = "Script", KeyName = "ScriptName", ValueName = "Properties")>]
+    type ScriptDictionary() =
+        inherit Dictionary<string, ScriptProperties>()
+    
+
+    [<CollectionDataContract(Namespace = "", ItemName = "Value")>]
+    type StringList() =
+        inherit List<string>()
+
+    type FilterType =
+        | And = 1
+        | Or = 2
+
+    type MissingValueOption =
+        | ThrowError = 1
+        | Default = 2
+        | Ignore = 3
+
+
+    type SearchCondition() =
+        member val Boost = 1 with get, set 
+        member val FieldName = "" with get, set 
+        member val MissingValueOption = FilterType.And with get, set 
+        member val Operator = "" with get, set 
+        member val Parameters = new KeyValuePairs() with get, set 
+        member val Values = new StringList() with get, set 
+
+
+    type SearchFilter() =
+        member val FilterType = FilterType.And with get, set 
+        member val Conditions = new List<SearchCondition>() with get, set 
+        member val SubFilters = new List<SearchFilter>() with get, set 
+        member val ConstantScore = 0 with get, set 
+    
+    type HighlightOption() =
+        member val FragmentsToReturn = 2 with get, set 
+        member val HighlightedFields = new StringList() with get, set 
+        member val PostTag = "</B>" with get, set 
+        member val PreTag = "</B>" with get, set 
+
+
+    type SearchQuery() =
+        member val Columns = new StringList() with get, set 
+        member val Count = 10 with get, set 
+        member val Highlight = new HighlightOption() with get, set 
+        member val IndexName = "" with get, set 
+        member val OrderBy = "" with get, set 
+        member val Skip = "" with get, set 
+        member val Query = "" with get, set 
+
+
+    [<CollectionDataContract(Namespace = "", ItemName = "SearchProfile", KeyName = "ProfileName", ValueName = "Properties")>]
+    type SearchProfileDictionary() =
+        inherit Dictionary<string, SearchQuery>()
+
+
+    type Index() =
+        member val Analyzers = new AnalyzerDictionary() with get, set
+        member val Configuration = new IndexConfiguration() with get, set
+        member val Fields = new FieldDictionary() with get, set
+        member val IndexName = "" with get, set
+        member val Online = true with get, set
+        member val Scripts = new ScriptDictionary() with get, set
+        member val SearchProfiles = new SearchProfileDictionary() with get, set

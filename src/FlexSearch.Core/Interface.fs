@@ -205,10 +205,10 @@ module Interface =
     /// General key value based settings store used across Flex to store all settings
     /// Do not use this as a cache store
     // ---------------------------------------------------------------------------- 
-    type ISettingsStore =
-        abstract member GetIndexSetting     :   string -> Index
-        abstract member DeleteIndexSetting  :   string -> bool
-        abstract member UpdateIndexSetting  :   Index -> bool
+    type IKeyValueStore =
+        abstract member GetIndexSetting     :   string -> Option<Index>
+        abstract member DeleteIndexSetting  :   string -> unit
+        abstract member UpdateIndexSetting  :   Index -> unit
         abstract member GetAllIndexSettings :   unit -> List<Index>
         abstract member GetItem<'T>         :   string -> 'T
         abstract member UpdateItem<'T>      :   string * 'T -> bool
@@ -231,7 +231,7 @@ module Interface =
         // Index queue which is used for async operations. This is useful for
         // bulk indexing tasks where the producer can send more than one record
         // to the buffer queue.
-        abstract member CommandQueue                :   unit -> ActionBlock<string * IndexCommand> //string * IndexCommand -> unit
+        abstract member CommandQueue                :   unit -> ActionBlock<string * IndexCommand>
 
         // Default Search operation. The associated search object will encapsulate
         // all possible search variations
@@ -255,8 +255,8 @@ module Interface =
 
         abstract member IndexStatus                 :   string -> IndexState
 
-        // Method to close all indexing indexing operation. Usually called before
-        // a server shutdown.
+        /// Method to close all indexing indexing operation. Usually called before
+        /// a server shutdown.
         abstract member ShutDown                    :   unit -> bool
 
 
