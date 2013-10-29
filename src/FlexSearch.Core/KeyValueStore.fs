@@ -46,9 +46,25 @@ module Store =
             member this.UpdateIndexSetting value =
                 db.Update(value) |> ignore
 
-            member this.GetAllIndexSettings value =
-                let values = db.Table<KeyValue>()
+            member this.GetAllIndexSettings() =
+                let values = db.Table<KeyValue>().ToList()
+                let indices = new ResizeArray<Index>()
+                values |> Seq.iter( fun x -> 
+                        indices.Add(JsonConvert.DeserializeObject<Index>(x.Value))
+                    )
+                indices
 
+            member this.GetItem<'T> value =
+                let result = db.Table<KeyValue>() |> Seq.tryFind(fun x -> x.Key = value)
+                match result with
+                | Some(a) -> Some(JsonConvert.DeserializeObject<'T>(a.Value))
+                | _ -> None
+
+            member this.UpdateItem<'T> key (value: 'T) =
+                db.Update(value) |> ignore
+
+            member this.DeleteItem value =
+                db.Delete<KeyValue>(value) |> ignore
             
 
 

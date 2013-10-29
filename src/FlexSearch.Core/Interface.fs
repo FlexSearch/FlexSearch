@@ -210,9 +210,9 @@ module Interface =
         abstract member DeleteIndexSetting  :   string -> unit
         abstract member UpdateIndexSetting  :   Index -> unit
         abstract member GetAllIndexSettings :   unit -> List<Index>
-        abstract member GetItem<'T>         :   string -> 'T
-        abstract member UpdateItem<'T>      :   string * 'T -> bool
-        abstract member DeleteItem          :   string  -> bool
+        abstract member GetItem<'T>         :   string -> Option<'T>
+        abstract member UpdateItem<'T>      :   string -> 'T -> unit
+        abstract member DeleteItem          :   string  -> unit
 
 
     // ---------------------------------------------------------------------------- 
