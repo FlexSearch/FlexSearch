@@ -46,15 +46,6 @@
       <HintPath>..\packages\FlexLucene.4.5.0.0\lib\net40\FlexLucene.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.3.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Gibraltar.Agent">
-      <HintPath>..\packages\Gibraltar.Agent.3.5.3.1533\lib\4.0\Gibraltar.Agent.dll</HintPath>
-    </Reference>
-    <Reference Include="Gibraltar.Agent.NLog2">
-      <HintPath>..\packages\Gibraltar.Agent.NLog2.3.5.3.1533\lib\Gibraltar.Agent.NLog2.dll</HintPath>
-    </Reference>
-    <Reference Include="Gibraltar.Packager.NET40">
-      <HintPath>..\packages\Gibraltar.Agent.3.5.3.1533\lib\4.0\Gibraltar.Packager.NET40.exe</HintPath>
-    </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=7.3.4830.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\IKVM.7.3.4830.0\lib\IKVM.AWT.WinForms.dll</HintPath>
@@ -147,14 +138,27 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\IKVM.7.3.4830.0\lib\IKVM.Runtime.JNI.dll</HintPath>
     </Reference>
-    <Reference Include="LoupeViewer">
-      <HintPath>..\packages\Gibraltar.Loupe.Viewer.3.5.3.1533\lib\net40\LoupeViewer.exe</HintPath>
+    <Reference Include="Microsoft.Owin">
+      <HintPath>..\packages\Microsoft.Owin.2.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
-    <Reference Include="Nancy">
-      <HintPath>..\packages\Nancy.0.20.0\lib\net40\Nancy.dll</HintPath>
+    <Reference Include="Microsoft.Owin.Host.HttpListener">
+      <HintPath>..\packages\Microsoft.Owin.Host.HttpListener.2.0.1\lib\net45\Microsoft.Owin.Host.HttpListener.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Hosting">
+      <HintPath>..\packages\Microsoft.Owin.Hosting.2.0.1\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
+    </Reference>
+    <Reference Include="Nancy, Version=0.21.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Nancy.0.21.1\lib\net40\Nancy.dll</HintPath>
+    </Reference>
+    <Reference Include="Nancy.Owin">
+      <HintPath>..\packages\Nancy.Owin.0.21.1\lib\net40\Nancy.Owin.dll</HintPath>
     </Reference>
     <Reference Include="NLog">
       <HintPath>..\packages\NLog.2.0.1.2\lib\net45\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="Owin">
+      <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
@@ -170,8 +174,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BootStrapper.cs" />
     <Compile Include="FlexServer.cs" />
-    <Compile Include="Loggers\RequestLogger.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ServicestackServer.cs" />
@@ -207,6 +211,7 @@
     <Folder Include="Content\css\" />
     <Folder Include="Content\img\" />
     <Folder Include="Content\js\" />
+    <Folder Include="Loggers\" />
     <Folder Include="Model\" />
     <Folder Include="Views\" />
   </ItemGroup>

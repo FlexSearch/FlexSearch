@@ -15,72 +15,84 @@ namespace FlexSearch.Core
 
 open System.Collections.Concurrent
 open FlexSearch.Api
-open SQLite.Net.Attributes
-open SQLite.Net.Interop
-open SQLite.Net.Platform.Win32
+open BinaryRage
 open System.Linq
 open Newtonsoft.Json
 open System.IO
 
 module Store =
+    type WriteMsg = WriteMsg of bool * string
+    let indexPath = Constants.ConfFolder.Value + "\index.config"
+    let keyValPath = Constants.ConfFolder.Value + "\keys.config"
 
-    type KeyValue() =       
-        [<PrimaryKey>]
-        member val Key = "" with get, set
-        member val Value = "" with get, set
+    let writingAgent =
+        MailboxProcessor.Start(fun inbox ->
+            let rec loop n =                                
+                async { 
+                    let! msg = inbox.Receive()
+                    match msg with
+                    | WriteMsg(isIndex, value) ->
+                        if isIndex then
+                            File.WriteAllText(indexPath, value)
+                        else
+                            File.WriteAllText(keyValPath, value)
 
-    type IndexKeyValue() = 
-        [<PrimaryKey>]
-        member val IndexName = "" with get, set
-        member val Value = Unchecked.defaultof<Index> with get, set
+                    return! loop n 
+                    }
+            loop 0)
 
     type KeyValueStore() =
-        let path = Constants.ConfFolder.Value + "\settings.config"
-        let db = new SQLite.Net.SQLiteConnection(new SQLitePlatformWin32(), path, false)
-        
-        do
-            if File.Exists(path) <> true then
-                db.CreateTable<KeyValue>() |> ignore
-                db.CreateTable<IndexKeyValue>() |> ignore
+        let indexDict = 
+            if File.Exists(indexPath) then
+                JsonConvert.DeserializeObject<ConcurrentDictionary<string, Index>>(File.ReadAllText(indexPath))
+            else
+                new ConcurrentDictionary<string, Index>()
+
+        let keyDict = 
+            if File.Exists(keyValPath) then
+                JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(File.ReadAllText(keyValPath))
+            else
+                new ConcurrentDictionary<string, string>()
 
         interface Interface.IKeyValueStore with 
             member this.GetIndexSetting value =
-                let result = db.Table<IndexKeyValue>() |> Seq.tryFind(fun x -> x.IndexName = value)
-                match result with
-                | Some(a) -> Some(a.Value)
+                match indexDict.TryGetValue(value) with
+                | (true, a) -> Some(a)
                 | _ -> None
           
             member this.DeleteIndexSetting value =
-                db.Delete<IndexKeyValue>(value) |> ignore
+                indexDict.TryRemove(value) |> ignore
+                writingAgent.Post(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
                 
             member this.UpdateIndexSetting value =
-                let index = new IndexKeyValue()
-                index.IndexName <- value.IndexName
-                index.Value <- value
-                db.Update(value) |> ignore
-
+                match indexDict.TryGetValue(value.IndexName) with
+                | (true, a) -> 
+                    indexDict.TryUpdate(value.IndexName, value, a) |> ignore
+                    writingAgent.Post(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
+                | _ -> 
+                    indexDict.TryAdd(value.IndexName, value) |> ignore
+                    writingAgent.Post(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
+                
             member this.GetAllIndexSettings() =
-                let values = db.Table<IndexKeyValue>().ToList()
-                let indices = new ResizeArray<Index>()
-                values |> Seq.iter( fun x -> 
-                        indices.Add(x.Value)
-                    )
-                indices
+                indexDict.Values.ToList()
 
             member this.GetItem<'T> value =
-                let result = db.Table<KeyValue>() |> Seq.tryFind(fun x -> x.Key = value)
-                match result with
-                | Some(a) -> Some(JsonConvert.DeserializeObject<'T>(a.Value))
+                match keyDict.TryGetValue(value) with
+                | (true, a) -> Some(JsonConvert.DeserializeObject<'T>(a))
                 | _ -> None
-
+                
             member this.UpdateItem<'T> key (value: 'T) =
-                let keyvalue = new KeyValue()
-                keyvalue.Key <- key
-                keyvalue.Value <- JsonConvert.SerializeObject(value)
-                db.Update(value) |> ignore
+                match keyDict.TryGetValue(key) with
+                | (true, a) -> 
+                    keyDict.TryUpdate(key, JsonConvert.SerializeObject(value), a) |> ignore
+                    writingAgent.Post(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
+                | _ -> 
+                    keyDict.TryAdd(key, JsonConvert.SerializeObject(value)) |> ignore
+                    writingAgent.Post(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
 
-            member this.DeleteItem value =
-                db.Delete<KeyValue>(value) |> ignore
+            member this.DeleteItem<'T> value =
+                keyDict.TryRemove(value) |> ignore
+                writingAgent.Post(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
             
 
 

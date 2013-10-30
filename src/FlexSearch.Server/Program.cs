@@ -1,7 +1,9 @@
 ﻿namespace FlexSearch.Server
 {
-    using ServiceStack.Logging;
-    using ServiceStack.Logging.NLogger;
+    using System.Collections.Specialized;
+
+    using Common.Logging;
+    using Common.Logging.NLog;
 
     using Topshelf;
 
@@ -11,7 +13,9 @@
 
         private static void Main(string[] args)
         {
-            LogManager.LogFactory = new NLogFactory();
+            var properties = new NameValueCollection();
+            properties["showDateTime"] = "true";
+            LogManager.Adapter = new NLogLoggerFactoryAdapter(properties);
             ILog logger = LogManager.GetLogger("Init");
             logger.Info("Loading core services");
 

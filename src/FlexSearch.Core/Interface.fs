@@ -211,7 +211,7 @@ module Interface =
         abstract member GetAllIndexSettings :   unit -> List<Index>
         abstract member GetItem<'T>         :   string -> Option<'T>
         abstract member UpdateItem<'T>      :   string -> 'T -> unit
-        abstract member DeleteItem          :   string  -> unit
+        abstract member DeleteItem<'T>      :   string  -> unit
 
 
     // ---------------------------------------------------------------------------- 

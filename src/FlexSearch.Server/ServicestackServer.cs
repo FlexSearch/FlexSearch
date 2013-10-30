@@ -1,128 +1,130 @@
-namespace FlexSearch.Server
-{
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel.Composition.Hosting;
+//namespace FlexSearch.Server
+//{
+//    using System;
+//    using System.Collections.Generic;
+//    using System.ComponentModel.Composition.Hosting;
 
-    using FlexSearch.Api.Types;
-    using FlexSearch.Core;
-    using FlexSearch.Core.Index;
+//    using Common.Logging;
 
-    using Funq;
+//    using FlexSearch.Api.Types;
+//    using FlexSearch.Core;
+//    using FlexSearch.Core.Index;
 
-    using ServiceStack;
-    using ServiceStack.CacheAccess;
-    using ServiceStack.CacheAccess.Providers;
-    using ServiceStack.Common;
-    using ServiceStack.Logging;
-    using ServiceStack.OrmLite;
-    using ServiceStack.Plugins.MsgPack;
-    using ServiceStack.Plugins.ProtoBuf;
-    using ServiceStack.ServiceInterface.Admin;
-    using ServiceStack.ServiceInterface.Cors;
-    using ServiceStack.ServiceInterface.Validation;
-    using ServiceStack.WebHost.Endpoints;
+//    using Funq;
 
-    public class ServicestackServer : AppHostHttpListenerLongRunningBase
-    {
-        #region Fields
+//    using ServiceStack;
+//    using ServiceStack.CacheAccess;
+//    using ServiceStack.CacheAccess.Providers;
+//    using ServiceStack.Common;
+//    using ServiceStack.Logging;
+//    using ServiceStack.OrmLite;
+//    using ServiceStack.Plugins.MsgPack;
+//    using ServiceStack.Plugins.ProtoBuf;
+//    using ServiceStack.ServiceInterface.Admin;
+//    using ServiceStack.ServiceInterface.Cors;
+//    using ServiceStack.ServiceInterface.Validation;
+//    using ServiceStack.WebHost.Endpoints;
 
-        private readonly Interface.IServerSettings serverSettings;
+//    public class ServicestackServer : AppHostHttpListenerLongRunningBase
+//    {
+//        #region Fields
 
-        #endregion
+//        private readonly Interface.IServerSettings serverSettings;
 
-        #region Constructors and Destructors
+//        #endregion
 
-        public ServicestackServer(Interface.IServerSettings serverSettings)
-            : base("FlexSearch", typeof(ServicestackServer).Assembly)
-        {
-            this.serverSettings = serverSettings;
-        }
+//        #region Constructors and Destructors
 
-        #endregion
+//        public ServicestackServer(Interface.IServerSettings serverSettings)
+//            : base("FlexSearch", typeof(ServicestackServer).Assembly)
+//        {
+//            this.serverSettings = serverSettings;
+//        }
 
-        #region Public Methods and Operators
+//        #endregion
 
-        public override void Configure(Container container)
-        {
-            ILog logger = LogManager.GetLogger("Init");
+//        #region Public Methods and Operators
 
-            // Don't send debug information
-            this.SetConfig(new EndpointHostConfig { DebugMode = false, });
+//        public override void Configure(Container container)
+//        {
+//            ILog logger = LogManager.GetLogger("Init");
 
-            // Add all the required plugins
-            this.Plugins.Add(new CorsFeature());
-            logger.Info("CORS enabled");
+//            // Don't send debug information
+//            this.SetConfig(new EndpointHostConfig { DebugMode = false, });
 
-            this.Plugins.Add(new MetadataFeature());
-            logger.Info("Metadata enabled");
+//            // Add all the required plugins
+//            this.Plugins.Add(new CorsFeature());
+//            logger.Info("CORS enabled");
 
-            this.Plugins.Add(new MsgPackFormat());
-            logger.Info("Message pack support enabled");
+//            this.Plugins.Add(new MetadataFeature());
+//            logger.Info("Metadata enabled");
 
-            this.Plugins.Add(new ProtoBufFormat());
-            logger.Info("Protobuffer support enabled");
+//            this.Plugins.Add(new MsgPackFormat());
+//            logger.Info("Message pack support enabled");
 
-            Tuple<bool, int, bool> requestLoggerProperties = this.serverSettings.LoggerProperties();
-            if (requestLoggerProperties.Item1)
-            {
-                this.Plugins.Add(
-                    new RequestLogsFeature(3000) { Capacity = requestLoggerProperties.Item2, RequiredRoles = null });
-                logger.Info("Request logger enabled with rolling log size of " + requestLoggerProperties.Item2);
-            }
+//            this.Plugins.Add(new ProtoBufFormat());
+//            logger.Info("Protobuffer support enabled");
 
-            this.Plugins.Add(new ValidationFeature());
-            logger.Info("Validation feature enabled");
+//            Tuple<bool, int, bool> requestLoggerProperties = this.serverSettings.LoggerProperties();
+//            if (requestLoggerProperties.Item1)
+//            {
+//                this.Plugins.Add(
+//                    new RequestLogsFeature(3000) { Capacity = requestLoggerProperties.Item2, RequiredRoles = null });
+//                logger.Info("Request logger enabled with rolling log size of " + requestLoggerProperties.Item2);
+//            }
 
-            container.DefaultReuse = ReuseScope.Container;
-            //container.RegisterValidators(typeof(IndexValidator).Assembly);
+//            this.Plugins.Add(new ValidationFeature());
+//            logger.Info("Validation feature enabled");
 
-            var dbFactory = new OrmLiteConnectionFactory(Constants.ConfFolder + "/conf.sqlite", SqliteDialect.Provider);
-            dbFactory.OpenDbConnection().Run(db => db.CreateTable<Index>(false));
-            container.Register<IDbConnectionFactory>(dbFactory);
+//            container.DefaultReuse = ReuseScope.Container;
+//            //container.RegisterValidators(typeof(IndexValidator).Assembly);
 
-            // base.Plugins.Add(new ProtoBufFormat())
-            logger.Info("All server featured enabled successfully.");
+//            var dbFactory = new OrmLiteConnectionFactory(Constants.ConfFolder + "/conf.sqlite", SqliteDialect.Provider);
+//            dbFactory.OpenDbConnection().Run(db => db.CreateTable<Index>(false));
+//            container.Register<IDbConnectionFactory>(dbFactory);
 
-            // Register memory cache store
-            container.Register<ICacheClient>(new MemoryCacheClient());
+//            // base.Plugins.Add(new ProtoBufFormat())
+//            logger.Info("All server featured enabled successfully.");
 
-            // container registerations
-            // It is very important to register the dependencies in the below order to
-            // satisfy mef based dependencies
-            CompositionContainer pluginContainer = Factories.PluginContainer(false).Value;
-            Interface.IFactoryCollection factoryCollection = new Factories.FactoryCollection(pluginContainer);
-            var searchService = new SearchDsl.SearchService(factoryCollection.SearchQueryFactory.GetAllModules());
-            Interface.ISettingsBuilder parser = SettingsBuilder.SettingsBuilder(factoryCollection, new Validator.IndexValidator(factoryCollection));
+//            // Register memory cache store
+//            container.Register<ICacheClient>(new MemoryCacheClient());
 
-            container.Register(factoryCollection);
-            container.Register(this.serverSettings);
-            container.Register<Interface.IIndexService>(
-                new FlexIndexModule.IndexService(parser, searchService, dbFactory.Open(), true));
+//            // container registerations
+//            // It is very important to register the dependencies in the below order to
+//            // satisfy mef based dependencies
+//            CompositionContainer pluginContainer = Factories.PluginContainer(false).Value;
+//            Interface.IFactoryCollection factoryCollection = new Factories.FactoryCollection(pluginContainer);
+//            var searchService = new SearchDsl.SearchService(factoryCollection.SearchQueryFactory.GetAllModules());
+//            Interface.ISettingsBuilder parser = SettingsBuilder.SettingsBuilder(factoryCollection, new Validator.IndexValidator(factoryCollection));
 
-            // Loading plugins after everything else is successful
-            Dictionary<string, IPlugin> plugins = factoryCollection.PluginsFactory.GetAllModules();
-            foreach (string pluginName in this.serverSettings.PluginsToLoad())
-            {
-                IPlugin plugin;
-                if (plugins.TryGetValue(pluginName, out plugin))
-                {
-                    this.LoadPlugin(plugin);
-                    logger.Info(string.Format("Plugin {0} successfully initialized.", pluginName));
-                }
-            }
+//            container.Register(factoryCollection);
+//            container.Register(this.serverSettings);
+//            container.Register<Interface.IIndexService>(
+//                new FlexIndexModule.IndexService(parser, searchService, dbFactory.Open(), true));
 
-            logger.Info("All server dependencies successfully initialized.");
-        }
+//            // Loading plugins after everything else is successful
+//            Dictionary<string, IPlugin> plugins = factoryCollection.PluginsFactory.GetAllModules();
+//            foreach (string pluginName in this.serverSettings.PluginsToLoad())
+//            {
+//                IPlugin plugin;
+//                if (plugins.TryGetValue(pluginName, out plugin))
+//                {
+//                    this.LoadPlugin(plugin);
+//                    logger.Info(string.Format("Plugin {0} successfully initialized.", pluginName));
+//                }
+//            }
 
-        public void StopServer()
-        {
-            ILog logger = LogManager.GetLogger("Init");
-            logger.Info("Received shutdown request");
-            var iindexService = this.Container.Resolve<Interface.IIndexService>();
-            iindexService.ShutDown();
-        }
+//            logger.Info("All server dependencies successfully initialized.");
+//        }
 
-        #endregion
-    }
-}
+//        public void StopServer()
+//        {
+//            ILog logger = LogManager.GetLogger("Init");
+//            logger.Info("Received shutdown request");
+//            var iindexService = this.Container.Resolve<Interface.IIndexService>();
+//            iindexService.ShutDown();
+//        }
+
+//        #endregion
+//    }
+//}
