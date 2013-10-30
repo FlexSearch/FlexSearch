@@ -139,10 +139,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
-      <Project>{c8c424a3-dc16-4527-b5a2-fb65f1dd5bf1}</Project>
-      <Name>FlexSearch.Api</Name>
-    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
       <Name>FlexSearch.Core</Name>

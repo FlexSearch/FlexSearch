@@ -14,7 +14,7 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Core
 open System.Linq
 open System.Collections.Generic
@@ -94,7 +94,7 @@ module Validator =
     // ----------------------------------------------------------------------------
     // FlexSearch related validation helpers
     // ----------------------------------------------------------------------------
-    let mustGenerateFilterInstance (factoryCollection : Interface.IFactoryCollection) (propName: string, value: Filter) =
+    let mustGenerateFilterInstance (factoryCollection : Interface.IFactoryCollection) (propName: string, value: TokenFilter) =
         match factoryCollection.FilterFactory.GetModuleByName(value.FilterName) with
         | Some(instance) ->    
             try
@@ -132,7 +132,7 @@ module Validator =
 
 
     /// Filter validator which checks both the input parameters and naming convention
-    let FilterValidator (factoryCollection : Interface.IFactoryCollection, value: Filter) =
+    let FilterValidator (factoryCollection : Interface.IFactoryCollection, value: TokenFilter) =
         validate "FilterName" value.FilterName |> propertyNameValidator |> ignore
         validate "Filter" value |> mustGenerateFilterInstance factoryCollection |> ignore
 
@@ -206,7 +206,7 @@ module Validator =
         ()
 
 
-    let SearchProfileValidator (fields : Dictionary<string, IndexFieldProperties>) (propName: string, value: SearchProfileProperties) =
+    let SearchProfileValidator (fields : Dictionary<string, IndexFieldProperties>) (propName: string, value: SearchQuery) =
         ()
 
 

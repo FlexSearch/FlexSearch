@@ -8,7 +8,7 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core
+namespace FlexSearch
 open System.Runtime.Serialization
 open System.Collections.Generic
 
@@ -85,7 +85,7 @@ module Api =
     type [<DataContract(Namespace = "")>] IndexFieldProperties() =
         [<DataMember(Order = 1)>] member val Analyze = true with get, set
         [<DataMember(Order = 2)>] member val Index = true with get, set
-        [<DataMember(Order = 3)>] member val store = true with get, set
+        [<DataMember(Order = 3)>] member val Store = true with get, set
         [<DataMember(Order = 4)>] member val IndexAnalyzer = "standardanalyzer" with get, set
         [<DataMember(Order = 5)>] member val SearchAnalyzer = "standardanalyzer" with get, set
         [<DataMember(Order = 6)>] member val FieldType = FieldType.Text with get, set
@@ -93,7 +93,8 @@ module Api =
         [<DataMember(Order = 8)>] member val FieldIndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions with get, set
         [<DataMember(Order = 9)>] member val FieldTermVector = FieldTermVector.StoreTermVectorsWithPositions with get, set
         [<DataMember(Order = 10)>] member val OmitNorms = true with get, set
-    
+        [<DataMember(Order = 11)>] member val ScriptName = "" with get, set
+
 
     [<CollectionDataContract(Namespace = "", ItemName = "Field", KeyName = "FieldName", ValueName = "Properties")>]
     type FieldDictionary() =
@@ -163,7 +164,7 @@ module Api =
     type SearchCondition() =
         member val Boost = 1 with get, set 
         member val FieldName = "" with get, set 
-        member val MissingValueOption = FilterType.And with get, set 
+        member val MissingValueOption = MissingValueOption.ThrowError with get, set 
         member val Operator = "" with get, set 
         member val Parameters = new KeyValuePairs() with get, set 
         member val Values = new StringList() with get, set 
@@ -185,17 +186,36 @@ module Api =
     type SearchQuery() =
         member val Columns = new StringList() with get, set 
         member val Count = 10 with get, set 
-        member val Highlight = new HighlightOption() with get, set 
+        member val Highlight = Unchecked.defaultof<HighlightOption> with get, set 
         member val IndexName = "" with get, set 
         member val OrderBy = "" with get, set 
-        member val Skip = "" with get, set 
-        member val Query = "" with get, set 
+        member val Skip = 0 with get, set 
+        member val Query = new SearchFilter() with get, set 
+
+
+    type SearchProfileQuery() =
+        member val Fields = new KeyValuePairs() with get, set 
+        member val SearchProfileSelector = "" with get, set 
+        member val IndexName = "" with get, set 
+        member val SearchProfileName = "" with get, set 
 
 
     [<CollectionDataContract(Namespace = "", ItemName = "SearchProfile", KeyName = "ProfileName", ValueName = "Properties")>]
     type SearchProfileDictionary() =
         inherit Dictionary<string, SearchQuery>()
+    
+    type Document() =
+        member val Fields = new KeyValuePairs() with get, set 
+        member val Highlights = new StringList() with get, set
+        member val Id = "" with get, set 
+        member val LastModified = "" with get, set
+        member val Index = "" with get, set
+        member val Score = 0.0 with get, set 
 
+    type SearchResults() =
+        member val Documents = new List<Document>() with get, set 
+        member val RecordsReturned = 0 with get, set 
+        member val TotalAvailable = 0 with get, set
 
     type Index() =
         member val Analyzers = new AnalyzerDictionary() with get, set

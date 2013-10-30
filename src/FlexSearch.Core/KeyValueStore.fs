@@ -14,7 +14,7 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open System.Collections.Concurrent
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open SQLite.Net.Attributes
 open SQLite.Net.Interop
 open SQLite.Net.Platform.Win32

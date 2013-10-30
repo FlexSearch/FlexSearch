@@ -13,7 +13,7 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Utility
 open FlexSearch.Core
 
@@ -240,9 +240,9 @@ module Interface =
         // all possible search variations
         abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
         
-        abstract member AddIndex                    :   FlexSearch.Api.Types.Index -> unit
+        abstract member AddIndex                    :   Index -> unit
 
-        abstract member UpdateIndex                 :   FlexSearch.Api.Types.Index -> unit
+        abstract member UpdateIndex                 :   Index -> unit
 
         abstract member OpenIndex                   :   string -> unit
 

@@ -13,7 +13,6 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api
 open FlexSearch.Utility
 
 open java.io

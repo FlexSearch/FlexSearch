@@ -16,7 +16,7 @@ namespace FlexSearch.Core
 
 open FSharp.Data
 open FlexSearch.Utility
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Analysis.Analyzers
 open FlexSearch.Core
 open FlexSearch.Core.Index

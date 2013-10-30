@@ -14,7 +14,7 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Utility
-open FlexSearch.Api.Types
+open FlexSearch.Api
 
 open java.io
 open java.util
@@ -160,7 +160,7 @@ type FlexIndexSetting =
         SearchAnalyzer          :   PerFieldAnalyzerWrapper
         Fields                  :   FlexField[]
         FieldsLookup            :   Dictionary<string, FlexField>
-        SearchProfiles          :   Dictionary<string, SearchProfileProperties>
+        SearchProfiles          :   Dictionary<string, SearchQuery>
         ScriptsManager          :   ScriptsManager   
         IndexConfig             :   IndexConfiguration
         BaseFolder              :   string

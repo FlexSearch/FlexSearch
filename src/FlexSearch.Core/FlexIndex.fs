@@ -13,7 +13,7 @@
 namespace FlexSearch.Core.Index
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Utility
 open FlexSearch.Core
 open Common.Logging
@@ -58,7 +58,7 @@ module Document =
         total % shardCount
     
     // Generates a lucene daocument from a flex document    
-    let Generate (document: FlexSearch.Api.Types.Document) flexIndexSetting =
+    let Generate (document: FlexSearch.Api.Document) flexIndexSetting =
         let luceneDocument = new Document()
         luceneDocument.add(new StringField("id", document.Id, Field.Store.YES))
         luceneDocument.add(new StringField("type", document.Index, Field.Store.YES))
@@ -72,7 +72,7 @@ module Document =
         luceneDocument    
 
     // Add a flex document to an index    
-    let Add (document: FlexSearch.Api.Types.Document) flexIndex  =
+    let Add (document: FlexSearch.Api.Document) flexIndex  =
         if (System.String.IsNullOrWhiteSpace(document.Id) = true) then
             failwith "Missing Id"
         let targetIndex = mapToShard document.Id flexIndex.Shards.Length
@@ -80,7 +80,7 @@ module Document =
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(targetDocument)
 
     // Update a flex document in an index    
-    let Update(document: FlexSearch.Api.Types.Document) flexIndex =
+    let Update(document: FlexSearch.Api.Document) flexIndex =
         if (System.String.IsNullOrWhiteSpace(document.Id) = true) then
             failwith "Missing Id"
         let targetIndex = mapToShard document.Id flexIndex.Shards.Length

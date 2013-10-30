@@ -16,7 +16,7 @@ namespace FlexSearch.Core
 
 open FSharp.Data
 open FlexSearch.Utility
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Analysis.Analyzers
 open FlexSearch.Core
 open FlexSearch.Core.Index
@@ -141,7 +141,7 @@ module SettingsBuilder =
     // ----------------------------------------------------------------------------
     // Build analyzer definition for flexindexsettings from api analyzers
     // ----------------------------------------------------------------------------
-    let buildAnalyzers(analyzersDict : Dictionary<string, FlexSearch.Api.Types.AnalyzerProperties>, factoryCollection: IFactoryCollection) =
+    let buildAnalyzers(analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, factoryCollection: IFactoryCollection) =
         let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
         for analyzer in analyzersDict do
             let tokenizer =
@@ -154,9 +154,7 @@ module SettingsBuilder =
 
             for filter in analyzer.Value.Filters do
                 match factoryCollection.FilterFactory.GetModuleByName(filter.FilterName) with
-                | Some(a) -> 
-                    if filter.Parameters = null then 
-                        filter.Parameters <- new KeyValuePairs()                        
+                | Some(a) ->                        
                     a.Initialize(filter.Parameters, factoryCollection.ResourceLoader) |> ignore
                     filters.Add(a)
                 | _  -> failwithf "The specified filter is not valid: %s" filter.FilterName 
