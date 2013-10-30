@@ -4,8 +4,6 @@ namespace FlexSearch.Api.Document
 
     using FlexSearch.Api.Types;
 
-    using ServiceStack.ServiceInterface.ServiceModel;
-
     [DataContract(Namespace = "")]
     public class ShowDocumentResponse
     {

@@ -4,8 +4,6 @@ namespace FlexSearch.Api.Types
     using System.Net;
     using System.Runtime.Serialization;
 
-    using ServiceStack.ServiceHost;
-
     [Api("Search")]
     [ApiResponse(HttpStatusCode.BadRequest, ApiDescriptionHttpResponse.BadRequest)]
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]

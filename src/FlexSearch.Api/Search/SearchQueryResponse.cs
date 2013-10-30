@@ -5,8 +5,6 @@ namespace FlexSearch.Api.Search
 
     using FlexSearch.Api.Types;
 
-    using ServiceStack.ServiceInterface.ServiceModel;
-
     [DataContract(Namespace = "")]
     public class SearchQueryResponse
     {

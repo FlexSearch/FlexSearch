@@ -16,6 +16,7 @@ namespace FlexSearch.Core.Index
 open FlexSearch.Api.Types
 open FlexSearch.Utility
 open FlexSearch.Core
+open Common.Logging
 
 open java.io
 open java.util
@@ -40,8 +41,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
-open ServiceStack.Logging
-open ServiceStack.OrmLite
 
 
 // ----------------------------------------------------------------------------
@@ -187,7 +186,7 @@ module FlexIndex =
     // loadAllIndex - This is used to bypass loading of index at initialization time.
     // Helpful for testing
     // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, dbFactory: IDbConnection, loadAllIndex: bool) =
+    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, keyValueStore: IKeyValueStore, loadAllIndex: bool) =
         
         let indexLogger = LogManager.GetLogger("IndexService")
 
@@ -482,7 +481,7 @@ module FlexIndex =
             queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
             
             if loadAllIndex then
-                dbFactory.Select<Index>()
+                keyValueStore.GetAllIndexSettings()
                 |> Seq.iter(fun x ->
                     if x.Online then
                         try
@@ -550,7 +549,7 @@ module FlexIndex =
                 | (true, _) -> raise(IndexAlreadyExistsException indexAlreadyExistsMessage)
                 | _ ->
                     let settings = settingsParser.BuildSetting(flexIndex)
-                    dbFactory.Insert(flexIndex)  
+                    keyValueStore.UpdateIndexSetting(flexIndex)  
                     if flexIndex.Online then
                         addIndex(settings)  
                     else
@@ -568,7 +567,7 @@ module FlexIndex =
                             let settings = settingsParser.BuildSetting(index)
                             closeIndex(flexIndex)
                             addIndex(settings)
-                            dbFactory.Update(index)  |> ignore     
+                            keyValueStore.UpdateIndexSetting(index)  |> ignore     
                         | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
 
                     | IndexState.Opening ->
@@ -576,7 +575,7 @@ module FlexIndex =
                     | IndexState.Offline 
                     | IndexState.Closing ->
                         let settings = settingsParser.BuildSetting(index)
-                        dbFactory.Update(index)  |> ignore     
+                        keyValueStore.UpdateIndexSetting(index)  |> ignore     
                 | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
                 
 
@@ -588,7 +587,7 @@ module FlexIndex =
                         match indexRegisteration.TryGetValue(indexName) with
                         | (true, flexIndex) -> 
                             closeIndex(flexIndex) 
-                            dbFactory.Delete<Index>("IndexName={0}", indexName)
+                            keyValueStore.DeleteIndexSetting(indexName)
                             // It is possible that directory might not exist if the index has never been opened
                             if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then
                                 Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
@@ -599,7 +598,7 @@ module FlexIndex =
                         raise(IndexIsOpeningException indexIsOpeningMessage)
                     | IndexState.Offline 
                     | IndexState.Closing -> 
-                        dbFactory.Delete<Index>("IndexName={0}", indexName)
+                        keyValueStore.DeleteIndexSetting(indexName)
                         
                         // It is possible that directory might not exist if the index has never been opened
                         if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then
@@ -611,9 +610,9 @@ module FlexIndex =
             member this.CloseIndex indexName = 
                 let flexIndex = getIndexRegisteration(indexName) 
                 closeIndex(flexIndex)
-                let index = dbFactory.GetById<Index>(indexName) 
-                index.Online <- false
-                dbFactory.Update<Index>(index) |> ignore
+                let index = keyValueStore.GetIndexSetting(indexName) 
+                index.Value.Online <- false
+                keyValueStore.UpdateIndexSetting(index.Value) |> ignore
 
 
             member this.OpenIndex indexName = 
@@ -625,11 +624,11 @@ module FlexIndex =
                             raise(IndexIsOpeningException indexIsOpeningMessage)
                         | IndexState.Offline 
                         | IndexState.Closing ->
-                            let index = dbFactory.GetById<Index>(indexName)
-                            let settings = settingsParser.BuildSetting(index)
+                            let index = keyValueStore.GetIndexSetting(indexName)
+                            let settings = settingsParser.BuildSetting(index.Value)
                             let res = addIndex(settings)  
-                            index.Online <- true
-                            dbFactory.Update<Index>(index)  |> ignore    
+                            index.Value.Online <- true
+                            keyValueStore.UpdateIndexSetting(index.Value)  |> ignore    
                     | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
                 
 

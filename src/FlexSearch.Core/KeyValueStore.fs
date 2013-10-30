@@ -20,6 +20,7 @@ open SQLite.Net.Interop
 open SQLite.Net.Platform.Win32
 open System.Linq
 open Newtonsoft.Json
+open System.IO
 
 module Store =
 
@@ -28,29 +29,41 @@ module Store =
         member val Key = "" with get, set
         member val Value = "" with get, set
 
+    type IndexKeyValue() = 
+        [<PrimaryKey>]
+        member val IndexName = "" with get, set
+        member val Value = Unchecked.defaultof<Index> with get, set
+
     type KeyValueStore() =
         let path = Constants.ConfFolder.Value + "\settings.config"
         let db = new SQLite.Net.SQLiteConnection(new SQLitePlatformWin32(), path, false)
+        
+        do
+            if File.Exists(path) <> true then
+                db.CreateTable<KeyValue>() |> ignore
+                db.CreateTable<IndexKeyValue>() |> ignore
 
-        interface Interface.IKeyValueStore with
-            
+        interface Interface.IKeyValueStore with 
             member this.GetIndexSetting value =
-                let result = db.Table<KeyValue>() |> Seq.tryFind(fun x -> x.Key = value)
+                let result = db.Table<IndexKeyValue>() |> Seq.tryFind(fun x -> x.IndexName = value)
                 match result with
-                | Some(a) -> Some(JsonConvert.DeserializeObject<Index>(a.Value))
+                | Some(a) -> Some(a.Value)
                 | _ -> None
           
             member this.DeleteIndexSetting value =
-                db.Delete<KeyValue>(value) |> ignore
+                db.Delete<IndexKeyValue>(value) |> ignore
                 
             member this.UpdateIndexSetting value =
+                let index = new IndexKeyValue()
+                index.IndexName <- value.IndexName
+                index.Value <- value
                 db.Update(value) |> ignore
 
             member this.GetAllIndexSettings() =
-                let values = db.Table<KeyValue>().ToList()
+                let values = db.Table<IndexKeyValue>().ToList()
                 let indices = new ResizeArray<Index>()
                 values |> Seq.iter( fun x -> 
-                        indices.Add(JsonConvert.DeserializeObject<Index>(x.Value))
+                        indices.Add(x.Value)
                     )
                 indices
 
@@ -61,6 +74,9 @@ module Store =
                 | _ -> None
 
             member this.UpdateItem<'T> key (value: 'T) =
+                let keyvalue = new KeyValue()
+                keyvalue.Key <- key
+                keyvalue.Value <- JsonConvert.SerializeObject(value)
                 db.Update(value) |> ignore
 
             member this.DeleteItem value =

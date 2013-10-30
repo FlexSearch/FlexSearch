@@ -31,8 +31,6 @@ open org.apache.lucene.store
 open org.apache.lucene.facet.search
 open org.apache.lucene.search
 
-open ServiceStack.Logging
-
 open System
 open System.IO
 open System.Collections.Generic

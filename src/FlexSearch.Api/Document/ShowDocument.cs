@@ -3,8 +3,6 @@ namespace FlexSearch.Api.Document
     using System.Net;
     using System.Runtime.Serialization;
 
-    using ServiceStack.ServiceHost;
-
     [Api("Document")]
     [ApiResponse(HttpStatusCode.BadRequest, ApiDescriptionHttpResponse.BadRequest)]
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]

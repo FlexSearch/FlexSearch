@@ -1,6 +1,5 @@
 ﻿namespace FlexSearch.Api.Types
 {
-    using System;
     using System.Runtime.Serialization;
 
     [DataContract(Namespace = "")]

@@ -1,13 +1,10 @@
 ﻿namespace FlexSearch.Api.Index
 {
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Net;
     using System.Runtime.Serialization;
 
     using FlexSearch.Api.Types;
-
-    using ServiceStack.ServiceHost;
 
     [Api("Index")]
     [ApiResponse(HttpStatusCode.BadRequest, ApiDescriptionHttpResponse.BadRequest)]

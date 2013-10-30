@@ -16,8 +16,6 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Utility
 
-open Funq
-
 open java.io
 open java.util
 
@@ -32,9 +30,6 @@ open org.apache.lucene.facet.search
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
-
-open ServiceStack
-open ServiceStack.WebHost.Endpoints.Support
 
 open System
 open System.ComponentModel.Composition

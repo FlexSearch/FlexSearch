@@ -20,7 +20,6 @@ open FlexSearch.Api.Types
 open FlexSearch.Analysis.Analyzers
 open FlexSearch.Core
 open FlexSearch.Core.Index
-open ServiceStack.FluentValidation
 
 open org.apache.lucene.codecs
 open org.apache.lucene.codecs.lucene42
@@ -31,8 +30,6 @@ open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.store
 open org.apache.lucene.facet.search
 open org.apache.lucene.search
-
-open ServiceStack.Logging
 
 open System
 open System.IO

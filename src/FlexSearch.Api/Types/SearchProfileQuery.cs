@@ -1,11 +1,8 @@
 namespace FlexSearch.Api.Types
 {
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Net;
     using System.Runtime.Serialization;
-
-    using ServiceStack.ServiceHost;
 
     [Api("Search")]
     [ApiResponse(HttpStatusCode.BadRequest, ApiDescriptionHttpResponse.BadRequest)]

@@ -2,8 +2,6 @@
 {
     using System.Runtime.Serialization;
 
-    using ServiceStack.ServiceInterface.ServiceModel;
-
     [DataContract(Namespace = "")]
     public class CreateIndexResponse
     {

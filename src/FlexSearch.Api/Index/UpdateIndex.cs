@@ -6,8 +6,6 @@
 
     using FlexSearch.Api.Types;
 
-    using ServiceStack.ServiceHost;
-
     [Api("Index")]
     [ApiResponse(HttpStatusCode.BadRequest, ApiDescriptionHttpResponse.BadRequest)]
     [ApiResponse(HttpStatusCode.InternalServerError, ApiDescriptionHttpResponse.InternalServerError)]

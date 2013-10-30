@@ -32,7 +32,6 @@ open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
 
-open ServiceStack.WebHost.Endpoints
 open System
 open System.ComponentModel.Composition
 open System.Collections.Generic
@@ -196,7 +195,7 @@ module Interface =
          abstract member AnalyzerFactory            :   IFlexFactory<Analyzer>
          abstract member SearchQueryFactory         :   IFlexFactory<IFlexQuery>
          abstract member ComputationOpertionFactory :   IFlexFactory<IComputationOperation>
-         abstract member PluginsFactory             :   IFlexFactory<IPlugin>
+         //abstract member PluginsFactory             :   IFlexFactory<IPlugin>
          abstract member ScriptFactoryCollection    :   IScriptFactoryCollection
          abstract member ResourceLoader             :   IResourceLoader
 
