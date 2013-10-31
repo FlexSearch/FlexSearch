@@ -60,7 +60,7 @@ namespace FlexSearch.Server
                 });
 
             serverThread.Start();
-            //this.logger.Info("Loading core services: Starting webserver on port: " + this.serverSettings.HttpPort());
+            // this.logger.Info("Loading core services: Starting webserver on port: " + this.serverSettings.HttpPort());
             // this.logger.Info("Loading core services: Webserver started on port: " + this.serverSettings.HttpPort());
         }
 

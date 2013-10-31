@@ -42,36 +42,36 @@ open System.Threading
 
 
 // ----------------------------------------------------------------------------
-// Contains all the flex iterface definitions 
+/// Contains all the flex iterface definitions 
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module Interface =
     
     // ---------------------------------------------------------------------------- 
-    // General Interface to offload all resource loading resposibilities. This will
-    // be used to parse settings, load text files etc. This will enable easy mocking 
-    // and central management of all such activities
+    /// General Interface to offload all resource loading resposibilities. This will
+    /// be used to parse settings, load text files etc. This will enable easy mocking 
+    /// and central management of all such activities
     // ---------------------------------------------------------------------------- 
     type IResourceLoader =
-        // Reads the resource from the location and returns all the content as a string
+        /// Reads the resource from the location and returns all the content as a string
         abstract member LoadResourceAsString    :   string -> string
 
-        // Reads the resource and returns it as a List<string>. Also ignores
-        // any blank lines or lines starting with #. Mostly used by filters
+        /// Reads the resource and returns it as a List<string>. Also ignores
+        /// any blank lines or lines starting with #. Mostly used by filters
         abstract member LoadResourceAsList      :   string -> List<string>
 
-        // Reads the resource and returns it as a List<string[]>. This is used to load 
-        // settings files in the below format
-        // test:test1,test2
-        // Here all the colon & comma separated stuff will be returned as the member of the array.
-        // This is used by certain filters to load map kind of data where first field maps to
-        // a number of secondary fields. Also ignores
-        // any blank lines or lines starting with #. Mostly used by filters
+        /// Reads the resource and returns it as a List<string[]>. This is used to load 
+        /// settings files in the below format
+        /// test:test1,test2
+        /// Here all the colon & comma separated stuff will be returned as the member of the array.
+        /// This is used by certain filters to load map kind of data where first field maps to
+        /// a number of secondary fields. Also ignores
+        /// any blank lines or lines starting with #. Mostly used by filters
         abstract member LoadResourceAsMap       :   string -> List<string[]>
         
 
     // ---------------------------------------------------------------------------- 
-    // General fatory Interface for all mef based factories
+    /// General fatory Interface for all mef based factories
     // ---------------------------------------------------------------------------- 
     type IFlexFactory<'a> = 
         abstract member GetModuleByName     :   string -> 'a option
@@ -80,7 +80,7 @@ module Interface =
 
 
     // ---------------------------------------------------------------------------- 
-    // Interface class from which all tokenizers will derive
+    /// Interface class from which all tokenizers will derive
     // ---------------------------------------------------------------------------- 
     type IFlexTokenizerFactory = 
         abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
@@ -88,7 +88,7 @@ module Interface =
     
 
     // ---------------------------------------------------------------------------- 
-    // Interface from which all filters will derive
+    /// Interface from which all filters will derive
     // ----------------------------------------------------------------------------     
     type IFlexFilterFactory = 
         abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
@@ -96,33 +96,33 @@ module Interface =
 
 
     // ----------------------------------------------------------------------------     
-    // The meta data interface which is used to read mef based
-    // meta data properties 
+    /// The meta data interface which is used to read mef based
+    /// meta data properties 
     // ---------------------------------------------------------------------------- 
     type IFlexMetaData =
         abstract Name   :   string
     
 
     // ----------------------------------------------------------------------------     
-    // Flex Setting builder interface
-    // This will take api objects and tranform them into Flex domain objects
+    /// Flex Setting builder interface
+    /// This will take api objects and tranform them into Flex domain objects
     // ----------------------------------------------------------------------------     
     type ISettingsBuilder =
         abstract BuildSetting           :   Index -> FlexIndexSetting
 
 
     // ----------------------------------------------------------------------------     
-    // Flex Index validator interface
-    // This will validate all index settings. This could be easily replaced by 
-    // a higher order function but it makes C# to F# interoperability a bit 
-    // difficult
+    /// Flex Index validator interface
+    /// This will validate all index settings. This could be easily replaced by 
+    /// a higher order function but it makes C# to F# interoperability a bit 
+    /// difficult
     // ----------------------------------------------------------------------------  
     type IIndexValidator =
         abstract Validate               :   Index -> Unit
 
 
     // ----------------------------------------------------------------------------     
-    // FlexQuery interface
+    /// FlexQuery interface
     // ----------------------------------------------------------------------------     
     type IFlexQuery =
         // abstract member QueryName   :   unit -> string[]
@@ -130,7 +130,7 @@ module Interface =
 
 
     // ----------------------------------------------------------------------------     
-    // Search service interface
+    /// Search service interface
     // ----------------------------------------------------------------------------     
     type ISearchService =
         abstract member Search          :   FlexIndex * SearchQuery -> SearchResults
@@ -138,7 +138,7 @@ module Interface =
         
 
     // ----------------------------------------------------------------------------     
-    // Computation operation interface
+    /// Computation operation interface
     // ----------------------------------------------------------------------------     
     type IComputationOperation =
                                         // destination * sources * parameters
@@ -147,35 +147,35 @@ module Interface =
 
 
     // ----------------------------------------------------------------------------     
-    // Search condition interface
+    /// Search condition interface
     // ----------------------------------------------------------------------------     
     type ISearchCondition =
         abstract member GetCondition    :   Dictionary<string,string> -> string 
     
     // ----------------------------------------------------------------------------     
-    // Scripting realted interfaces
+    /// Scripting realted interfaces
     // ----------------------------------------------------------------------------   
     // Compile different types of scripts
     type IScriptFactory<'a> =
         abstract member CompileScript   :   ScriptProperties -> 'a
     
 
-    // Profile selection scripts used to dynamically select an search profile
+    /// Profile selection scripts used to dynamically select an search profile
     type IFlexProfileSelectorScript =
         abstract Execute  :   IReadOnlyDictionary<string, string> -> string
 
 
-    // Scripts used by dynamic or computed fields
+    /// Scripts used by dynamic or computed fields
     type IComputedFieldScript =
         abstract Execute  :   IReadOnlyDictionary<string, string> -> string
 
 
-    // Scripts used for custom scoring
+    /// Scripts used for custom scoring
     type ICustomScoringScript =
         abstract Execute  :   IReadOnlyDictionary<string, string> * double -> double
 
 
-    // A helper factory exposing all the script factories
+    /// A helper factory exposing all the script factories
      type IScriptFactoryCollection =
         abstract member ProfileSelectorScriptFactory    :   IScriptFactory<IFlexProfileSelectorScript>
         abstract member ComputedFieldScriptFactory      :   IScriptFactory<IComputedFieldScript>
@@ -223,21 +223,21 @@ module Interface =
         /// operation status along with a description message.
         abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<bool * string> -> unit
 
-        // This method is for synchronous index operations. This will return the 
-        // operation status along with a description message.
+        /// This method is for synchronous index operations. This will return the 
+        /// operation status along with a description message.
         abstract member PerformCommand              :   string * IndexCommand -> bool * string
 
-        // Index queue which is used for async operations. This is useful for
-        // bulk indexing tasks where the producer can send more than one record
-        // to the buffer queue.
+        /// Index queue which is used for async operations. This is useful for
+        /// bulk indexing tasks where the producer can send more than one record
+        /// to the buffer queue.
         abstract member CommandQueue                :   unit -> ActionBlock<string * IndexCommand>
 
-        // Default Search operation. The associated search object will encapsulate
-        // all possible search variations
+        /// Default Search operation. The associated search object will encapsulate
+        /// all possible search variations
         abstract member PerformQuery                :   string * IndexQuery -> SearchResults
 
-        // Default Search operation. The associated search object will encapsulate
-        // all possible search variations
+        /// Default Search operation. The associated search object will encapsulate
+        /// all possible search variations
         abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
         
         abstract member AddIndex                    :   Index -> unit
@@ -260,27 +260,27 @@ module Interface =
 
 
     // ---------------------------------------------------------------------------- 
-    // Interface which exposes all global server settings
+    /// Interface which exposes all global server settings
     // ---------------------------------------------------------------------------- 
     type IServerSettings =
 
-        // Lucene version to be used across the application
+        /// Lucene version to be used across the application
         abstract member LuceneVersion       :   unit -> org.apache.lucene.util.Version
 
-        // Http port
+        /// Http port
         abstract member HttpPort            :   unit -> int
         
-        // Request logger settings
+        /// Request logger settings
         abstract member LoggerProperties    :   unit -> (bool * int * bool)
         
-        // Data folder
+        /// Data folder
         abstract member DataFolder          :   unit -> string
 
-        // Data folder
+        /// Data folder
         abstract member PluginFolder        :   unit -> string
 
-        // Data folder
+        /// Data folder
         abstract member ConfFolder          :   unit -> string
 
-        // Plugins to be loaded
+        /// Plugins to be loaded
         abstract member PluginsToLoad       :   unit -> string[]
