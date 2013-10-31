@@ -60,9 +60,9 @@ module Document =
     // Generates a lucene daocument from a flex document    
     let Generate (document: FlexSearch.Api.Document) flexIndexSetting =
         let luceneDocument = new Document()
-        luceneDocument.add(new StringField("id", document.Id, Field.Store.YES))
-        luceneDocument.add(new StringField("type", document.Index, Field.Store.YES))
-        luceneDocument.add(new LongField("lastmodified", GetCurrentTimeAsLong(), Field.Store.YES))
+        luceneDocument.add(new StringField(Constants.IdField, document.Id, Field.Store.YES))
+        luceneDocument.add(new StringField(Constants.TypeField, document.Index, Field.Store.YES))
+        luceneDocument.add(new LongField(Constants.LastModifiedField, GetCurrentTimeAsLong(), Field.Store.YES))
             
         for field in flexIndexSetting.Fields do
             match document.Fields.TryGetValue(field.FieldName) with
@@ -512,11 +512,7 @@ module FlexIndex =
                 let flexIndex = getIndexRegisteration(indexName)
                 processItem(indexMessage, flexIndex)
                 
-            member this.CommandQueue() = queue
-//            member this.SendCommandToQueue(indexName, indexMessage) =  
-//                let flexIndex = getIndexRegisteration(indexName)
-//                Async.AwaitTask(queue.SendAsync((indexMessage, flexIndex)))
-                
+            member this.CommandQueue() = queue               
 
             member this.PerformQuery(indexName, indexQuery) =
                 let flexIndex = getIndexRegisteration(indexName)      

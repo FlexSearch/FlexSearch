@@ -46,11 +46,9 @@ namespace FlexSearch.Server
             container.Register(indexService);   
         }
 
-        public void StopServer()
+        public void StopServer1()
         {
-            ILog logger = LogManager.GetLogger("Init");
-            logger.Info("Received shutdown request");
-            indexService.ShutDown();
+            this.ApplicationContainer.Resolve<Interface.IIndexService>().ShutDown();
         }
     }
 }

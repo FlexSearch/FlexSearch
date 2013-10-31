@@ -21,6 +21,8 @@ namespace FlexSearch.Server
 
         private readonly Interface.IServerSettings serverSettings;
 
+        private IDisposable server;
+
         #endregion
 
         #region Constructors and Destructors
@@ -38,7 +40,6 @@ namespace FlexSearch.Server
             }
 
             this.logger.Info("Loading core services: config.xml loaded successfully.");
-
             this.appHost = new BootStrapper(this.serverSettings);
             this.logger.Info("Loading core services: WebServer initialization successful.");
         }
@@ -49,24 +50,13 @@ namespace FlexSearch.Server
 
         public void Start()
         {
-            var serverThread = new Thread(
-                () =>
-                {                   
-                    using (WebApp.Start<OwinConfiguration>(string.Format("http://*:{0}/", 9800))) // this.serverSettings.HttpPort())))
-                    {
-                        Console.WriteLine("Press enter to exit");
-                        Console.ReadLine();
-                    }
-                });
-
-            serverThread.Start();
-            // this.logger.Info("Loading core services: Starting webserver on port: " + this.serverSettings.HttpPort());
-            // this.logger.Info("Loading core services: Webserver started on port: " + this.serverSettings.HttpPort());
+            this.server = WebApp.Start<OwinConfiguration>(string.Format("http://*:{0}/", 9800));
         }
 
         public void Stop()
         {
-            this.appHost.StopServer();
+            //this.server.Dispose();
+            this.appHost.StopServer1();
         }
 
         #endregion

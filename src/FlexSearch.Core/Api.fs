@@ -209,6 +209,7 @@ module Api =
         member val Highlights = new StringList() with get, set
         member val Id = "" with get, set 
         member val LastModified = "" with get, set
+        member val Version = 1 with get, set
         member val Index = "" with get, set
         member val Score = 0.0 with get, set 
 

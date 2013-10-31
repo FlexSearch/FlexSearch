@@ -46,7 +46,7 @@ open System.Threading
 module Constants =
 
     // Lucene version to be used across the application
-    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_44
+    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_45
     let IdField = "id"
     let LastModifiedField = "lastmodified"
     let TypeField = "type"
@@ -70,7 +70,7 @@ module Constants =
         | _ -> failwithf "message=Terminating Lunar due to a fatal error.; cause='\\Conf\\' configuration directory does not exist at the root location.; rootFolder=%s" rootFolder.Value
         )
     
-       
+     
     // Flex plugins folder
     let PluginFolder = lazy (
         match Directory.Exists(rootFolder.Force() + "\\Plugins") with

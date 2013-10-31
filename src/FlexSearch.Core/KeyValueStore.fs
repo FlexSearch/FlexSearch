@@ -15,7 +15,6 @@ namespace FlexSearch.Core
 
 open System.Collections.Concurrent
 open FlexSearch.Api
-open BinaryRage
 open System.Linq
 open Newtonsoft.Json
 open System.IO
