@@ -199,6 +199,7 @@
       <HintPath>..\packages\Rx-PlatformServices.2.1.30214.0\lib\Net45\System.Reactive.PlatformServices.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Threading.Tasks.Dataflow">
       <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.11\lib\portable-net45+win8\System.Threading.Tasks.Dataflow.dll</HintPath>
@@ -222,6 +223,7 @@
     <Compile Include="Interface.fs" />
     <Compile Include="FlexField.fs" />
     <Compile Include="FlexIndex.fs" />
+    <Compile Include="LocalCacheStore.fs" />
     <Compile Include="KeyValueStore.fs" />
     <Compile Include="CompilerService.fs" />
     <Compile Include="MefFactory.fs" />
