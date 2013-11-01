@@ -76,7 +76,7 @@ module Api =
         [<DataMember(Order = 3)>] member val DefaultWriteLockTimeout =  1000 with get, set
         
         /// Determines the amount of RAM that may be used for buffering added documents and deletions before they are flushed to the Directory.
-        [<DataMember(Order = 4)>] member val RamBufferSizeMb = 500 with get, set
+        [<DataMember(Order = 4)>] member val RamBufferSizeMb = 100 with get, set
 
         [<DataMember(Order = 5)>] member val RefreshTimeMilliSec = 25 with get, set
         [<DataMember(Order = 6)>] member val Shards = 1 with get, set

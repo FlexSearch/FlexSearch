@@ -40,7 +40,6 @@ namespace FlexSearch.Server
             }
 
             this.logger.Info("Loading core services: config.xml loaded successfully.");
-            this.appHost = new BootStrapper(this.serverSettings);
             this.logger.Info("Loading core services: WebServer initialization successful.");
         }
 

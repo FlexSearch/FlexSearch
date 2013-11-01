@@ -93,7 +93,7 @@ module Document =
             failwith "Missing Id"
         let targetIndex = mapToShard id flexIndex.Shards.Length
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term("id",id)) 
-
+                 
 
 // ----------------------------------------------------------------------------
 // Contains lucene writer IO and infracture related operations
