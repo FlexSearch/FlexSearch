@@ -18,29 +18,26 @@ open FlexSearch.Api
 open System.Linq
 open Newtonsoft.Json
 open System.IO
+open System.Reactive.Subjects
+open System
 
 module Store =
     type WriteMsg = WriteMsg of bool * string
     let indexPath = Constants.ConfFolder.Value + "\index.config"
     let keyValPath = Constants.ConfFolder.Value + "\keys.config"
 
-    let writingAgent =
-        MailboxProcessor.Start(fun inbox ->
-            let rec loop n =                                
-                async { 
-                    let! msg = inbox.Receive()
-                    match msg with
-                    | WriteMsg(isIndex, value) ->
-                        if isIndex then
-                            File.WriteAllText(indexPath, value)
-                        else
-                            File.WriteAllText(keyValPath, value)
-
-                    return! loop n 
-                    }
-            loop 0)
-
     type KeyValueStore() =
+        let store = new Subject<WriteMsg>()
+        
+        let sub = store.Subscribe(fun x ->
+            match x with
+            | WriteMsg(isIndex, value) ->
+                if isIndex then
+                    File.WriteAllText(indexPath, value)
+                else
+                    File.WriteAllText(keyValPath, value)
+            )
+
         let indexDict = 
             if File.Exists(indexPath) then
                 JsonConvert.DeserializeObject<ConcurrentDictionary<string, Index>>(File.ReadAllText(indexPath))
@@ -52,7 +49,22 @@ module Store =
                 JsonConvert.DeserializeObject<ConcurrentDictionary<string, string>>(File.ReadAllText(keyValPath))
             else
                 new ConcurrentDictionary<string, string>()
+        
+        let mutable disposed = false;
+        let cleanup(disposing:bool) = 
+            if not disposed then
+                disposed <- true
+            if disposing then
+                sub.Dispose()
+        
+        override self.Finalize() = 
+            cleanup(false)
 
+        interface IDisposable with
+            member this.Dispose() =
+                cleanup(true)
+                GC.SuppressFinalize(this)
+        
         interface Interface.IKeyValueStore with 
             member this.GetIndexSetting value =
                 match indexDict.TryGetValue(value) with
@@ -61,16 +73,16 @@ module Store =
           
             member this.DeleteIndexSetting value =
                 indexDict.TryRemove(value) |> ignore
-                writingAgent.Post(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
-                
+                store.OnNext(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
+                                
             member this.UpdateIndexSetting value =
                 match indexDict.TryGetValue(value.IndexName) with
                 | (true, a) -> 
                     indexDict.TryUpdate(value.IndexName, value, a) |> ignore
-                    writingAgent.Post(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
+                    store.OnNext(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
                 | _ -> 
                     indexDict.TryAdd(value.IndexName, value) |> ignore
-                    writingAgent.Post(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
+                    store.OnNext(WriteMsg(true, JsonConvert.SerializeObject(indexDict)))
                 
             member this.GetAllIndexSettings() =
                 indexDict.Values.ToList()
@@ -83,15 +95,14 @@ module Store =
             member this.UpdateItem<'T> key (value: 'T) =
                 match keyDict.TryGetValue(key) with
                 | (true, a) -> 
-                    keyDict.TryUpdate(key, JsonConvert.SerializeObject(value), a) |> ignore
-                    writingAgent.Post(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
+                    keyDict.TryUpdate(key, JsonConvert.SerializeObject(value), a) |> ignore 
                 | _ -> 
                     keyDict.TryAdd(key, JsonConvert.SerializeObject(value)) |> ignore
-                    writingAgent.Post(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
+                store.OnNext(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
 
             member this.DeleteItem<'T> value =
                 keyDict.TryRemove(value) |> ignore
-                writingAgent.Post(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
+                store.OnNext(WriteMsg(false, JsonConvert.SerializeObject(keyDict)))
             
 
 
