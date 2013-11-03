@@ -1,7 +1,6 @@
 namespace FlexSearch.Server
 {
     using System;
-    using System.Threading;
 
     using Common.Logging;
 

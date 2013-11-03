@@ -540,6 +540,15 @@ module FlexIndex =
                 | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
             
 
+            member this.GetIndex indexName =
+                match indexStatus.TryGetValue(indexName) with
+                | (true, _) -> 
+                    match keyValueStore.GetIndexSetting(indexName) with
+                    | Some(a) -> a
+                    | None -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+                | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+
+
             member this.AddIndex flexIndex = 
                 match indexStatus.TryGetValue(flexIndex.IndexName) with
                 | (true, _) -> raise(IndexAlreadyExistsException indexAlreadyExistsMessage)
