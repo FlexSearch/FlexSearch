@@ -215,6 +215,16 @@ module Interface =
 
 
     // ---------------------------------------------------------------------------- 
+    /// Version cache store used across the system. This helps in resolving 
+    /// conflicts arising out of concrrent threads trying to update a lucene document.
+    // ---------------------------------------------------------------------------- 
+    type IVersioningCacheStore =
+        abstract member GetVersion     :   string -> string -> Option<int * DateTime>
+        abstract member AddVersion     :   string -> string -> int -> bool
+        abstract member UpdateVersion  :   string -> string -> int -> DateTime -> int -> bool
+
+
+    // ---------------------------------------------------------------------------- 
     /// Interface which exposes all index related operations
     // ---------------------------------------------------------------------------- 
     type IIndexService =
@@ -240,6 +250,8 @@ module Interface =
         /// all possible search variations
         abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
         
+        abstract member GetIndex                    :   string -> Index
+
         abstract member AddIndex                    :   Index -> unit
 
         abstract member UpdateIndex                 :   Index -> unit

@@ -44,15 +44,16 @@ module Cache =
         do
             let observer = Observable.Interval(TimeSpan.FromMinutes(2.0)).Subscribe(fun x -> removeInvalidItems())
             ()
-               
-        member this.GetVersion index id =
-            match cache.TryGetValue((index, id)) with
-            | (true, x) -> Some(x)
-            | _ -> None
+
+        interface IVersioningCacheStore with      
+            member this.GetVersion index id =
+                match cache.TryGetValue((index, id)) with
+                | (true, x) -> Some(x)
+                | _ -> None
         
-        member this.AddVersion index id version =
-            cache.TryAdd((index, id), (version, DateTime.Now))
+            member this.AddVersion index id version =
+                cache.TryAdd((index, id), (version, DateTime.Now))
         
-        member this.UpdateVersion index id oldversion oldDateTime newVersion =
-            cache.TryUpdate((index, id), (newVersion, DateTime.Now), (oldversion, oldDateTime))
+            member this.UpdateVersion index id oldversion oldDateTime newVersion =
+                cache.TryUpdate((index, id), (newVersion, DateTime.Now), (oldversion, oldDateTime))
         
