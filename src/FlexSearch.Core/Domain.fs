@@ -178,8 +178,8 @@ type FlexShardWriter =
     }
     
 
-// Represents an index in Flex terms which may consist of a number of
-// valid lucene indices.
+/// Represents an index in Flex terms which may consist of a number of
+/// valid lucene indices.
 type FlexIndex =
     {
         IndexSetting        :   FlexIndexSetting
@@ -190,7 +190,7 @@ type FlexIndex =
 
 
 // ----------------------------------------------------------------------------
-// Case insensitive keyword analyzer 
+/// Case insensitive keyword analyzer 
 // ----------------------------------------------------------------------------
 [<Export(typeof<Analyzer>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
@@ -207,16 +207,36 @@ type CaseInsensitiveKeywordAnalyzer() =
 // Indexing related message. The model could be considered similiar to
 // Command–query separation pattern where are side effect free queries are 
 // kept seperate from side effect based command. Also side effect operations
-// don't support 
+// don't support
 // ----------------------------------------------------------------------------
-// Messages which can be send to the indexing queue to indicate the type of operation
-// and the associated data
+
+/// Messages which can be send to the indexing queue to indicate the type of operation
+/// and the associated data
 type IndexCommand = 
-    | Create of string * Dictionary<string,string>  // (documentId, indexName. Fields)
-    | Update of string * Dictionary<string,string>  // (documentId, indexName. Fields)
-    | Delete of string                     // (documentId, indexName)
-    | BulkDeleteByIndexName               // (indexName)
-    | Commit                              // (indexName)
+    
+    /// Create a new document
+    | Create of id: string * fields: Dictionary<string,string>  
+    
+    /// Update an existing document
+    | Update of id: string * fields: Dictionary<string,string>  
+    
+    /// Delete an existing document by id
+    | Delete of id: string                     
+    
+    /// Optimistic concurrency controlled create of a document
+    | OptimisticCreate of id: string * fields: Dictionary<string,string>
+    
+    /// Optimistic concurrency controlled update of a document
+    | OptimisticUpdate of id: string * fields: Dictionary<string,string> * version: int
+    
+    /// Optimistic concurrency controlled delete of a document
+    | OptimisticDelete of id: string * version: int
+    
+    /// Bulk delete all the documents in a index
+    | BulkDeleteByIndexName               
+
+    /// Commit pending index changes
+    | Commit                              
     
 
 type IndexQuery = 

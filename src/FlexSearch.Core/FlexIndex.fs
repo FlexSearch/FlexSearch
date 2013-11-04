@@ -72,9 +72,11 @@ module Document =
         luceneDocument    
 
     // Add a flex document to an index    
-    let Add (document: FlexSearch.Api.Document) flexIndex  =
+    let Add (document: FlexSearch.Api.Document) flexIndex optimistic (versionCache: IVersioningCacheStore)=
+        
         if (System.String.IsNullOrWhiteSpace(document.Id) = true) then
             failwith "Missing Id"
+        
         let targetIndex = mapToShard document.Id flexIndex.Shards.Length
         let targetDocument = Generate document flexIndex.IndexSetting
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(targetDocument)
@@ -88,7 +90,7 @@ module Document =
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.updateDocument(new Term("id",document.Id), targetDocument)
 
     // Delete a flex document in an index    
-    let Delete(id: string) flexIndex  =
+    let Delete (id: string) flexIndex  =
         if (System.String.IsNullOrWhiteSpace(id) = true) then
             failwith "Missing Id"
         let targetIndex = mapToShard id flexIndex.Shards.Length
@@ -306,7 +308,7 @@ module FlexIndex =
         // ----------------------------------------------------------------------------     
         // Function to process the 
         // ----------------------------------------------------------------------------                                         
-        let processItem(indexMessage: IndexCommand, flexIndex: FlexIndex) = 
+        let processItem(indexMessage: IndexCommand, flexIndex: FlexIndex, versionCache: IVersioningCacheStore) = 
             match indexMessage with
             | Create(documentId, fields) -> 
                 match indexExists(flexIndex.IndexSetting.IndexName) with
