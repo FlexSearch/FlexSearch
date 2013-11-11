@@ -21,3 +21,10 @@ There are a number of features which are in progress:
 
 Please see the [Future Roadmap](roadmap) for more details and timelines. 
 
+
+Update 11/11/2013
+====================
+
+- After initial feedback from few people my understanding is that FlexSearch should be distributed in nature. Based on this new requirement I have started adding distributed capabilities to the core. At technical level I have figured out most of the things. It also makes sense to do it now as the product is still in its early phase.
+- All the updates are happening in NancyFx branch.
+- I am still looking at end of December to release a fully functioning alpha version.
