@@ -36,7 +36,7 @@ module Api =
         | [<EnumMember>] DoNotStoreTermVector = 1
         | [<EnumMember>] StoreTermVector = 2
         | [<EnumMember>] StoreTermVectorsWithPositions = 3
-        | [<EnumMember>] StoreTermVectorsWithPositionsandOffsets = 3
+        | [<EnumMember>] StoreTermVectorsWithPositionsandOffsets = 4
 
 
     type [<DataContract(Namespace = "")>] FieldIndexOptions =
@@ -54,7 +54,7 @@ module Api =
         | [<EnumMember>] DocsAndFreqsAndPositions = 3
         
         /// Indexes documents, frequencies, positions and offsets. Character offsets are encoded alongside the positions.
-        | [<EnumMember>] SDocsAndFreqsAndPositionsAndOffsets = 3
+        | [<EnumMember>] DocsAndFreqsAndPositionsAndOffsets = 3
 
 
     type [<DataContract(Namespace = "")>] FieldType =

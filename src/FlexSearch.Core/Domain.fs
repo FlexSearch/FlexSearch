@@ -178,6 +178,12 @@ type FlexShardWriter =
     }
     
 
+type FlexShard = 
+    {
+        ShardNumber             :   int
+        
+    }
+
 /// Represents an index in Flex terms which may consist of a number of
 /// valid lucene indices.
 type FlexIndex =
