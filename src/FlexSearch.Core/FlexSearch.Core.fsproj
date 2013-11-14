@@ -236,6 +236,13 @@
     <Compile Include="Settings.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
+      <Name>FlexSearch.Api</Name>
+      <Project>{e915a1ef-0430-4e59-b861-bb1eac037217}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
