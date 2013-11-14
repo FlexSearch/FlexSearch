@@ -218,7 +218,6 @@
     <None Include="packages.config" />
     <Compile Include="Utility.fs" />
     <Compile Include="Constants.fs" />
-    <Compile Include="Api.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Interface.fs" />
     <Compile Include="FlexField.fs" />
