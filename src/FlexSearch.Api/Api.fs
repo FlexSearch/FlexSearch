@@ -13,6 +13,7 @@ open System.Runtime.Serialization
 open System.Collections.Generic
 
 module Api =
+
     // Represents Lucene's similarity models
     type [<DataContract(Namespace = "")>] FieldSimilarity =
         | [<EnumMember>] BM25 = 1
@@ -58,16 +59,34 @@ module Api =
 
 
     type [<DataContract(Namespace = "")>] FieldType =
-        | Int = 1
-        | Double = 2
-        | ExactText = 3
-        | Text = 4
-        | Highlight = 5
-        | Bool = 6
-        | Date = 7
-        | DateTime = 8
-        | Custom = 9
-        | Stored = 10
+        | [<EnumMember>] Int = 1
+        | [<EnumMember>] Double = 2
+        | [<EnumMember>] ExactText = 3
+        | [<EnumMember>] Text = 4
+        | [<EnumMember>] Highlight = 5
+        | [<EnumMember>] Bool = 6
+        | [<EnumMember>] Date = 7
+        | [<EnumMember>] DateTime = 8
+        | [<EnumMember>] Custom = 9
+        | [<EnumMember>] Stored = 10
+
+
+    type [<DataContract(Namespace = "")>] ShardAllocationStrategy =
+        | [<EnumMember>] Automatic = 1
+        | [<EnumMember>] Manual = 2
+
+
+    type [<DataContract(Namespace = "")>] ShardAllocationDetail()  =
+        [<DataMember(Order = 1)>] member val ShardNumber = 1 with get, set
+        [<DataMember(Order = 2)>] member val NodeName = new List<string>() with get, set
+
+
+    type [<DataContract(Namespace = "")>] ShardConfiguration()  =
+        [<DataMember(Order = 1)>] member val ShardCount = 1 with get, set
+        [<DataMember(Order = 2)>] member val Replica = 1 with get, set
+        [<DataMember(Order = 3)>] member val ShardAllocationStrategy = ShardAllocationStrategy.Manual with get, set
+        [<DataMember(Order = 4)>] member val ShardAllocationDetails = new List<ShardAllocationDetail>() with get, set
+        [<DataMember(Order = 5)>] member val AutoRebalance = false with get, set
 
 
     type [<DataContract(Namespace = "")>] IndexConfiguration()  =
@@ -79,7 +98,7 @@ module Api =
         [<DataMember(Order = 4)>] member val RamBufferSizeMb = 100 with get, set
 
         [<DataMember(Order = 5)>] member val RefreshTimeMilliSec = 25 with get, set
-        [<DataMember(Order = 6)>] member val Shards = 1 with get, set
+        [<DataMember(Order = 6)>] member val ShardConfiguration = new ShardConfiguration() with get, set
 
  
     type [<DataContract(Namespace = "")>] IndexFieldProperties() =
