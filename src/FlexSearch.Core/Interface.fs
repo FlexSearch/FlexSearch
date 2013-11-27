@@ -47,6 +47,11 @@ open System.Threading
 [<AutoOpen>]
 module Interface =
     
+    type IServer =
+        abstract member Start   :   unit -> unit
+        abstract member Stop    :   unit -> unit
+
+
     // ---------------------------------------------------------------------------- 
     /// General Interface to offload all resource loading resposibilities. This will
     /// be used to parse settings, load text files etc. This will enable easy mocking 
