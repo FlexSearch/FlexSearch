@@ -216,6 +216,7 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
+    <Compile Include="Interop.fs" />
     <Compile Include="Utility.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="Domain.fs" />
@@ -234,6 +235,7 @@
     <Compile Include="Validator.fs" />
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="Settings.fs" />
+    <Compile Include="Server.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>

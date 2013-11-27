@@ -13,34 +13,49 @@ open System.Runtime.Serialization
 open System.Collections.Generic
 
 module Api =
+    
+    [<Literal>]
+    let ApiNamespace = ""
+
+    type [<DataContract(Namespace = ApiNamespace)>] NodeRole = 
+        | [<EnumMember>] ClusterService = 1
+        | [<EnumMember>] Search = 2
+        | [<EnumMember>] Process = 3
+        
+    /// Cluster node information
+    type [<DataContract(Namespace = ApiNamespace)>] Node() =
+        [<DataMember(Order = 1)>] member val NodeName = "" with get, set
+        [<DataMember(Order = 1)>] member val IpAddress = "" with get, set
+        [<DataMember(Order = 1)>] member val NodeRole = NodeRole.Search with get, set
+
 
     // Represents Lucene's similarity models
-    type [<DataContract(Namespace = "")>] FieldSimilarity =
+    type [<DataContract(Namespace = ApiNamespace)>] FieldSimilarity =
         | [<EnumMember>] BM25 = 1
         | [<EnumMember>] TDF = 2
 
 
     // Lucene's field postings format
-    type [<DataContract(Namespace = "")>] FieldPostingsFormat = 
+    type [<DataContract(Namespace = ApiNamespace)>] FieldPostingsFormat = 
         | [<EnumMember>] Direct = 1
         | [<EnumMember>] Memory = 2
         | [<EnumMember>] Bloom = 3
         | [<EnumMember>] Pulsing = 4
         | [<EnumMember>] Lucene41PostingsFormat = 5
 
-    type [<DataContract(Namespace = "")>] DirectoryType =
+    type [<DataContract(Namespace = ApiNamespace)>] DirectoryType =
         | [<EnumMember>] FileSystem = 1
         | [<EnumMember>] MemoryMapped = 2
         | [<EnumMember>] Ram = 3
 
-    type [<DataContract(Namespace = "")>] FieldTermVector =
+    type [<DataContract(Namespace = ApiNamespace)>] FieldTermVector =
         | [<EnumMember>] DoNotStoreTermVector = 1
         | [<EnumMember>] StoreTermVector = 2
         | [<EnumMember>] StoreTermVectorsWithPositions = 3
         | [<EnumMember>] StoreTermVectorsWithPositionsandOffsets = 4
 
 
-    type [<DataContract(Namespace = "")>] FieldIndexOptions =
+    type [<DataContract(Namespace = ApiNamespace)>] FieldIndexOptions =
         /// Only documents are indexed: term frequencies and positions are omitted. 
         /// Phrase and other positional queries on the field will throw an exception, 
         /// and scoring will behave as if any term in the document appears only once.
@@ -58,7 +73,7 @@ module Api =
         | [<EnumMember>] DocsAndFreqsAndPositionsAndOffsets = 3
 
 
-    type [<DataContract(Namespace = "")>] FieldType =
+    type [<DataContract(Namespace = ApiNamespace)>] FieldType =
         | [<EnumMember>] Int = 1
         | [<EnumMember>] Double = 2
         | [<EnumMember>] ExactText = 3
@@ -71,17 +86,17 @@ module Api =
         | [<EnumMember>] Stored = 10
 
 
-    type [<DataContract(Namespace = "")>] ShardAllocationStrategy =
+    type [<DataContract(Namespace = ApiNamespace)>] ShardAllocationStrategy =
         | [<EnumMember>] Automatic = 1
         | [<EnumMember>] Manual = 2
 
 
-    type [<DataContract(Namespace = "")>] ShardAllocationDetail()  =
+    type [<DataContract(Namespace = ApiNamespace)>] ShardAllocationDetail()  =
         [<DataMember(Order = 1)>] member val ShardNumber = 1 with get, set
         [<DataMember(Order = 2)>] member val NodeName = new List<string>() with get, set
 
 
-    type [<DataContract(Namespace = "")>] ShardConfiguration()  =
+    type [<DataContract(Namespace = ApiNamespace)>] ShardConfiguration()  =
         [<DataMember(Order = 1)>] member val ShardCount = 1 with get, set
         [<DataMember(Order = 2)>] member val Replica = 1 with get, set
         [<DataMember(Order = 3)>] member val ShardAllocationStrategy = ShardAllocationStrategy.Manual with get, set
@@ -89,7 +104,7 @@ module Api =
         [<DataMember(Order = 5)>] member val AutoRebalance = false with get, set
 
 
-    type [<DataContract(Namespace = "")>] IndexConfiguration()  =
+    type [<DataContract(Namespace = ApiNamespace)>] IndexConfiguration()  =
         [<DataMember(Order = 1)>] member val CommitTimeSec = 60 with get, set
         [<DataMember(Order = 2)>] member val DirectoryType = DirectoryType.MemoryMapped with get, set
         [<DataMember(Order = 3)>] member val DefaultWriteLockTimeout =  1000 with get, set
@@ -101,7 +116,7 @@ module Api =
         [<DataMember(Order = 6)>] member val ShardConfiguration = new ShardConfiguration() with get, set
 
  
-    type [<DataContract(Namespace = "")>] IndexFieldProperties() =
+    type [<DataContract(Namespace = ApiNamespace)>] IndexFieldProperties() =
         [<DataMember(Order = 1)>] member val Analyze = true with get, set
         [<DataMember(Order = 2)>] member val Index = true with get, set
         [<DataMember(Order = 3)>] member val Store = true with get, set
@@ -115,32 +130,32 @@ module Api =
         [<DataMember(Order = 11)>] member val ScriptName = "" with get, set
 
 
-    [<CollectionDataContract(Namespace = "", ItemName = "Field", KeyName = "FieldName", ValueName = "Properties")>]
+    [<CollectionDataContract(Namespace = ApiNamespace, ItemName = "Field", KeyName = "FieldName", ValueName = "Properties")>]
     type FieldDictionary() =
         inherit Dictionary<string, IndexFieldProperties>()
 
 
-    [<CollectionDataContract(Namespace = "", ItemName = "KeyValuePair", KeyName = "Key", ValueName = "Value")>]
+    [<CollectionDataContract(Namespace = ApiNamespace, ItemName = "KeyValuePair", KeyName = "Key", ValueName = "Value")>]
     type KeyValuePairs() =
         inherit Dictionary<string, string>()
 
 
-    type [<DataContract(Namespace = "")>] TokenFilter() =
+    type [<DataContract(Namespace = ApiNamespace)>] TokenFilter() =
         [<DataMember(Order = 1)>] member val FilterName = "standardfilter" with get, set
         [<DataMember(Order = 2)>] member val Parameters = new KeyValuePairs() with get, set
 
 
-    type [<DataContract(Namespace = "")>] Tokenizer() =
+    type [<DataContract(Namespace = ApiNamespace)>] Tokenizer() =
         [<DataMember(Order = 1)>] member val TokenizerName = "standardtokenizer" with get, set
         [<DataMember(Order = 2)>] member val Parameters = new KeyValuePairs() with get, set
 
 
-    type [<DataContract(Namespace = "")>] AnalyzerProperties() = 
+    type [<DataContract(Namespace = ApiNamespace)>] AnalyzerProperties() = 
         [<DataMember(Order = 1)>] member val Filters = new List<TokenFilter>() with get, set
         [<DataMember(Order = 2)>] member val Tokenizer = new Tokenizer() with get, set
 
 
-    [<CollectionDataContract(Namespace = "", ItemName = "Analyzer", KeyName = "AnalyzerName", ValueName = "Properties")>]
+    [<CollectionDataContract(Namespace = ApiNamespace, ItemName = "Analyzer", KeyName = "AnalyzerName", ValueName = "Properties")>]
     type AnalyzerDictionary() =
         inherit Dictionary<string, AnalyzerProperties>()
 
@@ -161,12 +176,12 @@ module Api =
          member val ScriptType = ScriptType.ComputedField with get, set
     
 
-    [<CollectionDataContract(Namespace = "", ItemName = "Script", KeyName = "ScriptName", ValueName = "Properties")>]
+    [<CollectionDataContract(Namespace = ApiNamespace, ItemName = "Script", KeyName = "ScriptName", ValueName = "Properties")>]
     type ScriptDictionary() =
         inherit Dictionary<string, ScriptProperties>()
     
 
-    [<CollectionDataContract(Namespace = "", ItemName = "Value")>]
+    [<CollectionDataContract(Namespace = ApiNamespace, ItemName = "Value")>]
     type StringList() =
         inherit List<string>()
 
@@ -219,7 +234,7 @@ module Api =
         member val SearchProfileName = "" with get, set 
 
 
-    [<CollectionDataContract(Namespace = "", ItemName = "SearchProfile", KeyName = "ProfileName", ValueName = "Properties")>]
+    [<CollectionDataContract(Namespace = ApiNamespace, ItemName = "SearchProfile", KeyName = "ProfileName", ValueName = "Properties")>]
     type SearchProfileDictionary() =
         inherit Dictionary<string, SearchQuery>()
     
