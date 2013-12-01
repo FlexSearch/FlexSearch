@@ -188,7 +188,7 @@ module FlexIndex =
     // loadAllIndex - This is used to bypass loading of index at initialization time.
     // Helpful for testing
     // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, keyValueStore: IKeyValueStore, loadAllIndex: bool) =
+    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, keyValueStore: IKeyValueStore, loadAllIndex: bool, versionCache: IVersioningCacheStore) =
         
         let indexLogger = LogManager.GetLogger("IndexService")
 
@@ -384,7 +384,7 @@ module FlexIndex =
             indexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
 
             // Initialize shards
-            let shards = Array.init flexIndexConfig.Shards (fun a -> 
+            let shards = Array.init flexIndexConfig.ShardConfiguration.ShardCount (fun a -> 
                 let writers = GetIndexWriter(flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
                 if writers.IsNone then 
                     logger.Error("Unable to create the requested index writer.")
@@ -470,7 +470,7 @@ module FlexIndex =
         // Process index queue requests
         let processQueueItem(indexName, indexMessage: IndexCommand) = 
             let flexIndex = getIndexRegisteration(indexName)
-            processItem(indexMessage, flexIndex) |> ignore
+            processItem(indexMessage, flexIndex, versionCache) |> ignore
         
         // ----------------------------------------------------------------------------
         // Load all index configuration data on start of application
@@ -507,12 +507,12 @@ module FlexIndex =
         interface IIndexService with
             member this.PerformCommandAsync(indexName, indexMessage, replyChannel) = 
                 let flexIndex = getIndexRegisteration(indexName)
-                replyChannel.Reply(processItem(indexMessage, flexIndex))
+                replyChannel.Reply(processItem(indexMessage, flexIndex, versionCache))
                 
 
             member this.PerformCommand(indexName, indexMessage) = 
                 let flexIndex = getIndexRegisteration(indexName)
-                processItem(indexMessage, flexIndex)
+                processItem(indexMessage, flexIndex, versionCache)
                 
             member this.CommandQueue() = queue               
 

@@ -42,7 +42,7 @@ namespace FlexSearch.Server
             container.Register(keyValueStore);
             container.Register(factoryCollection);
             container.Register(this.serverSettings);
-            this.indexService = new FlexIndexModule.IndexService(parser, searchService, keyValueStore, true);
+            this.indexService = new FlexIndexModule.IndexService(parser, searchService, keyValueStore, true, new Cache.VersioningCacheStore());
             container.Register(indexService);   
         }
 

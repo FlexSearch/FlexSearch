@@ -151,7 +151,7 @@ module Validator =
     let IndexConfigurationValidator(propName: string, value: IndexConfiguration) =
         validate "CommitTimeSec" value.CommitTimeSec |> greaterThanOrEqualTo 60 |> ignore
         validate "RefreshTimeMilliSec" value.RefreshTimeMilliSec |> greaterThanOrEqualTo 25 |> ignore
-        validate "Shards" value.Shards |> greaterThanOrEqualTo 1 |> ignore
+        validate "Shards" value.ShardConfiguration.ShardCount |> greaterThanOrEqualTo 1 |> ignore
         validate "RamBufferSizeMb" value.RamBufferSizeMb |> greaterThanOrEqualTo 100 |> ignore
 
 
