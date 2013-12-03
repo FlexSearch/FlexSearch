@@ -48,6 +48,8 @@ module Settings =
     type FlexServerSetting = XmlProvider<"""
         <Settings version="1">
             <HttpPort>9800</HttpPort>
+            <InterNodePort>9900</InterNodePort>
+            <NodeType>Data</NodeType>
             <RequestLogger Enabled="true" RollingLogCapacity="1000" WriteLogToDisk="false"/>
             <Plugins>
                 <Plugin Name="test" />

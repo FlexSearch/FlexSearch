@@ -38,10 +38,17 @@ module Api =
     // Lucene's field postings format
     type [<DataContract(Namespace = ApiNamespace)>] FieldPostingsFormat = 
         | [<EnumMember>] Direct = 1
+
+        /// Postings and DocValues formats that are read entirely into memory.
         | [<EnumMember>] Memory = 2
+
+        /// A PostingsFormat useful for low doc-frequency fields such as primary keys.
         | [<EnumMember>] Bloom = 3
+
+        /// Pulsing Codec: inlines low frequency terms' postings into terms dictionary.
         | [<EnumMember>] Pulsing = 4
         | [<EnumMember>] Lucene41PostingsFormat = 5
+
 
     type [<DataContract(Namespace = ApiNamespace)>] DirectoryType =
         | [<EnumMember>] FileSystem = 1
@@ -84,12 +91,16 @@ module Api =
         | [<EnumMember>] DateTime = 8
         | [<EnumMember>] Custom = 9
         | [<EnumMember>] Stored = 10
+        | [<EnumMember>] Long = 11
 
 
     type [<DataContract(Namespace = ApiNamespace)>] ShardAllocationStrategy =
         | [<EnumMember>] Automatic = 1
         | [<EnumMember>] Manual = 2
 
+    type [<DataContract(Namespace = ApiNamespace)>] IndexVersion =
+        | [<EnumMember>] Lucene46 = 1
+        | [<EnumMember>] Lucene47 = 2
 
     type [<DataContract(Namespace = ApiNamespace)>] ShardAllocationDetail()  =
         [<DataMember(Order = 1)>] member val ShardNumber = 1 with get, set
@@ -114,6 +125,7 @@ module Api =
 
         [<DataMember(Order = 5)>] member val RefreshTimeMilliSec = 25 with get, set
         [<DataMember(Order = 6)>] member val ShardConfiguration = new ShardConfiguration() with get, set
+        [<DataMember(Order = 7)>] member val IndexVersion = IndexVersion.Lucene46 with get, set
 
  
     type [<DataContract(Namespace = ApiNamespace)>] IndexFieldProperties() =
