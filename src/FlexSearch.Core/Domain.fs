@@ -248,3 +248,4 @@ type IndexCommand =
 type IndexQuery = 
     | SearchProfileQuery of SearchProfileQuery
     | SearchQuery of SearchQuery
+

@@ -1,5 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Settings version="1">
-  <HttpPort>9800</HttpPort>
+  <Node>
+    <Name>Test</Name>
+    <HttpPort>9800</HttpPort>
+    <WSPort>9900</WSPort>
+    <Role>Data</Role>
+    <DataFolder>c:\</DataFolder>
+  </Node>
+  <Cluster>
+    <MasterNode>10.80.105.1</MasterNode>
+    <SlaveNode>10.80.105.1</SlaveNode>
+  </Cluster>
   <RequestLogger Enabled="true" RollingLogCapacity="1000" WriteLogToDisk="false"/>
+  <Plugins>
+    <Plugin Name="test" />
+    <Plugin Name="test" />
+  </Plugins>
 </Settings>

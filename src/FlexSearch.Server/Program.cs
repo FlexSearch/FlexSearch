@@ -30,7 +30,7 @@
                             s.WhenStopped(tc => tc.Stop());
                         });
                     x.RunAsLocalSystem();
-                    x.SetDescription("FlexSearch indexing Server");
+                    x.SetDescription("FlexSearch Server");
                     x.SetDisplayName("FlexSearch Server");
                     x.SetServiceName("FlexSearchServer");
                     x.EnableServiceRecovery(rc => rc.RestartService(1));

@@ -18,15 +18,17 @@ module Api =
     let ApiNamespace = ""
 
     type [<DataContract(Namespace = ApiNamespace)>] NodeRole = 
-        | [<EnumMember>] ClusterService = 1
-        | [<EnumMember>] Search = 2
-        | [<EnumMember>] Process = 3
+        | [<EnumMember>] CLusterMaster = 1
+        | [<EnumMember>] ClusterSlave = 2
+        | [<EnumMember>] Index = 3
+        | [<EnumMember>] Query = 4
+
         
     /// Cluster node information
     type [<DataContract(Namespace = ApiNamespace)>] Node() =
         [<DataMember(Order = 1)>] member val NodeName = "" with get, set
         [<DataMember(Order = 1)>] member val IpAddress = "" with get, set
-        [<DataMember(Order = 1)>] member val NodeRole = NodeRole.Search with get, set
+        [<DataMember(Order = 1)>] member val NodeRole = NodeRole.Index with get, set
 
 
     // Represents Lucene's similarity models

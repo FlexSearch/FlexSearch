@@ -287,6 +287,21 @@ module Interface =
         /// Http port
         abstract member HttpPort            :   unit -> int
         
+        /// Websocket port
+        abstract member WSPort              :   unit -> int
+        
+        /// Node name
+        abstract member NodeName            :   unit -> string
+
+        /// Node type
+        abstract member NodeType            :   unit -> NodeRole
+
+        /// Master node
+        abstract member MasterNode          :   unit -> string
+
+        /// Slave node
+        abstract member SlaveNode           :   unit -> string
+
         /// Request logger settings
         abstract member LoggerProperties    :   unit -> (bool * int * bool)
         
