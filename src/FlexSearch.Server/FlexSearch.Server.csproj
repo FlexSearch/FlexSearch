@@ -188,6 +188,7 @@
   <ItemGroup>
     <Compile Include="BootStrapper.cs" />
     <Compile Include="FlexServer.cs" />
+    <Compile Include="NodeBuilder.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AnalysisService.cs" />

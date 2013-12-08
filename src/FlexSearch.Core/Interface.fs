@@ -316,3 +316,8 @@ module Interface =
 
         /// Plugins to be loaded
         abstract member PluginsToLoad       :   unit -> string[]
+
+
+    type INodeBuilder =
+        abstract member BuildHttpEndpoint   :   IServerSettings -> Option<IServer>
+        abstract member BuildTcpEndpoint    :   IServerSettings -> Option<IServer>

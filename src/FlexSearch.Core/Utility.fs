@@ -132,7 +132,7 @@ module Helpers =
                     Path.Combine(mainDirectory, restPath)
                 else path
             
-            if File.Exists(dataPath) then 
+            if Directory.Exists(dataPath) then 
                 dataPath        
             else
                 failwithf "message=The specified path does not exist.; path=%s" dataPath

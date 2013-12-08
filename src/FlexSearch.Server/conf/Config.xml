@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Settings version="1">
   <Node>
-    <Name>Test</Name>
+    <Name>flexsearch</Name>
     <HttpPort>9800</HttpPort>
     <WSPort>9900</WSPort>
-    <Role>Data</Role>
-    <DataFolder>c:\</DataFolder>
+    <Role>Index</Role>
+    <DataFolder>.\Data</DataFolder>
   </Node>
   <Cluster>
     <MasterNode>10.80.105.1</MasterNode>
