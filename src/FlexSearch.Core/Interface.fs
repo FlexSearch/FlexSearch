@@ -46,7 +46,7 @@ open System.Threading
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module Interface =
-    
+
     /// Interface to represent communication channel 
     type ICommuncationChannel =
         
@@ -66,6 +66,12 @@ module Interface =
         inherit IServer
         abstract member SessionCount        :   unit -> int
         abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
+
+
+    /// Used to manage the persistant data access
+    type IDataStore =
+        abstract member Nodes     :   unit -> SharpRepository.Repository.IRepository<Node>
+        abstract member Indices     :   unit -> SharpRepository.Repository.IRepository<Index>
 
 
     // ---------------------------------------------------------------------------- 
