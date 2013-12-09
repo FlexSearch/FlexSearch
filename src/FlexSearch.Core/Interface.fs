@@ -47,9 +47,25 @@ open System.Threading
 [<AutoOpen>]
 module Interface =
     
+    /// Interface to represent communication channel 
+    type ICommuncationChannel =
+        
+        /// One way communcation channel
+        abstract member OneWay          :   CommMessage -> bool
+
+        /// Two way communication channel
+        abstract member RequestReply    :   CommMessage -> CommMessage
+
+
     type IServer =
         abstract member Start   :   unit -> unit
         abstract member Stop    :   unit -> unit
+    
+
+    type ISessionServer =
+        inherit IServer
+        abstract member SessionCount        :   unit -> int
+        abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
 
 
     // ---------------------------------------------------------------------------- 

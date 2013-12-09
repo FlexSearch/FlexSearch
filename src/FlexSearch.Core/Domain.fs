@@ -249,3 +249,11 @@ type IndexQuery =
     | SearchProfileQuery of SearchProfileQuery
     | SearchQuery of SearchQuery
 
+
+/// Message used by cluster for intra cluster communication
+type CommMessage =
+    {
+        Type    :   int8
+        Body    :   byte[]
+    }
+

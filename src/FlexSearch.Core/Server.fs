@@ -14,11 +14,14 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 module Server =
+    open System
     open System.Net
     open System.Threading
 
+    // ----------------------------------------------------------------------------
     // Based on http://www.techempower.com/benchmarks/ 
     /// A reusable http server
+    // ----------------------------------------------------------------------------
     type HttpServer(port: int, requestCallback) =
         let listener = new System.Net.HttpListener();
         do
@@ -53,3 +56,46 @@ module Server =
 
             member this.Stop() =
                 listener.Close()
+
+
+    // ----------------------------------------------------------------------------
+    /// NancyFx http server
+    // ----------------------------------------------------------------------------
+    open Nancy
+    open Nancy.Hosting.Self
+
+    type NancyServer(port: int) =
+        let url = sprintf "http://*:%d" port
+        let listener = new NancyHost(new Uri(url))
+        
+        interface IServer with
+            member this.Start() =
+                listener.Start()
+                    
+            member this.Stop() =
+                listener.Stop()
+
+
+    // ----------------------------------------------------------------------------
+    /// WebSocket server
+    // ----------------------------------------------------------------------------
+    open SuperSocket.SocketBase
+    open SuperWebSocket
+
+    type SocketServer(port: int, newDataHandler, newMessageHandler, newRequestHandler, newSessionHandler, dropSessionHandler) =
+        let listener = new WebSocketServer()
+        do
+            if listener.Setup(port) = false then
+                failwithf "Failed to initialize socket server."
+            listener.add_NewDataReceived(newDataHandler)
+            listener.add_NewMessageReceived(newMessageHandler)
+            listener.add_NewRequestReceived(newRequestHandler)
+            listener.add_NewSessionConnected(newSessionHandler)
+            listener.add_SessionClosed(dropSessionHandler)
+
+        interface IServer with
+            member this.Start() =
+                listener.Start() |> ignore
+                    
+            member this.Stop() =
+                listener.Stop()
