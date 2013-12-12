@@ -18,7 +18,7 @@ module Api =
     let ApiNamespace = ""
 
     type [<DataContract(Namespace = ApiNamespace)>] NodeRole = 
-        | [<EnumMember>] CLusterMaster = 1
+        | [<EnumMember>] ClusterMaster = 1
         | [<EnumMember>] ClusterSlave = 2
         | [<EnumMember>] Index = 3
         | [<EnumMember>] Query = 4

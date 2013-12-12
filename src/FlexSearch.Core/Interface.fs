@@ -69,9 +69,10 @@ module Interface =
 
 
     /// Used to manage the persistant data access
-    type IDataStore =
-        abstract member Nodes     :   unit -> SharpRepository.Repository.IRepository<Node>
-        abstract member Indices     :   unit -> SharpRepository.Repository.IRepository<Index>
+    type IPersistanceStore =
+        abstract member Nodes       :   SharpRepository.Repository.IRepository<Node>
+        abstract member Indices     :   SharpRepository.Repository.IRepository<Index>
+        abstract member Settings    :   ServerSettings
 
 
     // ---------------------------------------------------------------------------- 
@@ -343,3 +344,11 @@ module Interface =
     type INodeBuilder =
         abstract member BuildHttpEndpoint   :   IServerSettings -> Option<IServer>
         abstract member BuildTcpEndpoint    :   IServerSettings -> Option<IServer>
+
+
+    /// This will hold all the mutable data related to the node. Everything outside will be
+    /// immutable. This will be passed around. 
+    type INodeState =
+        abstract member PersistanceStore    :   IPersistanceStore
+        abstract member TcpServer           :   IServer
+        abstract member HttpServer          :   IServer

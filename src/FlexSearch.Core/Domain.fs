@@ -40,6 +40,20 @@ open System.Text.RegularExpressions
 open System.Threading
 open System.Linq       
 
+type ServerSettings =
+    {
+        LuceneVersion   :   org.apache.lucene.util.Version
+        HttpPort        :   int
+        TcpPort         :   int
+        DataFolder      :   string
+        PluginFolder    :   string
+        ConfFolder      :   string
+        NodeName        :   string
+        NodeRole        :   NodeRole
+        MasterNode      :   System.Net.IPAddress
+    }
+
+
 // ----------------------------------------------------------------------------
 // Contains all the indexing related datatype definitions 
 // ----------------------------------------------------------------------------
@@ -256,4 +270,3 @@ type CommMessage =
         Type    :   int8
         Body    :   byte[]
     }
-

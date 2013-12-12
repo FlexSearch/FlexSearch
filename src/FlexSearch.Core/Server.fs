@@ -59,41 +59,25 @@ module Server =
 
 
     // ----------------------------------------------------------------------------
-    /// NancyFx http server
-    // ----------------------------------------------------------------------------
-    open Nancy
-    open Nancy.Hosting.Self
-
-    type NancyServer(port: int) =
-        let url = sprintf "http://*:%d" port
-        let listener = new NancyHost(new Uri(url))
-        
-        interface IServer with
-            member this.Start() =
-                listener.Start()
-                    
-            member this.Stop() =
-                listener.Stop()
-
-
-    // ----------------------------------------------------------------------------
     /// WebSocket server
     // ----------------------------------------------------------------------------
     open SuperSocket.SocketBase
     open SuperWebSocket
-
-    type SocketServer(port: int, newDataHandler, newMessageHandler, newRequestHandler, newSessionHandler, dropSessionHandler) =
+    open System.Collections.Generic
+    
+    type SocketServer(port: int, newDataReceived, newMessageReceived, newSessionConnected, sessionClosed) =
         let listener = new WebSocketServer()
+
         do
             if listener.Setup(port) = false then
                 failwithf "Failed to initialize socket server."
-            listener.add_NewDataReceived(newDataHandler)
-            listener.add_NewMessageReceived(newMessageHandler)
-            listener.add_NewRequestReceived(newRequestHandler)
-            listener.add_NewSessionConnected(newSessionHandler)
-            listener.add_SessionClosed(dropSessionHandler)
+            listener.add_NewDataReceived(new SessionHandler<WebSocketSession, byte[]>(newDataReceived))
+            listener.add_NewMessageReceived(new SessionHandler<WebSocketSession, string>(newMessageReceived))
+            listener.add_NewSessionConnected(new SessionHandler<WebSocketSession>(newSessionConnected))
+            listener.add_SessionClosed(new SessionHandler<WebSocketSession, CloseReason>(sessionClosed))
 
         interface IServer with
+            
             member this.Start() =
                 listener.Start() |> ignore
                     

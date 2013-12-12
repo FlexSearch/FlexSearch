@@ -37,33 +37,32 @@ module Settings =
             <Node>
                 <Name>Test</Name>
                 <HttpPort>9800</HttpPort>
-                <WSPort>9900</WSPort>
+                <TcpPort>9900</TcpPort>
                 <Role>Data</Role>
                 <DataFolder>c:\</DataFolder>
             </Node>
             <Cluster>
                 <MasterNode>10.80.105.1</MasterNode>
-                <SlaveNode>10.80.105.1</SlaveNode>
             </Cluster>
-            <RequestLogger Enabled="true" RollingLogCapacity="1000" WriteLogToDisk="false"/>
-            <Plugins>
-                <Plugin Name="test" />
-                <Plugin Name="test" />
-            </Plugins>
         </Settings>
     """
     >
 
     // ----------------------------------------------------------------------------
     /// Concerete implementation of ISettingsServer
-    // ----------------------------------------------------------------------------   
-    type ServerSettings(path: string) =
-        let mutable dataFolder = ""
-        let mutable nodeRole = NodeRole.Index
-        let mutable masterNode = new IPAddress([|0uy; 0uy; 0uy; 0uy|])
-        let mutable slaveNode = new IPAddress([|0uy; 0uy; 0uy; 0uy|])
+    // ----------------------------------------------------------------------------
 
-        let settings = 
+    open SharpRepository
+    open SharpRepository.Repository.Caching
+    open SharpRepository.Repository
+    open SharpRepository.XmlRepository
+
+    type SettingsStore(path : string) =
+        let mutable settings = None
+        let mutable nodeRepository : IRepository<Node> option = None
+        let mutable indexRepository : IRepository<Index> option = None
+
+        do
             let fileXml = Helpers.LoadFile(path)
             let parsedResult = FlexServerSetting.Parse(fileXml)          
             
@@ -73,41 +72,36 @@ module Settings =
             |> Validator.regexMatch "^[a-z0-9]*$" 
             |> ignore
 
-            match NodeRole.TryParse(parsedResult.Node.Role) with
-            | (true, res) -> nodeRole <- res
-            | _ -> failwithf "Invalid Node->Role:%s" parsedResult.Node.Role  
+            let nodeRole =
+                match NodeRole.TryParse(parsedResult.Node.Role) with
+                | (true, res) -> res
+                | _ -> failwithf "Invalid Node->Role:%s" parsedResult.Node.Role  
             
-            dataFolder <- Helpers.GenerateAbsolutePath(parsedResult.Node.DataFolder)
+            let masterNode =
+                match IPAddress.TryParse(parsedResult.Cluster.MasterNode) with
+                | (true, address) -> address
+                | _ -> failwithf "Cluster->MasterNode ip address is  not in valid format: %s" parsedResult.Cluster.MasterNode
+
+            let setting =
+                {
+                    LuceneVersion = Constants.LuceneVersion
+                    HttpPort = parsedResult.Node.HttpPort
+                    TcpPort = parsedResult.Node.TcpPort
+                    DataFolder = Helpers.GenerateAbsolutePath(parsedResult.Node.DataFolder)
+                    PluginFolder = Constants.PluginFolder.Value
+                    ConfFolder = Constants.ConfFolder.Value
+                    NodeName = parsedResult.Node.Name
+                    NodeRole = nodeRole
+                    MasterNode = masterNode
+                }
             
-            match IPAddress.TryParse(parsedResult.Cluster.MasterNode) with
-            | (true, address) -> masterNode <- address
-            | _ -> failwithf "Cluster->MasterNode ip address is  not in valid format: %s" parsedResult.Cluster.MasterNode
+            nodeRepository <- Some(new XmlRepository<Node>(setting.ConfFolder, new StandardCachingStrategy<Node>(new InMemoryCachingProvider())) :> IRepository<Node>) 
+            indexRepository <- Some(new XmlRepository<Index>(setting.ConfFolder, new StandardCachingStrategy<Index>(new InMemoryCachingProvider())) :> IRepository<Index>)
 
-            match IPAddress.TryParse(parsedResult.Cluster.SlaveNode) with
-            | (true, address) -> slaveNode <- address
-            | _ -> failwithf "Cluster->SlaveNode ip address is  not in valid format: %s" parsedResult.Cluster.MasterNode
+            settings <- Some(setting)
 
-            parsedResult
+        interface IPersistanceStore with
+            member this.Settings = settings.Value
+            member this.Indices = indexRepository.Value
+            member this.Nodes = nodeRepository.Value
 
-        interface IServerSettings with
-            member this.LuceneVersion() = Constants.LuceneVersion
-            member this.HttpPort() = settings.Node.HttpPort
-            member this.WSPort() = settings.Node.WspOrt
-            member this.DataFolder() = dataFolder
-            member this.PluginFolder() = Constants.PluginFolder.Value
-            member this.ConfFolder() = Constants.ConfFolder.Value
-            member this.NodeName() = settings.Node.Name
-            member this.NodeType() = nodeRole
-            member this.MasterNode() = settings.Cluster.MasterNode
-            member this.SlaveNode() = settings.Cluster.SlaveNode     
-
-            
-            member this.PluginsToLoad() = 
-                let plugins = new List<string>()
-                if settings.XElement.Element(XName.Get("Plugins")) <> null then
-                    for plugin in settings.Plugins.GetPlugins() do
-                        plugins.Add(plugin.Name)
-                plugins.ToArray()
-                
-            member this.LoggerProperties() = 
-                (settings.RequestLogger.Enabled, settings.RequestLogger.RollingLogCapacity, settings.RequestLogger.WriteLogToDisk)
