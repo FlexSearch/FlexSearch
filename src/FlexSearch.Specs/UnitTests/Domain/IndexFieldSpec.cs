@@ -1,6 +1,5 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
-    using FlexSearch.Api.Types;
     using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
@@ -14,17 +13,17 @@
         #region Public Methods and Operators
 
         [Thesis]
-        [UnitInlineAutoFixture(FieldType.Bool, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Date, "dummy")]
-        [UnitInlineAutoFixture(FieldType.DateTime, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Double, "dummy")]
-        [UnitInlineAutoFixture(FieldType.ExactText, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Int, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Stored, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Bool, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Date, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.DateTime, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Double, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.ExactText, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Int, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Stored, "dummy")]
         public void AnalyzersAreIgnoredForXFieldtypes(
-            FieldType fieldType,
+            Api.FieldType fieldType,
             string analyzer,
-            IndexFieldProperties indexFieldProperties,
+            Api.IndexFieldProperties indexFieldProperties,
             Interface.IFactoryCollection factory)
         {
             "Given an index field validator and index field properties".Given(
@@ -47,8 +46,8 @@
                         () =>
                             Validator.IndexFieldValidator(
                                 factory,
-                                new AnalyzerDictionary(),
-                                new ScriptDictionary(),
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
                                 "",
                                 indexFieldProperties));
                 });
@@ -61,21 +60,21 @@
                         () =>
                             Validator.IndexFieldValidator(
                                 factory,
-                                new AnalyzerDictionary(),
-                                new ScriptDictionary(),
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
                                 "",
                                 indexFieldProperties));
                 });
         }
 
         [Thesis]
-        [UnitInlineAutoFixture(FieldType.Text, "test")]
-        [UnitInlineAutoFixture(FieldType.Highlight, "test")]
-        [UnitInlineAutoFixture(FieldType.Custom, "test")]
+        [UnitInlineAutoFixture(Api.FieldType.Text, "test")]
+        [UnitInlineAutoFixture(Api.FieldType.Highlight, "test")]
+        [UnitInlineAutoFixture(Api.FieldType.Custom, "test")]
         public void CorrectAnalyzersShouldBeSpecifiedForXFieldtypes(
-            FieldType fieldType,
+            Api.FieldType fieldType,
             string analyzer,
-            IndexFieldProperties indexFieldProperties,
+            Api.IndexFieldProperties indexFieldProperties,
             Interface.IFactoryCollection factory)
         {
             "Given an index field validator and index field properties".Given(
@@ -99,8 +98,8 @@
                          () =>
                              Validator.IndexFieldValidator(
                                  factory,
-                                 new AnalyzerDictionary(),
-                                 new ScriptDictionary(),
+                                 new Api.AnalyzerDictionary(),
+                                 new Api.ScriptDictionary(),
                                  "",
                                  indexFieldProperties));
                  });
@@ -113,27 +112,27 @@
                         () =>
                             Validator.IndexFieldValidator(
                                 factory,
-                                new AnalyzerDictionary(),
-                                new ScriptDictionary(),
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
                                 "",
                                 indexFieldProperties));
                 });
         }
 
         [Thesis]
-        [UnitInlineAutoFixture(FieldType.Text, "standardanalyzer")]
-        [UnitInlineAutoFixture(FieldType.Highlight, "standardanalyzer")]
-        [UnitInlineAutoFixture(FieldType.Custom, "standardanalyzer")]
+        [UnitInlineAutoFixture(Api.FieldType.Text, "standardanalyzer")]
+        [UnitInlineAutoFixture(Api.FieldType.Highlight, "standardanalyzer")]
+        [UnitInlineAutoFixture(Api.FieldType.Custom, "standardanalyzer")]
         public void CorrectAnalyzersShouldBeSpecifiedForXFieldtypes1(
-            FieldType fieldType,
+            Api.FieldType fieldType,
             string analyzer,
             Interface.IFactoryCollection factory)
         {
-            IndexFieldProperties indexFieldProperties = null;
+            Api.IndexFieldProperties indexFieldProperties = null;
             "Given an index field validator and index field properties".Given(
                 () =>
                 {
-                    indexFieldProperties = new IndexFieldProperties();
+                    indexFieldProperties = new Api.IndexFieldProperties();
                     indexFieldProperties.FieldType = fieldType;
                 });
 
@@ -150,8 +149,8 @@
                         () =>
                             Validator.IndexFieldValidator(
                                 factory,
-                                new AnalyzerDictionary(),
-                                new ScriptDictionary(),
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
                                 "",
                                 indexFieldProperties));
                 });
@@ -164,8 +163,8 @@
                         () =>
                             Validator.IndexFieldValidator(
                                 factory,
-                                new AnalyzerDictionary(),
-                                new ScriptDictionary(),
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
                                 "",
                                 indexFieldProperties));
                 });
@@ -174,8 +173,8 @@
         [Specification]
         public void DefaultValueTest()
         {
-            IndexFieldProperties sut = null;
-            "Given a new index field properties".Given(() => sut = new IndexFieldProperties());
+            Api.IndexFieldProperties sut = null;
+            "Given a new index field properties".Given(() => sut = new Api.IndexFieldProperties());
 
             "'standardanalyzer' should be the default 'SearchAnalyzer'".Then(
                 () => sut.SearchAnalyzer.Should().Be("standardanalyzer"));
@@ -184,21 +183,21 @@
             "'analyze' should be true".Then(() => sut.Analyze.Should().BeTrue());
             "'store' should be true".Then(() => sut.Store.Should().BeTrue());
             "'index' should be true".Then(() => sut.Index.Should().BeTrue());
-            "'FieldType' should be 'Text'".Then(() => sut.FieldType.Should().Be(FieldType.Text));
+            "'FieldType' should be 'Text'".Then(() => sut.FieldType.Should().Be(Api.FieldType.Text));
             "'FieldTermVector' should be 'StoreTermVectorsWithPositionsandOffsets'".Then(
-                () => sut.FieldTermVector.Should().Be(FieldTermVector.StoreTermVectorsWithPositionsandOffsets));
+                () => sut.FieldTermVector.Should().Be(Api.FieldTermVector.StoreTermVectorsWithPositionsandOffsets));
         }
 
         [Thesis]
         [UnitAutoFixture]
         public void StorePropertyCanbeSetToFalse(Interface.IFactoryCollection factory)
         {
-            IndexFieldProperties indexFieldProperties = null;
+            Api.IndexFieldProperties indexFieldProperties = null;
             "Given an index field validator and index field properties".Given(
                 () =>
                 {
-                    indexFieldProperties = new IndexFieldProperties();
-                    indexFieldProperties.FieldType = FieldType.Date;
+                    indexFieldProperties = new Api.IndexFieldProperties();
+                    indexFieldProperties.FieldType = Api.FieldType.Date;
                     indexFieldProperties.Store = false;
                 });
 
@@ -210,8 +209,8 @@
                         () =>
                             Validator.IndexFieldValidator(
                                 factory,
-                                new AnalyzerDictionary(),
-                                new ScriptDictionary(),
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
                                 "",
                                 indexFieldProperties)));
         }

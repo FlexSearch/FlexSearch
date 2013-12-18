@@ -32,19 +32,13 @@ open System.Xml.Linq
 module Settings =
 
     /// Xml setting provider for server config
-    type private FlexServerSetting = XmlProvider<"""
-        <Settings version="1">
-            <Node>
-                <Name>Test</Name>
-                <HttpPort>9800</HttpPort>
-                <TcpPort>9900</TcpPort>
-                <Role>Data</Role>
-                <DataFolder>c:\</DataFolder>
-            </Node>
-            <Cluster>
-                <MasterNode>10.80.105.1</MasterNode>
-            </Cluster>
-        </Settings>
+    type private FlexServerSetting = JsonProvider<"""
+        {
+            "HttpPort" : 9800,
+            "TcpPort" : 9900,
+            "IsMaster" : false,
+            "DataFolder" : "./data"
+        }
     """
     >
 
@@ -52,56 +46,113 @@ module Settings =
     /// Concerete implementation of ISettingsServer
     // ----------------------------------------------------------------------------
 
-    open SharpRepository
-    open SharpRepository.Repository.Caching
-    open SharpRepository.Repository
-    open SharpRepository.XmlRepository
+    open System.Linq
+    open System.Data.SQLite
+    open System.IO
+    
+    let private sqlCreateTable = """
+    CREATE TABLE [keyvalue] (
+    [id] INTEGER  NOT NULL PRIMARY KEY AUTOINCREMENT,
+    [key] TEXT  NOT NULL,
+    [value] TEXT  NOT NULL,
+    [type] TEXT  NOT NULL,
+    [timestamp] TIMESTAMP  NOT NULL
+    );
 
+    CREATE INDEX [keyvalue_idx] ON [keyvalue](
+    [key]  DESC,
+    [type]  DESC
+    );
+    """
+    
     type SettingsStore(path : string) =
         let mutable settings = None
-        let mutable nodeRepository : IRepository<Node> option = None
-        let mutable indexRepository : IRepository<Index> option = None
+        let mutable db = None
 
         do
             let fileXml = Helpers.LoadFile(path)
             let parsedResult = FlexServerSetting.Parse(fileXml)          
-            
-            // Validate node name
-            Validator.validate "Node->Name" parsedResult.Node.Name 
-            |> Validator.notNullAndEmpty 
-            |> Validator.regexMatch "^[a-z0-9]*$" 
-            |> ignore
-
-            let nodeRole =
-                match NodeRole.TryParse(parsedResult.Node.Role) with
-                | (true, res) -> res
-                | _ -> failwithf "Invalid Node->Role:%s" parsedResult.Node.Role  
-            
-            let masterNode =
-                match IPAddress.TryParse(parsedResult.Cluster.MasterNode) with
-                | (true, address) -> address
-                | _ -> failwithf "Cluster->MasterNode ip address is  not in valid format: %s" parsedResult.Cluster.MasterNode
 
             let setting =
                 {
                     LuceneVersion = Constants.LuceneVersion
-                    HttpPort = parsedResult.Node.HttpPort
-                    TcpPort = parsedResult.Node.TcpPort
-                    DataFolder = Helpers.GenerateAbsolutePath(parsedResult.Node.DataFolder)
+                    HttpPort = parsedResult.HttpPort
+                    TcpPort = parsedResult.TcpPort
+                    DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
                     PluginFolder = Constants.PluginFolder.Value
                     ConfFolder = Constants.ConfFolder.Value
-                    NodeName = parsedResult.Node.Name
-                    NodeRole = nodeRole
-                    MasterNode = masterNode
+                    NodeName = ""
+                    NodeRole = NodeRole.UnDefined
+                    MasterNode = IPAddress.None
                 }
             
-            nodeRepository <- Some(new XmlRepository<Node>(setting.ConfFolder, new StandardCachingStrategy<Node>(new InMemoryCachingProvider())) :> IRepository<Node>) 
-            indexRepository <- Some(new XmlRepository<Index>(setting.ConfFolder, new StandardCachingStrategy<Index>(new InMemoryCachingProvider())) :> IRepository<Index>)
-
+            let sqlLiteDbPath = setting.ConfFolder + "//conf"
+            let connectionString = sprintf "%s;Version=3;UseUTF16Encoding=True;" sqlLiteDbPath
+            
+            let dbConnection =
+                if File.Exists(sqlLiteDbPath) then
+                    let dbConnection = new SQLiteConnection(connectionString)
+                    dbConnection.Open()
+                    dbConnection
+                else
+                    SQLiteConnection.CreateFile(sqlLiteDbPath)
+                    let dbConnection = new SQLiteConnection(connectionString)
+                    dbConnection.Open()
+                    let command = new SQLiteCommand(sqlCreateTable, dbConnection)
+                    command.ExecuteNonQuery() |> ignore
+                    dbConnection
+               
             settings <- Some(setting)
+            db <- Some(dbConnection)
 
         interface IPersistanceStore with
             member this.Settings = settings.Value
-            member this.Indices = indexRepository.Value
-            member this.Nodes = nodeRepository.Value
+            
+            member this.Get<'T>(key) =
+                let instanceType = typeof<'T>.FullName
+                if key = "" then
+                    None
+                else
+                    let sql = sprintf "select * from keyvalue limit 1 where type=%s and key=%s" instanceType key
+                    let command = new SQLiteCommand(sql, db.Value)
+                    let reader = command.ExecuteReader()
+                    let mutable result : 'T = Unchecked.defaultof<'T>
+                    while reader.Read() do
+                        result <- Newtonsoft.Json.JsonConvert.DeserializeObject<'T>(reader.GetString(2)) 
+                    Some(result)
 
+
+            member this.GetAll<'T>() =
+                let sql = sprintf "select * from keyvalue where type=%s" typeof<'T>.FullName
+                let command = new SQLiteCommand(sql, db.Value)
+                let reader = command.ExecuteReader()
+                let mutable result : List<'T> = new List<'T>()
+                while reader.Read() do
+                    result.Add(Newtonsoft.Json.JsonConvert.DeserializeObject<'T>(reader.GetString(2)))
+                result :> IEnumerable<'T>
+
+            member this.Put<'T> (key) (instance : 'T) =
+                let instanceType = typeof<'T>.FullName
+                if key = "" then
+                    false
+                else
+                    let sql = sprintf "select * from keyvalue limit 1 where type='%s' and key='%s'" instanceType key
+                    let command = new SQLiteCommand(sql, db.Value)
+                    let reader = command.ExecuteReader()
+                    let mutable result = false
+                    while reader.Read() do
+                        result <- true
+
+                    let value = Newtonsoft.Json.JsonConvert.SerializeObject(instance)
+                    if result then
+                        // Exists so lets update it 
+                        let sql = sprintf "update keyvalue SET type = '%s', key = '%s', value = '%s', timestamp = '%s' where type = '%s' and key = '%s'" instanceType key value (DateTime.Now.ToString()) instanceType key
+                        let command = new SQLiteCommand(sql, db.Value)
+                        command.ExecuteNonQuery() |> ignore
+                    else
+                        // Does not exist so create it
+                        let sql = sprintf "insert into keyvalue (type, key, value, timestamp) values ('%s', '%s', '%s', '%s')" instanceType key value (DateTime.Now.ToString())
+                        let command = new SQLiteCommand(sql, db.Value)
+                        command.ExecuteNonQuery() |> ignore
+
+                    true

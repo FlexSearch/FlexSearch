@@ -235,7 +235,7 @@ type CaseInsensitiveKeywordAnalyzer() =
 type IndexCommand = 
     
     /// Create a new document
-    | Create of id: string * fields: Dictionary<string,string>  
+    | Create of id: string * fields: Dictionary<string, string>  
     
     /// Update an existing document
     | Update of id: string * fields: Dictionary<string,string>  
@@ -265,7 +265,7 @@ type IndexQuery =
 
 
 /// Message used by cluster for intra cluster communication
-type CommMessage =
+type CommunicationMessage =
     {
         Type    :   int8
         Body    :   byte[]

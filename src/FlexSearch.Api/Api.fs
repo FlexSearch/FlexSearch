@@ -22,6 +22,7 @@ module Api =
         | [<EnumMember>] ClusterSlave = 2
         | [<EnumMember>] Index = 3
         | [<EnumMember>] Query = 4
+        | [<EnumMember>] UnDefined = 5
 
         
     /// Cluster node information
@@ -31,7 +32,7 @@ module Api =
         [<DataMember(Order = 1)>] member val NodeRole = NodeRole.Index with get, set
 
 
-    // Represents Lucene's similarity models
+    /// Represents Lucene's similarity models
     type [<DataContract(Namespace = ApiNamespace)>] FieldSimilarity =
         | [<EnumMember>] BM25 = 1
         | [<EnumMember>] TDF = 2
@@ -115,6 +116,7 @@ module Api =
         [<DataMember(Order = 3)>] member val ShardAllocationStrategy = ShardAllocationStrategy.Manual with get, set
         [<DataMember(Order = 4)>] member val ShardAllocationDetails = new List<ShardAllocationDetail>() with get, set
         [<DataMember(Order = 5)>] member val AutoRebalance = false with get, set
+        [<DataMember(Order = 6)>] member val AutoRebalanceTimeOut = 300 with get, set
 
 
     type [<DataContract(Namespace = ApiNamespace)>] IndexConfiguration()  =
@@ -126,9 +128,8 @@ module Api =
         [<DataMember(Order = 4)>] member val RamBufferSizeMb = 100 with get, set
 
         [<DataMember(Order = 5)>] member val RefreshTimeMilliSec = 25 with get, set
-        [<DataMember(Order = 6)>] member val ShardConfiguration = new ShardConfiguration() with get, set
-        [<DataMember(Order = 7)>] member val IndexVersion = IndexVersion.Lucene46 with get, set
-
+        [<DataMember(Order = 6)>] member val IndexVersion = IndexVersion.Lucene46 with get, set
+        [<DataMember(Order = 7)>] member val ShardConfiguration = new ShardConfiguration() with get, set
  
     type [<DataContract(Namespace = ApiNamespace)>] IndexFieldProperties() =
         [<DataMember(Order = 1)>] member val Analyze = true with get, set
@@ -267,10 +268,10 @@ module Api =
         member val TotalAvailable = 0 with get, set
 
     type Index() =
-        member val Analyzers = new AnalyzerDictionary() with get, set
-        member val Configuration = new IndexConfiguration() with get, set
-        member val Fields = new FieldDictionary() with get, set
-        member val IndexName = "" with get, set
-        member val Online = true with get, set
-        member val Scripts = new ScriptDictionary() with get, set
-        member val SearchProfiles = new SearchProfileDictionary() with get, set
+        [<DataMember(Order = 1)>] member val Analyzers = new AnalyzerDictionary() with get, set
+        [<DataMember(Order = 2)>] member val Configuration = new IndexConfiguration() with get, set
+        [<DataMember(Order = 3)>] member val Fields = new FieldDictionary() with get, set
+        [<DataMember(Order = 4)>] member val IndexName = "" with get, set
+        [<DataMember(Order = 5)>] member val Online = true with get, set
+        [<DataMember(Order = 6)>] member val Scripts = new ScriptDictionary() with get, set
+        [<DataMember(Order = 7)>] member val SearchProfiles = new SearchProfileDictionary() with get, set

@@ -1,6 +1,5 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
-    using FlexSearch.Api.Types;
     using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
@@ -16,25 +15,25 @@
         [Specification]
         public void DefaultValueTest()
         {
-            IndexConfiguration sut = null;
-            "Given new index field properties".Given(() => sut = new IndexConfiguration());
+            Api.IndexConfiguration sut = null;
+            "Given new index field properties".Given(() => sut = new Api.IndexConfiguration());
 
             "'CommitTimeSec' should be '60'".Then(() => sut.CommitTimeSec.Should().Be(60));
-            "'DirectoryType' should be 'FileSystem'".Then(() => sut.DirectoryType.Should().Be(DirectoryType.FileSystem));
+            "'DirectoryType' should be 'FileSystem'".Then(() => sut.DirectoryType.Should().Be(Api.DirectoryType.FileSystem));
             "'RamBufferSizeMb' should be '500'".Then(() => sut.RamBufferSizeMb.Should().Be(500));
             "'RefreshTimeMilliSec' should be '25'".Then(() => sut.RefreshTimeMilliSec.Should().Be(25));
-            "'Shards' should be '1'".Then(() => sut.Shards.Should().Be(1));
+            "'Shards' should be '1'".Then(() => sut.ShardConfiguration.ShardCount.Should().Be(1));
         }
 
         [Thesis]
         [UnitAutoFixture]
         public void IndexConfigurationValidatorTest()
         {
-            IndexConfiguration indexConfiguration = null;
+            Api.IndexConfiguration indexConfiguration = null;
             "Given new index field properties & index configuration validator".Given(
                 () =>
                 {
-                    indexConfiguration = new IndexConfiguration();
+                    indexConfiguration = new Api.IndexConfiguration();
                 });
 
             "'CommitTimeSec' cannot be less than '60'".Then(
@@ -55,7 +54,7 @@
             "'Shards' cannot be less than '1'".Then(
                 () =>
                 {
-                    indexConfiguration.Shards = 0;
+                    indexConfiguration.ShardConfiguration.ShardCount = 0;
                     Assert.Throws<Validator.ValidationException>(
                         () => Validator.IndexConfigurationValidator("", indexConfiguration));
                 });

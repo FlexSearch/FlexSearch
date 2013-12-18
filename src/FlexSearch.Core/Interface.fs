@@ -35,6 +35,7 @@ open org.apache.lucene.store
 open System
 open System.ComponentModel.Composition
 open System.Collections.Generic
+open System.Collections.Concurrent
 open System.IO
 open System.Threading.Tasks.Dataflow
 open System.Reflection
@@ -51,16 +52,20 @@ module Interface =
     type ICommuncationChannel =
         
         /// One way communcation channel
-        abstract member OneWay          :   CommMessage -> bool
+        abstract member OneWay          :   CommunicationMessage -> bool
 
         /// Two way communication channel
-        abstract member RequestReply    :   CommMessage -> CommMessage
+        abstract member RequestReply    :   CommunicationMessage -> CommunicationMessage
 
 
     type IServer =
         abstract member Start   :   unit -> unit
         abstract member Stop    :   unit -> unit
     
+    type IConnectionPool<'T> =
+        abstract member PoolSize    :   int
+        abstract member TryExecute  :   int -> ('T -> unit) -> 'T
+
 
     type ISessionServer =
         inherit IServer
@@ -70,10 +75,11 @@ module Interface =
 
     /// Used to manage the persistant data access
     type IPersistanceStore =
-        abstract member Nodes       :   SharpRepository.Repository.IRepository<Node>
-        abstract member Indices     :   SharpRepository.Repository.IRepository<Index>
         abstract member Settings    :   ServerSettings
-
+        abstract member GetAll<'T>  :   unit -> IEnumerable<'T>
+        abstract member Get<'T>     :   string -> 'T option
+        abstract member Put<'T>     :   string -> 'T -> bool
+  
 
     // ---------------------------------------------------------------------------- 
     /// General Interface to offload all resource loading resposibilities. This will
@@ -130,6 +136,13 @@ module Interface =
     type IFlexMetaData =
         abstract Name   :   string
     
+
+    // ----------------------------------------------------------------------------     
+    /// Http module to handle to incoming requests
+    // ----------------------------------------------------------------------------     
+    type IHttpModule =
+        abstract Process    :   System.Net.HttpListenerRequest -> obj
+
 
     // ----------------------------------------------------------------------------     
     /// Flex Setting builder interface
@@ -299,52 +312,7 @@ module Interface =
         abstract member ShutDown                    :   unit -> bool
 
 
-    // ---------------------------------------------------------------------------- 
-    /// Interface which exposes all global server settings
-    // ---------------------------------------------------------------------------- 
-    type IServerSettings =
-
-        /// Lucene version to be used across the application
-        abstract member LuceneVersion       :   unit -> org.apache.lucene.util.Version
-
-        /// Http port
-        abstract member HttpPort            :   unit -> int
-        
-        /// Websocket port
-        abstract member WSPort              :   unit -> int
-        
-        /// Node name
-        abstract member NodeName            :   unit -> string
-
-        /// Node type
-        abstract member NodeType            :   unit -> NodeRole
-
-        /// Master node
-        abstract member MasterNode          :   unit -> string
-
-        /// Slave node
-        abstract member SlaveNode           :   unit -> string
-
-        /// Request logger settings
-        abstract member LoggerProperties    :   unit -> (bool * int * bool)
-        
-        /// Data folder
-        abstract member DataFolder          :   unit -> string
-
-        /// Data folder
-        abstract member PluginFolder        :   unit -> string
-
-        /// Data folder
-        abstract member ConfFolder          :   unit -> string
-
-        /// Plugins to be loaded
-        abstract member PluginsToLoad       :   unit -> string[]
-
-
-    type INodeBuilder =
-        abstract member BuildHttpEndpoint   :   IServerSettings -> Option<IServer>
-        abstract member BuildTcpEndpoint    :   IServerSettings -> Option<IServer>
-
+    open SuperWebSocket
 
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
@@ -352,3 +320,25 @@ module Interface =
         abstract member PersistanceStore    :   IPersistanceStore
         abstract member TcpServer           :   IServer
         abstract member HttpServer          :   IServer
+        //abstract member 
+        abstract member ActiveConnections   :   ConcurrentDictionary<string, string>
+        abstract member IncomingSessions    :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
+        abstract member OutgoingConnections :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
+
+    
+    type ISocketClient =
+        abstract member Open        :   unit -> unit
+        abstract member Send        :   byte[] -> unit
+        abstract member Connected   :   unit -> bool
+
+    /// This will hold all the mutable data related to the node. Everything outside will be
+    /// immutable. This will be passed around. 
+    type NodeState =
+        {
+            PersistanceStore    :   IPersistanceStore
+            ActiveConnections   :   ConcurrentDictionary<string, string>
+            IncomingSessions    :   ConcurrentDictionary<string, WebSocketSession>
+            OutgoingConnections :   ConcurrentDictionary<string, ISocketClient>
+            Indices             :   ConcurrentDictionary<string, Index>
+        }
+        

@@ -15,17 +15,35 @@ namespace FlexSearch.Core
 
 module Main =
     open System
+    open System.Collections.Concurrent
     open System.Net
     open System.Threading
     open FlexSearch.Api
     open FlexSearch.Core.Server
+    open SuperWebSocket
 
     let startClusterMaster() = ()
-
+    
+    type Servers =
+        {
+            TcpServer           :   IServer
+            HttpServer          :   IServer
+        } 
 
     let loadNode() =
         let serverSettings = new Settings.SettingsStore(Constants.ConfFolder.Value + "Config.xml") :> IPersistanceStore
-        //let httpServer = new HttpServer(serverSettings.Settings.HttpPort)
+        let nodeState =
+            {
+                PersistanceStore = serverSettings
+                ActiveConnections = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                IncomingSessions = new ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>(StringComparer.OrdinalIgnoreCase)
+                OutgoingConnections = new ConcurrentDictionary<string, ISocketClient>(StringComparer.OrdinalIgnoreCase)
+                Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
+            }
+
+
+        let httpServer = new Server.Http.HttpServer(serverSettings.Settings.HttpPort) :> IServer
+        httpServer.Start()
         ()
         //let tcpServer = new SocketServer(serverSettings.Settings().TcpPort, )
 //        match serverSettings.Settings().NodeRole with

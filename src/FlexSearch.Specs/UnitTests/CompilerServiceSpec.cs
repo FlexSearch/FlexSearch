@@ -2,7 +2,6 @@
 {
     using System.Collections.Generic;
 
-    using FlexSearch.Api.Types;
     using FlexSearch.Core;
     using FlexSearch.Specs.Helpers.SubSpec;
 
@@ -59,7 +58,7 @@
             string.Format("Computed field: {0}", message).Observation(
                 () =>
                 {
-                    var script = new ScriptProperties { ScriptOption = ScriptOption.SingleLine, ScriptType = ScriptType.ComputedField, ScriptSource = source };
+                    var script = new Api.ScriptProperties { ScriptOption = Api.ScriptOption.SingleLine, ScriptType = Api.ScriptType.ComputedField, ScriptSource = source };
                     this.factoryCollection.ComputedFieldScriptFactory.CompileScript(script)
                         .Should()
                         .BeAssignableTo<Interface.IComputedFieldScript>();
@@ -67,7 +66,7 @@
             string.Format("Profile Selector: {0}", message).Observation(
                 () =>
                 {
-                    var script = new ScriptProperties { ScriptOption = ScriptOption.SingleLine, ScriptType = ScriptType.SearchProfileSelector, ScriptSource = source };
+                    var script = new Api.ScriptProperties { ScriptOption = Api.ScriptOption.SingleLine, ScriptType = Api.ScriptType.SearchProfileSelector, ScriptSource = source };
                     this.factoryCollection.ProfileSelectorScriptFactory.CompileScript(script)
                         .Should()
                         .BeAssignableTo<Interface.IFlexProfileSelectorScript>();
@@ -83,7 +82,7 @@
             string.Format("Computed field: {0}", message).Observation(
                 () =>
                 {
-                    var script = new ScriptProperties { ScriptOption = ScriptOption.MultiLine, ScriptType = ScriptType.ComputedField, ScriptSource = source };
+                    var script = new Api.ScriptProperties { ScriptOption = Api.ScriptOption.MultiLine, ScriptType = Api.ScriptType.ComputedField, ScriptSource = source };
                     this.factoryCollection.ComputedFieldScriptFactory.CompileScript(script)
                         .Should()
                         .BeAssignableTo<Interface.IComputedFieldScript>();
@@ -91,7 +90,7 @@
             string.Format("Profile Selector: {0}", message).Observation(
                 () =>
                 {
-                    var script = new ScriptProperties { ScriptOption = ScriptOption.MultiLine, ScriptType = ScriptType.SearchProfileSelector, ScriptSource = source };
+                    var script = new Api.ScriptProperties { ScriptOption = Api.ScriptOption.MultiLine, ScriptType = Api.ScriptType.SearchProfileSelector, ScriptSource = source };
                     this.factoryCollection.ProfileSelectorScriptFactory.CompileScript(script)
                         .Should()
                         .BeAssignableTo<Interface.IFlexProfileSelectorScript>();

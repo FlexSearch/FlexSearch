@@ -1,19 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Settings version="1">
   <Node>
-    <Name>flexsearch</Name>
+    <Name>test</Name>
     <HttpPort>9800</HttpPort>
-    <WSPort>9900</WSPort>
-    <Role>Index</Role>
-    <DataFolder>.\Data</DataFolder>
+    <TcpPort>9900</TcpPort>
+    <Role>clustermaster</Role>
+    <DataFolder>./data</DataFolder>
   </Node>
   <Cluster>
     <MasterNode>10.80.105.1</MasterNode>
-    <SlaveNode>10.80.105.1</SlaveNode>
   </Cluster>
-  <RequestLogger Enabled="true" RollingLogCapacity="1000" WriteLogToDisk="false"/>
-  <Plugins>
-    <Plugin Name="test" />
-    <Plugin Name="test" />
-  </Plugins>
 </Settings>

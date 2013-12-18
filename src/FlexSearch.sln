@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Server", "FlexSe
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.fsproj", "{E915A1EF-0430-4E59-B861-BB1EAC037217}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Specs", "FlexSearch.Specs\FlexSearch.Specs.csproj", "{48EB0B88-5EC1-4C26-A559-476E296EE598}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{E915A1EF-0430-4E59-B861-BB1EAC037217}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E915A1EF-0430-4E59-B861-BB1EAC037217}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E915A1EF-0430-4E59-B861-BB1EAC037217}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

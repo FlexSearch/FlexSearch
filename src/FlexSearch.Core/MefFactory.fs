@@ -55,7 +55,7 @@ module Factories =
             // Create a container  
             new CompositionContainer(aggrCatalog, CompositionOptions.IsThreadSafe)
         )
-
+    
     
     // ----------------------------------------------------------------------------
     // Concerete implementation of IResourceLoader
@@ -126,6 +126,15 @@ module Factories =
                         modules.Add(x.Metadata.Name, x.CreateExport().Value))                
                 modules   
     
+
+    /// Loads all the http modules
+    let GetHttpModules =
+        lazy
+        (
+            let httpModule = new FlexFactory<IHttpModule>(PluginContainer(true).Value, "HttpModule") :> IFlexFactory<IHttpModule>
+            httpModule.GetAllModules()
+        )
+
 
     // ---------------------------------------------------------------------------- 
     // Concerete implementation of IFactoryCollection
