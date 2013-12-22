@@ -34,40 +34,40 @@ namespace csharp FlexSearch.Api
 
 // Node role
 enum NodeRole {
-	ClusterMaster = 1,
-    ClusterSlave = 2,
-    Index = 3,
-    Query = 4,
+	ClusterMaster = 1
+    ClusterSlave = 2
+    Index = 3
+    Query = 4
     UnDefined = 5	
 }
 
 
 enum FieldSimilarity {
-	BM25 = 1,
+	BM25 = 1
 	TDF = 2
 }
 
 
 enum FieldPostingsFormat {
-	Direct = 1,
-	Memory = 2, // Postings and DocValues formats that are read entirely into memory.
-	Bloom = 3, // A PostingsFormat useful for low doc-frequency fields such as primary keys.
-	Pulsing = 4, // Pulsing Codec: inlines low frequency terms' postings into terms dictionary.	
+	Direct = 1
+	Memory = 2 // Postings and DocValues formats that are read entirely into memory.
+	Bloom = 3 // A PostingsFormat useful for low doc-frequency fields such as primary keys.
+	Pulsing = 4 // Pulsing Codec: inlines low frequency terms' postings into terms dictionary.	
 	Lucene41PostingsFormat = 5
 }
 
 
 enum DirectoryType {
-	FileSystem = 1,
-	MemoryMapped = 2,
+	FileSystem = 1
+	MemoryMapped = 2
 	Ram = 3
 }
 
 
 enum FieldTermVector {
-	DoNotStoreTermVector = 1,
-	StoreTermVector = 2,
-	StoreTermVectorsWithPositions = 3,
+	DoNotStoreTermVector = 1
+	StoreTermVector = 2
+	StoreTermVectorsWithPositions = 3
 	StoreTermVectorsWithPositionsandOffsets = 4
 }
 
@@ -76,15 +76,15 @@ enum FieldIndexOptions {
 	// Only documents are indexed: term frequencies and positions are omitted. 
 	// Phrase and other positional queries on the field will throw an exception, 
 	// and scoring will behave as if any term in the document appears only once.
-	DocsOnly = 1,
+	DocsOnly = 1
 
 	// Only documents and term frequencies are indexed: positions are omitted. This enables normal scoring, 
 	// except Phrase and other positional queries will throw an exception.
-	DocsAndFreqs = 2,
+	DocsAndFreqs = 2
 
 	// Indexes documents, frequencies and positions. This is a typical default for full-text 
 	// search: full scoring is enabled and positional queries are supported.
-	DocsAndFreqsAndPositions = 3,
+	DocsAndFreqsAndPositions = 3
 
 	/// Indexes documents, frequencies, positions and offsets. Character offsets are encoded alongside the positions.
 	DocsAndFreqsAndPositionsAndOffsets = 4
@@ -92,35 +92,35 @@ enum FieldIndexOptions {
 
 
 enum FieldType {
-	Int = 1,
-	Double = 2,
-	ExactText = 3,
-	Text = 4,
-	Highlight = 5,
-	Bool = 6,
-	Date = 7,
-	DateTime = 8,
-	Custom = 9,
-	Stored = 10,
+	Int = 1
+	Double = 2
+	ExactText = 3
+	Text = 4
+	Highlight = 5
+	Bool = 6
+	Date = 7
+	DateTime = 8
+	Custom = 9
+	Stored = 10
 	Long = 11
 }
 
 
 enum ShardAllocationStrategy {
-	Automatic = 1,
+	Automatic = 1
 	Manual = 2
 }
 
 
 enum IndexVersion {
-	Lucene46 = 1,
+	Lucene46 = 1
 	Lucene47 = 2
 }
 
 
 enum ScriptType {
-	SearchProfileSelector = 1,
-    CustomScoring = 2,
+	SearchProfileSelector = 1
+    CustomScoring = 2
     ComputedField = 3
 }
 
@@ -129,42 +129,41 @@ enum ScriptType {
 //	Structs
 // ----------------------------------------------------------------------------
 struct Node {
-	1:	required string NodeName;
-	2:	required string IpAddress;
-	3:	required NodeRole NodeRole;
+	1:	required string NodeName
+	2:	required string IpAddress
+	3:	required NodeRole NodeRole
 }
 
 
 struct ShardAllocationDetail {
-	1:	required i16 ShardNumber;
-	2:	required list<string> Nodes;
+	1:	required i16 ShardNumber
+	2:	required list<string> Nodes
 }
 
 
 struct ShardConfiguration {
-	1:	optional i16 ShardCount = 1;
-    2:	optional i16 Replica = 1;
-    3:	optional ShardAllocationStrategy AllocationStrategy = 2;
-	4:	required list<ShardAllocationDetail> AllocationDetails;
-	5:	optional bool AutoRebalance = false;
-    6:	optional i32 AutoRebalanceTimeOut = 300;
+	1:	optional i16 ShardCount = 1
+    2:	optional i16 Replica = 1
+    3:	optional ShardAllocationStrategy AllocationStrategy = 2
+	4:	required list<ShardAllocationDetail> AllocationDetails
+	5:	optional bool AutoRebalance = false
+    6:	optional i32 AutoRebalanceTimeOut = 300
 }
 
 
 struct IndexConfiguration {
-	1:	optional i32 CommitTimeSec = 60;
-	2:	optional DirectoryType DirectoryType = 2;
-	3:	optional i32 DefaultWriteLockTimeout =  1000;
+	1:	optional i32 CommitTimeSec = 60
+	2:	optional DirectoryType DirectoryType = 2
+	3:	optional i32 DefaultWriteLockTimeout =  1000
 
 	// Determines the amount of RAM that may be used for buffering added documents and deletions before // they are flushed to the Directory.
-	4:	optional i32 RamBufferSizeMb = 100;
-	5:	optional i32 RefreshTimeMilliSec = 25;
-	6:	optional IndexVersion IndexVersion = IndexVersion.Lucene46;
-	7:	required ShardConfiguration Configuration;
+	4:	optional i32 RamBufferSizeMb = 100
+	5:	optional i32 RefreshTimeMilliSec = 25
+	6:	optional IndexVersion IndexVersion = IndexVersion.Lucene46
 }
 
 
-struct IndexFieldProperties {
+struct FieldProperties {
 	1:	optional bool Analyze = true
 	2:	optional bool Index = true
 	3:	optional bool Store = true
@@ -183,25 +182,136 @@ struct IndexFieldProperties {
 //	Analyzer related
 // ----------------------------------------------------------------------------
 struct TokenFilter {
-	1:	required string FilterName;
-    2:	optional map<string, string> Parameters;
+	1:	required string FilterName
+    2:	optional map<string, string> Parameters
 }
 
 
 struct Tokenizer {
-	1:	required string TokenizerName;
-    2:	optional map<string, string> Parameters;
+	1:	required string TokenizerName
+    2:	optional map<string, string> Parameters
 }
 
 
 struct AnalyzerProperties {
-	1:	required Tokenizer Tokenizer;
-	2:	required list<TokenFilter> Filters;
+	1:	required Tokenizer Tokenizer
+	2:	required list<TokenFilter> Filters
 }
 
 
+// ----------------------------------------------------------------------------
+//	Scripting related
+// ----------------------------------------------------------------------------
 struct ScriptProperties {
-	1:	required string Source;
-	2:	required ScriptType ScriptType;
+	1:	required string Source
+	2:	required ScriptType ScriptType
 }
 
+
+// ----------------------------------------------------------------------------
+//	Search related
+// ----------------------------------------------------------------------------
+enum MissingValueOption {
+	ThrowError = 1
+	Default = 2
+	Ignore = 3
+}
+
+
+struct MissingValue {
+	1:	required string FieldName
+	2:	required MissingValueOption MissingValueOption
+	3:	optional string DefaultValue
+}
+
+
+struct HighlightOption {
+	1:	optional i16 FragmentsToReturn = 2
+	2:	required list<string> HighlightedFields
+	3:	optional string PostTag = "</B>"
+	4:	optional string PreTag = "</B>"
+}
+
+
+struct SearchQuery {
+	1:	optional list<string> Columns = {}
+	2:	optional i32 Count = 10
+	3:	optional HighlightOption Highlights = {}
+	4:	required string IndexName
+	5:	optional string OrderBy = "score"
+	6:	optional i32 Skip = 0
+	7:	required string QueryString
+	8:	optional list<MissingValue> MissingValueCofiguration = {}
+	9:	optional MissingValueOption GlobalMissingValue = 1
+}
+
+
+// ----------------------------------------------------------------------------
+//	Index & Document related
+// ----------------------------------------------------------------------------
+struct Document {
+	1:	optional map<string, string> Fields = {}
+	2:	optional list<string> Highlights = {}
+	3:	required string Id
+	4:	optional i64 LastModified
+	5:	required i32 Version = 1
+	7:	required string Index
+	8:	optional double Score = 0.0
+}
+
+
+struct Index {
+	1:	optional map<string, AnalyzerProperties> Analyzers = {}
+	2:	required IndexConfiguration IndexConfiguration = {}
+	3:	required map<string, FieldProperties> Fields = {}
+	4:	required string IndexName
+	5:	required bool Online = false
+	6:	optional map<string, ScriptProperties> Scripts = {}
+	7:	optional map<string, SearchQuery> SearchProfiles = {}
+	8:	required ShardConfiguration ShardConfiguration = {}
+}
+
+
+// ----------------------------------------------------------------------------
+//	Exceptions
+// ----------------------------------------------------------------------------
+
+exception InvalidOperation {
+	1: string DeveloperMessage
+	2: string UserMessage
+	3: i32 ErrorCode
+}
+
+exception InvalidOperation1 {
+  1: string DeveloperMessage
+  2: string UserMessage
+  3: i32 ErrorCode
+}
+
+// ----------------------------------------------------------------------------
+//	Specialized Exceptions
+// ----------------------------------------------------------------------------
+const InvalidOperation INDEX_NOT_FOUND = {"DeveloperMessage" : "The requested index does not exist.", "UserMessage" : "The requested index does not exist.", "ErrorCode": 1000}
+const InvalidOperation INDEX_ALREADY_EXISTS = {"DeveloperMessage" : "The requested index already exist.", "UserMessage" : "The requested index already exist.", "ErrorCode": 1002}
+const InvalidOperation INDEX_SHOULD_BE_OFFLINE = {"DeveloperMessage" : "Index should be made offline before attempting to update index settings.", "UserMessage" : "Index should be made offline before attempting the operation.", "ErrorCode": 1003}
+
+
+service FlexSearchService {
+	// Index related
+	void AddIndex (1: Index index) throws(1: InvalidOperation message)
+	void UpdateIndex (1: Index index) throws(1: InvalidOperation message)
+	void GetIndex (1: string indexName) throws(1: InvalidOperation message)
+	void DeleteIndex (1: string indexName) throws(1: InvalidOperation message)
+	void IndexSetState (1: string indexName, 2: bool state) throws(1: InvalidOperation message)
+	void UpdateIndexConfiguration (1: string indexName, 2: IndexConfiguration configuration) throws(1: InvalidOperation message)
+	void UpdateShardConfiguration (1: string indexName, 2: ShardConfiguration configuration) throws(1: InvalidOperation message)
+	
+	// Document related
+	oneway void AddDocument(1: Document document)
+	oneway void AddDocumentToReplica(1: Document document)
+	oneway void UpdateDocument(1: Document document)
+	oneway void UpdateDocumentInReplica(1: Document document)
+	oneway void DeleteDocument(1: Document document)
+	oneway void DeleteDocumentFromReplica(1: Document document)
+	Document GetDocument(1: string indexName, 2: string documentId)
+}
