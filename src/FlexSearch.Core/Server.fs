@@ -22,39 +22,19 @@ module Http =
     open System.Threading
     open FlexSearch.Core
     open FlexSearch
+    open FlexSearch.Api
     open Newtonsoft.Json
+    open System.Collections.Concurrent
 
-    let httpModules = Factories.GetHttpModules.Value
-
-
-    /// Write http response
-    let writeResponse (res: obj) (request: HttpListenerRequest) (response: HttpListenerResponse) =
-        let matchType format res =
-            match format with
-            | "text/json"
-            | "application/json" ->
-                response.ContentType <- "text/json" 
-                let result = JsonConvert.SerializeObject(res)
-                Some(Encoding.UTF8.GetBytes(result))
-            | "application/x-protobuf" 
-            | "application/octet-stream" ->
-                response.ContentType <- "application/x-protobuf"
-                Some(ClusterMessage.serialize(res))
-            | _ -> None
-
-        let result =
-            if request.AcceptTypes.Length = 0 then
-                matchType request.ContentType res
-            else
-                matchType request.AcceptTypes.[0] res
-
-        match result with
-        | None -> 
-            response.StatusCode <- int HttpStatusCode.NotAcceptable
-        | Some(x) -> 
-            response.ContentLength64 <- int64 x.Length 
-            response.OutputStream.Write(x, 0, x.Length)   
-        response.Close()
+    let nodeState =
+        {
+            PersistanceStore = Unchecked.defaultof<_>
+            ServerSettings = Unchecked.defaultof<ServerSettings>
+            HttpConnections = new ConcurrentDictionary<string, System.Net.Http.HttpClient>(StringComparer.OrdinalIgnoreCase)
+            IncomingSessions = new ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>(StringComparer.OrdinalIgnoreCase)
+            OutgoingConnections = new ConcurrentDictionary<string, ISocketClient>(StringComparer.OrdinalIgnoreCase)
+            Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
+        }
 
 
     /// Request callback for http server
@@ -69,14 +49,27 @@ module Http =
             let content = Encoding.UTF8.GetBytes("Content-type is not defined.")
             response.OutputStream.Write(content, 0, content.Length)
         else
-            match httpModules.TryGetValue(request.Url.LocalPath) with
-            | (true, proc) -> 
-                try
-                    let result = proc.Process(request)
-                    writeResponse result request response
-                with
-                | x -> ()
-            | _ -> response.StatusCode <- int HttpStatusCode.NotFound
+            if request.Url.Segments.Length > 1 then
+                let segment =
+                    if request.Url.Segments.[1].EndsWith("/") then
+                        request.Url.Segments.[1].Substring(0, request.Url.Segments.[1].Length - 1)
+                    else
+                        request.Url.Segments.[1]
+
+                match ServiceLocator.HttpModule.TryGetValue(segment) with
+                | (true, proc) -> 
+                    try
+                        proc.Process request response nodeState
+                    with
+                    | x -> 
+                        HttpHelpers.writeResponse HttpStatusCode.InternalServerError x request response
+                | _ -> 
+                    HttpHelpers.writeResponse HttpStatusCode.NotFound "The request end point is not available." request response
+            else
+                response.StatusCode <- int HttpStatusCode.InternalServerError
+                response.ContentType <- "text/html"
+                let content = Encoding.UTF8.GetBytes("FlexSearch Server")
+                response.OutputStream.Write(content, 0, content.Length)
         response.Close()
 
                 
@@ -159,6 +152,7 @@ module Socket =
     open SuperSocket.ClientEngine
     open ProtoBuf
     open System
+    open System.Reactive.Linq
 
     type SocketClient(address: string, port: int, state: NodeState) as self =
         let socket = new WebSocket(sprintf "ws://%s:%i/" address port)
@@ -169,8 +163,14 @@ module Socket =
         
         let dataReceived (event: DataReceivedEventArgs) = ()
         let messageReceived (event: MessageReceivedEventArgs) = ()
-        let socketClosed (event: EventArgs) = ()
-        let socketErrored (event: ErrorEventArgs) = ()
+        let socketClosed (event: EventArgs) = 
+            state.OutgoingConnections.TryRemove(address) |> ignore
+        let socketErrored (event: ErrorEventArgs) = 
+            state.OutgoingConnections.TryRemove(address) |> ignore
+            let timer = Observable.Timer(TimeSpan.FromSeconds(15))
+            let subscribe = timer.Subscribe(fun x ->
+                socket.Open()
+            )
 
         do
             socket.Opened.Add(socketOpened)

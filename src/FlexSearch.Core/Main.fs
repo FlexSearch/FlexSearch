@@ -19,30 +19,65 @@ module Main =
     open System.Net
     open System.Threading
     open FlexSearch.Api
+    open FlexSearch.Utility
+    open FlexSearch.Core
+    open FlexSearch
     open FlexSearch.Core.Server
     open SuperWebSocket
+    open FSharp.Data
 
-    let startClusterMaster() = ()
-    
-    type Servers =
+    /// Xml setting provider for server config
+    type private FlexServerSetting = JsonProvider<"""
         {
-            TcpServer           :   IServer
-            HttpServer          :   IServer
-        } 
+            "HttpPort" : 9800,
+            "TcpPort" : 9900,
+            "IsMaster" : false,
+            "DataFolder" : "./data"
+        }
+    """
+    >
+
+    let getServerSettings(path) =
+        let fileXml = Helpers.LoadFile(path)
+        let parsedResult = FlexServerSetting.Parse(fileXml)          
+
+        let setting =
+            {
+                LuceneVersion = Constants.LuceneVersion
+                HttpPort = parsedResult.HttpPort
+                TcpPort = parsedResult.TcpPort
+                DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
+                PluginFolder = Constants.PluginFolder.Value
+                ConfFolder = Constants.ConfFolder.Value
+                NodeName = ""
+                NodeRole = NodeRole.UnDefined
+                MasterNode = IPAddress.None
+            }
+
+        setting
+
+    /// Initialize all the service locator member
+    let initServiceLocator() =
+        let pluginContainer = Factories.PluginContainer(true).Value
+        ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
+        ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
+        ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
+        
 
     let loadNode() =
-        let serverSettings = new Settings.SettingsStore(Constants.ConfFolder.Value + "Config.xml") :> IPersistanceStore
+        initServiceLocator()
+        let settings = getServerSettings(Constants.ConfFolder.Value + "Config.json")
         let nodeState =
             {
-                PersistanceStore = serverSettings
-                ActiveConnections = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
+                ServerSettings = settings
+                HttpConnections = new ConcurrentDictionary<string, System.Net.Http.HttpClient>(StringComparer.OrdinalIgnoreCase)
                 IncomingSessions = new ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>(StringComparer.OrdinalIgnoreCase)
                 OutgoingConnections = new ConcurrentDictionary<string, ISocketClient>(StringComparer.OrdinalIgnoreCase)
                 Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
             }
 
-
-        let httpServer = new Server.Http.HttpServer(serverSettings.Settings.HttpPort) :> IServer
+        let httpServer = new Server.Http.HttpServer(9800) :> IServer
         httpServer.Start()
         ()
         //let tcpServer = new SocketServer(serverSettings.Settings().TcpPort, )

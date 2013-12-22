@@ -178,6 +178,7 @@
     <Compile Include="Helpers\SubSpec\SubSpec.Thesis.cs" />
     <Compile Include="Helpers\SubSpec\SubSpecUtils.cs" />
     <Compile Include="IntegrationTests\Index\IndexCreationSpec.cs" />
+    <Compile Include="UnitTests\PersistanceStoreSpec.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

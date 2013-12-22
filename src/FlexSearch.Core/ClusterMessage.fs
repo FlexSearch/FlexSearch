@@ -13,20 +13,22 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-module ClusterMessage =
+module Cluster =
     open ProtoBuf
     open System.IO
     open System.Collections.Generic
     open System
     open System.Linq
-
+    open FlexSearch.Api
+    open System.Reactive.Linq
+    open System.Reactive
 
     /// Cluster messages 
     type MessageType =
-        | AddIndex = 01uy
-        | DeleteIndex = 02uy
+        | AddIndexToCluster = 01uy
+        | DeleteIndexFromCluster = 02uy
         | UpdateIndex = 03uy
-        | GetIndex = 04uy
+        | GetIndexFrom = 04uy
         | UpdateAlias = 05uy
         | UpdateConf = 06uy
         | AddReplica = 07uy
@@ -46,42 +48,45 @@ module ClusterMessage =
         | PurgeTLog = 41uy
         | GetTLog = 42uy
 
-    
-    /// Helper method to serialize cluster messages
-    let serialize (message: 'a) =
-        use stream = new MemoryStream()
-        Serializer.Serialize(stream, message)
-        stream.GetBuffer()
-    
+        | NodeLeave = 51uy
+        | NodeJoin = 52uy
 
-    /// Helper method to deserialize cluster messages
-    let deSerialize<'T> (message: byte[]) =
-        use stream = new MemoryStream(message)
-        Serializer.Deserialize<'T>(stream)
+    let sendUpdateToAllNodes (message: byte[]) (state : NodeState) =
+        let send = state.OutgoingConnections.Values.ToObservable().Do(fun x -> x.Send(message)).Materialize()
+        let subscribe = send.Subscribe(fun x -> 
+            match x.Kind with
+            | NotificationKind.OnError -> ()
+            |_ -> ())
+        subscribe.Dispose()
 
 
-    /// Utility method to send a message to the client using websocket
-    let SendMessage (message : 'a) (messageType: MessageType) (client: string) (state : NodeState) =
-        let msg = Array.append [|byte messageType|] (serialize message)
-
-        match state.OutgoingConnections.TryGetValue(client) with
-        | (true, x) -> 
-            if x.Connected() then
-                x.Send(msg)
-            else
-                failwithf "The client is not connected."
-        | _ -> failwithf "No connection exists to the specifiec client: %s." client
-
-
-    /// Utility method to process the incoming message
-    let ProcessMessage (message : byte[]) (state : NodeState) =  
-        if message.Length = 0 then
-            failwith "Empty message cannot be processed."
+    let addIndex (index: Index) (state: NodeState) = 
+        let settings = ServiceLocator.SettingsBuilder.BuildSetting(index)
+        state.Indices.TryAdd(index.IndexName, index)
         
-        let msgType: MessageType = LanguagePrimitives.EnumOfValue message.[0]
-        let body = message.Skip(1).ToArray()
 
-        match message.[0] with
-        | 1uy -> deSerialize body
-        | _ -> failwithf "The message type is not supported."
+//    /// Utility method to send a message to the client using websocket
+//    let SendMessage (message : 'a) (messageType: MessageType) (client: string) (state : NodeState) =
+//        let msg = Array.append [|byte messageType|] (serialize message)
+//
+//        match state.OutgoingConnections.TryGetValue(client) with
+//        | (true, x) -> 
+//            if x.Connected() then
+//                x.Send(msg)
+//            else
+//                failwithf "The client is not connected."
+//        | _ -> failwithf "No connection exists to the specifiec client: %s." client
+//
+//
+//    /// Utility method to process the incoming message
+//    let ProcessMessage (message : byte[]) (state : NodeState) =  
+//        if message.Length = 0 then
+//            failwith "Empty message cannot be processed."
+//        
+//        let msgType: MessageType = LanguagePrimitives.EnumOfValue message.[0]
+//        let body = message.Skip(1).ToArray()
+//
+//        match message.[0] with
+//        | 1uy -> deSerialize body
+//        | _ -> failwithf "The message type is not supported."
 

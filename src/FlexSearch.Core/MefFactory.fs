@@ -128,10 +128,10 @@ module Factories =
     
 
     /// Loads all the http modules
-    let GetHttpModules =
+    let GetHttpModules() =
         lazy
         (
-            let httpModule = new FlexFactory<IHttpModule>(PluginContainer(true).Value, "HttpModule") :> IFlexFactory<IHttpModule>
+            let httpModule = new FlexFactory<IHttpModule>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<IHttpModule>
             httpModule.GetAllModules()
         )
 

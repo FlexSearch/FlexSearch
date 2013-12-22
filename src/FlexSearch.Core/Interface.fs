@@ -37,6 +37,7 @@ open System.ComponentModel.Composition
 open System.Collections.Generic
 open System.Collections.Concurrent
 open System.IO
+open System.Reactive.Subjects
 open System.Threading.Tasks.Dataflow
 open System.Reflection
 open System.Threading
@@ -73,9 +74,12 @@ module Interface =
         abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
 
 
-    /// Used to manage the persistant data access
+    // ---------------------------------------------------------------------------- 
+    /// General key value based settings store used across Flex to store all settings
+    /// Do not use this as a cache store
+    // ---------------------------------------------------------------------------- 
     type IPersistanceStore =
-        abstract member Settings    :   ServerSettings
+       // abstract member Settings    :   ServerSettings
         abstract member GetAll<'T>  :   unit -> IEnumerable<'T>
         abstract member Get<'T>     :   string -> 'T option
         abstract member Put<'T>     :   string -> 'T -> bool
@@ -136,13 +140,6 @@ module Interface =
     type IFlexMetaData =
         abstract Name   :   string
     
-
-    // ----------------------------------------------------------------------------     
-    /// Http module to handle to incoming requests
-    // ----------------------------------------------------------------------------     
-    type IHttpModule =
-        abstract Process    :   System.Net.HttpListenerRequest -> obj
-
 
     // ----------------------------------------------------------------------------     
     /// Flex Setting builder interface
@@ -331,14 +328,9 @@ module Interface =
         abstract member Send        :   byte[] -> unit
         abstract member Connected   :   unit -> bool
 
-    /// This will hold all the mutable data related to the node. Everything outside will be
-    /// immutable. This will be passed around. 
-    type NodeState =
-        {
-            PersistanceStore    :   IPersistanceStore
-            ActiveConnections   :   ConcurrentDictionary<string, string>
-            IncomingSessions    :   ConcurrentDictionary<string, WebSocketSession>
-            OutgoingConnections :   ConcurrentDictionary<string, ISocketClient>
-            Indices             :   ConcurrentDictionary<string, Index>
-        }
-        
+
+    // ----------------------------------------------------------------------------     
+    /// Http module to handle to incoming requests
+    // ----------------------------------------------------------------------------     
+    type IHttpModule =
+        abstract Process    :   System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> NodeState -> unit        

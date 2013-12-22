@@ -266,6 +266,7 @@ module Api =
         member val Documents = new List<Document>() with get, set 
         member val RecordsReturned = 0 with get, set 
         member val TotalAvailable = 0 with get, set
+    
 
     type Index() =
         [<DataMember(Order = 1)>] member val Analyzers = new AnalyzerDictionary() with get, set
@@ -275,3 +276,4 @@ module Api =
         [<DataMember(Order = 5)>] member val Online = true with get, set
         [<DataMember(Order = 6)>] member val Scripts = new ScriptDictionary() with get, set
         [<DataMember(Order = 7)>] member val SearchProfiles = new SearchProfileDictionary() with get, set
+        
