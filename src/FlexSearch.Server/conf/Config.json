@@ -1,0 +1,6 @@
+﻿{
+  "HttpPort" : 9800,
+  "TcpPort" : 9900,
+  "IsMaster" : false,
+  "DataFolder" : "./data"
+}

@@ -13,10 +13,7 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api
 open FlexSearch.Utility
-
-open Funq
 
 open java.io
 open java.util
@@ -32,9 +29,6 @@ open org.apache.lucene.facet.search
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
-
-open ServiceStack
-open ServiceStack.WebHost.Endpoints.Support
 
 open System
 open System.ComponentModel.Composition
@@ -52,8 +46,12 @@ open System.Threading
 module Constants =
 
     // Lucene version to be used across the application
-    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_44
-    
+    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_45
+    let IdField = "id"
+    let LastModifiedField = "lastmodified"
+    let TypeField = "type"
+    let VersionField = "version"
+
     // Flex root folder path
     let private rootFolder = lazy AppDomain.CurrentDomain.SetupInformation.ApplicationBase
 
@@ -72,7 +70,7 @@ module Constants =
         | _ -> failwithf "message=Terminating Lunar due to a fatal error.; cause='\\Conf\\' configuration directory does not exist at the root location.; rootFolder=%s" rootFolder.Value
         )
     
-       
+     
     // Flex plugins folder
     let PluginFolder = lazy (
         match Directory.Exists(rootFolder.Force() + "\\Plugins") with

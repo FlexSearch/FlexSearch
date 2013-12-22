@@ -1,53 +1,36 @@
 ﻿namespace FlexSearch.Specs.UnitTests.Domain
 {
-    using FlexSearch.Api.Types;
+    using FlexSearch.Core;
     using FlexSearch.Specs.Helpers;
     using FlexSearch.Specs.Helpers.SubSpec;
-    using FlexSearch.Validators;
 
     using FluentAssertions;
 
-    using ServiceStack.FluentValidation.TestHelper;
+    using Xunit;
 
     public class IndexFieldSpec
     {
         #region Public Methods and Operators
 
-        [Specification]
-        public void DefaultValueTest()
-        {
-            IndexFieldProperties sut = null;
-            "Given a new index field properties".Given(() => sut = new IndexFieldProperties());
-
-            "'standardanalyzer' should be the default 'SearchAnalyzer'".Then(() => sut.SearchAnalyzer.Should().Be("standardanalyzer"));
-            "'standardanalyzer' should be the default 'IndexAnalyzer'".Then(() => sut.IndexAnalyzer.Should().Be("standardanalyzer"));
-            "'analyze' should be true".Then(() => sut.Analyze.Should().BeTrue());
-            "'store' should be true".Then(() => sut.Store.Should().BeTrue());
-            "'index' should be true".Then(() => sut.Index.Should().BeTrue());
-            "'FieldType' should be 'Text'".Then(() => sut.FieldType.Should().Be(FieldType.Text));
-            "'FieldTermVector' should be 'StoreTermVectorsWithPositionsandOffsets'".Then(() => sut.FieldTermVector.Should().Be(FieldTermVector.StoreTermVectorsWithPositionsandOffsets));
-        }
-
         [Thesis]
-        [UnitInlineAutoFixture(FieldType.Bool, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Date, "dummy")]
-        [UnitInlineAutoFixture(FieldType.DateTime, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Double, "dummy")]
-        [UnitInlineAutoFixture(FieldType.ExactText, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Int, "dummy")]
-        [UnitInlineAutoFixture(FieldType.Stored, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Bool, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Date, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.DateTime, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Double, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.ExactText, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Int, "dummy")]
+        [UnitInlineAutoFixture(Api.FieldType.Stored, "dummy")]
         public void AnalyzersAreIgnoredForXFieldtypes(
-            FieldType fieldType,
+            Api.FieldType fieldType,
             string analyzer,
-            IndexFieldProperties indexFieldProperties,
-            IndexFieldValidator validator)
+            Api.IndexFieldProperties indexFieldProperties,
+            Interface.IFactoryCollection factory)
         {
             "Given an index field validator and index field properties".Given(
                 () =>
                 {
+                    indexFieldProperties.ScriptName = string.Empty;
                     indexFieldProperties.FieldType = fieldType;
-                    indexFieldProperties.IndexAnalyzer = analyzer;
-                    indexFieldProperties.SearchAnalyzer = analyzer;
                 });
 
             string.Format(
@@ -56,21 +39,43 @@
                 analyzer).When(() => { });
 
             "then there should be no validation error for 'IndexAnalyzer'".Then(
-                () => validator.ShouldNotHaveValidationErrorFor(x => x.IndexAnalyzer, indexFieldProperties));
+                () =>
+                {
+                    indexFieldProperties.IndexAnalyzer = analyzer;
+                    Assert.DoesNotThrow(
+                        () =>
+                            Validator.IndexFieldValidator(
+                                factory,
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
+                                "",
+                                indexFieldProperties));
+                });
 
             "then there should be no validation error for 'SearchAnalyzer'".Then(
-                () => validator.ShouldNotHaveValidationErrorFor(x => x.SearchAnalyzer, indexFieldProperties));
+                () =>
+                {
+                    indexFieldProperties.SearchAnalyzer = analyzer;
+                    Assert.DoesNotThrow(
+                        () =>
+                            Validator.IndexFieldValidator(
+                                factory,
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
+                                "",
+                                indexFieldProperties));
+                });
         }
 
         [Thesis]
-        [UnitInlineAutoFixture(FieldType.Text, "test")]
-        [UnitInlineAutoFixture(FieldType.Highlight, "test")]
-        [UnitInlineAutoFixture(FieldType.Custom, "test")]
+        [UnitInlineAutoFixture(Api.FieldType.Text, "test")]
+        [UnitInlineAutoFixture(Api.FieldType.Highlight, "test")]
+        [UnitInlineAutoFixture(Api.FieldType.Custom, "test")]
         public void CorrectAnalyzersShouldBeSpecifiedForXFieldtypes(
-            FieldType fieldType,
+            Api.FieldType fieldType,
             string analyzer,
-            IndexFieldProperties indexFieldProperties,
-            IndexFieldValidator validator)
+            Api.IndexFieldProperties indexFieldProperties,
+            Interface.IFactoryCollection factory)
         {
             "Given an index field validator and index field properties".Given(
                 () =>
@@ -86,28 +91,49 @@
                 analyzer).When(() => { });
 
             "then there should be validation error for 'IndexAnalyzer'".Then(
-                () => validator.ShouldHaveValidationErrorFor(x => x.IndexAnalyzer, indexFieldProperties));
+                 () =>
+                 {
+                     indexFieldProperties.IndexAnalyzer = analyzer;
+                     Assert.Throws<Validator.ValidationException>(
+                         () =>
+                             Validator.IndexFieldValidator(
+                                 factory,
+                                 new Api.AnalyzerDictionary(),
+                                 new Api.ScriptDictionary(),
+                                 "",
+                                 indexFieldProperties));
+                 });
 
             "then there should be validation error for 'SearchAnalyzer'".Then(
-                () => validator.ShouldHaveValidationErrorFor(x => x.SearchAnalyzer, indexFieldProperties));
+                () =>
+                {
+                    indexFieldProperties.SearchAnalyzer = analyzer;
+                    Assert.Throws<Validator.ValidationException>(
+                        () =>
+                            Validator.IndexFieldValidator(
+                                factory,
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
+                                "",
+                                indexFieldProperties));
+                });
         }
 
         [Thesis]
-        [UnitInlineAutoFixture(FieldType.Text, "standardanalyzer")]
-        [UnitInlineAutoFixture(FieldType.Highlight, "standardanalyzer")]
-        [UnitInlineAutoFixture(FieldType.Custom, "standardanalyzer")]
+        [UnitInlineAutoFixture(Api.FieldType.Text, "standardanalyzer")]
+        [UnitInlineAutoFixture(Api.FieldType.Highlight, "standardanalyzer")]
+        [UnitInlineAutoFixture(Api.FieldType.Custom, "standardanalyzer")]
         public void CorrectAnalyzersShouldBeSpecifiedForXFieldtypes1(
-            FieldType fieldType,
+            Api.FieldType fieldType,
             string analyzer,
-            IndexFieldProperties indexFieldProperties,
-            IndexFieldValidator validator)
+            Interface.IFactoryCollection factory)
         {
+            Api.IndexFieldProperties indexFieldProperties = null;
             "Given an index field validator and index field properties".Given(
                 () =>
                 {
+                    indexFieldProperties = new Api.IndexFieldProperties();
                     indexFieldProperties.FieldType = fieldType;
-                    indexFieldProperties.IndexAnalyzer = analyzer;
-                    indexFieldProperties.SearchAnalyzer = analyzer;
                 });
 
             string.Format(
@@ -116,28 +142,77 @@
                 analyzer).When(() => { });
 
             "then there should be no validation error for 'IndexAnalyzer'".Then(
-                () => validator.ShouldNotHaveValidationErrorFor(x => x.IndexAnalyzer, indexFieldProperties));
+                () =>
+                {
+                    indexFieldProperties.IndexAnalyzer = analyzer;
+                    Assert.DoesNotThrow(
+                        () =>
+                            Validator.IndexFieldValidator(
+                                factory,
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
+                                "",
+                                indexFieldProperties));
+                });
 
             "then there should be no validation error for 'SearchAnalyzer'".Then(
-                () => validator.ShouldNotHaveValidationErrorFor(x => x.SearchAnalyzer, indexFieldProperties));
+                () =>
+                {
+                    indexFieldProperties.SearchAnalyzer = analyzer;
+                    Assert.DoesNotThrow(
+                        () =>
+                            Validator.IndexFieldValidator(
+                                factory,
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
+                                "",
+                                indexFieldProperties));
+                });
         }
 
-        [Thesis, UnitAutoFixture]
-        public void StorePropertyCanbeSetToFalse(IndexFieldValidator validator)
+        [Specification]
+        public void DefaultValueTest()
         {
-            IndexFieldProperties indexFieldProperties = null;
+            Api.IndexFieldProperties sut = null;
+            "Given a new index field properties".Given(() => sut = new Api.IndexFieldProperties());
+
+            "'standardanalyzer' should be the default 'SearchAnalyzer'".Then(
+                () => sut.SearchAnalyzer.Should().Be("standardanalyzer"));
+            "'standardanalyzer' should be the default 'IndexAnalyzer'".Then(
+                () => sut.IndexAnalyzer.Should().Be("standardanalyzer"));
+            "'analyze' should be true".Then(() => sut.Analyze.Should().BeTrue());
+            "'store' should be true".Then(() => sut.Store.Should().BeTrue());
+            "'index' should be true".Then(() => sut.Index.Should().BeTrue());
+            "'FieldType' should be 'Text'".Then(() => sut.FieldType.Should().Be(Api.FieldType.Text));
+            "'FieldTermVector' should be 'StoreTermVectorsWithPositionsandOffsets'".Then(
+                () => sut.FieldTermVector.Should().Be(Api.FieldTermVector.StoreTermVectorsWithPositionsandOffsets));
+        }
+
+        [Thesis]
+        [UnitAutoFixture]
+        public void StorePropertyCanbeSetToFalse(Interface.IFactoryCollection factory)
+        {
+            Api.IndexFieldProperties indexFieldProperties = null;
             "Given an index field validator and index field properties".Given(
                 () =>
                 {
-                    indexFieldProperties = new IndexFieldProperties();
-                    indexFieldProperties.FieldType = FieldType.Text;
+                    indexFieldProperties = new Api.IndexFieldProperties();
+                    indexFieldProperties.FieldType = Api.FieldType.Date;
                     indexFieldProperties.Store = false;
                 });
 
-                "when a field is validated".When(() => { });
+            "when a field is validated".When(() => { });
 
             "then there should be no validation error for 'Store'".Then(
-                () => validator.ShouldNotHaveValidationErrorFor(x => x.Store, indexFieldProperties));
+                () =>
+                    Assert.DoesNotThrow(
+                        () =>
+                            Validator.IndexFieldValidator(
+                                factory,
+                                new Api.AnalyzerDictionary(),
+                                new Api.ScriptDictionary(),
+                                "",
+                                indexFieldProperties)));
         }
 
         #endregion

@@ -16,11 +16,10 @@ namespace FlexSearch.Core
 
 open FSharp.Data
 open FlexSearch.Utility
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Analysis.Analyzers
 open FlexSearch.Core
 open FlexSearch.Core.Index
-open ServiceStack.FluentValidation
 
 open org.apache.lucene.codecs
 open org.apache.lucene.codecs.lucene42
@@ -31,8 +30,6 @@ open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.store
 open org.apache.lucene.facet.search
 open org.apache.lucene.search
-
-open ServiceStack.Logging
 
 open System
 open System.IO
@@ -144,7 +141,7 @@ module SettingsBuilder =
     // ----------------------------------------------------------------------------
     // Build analyzer definition for flexindexsettings from api analyzers
     // ----------------------------------------------------------------------------
-    let buildAnalyzers(analyzersDict : Dictionary<string, FlexSearch.Api.Types.AnalyzerProperties>, factoryCollection: IFactoryCollection) =
+    let buildAnalyzers(analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, factoryCollection: IFactoryCollection) =
         let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
         for analyzer in analyzersDict do
             let tokenizer =
@@ -157,9 +154,7 @@ module SettingsBuilder =
 
             for filter in analyzer.Value.Filters do
                 match factoryCollection.FilterFactory.GetModuleByName(filter.FilterName) with
-                | Some(a) -> 
-                    if filter.Parameters = null then 
-                        filter.Parameters <- new KeyValuePairs()                        
+                | Some(a) ->                        
                     a.Initialize(filter.Parameters, factoryCollection.ResourceLoader) |> ignore
                     filters.Add(a)
                 | _  -> failwithf "The specified filter is not valid: %s" filter.FilterName 
@@ -190,10 +185,10 @@ module SettingsBuilder =
     // ----------------------------------------------------------------------------
     // Top level settings builder   
     // ----------------------------------------------------------------------------   
-    let public SettingsBuilder(factoryCollection: IFactoryCollection, indexValidator: AbstractValidator<Index>) =  {
+    let public SettingsBuilder (factoryCollection: IFactoryCollection) (indexValidator: IIndexValidator) =  {
         new ISettingsBuilder with
             member x.BuildSetting (index) =
-                indexValidator.ValidateAndThrow(index)
+                indexValidator.Validate(index) |> ignore
                 let analyzers = buildAnalyzers(index.Analyzers, factoryCollection)
                 let fields =  buildFields(index.Fields, analyzers, index.Scripts, factoryCollection) 
                 let fieldsArray: FlexField array = Array.zeroCreate fields.Count

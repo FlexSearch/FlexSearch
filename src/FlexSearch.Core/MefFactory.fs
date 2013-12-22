@@ -19,8 +19,7 @@ open FlexSearch.Core.Index
 
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous
-
-open ServiceStack.WebHost.Endpoints
+open Common.Logging
 open System
 open System.Collections.Generic
 open System.ComponentModel.Composition
@@ -34,7 +33,7 @@ open System.Reflection
 // ----------------------------------------------------------------------------
 module Factories =
     
-    let factoryLogger = ServiceStack.Logging.LogManager.GetLogger("Factory")
+    let factoryLogger = LogManager.GetLogger("Factory")
 
     // Mef container which loads all the related plugins
     let PluginContainer(readPluginDirectory)  =
@@ -56,7 +55,7 @@ module Factories =
             // Create a container  
             new CompositionContainer(aggrCatalog, CompositionOptions.IsThreadSafe)
         )
-
+    
     
     // ----------------------------------------------------------------------------
     // Concerete implementation of IResourceLoader
@@ -128,6 +127,15 @@ module Factories =
                 modules   
     
 
+    /// Loads all the http modules
+    let GetHttpModules() =
+        lazy
+        (
+            let httpModule = new FlexFactory<IHttpModule>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<IHttpModule>
+            httpModule.GetAllModules()
+        )
+
+
     // ---------------------------------------------------------------------------- 
     // Concerete implementation of IFactoryCollection
     // ---------------------------------------------------------------------------- 
@@ -137,7 +145,7 @@ module Factories =
         let analyzerFactory = new FlexFactory<Analyzer>(container, "Analyzer") :> IFlexFactory<Analyzer>
         let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
         let computationOpertionFactory = new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
-        let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
+        //let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
         let scriptFactory = new CompilerService.ScriptFactoryCollection() :> IScriptFactoryCollection
         let resourceLoader = new ResourceLoader() :> IResourceLoader
 
@@ -147,6 +155,6 @@ module Factories =
             member this.AnalyzerFactory = analyzerFactory
             member this.SearchQueryFactory = searchQueryFactory
             member this.ComputationOpertionFactory = computationOpertionFactory           
-            member this.PluginsFactory = pluginsFactory
+            //member this.PluginsFactory = pluginsFactory
             member this.ScriptFactoryCollection = scriptFactory
             member this.ResourceLoader = resourceLoader

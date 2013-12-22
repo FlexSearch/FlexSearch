@@ -7,10 +7,7 @@
     using System.Threading;
 
     using FlexSearch.Analysis;
-    using FlexSearch.Api.Types;
     using FlexSearch.Core;
-    using FlexSearch.Core.Index;
-    using FlexSearch.Validators;
 
     using Microsoft.FSharp.Core;
 
@@ -21,10 +18,8 @@
     using Ploeh.AutoFixture;
     using Ploeh.AutoFixture.AutoMoq;
 
-    using ServiceStack.Common;
-    using ServiceStack.OrmLite;
 
-    using Document = FlexSearch.Api.Types.Document;
+    using Document = FlexSearch.Api.Document;
 
     internal class MockHelpers
     {
@@ -39,7 +34,7 @@
 
         #region Public Methods and Operators
 
-        public static void AddTestDataToIndex(Interface.IIndexService indexService, Index index, string testData)
+        public static void AddTestDataToIndex(Interface.IIndexService indexService, Api.Index index, string testData)
         {
             string[] lines = testData.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             string[] headers = lines[0].Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries);
@@ -49,7 +44,7 @@
                 var indexDocument = new Document();
                 indexDocument.Id = items[0];
                 indexDocument.Index = index.IndexName;
-                indexDocument.Fields = new KeyValuePairs();
+                indexDocument.Fields = new Api.KeyValuePairs();
 
                 for (int i = 1; i < items.Length; i++)
                 {
@@ -65,57 +60,57 @@
             Thread.Sleep(100);
         }
 
-        public static Index GetBasicIndexSettingsForContact()
+        public static Api.Index GetBasicIndexSettingsForContact()
         {
-            var index = new Index();
+            var index = new Api.Index();
             index.IndexName = "contact";
             index.Online = true;
-            index.Configuration.DirectoryType = DirectoryType.Ram;
-            index.Fields = new FieldDictionary();
+            index.Configuration.DirectoryType = Api.DirectoryType.Ram;
+            index.Fields = new Api.FieldDictionary();
 
-            index.Fields.Add("gender", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("title", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("givenname", new IndexFieldProperties { FieldType = FieldType.Text });
-            index.Fields.Add("middleinitial", new IndexFieldProperties { FieldType = FieldType.Text });
-            index.Fields.Add("surname", new IndexFieldProperties { FieldType = FieldType.Text });
-            index.Fields.Add("streetaddress", new IndexFieldProperties { FieldType = FieldType.Text });
+            index.Fields.Add("gender", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("title", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("givenname", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
+            index.Fields.Add("middleinitial", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
+            index.Fields.Add("surname", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
+            index.Fields.Add("streetaddress", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
 
-            index.Fields.Add("city", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("state", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("zipcode", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("country", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("countryfull", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("emailaddress", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("username", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("password", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("cctype", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("ccnumber", new IndexFieldProperties { FieldType = FieldType.ExactText });
+            index.Fields.Add("city", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("state", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("zipcode", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("country", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("countryfull", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("emailaddress", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("username", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("password", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("cctype", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("ccnumber", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
 
-            index.Fields.Add("occupation", new IndexFieldProperties { FieldType = FieldType.Text });
-            index.Fields.Add("cvv2", new IndexFieldProperties { FieldType = FieldType.Int });
-            index.Fields.Add("nationalid", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("ups", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("company", new IndexFieldProperties { FieldType = FieldType.Text });
-            index.Fields.Add("pounds", new IndexFieldProperties { FieldType = FieldType.Double });
-            index.Fields.Add("centimeters", new IndexFieldProperties { FieldType = FieldType.Int });
-            index.Fields.Add("guid", new IndexFieldProperties { FieldType = FieldType.ExactText });
-            index.Fields.Add("latitude", new IndexFieldProperties { FieldType = FieldType.Double });
-            index.Fields.Add("longitude", new IndexFieldProperties { FieldType = FieldType.Double });
+            index.Fields.Add("occupation", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
+            index.Fields.Add("cvv2", new Api.IndexFieldProperties { FieldType = Api.FieldType.Int });
+            index.Fields.Add("nationalid", value: new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("ups", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("company", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
+            index.Fields.Add("pounds", new Api.IndexFieldProperties { FieldType = Api.FieldType.Double });
+            index.Fields.Add("centimeters", new Api.IndexFieldProperties { FieldType = Api.FieldType.Int });
+            index.Fields.Add("guid", new Api.IndexFieldProperties { FieldType = Api.FieldType.ExactText });
+            index.Fields.Add("latitude", new Api.IndexFieldProperties { FieldType = Api.FieldType.Double });
+            index.Fields.Add("longitude", new Api.IndexFieldProperties { FieldType = Api.FieldType.Double });
 
-            index.Fields.Add("importdate", new IndexFieldProperties { FieldType = FieldType.Date });
-            index.Fields.Add("timestamp", new IndexFieldProperties { FieldType = FieldType.DateTime });
-            index.Fields.Add("topic", new IndexFieldProperties{FieldType = FieldType.ExactText});
-            index.Fields.Add("abstract", new IndexFieldProperties { FieldType = FieldType.Text });
+            index.Fields.Add("importdate", new Api.IndexFieldProperties { FieldType = Api.FieldType.Date });
+            index.Fields.Add("timestamp", new Api.IndexFieldProperties { FieldType = Api.FieldType.DateTime });
+            index.Fields.Add("topic", new Api.IndexFieldProperties{FieldType = Api.FieldType.ExactText});
+            index.Fields.Add("abstract", new Api.IndexFieldProperties { FieldType = Api.FieldType.Text });
             // Computed fields
             index.Fields.Add(
                 "fullname",
-                new IndexFieldProperties { FieldType = FieldType.Text, ScriptName = "fullname" });
+                new Api.IndexFieldProperties { FieldType = Api.FieldType.Text, ScriptName = "fullname" });
             index.Scripts.Add(
                 "fullname",
-                new ScriptProperties
+                new Api.ScriptProperties
                 {
-                    ScriptOption = ScriptOption.SingleLine,
-                    ScriptType = ScriptType.ComputedField,
+                    ScriptOption = Api.ScriptOption.SingleLine,
+                    ScriptType = Api.ScriptType.ComputedField,
                     ScriptSource = "fields[\"givenname\"] + \" \" + fields[\"surname\"]"
                 });
             return index;
@@ -134,25 +129,25 @@
             Interface.IFactoryCollection factoryCollection = new Factories.FactoryCollection(pluginContainer);
             Interface.ISettingsBuilder settingsBuilder = SettingsBuilder.SettingsBuilder(
                 factoryCollection,
-                new IndexValidator(factoryCollection, new IndexValidationParameters(true)));
+                new Validator.IndexValidator(factoryCollection));
             var searchService = new SearchDsl.SearchService(factoryCollection.SearchQueryFactory.GetAllModules());
-            var dbFactory = new OrmLiteConnectionFactory(
-                Constants.ConfFolder.Value + "//conf.sqlite",
-                SqliteDialect.Provider);
+            //var dbFactory = new OrmLiteConnectionFactory(
+            //    Constants.ConfFolder.Value + "//conf.sqlite",
+            //    SqliteDialect.Provider);
 
-            dbFactory.OpenDbConnection().Run(db => db.CreateTable<Index>(true));
-            Interface.IIndexService indexservice = new FlexIndexModule.IndexService(
-                settingsBuilder,
-                searchService,
-                dbFactory.Open(),
-                false);
+            //dbFactory.OpenDbConnection().Run(db => db.CreateTable<Index>(true));
+            //Interface.IIndexService indexservice = new FlexIndexModule.IndexService(
+            //    settingsBuilder,
+            //    searchService,
+            //    dbFactory.Open(),
+            //    false);
 
             IntegrationFixture.Register(GetBasicIndexSettingsForContact);
             IntegrationFixture.Register(() => pluginContainer);
             IntegrationFixture.Register(() => factoryCollection);
             IntegrationFixture.Register(() => settingsBuilder);
             IntegrationFixture.Register(() => searchService);
-            IntegrationFixture.Register(() => indexservice);
+            //IntegrationFixture.Register(() => indexservice);
             return IntegrationFixture;
         }
 

@@ -21,8 +21,17 @@ open System.Threading
 // A generic result object used by flex to pass around the result. Similar to
 // choice 
 // ----------------------------------------------------------------------------
-type Result<'T> = Success of 'T | Error of string     
+type Result<'T> = 
+    Success of 'T 
+    | Error of  PropertyName : string * ErrorMessage : string * ErrorCode : string     
 
+    type ValidationBuilder() =
+      member this.Bind (v,f) =
+        match v with
+          | Success(x) -> f x
+          | Error(x, y, z) -> Error(x, y, z)
+
+      member this.Return v = v
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
@@ -69,7 +78,7 @@ module DataType =
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module Monads =
-
+    
     type BoolConditionBuilder() =
         member x.Bind(v, f) = if v then f() else false
         member x.Return(v) = v  
@@ -123,7 +132,7 @@ module Helpers =
                     Path.Combine(mainDirectory, restPath)
                 else path
             
-            if File.Exists(dataPath) then 
+            if Directory.Exists(dataPath) then 
                 dataPath        
             else
                 failwithf "message=The specified path does not exist.; path=%s" dataPath

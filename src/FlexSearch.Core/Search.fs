@@ -14,7 +14,7 @@
 namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Core.Index
 open FlexSearch.Core
 open FlexSearch.Utility.DataType
@@ -125,9 +125,8 @@ module SearchDsl =
             searchResults.TotalAvailable <- totalDocs.totalHits
 
             let highlighterOptions = 
-                if search.Highlight <> null then
+                if search.Highlight <> Unchecked.defaultof<_> then
                     match search.Highlight.HighlightedFields with
-                    | null -> None
                     | x when x.Count = 1 -> 
                         match flexIndex.IndexSetting.FieldsLookup.TryGetValue(x.First())  with
                         | (true, field) -> 
@@ -152,7 +151,7 @@ module SearchDsl =
  
                     match search.Columns with
                     // Return no other columns when nothing is passed
-                    | null -> ()
+                    //| null -> ()
 
                     // Return no other columns when nothing is passed
                     | x when search.Columns.Count = 0 -> ()
@@ -198,7 +197,7 @@ module SearchDsl =
         let rec GenerateQueryFromFilter(flexIndex: FlexIndex, filter: SearchFilter, isTopLevelQuery, isProfileBased: KeyValuePairs option) =
             let query = new BooleanQuery()
             let occur = 
-                if (filter.FilterType = FlexSearch.Api.Types.FilterType.And) then
+                if (filter.FilterType = FlexSearch.Api.FilterType.And) then
                     BooleanClause.Occur.MUST
                 else
                     BooleanClause.Occur.SHOULD
@@ -224,7 +223,7 @@ module SearchDsl =
 
                         if ignoreCondition = false then
                             // Perform all check if the specified value is correct or not
-                            if (condition.Values = null || condition.Values.Count = 0 || System.String.IsNullOrWhiteSpace(condition.Values.[0])) then 
+                            if (condition.Values.Count = 0 || System.String.IsNullOrWhiteSpace(condition.Values.[0])) then 
                                 failwithf "The specified condition: %s for the field %s does not have any values specified." condition.Operator condition.FieldName
                             
                             // Pre query generation validation
@@ -279,8 +278,8 @@ module SearchDsl =
                 | (true, b) -> b
                 | _ -> failwithf  "The requested search profile selector does not exist."
             
-            let query = GenerateQueryFromFilter(flexIndex, searchProfile.SearchQuery.Query, true, Some(searchProfileQuery.Fields))
-            (query, searchProfile.SearchQuery)
+            let query = GenerateQueryFromFilter(flexIndex, searchProfile.Query, true, Some(searchProfileQuery.Fields))
+            (query, searchProfile)
            
 
         interface ISearchService with
@@ -326,7 +325,7 @@ module SearchDsl =
 
     // Quick check to see if an array is null or empty
     let inline CheckCondition(condition: SearchCondition) =
-        if (condition.Values <> null && condition.Values.Count > 0) then true else false
+        if (condition.Values.Count > 0) then true else false
 
 
     // THese are needed to satsfy certain lucene query requirements

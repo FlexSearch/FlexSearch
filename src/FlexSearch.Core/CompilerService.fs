@@ -11,7 +11,7 @@
 
 namespace FlexSearch.Core
 open FlexSearch.Utility
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open System 
 
 open CSScriptLibrary

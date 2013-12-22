@@ -1,73 +1,76 @@
-﻿namespace FlexSearch.Server.Services
-{
-    using System;
-    using System.Net;
+﻿////namespace FlexSearch.Server.Services
+//{
+//    using System.Data;
 
-    using FlexSearch.Api.Index;
-    using FlexSearch.Api.Types;
-    using FlexSearch.Core;
+//    using FlexSearch.Api.Index;
+//    using FlexSearch.Api.Types;
+//    using FlexSearch.Core;
 
-    using ServiceStack.Common.Web;
-    using ServiceStack.OrmLite;
-    using ServiceStack.ServiceInterface;
+//    using Nancy;
 
-    public class IndexService : Service
-    {
-        #region Public Properties
+//    using ServiceStack.Common.Web;
+//    using ServiceStack.OrmLite;
+//    using ServiceStack.ServiceInterface;
 
-        public Interface.IIndexService IndexingService { get; set; }
+//    using HttpStatusCode = System.Net.HttpStatusCode;
 
-        #endregion
+//    public class IndexService1 : Service
+//    {
+//        #region Public Properties
 
-        #region Public Methods and Operators
+//        public Interface.IIndexService IndexingService { get; set; }
 
-        public ShowIndexResponse Any(ShowIndex request)
-        {
-            var indexRecord = this.Db.FirstOrDefault<Index>("IndexName={0}", request.IndexName);
-            if (indexRecord == null)
-            {
-                throw new HttpError(HttpStatusCode.NotFound, "IndexNotFound", "Index does not exist.");
-            }
+//        #endregion
 
-            return new ShowIndexResponse { IndexSettings = indexRecord };
-        }
+//        #region Public Methods and Operators
 
-        public IndexExistsResponse Any(IndexExists request)
-        {
-            return new IndexExistsResponse { IndexExists = this.IndexingService.IndexExists(request.IndexName) };
-        }
+//        public ShowIndexResponse Any(ShowIndex request)
+//        {
+//            var indexRecord = this.Db.FirstOrDefault<Index>("IndexName={0}", request.IndexName);
+//            if (indexRecord == null)
+//            {
+//                throw new HttpError(HttpStatusCode.NotFound, "IndexNotFound", "Index does not exist.");
+//            }
 
-        public OpenIndexResponse Post(OpenIndex request)
-        {
-            this.IndexingService.OpenIndex(request.IndexName);
-            return new OpenIndexResponse();
-        }
+//            return new ShowIndexResponse { IndexSettings = indexRecord };
+//        }
 
-        public CloseIndexResponse Post(CloseIndex request)
-        {
-            this.IndexingService.CloseIndex(request.IndexName);
-            return new CloseIndexResponse();
-        }
+//        public IndexExistsResponse Any(IndexExists request)
+//        {
+//            return new IndexExistsResponse { IndexExists = this.IndexingService.IndexExists(request.IndexName) };
+//        }
 
-        public CreateIndexResponse Post(CreateIndex request)
-        {
-            request.Index.Online = request.OpenIndex;
-            this.IndexingService.AddIndex(request.Index);
-            return new CreateIndexResponse();
-        }
+//        public OpenIndexResponse Post(OpenIndex request)
+//        {
+//            this.IndexingService.OpenIndex(request.IndexName);
+//            return new OpenIndexResponse();
+//        }
 
-        public UpdateIndexResponse Post(UpdateIndex request)
-        {
-            this.IndexingService.UpdateIndex(request.Index);
-            return new UpdateIndexResponse();
-        }
+//        public CloseIndexResponse Post(CloseIndex request)
+//        {
+//            this.IndexingService.CloseIndex(request.IndexName);
+//            return new CloseIndexResponse();
+//        }
 
-        public DestroyIndexResponse Post(DestroyIndex request)
-        {
-            this.IndexingService.DeleteIndex(request.IndexName);
-            return new DestroyIndexResponse();
-        }
+//        public CreateIndexResponse Post(CreateIndex request)
+//        {
+//            request.Index.Online = request.OpenIndex;
+//            this.IndexingService.AddIndex(request.Index);
+//            return new CreateIndexResponse();
+//        }
 
-        #endregion
-    }
-}
+//        public UpdateIndexResponse Post(UpdateIndex request)
+//        {
+//            this.IndexingService.UpdateIndex(request.Index);
+//            return new UpdateIndexResponse();
+//        }
+
+//        public DestroyIndexResponse Post(DestroyIndex request)
+//        {
+//            this.IndexingService.DeleteIndex(request.IndexName);
+//            return new DestroyIndexResponse();
+//        }
+
+//        #endregion
+//    }
+//}

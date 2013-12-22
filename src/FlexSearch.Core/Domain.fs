@@ -14,7 +14,7 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Utility
-open FlexSearch.Api.Types
+open FlexSearch.Api
 
 open java.io
 open java.util
@@ -40,21 +40,23 @@ open System.Text.RegularExpressions
 open System.Threading
 open System.Linq       
 
+type ServerSettings =
+    {
+        LuceneVersion   :   org.apache.lucene.util.Version
+        HttpPort        :   int
+        TcpPort         :   int
+        DataFolder      :   string
+        PluginFolder    :   string
+        ConfFolder      :   string
+        NodeName        :   string
+        NodeRole        :   NodeRole
+        MasterNode      :   System.Net.IPAddress
+    }
+
+
 // ----------------------------------------------------------------------------
 // Contains all the indexing related datatype definitions 
 // ----------------------------------------------------------------------------
-// Lucene's field postings format
-type FieldPostingFormat = 
-    | Direct
-    | Memory
-    | Bloom
-    | Pulsing
-
-// Represents Lucene's similarity models
-type FieldSimilarity =
-    | BM25
-    | TDF
-
 
 // Represents details about field storage related option
 type FieldStoreInformation = 
@@ -172,12 +174,10 @@ type FlexIndexSetting =
         SearchAnalyzer          :   PerFieldAnalyzerWrapper
         Fields                  :   FlexField[]
         FieldsLookup            :   Dictionary<string, FlexField>
-        SearchProfiles          :   Dictionary<string, SearchProfileProperties>
+        SearchProfiles          :   Dictionary<string, SearchQuery>
         ScriptsManager          :   ScriptsManager   
-        //SearchProfileSelectors  :   Dictionary<string, SearchProfileSelector>
         IndexConfig             :   IndexConfiguration
         BaseFolder              :   string
-        //DirectoryType           :   DirectoryType
     }
     
 
@@ -192,8 +192,14 @@ type FlexShardWriter =
     }
     
 
-// Represents an index in Flex terms which may consist of a number of
-// valid lucene indices.
+type FlexShard = 
+    {
+        ShardNumber             :   int
+        
+    }
+
+/// Represents an index in Flex terms which may consist of a number of
+/// valid lucene indices.
 type FlexIndex =
     {
         IndexSetting        :   FlexIndexSetting
@@ -204,7 +210,7 @@ type FlexIndex =
 
 
 // ----------------------------------------------------------------------------
-// Case insensitive keyword analyzer 
+/// Case insensitive keyword analyzer 
 // ----------------------------------------------------------------------------
 [<Export(typeof<Analyzer>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
@@ -221,18 +227,46 @@ type CaseInsensitiveKeywordAnalyzer() =
 // Indexing related message. The model could be considered similiar to
 // Command–query separation pattern where are side effect free queries are 
 // kept seperate from side effect based command. Also side effect operations
-// don't support 
+// don't support
 // ----------------------------------------------------------------------------
-// Messages which can be send to the indexing queue to indicate the type of operation
-// and the associated data
+
+/// Messages which can be send to the indexing queue to indicate the type of operation
+/// and the associated data
 type IndexCommand = 
-    | Create of string * Dictionary<string,string>  // (documentId, indexName. Fields)
-    | Update of string * Dictionary<string,string>  // (documentId, indexName. Fields)
-    | Delete of string                     // (documentId, indexName)
-    | BulkDeleteByIndexName               // (indexName)
-    | Commit                              // (indexName)
+    
+    /// Create a new document
+    | Create of id: string * fields: Dictionary<string, string>  
+    
+    /// Update an existing document
+    | Update of id: string * fields: Dictionary<string,string>  
+    
+    /// Delete an existing document by id
+    | Delete of id: string                     
+    
+    /// Optimistic concurrency controlled create of a document
+    | OptimisticCreate of id: string * fields: Dictionary<string,string>
+    
+    /// Optimistic concurrency controlled update of a document
+    | OptimisticUpdate of id: string * fields: Dictionary<string,string> * version: int
+    
+    /// Optimistic concurrency controlled delete of a document
+    | OptimisticDelete of id: string * version: int
+    
+    /// Bulk delete all the documents in a index
+    | BulkDeleteByIndexName               
+
+    /// Commit pending index changes
+    | Commit                              
     
 
 type IndexQuery = 
     | SearchProfileQuery of SearchProfileQuery
     | SearchQuery of SearchQuery
+
+
+/// Message used by cluster for intra cluster communication
+type CommunicationMessage =
+    {
+        Type    :   int8
+        Body    :   byte[]
+    }

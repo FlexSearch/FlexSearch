@@ -13,9 +13,10 @@
 namespace FlexSearch.Core.Index
 // ----------------------------------------------------------------------------
 
-open FlexSearch.Api.Types
+open FlexSearch.Api
 open FlexSearch.Utility
 open FlexSearch.Core
+open Common.Logging
 
 open java.io
 open java.util
@@ -40,8 +41,6 @@ open System.IO
 open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
-open ServiceStack.Logging
-open ServiceStack.OrmLite
 
 
 // ----------------------------------------------------------------------------
@@ -59,11 +58,11 @@ module Document =
         total % shardCount
     
     // Generates a lucene daocument from a flex document    
-    let Generate (document: FlexSearch.Api.Types.Document) flexIndexSetting =
+    let Generate (document: FlexSearch.Api.Document) flexIndexSetting =
         let luceneDocument = new Document()
-        luceneDocument.add(new StringField("id", document.Id, Field.Store.YES))
-        luceneDocument.add(new StringField("type", document.Index, Field.Store.YES))
-        luceneDocument.add(new LongField("lastmodified", GetCurrentTimeAsLong(), Field.Store.YES))
+        luceneDocument.add(new StringField(Constants.IdField, document.Id, Field.Store.YES))
+        luceneDocument.add(new StringField(Constants.TypeField, document.Index, Field.Store.YES))
+        luceneDocument.add(new LongField(Constants.LastModifiedField, GetCurrentTimeAsLong(), Field.Store.YES))
             
         for field in flexIndexSetting.Fields do
             match document.Fields.TryGetValue(field.FieldName) with
@@ -73,15 +72,17 @@ module Document =
         luceneDocument    
 
     // Add a flex document to an index    
-    let Add (document: FlexSearch.Api.Types.Document) flexIndex  =
+    let Add (document: FlexSearch.Api.Document) flexIndex optimistic (versionCache: IVersioningCacheStore)=
+        
         if (System.String.IsNullOrWhiteSpace(document.Id) = true) then
             failwith "Missing Id"
+        
         let targetIndex = mapToShard document.Id flexIndex.Shards.Length
         let targetDocument = Generate document flexIndex.IndexSetting
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(targetDocument)
 
     // Update a flex document in an index    
-    let Update(document: FlexSearch.Api.Types.Document) flexIndex =
+    let Update(document: FlexSearch.Api.Document) flexIndex =
         if (System.String.IsNullOrWhiteSpace(document.Id) = true) then
             failwith "Missing Id"
         let targetIndex = mapToShard document.Id flexIndex.Shards.Length
@@ -89,12 +90,12 @@ module Document =
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.updateDocument(new Term("id",document.Id), targetDocument)
 
     // Delete a flex document in an index    
-    let Delete(id: string) flexIndex  =
+    let Delete (id: string) flexIndex  =
         if (System.String.IsNullOrWhiteSpace(id) = true) then
             failwith "Missing Id"
         let targetIndex = mapToShard id flexIndex.Shards.Length
         flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term("id",id)) 
-
+                 
 
 // ----------------------------------------------------------------------------
 // Contains lucene writer IO and infracture related operations
@@ -187,7 +188,7 @@ module FlexIndex =
     // loadAllIndex - This is used to bypass loading of index at initialization time.
     // Helpful for testing
     // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, dbFactory: IDbConnection, loadAllIndex: bool) =
+    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, keyValueStore: IKeyValueStore, loadAllIndex: bool, versionCache: IVersioningCacheStore) =
         
         let indexLogger = LogManager.GetLogger("IndexService")
 
@@ -307,7 +308,7 @@ module FlexIndex =
         // ----------------------------------------------------------------------------     
         // Function to process the 
         // ----------------------------------------------------------------------------                                         
-        let processItem(indexMessage: IndexCommand, flexIndex: FlexIndex) = 
+        let processItem(indexMessage: IndexCommand, flexIndex: FlexIndex, versionCache: IVersioningCacheStore) = 
             match indexMessage with
             | Create(documentId, fields) -> 
                 match indexExists(flexIndex.IndexSetting.IndexName) with
@@ -383,7 +384,7 @@ module FlexIndex =
             indexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
 
             // Initialize shards
-            let shards = Array.init flexIndexConfig.Shards (fun a -> 
+            let shards = Array.init flexIndexConfig.ShardConfiguration.ShardCount (fun a -> 
                 let writers = GetIndexWriter(flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
                 if writers.IsNone then 
                     logger.Error("Unable to create the requested index writer.")
@@ -469,7 +470,7 @@ module FlexIndex =
         // Process index queue requests
         let processQueueItem(indexName, indexMessage: IndexCommand) = 
             let flexIndex = getIndexRegisteration(indexName)
-            processItem(indexMessage, flexIndex) |> ignore
+            processItem(indexMessage, flexIndex, versionCache) |> ignore
         
         // ----------------------------------------------------------------------------
         // Load all index configuration data on start of application
@@ -482,7 +483,7 @@ module FlexIndex =
             queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
             
             if loadAllIndex then
-                dbFactory.Select<Index>()
+                keyValueStore.GetAllIndexSettings()
                 |> Seq.iter(fun x ->
                     if x.Online then
                         try
@@ -506,18 +507,14 @@ module FlexIndex =
         interface IIndexService with
             member this.PerformCommandAsync(indexName, indexMessage, replyChannel) = 
                 let flexIndex = getIndexRegisteration(indexName)
-                replyChannel.Reply(processItem(indexMessage, flexIndex))
+                replyChannel.Reply(processItem(indexMessage, flexIndex, versionCache))
                 
 
             member this.PerformCommand(indexName, indexMessage) = 
                 let flexIndex = getIndexRegisteration(indexName)
-                processItem(indexMessage, flexIndex)
+                processItem(indexMessage, flexIndex, versionCache)
                 
-            member this.CommandQueue() = queue
-//            member this.SendCommandToQueue(indexName, indexMessage) =  
-//                let flexIndex = getIndexRegisteration(indexName)
-//                Async.AwaitTask(queue.SendAsync((indexMessage, flexIndex)))
-                
+            member this.CommandQueue() = queue               
 
             member this.PerformQuery(indexName, indexQuery) =
                 let flexIndex = getIndexRegisteration(indexName)      
@@ -545,12 +542,21 @@ module FlexIndex =
                 | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
             
 
+            member this.GetIndex indexName =
+                match indexStatus.TryGetValue(indexName) with
+                | (true, _) -> 
+                    match keyValueStore.GetIndexSetting(indexName) with
+                    | Some(a) -> a
+                    | None -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+                | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
+
+
             member this.AddIndex flexIndex = 
                 match indexStatus.TryGetValue(flexIndex.IndexName) with
                 | (true, _) -> raise(IndexAlreadyExistsException indexAlreadyExistsMessage)
                 | _ ->
                     let settings = settingsParser.BuildSetting(flexIndex)
-                    dbFactory.Insert(flexIndex)  
+                    keyValueStore.UpdateIndexSetting(flexIndex)  
                     if flexIndex.Online then
                         addIndex(settings)  
                     else
@@ -568,7 +574,7 @@ module FlexIndex =
                             let settings = settingsParser.BuildSetting(index)
                             closeIndex(flexIndex)
                             addIndex(settings)
-                            dbFactory.Update(index)  |> ignore     
+                            keyValueStore.UpdateIndexSetting(index)  |> ignore     
                         | _ -> raise(IndexRegisterationMissingException indexRegisterationMissingMessage)
 
                     | IndexState.Opening ->
@@ -576,7 +582,7 @@ module FlexIndex =
                     | IndexState.Offline 
                     | IndexState.Closing ->
                         let settings = settingsParser.BuildSetting(index)
-                        dbFactory.Update(index)  |> ignore     
+                        keyValueStore.UpdateIndexSetting(index)  |> ignore     
                 | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
                 
 
@@ -588,7 +594,7 @@ module FlexIndex =
                         match indexRegisteration.TryGetValue(indexName) with
                         | (true, flexIndex) -> 
                             closeIndex(flexIndex) 
-                            dbFactory.Delete<Index>("IndexName={0}", indexName)
+                            keyValueStore.DeleteIndexSetting(indexName)
                             // It is possible that directory might not exist if the index has never been opened
                             if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then
                                 Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
@@ -599,7 +605,7 @@ module FlexIndex =
                         raise(IndexIsOpeningException indexIsOpeningMessage)
                     | IndexState.Offline 
                     | IndexState.Closing -> 
-                        dbFactory.Delete<Index>("IndexName={0}", indexName)
+                        keyValueStore.DeleteIndexSetting(indexName)
                         
                         // It is possible that directory might not exist if the index has never been opened
                         if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then
@@ -611,9 +617,9 @@ module FlexIndex =
             member this.CloseIndex indexName = 
                 let flexIndex = getIndexRegisteration(indexName) 
                 closeIndex(flexIndex)
-                let index = dbFactory.GetById<Index>(indexName) 
-                index.Online <- false
-                dbFactory.Update<Index>(index) |> ignore
+                let index = keyValueStore.GetIndexSetting(indexName) 
+                index.Value.Online <- false
+                keyValueStore.UpdateIndexSetting(index.Value) |> ignore
 
 
             member this.OpenIndex indexName = 
@@ -625,11 +631,11 @@ module FlexIndex =
                             raise(IndexIsOpeningException indexIsOpeningMessage)
                         | IndexState.Offline 
                         | IndexState.Closing ->
-                            let index = dbFactory.GetById<Index>(indexName)
-                            let settings = settingsParser.BuildSetting(index)
+                            let index = keyValueStore.GetIndexSetting(indexName)
+                            let settings = settingsParser.BuildSetting(index.Value)
                             let res = addIndex(settings)  
-                            index.Online <- true
-                            dbFactory.Update<Index>(index)  |> ignore    
+                            index.Value.Online <- true
+                            keyValueStore.UpdateIndexSetting(index.Value)  |> ignore    
                     | _ -> raise(IndexDoesNotExistException  indexDoesNotExistMessage)
                 
 
