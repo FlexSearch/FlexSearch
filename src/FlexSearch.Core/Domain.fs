@@ -260,7 +260,7 @@ type IndexCommand =
     
 
 type IndexQuery = 
-    | SearchProfileQuery of SearchProfileQuery
+    //| SearchProfileQuery of SearchProfileQuery
     | SearchQuery of SearchQuery
 
 

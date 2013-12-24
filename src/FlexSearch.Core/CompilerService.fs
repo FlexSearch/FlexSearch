@@ -41,17 +41,17 @@ module CompilerService =
     type ScriptFactory<'a when 'a : not struct>(codeTemplate: string) = 
         interface IScriptFactory<'a> with
             member this.CompileScript(script: ScriptProperties) =      
-                let sourceCode = 
-                    match script.ScriptOption with
-                    | ScriptOption.SingleLine ->
-                        codeTemplate.Replace("[SourceCode]", "return " + script.ScriptSource + ";")    
-                    | ScriptOption.MultiLine ->
-                        codeTemplate.Replace("[SourceCode]", script.ScriptSource)    
-                    | ScriptOption.FileBased ->
-                        Helpers.LoadFile(script.ScriptSource)
-                    | _ -> failwithf "Unknown script type"                
+//                let sourceCode = 
+//                    match script.ScriptOption with
+//                    | ScriptOption.SingleLine ->
+//                        codeTemplate.Replace("[SourceCode]", "return " + script.ScriptSource + ";")    
+//                    | ScriptOption.MultiLine ->
+//                        codeTemplate.Replace("[SourceCode]", script.ScriptSource)    
+//                    | ScriptOption.FileBased ->
+//                        Helpers.LoadFile(script.ScriptSource)
+//                    | _ -> failwithf "Unknown script type"                
                     
-                let compiledScript  = CSScript.Evaluator.LoadCode(sourceCode);
+                let compiledScript  = CSScript.Evaluator.LoadCode(script.Source);
                 let castMethod = compiledScript :?> 'a
                 castMethod
 

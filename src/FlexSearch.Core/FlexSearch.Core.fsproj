@@ -244,6 +244,9 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="Thrift">
+      <HintPath>..\..\lib\Thrift.dll</HintPath>
+    </Reference>
     <Reference Include="Topshelf">
       <HintPath>..\packages\Topshelf.3.1.1\lib\net40-full\Topshelf.dll</HintPath>
       <Private>True</Private>
@@ -262,19 +265,17 @@
     <Compile Include="Constants.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Interface.fs" />
-    <Compile Include="ServiceLocator.fs" />
     <Compile Include="State.fs" />
+    <Compile Include="ServiceLocator.fs" />
     <Compile Include="FlexField.fs" />
     <Compile Include="FlexIndex.fs" />
     <Compile Include="LocalCacheStore.fs" />
-    <Compile Include="KeyValueStore.fs" />
     <Compile Include="CompilerService.fs" />
     <Compile Include="MefFactory.fs" />
     <Compile Include="CustomAnalyzer.fs" />
     <Compile Include="Analyzers.fs" />
     <Compile Include="Filters.fs" />
     <Compile Include="Tokenizers.fs" />
-    <Compile Include="Search.fs" />
     <Compile Include="Validator.fs" />
     <Compile Include="ClusterMessage.fs" />
     <Compile Include="HttpModule.fs" />
@@ -289,9 +290,9 @@
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
+    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
       <Name>FlexSearch.Api</Name>
-      <Project>{e915a1ef-0430-4e59-b861-bb1eac037217}</Project>
+      <Project>{5ee56459-9341-4335-991e-041f0c769047}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

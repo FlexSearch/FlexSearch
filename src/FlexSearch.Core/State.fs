@@ -10,7 +10,7 @@
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core.Server
+namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 module State = 
@@ -38,3 +38,8 @@ module State =
                 | _ -> None
 
 
+    // ----------------------------------------------------------------------------     
+    /// Http module to handle to incoming requests
+    // ----------------------------------------------------------------------------     
+    type IHttpModule =
+        abstract Process    :   System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> NodeState -> unit   

@@ -6,10 +6,10 @@
     {
         #region Constructors and Destructors
 
-        public UnitAutoFixture()
-            : base(MockHelpers.UnitFixtureSetup())
-        {
-        }
+        //public UnitAutoFixture()
+        //    : base(MockHelpers.UnitFixtureSetup())
+        //{
+        //}
 
         #endregion
     }

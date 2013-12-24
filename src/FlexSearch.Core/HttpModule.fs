@@ -18,6 +18,7 @@ module HttpModule =
     open System.Net
     open FlexSearch.Core
     open FlexSearch.Core.Cluster
+    open FlexSearch.Core.State
     open FlexSearch.Api
     open Newtonsoft.Json
     open System.ComponentModel.Composition

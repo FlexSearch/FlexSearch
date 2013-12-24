@@ -22,7 +22,7 @@ module Cluster =
     open FlexSearch.Api
     open System.Reactive.Linq
     open System.Reactive
-
+    open FlexSearch.Core.State
     /// Cluster messages 
     type MessageType =
         | AddIndexToCluster = 01uy
@@ -62,7 +62,8 @@ module Cluster =
 
     let addIndex (index: Index) (state: NodeState) = 
         let settings = ServiceLocator.SettingsBuilder.BuildSetting(index)
-        state.Indices.TryAdd(index.IndexName, index)
+        ()
+        //state.Indices.TryAdd(index.IndexName, index)
         
 
 //    /// Utility method to send a message to the client using websocket

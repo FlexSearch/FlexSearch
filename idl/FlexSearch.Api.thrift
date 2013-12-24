@@ -335,7 +335,7 @@ service FlexSearchService {
 	void UpdateIndex (1: Index index) throws(1: InvalidOperation message)
 	void GetIndex (1: string indexName) throws(1: InvalidOperation message)
 	void DeleteIndex (1: string indexName) throws(1: InvalidOperation message)
-	void SetIndexState (1: string indexName, 2: bool state) throws(1: InvalidOperation message)
+	void SetIndexState (1: string indexName, 2: bool online) throws(1: InvalidOperation message)
 	void UpdateIndexConfiguration (1: string indexName, 2: IndexConfiguration configuration) throws(1: InvalidOperation message)
 	void UpdateShardConfiguration (1: string indexName, 2: ShardConfiguration configuration) throws(1: InvalidOperation message)
 	

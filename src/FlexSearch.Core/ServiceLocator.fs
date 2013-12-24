@@ -23,6 +23,7 @@ namespace FlexSearch.Core
 module ServiceLocator =
     open System.Collections.Generic
     open  System.Diagnostics.Tracing
+    open FlexSearch.Core.State
 
     let mutable FactoryCollection : IFactoryCollection = Unchecked.defaultof<_>
     let mutable SettingsBuilder : ISettingsBuilder = Unchecked.defaultof<_>

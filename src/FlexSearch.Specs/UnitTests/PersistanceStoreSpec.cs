@@ -29,7 +29,7 @@ namespace FlexSearch.Specs.UnitTests
             "Given an in memory store".Given(
                 () =>
                 {
-                    persistanceStore = new Settings.PersistanceStore("", true);
+                    persistanceStore = new Store.PersistanceStore("", true);
                 });
 
             "Adding a new TestClass should pass".Observation(

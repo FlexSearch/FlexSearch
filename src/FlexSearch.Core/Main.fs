@@ -25,6 +25,7 @@ module Main =
     open FlexSearch.Core.Server
     open SuperWebSocket
     open FSharp.Data
+    open FlexSearch.Core.State
 
     /// Xml setting provider for server config
     type private FlexServerSetting = JsonProvider<"""
@@ -71,10 +72,10 @@ module Main =
             {
                 PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
                 ServerSettings = settings
-                HttpConnections = new ConcurrentDictionary<string, System.Net.Http.HttpClient>(StringComparer.OrdinalIgnoreCase)
-                IncomingSessions = new ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>(StringComparer.OrdinalIgnoreCase)
-                OutgoingConnections = new ConcurrentDictionary<string, ISocketClient>(StringComparer.OrdinalIgnoreCase)
-                Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
+                HttpConnections = Unchecked.defaultof<_>
+                IncomingSessions = Unchecked.defaultof<_>
+                OutgoingConnections = Unchecked.defaultof<_>
+                Indices = Unchecked.defaultof<_>
             }
 
         let httpServer = new Server.Http.HttpServer(9800) :> IServer

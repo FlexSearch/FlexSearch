@@ -6,10 +6,10 @@
     {
         #region Constructors and Destructors
 
-        public IntegrationAutoFixture()
-            : base(MockHelpers.IntegartionFixtureSetup())
-        {
-        }
+        //public IntegrationAutoFixture()
+        //    : base(MockHelpers.IntegartionFixtureSetup())
+        //{
+        //}
 
         #endregion
     }

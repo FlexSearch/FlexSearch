@@ -25,17 +25,7 @@ module Http =
     open FlexSearch.Api
     open Newtonsoft.Json
     open System.Collections.Concurrent
-
-    let nodeState =
-        {
-            PersistanceStore = Unchecked.defaultof<_>
-            ServerSettings = Unchecked.defaultof<ServerSettings>
-            HttpConnections = new ConcurrentDictionary<string, System.Net.Http.HttpClient>(StringComparer.OrdinalIgnoreCase)
-            IncomingSessions = new ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>(StringComparer.OrdinalIgnoreCase)
-            OutgoingConnections = new ConcurrentDictionary<string, ISocketClient>(StringComparer.OrdinalIgnoreCase)
-            Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
-        }
-
+    open FlexSearch.Core.State
 
     /// Request callback for http server
     let requestCallback(state : obj) =
@@ -57,12 +47,12 @@ module Http =
                         request.Url.Segments.[1]
 
                 match ServiceLocator.HttpModule.TryGetValue(segment) with
-                | (true, proc) -> 
-                    try
-                        proc.Process request response nodeState
-                    with
-                    | x -> 
-                        HttpHelpers.writeResponse HttpStatusCode.InternalServerError x request response
+                | (true, proc) -> ()
+//                    try
+//                        //proc.Process request response nodeState
+//                    with
+//                    | x -> 
+//                        HttpHelpers.writeResponse HttpStatusCode.InternalServerError x request response
                 | _ -> 
                     HttpHelpers.writeResponse HttpStatusCode.NotFound "The request end point is not available." request response
             else
@@ -147,42 +137,6 @@ module Socket =
             member this.Stop() =
                 listener.Stop()
 
-
-    open WebSocket4Net
-    open SuperSocket.ClientEngine
-    open ProtoBuf
-    open System
-    open System.Reactive.Linq
-
-    type SocketClient(address: string, port: int, state: NodeState) as self =
-        let socket = new WebSocket(sprintf "ws://%s:%i/" address port)
-        
-        let socketOpened (event: EventArgs) = 
-            // Add it if it doesn't exist
-            state.OutgoingConnections.TryAdd(address, self) |> ignore
-        
-        let dataReceived (event: DataReceivedEventArgs) = ()
-        let messageReceived (event: MessageReceivedEventArgs) = ()
-        let socketClosed (event: EventArgs) = 
-            state.OutgoingConnections.TryRemove(address) |> ignore
-        let socketErrored (event: ErrorEventArgs) = 
-            state.OutgoingConnections.TryRemove(address) |> ignore
-            let timer = Observable.Timer(TimeSpan.FromSeconds(15))
-            let subscribe = timer.Subscribe(fun x ->
-                socket.Open()
-            )
-
-        do
-            socket.Opened.Add(socketOpened)
-            socket.DataReceived.Add(dataReceived)
-            socket.MessageReceived.Add(messageReceived)
-            socket.Closed.Add(socketClosed)
-            socket.Error.Add(socketErrored)
-            
-        interface ISocketClient with
-            member this.Open() = socket.Open()
-            member this.Connected() = true
-            member this.Send(msg) = socket.Send(msg, 0, msg.Length)
                 
 
 

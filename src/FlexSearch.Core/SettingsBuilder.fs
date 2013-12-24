@@ -48,7 +48,7 @@ module SettingsBuilder =
     // ----------------------------------------------------------------------------
     // Convert Api field objects to domain flex fields 
     // ----------------------------------------------------------------------------  
-    let buildFields(fieldsDict : Dictionary<string, IndexFieldProperties>, flexAnalyzers: Dictionary<string, Analyzer>, scripts: Dictionary<string, ScriptProperties>, factoryCollection: IFactoryCollection) =
+    let buildFields(fieldsDict : Dictionary<string, FieldProperties>, flexAnalyzers: Dictionary<string, Analyzer>, scripts: Dictionary<string, ScriptProperties>, factoryCollection: IFactoryCollection) =
         
         // ----------------------------------------------------------------------------
         // Utility function to get analyzer by name
@@ -96,7 +96,7 @@ module SettingsBuilder =
                     | FieldType.Text -> (FlexText(fieldAnalyzers), true)
                     | FieldType.Highlight -> (FlexHighlight(fieldAnalyzers), true)
                     | FieldType.Custom ->  
-                        let indexingInformation = {Index = field.Value.Index; Tokenize = field.Value.Analyze; FieldTermVector = field.Value.FieldTermVector}
+                        let indexingInformation = {Index = field.Value.Index; Tokenize = field.Value.Analyze; FieldTermVector = field.Value.TermVector}
                         (FlexCustom(fieldAnalyzers, indexingInformation), true)
                     | _ -> failwithf ""
                             
@@ -205,9 +205,9 @@ module SettingsBuilder =
                         SearchProfiles          = index.SearchProfiles
                         ScriptsManager          = scriptsManager
                         FieldsLookup            = fields
-                        IndexConfig             = index.Configuration
+                        IndexConfig             = index.IndexConfiguration
                         BaseFolder              = 
-                            if index.Configuration.DirectoryType = DirectoryType.Ram then
+                            if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then
                                 index.IndexName
                             else
                                 Constants.DataFolder.Value + "\\" + index.IndexName

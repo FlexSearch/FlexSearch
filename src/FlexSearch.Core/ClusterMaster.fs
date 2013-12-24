@@ -16,12 +16,10 @@ namespace FlexSearch.Core
 open System.Collections
 open FlexSearch.Api
 open System.Linq
-
+open FlexSearch.Core.State
 module ClusterMaster =
     
     let init (state: NodeState) =
         ()//state.PersistanceStore.Nodes.GetAll() 
 
-    let createIndex (index: Index) (state: NodeState) =
-        SettingsBuilder.SettingsBuilder()
         

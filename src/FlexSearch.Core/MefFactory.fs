@@ -16,7 +16,7 @@ namespace FlexSearch
 
 open FlexSearch.Core
 open FlexSearch.Core.Index
-
+open FlexSearch.Core.State
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous
 open Common.Logging
@@ -143,7 +143,7 @@ module Factories =
         let filterFactory = new FlexFactory<IFlexFilterFactory>(container, "Filter") :> IFlexFactory<IFlexFilterFactory>
         let tokenizerFactory = new FlexFactory<IFlexTokenizerFactory>(container, "Tokenizer") :> IFlexFactory<IFlexTokenizerFactory>
         let analyzerFactory = new FlexFactory<Analyzer>(container, "Analyzer") :> IFlexFactory<Analyzer>
-        let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
+        //let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
         let computationOpertionFactory = new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
         //let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
         let scriptFactory = new CompilerService.ScriptFactoryCollection() :> IScriptFactoryCollection
@@ -153,7 +153,7 @@ module Factories =
             member this.FilterFactory = filterFactory
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
-            member this.SearchQueryFactory = searchQueryFactory
+            //member this.SearchQueryFactory = searchQueryFactory
             member this.ComputationOpertionFactory = computationOpertionFactory           
             //member this.PluginsFactory = pluginsFactory
             member this.ScriptFactoryCollection = scriptFactory

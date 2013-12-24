@@ -188,7 +188,7 @@ module FlexIndex =
     // loadAllIndex - This is used to bypass loading of index at initialization time.
     // Helpful for testing
     // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser: ISettingsBuilder, searchService: ISearchService, keyValueStore: IKeyValueStore, loadAllIndex: bool, versionCache: IVersioningCacheStore) =
+    type IndexService(settingsParser: ISettingsBuilder, keyValueStore: IKeyValueStore, loadAllIndex: bool, versionCache: IVersioningCacheStore) =
         
         let indexLogger = LogManager.GetLogger("IndexService")
 
@@ -378,51 +378,50 @@ module FlexIndex =
 
         // Add index to the registeration
         let addIndex (flexIndexSetting: FlexIndexSetting) =    
-            let flexIndexConfig = flexIndexSetting.IndexConfig
             
             // Add index status
             indexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
 
             // Initialize shards
-            let shards = Array.init flexIndexConfig.ShardConfiguration.ShardCount (fun a -> 
-                let writers = GetIndexWriter(flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
-                if writers.IsNone then 
-                    logger.Error("Unable to create the requested index writer.")
-                    failwith "Unable to create the requested index writer."
-                
-                let (indexWriter, trackingIndexWriter) = writers.Value
-
-                // Based on Lucene 4.4 the nrtmanager is replaced with ControlledRealTimeReopenThread which can take any
-                // reference manager
-                let nrtManager = new SearcherManager(indexWriter, true, new SearcherFactory())
-                let shard = 
-                    {
-                        ShardNumber = a
-                        NRTManager = nrtManager
-                        ReopenThread = new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float(25), float(5)) 
-                        IndexWriter = indexWriter
-                        TrackingIndexWriter = trackingIndexWriter
-                    }
-                
-                shard
-                ) 
-            
-            let flexIndex = {
-                IndexSetting  =  flexIndexSetting
-                Shards = shards
-                Token = new System.Threading.CancellationTokenSource() 
-            }
-
-            // Add the scheduler for the index
-            // Commit Scheduler
-            Async.Start(ScheduleIndexJob (flexIndexConfig.CommitTimeSec * 1000) commitJob flexIndex)
-            
-            // NRT Scheduler
-            Async.Start(ScheduleIndexJob flexIndexConfig.RefreshTimeMilliSec refreshIndexJob flexIndex)
+//            let shards = Array.init flexIndexSetting.ShardConfiguration.ShardCount (fun a -> 
+//                let writers = GetIndexWriter(flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
+//                if writers.IsNone then 
+//                    logger.Error("Unable to create the requested index writer.")
+//                    failwith "Unable to create the requested index writer."
+//                
+//                let (indexWriter, trackingIndexWriter) = writers.Value
+//
+//                // Based on Lucene 4.4 the nrtmanager is replaced with ControlledRealTimeReopenThread which can take any
+//                // reference manager
+//                let nrtManager = new SearcherManager(indexWriter, true, new SearcherFactory())
+//                let shard = 
+//                    {
+//                        ShardNumber = a
+//                        NRTManager = nrtManager
+//                        ReopenThread = new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float(25), float(5)) 
+//                        IndexWriter = indexWriter
+//                        TrackingIndexWriter = trackingIndexWriter
+//                    }
+//                
+//                shard
+//                ) 
+//            
+//            let flexIndex = {
+//                IndexSetting  =  flexIndexSetting
+//                Shards = shards
+//                Token = new System.Threading.CancellationTokenSource() 
+//            }
+//
+//            // Add the scheduler for the index
+//            // Commit Scheduler
+//            Async.Start(ScheduleIndexJob (flexIndexConfig.CommitTimeSec * 1000) commitJob flexIndex)
+//            
+//            // NRT Scheduler
+//            Async.Start(ScheduleIndexJob flexIndexConfig.RefreshTimeMilliSec refreshIndexJob flexIndex)
 
             // Add the index to the registeration
-            indexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore                 
-            indexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
+//            indexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore                 
+//            indexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
             ()
 
 
@@ -516,18 +515,20 @@ module FlexIndex =
                 
             member this.CommandQueue() = queue               
 
-            member this.PerformQuery(indexName, indexQuery) =
-                let flexIndex = getIndexRegisteration(indexName)      
-                match indexQuery with
-                | SearchQuery(a) -> searchService.Search(flexIndex, a)
-                | SearchProfileQuery(a) -> searchService.SearchProfile(flexIndex, a)
+//            member this.PerformQuery(indexName, indexQuery) =
+//                let flexIndex = getIndexRegisteration(indexName)  
+                    
+//                match indexQuery with
+//                | SearchQuery(a) -> searchService.Search(flexIndex, a)
+//                | SearchProfileQuery(a) -> searchService.SearchProfile(flexIndex, a)
 
 
-            member this.PerformQueryAsync(indexName, indexQuery, replyChannel) =
-                let flexIndex = getIndexRegisteration(indexName)           
-                match indexQuery with
-                | SearchQuery(a) -> replyChannel.Reply(searchService.Search(flexIndex, a))
-                | SearchProfileQuery(a) -> replyChannel.Reply(searchService.SearchProfile(flexIndex, a))
+//            member this.PerformQueryAsync(indexName, indexQuery, replyChannel) =
+//                let flexIndex = getIndexRegisteration(indexName)     
+//                ()      
+//                match indexQuery with
+//                | SearchQuery(a) -> replyChannel.Reply(searchService.Search(flexIndex, a))
+//                | SearchProfileQuery(a) -> replyChannel.Reply(searchService.SearchProfile(flexIndex, a))
 
 
             member this.IndexExists(indexName) =

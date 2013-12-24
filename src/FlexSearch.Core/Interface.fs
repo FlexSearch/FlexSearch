@@ -162,17 +162,17 @@ module Interface =
     // ----------------------------------------------------------------------------     
     /// FlexQuery interface
     // ----------------------------------------------------------------------------     
-    type IFlexQuery =
-        // abstract member QueryName   :   unit -> string[]
-        abstract member GetQuery    :   FlexField * SearchCondition -> Option<Query>
-
-
-    // ----------------------------------------------------------------------------     
-    /// Search service interface
-    // ----------------------------------------------------------------------------     
-    type ISearchService =
-        abstract member Search          :   FlexIndex * SearchQuery -> SearchResults
-        abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
+//    type IFlexQuery =
+//        // abstract member QueryName   :   unit -> string[]
+//        abstract member GetQuery    :   FlexField * SearchCondition -> Option<Query>
+//
+//
+//    // ----------------------------------------------------------------------------     
+//    /// Search service interface
+//    // ----------------------------------------------------------------------------     
+//    type ISearchService =
+//        abstract member Search          :   FlexIndex * SearchQuery -> SearchResults
+//        abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
         
 
     // ----------------------------------------------------------------------------     
@@ -231,7 +231,7 @@ module Interface =
          abstract member FilterFactory              :   IFlexFactory<IFlexFilterFactory>
          abstract member TokenizerFactory           :   IFlexFactory<IFlexTokenizerFactory>
          abstract member AnalyzerFactory            :   IFlexFactory<Analyzer>
-         abstract member SearchQueryFactory         :   IFlexFactory<IFlexQuery>
+         //abstract member SearchQueryFactory         :   IFlexFactory<IFlexQuery>
          abstract member ComputationOpertionFactory :   IFlexFactory<IComputationOperation>
          //abstract member PluginsFactory             :   IFlexFactory<IPlugin>
          abstract member ScriptFactoryCollection    :   IScriptFactoryCollection
@@ -282,11 +282,11 @@ module Interface =
 
         /// Default Search operation. The associated search object will encapsulate
         /// all possible search variations
-        abstract member PerformQuery                :   string * IndexQuery -> SearchResults
+       // abstract member PerformQuery                :   string * IndexQuery -> SearchResults
 
         /// Default Search operation. The associated search object will encapsulate
         /// all possible search variations
-        abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
+        //abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
         
         abstract member GetIndex                    :   string -> Index
 
@@ -327,10 +327,4 @@ module Interface =
         abstract member Open        :   unit -> unit
         abstract member Send        :   byte[] -> unit
         abstract member Connected   :   unit -> bool
-
-
-    // ----------------------------------------------------------------------------     
-    /// Http module to handle to incoming requests
-    // ----------------------------------------------------------------------------     
-    type IHttpModule =
-        abstract Process    :   System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> NodeState -> unit        
+     
