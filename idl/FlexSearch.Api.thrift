@@ -312,10 +312,21 @@ const InvalidOperation INDEX_ALREADY_EXISTS = {"DeveloperMessage" : "The request
 const InvalidOperation INDEX_SHOULD_BE_OFFLINE = {"DeveloperMessage" : "Index should be made offline before attempting to update index settings.", "UserMessage" : "Index should be made offline before attempting the operation.", "ErrorCode": 1003}
 
 
+// ----------------------------------------------------------------------------
+//	Distributed coordination related
+// ----------------------------------------------------------------------------
+struct VoteResponse {
+	1: i32 Term
+	2: bool VoteGranted
+}
+
 service FlexSearchService {
+	// Raft consensus related
+	VoteResponse RequestVoteForClusterMaster(1: i32 term, 2: string candidateId)
+	
 	// Identity related and gossip
 	list<Index> GetAllIndexSettings() 
-	oneway void KeepAlive()
+	oneway void HeartBeat()
 	oneway void DeadNodeNotification(1: string nodeName)
 	oneway void JoinNodeNotification(1: string nodeName)
 	
