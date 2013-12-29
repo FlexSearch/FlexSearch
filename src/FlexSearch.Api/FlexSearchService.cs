@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
 //using System.ServiceModel;
@@ -26,135 +25,159 @@ namespace FlexSearch.Api
     public interface Iface {
       [OperationContract]
       VoteResponse RequestVoteForClusterMaster(int term, string candidateId);
+      #if SILVERLIGHT
       IAsyncResult Begin_RequestVoteForClusterMaster(AsyncCallback callback, object state, int term, string candidateId);
       VoteResponse End_RequestVoteForClusterMaster(IAsyncResult asyncResult);
-      Task<VoteResponse> RequestVoteForClusterMasterAsync(int term, string candidateId);
+      #endif
       [OperationContract]
       List<Index> GetAllIndexSettings();
+      #if SILVERLIGHT
       IAsyncResult Begin_GetAllIndexSettings(AsyncCallback callback, object state);
       List<Index> End_GetAllIndexSettings(IAsyncResult asyncResult);
-      Task<List<Index>> GetAllIndexSettingsAsync();
+      #endif
       [OperationContract]
       void HeartBeat();
+      #if SILVERLIGHT
       IAsyncResult Begin_HeartBeat(AsyncCallback callback, object state);
       void End_HeartBeat(IAsyncResult asyncResult);
-      Task HeartBeatAsync();
+      #endif
       [OperationContract]
       void DeadNodeNotification(string nodeName);
+      #if SILVERLIGHT
       IAsyncResult Begin_DeadNodeNotification(AsyncCallback callback, object state, string nodeName);
       void End_DeadNodeNotification(IAsyncResult asyncResult);
-      Task DeadNodeNotificationAsync(string nodeName);
+      #endif
       [OperationContract]
       void JoinNodeNotification(string nodeName);
+      #if SILVERLIGHT
       IAsyncResult Begin_JoinNodeNotification(AsyncCallback callback, object state, string nodeName);
       void End_JoinNodeNotification(IAsyncResult asyncResult);
-      Task JoinNodeNotificationAsync(string nodeName);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void AddIndex(Index index);
+      #if SILVERLIGHT
       IAsyncResult Begin_AddIndex(AsyncCallback callback, object state, Index index);
       void End_AddIndex(IAsyncResult asyncResult);
-      Task AddIndexAsync(Index index);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void UpdateIndex(Index index);
+      #if SILVERLIGHT
       IAsyncResult Begin_UpdateIndex(AsyncCallback callback, object state, Index index);
       void End_UpdateIndex(IAsyncResult asyncResult);
-      Task UpdateIndexAsync(Index index);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void GetIndex(string indexName);
+      #if SILVERLIGHT
       IAsyncResult Begin_GetIndex(AsyncCallback callback, object state, string indexName);
       void End_GetIndex(IAsyncResult asyncResult);
-      Task GetIndexAsync(string indexName);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void DeleteIndex(string indexName);
+      #if SILVERLIGHT
       IAsyncResult Begin_DeleteIndex(AsyncCallback callback, object state, string indexName);
       void End_DeleteIndex(IAsyncResult asyncResult);
-      Task DeleteIndexAsync(string indexName);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void SetIndexState(string indexName, bool online);
+      #if SILVERLIGHT
       IAsyncResult Begin_SetIndexState(AsyncCallback callback, object state, string indexName, bool online);
       void End_SetIndexState(IAsyncResult asyncResult);
-      Task SetIndexStateAsync(string indexName, bool online);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void UpdateIndexConfiguration(string indexName, IndexConfiguration configuration);
+      #if SILVERLIGHT
       IAsyncResult Begin_UpdateIndexConfiguration(AsyncCallback callback, object state, string indexName, IndexConfiguration configuration);
       void End_UpdateIndexConfiguration(IAsyncResult asyncResult);
-      Task UpdateIndexConfigurationAsync(string indexName, IndexConfiguration configuration);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       void UpdateShardConfiguration(string indexName, ShardConfiguration configuration);
+      #if SILVERLIGHT
       IAsyncResult Begin_UpdateShardConfiguration(AsyncCallback callback, object state, string indexName, ShardConfiguration configuration);
       void End_UpdateShardConfiguration(IAsyncResult asyncResult);
-      Task UpdateShardConfigurationAsync(string indexName, ShardConfiguration configuration);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       string RequestFullIndexSync(string indexName, int shardNumber, string networkPath);
+      #if SILVERLIGHT
       IAsyncResult Begin_RequestFullIndexSync(AsyncCallback callback, object state, string indexName, int shardNumber, string networkPath);
       string End_RequestFullIndexSync(IAsyncResult asyncResult);
-      Task<string> RequestFullIndexSyncAsync(string indexName, int shardNumber, string networkPath);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       List<Document> RequestTransactionLog(string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip);
+      #if SILVERLIGHT
       IAsyncResult Begin_RequestTransactionLog(AsyncCallback callback, object state, string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip);
       List<Document> End_RequestTransactionLog(IAsyncResult asyncResult);
-      Task<List<Document>> RequestTransactionLogAsync(string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       int RequestTransactionLogCount(string indexName, int shardNumber, long startTimeStamp, long endTimestamp);
+      #if SILVERLIGHT
       IAsyncResult Begin_RequestTransactionLogCount(AsyncCallback callback, object state, string indexName, int shardNumber, long startTimeStamp, long endTimestamp);
       int End_RequestTransactionLogCount(IAsyncResult asyncResult);
-      Task<int> RequestTransactionLogCountAsync(string indexName, int shardNumber, long startTimeStamp, long endTimestamp);
+      #endif
       [OperationContract]
       string PurgeTLog(string indexName, int shardNumber, long endTimeStamp);
+      #if SILVERLIGHT
       IAsyncResult Begin_PurgeTLog(AsyncCallback callback, object state, string indexName, int shardNumber, long endTimeStamp);
       string End_PurgeTLog(IAsyncResult asyncResult);
-      Task<string> PurgeTLogAsync(string indexName, int shardNumber, long endTimeStamp);
+      #endif
       [OperationContract]
       [FaultContract(typeof(InvalidOperationFault))]
       Job GetJobById(string JobId);
+      #if SILVERLIGHT
       IAsyncResult Begin_GetJobById(AsyncCallback callback, object state, string JobId);
       Job End_GetJobById(IAsyncResult asyncResult);
-      Task<Job> GetJobByIdAsync(string JobId);
+      #endif
       [OperationContract]
       void AddDocument(Document document);
+      #if SILVERLIGHT
       IAsyncResult Begin_AddDocument(AsyncCallback callback, object state, Document document);
       void End_AddDocument(IAsyncResult asyncResult);
-      Task AddDocumentAsync(Document document);
+      #endif
       [OperationContract]
       void AddDocumentToReplica(Document document);
+      #if SILVERLIGHT
       IAsyncResult Begin_AddDocumentToReplica(AsyncCallback callback, object state, Document document);
       void End_AddDocumentToReplica(IAsyncResult asyncResult);
-      Task AddDocumentToReplicaAsync(Document document);
+      #endif
       [OperationContract]
       void UpdateDocument(Document document);
+      #if SILVERLIGHT
       IAsyncResult Begin_UpdateDocument(AsyncCallback callback, object state, Document document);
       void End_UpdateDocument(IAsyncResult asyncResult);
-      Task UpdateDocumentAsync(Document document);
+      #endif
       [OperationContract]
       void UpdateDocumentInReplica(Document document);
+      #if SILVERLIGHT
       IAsyncResult Begin_UpdateDocumentInReplica(AsyncCallback callback, object state, Document document);
       void End_UpdateDocumentInReplica(IAsyncResult asyncResult);
-      Task UpdateDocumentInReplicaAsync(Document document);
+      #endif
       [OperationContract]
       void DeleteDocument(Document document);
+      #if SILVERLIGHT
       IAsyncResult Begin_DeleteDocument(AsyncCallback callback, object state, Document document);
       void End_DeleteDocument(IAsyncResult asyncResult);
-      Task DeleteDocumentAsync(Document document);
+      #endif
       [OperationContract]
       void DeleteDocumentFromReplica(Document document);
+      #if SILVERLIGHT
       IAsyncResult Begin_DeleteDocumentFromReplica(AsyncCallback callback, object state, Document document);
       void End_DeleteDocumentFromReplica(IAsyncResult asyncResult);
-      Task DeleteDocumentFromReplicaAsync(Document document);
+      #endif
       [OperationContract]
       Document GetDocument(string indexName, string documentId);
+      #if SILVERLIGHT
       IAsyncResult Begin_GetDocument(AsyncCallback callback, object state, string indexName, string documentId);
       Document End_GetDocument(IAsyncResult asyncResult);
-      Task<Document> GetDocumentAsync(string indexName, string documentId);
+      #endif
     }
 
     public class Client : IDisposable, Iface {
@@ -214,6 +237,7 @@ namespace FlexSearch.Api
 
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_RequestVoteForClusterMaster(AsyncCallback callback, object state, int term, string candidateId)
       {
         return send_RequestVoteForClusterMaster(callback, state, term, candidateId);
@@ -225,23 +249,25 @@ namespace FlexSearch.Api
         return recv_RequestVoteForClusterMaster();
       }
 
-      public async Task<VoteResponse> RequestVoteForClusterMasterAsync(int term, string candidateId)
-      {
-        VoteResponse retval;
-        retval = await Task.Run(() =>
-        {
-          return RequestVoteForClusterMaster(term, candidateId);
-        });
-        return retval;
-      }
+      #endif
 
       public VoteResponse RequestVoteForClusterMaster(int term, string candidateId)
       {
+        #if !SILVERLIGHT
+        send_RequestVoteForClusterMaster(term, candidateId);
+        return recv_RequestVoteForClusterMaster();
+
+        #else
         var asyncResult = Begin_RequestVoteForClusterMaster(null, null, term, candidateId);
         return End_RequestVoteForClusterMaster(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_RequestVoteForClusterMaster(AsyncCallback callback, object state, int term, string candidateId)
+      #else
+      public void send_RequestVoteForClusterMaster(int term, string candidateId)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("RequestVoteForClusterMaster", TMessageType.Call, seqid_));
         RequestVoteForClusterMaster_args args = new RequestVoteForClusterMaster_args();
@@ -249,7 +275,11 @@ namespace FlexSearch.Api
         args.CandidateId = candidateId;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public VoteResponse recv_RequestVoteForClusterMaster()
@@ -270,6 +300,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_GetAllIndexSettings(AsyncCallback callback, object state)
       {
         return send_GetAllIndexSettings(callback, state);
@@ -281,29 +312,35 @@ namespace FlexSearch.Api
         return recv_GetAllIndexSettings();
       }
 
-      public async Task<List<Index>> GetAllIndexSettingsAsync()
-      {
-        List<Index> retval;
-        retval = await Task.Run(() =>
-        {
-          return GetAllIndexSettings();
-        });
-        return retval;
-      }
+      #endif
 
       public List<Index> GetAllIndexSettings()
       {
+        #if !SILVERLIGHT
+        send_GetAllIndexSettings();
+        return recv_GetAllIndexSettings();
+
+        #else
         var asyncResult = Begin_GetAllIndexSettings(null, null);
         return End_GetAllIndexSettings(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_GetAllIndexSettings(AsyncCallback callback, object state)
+      #else
+      public void send_GetAllIndexSettings()
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("GetAllIndexSettings", TMessageType.Call, seqid_));
         GetAllIndexSettings_args args = new GetAllIndexSettings_args();
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public List<Index> recv_GetAllIndexSettings()
@@ -324,6 +361,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_HeartBeat(AsyncCallback callback, object state)
       {
         return send_HeartBeat(callback, state);
@@ -334,29 +372,37 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task HeartBeatAsync()
-      {
-        await Task.Run(() =>
-        {
-          HeartBeat();
-        });
-      }
+      #endif
 
       public void HeartBeat()
       {
+        #if !SILVERLIGHT
+        send_HeartBeat();
+
+        #else
         var asyncResult = Begin_HeartBeat(null, null);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_HeartBeat(AsyncCallback callback, object state)
+      #else
+      public void send_HeartBeat()
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("HeartBeat", TMessageType.Call, seqid_));
         HeartBeat_args args = new HeartBeat_args();
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_DeadNodeNotification(AsyncCallback callback, object state, string nodeName)
       {
         return send_DeadNodeNotification(callback, state, nodeName);
@@ -367,30 +413,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task DeadNodeNotificationAsync(string nodeName)
-      {
-        await Task.Run(() =>
-        {
-          DeadNodeNotification(nodeName);
-        });
-      }
+      #endif
 
       public void DeadNodeNotification(string nodeName)
       {
+        #if !SILVERLIGHT
+        send_DeadNodeNotification(nodeName);
+
+        #else
         var asyncResult = Begin_DeadNodeNotification(null, null, nodeName);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_DeadNodeNotification(AsyncCallback callback, object state, string nodeName)
+      #else
+      public void send_DeadNodeNotification(string nodeName)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("DeadNodeNotification", TMessageType.Call, seqid_));
         DeadNodeNotification_args args = new DeadNodeNotification_args();
         args.NodeName = nodeName;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_JoinNodeNotification(AsyncCallback callback, object state, string nodeName)
       {
         return send_JoinNodeNotification(callback, state, nodeName);
@@ -401,30 +455,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task JoinNodeNotificationAsync(string nodeName)
-      {
-        await Task.Run(() =>
-        {
-          JoinNodeNotification(nodeName);
-        });
-      }
+      #endif
 
       public void JoinNodeNotification(string nodeName)
       {
+        #if !SILVERLIGHT
+        send_JoinNodeNotification(nodeName);
+
+        #else
         var asyncResult = Begin_JoinNodeNotification(null, null, nodeName);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_JoinNodeNotification(AsyncCallback callback, object state, string nodeName)
+      #else
+      public void send_JoinNodeNotification(string nodeName)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("JoinNodeNotification", TMessageType.Call, seqid_));
         JoinNodeNotification_args args = new JoinNodeNotification_args();
         args.NodeName = nodeName;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_AddIndex(AsyncCallback callback, object state, Index index)
       {
         return send_AddIndex(callback, state, index);
@@ -436,28 +498,36 @@ namespace FlexSearch.Api
         recv_AddIndex();
       }
 
-      public async Task AddIndexAsync(Index index)
-      {
-        await Task.Run(() =>
-        {
-          AddIndex(index);
-        });
-      }
+      #endif
 
       public void AddIndex(Index index)
       {
+        #if !SILVERLIGHT
+        send_AddIndex(index);
+        recv_AddIndex();
+
+        #else
         var asyncResult = Begin_AddIndex(null, null, index);
         End_AddIndex(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_AddIndex(AsyncCallback callback, object state, Index index)
+      #else
+      public void send_AddIndex(Index index)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("AddIndex", TMessageType.Call, seqid_));
         AddIndex_args args = new AddIndex_args();
         args.Index = index;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_AddIndex()
@@ -478,6 +548,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_UpdateIndex(AsyncCallback callback, object state, Index index)
       {
         return send_UpdateIndex(callback, state, index);
@@ -489,28 +560,36 @@ namespace FlexSearch.Api
         recv_UpdateIndex();
       }
 
-      public async Task UpdateIndexAsync(Index index)
-      {
-        await Task.Run(() =>
-        {
-          UpdateIndex(index);
-        });
-      }
+      #endif
 
       public void UpdateIndex(Index index)
       {
+        #if !SILVERLIGHT
+        send_UpdateIndex(index);
+        recv_UpdateIndex();
+
+        #else
         var asyncResult = Begin_UpdateIndex(null, null, index);
         End_UpdateIndex(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_UpdateIndex(AsyncCallback callback, object state, Index index)
+      #else
+      public void send_UpdateIndex(Index index)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("UpdateIndex", TMessageType.Call, seqid_));
         UpdateIndex_args args = new UpdateIndex_args();
         args.Index = index;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_UpdateIndex()
@@ -531,6 +610,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_GetIndex(AsyncCallback callback, object state, string indexName)
       {
         return send_GetIndex(callback, state, indexName);
@@ -542,28 +622,36 @@ namespace FlexSearch.Api
         recv_GetIndex();
       }
 
-      public async Task GetIndexAsync(string indexName)
-      {
-        await Task.Run(() =>
-        {
-          GetIndex(indexName);
-        });
-      }
+      #endif
 
       public void GetIndex(string indexName)
       {
+        #if !SILVERLIGHT
+        send_GetIndex(indexName);
+        recv_GetIndex();
+
+        #else
         var asyncResult = Begin_GetIndex(null, null, indexName);
         End_GetIndex(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_GetIndex(AsyncCallback callback, object state, string indexName)
+      #else
+      public void send_GetIndex(string indexName)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("GetIndex", TMessageType.Call, seqid_));
         GetIndex_args args = new GetIndex_args();
         args.IndexName = indexName;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_GetIndex()
@@ -584,6 +672,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_DeleteIndex(AsyncCallback callback, object state, string indexName)
       {
         return send_DeleteIndex(callback, state, indexName);
@@ -595,28 +684,36 @@ namespace FlexSearch.Api
         recv_DeleteIndex();
       }
 
-      public async Task DeleteIndexAsync(string indexName)
-      {
-        await Task.Run(() =>
-        {
-          DeleteIndex(indexName);
-        });
-      }
+      #endif
 
       public void DeleteIndex(string indexName)
       {
+        #if !SILVERLIGHT
+        send_DeleteIndex(indexName);
+        recv_DeleteIndex();
+
+        #else
         var asyncResult = Begin_DeleteIndex(null, null, indexName);
         End_DeleteIndex(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_DeleteIndex(AsyncCallback callback, object state, string indexName)
+      #else
+      public void send_DeleteIndex(string indexName)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("DeleteIndex", TMessageType.Call, seqid_));
         DeleteIndex_args args = new DeleteIndex_args();
         args.IndexName = indexName;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_DeleteIndex()
@@ -637,6 +734,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_SetIndexState(AsyncCallback callback, object state, string indexName, bool online)
       {
         return send_SetIndexState(callback, state, indexName, online);
@@ -648,21 +746,25 @@ namespace FlexSearch.Api
         recv_SetIndexState();
       }
 
-      public async Task SetIndexStateAsync(string indexName, bool online)
-      {
-        await Task.Run(() =>
-        {
-          SetIndexState(indexName, online);
-        });
-      }
+      #endif
 
       public void SetIndexState(string indexName, bool online)
       {
+        #if !SILVERLIGHT
+        send_SetIndexState(indexName, online);
+        recv_SetIndexState();
+
+        #else
         var asyncResult = Begin_SetIndexState(null, null, indexName, online);
         End_SetIndexState(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_SetIndexState(AsyncCallback callback, object state, string indexName, bool online)
+      #else
+      public void send_SetIndexState(string indexName, bool online)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("SetIndexState", TMessageType.Call, seqid_));
         SetIndexState_args args = new SetIndexState_args();
@@ -670,7 +772,11 @@ namespace FlexSearch.Api
         args.Online = online;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_SetIndexState()
@@ -691,6 +797,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_UpdateIndexConfiguration(AsyncCallback callback, object state, string indexName, IndexConfiguration configuration)
       {
         return send_UpdateIndexConfiguration(callback, state, indexName, configuration);
@@ -702,21 +809,25 @@ namespace FlexSearch.Api
         recv_UpdateIndexConfiguration();
       }
 
-      public async Task UpdateIndexConfigurationAsync(string indexName, IndexConfiguration configuration)
-      {
-        await Task.Run(() =>
-        {
-          UpdateIndexConfiguration(indexName, configuration);
-        });
-      }
+      #endif
 
       public void UpdateIndexConfiguration(string indexName, IndexConfiguration configuration)
       {
+        #if !SILVERLIGHT
+        send_UpdateIndexConfiguration(indexName, configuration);
+        recv_UpdateIndexConfiguration();
+
+        #else
         var asyncResult = Begin_UpdateIndexConfiguration(null, null, indexName, configuration);
         End_UpdateIndexConfiguration(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_UpdateIndexConfiguration(AsyncCallback callback, object state, string indexName, IndexConfiguration configuration)
+      #else
+      public void send_UpdateIndexConfiguration(string indexName, IndexConfiguration configuration)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("UpdateIndexConfiguration", TMessageType.Call, seqid_));
         UpdateIndexConfiguration_args args = new UpdateIndexConfiguration_args();
@@ -724,7 +835,11 @@ namespace FlexSearch.Api
         args.Configuration = configuration;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_UpdateIndexConfiguration()
@@ -745,6 +860,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_UpdateShardConfiguration(AsyncCallback callback, object state, string indexName, ShardConfiguration configuration)
       {
         return send_UpdateShardConfiguration(callback, state, indexName, configuration);
@@ -756,21 +872,25 @@ namespace FlexSearch.Api
         recv_UpdateShardConfiguration();
       }
 
-      public async Task UpdateShardConfigurationAsync(string indexName, ShardConfiguration configuration)
-      {
-        await Task.Run(() =>
-        {
-          UpdateShardConfiguration(indexName, configuration);
-        });
-      }
+      #endif
 
       public void UpdateShardConfiguration(string indexName, ShardConfiguration configuration)
       {
+        #if !SILVERLIGHT
+        send_UpdateShardConfiguration(indexName, configuration);
+        recv_UpdateShardConfiguration();
+
+        #else
         var asyncResult = Begin_UpdateShardConfiguration(null, null, indexName, configuration);
         End_UpdateShardConfiguration(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_UpdateShardConfiguration(AsyncCallback callback, object state, string indexName, ShardConfiguration configuration)
+      #else
+      public void send_UpdateShardConfiguration(string indexName, ShardConfiguration configuration)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("UpdateShardConfiguration", TMessageType.Call, seqid_));
         UpdateShardConfiguration_args args = new UpdateShardConfiguration_args();
@@ -778,7 +898,11 @@ namespace FlexSearch.Api
         args.Configuration = configuration;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public void recv_UpdateShardConfiguration()
@@ -799,6 +923,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_RequestFullIndexSync(AsyncCallback callback, object state, string indexName, int shardNumber, string networkPath)
       {
         return send_RequestFullIndexSync(callback, state, indexName, shardNumber, networkPath);
@@ -810,23 +935,25 @@ namespace FlexSearch.Api
         return recv_RequestFullIndexSync();
       }
 
-      public async Task<string> RequestFullIndexSyncAsync(string indexName, int shardNumber, string networkPath)
-      {
-        string retval;
-        retval = await Task.Run(() =>
-        {
-          return RequestFullIndexSync(indexName, shardNumber, networkPath);
-        });
-        return retval;
-      }
+      #endif
 
       public string RequestFullIndexSync(string indexName, int shardNumber, string networkPath)
       {
+        #if !SILVERLIGHT
+        send_RequestFullIndexSync(indexName, shardNumber, networkPath);
+        return recv_RequestFullIndexSync();
+
+        #else
         var asyncResult = Begin_RequestFullIndexSync(null, null, indexName, shardNumber, networkPath);
         return End_RequestFullIndexSync(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_RequestFullIndexSync(AsyncCallback callback, object state, string indexName, int shardNumber, string networkPath)
+      #else
+      public void send_RequestFullIndexSync(string indexName, int shardNumber, string networkPath)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("RequestFullIndexSync", TMessageType.Call, seqid_));
         RequestFullIndexSync_args args = new RequestFullIndexSync_args();
@@ -835,7 +962,11 @@ namespace FlexSearch.Api
         args.NetworkPath = networkPath;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public string recv_RequestFullIndexSync()
@@ -859,6 +990,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_RequestTransactionLog(AsyncCallback callback, object state, string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip)
       {
         return send_RequestTransactionLog(callback, state, indexName, shardNumber, startTimeStamp, endTimestamp, count, skip);
@@ -870,23 +1002,25 @@ namespace FlexSearch.Api
         return recv_RequestTransactionLog();
       }
 
-      public async Task<List<Document>> RequestTransactionLogAsync(string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip)
-      {
-        List<Document> retval;
-        retval = await Task.Run(() =>
-        {
-          return RequestTransactionLog(indexName, shardNumber, startTimeStamp, endTimestamp, count, skip);
-        });
-        return retval;
-      }
+      #endif
 
       public List<Document> RequestTransactionLog(string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip)
       {
+        #if !SILVERLIGHT
+        send_RequestTransactionLog(indexName, shardNumber, startTimeStamp, endTimestamp, count, skip);
+        return recv_RequestTransactionLog();
+
+        #else
         var asyncResult = Begin_RequestTransactionLog(null, null, indexName, shardNumber, startTimeStamp, endTimestamp, count, skip);
         return End_RequestTransactionLog(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_RequestTransactionLog(AsyncCallback callback, object state, string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip)
+      #else
+      public void send_RequestTransactionLog(string indexName, int shardNumber, long startTimeStamp, long endTimestamp, int count, int skip)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("RequestTransactionLog", TMessageType.Call, seqid_));
         RequestTransactionLog_args args = new RequestTransactionLog_args();
@@ -898,7 +1032,11 @@ namespace FlexSearch.Api
         args.Skip = skip;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public List<Document> recv_RequestTransactionLog()
@@ -922,6 +1060,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_RequestTransactionLogCount(AsyncCallback callback, object state, string indexName, int shardNumber, long startTimeStamp, long endTimestamp)
       {
         return send_RequestTransactionLogCount(callback, state, indexName, shardNumber, startTimeStamp, endTimestamp);
@@ -933,23 +1072,25 @@ namespace FlexSearch.Api
         return recv_RequestTransactionLogCount();
       }
 
-      public async Task<int> RequestTransactionLogCountAsync(string indexName, int shardNumber, long startTimeStamp, long endTimestamp)
-      {
-        int retval;
-        retval = await Task.Run(() =>
-        {
-          return RequestTransactionLogCount(indexName, shardNumber, startTimeStamp, endTimestamp);
-        });
-        return retval;
-      }
+      #endif
 
       public int RequestTransactionLogCount(string indexName, int shardNumber, long startTimeStamp, long endTimestamp)
       {
+        #if !SILVERLIGHT
+        send_RequestTransactionLogCount(indexName, shardNumber, startTimeStamp, endTimestamp);
+        return recv_RequestTransactionLogCount();
+
+        #else
         var asyncResult = Begin_RequestTransactionLogCount(null, null, indexName, shardNumber, startTimeStamp, endTimestamp);
         return End_RequestTransactionLogCount(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_RequestTransactionLogCount(AsyncCallback callback, object state, string indexName, int shardNumber, long startTimeStamp, long endTimestamp)
+      #else
+      public void send_RequestTransactionLogCount(string indexName, int shardNumber, long startTimeStamp, long endTimestamp)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("RequestTransactionLogCount", TMessageType.Call, seqid_));
         RequestTransactionLogCount_args args = new RequestTransactionLogCount_args();
@@ -959,7 +1100,11 @@ namespace FlexSearch.Api
         args.EndTimestamp = endTimestamp;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public int recv_RequestTransactionLogCount()
@@ -983,6 +1128,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_PurgeTLog(AsyncCallback callback, object state, string indexName, int shardNumber, long endTimeStamp)
       {
         return send_PurgeTLog(callback, state, indexName, shardNumber, endTimeStamp);
@@ -994,23 +1140,25 @@ namespace FlexSearch.Api
         return recv_PurgeTLog();
       }
 
-      public async Task<string> PurgeTLogAsync(string indexName, int shardNumber, long endTimeStamp)
-      {
-        string retval;
-        retval = await Task.Run(() =>
-        {
-          return PurgeTLog(indexName, shardNumber, endTimeStamp);
-        });
-        return retval;
-      }
+      #endif
 
       public string PurgeTLog(string indexName, int shardNumber, long endTimeStamp)
       {
+        #if !SILVERLIGHT
+        send_PurgeTLog(indexName, shardNumber, endTimeStamp);
+        return recv_PurgeTLog();
+
+        #else
         var asyncResult = Begin_PurgeTLog(null, null, indexName, shardNumber, endTimeStamp);
         return End_PurgeTLog(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_PurgeTLog(AsyncCallback callback, object state, string indexName, int shardNumber, long endTimeStamp)
+      #else
+      public void send_PurgeTLog(string indexName, int shardNumber, long endTimeStamp)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("PurgeTLog", TMessageType.Call, seqid_));
         PurgeTLog_args args = new PurgeTLog_args();
@@ -1019,7 +1167,11 @@ namespace FlexSearch.Api
         args.EndTimeStamp = endTimeStamp;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public string recv_PurgeTLog()
@@ -1040,6 +1192,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_GetJobById(AsyncCallback callback, object state, string JobId)
       {
         return send_GetJobById(callback, state, JobId);
@@ -1051,30 +1204,36 @@ namespace FlexSearch.Api
         return recv_GetJobById();
       }
 
-      public async Task<Job> GetJobByIdAsync(string JobId)
-      {
-        Job retval;
-        retval = await Task.Run(() =>
-        {
-          return GetJobById(JobId);
-        });
-        return retval;
-      }
+      #endif
 
       public Job GetJobById(string JobId)
       {
+        #if !SILVERLIGHT
+        send_GetJobById(JobId);
+        return recv_GetJobById();
+
+        #else
         var asyncResult = Begin_GetJobById(null, null, JobId);
         return End_GetJobById(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_GetJobById(AsyncCallback callback, object state, string JobId)
+      #else
+      public void send_GetJobById(string JobId)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("GetJobById", TMessageType.Call, seqid_));
         GetJobById_args args = new GetJobById_args();
         args.JobId = JobId;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public Job recv_GetJobById()
@@ -1098,6 +1257,7 @@ namespace FlexSearch.Api
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_AddDocument(AsyncCallback callback, object state, Document document)
       {
         return send_AddDocument(callback, state, document);
@@ -1108,30 +1268,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task AddDocumentAsync(Document document)
-      {
-        await Task.Run(() =>
-        {
-          AddDocument(document);
-        });
-      }
+      #endif
 
       public void AddDocument(Document document)
       {
+        #if !SILVERLIGHT
+        send_AddDocument(document);
+
+        #else
         var asyncResult = Begin_AddDocument(null, null, document);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_AddDocument(AsyncCallback callback, object state, Document document)
+      #else
+      public void send_AddDocument(Document document)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("AddDocument", TMessageType.Call, seqid_));
         AddDocument_args args = new AddDocument_args();
         args.Document = document;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_AddDocumentToReplica(AsyncCallback callback, object state, Document document)
       {
         return send_AddDocumentToReplica(callback, state, document);
@@ -1142,30 +1310,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task AddDocumentToReplicaAsync(Document document)
-      {
-        await Task.Run(() =>
-        {
-          AddDocumentToReplica(document);
-        });
-      }
+      #endif
 
       public void AddDocumentToReplica(Document document)
       {
+        #if !SILVERLIGHT
+        send_AddDocumentToReplica(document);
+
+        #else
         var asyncResult = Begin_AddDocumentToReplica(null, null, document);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_AddDocumentToReplica(AsyncCallback callback, object state, Document document)
+      #else
+      public void send_AddDocumentToReplica(Document document)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("AddDocumentToReplica", TMessageType.Call, seqid_));
         AddDocumentToReplica_args args = new AddDocumentToReplica_args();
         args.Document = document;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_UpdateDocument(AsyncCallback callback, object state, Document document)
       {
         return send_UpdateDocument(callback, state, document);
@@ -1176,30 +1352,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task UpdateDocumentAsync(Document document)
-      {
-        await Task.Run(() =>
-        {
-          UpdateDocument(document);
-        });
-      }
+      #endif
 
       public void UpdateDocument(Document document)
       {
+        #if !SILVERLIGHT
+        send_UpdateDocument(document);
+
+        #else
         var asyncResult = Begin_UpdateDocument(null, null, document);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_UpdateDocument(AsyncCallback callback, object state, Document document)
+      #else
+      public void send_UpdateDocument(Document document)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("UpdateDocument", TMessageType.Call, seqid_));
         UpdateDocument_args args = new UpdateDocument_args();
         args.Document = document;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_UpdateDocumentInReplica(AsyncCallback callback, object state, Document document)
       {
         return send_UpdateDocumentInReplica(callback, state, document);
@@ -1210,30 +1394,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task UpdateDocumentInReplicaAsync(Document document)
-      {
-        await Task.Run(() =>
-        {
-          UpdateDocumentInReplica(document);
-        });
-      }
+      #endif
 
       public void UpdateDocumentInReplica(Document document)
       {
+        #if !SILVERLIGHT
+        send_UpdateDocumentInReplica(document);
+
+        #else
         var asyncResult = Begin_UpdateDocumentInReplica(null, null, document);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_UpdateDocumentInReplica(AsyncCallback callback, object state, Document document)
+      #else
+      public void send_UpdateDocumentInReplica(Document document)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("UpdateDocumentInReplica", TMessageType.Call, seqid_));
         UpdateDocumentInReplica_args args = new UpdateDocumentInReplica_args();
         args.Document = document;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_DeleteDocument(AsyncCallback callback, object state, Document document)
       {
         return send_DeleteDocument(callback, state, document);
@@ -1244,30 +1436,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task DeleteDocumentAsync(Document document)
-      {
-        await Task.Run(() =>
-        {
-          DeleteDocument(document);
-        });
-      }
+      #endif
 
       public void DeleteDocument(Document document)
       {
+        #if !SILVERLIGHT
+        send_DeleteDocument(document);
+
+        #else
         var asyncResult = Begin_DeleteDocument(null, null, document);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_DeleteDocument(AsyncCallback callback, object state, Document document)
+      #else
+      public void send_DeleteDocument(Document document)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("DeleteDocument", TMessageType.Call, seqid_));
         DeleteDocument_args args = new DeleteDocument_args();
         args.Document = document;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_DeleteDocumentFromReplica(AsyncCallback callback, object state, Document document)
       {
         return send_DeleteDocumentFromReplica(callback, state, document);
@@ -1278,30 +1478,38 @@ namespace FlexSearch.Api
         oprot_.Transport.EndFlush(asyncResult);
       }
 
-      public async Task DeleteDocumentFromReplicaAsync(Document document)
-      {
-        await Task.Run(() =>
-        {
-          DeleteDocumentFromReplica(document);
-        });
-      }
+      #endif
 
       public void DeleteDocumentFromReplica(Document document)
       {
+        #if !SILVERLIGHT
+        send_DeleteDocumentFromReplica(document);
+
+        #else
         var asyncResult = Begin_DeleteDocumentFromReplica(null, null, document);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_DeleteDocumentFromReplica(AsyncCallback callback, object state, Document document)
+      #else
+      public void send_DeleteDocumentFromReplica(Document document)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("DeleteDocumentFromReplica", TMessageType.Call, seqid_));
         DeleteDocumentFromReplica_args args = new DeleteDocumentFromReplica_args();
         args.Document = document;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       
+      #if SILVERLIGHT
       public IAsyncResult Begin_GetDocument(AsyncCallback callback, object state, string indexName, string documentId)
       {
         return send_GetDocument(callback, state, indexName, documentId);
@@ -1313,23 +1521,25 @@ namespace FlexSearch.Api
         return recv_GetDocument();
       }
 
-      public async Task<Document> GetDocumentAsync(string indexName, string documentId)
-      {
-        Document retval;
-        retval = await Task.Run(() =>
-        {
-          return GetDocument(indexName, documentId);
-        });
-        return retval;
-      }
+      #endif
 
       public Document GetDocument(string indexName, string documentId)
       {
+        #if !SILVERLIGHT
+        send_GetDocument(indexName, documentId);
+        return recv_GetDocument();
+
+        #else
         var asyncResult = Begin_GetDocument(null, null, indexName, documentId);
         return End_GetDocument(asyncResult);
 
+        #endif
       }
+      #if SILVERLIGHT
       public IAsyncResult send_GetDocument(AsyncCallback callback, object state, string indexName, string documentId)
+      #else
+      public void send_GetDocument(string indexName, string documentId)
+      #endif
       {
         oprot_.WriteMessageBegin(new TMessage("GetDocument", TMessageType.Call, seqid_));
         GetDocument_args args = new GetDocument_args();
@@ -1337,7 +1547,11 @@ namespace FlexSearch.Api
         args.DocumentId = documentId;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
         return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
       }
 
       public Document recv_GetDocument()

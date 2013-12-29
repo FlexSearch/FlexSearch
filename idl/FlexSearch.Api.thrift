@@ -298,12 +298,6 @@ exception InvalidOperation {
 	3: i32 ErrorCode
 }
 
-exception InvalidOperation1 {
-  1: string DeveloperMessage
-  2: string UserMessage
-  3: i32 ErrorCode
-}
-
 // ----------------------------------------------------------------------------
 //	Specialized Exceptions
 // ----------------------------------------------------------------------------
@@ -316,13 +310,13 @@ const InvalidOperation INDEX_SHOULD_BE_OFFLINE = {"DeveloperMessage" : "Index sh
 //	Distributed coordination related
 // ----------------------------------------------------------------------------
 struct VoteResponse {
-	1: i32 Term
+	1: string VotedFor
 	2: bool VoteGranted
 }
 
 service FlexSearchService {
-	// Raft consensus related
-	VoteResponse RequestVoteForClusterMaster(1: i32 term, 2: string candidateId)
+	// Consensus related
+	VoteResponse RequestVoteForClusterMaster(1: string serverName, 2: i32 metric)
 	
 	// Identity related and gossip
 	list<Index> GetAllIndexSettings() 

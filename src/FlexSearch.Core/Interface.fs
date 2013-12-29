@@ -63,10 +63,11 @@ module Interface =
         abstract member Start   :   unit -> unit
         abstract member Stop    :   unit -> unit
     
-    type IConnectionPool<'T> =
-        abstract member PoolSize    :   int
-        abstract member TryExecute  :   int -> ('T -> unit) -> 'T
-
+    type IConnectionPool =
+        abstract member PoolSize            :   int
+        abstract member Initialize          :   unit -> bool
+        abstract member TryExecute          :   (FlexSearchService.Iface -> unit) -> bool
+        //abstract member TryExecuteOneWay    :   (FlexSearchService.Iface -> unit) -> bool
 
     type ISessionServer =
         inherit IServer

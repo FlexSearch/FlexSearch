@@ -185,6 +185,9 @@
     <Reference Include="SuperSocket.Common">
       <HintPath>..\..\lib\SuperSocket.Common.dll</HintPath>
     </Reference>
+    <Reference Include="SuperSocket.Facility">
+      <HintPath>..\..\lib\SuperSocket.Facility.dll</HintPath>
+    </Reference>
     <Reference Include="SuperSocket.SocketBase">
       <HintPath>..\..\lib\SuperSocket.SocketBase.dll</HintPath>
     </Reference>

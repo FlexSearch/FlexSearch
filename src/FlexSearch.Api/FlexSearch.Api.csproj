@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="SuperSocket.Facility">
+      <HintPath>..\..\lib\SuperSocket.Facility.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -60,7 +63,6 @@
     <Compile Include="IndexConfiguration.cs" />
     <Compile Include="IndexVersion.cs" />
     <Compile Include="InvalidOperation.cs" />
-    <Compile Include="InvalidOperation1.cs" />
     <Compile Include="Job.cs" />
     <Compile Include="JobStatus.cs" />
     <Compile Include="MissingValue.cs" />

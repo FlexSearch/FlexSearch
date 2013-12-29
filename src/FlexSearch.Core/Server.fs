@@ -104,19 +104,79 @@ module Http =
 
 
 module Socket =
+    open System
     open SuperSocket.SocketBase
     open SuperWebSocket
     open System.Collections.Generic
-    
+    open SuperSocket.ClientEngine
+    open SuperSocket.SocketBase.Protocol
+    open SuperSocket.SocketBase
+    open SuperSocket.SocketBase.Config
+    open SuperSocket.SocketBase.Logging
+    open SuperSocket.Facility.Protocol
+    open SuperSocket.SocketBase.Protocol
 
     // ----------------------------------------------------------------------------
-    /// WebSocket server
+    /// TCP Socket server
     // ----------------------------------------------------------------------------
 
     let newDataReceived (session: WebSocketSession) (data: byte[]) = ()
     let newMessageReceived (session: WebSocketSession) (data: string) = ()
     let newSessionConnected (session: WebSocketSession) = ()
     let sessionClosed (session: WebSocketSession) (reason: CloseReason) = ()
+
+
+    /// Custom Flex based protocol implemetation on top of TCP
+    /// It's a protocol like that:
+    /// +-------+---+-------------------------------+
+    /// |length | m |                               |
+    /// |       | c |    request body               |
+    /// |       |   |                               |
+    /// |  (2)  |(1)|                               |
+    /// +-------+---+-------------------------------+
+    /// length -> length of the packet body
+    ///     +------------------+------------------+
+    ///     | bodylength / 256 | bodylength % 256 |
+    ///     +------------------+------------------+
+    /// mc -> method code
+    type ProtoBufferReceiveFilter() =
+        inherit FixedHeaderReceiveFilter<BinaryRequestInfo>(3)
+            
+            /// Returns the body length from the header 
+            member this.GetBodyLengthFromHeader(header: byte[], offset: int, length: int) =
+                (int header.[offset] * 256) + (int header.[offset + 1])
+
+            /// Returns binaryrequest for the handler
+            /// Key -> message code
+            /// Body -> Protobuffer encoded message
+            member this.ResolveRequestInfo(header: ArraySegment<byte>, bodyBuffer: byte[], offset: int, length: int) =
+                new BinaryRequestInfo(header.Array.[2].ToString(), bodyBuffer.CloneRange(offset, length))
+                
+
+    /// Protobuffer based session wrapper around AppSession
+    type ProtoBufferSession() =
+        inherit AppSession<ProtoBufferSession, BinaryRequestInfo>()
+
+
+    /// Wrapper around socket server to handle protobuffer based communication 
+    type ProtoBufferServer() =
+        inherit AppServer<ProtoBufferSession, BinaryRequestInfo>(new DefaultReceiveFilterFactory<ProtoBufferReceiveFilter, BinaryRequestInfo>())
+    
+    
+    type TcpSocketServer(port: int) =
+        let config = new ServerConfig(Port = port, Ip = "Any", MaxConnectionNumber = 1000, Mode = SocketMode.Tcp, Name = "CustomProtocolServer")
+        let server = new ProtoBufferServer()
+
+        do
+            server.Setup(config, new ConsoleLogFactory())
+        
+        interface IServer with 
+            member this.Start() =
+                server.Start() |> ignore
+                    
+            member this.Stop() =
+                server.Stop()
+
 
     type SocketServer(port: int) =
         let listener = new WebSocketServer()
@@ -137,8 +197,72 @@ module Socket =
             member this.Stop() =
                 listener.Stop()
 
-                
 
+
+    module Thrift =
+        open Thrift
+        open Thrift.Protocol
+        open Thrift.Server
+        open Thrift.Transport
+        open FlexSearch.Api
+        open System.Collections.Concurrent
+
+        // ----------------------------------------------------------------------------
+        /// Thrift server
+        // ----------------------------------------------------------------------------
+        type Server(port: int, processor: TProcessor, minThread, maxThread) =
+            let mutable server: TThreadPoolServer option = None
+            do
+                let serverSocket = new TServerSocket(port, 0, false)
+                let protocolFactory = new TBinaryProtocol.Factory(true, true)
+                let transportFactory = new TFramedTransport.Factory()
+                
+                server <- Some(new TThreadPoolServer(processor, serverSocket, transportFactory, transportFactory, protocolFactory, protocolFactory, minThread, maxThread, null))
+        
+            interface IServer with
+                member this.Start() = server.Value.Serve()
+                member this.Stop() = server.Value.Stop()
+
+        
+        /// Thrift based client pool
+        type ClientPool(ipAddress: System.Net.IPAddress, port: int, connectionCount: int) =
+            let queue = new BlockingCollection<FlexSearchService.Client>(connectionCount)
+            
+            interface IConnectionPool with
+                member this.PoolSize = connectionCount
+                
+                member this.Initialize() =
+                    let mutable success = true
+                    let mutable clientCount = 0
+                    while (success = true && clientCount < connectionCount) do
+                        try
+                            let transport = new TSocket(ipAddress.ToString(), port)
+                            let framedTransport = new TFramedTransport(transport)
+                            let protocol = new TBinaryProtocol(framedTransport, true, true)
+                            framedTransport.Open()
+                            queue.Add(new FlexSearchService.Client(protocol)) |> ignore
+                            clientCount <- clientCount + 1        
+                        with | ex -> success <- false
+                    success
+
+                member this.TryExecute (action: FlexSearchService.Iface -> unit) =
+                    try
+                        let (success, client) =  queue.TryTake()
+                        if success then action(client)
+                        true
+                    with
+                        | ex -> false
+                        
+                
+        let ElectLeader(state: State.NodeState) =
+            if state.ConnectedNodes.Count < state.TotalNodes / 2 then
+                failwith "Cannot initiate a leader election without having active connection to half the nodes."
+            state.ConnectedNodes.ToArray() |> Array.iter(fun x -> x.Connection.se
+                
+                )
+
+
+            
 
             
 

@@ -17,8 +17,24 @@ module State =
     open FlexSearch.Core
     open FlexSearch.Core.Interface
     open System.Collections.Immutable
+    open System.Collections.Concurrent
     open SuperWebSocket
+    open System.Net
     open FlexSearch.Api
+    open System.Reactive.Subjects
+
+    type ClusterEvents = 
+        | NodeDead of IPAddress
+        | NodeJoin of IPAddress
+        | HeartBeat of IPAddress
+        | NewLeaderElection of IPAddress  
+
+    type NodeProperties =
+        {
+            Name        :   string
+            Address     :   System.Net.IPAddress
+            Connection  :   FlexSearchService.Iface
+        }
 
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
@@ -30,12 +46,17 @@ module State =
             IncomingSessions    :   ImmutableDictionary<string, WebSocketSession>
             OutgoingConnections :   ImmutableDictionary<string, ISocketClient>
             Indices             :   ImmutableDictionary<string, Index>
+            ConnectedNodes      :   BlockingCollection<NodeProperties>
+            Nodes               :   ConcurrentDictionary<System.Net.IPAddress, bool>
+            TotalNodes          :   int
+            ClusterEventBus     :   Subject<ClusterEvents>
         }
         with 
             member this.IndexExists(indexName: string) = 
                 match this.Indices.TryGetValue(indexName) with
                 | true, x -> Some(x)
                 | _ -> None
+    
 
 
     // ----------------------------------------------------------------------------     
