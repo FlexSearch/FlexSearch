@@ -21,7 +21,7 @@
             LogManager.Adapter = new NLogLoggerFactoryAdapter(properties);
             ILog logger = LogManager.GetCurrentClassLogger();
             logger.Info("Loading core services");
-           FlexSearch.Core.Main.loadNode();
+           //FlexSearch.Core.Main.loadNode();
             //try
             //{
             //    var serverSettings = new Settings.SettingsStore(Constants.ConfFolder.Value + "Config.xml");

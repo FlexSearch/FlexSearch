@@ -76,6 +76,10 @@ module Main =
                 IncomingSessions = Unchecked.defaultof<_>
                 OutgoingConnections = Unchecked.defaultof<_>
                 Indices = Unchecked.defaultof<_>
+                ConnectedNodes = Unchecked.defaultof<_>
+                Nodes = Unchecked.defaultof<_>
+                TotalNodes = Unchecked.defaultof<_>
+                ClusterEventBus = Unchecked.defaultof<_>
             }
 
         let httpServer = new Server.Http.HttpServer(9800) :> IServer

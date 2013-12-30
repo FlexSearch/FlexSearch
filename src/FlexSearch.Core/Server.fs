@@ -143,13 +143,13 @@ module Socket =
         inherit FixedHeaderReceiveFilter<BinaryRequestInfo>(3)
             
             /// Returns the body length from the header 
-            member this.GetBodyLengthFromHeader(header: byte[], offset: int, length: int) =
+            override this.GetBodyLengthFromHeader(header: byte[], offset: int, length: int) =
                 (int header.[offset] * 256) + (int header.[offset + 1])
 
             /// Returns binaryrequest for the handler
             /// Key -> message code
             /// Body -> Protobuffer encoded message
-            member this.ResolveRequestInfo(header: ArraySegment<byte>, bodyBuffer: byte[], offset: int, length: int) =
+            override this.ResolveRequestInfo(header: ArraySegment<byte>, bodyBuffer: byte[], offset: int, length: int) =
                 new BinaryRequestInfo(header.Array.[2].ToString(), bodyBuffer.CloneRange(offset, length))
                 
 
@@ -164,11 +164,11 @@ module Socket =
     
     
     type TcpSocketServer(port: int) =
-        let config = new ServerConfig(Port = port, Ip = "Any", MaxConnectionNumber = 1000, Mode = SocketMode.Tcp, Name = "CustomProtocolServer")
+        let config = new ServerConfig(Port = port, Ip = "Any", MaxConnectionNumber = 1000, Mode = SocketMode.Tcp, Name = "CustomProtocolServer") :> IServerConfig
         let server = new ProtoBufferServer()
 
         do
-            server.Setup(config, new ConsoleLogFactory())
+            server.Setup(config) |> ignore
         
         interface IServer with 
             member this.Start() =
@@ -257,9 +257,9 @@ module Socket =
         let ElectLeader(state: State.NodeState) =
             if state.ConnectedNodes.Count < state.TotalNodes / 2 then
                 failwith "Cannot initiate a leader election without having active connection to half the nodes."
-            state.ConnectedNodes.ToArray() |> Array.iter(fun x -> x.Connection.se
-                
-                )
+//            state.ConnectedNodes.ToArray() |> Array.iter(fun x -> x.Connection.se
+//                
+//                )
 
 
             
