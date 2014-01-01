@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -31,10 +30,10 @@ namespace FlexSearch.Api
     private int _FailedItems;
     private string _Message;
 
-    [DataMember]
+    [DataMember(Order = 1)]
     public string JobId { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public int TotalItems
     {
       get
@@ -48,7 +47,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 3)]
     public int ProcessedItems
     {
       get
@@ -62,7 +61,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 4)]
     public int FailedItems
     {
       get
@@ -80,10 +79,10 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="JobStatus"/>
     /// </summary>
-    [DataMember]
+    [DataMember(Order = 5)]
     public JobStatus Status { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 6)]
     public string Message
     {
       get

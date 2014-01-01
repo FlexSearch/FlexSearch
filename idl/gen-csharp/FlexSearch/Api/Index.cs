@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -30,7 +29,7 @@ namespace FlexSearch.Api
     private Dictionary<string, ScriptProperties> _Scripts;
     private Dictionary<string, SearchQuery> _SearchProfiles;
 
-    [DataMember]
+    [DataMember(Order = 1)]
     public Dictionary<string, AnalyzerProperties> Analyzers
     {
       get
@@ -44,19 +43,19 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public IndexConfiguration IndexConfiguration { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 3)]
     public Dictionary<string, FieldProperties> Fields { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 4)]
     public string IndexName { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 5)]
     public bool Online { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 6)]
     public Dictionary<string, ScriptProperties> Scripts
     {
       get
@@ -70,7 +69,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 7)]
     public Dictionary<string, SearchQuery> SearchProfiles
     {
       get
@@ -84,7 +83,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 8)]
     public ShardConfiguration ShardConfiguration { get; set; }
 
 

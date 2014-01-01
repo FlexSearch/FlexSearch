@@ -169,6 +169,9 @@
       <HintPath>..\packages\IKVM.7.3.4830.0\lib\IKVM.Runtime.JNI.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
+      <HintPath>..\packages\Microsoft.Diagnostics.Tracing.EventSource.1.0.14-rc\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+    </Reference>
     <Reference Include="Mono.CSharp">
       <HintPath>..\packages\CS-Script.3.6.2.0\lib\net45\Mono.CSharp.dll</HintPath>
       <Private>True</Private>
@@ -264,6 +267,7 @@
     <None Include="packages.config" />
     <Compile Include="Interop.fs" />
     <Compile Include="Utility.fs" />
+    <Compile Include="Logger.fs" />
     <Compile Include="HttpHelpers.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="Domain.fs" />
@@ -296,6 +300,11 @@
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
       <Name>FlexSearch.Api</Name>
       <Project>{5ee56459-9341-4335-991e-041f0c769047}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Logging\FlexSearch.Logging.csproj">
+      <Name>FlexSearch.Logging</Name>
+      <Project>{cd741727-1160-4832-addf-0cad1a2bca31}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

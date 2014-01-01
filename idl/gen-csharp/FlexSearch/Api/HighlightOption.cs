@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -30,7 +29,7 @@ namespace FlexSearch.Api
     private string _PostTag;
     private string _PreTag;
 
-    [DataMember]
+    [DataMember(Order = 1)]
     public short FragmentsToReturn
     {
       get
@@ -44,10 +43,10 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public List<string> HighlightedFields { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 3)]
     public string PostTag
     {
       get
@@ -61,7 +60,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 4)]
     public string PreTag
     {
       get

@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 
 namespace FlexSearch.Api

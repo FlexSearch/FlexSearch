@@ -11,22 +11,20 @@ using System.Text;
 using System.IO;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
 
 namespace FlexSearch.Api
 {
-    using System.ServiceModel;
-
-    public partial class FlexSearchService {
+  public partial class FlexSearchService {
     [ServiceContract(Namespace="")]
     public interface Iface {
       [OperationContract]
-      VoteResponse RequestVoteForClusterMaster(int term, string candidateId);
+      VoteResponse RequestVoteForClusterMaster(string serverName, int metric);
       #if SILVERLIGHT
-      IAsyncResult Begin_RequestVoteForClusterMaster(AsyncCallback callback, object state, int term, string candidateId);
+      IAsyncResult Begin_RequestVoteForClusterMaster(AsyncCallback callback, object state, string serverName, int metric);
       VoteResponse End_RequestVoteForClusterMaster(IAsyncResult asyncResult);
       #endif
       [OperationContract]
@@ -238,9 +236,9 @@ namespace FlexSearch.Api
 
       
       #if SILVERLIGHT
-      public IAsyncResult Begin_RequestVoteForClusterMaster(AsyncCallback callback, object state, int term, string candidateId)
+      public IAsyncResult Begin_RequestVoteForClusterMaster(AsyncCallback callback, object state, string serverName, int metric)
       {
-        return send_RequestVoteForClusterMaster(callback, state, term, candidateId);
+        return send_RequestVoteForClusterMaster(callback, state, serverName, metric);
       }
 
       public VoteResponse End_RequestVoteForClusterMaster(IAsyncResult asyncResult)
@@ -251,28 +249,28 @@ namespace FlexSearch.Api
 
       #endif
 
-      public VoteResponse RequestVoteForClusterMaster(int term, string candidateId)
+      public VoteResponse RequestVoteForClusterMaster(string serverName, int metric)
       {
         #if !SILVERLIGHT
-        send_RequestVoteForClusterMaster(term, candidateId);
+        send_RequestVoteForClusterMaster(serverName, metric);
         return recv_RequestVoteForClusterMaster();
 
         #else
-        var asyncResult = Begin_RequestVoteForClusterMaster(null, null, term, candidateId);
+        var asyncResult = Begin_RequestVoteForClusterMaster(null, null, serverName, metric);
         return End_RequestVoteForClusterMaster(asyncResult);
 
         #endif
       }
       #if SILVERLIGHT
-      public IAsyncResult send_RequestVoteForClusterMaster(AsyncCallback callback, object state, int term, string candidateId)
+      public IAsyncResult send_RequestVoteForClusterMaster(AsyncCallback callback, object state, string serverName, int metric)
       #else
-      public void send_RequestVoteForClusterMaster(int term, string candidateId)
+      public void send_RequestVoteForClusterMaster(string serverName, int metric)
       #endif
       {
         oprot_.WriteMessageBegin(new TMessage("RequestVoteForClusterMaster", TMessageType.Call, seqid_));
         RequestVoteForClusterMaster_args args = new RequestVoteForClusterMaster_args();
-        args.Term = term;
-        args.CandidateId = candidateId;
+        args.ServerName = serverName;
+        args.Metric = metric;
         args.Write(oprot_);
         oprot_.WriteMessageEnd();
         #if SILVERLIGHT
@@ -1638,7 +1636,7 @@ namespace FlexSearch.Api
         args.Read(iprot);
         iprot.ReadMessageEnd();
         RequestVoteForClusterMaster_result result = new RequestVoteForClusterMaster_result();
-        result.Success = iface_.RequestVoteForClusterMaster(args.Term, args.CandidateId);
+        result.Success = iface_.RequestVoteForClusterMaster(args.ServerName, args.Metric);
         oprot.WriteMessageBegin(new TMessage("RequestVoteForClusterMaster", TMessageType.Reply, seqid)); 
         result.Write(oprot);
         oprot.WriteMessageEnd();
@@ -1952,34 +1950,34 @@ namespace FlexSearch.Api
     [DataContract(Namespace="")]
     public partial class RequestVoteForClusterMaster_args : TBase
     {
-      private int _term;
-      private string _candidateId;
+      private string _serverName;
+      private int _metric;
 
-      [DataMember]
-      public int Term
+      [DataMember(Order = 1)]
+      public string ServerName
       {
         get
         {
-          return _term;
+          return _serverName;
         }
         set
         {
-          __isset.term = true;
-          this._term = value;
+          __isset.serverName = true;
+          this._serverName = value;
         }
       }
 
-      [DataMember]
-      public string CandidateId
+      [DataMember(Order = 2)]
+      public int Metric
       {
         get
         {
-          return _candidateId;
+          return _metric;
         }
         set
         {
-          __isset.candidateId = true;
-          this._candidateId = value;
+          __isset.metric = true;
+          this._metric = value;
         }
       }
 
@@ -1990,8 +1988,8 @@ namespace FlexSearch.Api
       #endif
       [DataContract]
       public struct Isset {
-        public bool term;
-        public bool candidateId;
+        public bool serverName;
+        public bool metric;
       }
 
       public RequestVoteForClusterMaster_args() {
@@ -2010,15 +2008,15 @@ namespace FlexSearch.Api
           switch (field.ID)
           {
             case 1:
-              if (field.Type == TType.I32) {
-                Term = iprot.ReadI32();
+              if (field.Type == TType.String) {
+                ServerName = iprot.ReadString();
               } else { 
                 TProtocolUtil.Skip(iprot, field.Type);
               }
               break;
             case 2:
-              if (field.Type == TType.String) {
-                CandidateId = iprot.ReadString();
+              if (field.Type == TType.I32) {
+                Metric = iprot.ReadI32();
               } else { 
                 TProtocolUtil.Skip(iprot, field.Type);
               }
@@ -2036,20 +2034,20 @@ namespace FlexSearch.Api
         TStruct struc = new TStruct("RequestVoteForClusterMaster_args");
         oprot.WriteStructBegin(struc);
         TField field = new TField();
-        if (__isset.term) {
-          field.Name = "term";
-          field.Type = TType.I32;
+        if (ServerName != null && __isset.serverName) {
+          field.Name = "serverName";
+          field.Type = TType.String;
           field.ID = 1;
           oprot.WriteFieldBegin(field);
-          oprot.WriteI32(Term);
+          oprot.WriteString(ServerName);
           oprot.WriteFieldEnd();
         }
-        if (CandidateId != null && __isset.candidateId) {
-          field.Name = "candidateId";
-          field.Type = TType.String;
+        if (__isset.metric) {
+          field.Name = "metric";
+          field.Type = TType.I32;
           field.ID = 2;
           oprot.WriteFieldBegin(field);
-          oprot.WriteString(CandidateId);
+          oprot.WriteI32(Metric);
           oprot.WriteFieldEnd();
         }
         oprot.WriteFieldStop();
@@ -2060,25 +2058,25 @@ namespace FlexSearch.Api
         var other = that as RequestVoteForClusterMaster_args;
         if (other == null) return false;
         if (ReferenceEquals(this, other)) return true;
-        return ((__isset.term == other.__isset.term) && ((!__isset.term) || (System.Object.Equals(Term, other.Term))))
-          && ((__isset.candidateId == other.__isset.candidateId) && ((!__isset.candidateId) || (System.Object.Equals(CandidateId, other.CandidateId))));
+        return ((__isset.serverName == other.__isset.serverName) && ((!__isset.serverName) || (System.Object.Equals(ServerName, other.ServerName))))
+          && ((__isset.metric == other.__isset.metric) && ((!__isset.metric) || (System.Object.Equals(Metric, other.Metric))));
       }
 
       public override int GetHashCode() {
         int hashcode = 0;
         unchecked {
-          hashcode = (hashcode * 397) ^ (!__isset.term ? 0 : (Term.GetHashCode()));
-          hashcode = (hashcode * 397) ^ (!__isset.candidateId ? 0 : (CandidateId.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.serverName ? 0 : (ServerName.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.metric ? 0 : (Metric.GetHashCode()));
         }
         return hashcode;
       }
 
       public override string ToString() {
         StringBuilder sb = new StringBuilder("RequestVoteForClusterMaster_args(");
-        sb.Append("Term: ");
-        sb.Append(Term);
-        sb.Append(",CandidateId: ");
-        sb.Append(CandidateId);
+        sb.Append("ServerName: ");
+        sb.Append(ServerName);
+        sb.Append(",Metric: ");
+        sb.Append(Metric);
         sb.Append(")");
         return sb.ToString();
       }
@@ -2094,7 +2092,7 @@ namespace FlexSearch.Api
     {
       private VoteResponse _success;
 
-      [DataMember]
+      [DataMember(Order = 3)]
       public VoteResponse Success
       {
         get
@@ -2264,7 +2262,7 @@ namespace FlexSearch.Api
     {
       private List<Index> _success;
 
-      [DataMember]
+      [DataMember(Order = 4)]
       public List<Index> Success
       {
         get
@@ -2451,7 +2449,7 @@ namespace FlexSearch.Api
     {
       private string _nodeName;
 
-      [DataMember]
+      [DataMember(Order = 5)]
       public string NodeName
       {
         get
@@ -2556,7 +2554,7 @@ namespace FlexSearch.Api
     {
       private string _nodeName;
 
-      [DataMember]
+      [DataMember(Order = 6)]
       public string NodeName
       {
         get
@@ -2661,7 +2659,7 @@ namespace FlexSearch.Api
     {
       private Index _index;
 
-      [DataMember]
+      [DataMember(Order = 7)]
       public Index Index
       {
         get
@@ -2767,7 +2765,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 8)]
       public InvalidOperation Message
       {
         get
@@ -2876,7 +2874,7 @@ namespace FlexSearch.Api
     {
       private Index _index;
 
-      [DataMember]
+      [DataMember(Order = 9)]
       public Index Index
       {
         get
@@ -2982,7 +2980,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 10)]
       public InvalidOperation Message
       {
         get
@@ -3091,7 +3089,7 @@ namespace FlexSearch.Api
     {
       private string _indexName;
 
-      [DataMember]
+      [DataMember(Order = 11)]
       public string IndexName
       {
         get
@@ -3196,7 +3194,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 12)]
       public InvalidOperation Message
       {
         get
@@ -3305,7 +3303,7 @@ namespace FlexSearch.Api
     {
       private string _indexName;
 
-      [DataMember]
+      [DataMember(Order = 13)]
       public string IndexName
       {
         get
@@ -3410,7 +3408,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 14)]
       public InvalidOperation Message
       {
         get
@@ -3520,7 +3518,7 @@ namespace FlexSearch.Api
       private string _indexName;
       private bool _online;
 
-      [DataMember]
+      [DataMember(Order = 15)]
       public string IndexName
       {
         get
@@ -3534,7 +3532,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 16)]
       public bool Online
       {
         get
@@ -3659,7 +3657,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 17)]
       public InvalidOperation Message
       {
         get
@@ -3769,7 +3767,7 @@ namespace FlexSearch.Api
       private string _indexName;
       private IndexConfiguration _configuration;
 
-      [DataMember]
+      [DataMember(Order = 18)]
       public string IndexName
       {
         get
@@ -3783,7 +3781,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 19)]
       public IndexConfiguration Configuration
       {
         get
@@ -3909,7 +3907,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 20)]
       public InvalidOperation Message
       {
         get
@@ -4019,7 +4017,7 @@ namespace FlexSearch.Api
       private string _indexName;
       private ShardConfiguration _configuration;
 
-      [DataMember]
+      [DataMember(Order = 21)]
       public string IndexName
       {
         get
@@ -4033,7 +4031,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 22)]
       public ShardConfiguration Configuration
       {
         get
@@ -4159,7 +4157,7 @@ namespace FlexSearch.Api
     {
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 23)]
       public InvalidOperation Message
       {
         get
@@ -4270,7 +4268,7 @@ namespace FlexSearch.Api
       private int _shardNumber;
       private string _networkPath;
 
-      [DataMember]
+      [DataMember(Order = 24)]
       public string IndexName
       {
         get
@@ -4284,7 +4282,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 25)]
       public int ShardNumber
       {
         get
@@ -4298,7 +4296,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 26)]
       public string NetworkPath
       {
         get
@@ -4444,7 +4442,7 @@ namespace FlexSearch.Api
       private string _success;
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 27)]
       public string Success
       {
         get
@@ -4458,7 +4456,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 28)]
       public InvalidOperation Message
       {
         get
@@ -4593,7 +4591,7 @@ namespace FlexSearch.Api
       private int _count;
       private int _skip;
 
-      [DataMember]
+      [DataMember(Order = 29)]
       public string IndexName
       {
         get
@@ -4607,7 +4605,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 30)]
       public int ShardNumber
       {
         get
@@ -4621,7 +4619,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 31)]
       public long StartTimeStamp
       {
         get
@@ -4635,7 +4633,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 32)]
       public long EndTimestamp
       {
         get
@@ -4649,7 +4647,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 33)]
       public int Count
       {
         get
@@ -4663,7 +4661,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 34)]
       public int Skip
       {
         get
@@ -4869,7 +4867,7 @@ namespace FlexSearch.Api
       private List<Document> _success;
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 35)]
       public List<Document> Success
       {
         get
@@ -4883,7 +4881,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 36)]
       public InvalidOperation Message
       {
         get
@@ -5034,7 +5032,7 @@ namespace FlexSearch.Api
       private long _startTimeStamp;
       private long _endTimestamp;
 
-      [DataMember]
+      [DataMember(Order = 37)]
       public string IndexName
       {
         get
@@ -5048,7 +5046,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 38)]
       public int ShardNumber
       {
         get
@@ -5062,7 +5060,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 39)]
       public long StartTimeStamp
       {
         get
@@ -5076,7 +5074,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 40)]
       public long EndTimestamp
       {
         get
@@ -5242,7 +5240,7 @@ namespace FlexSearch.Api
       private int _success;
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 41)]
       public int Success
       {
         get
@@ -5256,7 +5254,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 42)]
       public InvalidOperation Message
       {
         get
@@ -5386,7 +5384,7 @@ namespace FlexSearch.Api
       private int _shardNumber;
       private long _endTimeStamp;
 
-      [DataMember]
+      [DataMember(Order = 43)]
       public string IndexName
       {
         get
@@ -5400,7 +5398,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 44)]
       public int ShardNumber
       {
         get
@@ -5414,7 +5412,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 45)]
       public long EndTimeStamp
       {
         get
@@ -5559,7 +5557,7 @@ namespace FlexSearch.Api
     {
       private string _success;
 
-      [DataMember]
+      [DataMember(Order = 46)]
       public string Success
       {
         get
@@ -5667,7 +5665,7 @@ namespace FlexSearch.Api
     {
       private string _JobId;
 
-      [DataMember]
+      [DataMember(Order = 47)]
       public string JobId
       {
         get
@@ -5773,7 +5771,7 @@ namespace FlexSearch.Api
       private Job _success;
       private InvalidOperation _message;
 
-      [DataMember]
+      [DataMember(Order = 48)]
       public Job Success
       {
         get
@@ -5787,7 +5785,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 49)]
       public InvalidOperation Message
       {
         get
@@ -5918,7 +5916,7 @@ namespace FlexSearch.Api
     {
       private Document _document;
 
-      [DataMember]
+      [DataMember(Order = 50)]
       public Document Document
       {
         get
@@ -6024,7 +6022,7 @@ namespace FlexSearch.Api
     {
       private Document _document;
 
-      [DataMember]
+      [DataMember(Order = 51)]
       public Document Document
       {
         get
@@ -6130,7 +6128,7 @@ namespace FlexSearch.Api
     {
       private Document _document;
 
-      [DataMember]
+      [DataMember(Order = 52)]
       public Document Document
       {
         get
@@ -6236,7 +6234,7 @@ namespace FlexSearch.Api
     {
       private Document _document;
 
-      [DataMember]
+      [DataMember(Order = 53)]
       public Document Document
       {
         get
@@ -6342,7 +6340,7 @@ namespace FlexSearch.Api
     {
       private Document _document;
 
-      [DataMember]
+      [DataMember(Order = 54)]
       public Document Document
       {
         get
@@ -6448,7 +6446,7 @@ namespace FlexSearch.Api
     {
       private Document _document;
 
-      [DataMember]
+      [DataMember(Order = 55)]
       public Document Document
       {
         get
@@ -6555,7 +6553,7 @@ namespace FlexSearch.Api
       private string _indexName;
       private string _documentId;
 
-      [DataMember]
+      [DataMember(Order = 56)]
       public string IndexName
       {
         get
@@ -6569,7 +6567,7 @@ namespace FlexSearch.Api
         }
       }
 
-      [DataMember]
+      [DataMember(Order = 57)]
       public string DocumentId
       {
         get
@@ -6694,7 +6692,7 @@ namespace FlexSearch.Api
     {
       private Document _success;
 
-      [DataMember]
+      [DataMember(Order = 58)]
       public Document Success
       {
         get

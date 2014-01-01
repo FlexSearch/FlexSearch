@@ -47,38 +47,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AnalyzerProperties.cs" />
-    <Compile Include="DirectoryType.cs" />
-    <Compile Include="Document.cs" />
-    <Compile Include="FieldIndexOptions.cs" />
-    <Compile Include="FieldPostingsFormat.cs" />
-    <Compile Include="FieldProperties.cs" />
-    <Compile Include="FieldSimilarity.cs" />
-    <Compile Include="FieldTermVector.cs" />
-    <Compile Include="FieldType.cs" />
-    <Compile Include="FlexSearch.Api.Constants.cs" />
-    <Compile Include="FlexSearchService.cs" />
-    <Compile Include="HighlightOption.cs" />
-    <Compile Include="Index.cs" />
-    <Compile Include="IndexConfiguration.cs" />
-    <Compile Include="IndexVersion.cs" />
-    <Compile Include="InvalidOperation.cs" />
-    <Compile Include="Job.cs" />
-    <Compile Include="JobStatus.cs" />
-    <Compile Include="MissingValue.cs" />
-    <Compile Include="MissingValueOption.cs" />
-    <Compile Include="Node.cs" />
-    <Compile Include="NodeRole.cs" />
+    <Compile Include="..\..\idl\gen-csharp\FlexSearch\Api\*.cs">
+      <Link>%(FileName)</Link>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ScriptProperties.cs" />
-    <Compile Include="ScriptType.cs" />
-    <Compile Include="SearchQuery.cs" />
-    <Compile Include="ShardAllocationDetail.cs" />
-    <Compile Include="ShardAllocationStrategy.cs" />
-    <Compile Include="ShardConfiguration.cs" />
-    <Compile Include="TokenFilter.cs" />
-    <Compile Include="Tokenizer.cs" />
-    <Compile Include="VoteResponse.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

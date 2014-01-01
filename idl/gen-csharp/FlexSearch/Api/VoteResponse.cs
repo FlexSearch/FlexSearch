@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -26,24 +25,24 @@ namespace FlexSearch.Api
   [DataContract(Namespace="")]
   public partial class VoteResponse : TBase
   {
-    private int _Term;
+    private string _VotedFor;
     private bool _VoteGranted;
 
-    [DataMember]
-    public int Term
+    [DataMember(Order = 1)]
+    public string VotedFor
     {
       get
       {
-        return _Term;
+        return _VotedFor;
       }
       set
       {
-        __isset.Term = true;
-        this._Term = value;
+        __isset.VotedFor = true;
+        this._VotedFor = value;
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public bool VoteGranted
     {
       get
@@ -64,7 +63,7 @@ namespace FlexSearch.Api
     #endif
     [DataContract]
     public struct Isset {
-      public bool Term;
+      public bool VotedFor;
       public bool VoteGranted;
     }
 
@@ -84,8 +83,8 @@ namespace FlexSearch.Api
         switch (field.ID)
         {
           case 1:
-            if (field.Type == TType.I32) {
-              Term = iprot.ReadI32();
+            if (field.Type == TType.String) {
+              VotedFor = iprot.ReadString();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -110,12 +109,12 @@ namespace FlexSearch.Api
       TStruct struc = new TStruct("VoteResponse");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
-      if (__isset.Term) {
-        field.Name = "Term";
-        field.Type = TType.I32;
+      if (VotedFor != null && __isset.VotedFor) {
+        field.Name = "VotedFor";
+        field.Type = TType.String;
         field.ID = 1;
         oprot.WriteFieldBegin(field);
-        oprot.WriteI32(Term);
+        oprot.WriteString(VotedFor);
         oprot.WriteFieldEnd();
       }
       if (__isset.VoteGranted) {
@@ -134,14 +133,14 @@ namespace FlexSearch.Api
       var other = that as VoteResponse;
       if (other == null) return false;
       if (ReferenceEquals(this, other)) return true;
-      return ((__isset.Term == other.__isset.Term) && ((!__isset.Term) || (System.Object.Equals(Term, other.Term))))
+      return ((__isset.VotedFor == other.__isset.VotedFor) && ((!__isset.VotedFor) || (System.Object.Equals(VotedFor, other.VotedFor))))
         && ((__isset.VoteGranted == other.__isset.VoteGranted) && ((!__isset.VoteGranted) || (System.Object.Equals(VoteGranted, other.VoteGranted))));
     }
 
     public override int GetHashCode() {
       int hashcode = 0;
       unchecked {
-        hashcode = (hashcode * 397) ^ (!__isset.Term ? 0 : (Term.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.VotedFor ? 0 : (VotedFor.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.VoteGranted ? 0 : (VoteGranted.GetHashCode()));
       }
       return hashcode;
@@ -149,8 +148,8 @@ namespace FlexSearch.Api
 
     public override string ToString() {
       StringBuilder sb = new StringBuilder("VoteResponse(");
-      sb.Append("Term: ");
-      sb.Append(Term);
+      sb.Append("VotedFor: ");
+      sb.Append(VotedFor);
       sb.Append(",VoteGranted: ");
       sb.Append(VoteGranted);
       sb.Append(")");

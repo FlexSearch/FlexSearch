@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -27,10 +26,10 @@ namespace FlexSearch.Api
   public partial class AnalyzerProperties : TBase
   {
 
-    [DataMember]
+    [DataMember(Order = 1)]
     public Tokenizer Tokenizer { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public List<TokenFilter> Filters { get; set; }
 
     public AnalyzerProperties() {

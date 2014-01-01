@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -24,14 +23,14 @@ namespace FlexSearch.Api
   [Serializable]
   #endif
   [DataContract(Namespace="")]
-  public partial class TokenFilter : TBase
+  public partial class Tokenizer : TBase
   {
     private Dictionary<string, string> _Parameters;
 
-    [DataMember]
-    public string FilterName { get; set; }
+    [DataMember(Order = 1)]
+    public string TokenizerName { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public Dictionary<string, string> Parameters
     {
       get
@@ -55,16 +54,16 @@ namespace FlexSearch.Api
       public bool Parameters;
     }
 
-    public TokenFilter() {
+    public Tokenizer() {
     }
 
-    public TokenFilter(string FilterName) : this() {
-      this.FilterName = FilterName;
+    public Tokenizer(string TokenizerName) : this() {
+      this.TokenizerName = TokenizerName;
     }
 
     public void Read (TProtocol iprot)
     {
-      bool isset_FilterName = false;
+      bool isset_TokenizerName = false;
       TField field;
       iprot.ReadStructBegin();
       while (true)
@@ -77,8 +76,8 @@ namespace FlexSearch.Api
         {
           case 1:
             if (field.Type == TType.String) {
-              FilterName = iprot.ReadString();
-              isset_FilterName = true;
+              TokenizerName = iprot.ReadString();
+              isset_TokenizerName = true;
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -87,14 +86,14 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Parameters = new Dictionary<string, string>();
-                TMap _map8 = iprot.ReadMapBegin();
-                for( int _i9 = 0; _i9 < _map8.Count; ++_i9)
+                TMap _map13 = iprot.ReadMapBegin();
+                for( int _i14 = 0; _i14 < _map13.Count; ++_i14)
                 {
-                  string _key10;
-                  string _val11;
-                  _key10 = iprot.ReadString();
-                  _val11 = iprot.ReadString();
-                  Parameters[_key10] = _val11;
+                  string _key15;
+                  string _val16;
+                  _key15 = iprot.ReadString();
+                  _val16 = iprot.ReadString();
+                  Parameters[_key15] = _val16;
                 }
                 iprot.ReadMapEnd();
               }
@@ -109,19 +108,19 @@ namespace FlexSearch.Api
         iprot.ReadFieldEnd();
       }
       iprot.ReadStructEnd();
-      if (!isset_FilterName)
+      if (!isset_TokenizerName)
         throw new TProtocolException(TProtocolException.INVALID_DATA);
     }
 
     public void Write(TProtocol oprot) {
-      TStruct struc = new TStruct("TokenFilter");
+      TStruct struc = new TStruct("Tokenizer");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
-      field.Name = "FilterName";
+      field.Name = "TokenizerName";
       field.Type = TType.String;
       field.ID = 1;
       oprot.WriteFieldBegin(field);
-      oprot.WriteString(FilterName);
+      oprot.WriteString(TokenizerName);
       oprot.WriteFieldEnd();
       if (Parameters != null && __isset.Parameters) {
         field.Name = "Parameters";
@@ -130,10 +129,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.String, Parameters.Count));
-          foreach (string _iter12 in Parameters.Keys)
+          foreach (string _iter17 in Parameters.Keys)
           {
-            oprot.WriteString(_iter12);
-            oprot.WriteString(Parameters[_iter12]);
+            oprot.WriteString(_iter17);
+            oprot.WriteString(Parameters[_iter17]);
           }
           oprot.WriteMapEnd();
         }
@@ -144,26 +143,26 @@ namespace FlexSearch.Api
     }
 
     public override bool Equals(object that) {
-      var other = that as TokenFilter;
+      var other = that as Tokenizer;
       if (other == null) return false;
       if (ReferenceEquals(this, other)) return true;
-      return System.Object.Equals(FilterName, other.FilterName)
+      return System.Object.Equals(TokenizerName, other.TokenizerName)
         && ((__isset.Parameters == other.__isset.Parameters) && ((!__isset.Parameters) || (TCollections.Equals(Parameters, other.Parameters))));
     }
 
     public override int GetHashCode() {
       int hashcode = 0;
       unchecked {
-        hashcode = (hashcode * 397) ^ ((FilterName.GetHashCode()));
+        hashcode = (hashcode * 397) ^ ((TokenizerName.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.Parameters ? 0 : (TCollections.GetHashCode(Parameters)));
       }
       return hashcode;
     }
 
     public override string ToString() {
-      StringBuilder sb = new StringBuilder("TokenFilter(");
-      sb.Append("FilterName: ");
-      sb.Append(FilterName);
+      StringBuilder sb = new StringBuilder("Tokenizer(");
+      sb.Append("TokenizerName: ");
+      sb.Append(TokenizerName);
       sb.Append(",Parameters: ");
       sb.Append(Parameters);
       sb.Append(")");

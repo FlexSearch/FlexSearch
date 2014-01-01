@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -34,7 +33,7 @@ namespace FlexSearch.Api
     private List<MissingValue> _MissingValueCofiguration;
     private MissingValueOption _GlobalMissingValue;
 
-    [DataMember]
+    [DataMember(Order = 1)]
     public List<string> Columns
     {
       get
@@ -48,7 +47,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public int Count
     {
       get
@@ -62,7 +61,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 3)]
     public HighlightOption Highlights
     {
       get
@@ -76,10 +75,10 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 4)]
     public string IndexName { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 5)]
     public string OrderBy
     {
       get
@@ -93,7 +92,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 6)]
     public int Skip
     {
       get
@@ -107,10 +106,10 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 7)]
     public string QueryString { get; set; }
 
-    [DataMember]
+    [DataMember(Order = 8)]
     public List<MissingValue> MissingValueCofiguration
     {
       get
@@ -128,7 +127,7 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="MissingValueOption"/>
     /// </summary>
-    [DataMember]
+    [DataMember(Order = 9)]
     public MissingValueOption GlobalMissingValue
     {
       get

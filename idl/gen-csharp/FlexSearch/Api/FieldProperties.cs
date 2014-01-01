@@ -9,10 +9,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Threading.Tasks;
 using Thrift;
 using Thrift.Collections;
-//using System.ServiceModel;
+using System.ServiceModel;
 using System.Runtime.Serialization;
 using Thrift.Protocol;
 using Thrift.Transport;
@@ -38,7 +37,7 @@ namespace FlexSearch.Api
     private bool _OmitNorms;
     private string _ScriptName;
 
-    [DataMember]
+    [DataMember(Order = 1)]
     public bool Analyze
     {
       get
@@ -52,7 +51,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 2)]
     public bool Index
     {
       get
@@ -66,7 +65,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 3)]
     public bool Store
     {
       get
@@ -80,7 +79,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 4)]
     public string IndexAnalyzer
     {
       get
@@ -94,7 +93,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 5)]
     public string SearchAnalyzer
     {
       get
@@ -112,7 +111,7 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="FieldType"/>
     /// </summary>
-    [DataMember]
+    [DataMember(Order = 6)]
     public FieldType FieldType
     {
       get
@@ -130,7 +129,7 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="FieldPostingsFormat"/>
     /// </summary>
-    [DataMember]
+    [DataMember(Order = 7)]
     public FieldPostingsFormat PostingsFormat
     {
       get
@@ -148,7 +147,7 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="FieldIndexOptions"/>
     /// </summary>
-    [DataMember]
+    [DataMember(Order = 8)]
     public FieldIndexOptions IndexOptions
     {
       get
@@ -166,7 +165,7 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="FieldTermVector"/>
     /// </summary>
-    [DataMember]
+    [DataMember(Order = 9)]
     public FieldTermVector TermVector
     {
       get
@@ -180,7 +179,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 10)]
     public bool OmitNorms
     {
       get
@@ -194,7 +193,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember]
+    [DataMember(Order = 11)]
     public string ScriptName
     {
       get
