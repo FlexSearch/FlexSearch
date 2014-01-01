@@ -106,8 +106,8 @@ module Http =
 module Socket =
     open System
     open SuperSocket.SocketBase
-    open SuperWebSocket
     open System.Collections.Generic
+    open SuperSocket.ClientEngine
     open SuperSocket.ClientEngine
     open SuperSocket.SocketBase.Protocol
     open SuperSocket.SocketBase
@@ -115,15 +115,17 @@ module Socket =
     open SuperSocket.SocketBase.Logging
     open SuperSocket.Facility.Protocol
     open SuperSocket.SocketBase.Protocol
+    open System.Collections.Concurrent
+    open FlexSearch.Api
 
     // ----------------------------------------------------------------------------
     /// TCP Socket server
     // ----------------------------------------------------------------------------
 
-    let newDataReceived (session: WebSocketSession) (data: byte[]) = ()
-    let newMessageReceived (session: WebSocketSession) (data: string) = ()
-    let newSessionConnected (session: WebSocketSession) = ()
-    let sessionClosed (session: WebSocketSession) (reason: CloseReason) = ()
+//    let newDataReceived (session: WebSocketSession) (data: byte[]) = ()
+//    let newMessageReceived (session: WebSocketSession) (data: string) = ()
+//    let newSessionConnected (session: WebSocketSession) = ()
+//    let sessionClosed (session: WebSocketSession) (reason: CloseReason) = ()
 
 
     /// Custom Flex based protocol implemetation on top of TCP
@@ -164,7 +166,7 @@ module Socket =
     
     
     type TcpSocketServer(port: int) =
-        let config = new ServerConfig(Port = port, Ip = "Any", MaxConnectionNumber = 1000, Mode = SocketMode.Tcp, Name = "CustomProtocolServer") :> IServerConfig
+        let config = new ServerConfig(Port = port, Ip = "Any", MaxConnectionNumber = 1000, Mode = SocketMode.Tcp, Name = "FlexTcpServer") :> IServerConfig
         let server = new ProtoBufferServer()
 
         do
@@ -178,26 +180,73 @@ module Socket =
                 server.Stop()
 
 
-    type SocketServer(port: int) =
-        let listener = new WebSocketServer()
-
+//    type SocketServer(port: int) =
+//        let listener = new WebSocketServer()
+//
+//        do
+//            if listener.Setup(port) = false then
+//                failwithf "Failed to initialize socket server."
+//
+//            listener.add_NewDataReceived(new SessionHandler<WebSocketSession, byte[]>(newDataReceived))
+//            listener.add_NewMessageReceived(new SessionHandler<WebSocketSession, string>(newMessageReceived))
+//            listener.add_NewSessionConnected(new SessionHandler<WebSocketSession>(newSessionConnected))
+//            listener.add_SessionClosed(new SessionHandler<WebSocketSession, CloseReason>(sessionClosed))
+//
+//        interface IServer with 
+//            member this.Start() =
+//                listener.Start() |> ignore
+//                    
+//            member this.Stop() =
+//                listener.Stop()
+    
+    type TcpClient(ipAddress: System.Net.IPAddress, port: int) =
+        let client = new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port)) :> SuperSocket.ClientEngine.IClientSession
+        
         do
-            if listener.Setup(port) = false then
-                failwithf "Failed to initialize socket server."
-
-            listener.add_NewDataReceived(new SessionHandler<WebSocketSession, byte[]>(newDataReceived))
-            listener.add_NewMessageReceived(new SessionHandler<WebSocketSession, string>(newMessageReceived))
-            listener.add_NewSessionConnected(new SessionHandler<WebSocketSession>(newSessionConnected))
-            listener.add_SessionClosed(new SessionHandler<WebSocketSession, CloseReason>(sessionClosed))
-
-        interface IServer with 
-            member this.Start() =
-                listener.Start() |> ignore
+            client.Connect()
+            if client.IsConnected <> true then failwithf "Client connection error."
+            client.DataReceived.Add(fun x -> 
                     
-            member this.Stop() =
-                listener.Stop()
+                )
+        member this.SendOneWay(data: IList<ArraySegment<byte>>) = 
+            if client.IsConnected then
+                client.TrySend(data)
+            else
+                false   
 
+        member this.Send(data: IList<ArraySegment<byte>>) = 
+            if client.IsConnected then
+                client.TrySend(data)
+                              
+            else
+                false  
 
+    /// Thrift based client pool
+    type TcpClientPool(ipAddress: System.Net.IPAddress, port: int, connectionCount: int) =
+        let queue = new BlockingCollection<SuperSocket.ClientEngine.AsyncTcpSession>(connectionCount)
+            
+        interface IConnectionPool with
+            member this.PoolSize = connectionCount
+                
+            member this.Initialize() =
+                let mutable success = true
+                let mutable clientCount = 0
+                while (success = true && clientCount < connectionCount) do
+                    try
+                        let client = new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port))
+                        client.Connect()
+                        if client.IsConnected <> true then failwithf "Client connection error."
+                        clientCount <- clientCount + 1        
+                    with | ex -> success <- false
+                success
+
+            member this.TryExecute (action: FlexSearchService.Iface -> unit) =
+                try
+                    let (success, client) =  queue.TryTake()
+                    if success then action(client)
+                    true
+                with
+                    | ex -> false
 
     module Thrift =
         open Thrift

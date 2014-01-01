@@ -72,7 +72,7 @@ module Interface =
     type ISessionServer =
         inherit IServer
         abstract member SessionCount        :   unit -> int
-        abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
+        //abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
 
 
     // ---------------------------------------------------------------------------- 
@@ -310,7 +310,7 @@ module Interface =
         abstract member ShutDown                    :   unit -> bool
 
 
-    open SuperWebSocket
+    //open SuperWebSocket
 
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
@@ -320,8 +320,8 @@ module Interface =
         abstract member HttpServer          :   IServer
         //abstract member 
         abstract member ActiveConnections   :   ConcurrentDictionary<string, string>
-        abstract member IncomingSessions    :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
-        abstract member OutgoingConnections :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
+        //abstract member IncomingSessions    :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
+        //abstract member OutgoingConnections :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
 
     
     type ISocketClient =

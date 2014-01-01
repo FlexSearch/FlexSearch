@@ -23,7 +23,7 @@ module Main =
     open FlexSearch.Core
     open FlexSearch
     open FlexSearch.Core.Server
-    open SuperWebSocket
+    //open SuperWebSocket
     open FSharp.Data
     open FlexSearch.Core.State
 
@@ -73,7 +73,7 @@ module Main =
                 PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
                 ServerSettings = settings
                 HttpConnections = Unchecked.defaultof<_>
-                IncomingSessions = Unchecked.defaultof<_>
+                //IncomingSessions = Unchecked.defaultof<_>
                 OutgoingConnections = Unchecked.defaultof<_>
                 Indices = Unchecked.defaultof<_>
                 ConnectedNodes = Unchecked.defaultof<_>

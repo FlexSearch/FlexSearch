@@ -18,7 +18,6 @@ module State =
     open FlexSearch.Core.Interface
     open System.Collections.Immutable
     open System.Collections.Concurrent
-    open SuperWebSocket
     open System.Net
     open FlexSearch.Api
     open System.Reactive.Subjects
@@ -43,7 +42,7 @@ module State =
             PersistanceStore    :   IPersistanceStore
             ServerSettings      :   ServerSettings
             HttpConnections     :   ImmutableDictionary<string, System.Net.Http.HttpClient>
-            IncomingSessions    :   ImmutableDictionary<string, WebSocketSession>
+            //IncomingSessions    :   ImmutableDictionary<string, WebSocketSession>
             OutgoingConnections :   ImmutableDictionary<string, ISocketClient>
             Indices             :   ImmutableDictionary<string, Index>
             ConnectedNodes      :   BlockingCollection<NodeProperties>
