@@ -29,6 +29,7 @@ module Pool =
             if not disposed then
                 if disposing then
                     if self.AllowRegeneration = true then
+                        GC.ReRegisterForFinalize(self)
                         self.ReturnToPool(self)
                     else
                         disposed <- true
@@ -44,7 +45,7 @@ module Pool =
         interface IDisposable with
             member this.Dispose() =
                 cleanup(true)
-                GC.SuppressFinalize(self)
+                //GC.SuppressFinalize(self)
 
         // override of finalizer
         override this.Finalize() = 
@@ -62,6 +63,7 @@ module Pool =
         let createNewItem() =
             let returnToPool(item: PooledObject) =
                 pool.Enqueue(item :?> 'T)
+                Interlocked.Increment(itemCount) |> ignore
 
             let instance = factory()
             instance.ReturnToPool <- returnToPool
@@ -82,7 +84,7 @@ module Pool =
                         | _ -> ()
                         
         do
-            for i = 0 to poolSize do     
+            for i = 1 to poolSize do     
                 pool.Enqueue(createNewItem())
         
         // implementation of IDisposable
@@ -106,21 +108,24 @@ module Pool =
                 | _ -> createNewItem()
 
             // if onAcquire id defined then keep on finding the poolable object till onAcquire is satisfied
-            match onAcquire with
-            | Some(a) ->
-                let mutable item = getItem()
-                let mutable success = a(item)
-                while success <> true do
-                    item <- getItem()
-                    success <- a(item)
+            let item =
+                match onAcquire with
+                | Some(a) ->
+                    let mutable item = getItem()
+                    let mutable success = a(item)
+                    while success <> true do
+                        item <- getItem()
+                        success <- a(item)
 
-                    // Dispose the item which failed the onAcquire condition
-                    if not success then
-                        item.AllowRegeneration <- false
-                        (item :> IDisposable).Dispose() 
-                item
-            | None -> getItem()
-                     
+                        // Dispose the item which failed the onAcquire condition
+                        if not success then
+                            item.AllowRegeneration <- false
+                            (item :> IDisposable).Dispose() 
+                    item
+                | None -> getItem()
+            
+            Interlocked.Decrement(itemCount) |> ignore
+            item     
 
         /// Release the instance. Poolable objects implement dispose which can automatically
         /// return the object to the object pool
