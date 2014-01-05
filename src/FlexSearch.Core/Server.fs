@@ -225,28 +225,28 @@ module Socket =
     type TcpClientPool(ipAddress: System.Net.IPAddress, port: int, connectionCount: int) =
         let queue = new BlockingCollection<SuperSocket.ClientEngine.AsyncTcpSession>(connectionCount)
           
-        interface IConnectionPool with
-            member this.PoolSize = connectionCount
-                
-            member this.Initialize() =
-                let mutable success = true
-                let mutable clientCount = 0
-                while (success = true && clientCount < connectionCount) do
-                    try
-                        let client = new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port))
-                        client.Connect()
-                        if client.IsConnected <> true then failwithf "Client connection error."
-                        clientCount <- clientCount + 1        
-                    with | ex -> success <- false
-                success
+//        interface IConnectionPool with
+//            member this.PoolSize = connectionCount
+//                
+//            member this.Initialize() =
+//                let mutable success = true
+//                let mutable clientCount = 0
+//                while (success = true && clientCount < connectionCount) do
+//                    try
+//                        let client = new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port))
+//                        client.Connect()
+//                        if client.IsConnected <> true then failwithf "Client connection error."
+//                        clientCount <- clientCount + 1        
+//                    with | ex -> success <- false
+//                success
 
-            member this.TryExecute (action: FlexSearchService.Iface -> unit) =
-                try
-                    let (success, client) =  queue.TryTake()
-                    if success then action(client)
-                    true
-                with
-                    | ex -> false
+//            member this.TryExecute (action: FlexSearchService.Iface -> unit) =
+//                try
+//                    let (success, client) =  queue.TryTake()
+//                    if success then //action(client)
+//                    true
+//                with
+//                    | ex -> false
 
     module Thrift =
         open Thrift
