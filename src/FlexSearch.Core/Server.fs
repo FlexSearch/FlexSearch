@@ -117,6 +117,7 @@ module Socket =
     open SuperSocket.SocketBase.Protocol
     open System.Collections.Concurrent
     open FlexSearch.Api
+    open System.Threading
 
     // ----------------------------------------------------------------------------
     /// TCP Socket server
@@ -178,53 +179,52 @@ module Socket =
                     
             member this.Stop() =
                 server.Stop()
-
-
-//    type SocketServer(port: int) =
-//        let listener = new WebSocketServer()
-//
-//        do
-//            if listener.Setup(port) = false then
-//                failwithf "Failed to initialize socket server."
-//
-//            listener.add_NewDataReceived(new SessionHandler<WebSocketSession, byte[]>(newDataReceived))
-//            listener.add_NewMessageReceived(new SessionHandler<WebSocketSession, string>(newMessageReceived))
-//            listener.add_NewSessionConnected(new SessionHandler<WebSocketSession>(newSessionConnected))
-//            listener.add_SessionClosed(new SessionHandler<WebSocketSession, CloseReason>(sessionClosed))
-//
-//        interface IServer with 
-//            member this.Start() =
-//                listener.Start() |> ignore
-//                    
-//            member this.Stop() =
-//                listener.Stop()
     
+
     type TcpClient(ipAddress: System.Net.IPAddress, port: int) =
         let client = new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port)) :> SuperSocket.ClientEngine.IClientSession
-        
+        let locker = new Object()
+        let mutable resultExpected = false
+        let res : byte[] = Array.zeroCreate(2048)
+        let mutable length = 0
+
         do
             client.Connect()
             if client.IsConnected <> true then failwithf "Client connection error."
             client.DataReceived.Add(fun x -> 
-                    
+                    lock(locker) (fun () ->
+                        if(resultExpected) then
+                            Array.Copy(x.Data, x.Offset, res, 0, x.Length)
+                            length <- x.Length
+                            resultExpected <- false
+                            Monitor.Pulse(locker)
+                    )    
                 )
-        member this.SendOneWay(data: IList<ArraySegment<byte>>) = 
-            if client.IsConnected then
-                client.TrySend(data)
-            else
-                false   
+
 
         member this.Send(data: IList<ArraySegment<byte>>) = 
-            if client.IsConnected then
-                client.TrySend(data)
-                              
-            else
-                false  
+            client.IsConnected && client.TrySend(data)
 
-    /// Thrift based client pool
+
+        member this.Get<'T>(data: IList<ArraySegment<byte>>) = 
+            if client.IsConnected && client.TrySend(data) then
+                lock(locker) (fun () ->
+                    resultExpected <- true
+                    while resultExpected do 
+                        Monitor.Wait(locker) |> ignore
+                    resultExpected <- false
+                )
+
+                HttpHelpers.protoDeserialize<'T>(Array.sub res 0 length)
+            else
+                Unchecked.defaultof<'T>
+
+  
+
+    /// Tcp based client pool
     type TcpClientPool(ipAddress: System.Net.IPAddress, port: int, connectionCount: int) =
         let queue = new BlockingCollection<SuperSocket.ClientEngine.AsyncTcpSession>(connectionCount)
-            
+          
         interface IConnectionPool with
             member this.PoolSize = connectionCount
                 
@@ -312,7 +312,24 @@ module Socket =
 
 
             
-
+//    type SocketServer(port: int) =
+//        let listener = new WebSocketServer()
+//
+//        do
+//            if listener.Setup(port) = false then
+//                failwithf "Failed to initialize socket server."
+//
+//            listener.add_NewDataReceived(new SessionHandler<WebSocketSession, byte[]>(newDataReceived))
+//            listener.add_NewMessageReceived(new SessionHandler<WebSocketSession, string>(newMessageReceived))
+//            listener.add_NewSessionConnected(new SessionHandler<WebSocketSession>(newSessionConnected))
+//            listener.add_SessionClosed(new SessionHandler<WebSocketSession, CloseReason>(sessionClosed))
+//
+//        interface IServer with 
+//            member this.Start() =
+//                listener.Start() |> ignore
+//                    
+//            member this.Stop() =
+//                listener.Stop()
             
 
     

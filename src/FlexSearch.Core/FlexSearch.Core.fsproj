@@ -276,6 +276,7 @@
     <Compile Include="Interop.fs" />
     <Compile Include="Utility.fs" />
     <Compile Include="Logger.fs" />
+    <Compile Include="Pool.fs" />
     <Compile Include="HttpHelpers.fs" />
     <Compile Include="Constants.fs" />
     <Compile Include="Domain.fs" />
