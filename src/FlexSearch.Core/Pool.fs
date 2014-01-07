@@ -25,14 +25,14 @@ module Pool =
         let mutable disposed = false
 
         /// Internal method to cleanup resources
-        let cleanup(disposing: bool) = 
+        let cleanup(reRegisterForFinalization: bool) = 
             if not disposed then
-                if disposing then
-                    if self.AllowRegeneration = true then
+                if self.AllowRegeneration = true then
+                    if reRegisterForFinalization then 
                         GC.ReRegisterForFinalize(self)
-                        self.ReturnToPool(self)
-                    else
-                        disposed <- true
+                    self.ReturnToPool(self)
+                else
+                    disposed <- true
         
         /// Responsible for returning object back to the pool. This will be set automatically by the
         /// object pool
@@ -44,13 +44,14 @@ module Pool =
         // implementation of IDisposable
         interface IDisposable with
             member this.Dispose() =
-                cleanup(true)
-                //GC.SuppressFinalize(self)
+                cleanup(false)
 
         // override of finalizer
         override this.Finalize() = 
-            cleanup(false)     
+            cleanup(true)     
     
+        member this.Release() =
+            cleanup(false)
 
     // ----------------------------------------------------------------------------
     /// A generic object pool which can be used for connection pooling etc.
@@ -58,17 +59,24 @@ module Pool =
     type ObjectPool<'T when 'T :> PooledObject>(factory: unit -> 'T, poolSize: int, ?onAcquire: 'T -> bool, ?onRelease: 'T -> bool) as self =
         let pool = new ConcurrentQueue<'T>()
         let mutable disposed = false
-        let itemCount = ref 0
+        let mutable itemCount = 0L
               
-        let createNewItem() =
-            let returnToPool(item: PooledObject) =
+        let createNewItem() =            
+            // Since this method will be passed to the poolable object we have to pass the reference 
+            // to the underlyinh queue for the items to be returned back cleanly
+            let returnToPool (item: PooledObject) =
                 pool.Enqueue(item :?> 'T)
-                Interlocked.Increment(itemCount) |> ignore
 
             let instance = factory()
             instance.ReturnToPool <- returnToPool
-            Interlocked.Increment(itemCount) |> ignore
+            Interlocked.Increment(&itemCount) |> ignore
             instance
+        
+
+        let getItem() =
+            match pool.TryDequeue() with
+            | true, a -> a
+            | _ -> createNewItem()
 
         /// Internal method to cleanup resources
         let cleanup(disposing: bool) = 
@@ -81,6 +89,7 @@ module Pool =
                         | true, a -> 
                             a.AllowRegeneration <- false
                             (a :> IDisposable).Dispose()
+                            Interlocked.Decrement(&itemCount) |> ignore
                         | _ -> ()
                         
         do
@@ -97,40 +106,28 @@ module Pool =
         override this.Finalize() = 
             cleanup(false)     
         
-        member this.Available = pool.Count
-        member this.Total = itemCount.Value
+        member this.Available() = pool.Count
+        member this.Total() = itemCount
 
         /// Acquire an instance of 'T
         member this.Acquire() =
-            let getItem() =
-                match pool.TryDequeue() with
-                | true, a -> a
-                | _ -> createNewItem()
-
             // if onAcquire id defined then keep on finding the poolable object till onAcquire is satisfied
-            let item =
-                match onAcquire with
-                | Some(a) ->
-                    let mutable item = getItem()
-                    let mutable success = a(item)
-                    while success <> true do
-                        item <- getItem()
-                        success <- a(item)
 
-                        // Dispose the item which failed the onAcquire condition
-                        if not success then
-                            item.AllowRegeneration <- false
-                            (item :> IDisposable).Dispose() 
-                    item
-                | None -> getItem()
-            
-            Interlocked.Decrement(itemCount) |> ignore
-            item     
+            match onAcquire with
+            | Some(a) ->
+                let mutable item = getItem()
+                let mutable success = a(item)
+                while success <> true do
+                    item <- getItem()
+                    success <- a(item)
 
-        /// Release the instance. Poolable objects implement dispose which can automatically
-        /// return the object to the object pool
-        member this.Release(item : 'T) =
-            pool.Enqueue(item)
-            Interlocked.Increment(itemCount) |> ignore
+                    // Dispose the item which failed the onAcquire condition
+                    if not success then
+                        item.AllowRegeneration <- false
+                        (item :> IDisposable).Dispose() 
+                item
+            | None -> getItem()
 
+//        member this.Release(item: PooledObject) =
+//            pool.Enqueue(item :?> 'T)
 
