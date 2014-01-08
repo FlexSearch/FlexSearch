@@ -39,7 +39,7 @@ module HttpHelpers =
     let protoSerialize (message: 'a) =
         use stream = new MemoryStream()
         Serializer.Serialize(stream, message)
-        stream.GetBuffer()
+        stream.ToArray()
     
 
     /// Helper method to deserialize cluster messages

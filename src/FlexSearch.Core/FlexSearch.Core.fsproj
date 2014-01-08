@@ -301,6 +301,7 @@
     <Compile Include="ClusterSlave.fs" />
     <Compile Include="QueryNode.fs" />
     <Compile Include="IndexNode.fs" />
+    <Compile Include="SocketServer.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />
