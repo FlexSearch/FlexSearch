@@ -16,6 +16,7 @@ namespace FlexSearch.Core
 module Socket =
     
     open System
+    open System.Net
     open System.Collections.Generic
     open SuperSocket.ClientEngine
     open SuperSocket.SocketBase.Protocol
@@ -70,12 +71,13 @@ module Socket =
     /// TCP Socket server
     // ----------------------------------------------------------------------------
     type TcpSocketServer(port: int, requestHandler) =
+       // let permission = new System.Net.SocketPermission(NetworkAccess.Accept, TransportType.Tcp, "", SocketPermission.AllPorts)
         let config = new ServerConfig(Port = port, Ip = "127.0.0.1", MaxConnectionNumber = 1000, Mode = SocketMode.Tcp, Name = "FlexTcpServer") :> IServerConfig
         let mutable server = Unchecked.defaultof<ProtoBufferServer>
         do
             try
                 server <- new ProtoBufferServer()
-                server.Setup(config) |> ignore
+                if server.Setup(config, null, null, new ConsoleLogFactory()) <> true then failwith "Unable to setup the server."
                 server.add_NewRequestReceived(requestHandler)
             with 
             |ex -> Console.Write(ex.Message)
@@ -94,8 +96,8 @@ module Socket =
     type TcpClient(ipAddress: System.Net.IPAddress, port: int) =
         inherit Pool.PooledObject()
         let client = new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port)) :> SuperSocket.ClientEngine.IClientSession
-        let locker = new Object()
-        let mutable resultExpected = false
+        let monitor = new Object()
+        let resultExpected = ref false
         let res : byte[] = Array.zeroCreate(2048)
         let mutable length = 0
 
@@ -104,12 +106,12 @@ module Socket =
             Thread.Sleep(100)
             if client.IsConnected <> true then failwithf "Client connection error."
             client.DataReceived.Add(fun x -> 
-                    lock(locker) (fun () ->
-                        if(resultExpected) then
+                    lock monitor (fun () ->
+                        if(!resultExpected) then
                             Array.Copy(x.Data, x.Offset, res, 0, x.Length)
                             length <- x.Length
-                            resultExpected <- false
-                            Monitor.Pulse(locker)
+                            resultExpected := false
+                            Monitor.Pulse(monitor)
                     )    
                 )
 
@@ -121,37 +123,25 @@ module Socket =
             client.IsConnected && client.TrySend(message)
 
 
-        member this.Send(data: IList<ArraySegment<byte>>) = 
-            client.IsConnected && client.TrySend(data)
-
-
-        member this.Get<'T>(data: IList<ArraySegment<byte>>) = 
-            if client.IsConnected && client.TrySend(data) then
-                lock(locker) (fun () ->
-                    resultExpected <- true
-                    while resultExpected do 
-                        Monitor.Wait(locker) |> ignore
-                    resultExpected <- false
-                )
-
-                HttpHelpers.protoDeserialize<'T>(Array.sub res 0 length)
-            else
-                Unchecked.defaultof<'T>
-
-        member this.Get<'T>(messageType: byte, data: byte[]) = 
+        member this.Get<'T>(messageType: byte, data: byte[], ?timeout : int) = 
+            let timeout = defaultArg timeout 200
             let message = new List<ArraySegment<byte>>()
-            message.Add(new ArraySegment<byte>([|(byte)(data.Length / 256); (byte)(data.Length % 255); (byte)21|]))
+            message.Add(new ArraySegment<byte>([|(byte)(data.Length / 256); (byte)(data.Length % 255); messageType|]))
             message.Add(new ArraySegment<byte>(data))
             if client.IsConnected && client.TrySend(message) then
-                lock(locker) (fun () ->
-                    resultExpected <- true
-                    while resultExpected do 
-                        Monitor.Wait(locker) |> ignore
-                    resultExpected <- false
+                let result = lock monitor (fun () ->
+                    resultExpected := true
+                    let success = Monitor.Wait(monitor, timeout)
+                    resultExpected := false
+                    if success then true
+                    else false
                 )
-
-                HttpHelpers.protoDeserialize<'T>(Array.sub res 0 length)
+                                
+                if result then
+                    Some(HttpHelpers.protoDeserialize<'T>(Array.sub res 0 length))
+                else
+                    None
             else
-                Unchecked.defaultof<'T>
+                None
 
 

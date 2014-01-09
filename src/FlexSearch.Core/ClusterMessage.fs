@@ -23,6 +23,7 @@ module Cluster =
     open System.Reactive.Linq
     open System.Reactive
     open FlexSearch.Core.State
+    
     /// Cluster messages 
     type MessageType =
         | AddIndexToCluster = 01uy

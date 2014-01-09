@@ -30,7 +30,7 @@ module Pool =
                 if self.AllowRegeneration = true then
                     if reRegisterForFinalization then 
                         GC.ReRegisterForFinalize(self)
-                    self.ReturnToPool(self)
+                        self.ReturnToPool(self)
                 else
                     disposed <- true
         
@@ -39,7 +39,7 @@ module Pool =
         member val ReturnToPool: PooledObject -> unit = Unchecked.defaultof<_> with get, set
         
         /// This should be set to true to allow automatic return to the pool in case dispose is called
-        member val AllowRegeneration = true with get, set
+        member val AllowRegeneration = false with get, set
 
         // implementation of IDisposable
         interface IDisposable with
@@ -69,6 +69,7 @@ module Pool =
 
             let instance = factory()
             instance.ReturnToPool <- returnToPool
+            instance.AllowRegeneration <- true
             Interlocked.Increment(&itemCount) |> ignore
             instance
         
