@@ -32,7 +32,8 @@ module State =
         {
             Name        :   string
             Address     :   System.Net.IPAddress
-            Connection  :   FlexSearchService.Iface
+            Pool        :   Pool.ObjectPool<Socket.TcpClient>
+            Priority    :   int
         }
 
     /// This will hold all the mutable data related to the node. Everything outside will be
@@ -41,20 +42,19 @@ module State =
         {
             PersistanceStore    :   IPersistanceStore
             ServerSettings      :   ServerSettings
-            HttpConnections     :   ImmutableDictionary<string, System.Net.Http.HttpClient>
-            //IncomingSessions    :   ImmutableDictionary<string, WebSocketSession>
             OutgoingConnections :   ImmutableDictionary<string, ISocketClient>
             Indices             :   ImmutableDictionary<string, Index>
             ConnectedNodes      :   BlockingCollection<NodeProperties>
-            Nodes               :   ConcurrentDictionary<System.Net.IPAddress, bool>
+            Nodes               :   BlockingCollection<NodeProperties>
+            ConnectedNodesLookup:   ConcurrentDictionary<IPAddress, NodeProperties>
             TotalNodes          :   int
             ClusterEventBus     :   Subject<ClusterEvents>
         }
         with 
             member this.IndexExists(indexName: string) = 
                 match this.Indices.TryGetValue(indexName) with
-                | true, x -> Some(x)
-                | _ -> None
+                | true, x   -> Some(x)
+                | _         -> None
     
 
 

@@ -281,6 +281,7 @@
     <Compile Include="Constants.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Interface.fs" />
+    <Compile Include="SocketServer.fs" />
     <Compile Include="State.fs" />
     <Compile Include="ServiceLocator.fs" />
     <Compile Include="FlexField.fs" />
@@ -297,11 +298,7 @@
     <Compile Include="HttpModule.fs" />
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="PersitanceStore.fs" />
-    <Compile Include="ClusterMaster.fs" />
-    <Compile Include="ClusterSlave.fs" />
-    <Compile Include="QueryNode.fs" />
-    <Compile Include="IndexNode.fs" />
-    <Compile Include="SocketServer.fs" />
+    <Compile Include="Cluster.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />

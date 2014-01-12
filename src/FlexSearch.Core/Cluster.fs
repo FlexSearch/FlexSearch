@@ -17,9 +17,25 @@ open System.Collections
 open FlexSearch.Api
 open System.Linq
 open FlexSearch.Core.State
-module ClusterMaster =
+module Cluster =
     
-    let init (state: NodeState) =
-        ()//state.PersistanceStore.Nodes.GetAll() 
+    /// Returns the tentative leader for the cluster
+    let getCandidateLeader (state: NodeState) =
+        let nodes = state.Nodes.ToArray()
+        
+        let rec loop n = 
+            if n < state.Nodes.Count then 
+                match state.ConnectedNodesLookup.TryGetValue(nodes.[n].Address) with
+                | true, a  -> n
+                | _ -> loop (n + 1)
+            else 
+                -1
+
+        let candidateNumber = loop 0
+        if candidateNumber <> -1 then
+            Some(nodes.[candidateNumber])
+        else
+            None
+                
 
         
