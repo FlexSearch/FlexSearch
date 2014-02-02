@@ -72,11 +72,12 @@ module Main =
             {
                 PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
                 ServerSettings = settings
-                HttpConnections = Unchecked.defaultof<_>
+                //HttpConnections = Unchecked.defaultof<_>
                 //IncomingSessions = Unchecked.defaultof<_>
                 OutgoingConnections = Unchecked.defaultof<_>
                 Indices = Unchecked.defaultof<_>
                 ConnectedNodes = Unchecked.defaultof<_>
+                ConnectedNodesLookup = Unchecked.defaultof<_>
                 Nodes = Unchecked.defaultof<_>
                 TotalNodes = Unchecked.defaultof<_>
                 ClusterEventBus = Unchecked.defaultof<_>

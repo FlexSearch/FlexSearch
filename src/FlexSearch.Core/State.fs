@@ -30,11 +30,24 @@ module State =
 
     type NodeProperties =
         {
+            
             Name        :   string
+            
+            /// Ip Address of the server
             Address     :   System.Net.IPAddress
+
+            /// Port on which the server is listening
+            Port        :   int
+            
+            /// Connection pool to the server
             Pool        :   Pool.ObjectPool<Socket.TcpClient>
+
+            /// Priority of the node in the cluster. It is calculated as the
+            /// sum of all digits in the ip adress + the port number where the
+            /// server is hosted. This will result in unique priorities.
             Priority    :   int
         }
+
 
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 

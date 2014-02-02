@@ -17,7 +17,7 @@ open System.Collections
 open FlexSearch.Api
 open System.Linq
 open FlexSearch.Core.State
-module Cluster =
+module ClusterService =
     
     /// Returns the tentative leader for the cluster
     let getCandidateLeader (state: NodeState) =

@@ -138,7 +138,9 @@ enum JobStatus {
 struct Node {
 	1:	required string NodeName
 	2:	required string IpAddress
-	3:	required NodeRole NodeRole
+	3:	required i32 Port
+	4:	required NodeRole NodeRole
+	5:	required i32 Priority
 }
 
 

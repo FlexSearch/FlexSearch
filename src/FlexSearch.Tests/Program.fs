@@ -19,7 +19,7 @@ let main argv =
     //let result = Tests.defaultMainThisAssembly(argv)
     
     // Uncheck the below for debuggin individual test
-    let result = run SocketServerTests.socketServerTests
+    let result = run ParserTests.parserTests
     
     Console.WriteLine(result)
     Console.ReadKey() |> ignore
