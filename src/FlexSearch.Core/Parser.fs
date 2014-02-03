@@ -23,6 +23,7 @@ open FParsec.CharParsers
 /// Based on some inputs from 
 /// http://stackoverflow.com/questions/9233666/parsing-parenthesized-expressions
 /// Simple AST parser -> http://fssnip.net/iJ
+/// http://stackoverflow.com/questions/9215975/differentiating-logical-from-other-infix-operators
 // ----------------------------------------------------------------------------
 module FlexParser = 
   
@@ -54,7 +55,8 @@ module FlexParser =
         | Comparison of Comparison * LeftHandExpression * RightHandExpression
         | Or of SearchCondition * SearchCondition
         | And of SearchCondition * SearchCondition
-  
+    
+    type Assoc = Associativity
     let ws = spaces
     let str_ws s = pstring s .>> ws
 
@@ -87,10 +89,11 @@ module FlexParser =
 //    let startsWithOp = strOp "startswith" StartsWith
 //    let endsWithOp = strOp "endsWith" EndsWith
 //    let identifierName = [startsWithOp; endsWithOp] |> choice
+    
 
     let functionIdentifier = parse {
         let! funcName = manySatisfy (fun c -> c <> ' ' && c <> '(')
-        do! spaces
+        //do! spaces
         do! skipStringCI "("
         do! spaces
         let! fieldName = manySatisfy (fun c -> c <> ' ' && c <> ',')
@@ -117,12 +120,20 @@ module FlexParser =
         let compareExpr = pipe3 identifier compareOp constant (fun l op r -> Comparison(op, l, r))
         compareExpr <|> tryBetweenParens compareExpr
    
-    let andTerm = stringCIReturn "and" (fun l r -> And(l, r)) .>> ws
-    let orTerm = stringCIReturn "or" (fun l r -> Or(l, r)) .>> ws
+//    let andTerm = stringCIReturn "and" (fun l r -> And(l, r)) .>> ws
+//    let orTerm = stringCIReturn "or" (fun l r -> Or(l, r)) .>> ws       
 
-    let searchCondition, searchConditionRef = createParserForwardedToRef()
-    do searchConditionRef:=
-        chainl1 (comparison <|> between lparen rparen searchCondition)
-                (andTerm <|> orTerm)
+
+    let condOpp = OperatorPrecedenceParser()
+    let searchCondition = condOpp.ExpressionParser
+    condOpp.TermParser <- (attempt comparison) <|> between lparen rparen searchCondition <|> searchCondition
+    condOpp.AddOperator(InfixOperator("or", ws, 2, Assoc.Left, fun l r -> Or(l, r)))    
+    condOpp.AddOperator(InfixOperator("and", ws, 1, Assoc.Left, fun l r -> And(l, r)))  
+
+
+//    let searchCondition, searchConditionRef = createParserForwardedToRef()
+//    do searchConditionRef:=
+//        chainl1 (comparison <|> between lparen rparen searchCondition)
+//                (andTerm <|> orTerm)
 
     let filter : Parser<_,unit> = ws >>. searchCondition .>> eof
