@@ -54,14 +54,6 @@
       <HintPath>..\packages\FlexLucene.4.5.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FParsec">
-      <HintPath>..\packages\FParsec.1.0.1\lib\net40-client\FParsec.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="FParsecCS">
-      <HintPath>..\packages\FParsec.1.0.1\lib\net40-client\FParsecCS.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
@@ -76,6 +68,9 @@
     <Reference Include="FSharpx.Core">
       <HintPath>..\packages\FSharpx.Core.1.8.38\lib\40\FSharpx.Core.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="GoldParserEngine">
+      <HintPath>..\..\lib\GoldParserEngine.dll</HintPath>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms">
       <HintPath>..\packages\IKVM.7.3.4830.0\lib\IKVM.AWT.WinForms.dll</HintPath>
@@ -218,10 +213,6 @@
       <HintPath>..\..\lib\SuperSocket.SocketBase.dll</HintPath>
     </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable">
-      <HintPath>..\packages\Microsoft.Bcl.Immutable.1.0.30\lib\portable-net45+win8+wp8\System.Collections.Immutable.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
@@ -303,14 +294,15 @@
     <Compile Include="Filters.fs" />
     <Compile Include="Tokenizers.fs" />
     <Compile Include="Validator.fs" />
-    <Compile Include="ClusterMessage.fs" />
     <Compile Include="HttpModule.fs" />
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="PersitanceStore.fs" />
-    <Compile Include="Cluster.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />
+    <EmbeddedResource Include="FlexSearchGrammar.cgt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">

@@ -8,71 +8,41 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
 
 module State = 
+    open FlexSearch.Api
     open FlexSearch.Core
     open FlexSearch.Core.Interface
-    open System.Collections.Immutable
     open System.Collections.Concurrent
     open System.Net
-    open FlexSearch.Api
-    open System.Reactive.Subjects
-
-    type ClusterEvents = 
-        | NodeDead of IPAddress
-        | NodeJoin of IPAddress
-        | HeartBeat of IPAddress
-        | NewLeaderElection of IPAddress  
-
-    type NodeProperties =
-        {
-            
-            Name        :   string
-            
-            /// Ip Address of the server
-            Address     :   System.Net.IPAddress
-
-            /// Port on which the server is listening
-            Port        :   int
-            
-            /// Connection pool to the server
-            Pool        :   Pool.ObjectPool<Socket.TcpClient>
-
-            /// Priority of the node in the cluster. It is calculated as the
-            /// sum of all digits in the ip adress + the port number where the
-            /// server is hosted. This will result in unique priorities.
-            Priority    :   int
-        }
-
-
+    
+    type NodeProperties = 
+        { /// Name of the node  
+          Name : string
+          /// Ip Address of the server
+          Address : System.Net.IPAddress
+          /// Port on which the server is listening
+          Port : int
+          /// Connection pool to the server
+          Pool : Pool.ObjectPool<Socket.TcpClient> }
+    
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
-    type NodeState =
-        {
-            PersistanceStore    :   IPersistanceStore
-            ServerSettings      :   ServerSettings
-            OutgoingConnections :   ImmutableDictionary<string, ISocketClient>
-            Indices             :   ImmutableDictionary<string, Index>
-            ConnectedNodes      :   BlockingCollection<NodeProperties>
-            Nodes               :   BlockingCollection<NodeProperties>
-            ConnectedNodesLookup:   ConcurrentDictionary<IPAddress, NodeProperties>
-            TotalNodes          :   int
-            ClusterEventBus     :   Subject<ClusterEvents>
-        }
-        with 
-            member this.IndexExists(indexName: string) = 
-                match this.Indices.TryGetValue(indexName) with
-                | true, x   -> Some(x)
-                | _         -> None
-    
+    type NodeState = 
+        { PersistanceStore : IPersistanceStore
+          ServerSettings : ServerSettings
+          Indices : ConcurrentDictionary<string, Index>
+          ConnectedSlaves : BlockingCollection<NodeProperties>
+          SlaveNodes : BlockingCollection<NodeProperties>
+          MasterNode : NodeProperties }
+        member this.IndexExists(indexName : string) = 
+            match this.Indices.TryGetValue(indexName) with
+            | true, x -> Some(x)
+            | _ -> None
 
-
-    // ----------------------------------------------------------------------------     
-    /// Http module to handle to incoming requests
-    // ----------------------------------------------------------------------------     
-    type IHttpModule =
-        abstract Process    :   System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> NodeState -> unit   
+// ----------------------------------------------------------------------------     
+/// Http module to handle to incoming requests
+// ----------------------------------------------------------------------------     
+type IHttpModule = 
+    abstract Process : System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> State.NodeState -> unit

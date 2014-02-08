@@ -14,126 +14,152 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open System
-open FParsec
-open FParsec.Primitives
-open FParsec.CharParsers
+open System.Resources
+open System.Reflection
+open System.IO
+open System.Runtime.Serialization
+open com.calitha.goldparser.lalr
+open com.calitha.commons
 
 // ----------------------------------------------------------------------------
 /// Default query parser used by Flex
-/// Based on some inputs from 
-/// http://stackoverflow.com/questions/9233666/parsing-parenthesized-expressions
-/// Simple AST parser -> http://fssnip.net/iJ
-/// http://stackoverflow.com/questions/9215975/differentiating-logical-from-other-infix-operators
 // ----------------------------------------------------------------------------
 module FlexParser = 
-  
-    type Comparison =
-        | Eq
-        | Ne
     
-    type FunctionName =
-        | StartsWith
-        | EndsWith
+    type SymbolConstants =    
+        | SYMBOL_EOF           =  0 // (EOF)
+        | SYMBOL_ERROR         =  1 // (Error)
+        | SYMBOL_WHITESPACE    =  2 // Whitespace
+        | SYMBOL_LPAREN        =  3 // '('
+        | SYMBOL_RPAREN        =  4 // ')'
+        | SYMBOL_AND           =  5 // AND
+        | SYMBOL_BOOST         =  6 // Boost
+        | SYMBOL_IDENTIFIER    =  7 // Identifier
+        | SYMBOL_INTEGER       =  8 // Integer
+        | SYMBOL_NOT           =  9 // Not
+        | SYMBOL_OR            = 10 // OR
+        | SYMBOL_VALUE         = 11 // Value
+        | SYMBOL_ANDEXPRESSION = 12 // <And Expression>
+        | SYMBOL_BOOST2        = 13 // <Boost>
+        | SYMBOL_CONDITION     = 14 // <Condition>
+        | SYMBOL_EXPRESSION    = 15 // <Expression>
+        | SYMBOL_NOT2          = 16 // <Not>
 
-    type Constant =
-        | Int32 of int
-        | Float of float
-        | DateTime of DateTime
-        | Bool of bool
-        | String of string
-        | Null
+    type RuleConstants =
+        | RULE_EXPRESSION_OR                         =  0 // <Expression> ::= <And Expression> OR <Expression>
+        | RULE_EXPRESSION                            =  1 // <Expression> ::= <And Expression>
+        | RULE_ANDEXPRESSION_AND                     =  2 // <And Expression> ::= <Condition> AND <And Expression>
+        | RULE_ANDEXPRESSION                         =  3 // <And Expression> ::= <Condition>
+        | RULE_CONDITION_IDENTIFIER_IDENTIFIER_VALUE =  4 // <Condition> ::= Identifier <Not> Identifier Value <Boost>
+        | RULE_CONDITION_LPAREN_RPAREN               =  5 // <Condition> ::= '(' <Expression> ')'
+        | RULE_NOT_NOT                               =  6 // <Not> ::= Not
+        | RULE_NOT                                   =  7 // <Not> ::= 
+        | RULE_BOOST_BOOST_INTEGER                   =  8 // <Boost> ::= Boost Integer
+        | RULE_BOOST                                 =  9 // <Boost> ::= 
+
+    type Token =
+        | NonterminalToken of RuleConstants * List<Token>
+        | TerminalToken of SymbolConstants * string 
     
-    //type FieldName = FieldName of string
-    type LeftHandExpression =
-        | FieldName of string
-        | Function of FunctionName: string * FunctionValue: Constant * FieldName: string
-    
-    type RightHandExpression =
-        | Constant of Constant
-          
-    type SearchCondition =
-        | Comparison of Comparison * LeftHandExpression * RightHandExpression
-        | Or of SearchCondition * SearchCondition
-        | And of SearchCondition * SearchCondition
-    
-    type Assoc = Associativity
-    let ws = spaces
-    let str_ws s = pstring s .>> ws
+     let CreateObject(token : Token) : Object =
+        match token with
+        | TerminalToken(symbol,text) ->
+            match symbol with
+            //(EOF)
+            | SymbolConstants.SYMBOL_EOF           -> failwith("NotImplemented")
+            //(Error)
+            | SymbolConstants.SYMBOL_ERROR         -> failwith("NotImplemented")
+            //Whitespace
+            | SymbolConstants.SYMBOL_WHITESPACE    -> failwith("NotImplemented")
+            //'('
+            | SymbolConstants.SYMBOL_LPAREN        -> failwith("NotImplemented")
+            //')'
+            | SymbolConstants.SYMBOL_RPAREN        -> failwith("NotImplemented")
+            //AND
+            | SymbolConstants.SYMBOL_AND           -> failwith("NotImplemented")
+            //Boost
+            | SymbolConstants.SYMBOL_BOOST         -> failwith("NotImplemented")
+            //Identifier
+            | SymbolConstants.SYMBOL_IDENTIFIER    -> failwith("NotImplemented")
+            //Integer
+            | SymbolConstants.SYMBOL_INTEGER       -> failwith("NotImplemented")
+            //Not
+            | SymbolConstants.SYMBOL_NOT           -> failwith("NotImplemented")
+            //OR
+            | SymbolConstants.SYMBOL_OR            -> failwith("NotImplemented")
+            //Value
+            | SymbolConstants.SYMBOL_VALUE         -> failwith("NotImplemented")
+            //<And Expression>
+            | SymbolConstants.SYMBOL_ANDEXPRESSION -> failwith("NotImplemented")
+            //<Boost>
+            | SymbolConstants.SYMBOL_BOOST2        -> failwith("NotImplemented")
+            //<Condition>
+            | SymbolConstants.SYMBOL_CONDITION     -> failwith("NotImplemented")
+            //<Expression>
+            | SymbolConstants.SYMBOL_EXPRESSION    -> failwith("NotImplemented")
+            //<Not>
+            | SymbolConstants.SYMBOL_NOT2          -> failwith("NotImplemented")
+            | _ -> failwith("Unknown symbol")
+        | NonterminalToken(rule,tokens) ->
+            match rule with
+            //<Expression> ::= <And Expression> OR <Expression>
+            | RuleConstants.RULE_EXPRESSION_OR                         -> failwith("NotImplemented")
+            //<Expression> ::= <And Expression>
+            | RuleConstants.RULE_EXPRESSION                            -> failwith("NotImplemented")
+            //<And Expression> ::= <Condition> AND <And Expression>
+            | RuleConstants.RULE_ANDEXPRESSION_AND                     -> failwith("NotImplemented")
+            //<And Expression> ::= <Condition>
+            | RuleConstants.RULE_ANDEXPRESSION                         -> failwith("NotImplemented")
+            //<Condition> ::= Identifier <Not> Identifier Value <Boost>
+            | RuleConstants.RULE_CONDITION_IDENTIFIER_IDENTIFIER_VALUE -> failwith("NotImplemented")
+            //<Condition> ::= '(' <Expression> ')'
+            | RuleConstants.RULE_CONDITION_LPAREN_RPAREN               -> failwith("NotImplemented")
+            //<Not> ::= Not
+            | RuleConstants.RULE_NOT_NOT                               -> failwith("NotImplemented")
+            //<Not> ::= 
+            | RuleConstants.RULE_NOT                                   -> failwith("NotImplemented")
+            //<Boost> ::= Boost Integer
+            | RuleConstants.RULE_BOOST_BOOST_INTEGER                   -> failwith("NotImplemented")
+            //<Boost> ::= 
+            | RuleConstants.RULE_BOOST                                 -> failwith("NotImplemented")
+            | _ -> failwith("Unknown rule")  
 
-    let lparen = pstring "(" >>. ws
-    let rparen = pstring ")" >>. ws
-    let tryBetweenParens p = lparen >>? (p .>>? rparen)
-    
-    let trueLiteral = stringCIReturn "true" (Bool true) .>> ws
-    let falseLiteral = stringCIReturn "false" (Bool false) .>> ws
-    let boolLiteral = (trueLiteral <|> falseLiteral)
-    let nullLiteral = stringCIReturn "null" Null .>> ws
+        type Parser() as self =
+            [<DefaultValue>]val mutable parser : com.calitha.goldparser.LALRParser
 
-    let quoteChar = pstring "'"
-    let pChar = satisfy ((<>) '\'')
-    let stringLiteral = (quoteChar >>. (manyCharsTill pChar quoteChar)) |>> String .>> ws
-    let floatLiteral = pfloat |>> Float .>> ws
-    let int32Literal = pint32 |>> Int32 .>> ws
-    let constant =
-        [ boolLiteral; nullLiteral; int32Literal; floatLiteral; stringLiteral ]
-        |> choice
-        |>> Constant
+            do
+                self.Init()
 
-    let strOrSymOp str sym x = ((stringCIReturn str x) <|> (stringCIReturn sym x)) .>> ws   
-    let eqOp = strOrSymOp "eq" "=" Eq    
-    let neOp = strOrSymOp "ne" "<>" Ne    
-    let compareOp = [ eqOp; neOp ] |> choice  
-  
+            member public this.Init () = 
+                let assem = Assembly.GetExecutingAssembly()
+                use stream = assem.GetManifestResourceStream("FlexSearchGrammar.cgt")
+                //let filePath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, "FlexSearchGrammar.cgt")
+                //if File.Exists(filePath) <> true then failwithf "Unable to load the grammar."
+                
+                try
+                    let reader = new com.calitha.goldparser.CGTReader(stream)
+                    this.parser <- reader.CreateNewParser()
+                    this.parser.TrimReductions <- false
+                    this.parser.StoreTokens <- com.calitha.goldparser.LALRParser.StoreTokensMode.NoUserObject
+                with
+                    | ex -> raise ex
 
-//    let strOp str x = (stringCIReturn str x) .>> ws
-//    let startsWithOp = strOp "startswith" StartsWith
-//    let endsWithOp = strOp "endsWith" EndsWith
-//    let identifierName = [startsWithOp; endsWithOp] |> choice
-    
+                //parser.OnTokenError += new LALRParser.TokenErrorHandler(TokenErrorEvent);
+                //parser.OnParseError += new LALRParser.ParseErrorHandler(ParseErrorEvent);
 
-    let functionIdentifier = parse {
-        let! funcName = manySatisfy (fun c -> c <> ' ' && c <> '(')
-        //do! spaces
-        do! skipStringCI "("
-        do! spaces
-        let! fieldName = manySatisfy (fun c -> c <> ' ' && c <> ',')
-        do! spaces
-        do! skipStringCI ","
-        do! spaces
-        let! fieldValue = stringLiteral
-        do! spaces
-        do! skipStringCI ")"
-        do! spaces
-        return Function(funcName, fieldValue, fieldName)
-        }
-    
-    let fieldIdentifier = parse {
-        let! funcName = manySatisfy (fun c -> c <> ' ')
-        do! spaces
-        return FieldName(funcName)
-    }
+            member this.Parse(source : string) =
+                let rec ToX (token : com.calitha.goldparser.Token)  : Token =
+                    match token with
+                        | :? com.calitha.goldparser.TerminalToken -> let t = token :?> com.calitha.goldparser.TerminalToken
+                                                                     TerminalToken(enum t.Symbol.Id,t.Text)
 
-    let identifier =
-        (attempt functionIdentifier) <|> fieldIdentifier
+                        | :? com.calitha.goldparser.NonterminalToken -> let t = token :?> com.calitha.goldparser.NonterminalToken
+                                                                        NonterminalToken(enum t.Rule.Id, [for tok in t.Tokens -> ToX(tok)] )
 
-    let comparison =
-        let compareExpr = pipe3 identifier compareOp constant (fun l op r -> Comparison(op, l, r))
-        compareExpr <|> tryBetweenParens compareExpr
-   
-//    let andTerm = stringCIReturn "and" (fun l r -> And(l, r)) .>> ws
-//    let orTerm = stringCIReturn "or" (fun l r -> Or(l, r)) .>> ws       
+                        | _ -> failwith("unknown token type")
 
-
-    let condOpp = OperatorPrecedenceParser()
-    let searchCondition = condOpp.ExpressionParser
-    condOpp.TermParser <- (attempt comparison) <|> between lparen rparen searchCondition <|> searchCondition
-    condOpp.AddOperator(InfixOperator("or", ws, 2, Assoc.Left, fun l r -> Or(l, r)))    
-    condOpp.AddOperator(InfixOperator("and", ws, 1, Assoc.Left, fun l r -> And(l, r)))  
-
-
-//    let searchCondition, searchConditionRef = createParserForwardedToRef()
-//    do searchConditionRef:=
-//        chainl1 (comparison <|> between lparen rparen searchCondition)
-//                (andTerm <|> orTerm)
-
-    let filter : Parser<_,unit> = ws >>. searchCondition .>> eof
+                let token = this.parser.Parse(source)
+                ToX(token)
+            
+            // let obj = this.CreateObject(xtoken)
+            //obj

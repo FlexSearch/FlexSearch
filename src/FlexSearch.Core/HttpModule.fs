@@ -17,7 +17,6 @@ module HttpModule =
 
     open System.Net
     open FlexSearch.Core
-    open FlexSearch.Core.Cluster
     open FlexSearch.Core.State
     open FlexSearch.Api
     open Newtonsoft.Json
@@ -25,15 +24,7 @@ module HttpModule =
     open System.Collections.Generic
     open System.Linq
     open FlexSearch.Core.HttpHelpers
-    open System.Net.Http
-
-//    let sendUpdateToAllNodes (message: ByteArrayContent) (state : NodeState) =
-//        let results =
-//            state.HttpConnections.Values.ToArray()
-//            |> Array.map(fun x-> Async.AwaitTask(x.PostAsync("", message))
-//            |> Async.Parallel
-//            |> Async.RunSynchronously
-        
+    open System.Net.Http        
         
 
     [<Export(typeof<IHttpModule>)>]
@@ -59,7 +50,7 @@ module HttpModule =
                         BAD_REQUEST indexAlreadyExist request response
                     | None -> 
                         match HttpHelpers.getRequestBody<Index>(request) with
-                        | Choice1Of2(body) -> addIndex body state |> ignore
+                        | Choice1Of2(body) -> ()//addIndex body state |> ignore
                         | Choice2Of2(error) -> BAD_REQUEST error request response 
                         
 

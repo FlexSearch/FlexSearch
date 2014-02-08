@@ -1,0 +1,38 @@
+! -----------------------------------------------------------------------------------
+"Name"     = 'Flex Search Parser Grammar'
+"Author"   = 'Seemant'
+"Version"  = '1.0'
+"About"    = 'Flex Search Parser'
+! -----------------------------------------------------------------------------------
+
+"Start Symbol" = <Expression>
+
+! =============================================================================
+! Terminals
+! =============================================================================
+
+{String Ch}  = {All Valid} - ['''']
+Value   = ''({String Ch}|'''')*''
+Identifier = {Letter}{Alphanumeric}*            
+Integer = {Digit}+
+                               
+! ============================================================================= 
+! Expressions
+! =============================================================================
+
+<Expression>  ::= <And Expression> OR <Expression>
+               |  <And Expression>
+
+
+<And Expression>     ::= <Condition> AND <And Expression>
+                      |  <Condition>
+
+
+<Condition>    ::= Identifier <Not> Identifier Value <Boost>
+                |  '(' <Expression> ')'
+                                                
+<Not> ::= Not
+       |  
+                                           
+<Boost>     ::= Boost Integer
+             |  
