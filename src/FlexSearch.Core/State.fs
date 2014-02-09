@@ -41,8 +41,15 @@ module State =
             | true, x -> Some(x)
             | _ -> None
 
+type ServiceRoute = 
+    { RequestType : System.Type
+      RestPath : string
+      Verbs : string
+      Summary : string
+      Notes : string }
+
 // ----------------------------------------------------------------------------     
 /// Http module to handle to incoming requests
-// ----------------------------------------------------------------------------     
+// ----------------------------------------------------------------------------   
 type IHttpModule = 
-    abstract Process : System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> State.NodeState -> unit
+    abstract Routes : unit -> ServiceRoute []

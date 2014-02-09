@@ -8,57 +8,44 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
+namespace FlexSearch.Core.HttpModule
 
-// ----------------------------------------------------------------------------
-namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
+open FlexSearch.Api
+open FlexSearch.Core
+open FlexSearch.Core.HttpHelpers
+open FlexSearch.Core.State
+open Newtonsoft.Json
+open ServiceStack
+open System.Collections.Generic
+open System.ComponentModel
+open System.ComponentModel.Composition
+open System.Linq
+open System.Net
+open System.Net.Http
 
-module HttpModule = 
+type Hello() = 
+    
+    [<Description("Hello world")>] member val Name = "" with get, set
+    
+    member val Place = "" with get, set
 
-    open System.Net
-    open FlexSearch.Core
-    open FlexSearch.Core.State
-    open FlexSearch.Api
-    open Newtonsoft.Json
-    open System.ComponentModel.Composition
-    open System.Collections.Generic
-    open System.Linq
-    open FlexSearch.Core.HttpHelpers
-    open System.Net.Http        
-        
+type HelloResponse = 
+    { mutable Result : string }
 
-    [<Export(typeof<IHttpModule>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "indices")>]
-    type IndexModule() =
-        interface IHttpModule with
-            member this.Process (request: System.Net.HttpListenerRequest) (response: System.Net.HttpListenerResponse) (state: NodeState) = 
-                match request with         
-                // /indices/status
-                | POST "state" _ -> ()
-                    
-                              
-                // /indices/{indexname}
-                | GET "*" x -> 
-                    let index = state.PersistanceStore.Get<Index>(x)
-                    OK index request response  
-                 
-                // /indices
-                | POST "*" x -> 
-                    match state.IndexExists(x) with
-                    | Some(x) -> 
-                        BAD_REQUEST indexAlreadyExist request response
-                    | None -> 
-                        match HttpHelpers.getRequestBody<Index>(request) with
-                        | Choice1Of2(body) -> ()//addIndex body state |> ignore
-                        | Choice2Of2(error) -> BAD_REQUEST error request response 
-                        
-
-
-                // /indices/{indexname}
-                | PUT "*" x -> ()
-
-                // /indices/{indexname}
-                | DELETE "*" x -> ()
-
-                | _ -> ()
+[<Export(typeof<IHttpModule>)>]
+[<PartCreationPolicy(CreationPolicy.NonShared)>]
+[<ExportMetadata("Name", "indices")>]
+type IndexModule() = 
+    inherit Service()
+    
+    let routes = 
+        [| { RequestType = typeof<Hello>
+             RestPath = "/indices"
+             Verbs = "GET"
+             Summary = ""
+             Notes = "" } |]
+    
+    interface IHttpModule with
+        member this.Routes() = routes
+    
+    member this.Get(req : Hello) = { Result = "Hello, " + req.Name }

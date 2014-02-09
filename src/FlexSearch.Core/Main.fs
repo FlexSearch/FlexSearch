@@ -22,9 +22,8 @@ module Main =
     open FlexSearch.Utility
     open System
     open System.Collections.Concurrent
-    //open SuperWebSocket
     open System.Net
-    open System.Threading
+    open System.Threading           
     
     /// Xml setting provider for server config
     type private FlexServerSetting = JsonProvider< """
@@ -60,8 +59,18 @@ module Main =
         ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
                                               (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
     
+    open ServiceStack
+    type AppHost() =
+        inherit AppHostHttpListenerPoolBase("FlexSearch", typeof<FlexSearch.Core.HttpModule.Hello>.Assembly)
+        override this.Configure container =
+            let httpModules = Factories.GetHttpModules().Value
+            for httpModule in httpModules do
+                for route in httpModule.Value.Routes() do
+                    base.Routes.Add(route.RequestType, route.RestPath, route.Verbs, route.Summary, route.Notes) |> ignore
+                
+
     let loadNode() = 
-        initServiceLocator()
+        //initServiceLocator()
         let settings = getServerSettings (Constants.ConfFolder.Value + "Config.json")
         
         let nodeState = 
@@ -72,6 +81,8 @@ module Main =
               MasterNode = Unchecked.defaultof<_>
               ConnectedSlaves = Unchecked.defaultof<_> }
         
-        let httpServer = new Server.Http.HttpServer(9800) :> IServer
-        httpServer.Start()
+        let appHost = new AppHost()
+        appHost.Init() |> ignore
+        appHost.Start "http://localhost:9900/" |> ignore
+        Console.ReadKey() |> ignore
         ()
