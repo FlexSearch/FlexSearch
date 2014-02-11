@@ -46,8 +46,16 @@
       <HintPath>..\packages\Common.Logging.2.1.2\lib\net40\Common.Logging.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Common.Logging.EventSource">
+      <HintPath>..\packages\Common.Logging.EventSource.1.0.0\lib\net40\Common.Logging.EventSource.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="CSScriptLibrary">
       <HintPath>..\packages\CS-Script.3.6.2.0\lib\net45\CSScriptLibrary.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EventSourceProxy">
+      <HintPath>..\packages\EventSourceProxy.1.1.3\lib\EventSourceProxy.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">

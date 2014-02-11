@@ -32,27 +32,37 @@ namespace FlexSearch.Api
     [DataMember(Order = 2)]
     public string IpAddress { get; set; }
 
+    [DataMember(Order = 3)]
+    public int Port { get; set; }
+
     /// <summary>
     /// 
     /// <seealso cref="NodeRole"/>
     /// </summary>
-    [DataMember(Order = 3)]
+    [DataMember(Order = 4)]
     public NodeRole NodeRole { get; set; }
+
+    [DataMember(Order = 5)]
+    public int Priority { get; set; }
 
     public Node() {
     }
 
-    public Node(string NodeName, string IpAddress, NodeRole NodeRole) : this() {
+    public Node(string NodeName, string IpAddress, int Port, NodeRole NodeRole, int Priority) : this() {
       this.NodeName = NodeName;
       this.IpAddress = IpAddress;
+      this.Port = Port;
       this.NodeRole = NodeRole;
+      this.Priority = Priority;
     }
 
     public void Read (TProtocol iprot)
     {
       bool isset_NodeName = false;
       bool isset_IpAddress = false;
+      bool isset_Port = false;
       bool isset_NodeRole = false;
+      bool isset_Priority = false;
       TField field;
       iprot.ReadStructBegin();
       while (true)
@@ -81,8 +91,24 @@ namespace FlexSearch.Api
             break;
           case 3:
             if (field.Type == TType.I32) {
+              Port = iprot.ReadI32();
+              isset_Port = true;
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 4:
+            if (field.Type == TType.I32) {
               NodeRole = (NodeRole)iprot.ReadI32();
               isset_NodeRole = true;
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 5:
+            if (field.Type == TType.I32) {
+              Priority = iprot.ReadI32();
+              isset_Priority = true;
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -98,7 +124,11 @@ namespace FlexSearch.Api
         throw new TProtocolException(TProtocolException.INVALID_DATA);
       if (!isset_IpAddress)
         throw new TProtocolException(TProtocolException.INVALID_DATA);
+      if (!isset_Port)
+        throw new TProtocolException(TProtocolException.INVALID_DATA);
       if (!isset_NodeRole)
+        throw new TProtocolException(TProtocolException.INVALID_DATA);
+      if (!isset_Priority)
         throw new TProtocolException(TProtocolException.INVALID_DATA);
     }
 
@@ -118,11 +148,23 @@ namespace FlexSearch.Api
       oprot.WriteFieldBegin(field);
       oprot.WriteString(IpAddress);
       oprot.WriteFieldEnd();
-      field.Name = "NodeRole";
+      field.Name = "Port";
       field.Type = TType.I32;
       field.ID = 3;
       oprot.WriteFieldBegin(field);
+      oprot.WriteI32(Port);
+      oprot.WriteFieldEnd();
+      field.Name = "NodeRole";
+      field.Type = TType.I32;
+      field.ID = 4;
+      oprot.WriteFieldBegin(field);
       oprot.WriteI32((int)NodeRole);
+      oprot.WriteFieldEnd();
+      field.Name = "Priority";
+      field.Type = TType.I32;
+      field.ID = 5;
+      oprot.WriteFieldBegin(field);
+      oprot.WriteI32(Priority);
       oprot.WriteFieldEnd();
       oprot.WriteFieldStop();
       oprot.WriteStructEnd();
@@ -134,7 +176,9 @@ namespace FlexSearch.Api
       if (ReferenceEquals(this, other)) return true;
       return System.Object.Equals(NodeName, other.NodeName)
         && System.Object.Equals(IpAddress, other.IpAddress)
-        && System.Object.Equals(NodeRole, other.NodeRole);
+        && System.Object.Equals(Port, other.Port)
+        && System.Object.Equals(NodeRole, other.NodeRole)
+        && System.Object.Equals(Priority, other.Priority);
     }
 
     public override int GetHashCode() {
@@ -142,7 +186,9 @@ namespace FlexSearch.Api
       unchecked {
         hashcode = (hashcode * 397) ^ ((NodeName.GetHashCode()));
         hashcode = (hashcode * 397) ^ ((IpAddress.GetHashCode()));
+        hashcode = (hashcode * 397) ^ ((Port.GetHashCode()));
         hashcode = (hashcode * 397) ^ ((NodeRole.GetHashCode()));
+        hashcode = (hashcode * 397) ^ ((Priority.GetHashCode()));
       }
       return hashcode;
     }
@@ -153,8 +199,12 @@ namespace FlexSearch.Api
       sb.Append(NodeName);
       sb.Append(",IpAddress: ");
       sb.Append(IpAddress);
+      sb.Append(",Port: ");
+      sb.Append(Port);
       sb.Append(",NodeRole: ");
       sb.Append(NodeRole);
+      sb.Append(",Priority: ");
+      sb.Append(Priority);
       sb.Append(")");
       return sb.ToString();
     }

@@ -1,13 +1,13 @@
 #r "System"
 open System.IO
 
-let generateThriftFiles() =
+let generateThriftFiles(filename) =
     let p = new System.Diagnostics.Process()
     p.StartInfo.FileName <- Path.Combine(__SOURCE_DIRECTORY__ , "thrift-0.9.1.exe")
     printfn "Thrift Path:%s" p.StartInfo.FileName
     if File.Exists(p.StartInfo.FileName) <> true then
         failwithf "Thrift compiler cannot be located: %s." p.StartInfo.FileName
-    p.StartInfo.Arguments <- ("--gen csharp:serial,hashcode,wcf,union FlexSearch.Api.thrift")
+    p.StartInfo.Arguments <- (sprintf "--gen csharp:serial,hashcode,wcf,union %s" filename)
     p.StartInfo.WorkingDirectory <- __SOURCE_DIRECTORY__
     p.StartInfo.RedirectStandardOutput <- true
     p.StartInfo.UseShellExecute <- false
@@ -17,7 +17,7 @@ let generateThriftFiles() =
     printfn "done"
 
 let addDataMemberOrder() =
-    for file in Directory.GetFiles(__SOURCE_DIRECTORY__ + "\gen-csharp\FlexSearch\Api", "*.cs") do
+    for file in Directory.GetFiles(__SOURCE_DIRECTORY__ + "\gen-csharp\FlexSearch\Api", "*.cs", System.IO.SearchOption.AllDirectories) do
         printfn "%s" file
         let fileContent = File.ReadAllLines(file)
         let targetFile = new ResizeArray<string>()
@@ -36,5 +36,8 @@ let addDataMemberOrder() =
                 
         File.WriteAllLines(file, targetFile.ToArray())
 
-generateThriftFiles()
+generateThriftFiles("Service.thrift")
+generateThriftFiles("Api.thrift")
+generateThriftFiles("Exception.thrift")
+generateThriftFiles("Dto.thrift")
 addDataMemberOrder()
