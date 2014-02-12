@@ -23,29 +23,18 @@ open System.Linq
 open System.Net
 open System.Net.Http
 
-type Hello() = 
-    
-    [<Description("Hello world")>] member val Name = "" with get, set
-    
-    member val Place = "" with get, set
 
-type HelloResponse = 
-    { mutable Result : string }
-
-[<Export(typeof<IHttpModule>)>]
+[<Export(typeof<HttpModule>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "indices")>]
-type IndexModule() = 
-    inherit Service()
+[<ExportMetadata("Name", "index")>]
+type IndexModule(state: NodeState) = 
+    inherit HttpModule(state)
     
     let routes = 
-        [| { RequestType = typeof<Hello>
-             RestPath = "/indices"
-             Verbs = "GET"
-             Summary = ""
-             Notes = "" } |]
+        [||]
     
-    interface IHttpModule with
-        member this.Routes() = routes
-    
-    member this.Get(req : Hello) = { Result = "Hello, " + req.Name }
+    override this.Routes() = routes
+    override this.Get indexName request response = ()
+    override this.Post indexName request  = box ""
+    override this.Delete indexName request  = box ""
+    override this.Put indexName request = box ""

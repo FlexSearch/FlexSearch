@@ -40,16 +40,21 @@ module State =
             match this.Indices.TryGetValue(indexName) with
             | true, x -> Some(x)
             | _ -> None
-
-type ServiceRoute = 
-    { RequestType : System.Type
-      RestPath : string
-      Verbs : string
-      Summary : string
-      Notes : string }
-
-// ----------------------------------------------------------------------------     
-/// Http module to handle to incoming requests
-// ----------------------------------------------------------------------------   
-type IHttpModule = 
-    abstract Routes : unit -> ServiceRoute []
+    
+    type ServiceRoute = 
+        { RequestType : System.Type
+          RestPath : string
+          Verbs : string
+          Summary : string
+          Notes : string }
+    
+    // ----------------------------------------------------------------------------     
+    /// Http module to handle to incoming requests
+    // ----------------------------------------------------------------------------   
+    [<AbstractClass>]
+    type HttpModule(state : NodeState) = 
+        abstract Routes : unit -> ServiceRoute []
+        abstract Get : string -> HttpListenerRequest -> HttpListenerResponse -> unit
+        abstract Post : string -> HttpListenerRequest -> obj
+        abstract Put : string -> HttpListenerRequest -> obj
+        abstract Delete : string -> HttpListenerRequest -> obj

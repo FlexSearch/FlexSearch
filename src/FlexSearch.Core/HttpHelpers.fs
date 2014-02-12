@@ -105,31 +105,6 @@ module HttpHelpers =
         else
             Choice2Of2({ DeveloperMessage = "No body defined."; UserMessage = "No body defined."; ErrorCode = 1004})
               
-                
-
-    let (|GET|_|) (value: string) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "GET" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let (|POST|_|) (value) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "POST" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let (|PUT|_|) (value) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "PUT" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let (|DELETE|_|) (value) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "DELETE" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
 
     let OK (value : obj) (request: System.Net.HttpListenerRequest) (response: System.Net.HttpListenerResponse) =
         writeResponse HttpStatusCode.OK value request response

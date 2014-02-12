@@ -59,14 +59,14 @@ module Main =
         ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
                                               (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
     
-    open ServiceStack
-    type AppHost() =
-        inherit AppHostHttpListenerPoolBase("FlexSearch", typeof<FlexSearch.Core.HttpModule.Hello>.Assembly)
-        override this.Configure container =
-            let httpModules = Factories.GetHttpModules().Value
-            for httpModule in httpModules do
-                for route in httpModule.Value.Routes() do
-                    base.Routes.Add(route.RequestType, route.RestPath, route.Verbs, route.Summary, route.Notes) |> ignore
+//    open ServiceStack
+//    type AppHost() =
+//        inherit AppHostHttpListenerPoolBase("FlexSearch", typeof<FlexSearch.Core.HttpModule.Hello>.Assembly)
+//        override this.Configure container =
+//            let httpModules = Factories.GetHttpModules().Value
+//            for httpModule in httpModules do
+//                for route in httpModule.Value.Routes() do
+//                    base.Routes.Add(route.RequestType, route.RestPath, route.Verbs, route.Summary, route.Notes) |> ignore
                 
 
     let loadNode() = 
@@ -82,10 +82,10 @@ module Main =
               ConnectedSlaves = Unchecked.defaultof<_> }
         
         // License key required by Servicestack for open source usage
-        let licenseKeyText = "1001-e1JlZjoxMDAxLE5hbWU6VGVzdCBCdXNpbmVzcyxUeXBlOkJ1c2luZXNzLEhhc2g6UHVNTVRPclhvT2ZIbjQ5MG5LZE1mUTd5RUMzQnBucTFEbTE3TDczVEF4QUNMT1FhNXJMOWkzVjFGL2ZkVTE3Q2pDNENqTkQyUktRWmhvUVBhYTBiekJGUUZ3ZE5aZHFDYm9hL3lydGlwUHI5K1JsaTBYbzNsUC85cjVJNHE5QVhldDN6QkE4aTlvdldrdTgyTk1relY2eis2dFFqTThYN2lmc0JveHgycFdjPSxFeHBpcnk6MjAxMy0wMS0wMX0="
-        Licensing.RegisterLicense(licenseKeyText)
-        let appHost = new AppHost()
-        appHost.Init() |> ignore
-        appHost.Start "http://localhost:9900/" |> ignore
+//        let licenseKeyText = "1001-e1JlZjoxMDAxLE5hbWU6VGVzdCBCdXNpbmVzcyxUeXBlOkJ1c2luZXNzLEhhc2g6UHVNTVRPclhvT2ZIbjQ5MG5LZE1mUTd5RUMzQnBucTFEbTE3TDczVEF4QUNMT1FhNXJMOWkzVjFGL2ZkVTE3Q2pDNENqTkQyUktRWmhvUVBhYTBiekJGUUZ3ZE5aZHFDYm9hL3lydGlwUHI5K1JsaTBYbzNsUC85cjVJNHE5QVhldDN6QkE4aTlvdldrdTgyTk1relY2eis2dFFqTThYN2lmc0JveHgycFdjPSxFeHBpcnk6MjAxMy0wMS0wMX0="
+//        Licensing.RegisterLicense(licenseKeyText)
+//        let appHost = new AppHost()
+//        appHost.Init() |> ignore
+//        appHost.Start "http://localhost:9900/" |> ignore
         Console.ReadKey() |> ignore
         ()

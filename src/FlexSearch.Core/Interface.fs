@@ -16,6 +16,7 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Utility
 open FlexSearch.Core
+open FlexSearch.Api.Service
 
 open java.io
 open java.util
@@ -328,4 +329,4 @@ module Interface =
         abstract member Open        :   unit -> unit
         abstract member Send        :   byte[] -> unit
         abstract member Connected   :   unit -> bool
-     
+    
