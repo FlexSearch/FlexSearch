@@ -47,9 +47,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\idl\gen-csharp\FlexSearch\Api\*.cs">
-      <Link>%(FileName)</Link>
+    <Compile Include="..\..\idl\gen-csharp\FlexSearch\Api\**\*.cs">
+      <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
+    
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
