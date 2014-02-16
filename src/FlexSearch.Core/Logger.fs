@@ -10,19 +10,18 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open EventSourceProxy.NuGet
-open FlexSearch.Api
-open Microsoft.Diagnostics.Tracing
-
-[<EventSourceImplementation(Name = "FlexSearch")>]
-type IFlexLogger = 
+[<RequireQualifiedAccess>]
+module Logger = 
+    open FlexSearch.Api
+    open Microsoft.Diagnostics.Tracing
     
-    [<Event(1, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Adding index {0}")>] abstract AddIndex : string * Index -> unit
+    [<Sealed>]
+    [<EventSource(Name = "FlexSearch")>]
+    type FlexLogger() = 
+        inherit EventSource()
+        [<Event(1, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Adding index {0}")>]
+        member this.AddIndex(indexName : string, indexDetails : string) = 
+            if this.IsEnabled() then this.WriteEvent(1, indexName, indexDetails)
     
-    [<Event(2, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Updating index {0}")>] abstract UpdateIndex : string * Index -> unit
-    
-    [<Event(3, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Deleting index {0}")>] abstract DeleteIndex : string -> unit
-    
-    [<Event(4, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Index {0} is offline")>] abstract IndexIsOnline : string -> unit
-    
-    [<Event(5, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Index {0} is online")>] abstract IndexIsOffline : string -> unit
+    let Logger = new FlexLogger()
+    let addIndex (indexName : string, indexDetails : Index) = Logger.AddIndex(indexName, indexDetails.ToString())

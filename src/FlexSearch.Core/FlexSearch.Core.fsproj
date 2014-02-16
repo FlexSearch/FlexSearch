@@ -50,10 +50,6 @@
       <HintPath>..\packages\CS-Script.3.6.2.0\lib\net45\CSScriptLibrary.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EventSourceProxy.NuGet">
-      <HintPath>..\packages\EventSourceProxy.NuGet.2.1.0\lib\EventSourceProxy.NuGet.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.4.5.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>

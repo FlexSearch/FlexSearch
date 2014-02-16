@@ -106,10 +106,11 @@ module Main =
     /// Initialize all the service locator member
     let initServiceLocator() = 
         let pluginContainer = Factories.PluginContainer(true).Value
-        ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
+        FlexSearch.Core.Logger.Logger.AddIndex("test", "test")
+        //ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
-        ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
-                                              (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
+        //ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
+        //                                      (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
     
     let loadNode() = 
         initServiceLocator()

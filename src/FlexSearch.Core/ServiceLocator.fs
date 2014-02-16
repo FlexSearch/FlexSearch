@@ -15,8 +15,8 @@ namespace FlexSearch.Core
 // All the services exposed here are singleton across the application with no state. 
 // Note: This will not affect unit testing when simuating multiple nodes as these services are
 // same across all the nodes and don't have any node specific functionality
+[<RequireQualifiedAccess>]
 module ServiceLocator = 
-    open EventSourceProxy.NuGet
     open FlexSearch.Core
     open FlexSearch.Core.State
     open Microsoft.Diagnostics.Tracing
@@ -25,4 +25,3 @@ module ServiceLocator =
     let mutable FactoryCollection : IFactoryCollection = Unchecked.defaultof<_>
     let mutable SettingsBuilder : ISettingsBuilder = Unchecked.defaultof<_>
     let mutable HttpModule : Dictionary<string, IHttpModule> = Unchecked.defaultof<_>
-    let Logger = EventSourceImplementer.GetEventSource<IFlexLogger>()

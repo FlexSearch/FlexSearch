@@ -41,9 +41,6 @@
     <Reference Include="Common.Logging.NLog20">
       <HintPath>..\packages\Common.Logging.NLog20.2.1.2\lib\net40\Common.Logging.NLog20.dll</HintPath>
     </Reference>
-    <Reference Include="EventSourceProxy.NuGet">
-      <HintPath>..\packages\EventSourceProxy.NuGet.2.1.0\lib\EventSourceProxy.NuGet.dll</HintPath>
-    </Reference>
     <Reference Include="FlexLucene, Version=4.5.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\FlexLucene.4.5.0.0\lib\net40\FlexLucene.dll</HintPath>
