@@ -42,12 +42,12 @@ module Http =
                     request.Url.Segments.[1].Substring(0, request.Url.Segments.[1].Length - 1)
                 else request.Url.Segments.[1]
             match ServiceLocator.HttpModule.TryGetValue(segment) with
-            | (true, proc) -> 
-                try
-                    proc. request response nodeState
-                with
-                | x -> 
-                    HttpHelpers.writeResponse HttpStatusCode.InternalServerError x request response
+            | (true, proc) -> ()
+//                try
+//                    proc. request response nodeState
+//                with
+//                | x -> 
+//                    HttpHelpers.writeResponse HttpStatusCode.InternalServerError x request response
             | _ -> 
                 HttpHelpers.writeResponse HttpStatusCode.NotFound "The request end point is not available." request 
                     response

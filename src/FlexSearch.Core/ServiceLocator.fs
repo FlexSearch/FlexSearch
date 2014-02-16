@@ -28,7 +28,7 @@ module ServiceLocator =
     let mutable FactoryCollection : IFactoryCollection = Unchecked.defaultof<_>
     let mutable SettingsBuilder : ISettingsBuilder = Unchecked.defaultof<_>
     let mutable HttpModule : Dictionary<string, HttpModule> = Unchecked.defaultof<_>
-
+    let mutable NodeState : NodeState = Unchecked.defaultof<_>
     
     type Logger() as self =
         inherit EventSource()

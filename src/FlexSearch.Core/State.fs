@@ -16,7 +16,9 @@ module State =
     open FlexSearch.Core.Interface
     open System.Collections.Concurrent
     open System.Net
-    
+    open Microsoft.Owin
+    open Owin
+
     type NodeProperties = 
         { /// Name of the node  
           Name : string
@@ -52,9 +54,9 @@ module State =
     /// Http module to handle to incoming requests
     // ----------------------------------------------------------------------------   
     [<AbstractClass>]
-    type HttpModule(state : NodeState) = 
+    type HttpModule() = 
         abstract Routes : unit -> ServiceRoute []
-        abstract Get : string -> HttpListenerRequest -> HttpListenerResponse -> unit
-        abstract Post : string -> HttpListenerRequest -> obj
-        abstract Put : string -> HttpListenerRequest -> obj
-        abstract Delete : string -> HttpListenerRequest -> obj
+        abstract Get : string * IOwinContext -> unit
+        abstract Post : string * IOwinContext -> unit
+        abstract Put : string * IOwinContext -> unit
+        abstract Delete : string * IOwinContext -> unit

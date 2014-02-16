@@ -9,10 +9,12 @@
     using FlexSearch.Core;
 
     using Topshelf;
+    using Owin;
 
     internal class Program
     {
         #region Methods
+
 
         private static void Main(string[] args)
         {
@@ -22,6 +24,8 @@
             ILog logger = LogManager.GetCurrentClassLogger();
             logger.Info("Loading core services");
             FlexSearch.Core.Main.loadNode();
+
+
             //try
             //{
             //    var serverSettings = new Settings.SettingsStore(Constants.ConfFolder.Value + "Config.xml");

@@ -15,9 +15,8 @@ namespace FlexSearch.Core
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Logger = 
-    open FlexSearch.Logging
+    open EventSourceProxy.NuGet
     open FlexSearch.Api
-    open EventSourceProxy
     open Microsoft.Diagnostics.Tracing
     
     [<EventSourceImplementation(Name = "FlexSearch")>]
@@ -32,8 +31,3 @@ module Logger =
         [<Event(4, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Index {0} is offline")>] abstract IndexIsOnline : string -> unit
         
         [<Event(5, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Index {0} is online")>] abstract IndexIsOffline : string -> unit
-    
-    let private logger = FlexLogger.Logger
-    
-    let addIndex (indexName : string) (indexDetails : Index) = 
-        if logger.IsEnabled() then logger.AddIndex(indexName, indexDetails.ToString())

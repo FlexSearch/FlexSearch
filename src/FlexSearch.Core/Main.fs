@@ -24,7 +24,11 @@ module Main =
     open System.Collections.Concurrent
     open System.Net
     open System.Threading           
-    
+    open Microsoft.Owin
+    open Owin
+    open System.Linq
+    open System.Threading.Tasks
+
     /// Xml setting provider for server config
     type private FlexServerSetting = JsonProvider< """
         {
@@ -34,7 +38,82 @@ module Main =
             "DataFolder" : "./data"
         }
     """ >
+
+    let exec (owin: IOwinContext) = async {
+        try
+            let dataType =
+                if owin.Request.Uri.Segments.Last().Contains(".") then
+                    owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf("."))
+                else
+                    "json"
+
+            // Root path
+            if owin.Request.Uri.Segments.Length = 1 then
+                match ServiceLocator.HttpModule.TryGetValue("/") with
+                | (true, x) -> 
+                    match owin.Request.Method with
+                    | "GET" -> x.Get("/", owin)
+                    | "POST" -> x.Post("/", owin)
+                    | "PUT" -> x.Post("/", owin)
+                    | "DELETE" -> x.Delete("/", owin)
+                    | _ -> 
+                        owin.Response.StatusCode <- 500
+                | _ -> owin.Response.StatusCode <- 500
+            else
+                let indexName = 
+                    if owin.Request.Uri.Segments.[1].EndsWith("/") then 
+                        owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
+                    else owin.Request.Uri.Segments.[1]
+                
+                if indexName.EndsWith(".ico") <> true then
+                    // Check if the passed index exists     
+                    match ServiceLocator.NodeState.IndexExists(indexName) with
+                    | Some(index) -> 
+                    
+                        // This is the root index module request
+                        if owin.Request.Uri.Segments.Length = 2 then
+                        
+                            // Check if the requested module exists                    
+                            match ServiceLocator.HttpModule.TryGetValue("index") with
+                            | (true, x) -> 
+                                match owin.Request.Method with
+                                | "GET" -> x.Get(indexName, owin)
+                                | "POST" -> x.Post(indexName, owin)
+                                | "PUT" -> x.Put(indexName, owin)
+                                | "DELETE" -> x.Delete(indexName, owin)
+                                | _ -> 
+                                    owin.Response.StatusCode <- 500
+                            | _ -> owin.Response.StatusCode <- 500
+
+                        else
+                            // This is a specialized reuest to an existing index
+                            // Check if the requested module exists                    
+                            match ServiceLocator.HttpModule.TryGetValue(owin.Request.Uri.Segments.[2]) with
+                            | (true, x) -> 
+                                match owin.Request.Method with
+                                | "GET" -> x.Get(indexName, owin)
+                                | "POST" -> x.Post(indexName, owin)
+                                | "PUT" -> x.Put(indexName, owin)
+                                | "DELETE" -> x.Delete(indexName, owin)
+                                | _ -> 
+                                    owin.Response.StatusCode <- 500
+                            | _ -> owin.Response.StatusCode <- 500
+                    | _ -> owin.Response.StatusCode <- 500
+                else
+                    owin.Response.StatusCode <- 500
+            with
+            | ex -> ()
+        }
+
+    let handler = Func<IOwinContext, Tasks.Task>(fun owin -> 
+        Async.StartAsTask(exec(owin)) :> Task
+    )
     
+    type OwinStartUp() =
+        member this.Configuration(app: IAppBuilder) =
+            app.Run(handler)
+            ()
+
     let getServerSettings (path) = 
         let fileXml = Helpers.LoadFile(path)
         let parsedResult = FlexServerSetting.Parse(fileXml)
@@ -58,19 +137,11 @@ module Main =
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
         ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
                                               (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
-    
-//    open ServiceStack
-//    type AppHost() =
-//        inherit AppHostHttpListenerPoolBase("FlexSearch", typeof<FlexSearch.Core.HttpModule.Hello>.Assembly)
-//        override this.Configure container =
-//            let httpModules = Factories.GetHttpModules().Value
-//            for httpModule in httpModules do
-//                for route in httpModule.Value.Routes() do
-//                    base.Routes.Add(route.RequestType, route.RestPath, route.Verbs, route.Summary, route.Notes) |> ignore
-                
+        
+   
 
     let loadNode() = 
-        //initServiceLocator()
+        initServiceLocator()
         let settings = getServerSettings (Constants.ConfFolder.Value + "Config.json")
         
         let nodeState = 
@@ -81,11 +152,6 @@ module Main =
               MasterNode = Unchecked.defaultof<_>
               ConnectedSlaves = Unchecked.defaultof<_> }
         
-        // License key required by Servicestack for open source usage
-//        let licenseKeyText = "1001-e1JlZjoxMDAxLE5hbWU6VGVzdCBCdXNpbmVzcyxUeXBlOkJ1c2luZXNzLEhhc2g6UHVNTVRPclhvT2ZIbjQ5MG5LZE1mUTd5RUMzQnBucTFEbTE3TDczVEF4QUNMT1FhNXJMOWkzVjFGL2ZkVTE3Q2pDNENqTkQyUktRWmhvUVBhYTBiekJGUUZ3ZE5aZHFDYm9hL3lydGlwUHI5K1JsaTBYbzNsUC85cjVJNHE5QVhldDN6QkE4aTlvdldrdTgyTk1relY2eis2dFFqTThYN2lmc0JveHgycFdjPSxFeHBpcnk6MjAxMy0wMS0wMX0="
-//        Licensing.RegisterLicense(licenseKeyText)
-//        let appHost = new AppHost()
-//        appHost.Init() |> ignore
-//        appHost.Start "http://localhost:9900/" |> ignore
+        Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>("http://localhost:9000") |> ignore
         Console.ReadKey() |> ignore
         ()

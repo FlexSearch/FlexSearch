@@ -132,7 +132,7 @@ module Helpers =
                     Path.Combine(mainDirectory, restPath)
                 else path
             
-            if Directory.Exists(dataPath) then 
+            if Directory.Exists(dataPath) || File.Exists(dataPath) then 
                 dataPath        
             else
                 failwithf "message=The specified path does not exist.; path=%s" dataPath
@@ -167,3 +167,4 @@ module Helpers =
         | _ -> dict.Add(key, value)
              
 
+    let await iar = Async.AwaitIAsyncResult iar |> ignore
