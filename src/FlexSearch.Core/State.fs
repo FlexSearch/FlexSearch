@@ -53,10 +53,9 @@ module State =
     // ----------------------------------------------------------------------------     
     /// Http module to handle to incoming requests
     // ----------------------------------------------------------------------------   
-    [<AbstractClass>]
-    type HttpModule() = 
+    type IHttpModule = 
         abstract Routes : unit -> ServiceRoute []
-        abstract Get : string * IOwinContext -> unit
-        abstract Post : string * IOwinContext -> unit
-        abstract Put : string * IOwinContext -> unit
-        abstract Delete : string * IOwinContext -> unit
+        abstract Get : string * IOwinContext * NodeState -> unit
+        abstract Post : string * IOwinContext  * NodeState -> unit
+        abstract Put : string * IOwinContext  * NodeState -> unit
+        abstract Delete : string * IOwinContext  * NodeState -> unit

@@ -25,31 +25,31 @@ open System.Linq
 open System.Net
 open System.Net.Http
 
-[<Export(typeof<HttpModule>)>]
+[<Export(typeof<IHttpModule>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
 [<ExportMetadata("Name", "index")>]
 type IndexModule() = 
-    inherit HttpModule()
     let routes = [||]
-    override this.Routes() = routes
-    override this.Get(indexName: string , owin : IOwinContext) = owin.Response.ContentType <- "text/html"
-    override this.Post(indexName, owin : IOwinContext) = owin.Response.ContentType <- "text/html"
-    override this.Delete(indexName, owin : IOwinContext) = owin.Response.ContentType <- "text/html"
-    override this.Put(indexName, owin : IOwinContext) = owin.Response.ContentType <- "text/html"
+    interface IHttpModule with
+        member this.Routes() = routes
+        member this.Get(indexName, owin, state) = owin.Response.ContentType <- "text/html"
+        member this.Post(indexName, owin, state) = owin.Response.ContentType <- "text/html"
+        member this.Delete(indexName, owin, state) = owin.Response.ContentType <- "text/html"
+        member this.Put(indexName, owin, state) = owin.Response.ContentType <- "text/html"
 
-[<Export(typeof<HttpModule>)>]
+[<Export(typeof<IHttpModule>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
 [<ExportMetadata("Name", "/")>]
 type RootModule() = 
-    inherit HttpModule()
     let routes = [||]
-    override this.Routes() = routes
-    
-    override this.Get(indexName, owin : IOwinContext) = 
-        owin.Response.ContentType <- "text/html"
-        owin.Response.StatusCode <- 200
-        await (owin.Response.WriteAsync("FlexSearch 0.21"))
-    
-    override this.Post(indexName, owin : IOwinContext) = owin.Response.ContentType <- "text/html"
-    override this.Delete(indexName, owin : IOwinContext) = owin.Response.ContentType <- "text/html"
-    override this.Put(indexName, owin : IOwinContext) = owin.Response.ContentType <- "text/html"
+    interface IHttpModule with
+        member this.Routes() = routes
+        
+        member this.Get(indexName, owin, state) = 
+            owin.Response.ContentType <- "text/html"
+            owin.Response.StatusCode <- 200
+            await (owin.Response.WriteAsync("FlexSearch 0.21"))
+        
+        member this.Post(indexName, owin, state) = owin.Response.ContentType <- "text/html"
+        member this.Delete(indexName, owin, state) = owin.Response.ContentType <- "text/html"
+        member this.Put(indexName, owin, state) = owin.Response.ContentType <- "text/html"
