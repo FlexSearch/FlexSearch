@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.30110.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{527581E3-C4E4-447D-918D-675C7D7FB9E5}"
 	ProjectSection(SolutionItems) = preProject
@@ -18,6 +18,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.csproj", "{5EE56459-9341-4335-991E-041F0C769047}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Tests", "FlexSearch.Tests\FlexSearch.Tests.fsproj", "{7879D589-02A7-45BD-B80B-A37BB560457F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Logging", "FlexSearch.Logging\FlexSearch.Logging.csproj", "{CD741727-1160-4832-ADDF-0CAD1A2BCA31}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +47,10 @@ Global
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD741727-1160-4832-ADDF-0CAD1A2BCA31}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD741727-1160-4832-ADDF-0CAD1A2BCA31}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD741727-1160-4832-ADDF-0CAD1A2BCA31}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD741727-1160-4832-ADDF-0CAD1A2BCA31}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

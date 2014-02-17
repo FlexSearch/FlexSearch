@@ -19,7 +19,6 @@ namespace FlexSearch.Core
 module ServiceLocator = 
     open FlexSearch.Core
     open FlexSearch.Core.State
-    open Microsoft.Diagnostics.Tracing
     open System.Collections.Generic
     
     let mutable FactoryCollection : IFactoryCollection = Unchecked.defaultof<_>

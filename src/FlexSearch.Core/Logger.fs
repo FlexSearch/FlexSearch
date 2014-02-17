@@ -10,18 +10,10 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+
 [<RequireQualifiedAccess>]
 module Logger = 
     open FlexSearch.Api
-    open Microsoft.Diagnostics.Tracing
-    
-    [<Sealed>]
-    [<EventSource(Name = "FlexSearch")>]
-    type FlexLogger() = 
-        inherit EventSource()
-        [<Event(1, Channel = EventChannel.Admin, Level = EventLevel.Informational, Message = "Adding index {0}")>]
-        member this.AddIndex(indexName : string, indexDetails : string) = 
-            if this.IsEnabled() then this.WriteEvent(1, indexName, indexDetails)
-    
-    let Logger = new FlexLogger()
-    let addIndex (indexName : string, indexDetails : Index) = Logger.AddIndex(indexName, indexDetails.ToString())
+    open FlexSearch.Logging
+    let private logger = FlexLogger.Logger
+    let addIndex (indexName : string, indexDetails : Index) = logger.AddIndex(indexName, indexDetails.ToString())

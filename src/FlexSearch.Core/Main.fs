@@ -42,7 +42,7 @@ module Main =
     let exec (owin : IOwinContext) = 
         async { 
             let getModule moduleName indexName (owin : IOwinContext) = 
-                match ServiceLocator.HttpModule.TryGetValue("index") with
+                match ServiceLocator.HttpModule.TryGetValue(moduleName) with
                 | (true, x) -> 
                     match owin.Request.Method with
                     | "GET" -> x.Get(indexName, owin, container.[owin.Request.Uri.Port])
@@ -106,7 +106,7 @@ module Main =
     /// Initialize all the service locator member
     let initServiceLocator() = 
         let pluginContainer = Factories.PluginContainer(true).Value
-        FlexSearch.Core.Logger.Logger.AddIndex("test", "test")
+        FlexSearch.Logging.FlexLogger.Logger.AddIndex("test", "test")
         //ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
         //ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
