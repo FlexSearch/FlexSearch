@@ -56,4 +56,8 @@ module Cache =
         
             member this.UpdateVersion index id oldversion oldDateTime newVersion =
                 cache.TryUpdate((index, id), (newVersion, DateTime.Now), (oldversion, oldDateTime))
+
+            member this.DeleteVersion index id =
+                let (res, _) = cache.TryRemove((index, id))
+                res
         

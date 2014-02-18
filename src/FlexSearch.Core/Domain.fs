@@ -244,13 +244,13 @@ type IndexCommand =
     | Delete of id: string                     
     
     /// Optimistic concurrency controlled create of a document
-    | OptimisticCreate of id: string * fields: Dictionary<string,string>
+    //| OptimisticCreate of id: string * fields: Dictionary<string,string>
     
     /// Optimistic concurrency controlled update of a document
     | OptimisticUpdate of id: string * fields: Dictionary<string,string> * version: int
     
     /// Optimistic concurrency controlled delete of a document
-    | OptimisticDelete of id: string * version: int
+    //| OptimisticDelete of id: string * version: int
     
     /// Bulk delete all the documents in a index
     | BulkDeleteByIndexName               

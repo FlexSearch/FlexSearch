@@ -271,13 +271,14 @@ module FlexIndex =
         // ----------------------------------------------------------------------------     
         // Updates the current thread local index document with the incoming data
         // ----------------------------------------------------------------------------     
-        let UpdateDocument(flexIndex: FlexIndex, documentTemplate: threadLocalDocument , documentId: string, fields: Dictionary<string, string>) =            
+        let UpdateDocument(flexIndex: FlexIndex, documentTemplate: threadLocalDocument , documentId: string, version: int, fields: Dictionary<string, string>) =            
             documentTemplate.FieldsLookup.["id"].setStringValue(documentId)
             documentTemplate.FieldsLookup.["lastmodified"].setLongValue(GetCurrentTimeAsLong())
-            
+            documentTemplate.FieldsLookup.["version"].setIntValue(version)
+
             for field in flexIndex.IndexSetting.Fields do
                 // Ignore these 3 fields here.
-                if (field.FieldName = "id" || field.FieldName = "type" || field.FieldName = "lastmodified") then
+                if (field.FieldName = "id" || field.FieldName = "type" || field.FieldName = "lastmodified" || field.FieldName = "version") then
                     ()
                 else
                     // If it is computed field then generate and add it otherwise follow standard path
@@ -313,21 +314,46 @@ module FlexIndex =
             | Create(documentId, fields) -> 
                 match indexExists(flexIndex.IndexSetting.IndexName) with
                 | Some(flexIndex, documentTemplate) -> 
-                    let (flexIndex, targetIndex, documentTemplate) = UpdateDocument(flexIndex, documentTemplate, documentId, fields)
+                    let (flexIndex, targetIndex, documentTemplate) = UpdateDocument(flexIndex, documentTemplate, documentId, 1, fields)
+                    versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId 1 |> ignore
                     flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
                     (true, "")
                 | _ -> (false, "Index does not exist")
 
             | Update(documentId, fields) -> 
                 match indexExists(flexIndex.IndexSetting.IndexName) with
-                | Some(flexIndex, documentTemplate) -> 
-                    let (flexIndex, targetIndex, documentTemplate) = UpdateDocument(flexIndex, documentTemplate, documentId, fields)
-                    flexIndex.Shards.[targetIndex].TrackingIndexWriter.updateDocument(new Term("id",documentId), documentTemplate.Document) |> ignore
+                | Some(flexIndex, documentTemplate) ->                     
+                    // It is a simple update so get the version number and increment it
+                    match versionCache.GetVersion flexIndex.IndexSetting.IndexName documentId with
+                    | Some(x) ->
+                        let (version , dateTime) = x
+                        match versionCache.UpdateVersion flexIndex.IndexSetting.IndexName documentId version dateTime (version + 1) with
+                        | true -> 
+                            // Version was updated successfully so let's update the document
+                            let (flexIndex, targetIndex, documentTemplate) = UpdateDocument(flexIndex, documentTemplate, documentId, (version + 1), fields)
+                            flexIndex.Shards.[targetIndex].TrackingIndexWriter.updateDocument(new Term("id",documentId), documentTemplate.Document) |> ignore
+                        | false -> failwithf "Version mismatch"
+                    | None ->
+                        // Document was not found in version cache so retrieve it from the index
+                        let (flexIndex, targetIndex, documentTemplate) = UpdateDocument(flexIndex, documentTemplate, documentId, 1, fields)
+                        let query = new TermQuery(new Term("id", documentId))
+                        let searcher = (flexIndex.Shards.[targetIndex].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
+                        let topDocs = searcher.search(query, 1)
+                        let hits = topDocs.scoreDocs
+                        if hits.Length = 0 then
+                            // It is actually a create as the document does not exist
+                            versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId 1 |> ignore
+                            flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
+                        else
+                            let version = int(searcher.doc(hits.[0].doc).get("version"))
+                            versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId (version + 1) |> ignore
+                            flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
                     (true, "")
                 | _ -> (false, "Index does not exist")
-
+            
             | Delete(documentId) -> 
                 let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length - 1
+                versionCache.DeleteVersion flexIndex.IndexSetting.IndexName documentId |> ignore
                 flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term("id",documentId))  |> ignore
                 (true, "")
 

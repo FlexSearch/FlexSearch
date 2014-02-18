@@ -262,7 +262,7 @@ module Interface =
         abstract member GetVersion     :   string -> string -> Option<int * DateTime>
         abstract member AddVersion     :   string -> string -> int -> bool
         abstract member UpdateVersion  :   string -> string -> int -> DateTime -> int -> bool
-
+        abstract member DeleteVersion  :   string -> string -> bool
 
     // ---------------------------------------------------------------------------- 
     /// Interface which exposes all index related operations

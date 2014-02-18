@@ -317,6 +317,7 @@
     <Compile Include="LocalCacheStore.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="CompilerService.fs" />
+    <Compile Include="Search.fs" />
     <Compile Include="MefFactory.fs" />
     <Compile Include="CustomAnalyzer.fs" />
     <Compile Include="Analyzers.fs" />
