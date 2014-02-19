@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 module Main = 
-    open FSharp.Data
     open FlexSearch
     open FlexSearch.Api
     open FlexSearch.Core
