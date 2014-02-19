@@ -3,8 +3,6 @@
     using System;
     using System.Collections.Specialized;
 
-    using Common.Logging;
-    using Common.Logging.NLog;
 
     using FlexSearch.Core;
 
@@ -18,11 +16,6 @@
 
         private static void Main(string[] args)
         {
-            var properties = new NameValueCollection();
-            properties["showDateTime"] = "true";
-            LogManager.Adapter = new NLogLoggerFactoryAdapter(properties);
-            ILog logger = LogManager.GetCurrentClassLogger();
-            logger.Info("Loading core services");
             FlexSearch.Core.Main.loadNode();
 
 

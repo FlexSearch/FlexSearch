@@ -19,7 +19,6 @@ open FlexSearch.Core.Index
 open FlexSearch.Core.State
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous
-open Common.Logging
 open System
 open System.Collections.Generic
 open System.ComponentModel.Composition
@@ -33,7 +32,7 @@ open System.Reflection
 // ----------------------------------------------------------------------------
 module Factories =
     
-    let factoryLogger = LogManager.GetLogger("Factory")
+    //let factoryLogger = LogManager.GetLogger("Factory")
 
     // Mef container which loads all the related plugins
     let PluginContainer(readPluginDirectory)  =
@@ -101,7 +100,8 @@ module Factories =
         do 
             container.ComposeParts(self)
             for operation in factory do
-                factoryLogger.Info(sprintf "Discovered %s module: %s" moduleType operation.Metadata.Name)
+                ()
+                //factoryLogger.Info(sprintf "Discovered %s module: %s" moduleType operation.Metadata.Name)
             
         interface IFlexFactory<'a> with
             member this.GetModuleByName(moduleName) = 

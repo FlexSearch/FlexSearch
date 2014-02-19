@@ -16,7 +16,6 @@ namespace FlexSearch.Core.Index
 open FlexSearch.Api
 open FlexSearch.Utility
 open FlexSearch.Core
-open Common.Logging
 
 open java.io
 open java.util
@@ -105,7 +104,7 @@ module Document =
 module IO =        
     
     // Logger 
-    let logger = LogManager.GetLogger("Settings")  
+    //let logger = LogManager.GetLogger("Settings")  
      
     // ----------------------------------------------------------------------------     
     // Creates lucene index writer config from flex index setting 
@@ -132,7 +131,8 @@ module IO =
             | DirectoryType.Ram -> Some(new RAMDirectory() :> org.apache.lucene.store.Directory)  
             | _ -> failwithf "Unknown directory type."          
         with
-            | e -> logger.Error(sprintf "Unable to open index at location: %s" directoryPath, e); None
+            | e -> //logger.Error(sprintf "Unable to open index at location: %s" directoryPath, e); 
+                None
 
     // ---------------------------------------------------------------------------- 
     // Creates lucene index writer from flex index setting  
@@ -190,7 +190,7 @@ module FlexIndex =
     // ----------------------------------------------------------------------------   
     type IndexService(settingsParser: ISettingsBuilder, keyValueStore: IKeyValueStore, loadAllIndex: bool, versionCache: IVersioningCacheStore) =
         
-        let indexLogger = LogManager.GetLogger("IndexService")
+        //let indexLogger = LogManager.GetLogger("IndexService")
 
         // Dictionary to hold all the information about currently active index and their status
         let indexRegisteration: ConcurrentDictionary<string, FlexIndex>  
@@ -468,7 +468,7 @@ module FlexIndex =
                     x.IndexWriter.close()
                     )
             with
-            | e -> logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
+            | e -> ()//logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
             
             indexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Offline
         
@@ -501,7 +501,7 @@ module FlexIndex =
         // Load all index configuration data on start of application
         // ----------------------------------------------------------------------------
         do
-            indexLogger.Info("Index loading: Operation Start")
+            //indexLogger.Info("Index loading: Operation Start")
             let executionBlockOption = new ExecutionDataflowBlockOptions()
             executionBlockOption.MaxDegreeOfParallelism <- -1
             executionBlockOption.BoundedCapacity <- 1000
@@ -514,16 +514,17 @@ module FlexIndex =
                         try
                             let flexIndexSetting = settingsParser.BuildSetting(x)
                             addIndex(flexIndexSetting) 
-                            indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
+                            //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
                          with
-                            | ex -> 
-                                indexLogger.Error("Loading index from file failed.", ex)
+                            | ex -> ()
+                                //indexLogger.Error("Loading index from file failed.", ex)
                     else
-                        indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
+                        //indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
                         indexStatus.TryAdd(x.IndexName, IndexState.Offline) |> ignore    
                 )                
             else
-                indexLogger.Info("Index loading bypassed. LoadIndex parameter is false. (Testing mode)")
+                ()
+                //indexLogger.Info("Index loading bypassed. LoadIndex parameter is false. (Testing mode)")
             
 
         // ----------------------------------------------------------------------------
