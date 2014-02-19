@@ -32,6 +32,7 @@ let parserTests =
                 6, "abc eq 'a' and (pqr eq 'b')"
                 7, "(abc eq 'a') and pqr eq 'b'"
                 8, "((((((abc eq 'a'))))) and (pqr eq 'b'))"
+                9, "abc eq ['sdsd', '2', '3']"
                 ] ->
             testCase (sprintf "%i: Function call should parse" (fst(exp))) <| fun _ -> test (snd(exp))
         ]

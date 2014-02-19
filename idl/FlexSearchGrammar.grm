@@ -15,24 +15,30 @@
 Value   = ''({String Ch}|'''')*''
 Identifier = {Letter}{Alphanumeric}*            
 Integer = {Digit}+
-                               
+                            
 ! ============================================================================= 
 ! Expressions
 ! =============================================================================
 
-<Expression>  ::= <And Expression> OR <Expression>
-               |  <And Expression>
+<Expression>  ::= <And_Expression> OR <Expression>
+               |  <And_Expression>
 
 
-<And Expression>     ::= <Condition> AND <And Expression>
+<And_Expression>     ::= <Condition> AND <And_Expression>
                       |  <Condition>
 
 
-<Condition>    ::= Identifier <Not> Identifier Value <Boost>
+<Condition>    ::= Identifier <Not_Identifier> Identifier <Value_Identifier> <Boost_Identifier>
                 |  '(' <Expression> ')'
+
+<Value_Identifier> ::= Value
+                    |  '[' <List> ']'
+
+<List> ::= <List> ',' Value
+        |  Value
                                                 
-<Not> ::= Not
-       |  
-                                           
-<Boost>     ::= Boost Integer
-             |  
+<Not_Identifier> ::= Not
+                  |  
+                                        
+<Boost_Identifier>     ::= Boost Integer
+                        |  

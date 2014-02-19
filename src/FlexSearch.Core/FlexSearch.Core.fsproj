@@ -318,9 +318,7 @@
     <Compile Include="Server.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />
-    <EmbeddedResource Include="FlexSearchGrammar.cgt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="FlexSearchGrammar.cgt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
