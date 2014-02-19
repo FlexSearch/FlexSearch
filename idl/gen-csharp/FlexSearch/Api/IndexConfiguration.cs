@@ -150,7 +150,7 @@ namespace FlexSearch.Api
       this.__isset.RamBufferSizeMb = true;
       this._RefreshTimeMilliSec = 25;
       this.__isset.RefreshTimeMilliSec = true;
-      this._IndexVersion = IndexVersion.Lucene46;
+      this._IndexVersion = IndexVersion.Lucene47;
       this.__isset.IndexVersion = true;
     }
 

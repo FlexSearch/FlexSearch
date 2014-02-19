@@ -19,6 +19,7 @@ module Main =
     open FlexSearch.Core.State
     open FlexSearch.Utility
     open Microsoft.Owin
+    open Newtonsoft.Json
     open Owin
     open System
     open System.Collections.Concurrent
@@ -27,18 +28,15 @@ module Main =
     open System.Threading
     open System.Threading.Tasks
     
-    /// Xml setting provider for server config
-    type private FlexServerSetting = JsonProvider< """
-        {
-            "HttpPort" : 9800,
-            "TcpPort" : 9900,
-            "IsMaster" : false,
-            "DataFolder" : "./data"
-        }
-    """ >
-    
+    /// <summary>
+    /// A container used by OWIN to perform dependency injection
+    /// </summary>
     let container = new ConcurrentDictionary<int, NodeState>()
     
+    /// <summary>
+    /// Default Owin method to process request
+    /// </summary>
+    /// <param name="owin">Owin Context</param>
     let exec (owin : IOwinContext) = 
         async { 
             let getModule moduleName indexName (owin : IOwinContext) = 
@@ -80,38 +78,42 @@ module Main =
             with ex -> ()
         }
     
+    /// <summary>
+    /// Default owin handler to tranform C# functiom to F#
+    /// </summary>
     let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
     
+    /// <summary>
+    /// Owin startup class
+    /// </summary>
     type OwinStartUp() = 
-        member this.Configuration(app : IAppBuilder) = 
-            app.Run(handler)
-            ()
+        member this.Configuration(app : IAppBuilder) = app.Run(handler)
     
+    /// <summary>
+    /// Generate server settings from the json text file
+    /// </summary>
+    /// <param name="path">File path to load settings from</param>
     let getServerSettings (path) = 
-        let fileXml = Helpers.LoadFile(path)
-        let parsedResult = FlexServerSetting.Parse(fileXml)
-        
-        let setting = 
-            { LuceneVersion = Constants.LuceneVersion
-              HttpPort = parsedResult.HttpPort
-              TcpPort = parsedResult.TcpPort
-              DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
-              PluginFolder = Constants.PluginFolder.Value
-              ConfFolder = Constants.ConfFolder.Value
-              NodeName = ""
-              NodeRole = NodeRole.UnDefined
-              MasterNode = IPAddress.None }
-        setting
+        let fileText = Helpers.LoadFile(path)
+        let parsedResult = JsonConvert.DeserializeObject<ServerSettings>(fileText)
+        parsedResult.ConfFolder <- Helpers.GenerateAbsolutePath(parsedResult.ConfFolder)
+        parsedResult.DataFolder <- Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
+        parsedResult.PluginFolder <- Helpers.GenerateAbsolutePath(parsedResult.PluginFolder)
+        parsedResult
     
+    /// <summary>
     /// Initialize all the service locator member
+    /// </summary>
     let initServiceLocator() = 
         let pluginContainer = Factories.PluginContainer(true).Value
-        FlexSearch.Logging.FlexLogger.Logger.AddIndex("test", "test")
-        //ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
+        ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
-        //ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
-        //                                      (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
+        ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
+                                              (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
     
+    /// <summary>
+    /// Main entrypoint to load node
+    /// </summary>
     let loadNode() = 
         initServiceLocator()
         let settings = getServerSettings (Constants.ConfFolder.Value + "Config.json")
@@ -119,11 +121,13 @@ module Main =
         let nodeState = 
             { PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
               ServerSettings = settings
-              Indices = Unchecked.defaultof<_>
-              SlaveNodes = Unchecked.defaultof<_>
-              MasterNode = Unchecked.defaultof<_>
-              ConnectedSlaves = Unchecked.defaultof<_> }
-        container.TryAdd(9000, nodeState) |> ignore
-        Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>("http://localhost:9000") |> ignore
-        Console.ReadKey() |> ignore
-        ()
+              Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase) }
+        container.TryAdd(settings.HttpPort, nodeState) |> ignore
+        Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>(sprintf "http://*:%i" settings.HttpPort) |> ignore
+    
+    /// <summary>
+    /// Used by windows service (top shelf) to start and stop windows service.
+    /// </summary>
+    type NodeService() = 
+        member this.Start() = loadNode()
+        member this.Stop() = ()

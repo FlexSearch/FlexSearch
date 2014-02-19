@@ -14,30 +14,17 @@ module State =
     open FlexSearch.Api
     open FlexSearch.Core
     open FlexSearch.Core.Interface
-    open System.Collections.Concurrent
-    open System.Net
     open Microsoft.Owin
     open Owin
-
-    type NodeProperties = 
-        { /// Name of the node  
-          Name : string
-          /// Ip Address of the server
-          Address : System.Net.IPAddress
-          /// Port on which the server is listening
-          Port : int
-          /// Connection pool to the server
-          Pool : Pool.ObjectPool<Socket.TcpClient> }
+    open System.Collections.Concurrent
+    open System.Net
     
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
     type NodeState = 
         { PersistanceStore : IPersistanceStore
           ServerSettings : ServerSettings
-          Indices : ConcurrentDictionary<string, Index>
-          ConnectedSlaves : BlockingCollection<NodeProperties>
-          SlaveNodes : BlockingCollection<NodeProperties>
-          MasterNode : NodeProperties }
+          Indices : ConcurrentDictionary<string, Index> }
         member this.IndexExists(indexName : string) = 
             match this.Indices.TryGetValue(indexName) with
             | true, x -> Some(x)
@@ -56,6 +43,6 @@ module State =
     type IHttpModule = 
         abstract Routes : unit -> ServiceRoute []
         abstract Get : string * IOwinContext * NodeState -> unit
-        abstract Post : string * IOwinContext  * NodeState -> unit
-        abstract Put : string * IOwinContext  * NodeState -> unit
-        abstract Delete : string * IOwinContext  * NodeState -> unit
+        abstract Post : string * IOwinContext * NodeState -> unit
+        abstract Put : string * IOwinContext * NodeState -> unit
+        abstract Delete : string * IOwinContext * NodeState -> unit

@@ -67,13 +67,13 @@ namespace FlexSearch.Api
             if (field.Type == TType.List) {
               {
                 Filters = new List<TokenFilter>();
-                TList _list18 = iprot.ReadListBegin();
-                for( int _i19 = 0; _i19 < _list18.Count; ++_i19)
+                TList _list10 = iprot.ReadListBegin();
+                for( int _i11 = 0; _i11 < _list10.Count; ++_i11)
                 {
-                  TokenFilter _elem20 = new TokenFilter();
-                  _elem20 = new TokenFilter();
-                  _elem20.Read(iprot);
-                  Filters.Add(_elem20);
+                  TokenFilter _elem12 = new TokenFilter();
+                  _elem12 = new TokenFilter();
+                  _elem12.Read(iprot);
+                  Filters.Add(_elem12);
                 }
                 iprot.ReadListEnd();
               }
@@ -111,9 +111,9 @@ namespace FlexSearch.Api
       oprot.WriteFieldBegin(field);
       {
         oprot.WriteListBegin(new TList(TType.Struct, Filters.Count));
-        foreach (TokenFilter _iter21 in Filters)
+        foreach (TokenFilter _iter13 in Filters)
         {
-          _iter21.Write(oprot);
+          _iter13.Write(oprot);
         }
         oprot.WriteListEnd();
       }

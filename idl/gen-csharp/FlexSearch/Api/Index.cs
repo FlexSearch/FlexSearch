@@ -140,15 +140,15 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Analyzers = new Dictionary<string, AnalyzerProperties>();
-                TMap _map43 = iprot.ReadMapBegin();
-                for( int _i44 = 0; _i44 < _map43.Count; ++_i44)
+                TMap _map35 = iprot.ReadMapBegin();
+                for( int _i36 = 0; _i36 < _map35.Count; ++_i36)
                 {
-                  string _key45;
-                  AnalyzerProperties _val46;
-                  _key45 = iprot.ReadString();
-                  _val46 = new AnalyzerProperties();
-                  _val46.Read(iprot);
-                  Analyzers[_key45] = _val46;
+                  string _key37;
+                  AnalyzerProperties _val38;
+                  _key37 = iprot.ReadString();
+                  _val38 = new AnalyzerProperties();
+                  _val38.Read(iprot);
+                  Analyzers[_key37] = _val38;
                 }
                 iprot.ReadMapEnd();
               }
@@ -169,15 +169,15 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Fields = new Dictionary<string, FieldProperties>();
-                TMap _map47 = iprot.ReadMapBegin();
-                for( int _i48 = 0; _i48 < _map47.Count; ++_i48)
+                TMap _map39 = iprot.ReadMapBegin();
+                for( int _i40 = 0; _i40 < _map39.Count; ++_i40)
                 {
-                  string _key49;
-                  FieldProperties _val50;
-                  _key49 = iprot.ReadString();
-                  _val50 = new FieldProperties();
-                  _val50.Read(iprot);
-                  Fields[_key49] = _val50;
+                  string _key41;
+                  FieldProperties _val42;
+                  _key41 = iprot.ReadString();
+                  _val42 = new FieldProperties();
+                  _val42.Read(iprot);
+                  Fields[_key41] = _val42;
                 }
                 iprot.ReadMapEnd();
               }
@@ -206,15 +206,15 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Scripts = new Dictionary<string, ScriptProperties>();
-                TMap _map51 = iprot.ReadMapBegin();
-                for( int _i52 = 0; _i52 < _map51.Count; ++_i52)
+                TMap _map43 = iprot.ReadMapBegin();
+                for( int _i44 = 0; _i44 < _map43.Count; ++_i44)
                 {
-                  string _key53;
-                  ScriptProperties _val54;
-                  _key53 = iprot.ReadString();
-                  _val54 = new ScriptProperties();
-                  _val54.Read(iprot);
-                  Scripts[_key53] = _val54;
+                  string _key45;
+                  ScriptProperties _val46;
+                  _key45 = iprot.ReadString();
+                  _val46 = new ScriptProperties();
+                  _val46.Read(iprot);
+                  Scripts[_key45] = _val46;
                 }
                 iprot.ReadMapEnd();
               }
@@ -226,15 +226,15 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 SearchProfiles = new Dictionary<string, SearchQuery>();
-                TMap _map55 = iprot.ReadMapBegin();
-                for( int _i56 = 0; _i56 < _map55.Count; ++_i56)
+                TMap _map47 = iprot.ReadMapBegin();
+                for( int _i48 = 0; _i48 < _map47.Count; ++_i48)
                 {
-                  string _key57;
-                  SearchQuery _val58;
-                  _key57 = iprot.ReadString();
-                  _val58 = new SearchQuery();
-                  _val58.Read(iprot);
-                  SearchProfiles[_key57] = _val58;
+                  string _key49;
+                  SearchQuery _val50;
+                  _key49 = iprot.ReadString();
+                  _val50 = new SearchQuery();
+                  _val50.Read(iprot);
+                  SearchProfiles[_key49] = _val50;
                 }
                 iprot.ReadMapEnd();
               }
@@ -281,10 +281,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.Struct, Analyzers.Count));
-          foreach (string _iter59 in Analyzers.Keys)
+          foreach (string _iter51 in Analyzers.Keys)
           {
-            oprot.WriteString(_iter59);
-            Analyzers[_iter59].Write(oprot);
+            oprot.WriteString(_iter51);
+            Analyzers[_iter51].Write(oprot);
           }
           oprot.WriteMapEnd();
         }
@@ -302,10 +302,10 @@ namespace FlexSearch.Api
       oprot.WriteFieldBegin(field);
       {
         oprot.WriteMapBegin(new TMap(TType.String, TType.Struct, Fields.Count));
-        foreach (string _iter60 in Fields.Keys)
+        foreach (string _iter52 in Fields.Keys)
         {
-          oprot.WriteString(_iter60);
-          Fields[_iter60].Write(oprot);
+          oprot.WriteString(_iter52);
+          Fields[_iter52].Write(oprot);
         }
         oprot.WriteMapEnd();
       }
@@ -329,10 +329,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.Struct, Scripts.Count));
-          foreach (string _iter61 in Scripts.Keys)
+          foreach (string _iter53 in Scripts.Keys)
           {
-            oprot.WriteString(_iter61);
-            Scripts[_iter61].Write(oprot);
+            oprot.WriteString(_iter53);
+            Scripts[_iter53].Write(oprot);
           }
           oprot.WriteMapEnd();
         }
@@ -345,10 +345,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.Struct, SearchProfiles.Count));
-          foreach (string _iter62 in SearchProfiles.Keys)
+          foreach (string _iter54 in SearchProfiles.Keys)
           {
-            oprot.WriteString(_iter62);
-            SearchProfiles[_iter62].Write(oprot);
+            oprot.WriteString(_iter54);
+            SearchProfiles[_iter54].Write(oprot);
           }
           oprot.WriteMapEnd();
         }

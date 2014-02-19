@@ -34,7 +34,7 @@ namespace java org.FlexSearch.Api.Exception
 //	Exceptions
 // ----------------------------------------------------------------------------
 
-exception InvalidOperation {
+struct InvalidOperation {
 	1: string DeveloperMessage
 	2: string UserMessage
 	3: i32 ErrorCode
@@ -43,6 +43,52 @@ exception InvalidOperation {
 // ----------------------------------------------------------------------------
 //	Specialized Exceptions
 // ----------------------------------------------------------------------------
-const InvalidOperation INDEX_NOT_FOUND = {"DeveloperMessage" : "The requested index does not exist.", "UserMessage" : "The requested index does not exist.", "ErrorCode": 1000}
-const InvalidOperation INDEX_ALREADY_EXISTS = {"DeveloperMessage" : "The requested index already exist.", "UserMessage" : "The requested index already exist.", "ErrorCode": 1002}
-const InvalidOperation INDEX_SHOULD_BE_OFFLINE = {"DeveloperMessage" : "Index should be made offline before attempting to update index settings.", "UserMessage" : "Index should be made offline before attempting the operation.", "ErrorCode": 1003}
+
+const InvalidOperation INDEX_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "The requested index does not exist.", 
+		"UserMessage" : "The requested index does not exist.", 
+		"ErrorCode": 1000
+	}
+	
+const InvalidOperation INDEX_ALREADY_EXISTS = 
+	{
+		"DeveloperMessage" : "The requested index already exist.", 
+		"UserMessage" : "The requested index already exist.", 
+		"ErrorCode": 1002
+	}
+	
+const InvalidOperation INDEX_SHOULD_BE_OFFLINE = 
+	{
+		"DeveloperMessage" : "Index should be made offline before attempting to update index settings.", 
+		"UserMessage" : "Index should be made offline before attempting the operation.", 
+		"ErrorCode": 1003
+	}
+	
+const InvalidOperation INDEX_IS_OFFLINE = 
+	{
+		"DeveloperMessage" : "The index is offline or closing. Please bring the index online to use it.", 
+		"UserMessage" : "The index is offline or closing. Please bring the index online to use it.", 
+		"ErrorCode": 1004
+	}
+	
+const InvalidOperation INDEX_IS_OPENING = 
+	{
+		"DeveloperMessage" : "The index is in opening state. Please wait some time before making another request.", 
+		"UserMessage" : "The index is in opening state. Please wait some time before making another request.", 
+		"ErrorCode": 1005
+	}
+	
+const InvalidOperation INDEX_REGISTERATION_MISSING = 
+	{
+		"DeveloperMessage" : "Registeration information associated with the index is missing.", 
+		"UserMessage" : "Registeration information associated with the index is missing.",
+		"ErrorCode": 1006
+	}
+	
+const InvalidOperation INDEXING_DOCUMENT_ID_MISSING = 
+	{
+		"DeveloperMessage" : "Document id missing.", 
+		"UserMessage" : "Document Id is required in order to index an document. Please specify _documentid and submit the document for indexing.",
+		"ErrorCode": 1007
+	}	

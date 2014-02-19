@@ -9,7 +9,6 @@ namespace FlexSearch.Api
 {
   public enum IndexVersion
   {
-    Lucene46 = 1,
-    Lucene47 = 2,
+    Lucene47 = 1,
   }
 }

@@ -86,14 +86,14 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Parameters = new Dictionary<string, string>();
-                TMap _map8 = iprot.ReadMapBegin();
-                for( int _i9 = 0; _i9 < _map8.Count; ++_i9)
+                TMap _map0 = iprot.ReadMapBegin();
+                for( int _i1 = 0; _i1 < _map0.Count; ++_i1)
                 {
-                  string _key10;
-                  string _val11;
-                  _key10 = iprot.ReadString();
-                  _val11 = iprot.ReadString();
-                  Parameters[_key10] = _val11;
+                  string _key2;
+                  string _val3;
+                  _key2 = iprot.ReadString();
+                  _val3 = iprot.ReadString();
+                  Parameters[_key2] = _val3;
                 }
                 iprot.ReadMapEnd();
               }
@@ -129,10 +129,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.String, Parameters.Count));
-          foreach (string _iter12 in Parameters.Keys)
+          foreach (string _iter4 in Parameters.Keys)
           {
-            oprot.WriteString(_iter12);
-            oprot.WriteString(Parameters[_iter12]);
+            oprot.WriteString(_iter4);
+            oprot.WriteString(Parameters[_iter4]);
           }
           oprot.WriteMapEnd();
         }

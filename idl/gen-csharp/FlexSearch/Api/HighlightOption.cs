@@ -123,12 +123,12 @@ namespace FlexSearch.Api
             if (field.Type == TType.List) {
               {
                 HighlightedFields = new List<string>();
-                TList _list22 = iprot.ReadListBegin();
-                for( int _i23 = 0; _i23 < _list22.Count; ++_i23)
+                TList _list14 = iprot.ReadListBegin();
+                for( int _i15 = 0; _i15 < _list14.Count; ++_i15)
                 {
-                  string _elem24 = null;
-                  _elem24 = iprot.ReadString();
-                  HighlightedFields.Add(_elem24);
+                  string _elem16 = null;
+                  _elem16 = iprot.ReadString();
+                  HighlightedFields.Add(_elem16);
                 }
                 iprot.ReadListEnd();
               }
@@ -180,9 +180,9 @@ namespace FlexSearch.Api
       oprot.WriteFieldBegin(field);
       {
         oprot.WriteListBegin(new TList(TType.String, HighlightedFields.Count));
-        foreach (string _iter25 in HighlightedFields)
+        foreach (string _iter17 in HighlightedFields)
         {
-          oprot.WriteString(_iter25);
+          oprot.WriteString(_iter17);
         }
         oprot.WriteListEnd();
       }

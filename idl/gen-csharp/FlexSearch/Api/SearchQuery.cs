@@ -197,12 +197,12 @@ namespace FlexSearch.Api
             if (field.Type == TType.List) {
               {
                 Columns = new List<string>();
-                TList _list26 = iprot.ReadListBegin();
-                for( int _i27 = 0; _i27 < _list26.Count; ++_i27)
+                TList _list18 = iprot.ReadListBegin();
+                for( int _i19 = 0; _i19 < _list18.Count; ++_i19)
                 {
-                  string _elem28 = null;
-                  _elem28 = iprot.ReadString();
-                  Columns.Add(_elem28);
+                  string _elem20 = null;
+                  _elem20 = iprot.ReadString();
+                  Columns.Add(_elem20);
                 }
                 iprot.ReadListEnd();
               }
@@ -259,13 +259,13 @@ namespace FlexSearch.Api
             if (field.Type == TType.List) {
               {
                 MissingValueCofiguration = new List<MissingValue>();
-                TList _list29 = iprot.ReadListBegin();
-                for( int _i30 = 0; _i30 < _list29.Count; ++_i30)
+                TList _list21 = iprot.ReadListBegin();
+                for( int _i22 = 0; _i22 < _list21.Count; ++_i22)
                 {
-                  MissingValue _elem31 = new MissingValue();
-                  _elem31 = new MissingValue();
-                  _elem31.Read(iprot);
-                  MissingValueCofiguration.Add(_elem31);
+                  MissingValue _elem23 = new MissingValue();
+                  _elem23 = new MissingValue();
+                  _elem23.Read(iprot);
+                  MissingValueCofiguration.Add(_elem23);
                 }
                 iprot.ReadListEnd();
               }
@@ -304,9 +304,9 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteListBegin(new TList(TType.String, Columns.Count));
-          foreach (string _iter32 in Columns)
+          foreach (string _iter24 in Columns)
           {
-            oprot.WriteString(_iter32);
+            oprot.WriteString(_iter24);
           }
           oprot.WriteListEnd();
         }
@@ -363,9 +363,9 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteListBegin(new TList(TType.Struct, MissingValueCofiguration.Count));
-          foreach (MissingValue _iter33 in MissingValueCofiguration)
+          foreach (MissingValue _iter25 in MissingValueCofiguration)
           {
-            _iter33.Write(oprot);
+            _iter25.Write(oprot);
           }
           oprot.WriteListEnd();
         }

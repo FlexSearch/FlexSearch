@@ -9,10 +9,7 @@ namespace FlexSearch.Api
 {
   public enum NodeRole
   {
-    ClusterMaster = 1,
-    ClusterSlave = 2,
-    Index = 3,
-    Query = 4,
-    UnDefined = 5,
+    Master = 1,
+    Slave = 2,
   }
 }

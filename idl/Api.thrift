@@ -35,11 +35,8 @@ namespace java org.FlexSearch.Api
 
 // Node role
 enum NodeRole {
-	ClusterMaster = 1
-    ClusterSlave = 2
-    Index = 3
-    Query = 4
-    UnDefined = 5	
+	Master = 1
+    Slave = 2
 }
 
 
@@ -114,8 +111,7 @@ enum ShardAllocationStrategy {
 
 
 enum IndexVersion {
-	Lucene46 = 1
-	Lucene47 = 2
+	Lucene47 = 1
 }
 
 
@@ -136,28 +132,8 @@ enum JobStatus {
 // ----------------------------------------------------------------------------
 //	Structs
 // ----------------------------------------------------------------------------
-struct Node {
-	1:	required string NodeName
-	2:	required string IpAddress
-	3:	required i32 Port
-	4:	required NodeRole NodeRole
-	5:	required i32 Priority
-}
-
-
-struct ShardAllocationDetail {
-	1:	required i16 ShardNumber
-	2:	required list<string> Nodes
-}
-
-
 struct ShardConfiguration {
-	1:	optional i16 ShardCount = 1
-    2:	optional i16 Replica = 1
-    3:	optional ShardAllocationStrategy AllocationStrategy = 2
-	4:	required list<ShardAllocationDetail> AllocationDetails
-	5:	optional bool AutoRebalance = false
-    6:	optional i32 AutoRebalanceTimeOut = 300
+	1:	optional i16 Count = 1
 }
 
 
@@ -170,7 +146,7 @@ struct IndexConfiguration {
 	// they are flushed to the Directory.
 	4:	optional i32 RamBufferSizeMb = 100
 	5:	optional i32 RefreshTimeMilliSec = 25
-	6:	optional IndexVersion IndexVersion = IndexVersion.Lucene46
+	6:	optional IndexVersion IndexVersion = IndexVersion.Lucene47
 }
 
 
@@ -263,6 +239,20 @@ struct SearchQuery {
 	7:	required string QueryString
 	8:	optional list<MissingValue> MissingValueCofiguration = {}
 	9:	optional MissingValueOption GlobalMissingValue = 1
+}
+
+
+// ----------------------------------------------------------------------------
+//	Server Settings
+// ----------------------------------------------------------------------------
+struct ServerSettings {
+	1:	optional i32 HttpPort = 9800
+	2:	optional i32 ThriftPort = 9900
+	3:	optional string DataFolder = "./data"
+	4:	optional string PluginFolder = "./plugins"
+	5:	optional string ConfFolder = "./conf"
+	6:	optional string NodeName = "FlexNode"
+	7:	optional NodeRole NodeRole = 1
 }
 
 

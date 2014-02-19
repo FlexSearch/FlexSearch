@@ -1,6 +1,9 @@
 ﻿{
   "HttpPort" : 9800,
-  "TcpPort" : 9900,
-  "IsMaster" : false,
-  "DataFolder" : "./data"
+  "ThriftPort" : 9900,
+  "DataFolder" : "./data",
+  "PluginFolder" : "./data",
+  "ConfFolder" : "./data",
+  "NodeName" : "FlexNode",
+  "NodeRole" : "Master"
 }

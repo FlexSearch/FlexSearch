@@ -35,12 +35,3 @@ include "Exception.thrift"
 // ----------------------------------------------------------------------------
 //	Index related
 // ----------------------------------------------------------------------------
-struct CreateIndex {
-	1:	required Api.Index Index
-	2:	optional bool Online = true
-}
-
-struct CreateIndexResponse {
-	1:	required Api.Index Index
-	2:	optional bool Online = true
-}

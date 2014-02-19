@@ -4,7 +4,7 @@ open System.IO
 let generateThriftFiles(filename) =
     let p = new System.Diagnostics.Process()
     p.StartInfo.FileName <- Path.Combine(__SOURCE_DIRECTORY__ , "thrift-0.9.1.exe")
-    printfn "Thrift Path:%s" p.StartInfo.FileName
+    // printfn "Thrift Path:%s" p.StartInfo.FileName
     if File.Exists(p.StartInfo.FileName) <> true then
         failwithf "Thrift compiler cannot be located: %s." p.StartInfo.FileName
     p.StartInfo.Arguments <- (sprintf "--gen csharp:serial,hashcode,wcf,union %s" filename)
@@ -12,9 +12,13 @@ let generateThriftFiles(filename) =
     p.StartInfo.RedirectStandardOutput <- true
     p.StartInfo.UseShellExecute <- false
     p.Start() |> ignore 
-    printfn "result ?"
-    printfn "result %A" (p.StandardOutput.ReadToEnd())
-    printfn "done"
+    let result = p.StandardOutput.ReadToEnd()
+    printf "Generating: %s " filename
+    if result = "" then
+        printfn " [Success]"
+    else 
+        printfn " [%A]" result
+    
 
 let addDataMemberOrder() =
     for file in Directory.GetFiles(__SOURCE_DIRECTORY__ + "\gen-csharp\FlexSearch\Api", "*.cs", System.IO.SearchOption.AllDirectories) do

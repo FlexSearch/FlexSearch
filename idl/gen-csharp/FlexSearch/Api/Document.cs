@@ -143,14 +143,14 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Fields = new Dictionary<string, string>();
-                TMap _map34 = iprot.ReadMapBegin();
-                for( int _i35 = 0; _i35 < _map34.Count; ++_i35)
+                TMap _map26 = iprot.ReadMapBegin();
+                for( int _i27 = 0; _i27 < _map26.Count; ++_i27)
                 {
-                  string _key36;
-                  string _val37;
-                  _key36 = iprot.ReadString();
-                  _val37 = iprot.ReadString();
-                  Fields[_key36] = _val37;
+                  string _key28;
+                  string _val29;
+                  _key28 = iprot.ReadString();
+                  _val29 = iprot.ReadString();
+                  Fields[_key28] = _val29;
                 }
                 iprot.ReadMapEnd();
               }
@@ -162,12 +162,12 @@ namespace FlexSearch.Api
             if (field.Type == TType.List) {
               {
                 Highlights = new List<string>();
-                TList _list38 = iprot.ReadListBegin();
-                for( int _i39 = 0; _i39 < _list38.Count; ++_i39)
+                TList _list30 = iprot.ReadListBegin();
+                for( int _i31 = 0; _i31 < _list30.Count; ++_i31)
                 {
-                  string _elem40 = null;
-                  _elem40 = iprot.ReadString();
-                  Highlights.Add(_elem40);
+                  string _elem32 = null;
+                  _elem32 = iprot.ReadString();
+                  Highlights.Add(_elem32);
                 }
                 iprot.ReadListEnd();
               }
@@ -239,10 +239,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.String, Fields.Count));
-          foreach (string _iter41 in Fields.Keys)
+          foreach (string _iter33 in Fields.Keys)
           {
-            oprot.WriteString(_iter41);
-            oprot.WriteString(Fields[_iter41]);
+            oprot.WriteString(_iter33);
+            oprot.WriteString(Fields[_iter33]);
           }
           oprot.WriteMapEnd();
         }
@@ -255,9 +255,9 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteListBegin(new TList(TType.String, Highlights.Count));
-          foreach (string _iter42 in Highlights)
+          foreach (string _iter34 in Highlights)
           {
-            oprot.WriteString(_iter42);
+            oprot.WriteString(_iter34);
           }
           oprot.WriteListEnd();
         }

@@ -22,7 +22,8 @@ namespace FlexSearch.Api.Exception
   #if !SILVERLIGHT
   [Serializable]
   #endif
-  public partial class InvalidOperation : TException, TBase
+  [DataContract(Namespace="")]
+  public partial class InvalidOperation : TBase
   {
     private string _DeveloperMessage;
     private string _UserMessage;
@@ -188,58 +189,6 @@ namespace FlexSearch.Api.Exception
       sb.Append(ErrorCode);
       sb.Append(")");
       return sb.ToString();
-    }
-
-  }
-
-
-  #if !SILVERLIGHT
-  [Serializable]
-  #endif
-  [DataContract]
-  public partial class InvalidOperationFault
-  {
-    private string _DeveloperMessage;
-    private string _UserMessage;
-    private int _ErrorCode;
-
-    [DataMember(Order = 4)]
-    public string DeveloperMessage
-    {
-      get
-      {
-        return _DeveloperMessage;
-      }
-      set
-      {
-        this._DeveloperMessage = value;
-      }
-    }
-
-    [DataMember(Order = 5)]
-    public string UserMessage
-    {
-      get
-      {
-        return _UserMessage;
-      }
-      set
-      {
-        this._UserMessage = value;
-      }
-    }
-
-    [DataMember(Order = 6)]
-    public int ErrorCode
-    {
-      get
-      {
-        return _ErrorCode;
-      }
-      set
-      {
-        this._ErrorCode = value;
-      }
     }
 
   }

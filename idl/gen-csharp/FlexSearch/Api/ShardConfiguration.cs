@@ -25,86 +25,19 @@ namespace FlexSearch.Api
   [DataContract(Namespace="")]
   public partial class ShardConfiguration : TBase
   {
-    private short _ShardCount;
-    private short _Replica;
-    private ShardAllocationStrategy _AllocationStrategy;
-    private bool _AutoRebalance;
-    private int _AutoRebalanceTimeOut;
+    private short _Count;
 
     [DataMember(Order = 1)]
-    public short ShardCount
+    public short Count
     {
       get
       {
-        return _ShardCount;
+        return _Count;
       }
       set
       {
-        __isset.ShardCount = true;
-        this._ShardCount = value;
-      }
-    }
-
-    [DataMember(Order = 2)]
-    public short Replica
-    {
-      get
-      {
-        return _Replica;
-      }
-      set
-      {
-        __isset.Replica = true;
-        this._Replica = value;
-      }
-    }
-
-    /// <summary>
-    /// 
-    /// <seealso cref="ShardAllocationStrategy"/>
-    /// </summary>
-    [DataMember(Order = 3)]
-    public ShardAllocationStrategy AllocationStrategy
-    {
-      get
-      {
-        return _AllocationStrategy;
-      }
-      set
-      {
-        __isset.AllocationStrategy = true;
-        this._AllocationStrategy = value;
-      }
-    }
-
-    [DataMember(Order = 4)]
-    public List<ShardAllocationDetail> AllocationDetails { get; set; }
-
-    [DataMember(Order = 5)]
-    public bool AutoRebalance
-    {
-      get
-      {
-        return _AutoRebalance;
-      }
-      set
-      {
-        __isset.AutoRebalance = true;
-        this._AutoRebalance = value;
-      }
-    }
-
-    [DataMember(Order = 6)]
-    public int AutoRebalanceTimeOut
-    {
-      get
-      {
-        return _AutoRebalanceTimeOut;
-      }
-      set
-      {
-        __isset.AutoRebalanceTimeOut = true;
-        this._AutoRebalanceTimeOut = value;
+        __isset.Count = true;
+        this._Count = value;
       }
     }
 
@@ -115,33 +48,16 @@ namespace FlexSearch.Api
     #endif
     [DataContract]
     public struct Isset {
-      public bool ShardCount;
-      public bool Replica;
-      public bool AllocationStrategy;
-      public bool AutoRebalance;
-      public bool AutoRebalanceTimeOut;
+      public bool Count;
     }
 
     public ShardConfiguration() {
-      this._ShardCount = 1;
-      this.__isset.ShardCount = true;
-      this._Replica = 1;
-      this.__isset.Replica = true;
-      this._AllocationStrategy = ShardAllocationStrategy.Manual;
-      this.__isset.AllocationStrategy = true;
-      this._AutoRebalance = false;
-      this.__isset.AutoRebalance = true;
-      this._AutoRebalanceTimeOut = 300;
-      this.__isset.AutoRebalanceTimeOut = true;
-    }
-
-    public ShardConfiguration(List<ShardAllocationDetail> AllocationDetails) : this() {
-      this.AllocationDetails = AllocationDetails;
+      this._Count = 1;
+      this.__isset.Count = true;
     }
 
     public void Read (TProtocol iprot)
     {
-      bool isset_AllocationDetails = false;
       TField field;
       iprot.ReadStructBegin();
       while (true)
@@ -154,54 +70,7 @@ namespace FlexSearch.Api
         {
           case 1:
             if (field.Type == TType.I16) {
-              ShardCount = iprot.ReadI16();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 2:
-            if (field.Type == TType.I16) {
-              Replica = iprot.ReadI16();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 3:
-            if (field.Type == TType.I32) {
-              AllocationStrategy = (ShardAllocationStrategy)iprot.ReadI32();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 4:
-            if (field.Type == TType.List) {
-              {
-                AllocationDetails = new List<ShardAllocationDetail>();
-                TList _list4 = iprot.ReadListBegin();
-                for( int _i5 = 0; _i5 < _list4.Count; ++_i5)
-                {
-                  ShardAllocationDetail _elem6 = new ShardAllocationDetail();
-                  _elem6 = new ShardAllocationDetail();
-                  _elem6.Read(iprot);
-                  AllocationDetails.Add(_elem6);
-                }
-                iprot.ReadListEnd();
-              }
-              isset_AllocationDetails = true;
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 5:
-            if (field.Type == TType.Bool) {
-              AutoRebalance = iprot.ReadBool();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 6:
-            if (field.Type == TType.I32) {
-              AutoRebalanceTimeOut = iprot.ReadI32();
+              Count = iprot.ReadI16();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -213,65 +82,18 @@ namespace FlexSearch.Api
         iprot.ReadFieldEnd();
       }
       iprot.ReadStructEnd();
-      if (!isset_AllocationDetails)
-        throw new TProtocolException(TProtocolException.INVALID_DATA);
     }
 
     public void Write(TProtocol oprot) {
       TStruct struc = new TStruct("ShardConfiguration");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
-      if (__isset.ShardCount) {
-        field.Name = "ShardCount";
+      if (__isset.Count) {
+        field.Name = "Count";
         field.Type = TType.I16;
         field.ID = 1;
         oprot.WriteFieldBegin(field);
-        oprot.WriteI16(ShardCount);
-        oprot.WriteFieldEnd();
-      }
-      if (__isset.Replica) {
-        field.Name = "Replica";
-        field.Type = TType.I16;
-        field.ID = 2;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteI16(Replica);
-        oprot.WriteFieldEnd();
-      }
-      if (__isset.AllocationStrategy) {
-        field.Name = "AllocationStrategy";
-        field.Type = TType.I32;
-        field.ID = 3;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteI32((int)AllocationStrategy);
-        oprot.WriteFieldEnd();
-      }
-      field.Name = "AllocationDetails";
-      field.Type = TType.List;
-      field.ID = 4;
-      oprot.WriteFieldBegin(field);
-      {
-        oprot.WriteListBegin(new TList(TType.Struct, AllocationDetails.Count));
-        foreach (ShardAllocationDetail _iter7 in AllocationDetails)
-        {
-          _iter7.Write(oprot);
-        }
-        oprot.WriteListEnd();
-      }
-      oprot.WriteFieldEnd();
-      if (__isset.AutoRebalance) {
-        field.Name = "AutoRebalance";
-        field.Type = TType.Bool;
-        field.ID = 5;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteBool(AutoRebalance);
-        oprot.WriteFieldEnd();
-      }
-      if (__isset.AutoRebalanceTimeOut) {
-        field.Name = "AutoRebalanceTimeOut";
-        field.Type = TType.I32;
-        field.ID = 6;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteI32(AutoRebalanceTimeOut);
+        oprot.WriteI16(Count);
         oprot.WriteFieldEnd();
       }
       oprot.WriteFieldStop();
@@ -282,41 +104,21 @@ namespace FlexSearch.Api
       var other = that as ShardConfiguration;
       if (other == null) return false;
       if (ReferenceEquals(this, other)) return true;
-      return ((__isset.ShardCount == other.__isset.ShardCount) && ((!__isset.ShardCount) || (System.Object.Equals(ShardCount, other.ShardCount))))
-        && ((__isset.Replica == other.__isset.Replica) && ((!__isset.Replica) || (System.Object.Equals(Replica, other.Replica))))
-        && ((__isset.AllocationStrategy == other.__isset.AllocationStrategy) && ((!__isset.AllocationStrategy) || (System.Object.Equals(AllocationStrategy, other.AllocationStrategy))))
-        && TCollections.Equals(AllocationDetails, other.AllocationDetails)
-        && ((__isset.AutoRebalance == other.__isset.AutoRebalance) && ((!__isset.AutoRebalance) || (System.Object.Equals(AutoRebalance, other.AutoRebalance))))
-        && ((__isset.AutoRebalanceTimeOut == other.__isset.AutoRebalanceTimeOut) && ((!__isset.AutoRebalanceTimeOut) || (System.Object.Equals(AutoRebalanceTimeOut, other.AutoRebalanceTimeOut))));
+      return ((__isset.Count == other.__isset.Count) && ((!__isset.Count) || (System.Object.Equals(Count, other.Count))));
     }
 
     public override int GetHashCode() {
       int hashcode = 0;
       unchecked {
-        hashcode = (hashcode * 397) ^ (!__isset.ShardCount ? 0 : (ShardCount.GetHashCode()));
-        hashcode = (hashcode * 397) ^ (!__isset.Replica ? 0 : (Replica.GetHashCode()));
-        hashcode = (hashcode * 397) ^ (!__isset.AllocationStrategy ? 0 : (AllocationStrategy.GetHashCode()));
-        hashcode = (hashcode * 397) ^ ((TCollections.GetHashCode(AllocationDetails)));
-        hashcode = (hashcode * 397) ^ (!__isset.AutoRebalance ? 0 : (AutoRebalance.GetHashCode()));
-        hashcode = (hashcode * 397) ^ (!__isset.AutoRebalanceTimeOut ? 0 : (AutoRebalanceTimeOut.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.Count ? 0 : (Count.GetHashCode()));
       }
       return hashcode;
     }
 
     public override string ToString() {
       StringBuilder sb = new StringBuilder("ShardConfiguration(");
-      sb.Append("ShardCount: ");
-      sb.Append(ShardCount);
-      sb.Append(",Replica: ");
-      sb.Append(Replica);
-      sb.Append(",AllocationStrategy: ");
-      sb.Append(AllocationStrategy);
-      sb.Append(",AllocationDetails: ");
-      sb.Append(AllocationDetails);
-      sb.Append(",AutoRebalance: ");
-      sb.Append(AutoRebalance);
-      sb.Append(",AutoRebalanceTimeOut: ");
-      sb.Append(AutoRebalanceTimeOut);
+      sb.Append("Count: ");
+      sb.Append(Count);
       sb.Append(")");
       return sb.ToString();
     }
