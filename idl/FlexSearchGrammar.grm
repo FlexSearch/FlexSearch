@@ -5,7 +5,7 @@
 "About"    = 'Flex Search Parser'
 ! -----------------------------------------------------------------------------------
 
-"Start Symbol" = <Expression>
+"Start Symbol" = <PredicateOr>
 
 ! =============================================================================
 ! Terminals
@@ -17,28 +17,40 @@ Identifier = {Letter}{Alphanumeric}*
 Integer = {Digit}+
                             
 ! ============================================================================= 
-! Expressions
+! Predicates
 ! =============================================================================
+!<Predicate> ::= <PredicateOr>
 
-<Expression>  ::= <And_Expression> OR <Expression>
-               |  <And_Expression>
+<PredicateOr>  ::= <PredicateAnd> OR <PredicateAnd>
+               |  <PredicateAnd>
 
+<PredicateAnd>     ::= <PredicateNot> AND <PredicateNot>
+                      |  <PredicateNot>
 
-<And_Expression>     ::= <Condition> AND <And_Expression>
-                      |  <Condition>
+<PredicateNot> ::= NOT <PredicateCompare>
+                 | <PredicateCompare>
 
+! =============================================================================
+! The below is an left recursive grammar and I want to avoid it to 
+! enable easy migration to something like ANTLR                 
+!<PredicateOr>  ::= <PredicateAnd> OR <PredicateOr>
+!               |  <PredicateAnd>
+!
+!<PredicateAnd>     ::= <PredicateNot> AND <PredicateAnd>
+!                      |  <PredicateNot>
+!
+!<PredicateNot> ::= NOT <PredicateCompare>
+!                 | <PredicateCompare>
+! =============================================================================
+                 
+<PredicateCompare>    ::= Identifier Identifier <ValueIdentifier> <BoostIdentifier>
+                |  '(' <PredicateOr> ')'
 
-<Condition>    ::= Identifier <Not_Identifier> Identifier <Value_Identifier> <Boost_Identifier>
-                |  '(' <Expression> ')'
-
-<Value_Identifier> ::= Value
+<ValueIdentifier> ::= Value
                     |  '[' <List> ']'
 
 <List> ::= <List> ',' Value
         |  Value
-                                                
-<Not_Identifier> ::= Not
-                  |  
-                                        
-<Boost_Identifier>     ::= Boost Integer
+                                                                                     
+<BoostIdentifier>     ::= BOOST Integer
                         |  

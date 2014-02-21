@@ -164,9 +164,9 @@ module Interface =
     // ----------------------------------------------------------------------------     
     /// FlexQuery interface
     // ----------------------------------------------------------------------------     
-//    type IFlexQuery =
-//        // abstract member QueryName   :   unit -> string[]
-//        abstract member GetQuery    :   FlexField * SearchCondition -> Option<Query>
+    type IFlexQuery =
+        // abstract member QueryName   :   unit -> string[]
+        abstract member GetQuery    :   FlexField * string[] -> Option<Query>
 //
 //
 //    // ----------------------------------------------------------------------------     
