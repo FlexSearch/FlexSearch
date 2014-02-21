@@ -8,27 +8,13 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
-open System
-open System.Collections.Generic
-open System.IO
-open System.Reflection
-open System.Resources
-open System.Runtime.Serialization
-open com.calitha.commons
-open com.calitha.goldparser.lalr
-open org.apache.lucene.search
-
-// ----------------------------------------------------------------------------
-/// Default query parser used by Flex
-// ----------------------------------------------------------------------------
 module Parsers = 
     open FParsec
     open FParsec.CharParsers
     open FParsec.Primitives
+    open System
     
     /// <summary>
     /// Represents the Values which can be used in the querystring
