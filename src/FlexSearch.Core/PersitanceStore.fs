@@ -108,6 +108,16 @@ module Store =
                 while reader.Read() do
                     result.Add(Newtonsoft.Json.JsonConvert.DeserializeObject<'T>(reader.GetString(2)))
                 result :> IEnumerable<'T>
+            
+            member this.Delete<'T> (key) =
+                let instanceType = typeof<'T>.FullName
+                if key = "" then
+                    false
+                else
+                    let sql = sprintf "DELETE FROM keyvalue WHERE type='%s' and key='%s'" instanceType key
+                    let command = new SQLiteCommand(sql, db.Value)
+                    command.ExecuteNonQuery() |> ignore
+                    true
 
             member this.Put<'T> (key) (instance : 'T) =
                 let instanceType = typeof<'T>.FullName
