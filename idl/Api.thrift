@@ -133,7 +133,7 @@ enum JobStatus {
 //	Structs
 // ----------------------------------------------------------------------------
 struct ShardConfiguration {
-	1:	optional i16 Count = 1
+	1:	optional i32 ShardCount = 1
 }
 
 

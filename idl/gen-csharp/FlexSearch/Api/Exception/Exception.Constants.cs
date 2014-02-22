@@ -33,9 +33,9 @@ namespace FlexSearch.Api.Exception
       INDEX_ALREADY_EXISTS.DeveloperMessage = "The requested index already exist.";
       INDEX_ALREADY_EXISTS.UserMessage = "The requested index already exist.";
       INDEX_ALREADY_EXISTS.ErrorCode = 1002;
-      INDEX_SHOULD_BE_OFFLINE.DeveloperMessage = "Index should be made offline before attempting to update index settings.";
       INDEX_SHOULD_BE_OFFLINE.UserMessage = "Index should be made offline before attempting the operation.";
       INDEX_SHOULD_BE_OFFLINE.ErrorCode = 1003;
+      INDEX_SHOULD_BE_OFFLINE.DeveloperMessage = "Index should be made offline before attempting to update index settings.";
       INDEX_IS_OFFLINE.DeveloperMessage = "The index is offline or closing. Please bring the index online to use it.";
       INDEX_IS_OFFLINE.UserMessage = "The index is offline or closing. Please bring the index online to use it.";
       INDEX_IS_OFFLINE.ErrorCode = 1004;

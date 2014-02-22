@@ -25,19 +25,19 @@ namespace FlexSearch.Api
   [DataContract(Namespace="")]
   public partial class ShardConfiguration : TBase
   {
-    private short _Count;
+    private int _ShardCount;
 
     [DataMember(Order = 1)]
-    public short Count
+    public int ShardCount
     {
       get
       {
-        return _Count;
+        return _ShardCount;
       }
       set
       {
-        __isset.Count = true;
-        this._Count = value;
+        __isset.ShardCount = true;
+        this._ShardCount = value;
       }
     }
 
@@ -48,12 +48,12 @@ namespace FlexSearch.Api
     #endif
     [DataContract]
     public struct Isset {
-      public bool Count;
+      public bool ShardCount;
     }
 
     public ShardConfiguration() {
-      this._Count = 1;
-      this.__isset.Count = true;
+      this._ShardCount = 1;
+      this.__isset.ShardCount = true;
     }
 
     public void Read (TProtocol iprot)
@@ -69,8 +69,8 @@ namespace FlexSearch.Api
         switch (field.ID)
         {
           case 1:
-            if (field.Type == TType.I16) {
-              Count = iprot.ReadI16();
+            if (field.Type == TType.I32) {
+              ShardCount = iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -88,12 +88,12 @@ namespace FlexSearch.Api
       TStruct struc = new TStruct("ShardConfiguration");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
-      if (__isset.Count) {
-        field.Name = "Count";
-        field.Type = TType.I16;
+      if (__isset.ShardCount) {
+        field.Name = "ShardCount";
+        field.Type = TType.I32;
         field.ID = 1;
         oprot.WriteFieldBegin(field);
-        oprot.WriteI16(Count);
+        oprot.WriteI32(ShardCount);
         oprot.WriteFieldEnd();
       }
       oprot.WriteFieldStop();
@@ -104,21 +104,21 @@ namespace FlexSearch.Api
       var other = that as ShardConfiguration;
       if (other == null) return false;
       if (ReferenceEquals(this, other)) return true;
-      return ((__isset.Count == other.__isset.Count) && ((!__isset.Count) || (System.Object.Equals(Count, other.Count))));
+      return ((__isset.ShardCount == other.__isset.ShardCount) && ((!__isset.ShardCount) || (System.Object.Equals(ShardCount, other.ShardCount))));
     }
 
     public override int GetHashCode() {
       int hashcode = 0;
       unchecked {
-        hashcode = (hashcode * 397) ^ (!__isset.Count ? 0 : (Count.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.ShardCount ? 0 : (ShardCount.GetHashCode()));
       }
       return hashcode;
     }
 
     public override string ToString() {
       StringBuilder sb = new StringBuilder("ShardConfiguration(");
-      sb.Append("Count: ");
-      sb.Append(Count);
+      sb.Append("ShardCount: ");
+      sb.Append(ShardCount);
       sb.Append(")");
       return sb.ToString();
     }
