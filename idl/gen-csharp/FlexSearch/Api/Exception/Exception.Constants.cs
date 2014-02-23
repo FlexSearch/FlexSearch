@@ -25,6 +25,7 @@ namespace FlexSearch.Api.Exception
     public static InvalidOperation INDEX_IS_OPENING = new InvalidOperation();
     public static InvalidOperation INDEX_REGISTERATION_MISSING = new InvalidOperation();
     public static InvalidOperation INDEXING_DOCUMENT_ID_MISSING = new InvalidOperation();
+    public static InvalidOperation ERROR_OPENING_INDEXWRITER = new InvalidOperation();
     static ExceptionConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -33,9 +34,9 @@ namespace FlexSearch.Api.Exception
       INDEX_ALREADY_EXISTS.DeveloperMessage = "The requested index already exist.";
       INDEX_ALREADY_EXISTS.UserMessage = "The requested index already exist.";
       INDEX_ALREADY_EXISTS.ErrorCode = 1002;
+      INDEX_SHOULD_BE_OFFLINE.DeveloperMessage = "Index should be made offline before attempting to update index settings.";
       INDEX_SHOULD_BE_OFFLINE.UserMessage = "Index should be made offline before attempting the operation.";
       INDEX_SHOULD_BE_OFFLINE.ErrorCode = 1003;
-      INDEX_SHOULD_BE_OFFLINE.DeveloperMessage = "Index should be made offline before attempting to update index settings.";
       INDEX_IS_OFFLINE.DeveloperMessage = "The index is offline or closing. Please bring the index online to use it.";
       INDEX_IS_OFFLINE.UserMessage = "The index is offline or closing. Please bring the index online to use it.";
       INDEX_IS_OFFLINE.ErrorCode = 1004;
@@ -48,6 +49,9 @@ namespace FlexSearch.Api.Exception
       INDEXING_DOCUMENT_ID_MISSING.DeveloperMessage = "Document id missing.";
       INDEXING_DOCUMENT_ID_MISSING.UserMessage = "Document Id is required in order to index an document. Please specify _documentid and submit the document for indexing.";
       INDEXING_DOCUMENT_ID_MISSING.ErrorCode = 1007;
+      ERROR_OPENING_INDEXWRITER.DeveloperMessage = "{To be populated by the developer code}";
+      ERROR_OPENING_INDEXWRITER.UserMessage = "Unable to open index writer.";
+      ERROR_OPENING_INDEXWRITER.ErrorCode = 1008;
     }
   }
 }

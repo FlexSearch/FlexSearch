@@ -34,6 +34,7 @@ type ValidationBuilder() =
     
     member this.ReturnFrom v = v
     member this.Return v = Choice1Of2(v)
+    member this.Zero() = Choice1Of2()
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
@@ -84,6 +85,8 @@ module Helpers =
     open System.Security.AccessControl
     open System.Security.Principal
     
+    let maybe = new ValidationBuilder()
+
     // Returns current date time in Flex compatible format
     let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmss"))
     

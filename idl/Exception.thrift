@@ -92,3 +92,10 @@ const InvalidOperation INDEXING_DOCUMENT_ID_MISSING =
 		"UserMessage" : "Document Id is required in order to index an document. Please specify _documentid and submit the document for indexing.",
 		"ErrorCode": 1007
 	}	
+
+const InvalidOperation ERROR_OPENING_INDEXWRITER = 
+	{
+		"DeveloperMessage" : "{To be populated by the developer code}", 
+		"UserMessage" : "Unable to open index writer.",
+		"ErrorCode": 1008
+	}	

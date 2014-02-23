@@ -40,8 +40,6 @@ open org.apache.lucene.store
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Index = 
-    let maybe = new ValidationBuilder()
-    
     /// <summary>
     /// Represents a dummy lucene document. There will be one per index stored in a dictionary
     /// </summary>
@@ -103,53 +101,65 @@ module Index =
             }
         loop delay flexIndex.Token
     
-    // Add index to the registeration
+    /// <summary>
+    /// Add index to the registeration
+    /// </summary>
+    /// <param name="state">Index state</param>
+    /// <param name="flexIndexSetting">Index setting</param>
     let private addIndex (state : IndicesState, flexIndexSetting : FlexIndexSetting) = 
-        // Add index status
-        state.IndexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
-        // Initialize shards
-        let shards = 
-            Array.init flexIndexSetting.ShardConfiguration.ShardCount (fun a -> 
-                let writers = 
-                    IO.GetIndexWriter(flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
-                if writers.IsNone then 
-                    //logger.Error("Unable to create the requested index writer.")
-                    failwith "Unable to create the requested index writer."
-                let (indexWriter, trackingIndexWriter) = writers.Value
-                // Based on Lucene 4.4 the nrtmanager is replaced with ControlledRealTimeReopenThread which can take any
-                // reference manager
-                let nrtManager = new SearcherManager(indexWriter, true, new SearcherFactory())
-                
-                let shard = 
-                    { ShardNumber = a
-                      NRTManager = nrtManager
-                      ReopenThread = 
-                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), float (5))
-                      IndexWriter = indexWriter
-                      TrackingIndexWriter = trackingIndexWriter }
-                shard)
-        
-        let flexIndex = 
-            { IndexSetting = flexIndexSetting
-              Shards = shards
-              Token = new System.Threading.CancellationTokenSource() }
-        
-        // Add the scheduler for the index
-        // Commit Scheduler
-        Async.Start(scheduleIndexJob (flexIndexSetting.IndexConfiguration.CommitTimeSec * 1000) commitJob flexIndex)
-        // NRT Scheduler
-        Async.Start(scheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliSec refreshIndexJob flexIndex)
-        // Add the index to the registeration
-        state.IndexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore
-        state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
+        maybe { 
+            /// Generate shards for the newly added index
+            let generateShards flexIndexSetting = 
+                try 
+                    let shards = 
+                        Array.init flexIndexSetting.ShardConfiguration.ShardCount (fun a -> 
+                            let writers = 
+                                IO.GetIndexWriter
+                                    (flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
+                            match writers with
+                            | Choice2Of2(e) -> failwith e.UserMessage
+                            | Choice1Of2(indexWriter, trackingIndexWriter) -> 
+                                // Based on Lucene 4.4 the nrtmanager is replaced with ControlledRealTimeReopenThread which can take any
+                                // reference manager
+                                let nrtManager = new SearcherManager(indexWriter, true, new SearcherFactory())
+                                
+                                let shard = 
+                                    { ShardNumber = a
+                                      NRTManager = nrtManager
+                                      ReopenThread = 
+                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
+                                                                             float (5))
+                                      IndexWriter = indexWriter
+                                      TrackingIndexWriter = trackingIndexWriter }
+                                shard)
+                    Choice1Of2(shards)
+                with e -> 
+                    Choice2Of2
+                        (InvalidOperation.WithDeveloperMessage(ExceptionConstants.ERROR_OPENING_INDEXWRITER, e.Message))
+            // Add index status
+            state.IndexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
+            let! shards = generateShards flexIndexSetting
+            let flexIndex = 
+                { IndexSetting = flexIndexSetting
+                  Shards = shards
+                  Token = new System.Threading.CancellationTokenSource() }
+            // Add the scheduler for the index
+            // Commit Scheduler
+            Async.Start(scheduleIndexJob (flexIndexSetting.IndexConfiguration.CommitTimeSec * 1000) commitJob flexIndex)
+            // NRT Scheduler
+            Async.Start
+                (scheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliSec refreshIndexJob flexIndex)
+            // Add the index to the registeration
+            state.IndexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore
+            state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
+        }
     
-    let private loadAllIndex (state : IndicesState, persistanceStore : IPersistanceStore, 
-                              flexIndexSetting : FlexIndexSetting) = 
+    let private loadAllIndex (state : IndicesState, persistanceStore : IPersistanceStore) = 
         for x in persistanceStore.GetAll<Index>() do
             if x.Online then 
                 try 
                     let flexIndexSetting = ServiceLocator.SettingsBuilder.BuildSetting(x)
-                    addIndex (state, flexIndexSetting)
+                    addIndex (state, flexIndexSetting) |> ignore
                 //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
                 with ex -> ()
             //indexLogger.Error("Loading index from file failed.", ex)
@@ -182,11 +192,11 @@ module Index =
             match status with
             | IndexState.Online -> 
                 match state.IndexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex) -> flexIndex
-                | _ -> raise (IndexRegisterationMissingException indexRegisterationMissingMessage)
-            | IndexState.Opening -> raise (IndexIsOpeningException indexIsOpeningMessage)
-            | IndexState.Offline | IndexState.Closing -> raise (IndexIsOfflineException indexIsOfflineMessage)
-        | _ -> raise (IndexDoesNotExistException indexDoesNotExistMessage)
+                | (true, flexIndex) -> Choice1Of2(flexIndex)
+                | _ -> Choice2Of2(ExceptionConstants.INDEX_REGISTERATION_MISSING)
+            | IndexState.Opening -> Choice2Of2(ExceptionConstants.INDEX_IS_OPENING)
+            | IndexState.Offline | IndexState.Closing -> Choice2Of2(ExceptionConstants.INDEX_IS_OFFLINE)
+        | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
     
     // ----------------------------------------------------------------------------               
     // Function to check if the requested index is available. If yes then tries to 
@@ -208,9 +218,6 @@ module Index =
                 let typeField = new StringField(Constants.TypeField, indexName, Field.Store.YES)
                 luceneDocument.add (typeField)
                 fieldLookup.Add(Constants.TypeField, typeField)
-                let versionField = new IntField(Constants.VersionField, 0, Field.Store.YES)
-                luceneDocument.add (typeField)
-                fieldLookup.Add(Constants.VersionField, typeField)
                 let lastModifiedField = 
                     new LongField(Constants.LastModifiedField, GetCurrentTimeAsLong(), Field.Store.YES)
                 luceneDocument.add (lastModifiedField)
@@ -218,8 +225,7 @@ module Index =
                 for field in flexIndex.IndexSetting.Fields do
                     // Ignore these 4 fields here.
                     if (field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
-                        || field.FieldName = Constants.LastModifiedField || field.FieldName = Constants.VersionField) then 
-                        ()
+                        || field.FieldName = Constants.LastModifiedField) then ()
                     else 
                         let defaultField = FlexField.CreateDefaultLuceneField field
                         luceneDocument.add (defaultField)
@@ -239,11 +245,10 @@ module Index =
                                 version : int, fields : Dictionary<string, string>) = 
         documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(documentId)
         documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(GetCurrentTimeAsLong())
-        documentTemplate.FieldsLookup.[Constants.VersionField].setIntValue(version)
         for field in flexIndex.IndexSetting.Fields do
             // Ignore these 3 fields here.
             if (field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
-                || field.FieldName = Constants.LastModifiedField || field.FieldName = Constants.VersionField) then ()
+                || field.FieldName = Constants.LastModifiedField) then ()
             else 
                 // If it is computed field then generate and add it otherwise follow standard path
                 match field.Source with
@@ -272,97 +277,91 @@ module Index =
         maybe { 
             let! (flexIndex, documentTemplate) = indexExists (state, flexIndex.IndexSetting.IndexName)
             match indexMessage with
-            | Create(documentId, fields) ->                 
+            | Create(documentId, fields) -> 
                 let (targetIndex, documentTemplate) = 
                     updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
-                versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId 1 |> ignore
                 flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
                 return! Choice1Of2()
             | Update(documentId, fields) -> 
-                // It is a simple update so get the version number and increment it
-                match versionCache.GetVersion flexIndex.IndexSetting.IndexName documentId with
-                | Some(x) -> 
-                    let (version, dateTime) = x
-                    match versionCache.UpdateVersion flexIndex.IndexSetting.IndexName documentId version dateTime 
-                                (version + 1) with
-                    | true -> 
-                        // Version was updated successfully so let's update the document
-                        let (flexIndex, targetIndex, documentTemplate) = 
-                            UpdateDocument(flexIndex, documentTemplate, documentId, (version + 1), fields)
-                        flexIndex.Shards.[targetIndex]
-                            .TrackingIndexWriter.updateDocument(new Term("id", documentId), 
-                                                                documentTemplate.Document) |> ignore
-                    | false -> failwithf "Version mismatch"
-                | None -> 
-                    // Document was not found in version cache so retrieve it from the index
-                    let (flexIndex, targetIndex, documentTemplate) = 
-                        UpdateDocument(flexIndex, documentTemplate, documentId, 1, fields)
-                    let query = new TermQuery(new Term("id", documentId))
-                    let searcher = 
-                        (flexIndex.Shards.[targetIndex].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
-                    let topDocs = searcher.search (query, 1)
-                    let hits = topDocs.scoreDocs
-                    if hits.Length = 0 then 
-                        // It is actually a create as the document does not exist
-                        versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId 1 |> ignore
-                        flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) 
-                        |> ignore
-                    else 
-                        let version = int (searcher.doc(hits.[0].doc).get("version"))
-                        versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId (version + 1) |> ignore
-                        flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) 
-                        |> ignore
-                (true, "")         
+                let (targetIndex, documentTemplate) = 
+                    updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
+                flexIndex.Shards.[targetIndex]
+                    .TrackingIndexWriter.updateDocument(new Term("id", documentId), documentTemplate.Document) |> ignore
+                return! Choice1Of2()
+            | Delete(documentId) -> 
+                let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length - 1
+                flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term("id", documentId)) |> ignore
+                return! Choice1Of2()
+            | BulkDeleteByIndexName -> 
+                flexIndex.Shards |> Array.iter (fun shard -> shard.TrackingIndexWriter.deleteAll() |> ignore)
+                return! Choice1Of2()
+            | Commit -> 
+                flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit())
+                return! Choice1Of2()
             | _ -> return! Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
         }
-//        | Update(documentId, fields) -> 
-//            match indexExists (state, flexIndex.IndexSetting.IndexName) with
-//            | Some(flexIndex, documentTemplate) -> 
-//                // It is a simple update so get the version number and increment it
-//                match versionCache.GetVersion flexIndex.IndexSetting.IndexName documentId with
-//                | Some(x) -> 
-//                    let (version, dateTime) = x
-//                    match versionCache.UpdateVersion flexIndex.IndexSetting.IndexName documentId version dateTime 
-//                              (version + 1) with
-//                    | true -> 
-//                        // Version was updated successfully so let's update the document
-//                        let (flexIndex, targetIndex, documentTemplate) = 
-//                            updateDocument (flexIndex, documentTemplate, documentId, (version + 1), fields)
-//                        flexIndex.Shards.[targetIndex]
-//                            .TrackingIndexWriter.updateDocument(new Term("id", documentId), documentTemplate.Document) 
-//                        |> ignore
-//                    | false -> failwithf "Version mismatch"
-//                | None -> 
-//                    // Document was not found in version cache so retrieve it from the index
-//                    let (flexIndex, targetIndex, documentTemplate) = 
-//                        updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
-//                    let query = new TermQuery(new Term("id", documentId))
-//                    let searcher = 
-//                        (flexIndex.Shards.[targetIndex].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
-//                    let topDocs = searcher.search (query, 1)
-//                    let hits = topDocs.scoreDocs
-//                    if hits.Length = 0 then 
-//                        // It is actually a create as the document does not exist
-//                        versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId 1 |> ignore
-//                        flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) 
-//                        |> ignore
-//                    else 
-//                        let version = int (searcher.doc(hits.[0].doc).get("version"))
-//                        versionCache.AddVersion flexIndex.IndexSetting.IndexName documentId (version + 1) |> ignore
-//                        flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) 
-//                        |> ignore
-//                (true, "")
-//            | _ -> (false, "Index does not exist")
-//        | Delete(documentId) -> 
-//            let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length - 1
-//            versionCache.DeleteVersion flexIndex.IndexSetting.IndexName documentId |> ignore
-//            flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term("id", documentId)) |> ignore
-//            (true, "")
-//        | BulkDeleteByIndexName -> 
-//            for shard in flexIndex.Shards do
-//                shard.TrackingIndexWriter.deleteAll() |> ignore
-//            (true, "")
-//        | Commit -> 
-//            for i in 0..flexIndex.Shards.Length - 1 do
-//                flexIndex.Shards.[i].IndexWriter.commit()
-//            (true, "")
+    
+    // ----------------------------------------------------------------------------   
+    // Concerete implementation of the index service interface. This class will be 
+    // injected using DI thus exposing the necessary
+    // functionality at any web service
+    // loadAllIndex - This is used to bypass loading of index at initialization time.
+    // Helpful for testing
+    // ----------------------------------------------------------------------------   
+    type IndexService(settingsParser : ISettingsBuilder, persistanceStore : IPersistanceStore, versionCache : IVersioningCacheStore) = 
+        
+        let state = 
+            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
+              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
+              ThreadLocalStore = 
+                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
+                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
+        
+        /// Default buffering queue
+        /// This is TPL Dataflow based approach. Can replace it with parallel.foreach
+        /// on blocking collection. 
+        /// Advantages - Faster, EnumerablePartitionerOptions.NoBuffering takes care of the
+        /// older .net partitioner bug, Can reduce the number of lucene documents which will be
+        /// generated 
+        let mutable queue : ActionBlock<string * IndexCommand> = null
+        
+        let processQueueItem (indexName, indexMessage : IndexCommand) = 
+            let registeration = getIndexRegisteration (state, indexName)
+            match registeration with
+            | Choice1Of2(index) -> processItem (state, indexMessage, index, versionCache) |> ignore
+            | Choice2Of2(_) -> ()
+        
+        // ----------------------------------------------------------------------------
+        // Load all index configuration data on start of application
+        // ----------------------------------------------------------------------------
+        do 
+            let executionBlockOption = new ExecutionDataflowBlockOptions()
+            executionBlockOption.MaxDegreeOfParallelism <- -1
+            executionBlockOption.BoundedCapacity <- 1000
+            queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
+            loadAllIndex (state, persistanceStore)
+        
+        // ----------------------------------------------------------------------------
+        // Interface implementation
+        // ----------------------------------------------------------------------------        
+        interface IIndexService with
+            
+            member this.PerformCommandAsync(indexName, indexMessage, replyChannel) = 
+                match getIndexRegisteration (state, indexName) with
+                | Choice1Of2(index) -> replyChannel.Reply(processItem (state, indexMessage, index, versionCache))
+                | Choice2Of2(error) -> replyChannel.Reply(Choice2Of2(error))
+            
+            member this.PerformCommand(indexName, indexMessage) = 
+                maybe { let! index = getIndexRegisteration (state, indexName)
+                        return! processItem (state, indexMessage, index, versionCache) }
+            member this.CommandQueue() = queue
+            
+            member this.IndexExists(indexName) = 
+                match state.IndexStatus.TryGetValue(indexName) with
+                | (true, _) -> true
+                | _ -> false
+            
+            member this.IndexStatus(indexName) = 
+                match state.IndexStatus.TryGetValue(indexName) with
+                | (true, status) -> Choice1Of2(status)
+                | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
