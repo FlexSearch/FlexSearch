@@ -163,8 +163,9 @@ type FlexIndexSetting =
         FieldsLookup            :   Dictionary<string, FlexField>
         SearchProfiles          :   Dictionary<string, SearchQuery>
         ScriptsManager          :   ScriptsManager   
-        IndexConfig             :   IndexConfiguration
+        IndexConfiguration      :   IndexConfiguration
         BaseFolder              :   string
+        ShardConfiguration      :   ShardConfiguration
     }
     
 

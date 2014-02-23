@@ -302,7 +302,8 @@
     <Compile Include="State.fs" />
     <Compile Include="ServiceLocator.fs" />
     <Compile Include="FlexField.fs" />
-    <Compile Include="FlexIndex.fs" />
+    <Compile Include="Document.fs" />
+    <Compile Include="Index.fs" />
     <Compile Include="LocalCacheStore.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="CompilerService.fs" />

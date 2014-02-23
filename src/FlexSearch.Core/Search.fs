@@ -15,7 +15,6 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Api
-open FlexSearch.Core.Index
 open FlexSearch.Core
 open FlexSearch.Utility.DataType
 
@@ -53,31 +52,31 @@ module SearchDsl =
     let FlexCharTermAttribute = lazy java.lang.Class.forName("org.apache.lucene.analysis.tokenattributes.CharTermAttribute")
 
     
-//    // ----------------------------------------------------------------------------
-//    // Utility function to get tokens from the search string based upon the passed analyzer
-//    // This will enable us to avoid using the lucene query parser
-//    // We cannot use simple white space based token generation as it really depends 
-//    // upon the analyzer used
-//    // ----------------------------------------------------------------------------
-//    let inline ParseTextUsingAnalyzer(analyzer: Analyzer, fieldName, queryText) =
-//        let tokens = new List<string>()
-//        let source: TokenStream = analyzer.tokenStream(fieldName, new StringReader(queryText))
-//
-//        // Get the CharTermAttribute from the TokenStream
-//        let termAtt = source.addAttribute(FlexCharTermAttribute.Force())
-//        
-//        try
-//            try
-//                source.reset()
-//                while source.incrementToken() do
-//                    tokens.Add(termAtt.ToString()) 
-//            
-//                source.``end``()   
-//            with
-//            | ex -> ()
-//        finally
-//            source.close()
-//        tokens
+    // ----------------------------------------------------------------------------
+    // Utility function to get tokens from the search string based upon the passed analyzer
+    // This will enable us to avoid using the lucene query parser
+    // We cannot use simple white space based token generation as it really depends 
+    // upon the analyzer used
+    // ----------------------------------------------------------------------------
+    let inline ParseTextUsingAnalyzer(analyzer: Analyzer, fieldName, queryText) =
+        let tokens = new List<string>()
+        let source: TokenStream = analyzer.tokenStream(fieldName, new StringReader(queryText))
+
+        // Get the CharTermAttribute from the TokenStream
+        let termAtt = source.addAttribute(FlexCharTermAttribute.Force())
+        
+        try
+            try
+                source.reset()
+                while source.incrementToken() do
+                    tokens.Add(termAtt.ToString()) 
+            
+                source.``end``()   
+            with
+            | ex -> ()
+        finally
+            source.close()
+        tokens
 //
 //
 //    // ----------------------------------------------------------------------------

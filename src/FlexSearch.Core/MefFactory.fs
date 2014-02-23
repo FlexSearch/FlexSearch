@@ -15,7 +15,6 @@ namespace FlexSearch
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Core
-open FlexSearch.Core.Index
 open FlexSearch.Core.State
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous

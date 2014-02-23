@@ -24,7 +24,10 @@ module State =
     type NodeState = 
         { PersistanceStore : IPersistanceStore
           ServerSettings : ServerSettings
-          Indices : ConcurrentDictionary<string, Index> }
+          Indices : ConcurrentDictionary<string, Index>
+          CacheStore : IVersioningCacheStore 
+          IndexService : IIndexService
+          SettingsBuilder: ISettingsBuilder}
         member this.IndexExists(indexName : string) = 
             match this.Indices.TryGetValue(indexName) with
             | true, x -> Some(x)

@@ -18,7 +18,6 @@ open FlexSearch.Utility
 open FlexSearch.Api
 open FlexSearch.Analysis.Analyzers
 open FlexSearch.Core
-open FlexSearch.Core.Index
 
 open org.apache.lucene.codecs
 open org.apache.lucene.codecs.lucene42
@@ -204,7 +203,8 @@ module SettingsBuilder =
                         SearchProfiles          = index.SearchProfiles
                         ScriptsManager          = scriptsManager
                         FieldsLookup            = fields
-                        IndexConfig             = index.IndexConfiguration
+                        IndexConfiguration      = index.IndexConfiguration
+                        ShardConfiguration      = index.ShardConfiguration
                         BaseFolder              = 
                             if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then
                                 index.IndexName

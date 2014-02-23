@@ -85,7 +85,7 @@ module Interface =
         abstract member GetAll<'T>  :   unit -> IEnumerable<'T>
         abstract member Get<'T>     :   string -> 'T option
         abstract member Put<'T>     :   string -> 'T -> bool
-  
+        abstract member Delete<'T>  :   string -> bool
 
     // ---------------------------------------------------------------------------- 
     /// General Interface to offload all resource loading resposibilities. This will

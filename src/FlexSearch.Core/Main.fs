@@ -120,7 +120,10 @@ module Main =
         let nodeState = 
             { PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
               ServerSettings = settings
-              Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase) }
+              Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase) 
+              CacheStore = Unchecked.defaultof<_>
+              IndexService = Unchecked.defaultof<_>
+              SettingsBuilder = Unchecked.defaultof<_>}
         container.TryAdd(settings.HttpPort, nodeState) |> ignore
         Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>(sprintf "http://*:%i" settings.HttpPort) |> ignore
     
