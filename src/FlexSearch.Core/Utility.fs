@@ -35,7 +35,10 @@ type ValidationBuilder() =
     member this.ReturnFrom v = v
     member this.Return v = Choice1Of2(v)
     member this.Zero() = Choice1Of2()
-
+    member this.Combine(a, b) = a
+    member this.Delay(f) = f()
+    member this.For(list, f) = 
+        this.Bind(list, f)
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------

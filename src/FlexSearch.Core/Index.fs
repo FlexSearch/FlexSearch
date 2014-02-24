@@ -68,6 +68,16 @@ module Index =
           /// be indexed is the penalty it has in terms of garbage collection. Also,
           /// lucene's document and index classes can't be shared across threads.
           ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> }
+        
+        member this.GetStatus(indexName) = 
+            match this.IndexStatus.TryGetValue(indexName) with
+            | (true, state) -> Choice1Of2(state)
+            | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+        
+        member this.GetRegisteration(indexName) = 
+            match this.IndexRegisteration.TryGetValue(indexName) with
+            | (true, state) -> Choice1Of2(state)
+            | _ -> Choice2Of2(ExceptionConstants.INDEX_REGISTERATION_MISSING)
     
     // Index auto commit changes job
     let private commitJob (flexIndex : FlexIndex) = 
@@ -365,3 +375,26 @@ module Index =
                 match state.IndexStatus.TryGetValue(indexName) with
                 | (true, status) -> Choice1Of2(status)
                 | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+            
+            member this.GetIndex indexName = 
+                match state.IndexStatus.TryGetValue(indexName) with
+                | (true, _) -> 
+                    match persistanceStore.Get<Index>(indexName) with
+                    | Some(a) -> Choice1Of2(a)
+                    | None -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+                | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+            
+            member this.AddIndex flexIndex = maybe {
+                let! status = state.GetStatus(flexIndex.IndexName)
+                let settings = settingsParser.BuildSetting(flexIndex)
+                flexIndex <| persistanceStore.Put flexIndex.IndexName  |> ignore
+                if flexIndex.Online then 
+                    do! addIndex (state, settings)
+                else 
+                    state.IndexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
+            }
+ 
+                    
+                    
+                    
+            

@@ -149,7 +149,7 @@ module Interface =
     /// This will take api objects and tranform them into Flex domain objects
     // ----------------------------------------------------------------------------     
     type ISettingsBuilder =
-        abstract BuildSetting           :   Index -> FlexIndexSetting
+        abstract BuildSetting           :   Index -> Choice<FlexIndexSetting, Exception.InvalidOperation>
 
 
     // ----------------------------------------------------------------------------     
@@ -293,7 +293,7 @@ module Interface =
         
         abstract member GetIndex                    :   string -> Choice<Index, InvalidOperation>
 
-        abstract member AddIndex                    :   Index -> Choice<'T, InvalidOperation>
+        abstract member AddIndex                    :   Index -> Choice<unit, InvalidOperation>
 
         abstract member UpdateIndex                 :   Index -> Choice<'T, InvalidOperation>
 

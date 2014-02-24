@@ -16,5 +16,25 @@ namespace FlexSearch.Api.Exception
                 ErrorCode = op.ErrorCode
             };
         }
+
+        public static InvalidOperation WithPropertyName(InvalidOperation op, string propertyName)
+        {
+            return new InvalidOperation
+            {
+                DeveloperMessage = op.DeveloperMessage.Replace("{propertyName}", propertyName),
+                UserMessage = op.UserMessage.Replace("{propertyName}", propertyName),
+                ErrorCode = op.ErrorCode
+            };
+        }
+
+        public static InvalidOperation WithPropertyName(InvalidOperation op, string propertyName, string value)
+        {
+            return new InvalidOperation
+            {
+                DeveloperMessage = op.DeveloperMessage.Replace("{propertyName}", propertyName).Replace("{value}", value),
+                UserMessage = op.UserMessage.Replace("{propertyName}", propertyName).Replace("{value}", value),
+                ErrorCode = op.ErrorCode
+            };
+        }
     }
 }

@@ -99,3 +99,98 @@ const InvalidOperation ERROR_OPENING_INDEXWRITER =
 		"UserMessage" : "Unable to open index writer.",
 		"ErrorCode": 1008
 	}	
+
+	
+// ----------------------------------------------------------------------------
+//	Validation Exceptions
+// ----------------------------------------------------------------------------
+const InvalidOperation PROPERTY_CANNOT_BE_EMPTY = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} cannot be empty.", 
+		"UserMessage" : "Field:{propertyName} cannot be empty.",
+		"ErrorCode": 2001
+	}
+	
+const InvalidOperation REGEX_NOT_MATCHED = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} does not match the regex pattern {value}.", 
+		"UserMessage" : "Field:{propertyName} does not match the regex pattern {value}.",
+		"ErrorCode": 2002
+	}	
+	
+const InvalidOperation VALUE_NOT_IN = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} cannot have the following as valid values: {value}.", 
+		"UserMessage" : "Field:{propertyName} cannot have the following as valid values: {value}.", 
+		"ErrorCode": 2003
+	}	
+	
+const InvalidOperation VALUE_ONLY_IN = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} can only have the following as valid values: {value}.", 
+		"UserMessage" : "Field:{propertyName} can only have the following as valid values: {value}.", 
+		"ErrorCode": 2004
+	}
+	
+const InvalidOperation GREATER_THAN_EQUAL_TO = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} should be greater than or equal to: {value}.", 
+		"UserMessage" : "Field:{propertyName} should be greater than or equal to: {value}.", 
+		"ErrorCode": 2005
+	}	
+
+const InvalidOperation GREATER_THAN = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} should be greater than: {value}.", 
+		"UserMessage" : "Field:{propertyName} should be greater than: {value}.", 
+		"ErrorCode": 2006
+	}	
+	
+const InvalidOperation LESS_THAN_EQUAL_TO = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} should be less than or equal to: {value}.", 
+		"UserMessage" : "Field:{propertyName} should be less than or equal to: {value}.", 
+		"ErrorCode": 2005
+	}	
+
+const InvalidOperation LESS_THAN = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} should be less than: {value}.", 
+		"UserMessage" : "Field:{propertyName} should be less than: {value}.", 
+		"ErrorCode": 2006
+	}
+	
+const InvalidOperation FILTER_CANNOT_BE_INITIALIZED = 
+	{
+		"DeveloperMessage" : "Filter:{propertyName} cannot be initialized: {value}", 
+		"UserMessage" : "Filter:{propertyName} cannot be initialized.", 
+		"ErrorCode": 2007
+	}
+	
+const InvalidOperation FILTER_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "Filter:{propertyName} not found.", 
+		"UserMessage" : "Filter:{propertyName} not found.", 
+		"ErrorCode": 2008
+	}	
+	
+const InvalidOperation TOKENIZER_CANNOT_BE_INITIALIZED = 
+	{
+		"DeveloperMessage" : "Tokenizer:{propertyName} cannot be initialized: {value}", 
+		"UserMessage" : "Tokenizer:{propertyName} cannot be initialized.", 
+		"ErrorCode": 2009
+	}
+	
+const InvalidOperation TOKENIZER_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "Tokenizer:{propertyName} not found.", 
+		"UserMessage" : "Tokenizer:{propertyName} not found.", 
+		"ErrorCode": 2010
+	}
+
+const InvalidOperation ATLEAST_ONE_FILTER_REQUIRED = 
+	{
+		"DeveloperMessage" : "Atleast one filter should be specified for a custom analyzer.", 
+		"UserMessage" : "Atleast one filter should be specified for a custom analyzer.", 
+		"ErrorCode": 2010
+	}		
