@@ -42,6 +42,6 @@ let addDataMemberOrder() =
 
 generateThriftFiles("Service.thrift")
 generateThriftFiles("Api.thrift")
-generateThriftFiles("Exception.thrift")
+generateThriftFiles("Message.thrift")
 generateThriftFiles("Dto.thrift")
 addDataMemberOrder()

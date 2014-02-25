@@ -14,7 +14,7 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Api
-open FlexSearch.Api.Exception
+open FlexSearch.Api.Message
 open FlexSearch.Utility
 open FlexSearch.Core
 open FlexSearch.Api.Service
@@ -149,7 +149,7 @@ module Interface =
     /// This will take api objects and tranform them into Flex domain objects
     // ----------------------------------------------------------------------------     
     type ISettingsBuilder =
-        abstract BuildSetting           :   Index -> Choice<FlexIndexSetting, Exception.InvalidOperation>
+        abstract BuildSetting           :   Index -> Choice<FlexIndexSetting, OperationMessage>
 
 
     // ----------------------------------------------------------------------------     
@@ -197,8 +197,8 @@ module Interface =
     /// Scripting realted interfaces
     // ----------------------------------------------------------------------------   
     // Compile different types of scripts
-    type IScriptFactory<'a> =
-        abstract member CompileScript   :   ScriptProperties -> 'a
+    type IScriptFactory<'T> =
+        abstract member CompileScript   :   ScriptProperties -> Choice<'T, OperationMessage>
     
 
     /// Profile selection scripts used to dynamically select an search profile
@@ -272,11 +272,11 @@ module Interface =
 
         /// This method is for synchronous index operations. This will return the 
         /// operation status along with a description message.
-        abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<Choice<unit, InvalidOperation>> -> unit
+        abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
 
         /// This method is for synchronous index operations. This will return the 
         /// operation status along with a description message.
-        abstract member PerformCommand              :   string * IndexCommand -> Choice<unit, InvalidOperation>
+        abstract member PerformCommand              :   string * IndexCommand -> Choice<unit, OperationMessage>
 
         /// Index queue which is used for async operations. This is useful for
         /// bulk indexing tasks where the producer can send more than one record
@@ -291,21 +291,21 @@ module Interface =
         /// all possible search variations
         //abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
         
-        abstract member GetIndex                    :   string -> Choice<Index, InvalidOperation>
+        abstract member GetIndex                    :   string -> Choice<Index, OperationMessage>
 
-        abstract member AddIndex                    :   Index -> Choice<unit, InvalidOperation>
+        abstract member AddIndex                    :   Index -> Choice<unit, OperationMessage>
 
-        abstract member UpdateIndex                 :   Index -> Choice<'T, InvalidOperation>
+        abstract member UpdateIndex                 :   Index -> Choice<unit, OperationMessage>
 
-        abstract member OpenIndex                   :   string -> Choice<'T, InvalidOperation>
+        abstract member OpenIndex                   :   string -> Choice<'T, OperationMessage>
 
-        abstract member CloseIndex                  :   string -> Choice<'T, InvalidOperation>
+        abstract member CloseIndex                  :   string -> Choice<'T, OperationMessage>
 
-        abstract member DeleteIndex                 :   string -> Choice<'T, InvalidOperation>
+        abstract member DeleteIndex                 :   string -> Choice<'T, OperationMessage>
 
         abstract member IndexExists                 :   string -> bool
 
-        abstract member IndexStatus                 :   string -> Choice<IndexState, InvalidOperation>
+        abstract member IndexStatus                 :   string -> Choice<IndexState, OperationMessage>
 
         /// Method to close all indexing indexing operation. Usually called before
         /// a server shutdown.

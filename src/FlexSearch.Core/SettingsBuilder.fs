@@ -69,7 +69,9 @@ module SettingsBuilder =
                 else
                     match scripts.TryGetValue(field.Value.ScriptName) with
                     | (true, a) -> 
-                        Some(factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript(a).Execute)
+                        match factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript(a) with
+                        | Choice1Of2(b) -> Some(b.Execute)
+                        | Choice2Of2(e) -> None
                     | _ -> None
             
             let (fieldType, requiresAnalyzer) =
@@ -186,7 +188,7 @@ module SettingsBuilder =
     let public SettingsBuilder (factoryCollection: IFactoryCollection) (indexValidator: IIndexValidator) =  {
         new ISettingsBuilder with
             member x.BuildSetting (index) =
-                indexValidator.Validate(index) |> ignore
+                indexValidator.Validate(index)
                 let analyzers = buildAnalyzers(index.Analyzers, factoryCollection)
                 let fields =  buildFields(index.Fields, analyzers, index.Scripts, factoryCollection) 
                 let fieldsArray: FlexField array = Array.zeroCreate fields.Count
@@ -212,5 +214,5 @@ module SettingsBuilder =
                                 Constants.DataFolder.Value + "\\" + index.IndexName
                     }
 
-                flexIndexSetting    
+                Choice1Of2(flexIndexSetting)
         }    

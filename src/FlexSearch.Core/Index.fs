@@ -11,7 +11,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Exception
+open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.State
 open FlexSearch.Utility
@@ -72,12 +72,12 @@ module Index =
         member this.GetStatus(indexName) = 
             match this.IndexStatus.TryGetValue(indexName) with
             | (true, state) -> Choice1Of2(state)
-            | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+            | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
         
         member this.GetRegisteration(indexName) = 
             match this.IndexRegisteration.TryGetValue(indexName) with
             | (true, state) -> Choice1Of2(state)
-            | _ -> Choice2Of2(ExceptionConstants.INDEX_REGISTERATION_MISSING)
+            | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
     
     // Index auto commit changes job
     let private commitJob (flexIndex : FlexIndex) = 
@@ -145,7 +145,7 @@ module Index =
                     Choice1Of2(shards)
                 with e -> 
                     Choice2Of2
-                        (InvalidOperation.WithDeveloperMessage(ExceptionConstants.ERROR_OPENING_INDEXWRITER, e.Message))
+                        (OperationMessage.WithDeveloperMessage(MessageConstants.ERROR_OPENING_INDEXWRITER, e.Message))
             // Add index status
             state.IndexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
             let! shards = generateShards flexIndexSetting
@@ -168,8 +168,9 @@ module Index =
         for x in persistanceStore.GetAll<Index>() do
             if x.Online then 
                 try 
-                    let flexIndexSetting = ServiceLocator.SettingsBuilder.BuildSetting(x)
-                    addIndex (state, flexIndexSetting) |> ignore
+                    match ServiceLocator.SettingsBuilder.BuildSetting(x) with
+                    | Choice1Of2(flexIndexSetting) -> addIndex (state, flexIndexSetting) |> ignore
+                    | Choice2Of2(e) -> ()
                 //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
                 with ex -> ()
             //indexLogger.Error("Loading index from file failed.", ex)
@@ -203,10 +204,10 @@ module Index =
             | IndexState.Online -> 
                 match state.IndexRegisteration.TryGetValue(indexName) with
                 | (true, flexIndex) -> Choice1Of2(flexIndex)
-                | _ -> Choice2Of2(ExceptionConstants.INDEX_REGISTERATION_MISSING)
-            | IndexState.Opening -> Choice2Of2(ExceptionConstants.INDEX_IS_OPENING)
-            | IndexState.Offline | IndexState.Closing -> Choice2Of2(ExceptionConstants.INDEX_IS_OFFLINE)
-        | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+                | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
+            | IndexState.Opening -> Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+            | IndexState.Offline | IndexState.Closing -> Choice2Of2(MessageConstants.INDEX_IS_OFFLINE)
+        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
     
     // ----------------------------------------------------------------------------               
     // Function to check if the requested index is available. If yes then tries to 
@@ -246,7 +247,7 @@ module Index =
                       LastGeneration = 0 }
                 state.ThreadLocalStore.Value.TryAdd(indexName, documentTemplate) |> ignore
                 Choice1Of2(flexIndex, documentTemplate)
-        | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
     
     // ----------------------------------------------------------------------------     
     // Updates the current thread local index document with the incoming data
@@ -308,7 +309,7 @@ module Index =
             | Commit -> 
                 flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit())
                 return! Choice1Of2()
-            | _ -> return! Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+            | _ -> return! Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
         }
     
     // ----------------------------------------------------------------------------   
@@ -374,27 +375,39 @@ module Index =
             member this.IndexStatus(indexName) = 
                 match state.IndexStatus.TryGetValue(indexName) with
                 | (true, status) -> Choice1Of2(status)
-                | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
             
             member this.GetIndex indexName = 
                 match state.IndexStatus.TryGetValue(indexName) with
                 | (true, _) -> 
                     match persistanceStore.Get<Index>(indexName) with
                     | Some(a) -> Choice1Of2(a)
-                    | None -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
-                | _ -> Choice2Of2(ExceptionConstants.INDEX_NOT_FOUND)
+                    | None -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
             
-            member this.AddIndex flexIndex = maybe {
-                let! status = state.GetStatus(flexIndex.IndexName)
-                let settings = settingsParser.BuildSetting(flexIndex)
-                flexIndex <| persistanceStore.Put flexIndex.IndexName  |> ignore
-                if flexIndex.Online then 
-                    do! addIndex (state, settings)
-                else 
-                    state.IndexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
-            }
- 
-                    
-                    
-                    
+            member this.AddIndex flexIndex = 
+                maybe { 
+                    let! status = state.GetStatus(flexIndex.IndexName)
+                    let! settings = settingsParser.BuildSetting(flexIndex)
+                    persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
+                    if flexIndex.Online then do! addIndex (state, settings)
+                    else state.IndexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
+                }
             
+            member this.UpdateIndex index = 
+                maybe { 
+                    let! status = state.GetStatus(index.IndexName)
+                    match status with
+                    | IndexState.Online -> 
+                        let! flexIndex = state.GetRegisteration(index.IndexName)
+                        let! settings = settingsParser.BuildSetting(index)
+                        closeIndex (state, flexIndex)
+                        do! addIndex (state, settings)
+                        persistanceStore.Put index.IndexName index |> ignore
+                        return! Choice1Of2()
+                    | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+                    | IndexState.Offline | IndexState.Closing -> 
+                        let settings = settingsParser.BuildSetting(index)
+                        persistanceStore.Put index.IndexName index |> ignore
+                        return! Choice1Of2()
+                }

@@ -13,7 +13,7 @@ namespace FlexSearch.Core
 
 // ----------------------------------------------------------------------------
 open FlexSearch.Api
-open FlexSearch.Api.Exception
+open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -106,7 +106,7 @@ module IO =
             |> ignore
             Choice1Of2(iwc)
         with e -> 
-            let error = InvalidOperation.WithDeveloperMessage(ExceptionConstants.ERROR_OPENING_INDEXWRITER, e.Message)
+            let error = OperationMessage.WithDeveloperMessage(MessageConstants.ERROR_OPENING_INDEXWRITER, e.Message)
             Choice2Of2(error)
     
     // ----------------------------------------------------------------------------                  
@@ -126,11 +126,11 @@ module IO =
             | DirectoryType.Ram -> Choice1Of2(new RAMDirectory() :> org.apache.lucene.store.Directory)
             | _ -> 
                 let error = 
-                    InvalidOperation.WithDeveloperMessage
-                        (ExceptionConstants.ERROR_OPENING_INDEXWRITER, "Unknown directory type.")
+                    OperationMessage.WithDeveloperMessage
+                        (MessageConstants.ERROR_OPENING_INDEXWRITER, "Unknown directory type.")
                 Choice2Of2(error)
         with e -> 
-            let error = InvalidOperation.WithDeveloperMessage(ExceptionConstants.ERROR_OPENING_INDEXWRITER, e.Message)
+            let error = OperationMessage.WithDeveloperMessage(MessageConstants.ERROR_OPENING_INDEXWRITER, e.Message)
             Choice2Of2(error)
     
     // ---------------------------------------------------------------------------- 

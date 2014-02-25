@@ -13,7 +13,7 @@ namespace FlexSearch.Core
 
 open FlexSearch
 open FlexSearch.Api
-open FlexSearch.Api.Exception
+open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -39,46 +39,46 @@ module Validator =
     // ----------------------------------------------------------------------------
     let notNullAndEmpty (propName : string, value : string) = 
         if System.String.IsNullOrWhiteSpace(value) <> true then Choice1Of2()
-        else Choice2Of2(InvalidOperation.WithPropertyName(ExceptionConstants.PROPERTY_CANNOT_BE_EMPTY, propName))
+        else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.PROPERTY_CANNOT_BE_EMPTY, propName))
     
     let regexMatch (pattern : string) (propName : string, value : string) = 
         let m = System.Text.RegularExpressions.Regex.Match(value, pattern)
         if m.Success then Choice1Of2()
-        else Choice2Of2(InvalidOperation.WithPropertyName(ExceptionConstants.REGEX_NOT_MATCHED, propName, pattern))
+        else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.REGEX_NOT_MATCHED, propName, pattern))
     
     let notIn (values : string []) (propName : string, value : string) = 
         if values.Contains(value) <> true then Choice1Of2()
         else 
             Choice2Of2
-                (InvalidOperation.WithPropertyName
-                     (ExceptionConstants.VALUE_NOT_IN, propName, (String.Join(",", values))))
+                (OperationMessage.WithPropertyName
+                     (MessageConstants.VALUE_NOT_IN, propName, (String.Join(",", values))))
     
     let onlyIn (values : string []) (propName : string, value : string) = 
         if values.Contains(value) = true then Choice1Of2()
         else 
             Choice2Of2
-                (InvalidOperation.WithPropertyName
-                     (ExceptionConstants.VALUE_ONLY_IN, propName, (String.Join(",", values))))
+                (OperationMessage.WithPropertyName
+                     (MessageConstants.VALUE_ONLY_IN, propName, (String.Join(",", values))))
     
     let greaterThanOrEqualTo (range : int) (propName : string, value : int) = 
         if value >= range then Choice1Of2()
         else 
             Choice2Of2
-                (InvalidOperation.WithPropertyName(ExceptionConstants.GREATER_THAN_EQUAL_TO, propName, range.ToString()))
+                (OperationMessage.WithPropertyName(MessageConstants.GREATER_THAN_EQUAL_TO, propName, range.ToString()))
     
     let greaterThan (range : int) (propName : string, value : int) = 
         if value > range then Choice1Of2(propName, value)
-        else Choice2Of2(InvalidOperation.WithPropertyName(ExceptionConstants.GREATER_THAN, propName, range.ToString()))
+        else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.GREATER_THAN, propName, range.ToString()))
     
     let lessThanOrEqualTo (range : int) (propName : string, value : int) = 
         if value <= range then Choice1Of2()
         else 
             Choice2Of2
-                (InvalidOperation.WithPropertyName(ExceptionConstants.LESS_THAN_EQUAL_TO, propName, range.ToString()))
+                (OperationMessage.WithPropertyName(MessageConstants.LESS_THAN_EQUAL_TO, propName, range.ToString()))
     
     let lessThan (range : int) (propName : string, value : int) = 
         if value < range then Choice1Of2()
-        else Choice2Of2(InvalidOperation.WithPropertyName(ExceptionConstants.LESS_THAN, propName, range.ToString()))
+        else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.LESS_THAN, propName, range.ToString()))
     
     // ----------------------------------------------------------------------------
     // FlexSearch related validation helpers
@@ -92,9 +92,9 @@ module Validator =
                 Choice1Of2()
             with e -> 
                 Choice2Of2
-                    (InvalidOperation.WithPropertyName
-                         (ExceptionConstants.FILTER_CANNOT_BE_INITIALIZED, propName, e.Message))
-        | _ -> Choice2Of2(InvalidOperation.WithPropertyName(ExceptionConstants.FILTER_NOT_FOUND, propName))
+                    (OperationMessage.WithPropertyName
+                         (MessageConstants.FILTER_CANNOT_BE_INITIALIZED, propName, e.Message))
+        | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.FILTER_NOT_FOUND, propName))
     
     let mustGenerateTokenizerInstance (factoryCollection : Interface.IFactoryCollection) 
         (propName : string, value : Tokenizer) = 
@@ -105,9 +105,9 @@ module Validator =
                 Choice1Of2()
             with e -> 
                 Choice2Of2
-                    (InvalidOperation.WithPropertyName
-                         (ExceptionConstants.TOKENIZER_CANNOT_BE_INITIALIZED, propName, e.Message))
-        | _ -> Choice2Of2(InvalidOperation.WithPropertyName(ExceptionConstants.TOKENIZER_NOT_FOUND, propName))
+                    (OperationMessage.WithPropertyName
+                         (MessageConstants.TOKENIZER_CANNOT_BE_INITIALIZED, propName, e.Message))
+        | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.TOKENIZER_NOT_FOUND, propName))
     
     // ----------------------------------------------------------------------------
     // FlexSearch validation constructs
@@ -121,7 +121,7 @@ module Validator =
         }
     
     /// Filter validator which checks both the input parameters and naming convention
-    let FilterValidator(factoryCollection : Interface.IFactoryCollection, value : TokenFilter) = 
+    let FilterValidator (factoryCollection : Interface.IFactoryCollection) (value : TokenFilter) = 
         maybe { 
             do! ("FilterName", value.FilterName) |> propertyNameValidator
             do! ("FilterName", value) |> mustGenerateFilterInstance factoryCollection
@@ -132,36 +132,34 @@ module Validator =
             do! validate "TokenizerName" value.TokenizerName |> propertyNameValidator
             do! validate "Tokenizer" value |> mustGenerateTokenizerInstance factoryCollection
         }
-
-    let AnalyzerValidator (factoryCollection : Interface.IFactoryCollection) (propName: string, value: AnalyzerProperties) = maybe {
-        do! TokenizerValidator(factoryCollection, value.Tokenizer)
-        if value.Filters.Count = 0 then 
-            return! Choice2Of2(ExceptionConstants.ATLEAST_ONE_FILTER_REQUIRED)
-        else
-            value.Filters.ToArray() |> Array.iter(fun x -> do! FilterValidator(factoryCollection, x))
+    
+    let AnalyzerValidator (factoryCollection : Interface.IFactoryCollection) 
+        (propName : string, value : AnalyzerProperties) = 
+        maybe { 
+            do! TokenizerValidator(factoryCollection, value.Tokenizer)
+            if value.Filters.Count = 0 then return! Choice2Of2(MessageConstants.ATLEAST_ONE_FILTER_REQUIRED)
+            else do! loopValidation (List.ofSeq (value.Filters)) (FilterValidator factoryCollection)
+        }
+    
+    let IndexConfigurationValidator(propName : string, value : IndexConfiguration) = 
+        maybe { 
+            do! validate "CommitTimeSec" value.CommitTimeSec |> greaterThanOrEqualTo 60
+            do! validate "RefreshTimeMilliSec" value.RefreshTimeMilliSec |> greaterThanOrEqualTo 25
+            do! validate "RamBufferSizeMb" value.RamBufferSizeMb |> greaterThanOrEqualTo 100
         }
 
-//    let IndexConfigurationValidator(propName: string, value: IndexConfiguration) =
-//        validate "CommitTimeSec" value.CommitTimeSec |> greaterThanOrEqualTo 60 |> ignore
-//        validate "RefreshTimeMilliSec" value.RefreshTimeMilliSec |> greaterThanOrEqualTo 25 |> ignore
-//        //validate "Shards" value.ShardConfiguration.ShardCount |> greaterThanOrEqualTo 1 |> ignore
-//        validate "RamBufferSizeMb" value.RamBufferSizeMb |> greaterThanOrEqualTo 100 |> ignore
-//
-//
-//    let ScriptValidator(factoryCollection : Interface.IFactoryCollection)  (propName: string, value: ScriptProperties) =
-//        validate "ScriptSource" value.Source |> notNullAndEmpty |> ignore
-//        try
-//            match value.ScriptType with
-//            | ScriptType.SearchProfileSelector ->
-//                factoryCollection.ScriptFactoryCollection.ProfileSelectorScriptFactory.CompileScript(value) |> ignore
-//            | ScriptType.CustomScoring ->
-//                factoryCollection.ScriptFactoryCollection.CustomScoringScriptFactory.CompileScript(value) |> ignore
-//                
-//            | ScriptType.ComputedField ->
-//                factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript(value) |> ignore
-//            | _ -> raise (ValidationException("Script", "The requested script type does not exist: " + value.ScriptType.ToString() + ".", "3000"))
-//        with
-//        | e -> raise (ValidationException("Script", "Script cannot be compiled : " + e.Message + ".", "3000"))
+    let ScriptValidator(factoryCollection : Interface.IFactoryCollection)  (propName: string, value: ScriptProperties) = maybe {
+        do! validate "ScriptSource" value.Source |> notNullAndEmpty        
+        match value.ScriptType with
+        | ScriptType.SearchProfileSelector ->
+            do! factoryCollection.ScriptFactoryCollection.ProfileSelectorScriptFactory.CompileScript(value)
+        | ScriptType.CustomScoring ->
+            do! factoryCollection.ScriptFactoryCollection.CustomScoringScriptFactory.CompileScript(value)
+                
+        | ScriptType.ComputedField ->
+            do! factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript(value)
+        | _ -> raise (ValidationException("Script", "The requested script type does not exist: " + value.ScriptType.ToString() + ".", "3000"))
+        }
 //
 //
 ////    let IndexFieldValidator(factoryCollection : Interface.IFactoryCollection) (analyzers: Dictionary<string, AnalyzerProperties>) (scripts : Dictionary<string, ScriptProperties>) (propName: string, value: IndexFieldProperties) =

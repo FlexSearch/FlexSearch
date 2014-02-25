@@ -12,7 +12,7 @@
 namespace FlexSearch.Utility
 
 // ----------------------------------------------------------------------------
-open FlexSearch.Api.Exception
+open FlexSearch.Api.Message
 open System
 open System.IO
 open System.Threading
@@ -23,7 +23,7 @@ open System.Threading
 // ----------------------------------------------------------------------------
 type Result<'T> = 
     | Success of 'T
-    | Error of InvalidOperation
+    | Error of MessageConstants
 
 type ValidationBuilder() = 
     
@@ -37,8 +37,28 @@ type ValidationBuilder() =
     member this.Zero() = Choice1Of2()
     member this.Combine(a, b) = a
     member this.Delay(f) = f()
-    member this.For(list, f) = 
-        this.Bind(list, f)
+
+//    member this.Run(f) = f()
+
+//    member this.TryWith(m, h) =
+//        try this.ReturnFrom(m)
+//        with e -> h e
+//
+//    member this.TryFinally(m, compensation) =
+//        try this.ReturnFrom(m)
+//        finally compensation()
+//
+//    member this.Using(res:#IDisposable, body) =
+//        this.TryFinally(body res, fun () -> match res with null -> () | disp -> disp.Dispose())
+//    
+//    member this.While(guard, f) =
+//        if not (guard()) then this.Zero() else
+//        this.Bind(f(), fun _ -> this.While(guard, f))
+//
+//    member this.For(sequence:seq<_>, body) =
+//        this.Using(sequence.GetEnumerator(),
+//                        fun enum -> this.While(enum.MoveNext, this.Delay(fun () -> body enum.Current)))
+
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------
@@ -89,6 +109,22 @@ module Helpers =
     open System.Security.Principal
     
     let maybe = new ValidationBuilder()
+
+    let loopValidation (list: 'T list) f =
+        let rec loop (list: 'T list) f =
+            match list with
+            | head :: tail -> 
+                match f (head) with
+                | Choice1Of2(_) -> 
+                    loop tail f
+                | Choice2Of2(e) -> Choice2Of2(e)
+            | [] -> Choice1Of2()
+        loop list f
+
+    let inline getValue (dictionary: Dictionary<string, 'T>) key (error : OperationMessage) =
+        match  dictionary.TryGetValue(key) with
+        | (true, x) -> Choice1Of2(x)
+        | _ -> Choice2Of2(error)
 
     // Returns current date time in Flex compatible format
     let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmss"))
