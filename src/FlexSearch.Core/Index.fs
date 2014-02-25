@@ -411,3 +411,53 @@ module Index =
                         persistanceStore.Put index.IndexName index |> ignore
                         return! Choice1Of2()
                 }
+            
+            member this.DeleteIndex indexName = 
+                maybe { 
+                    let! status = state.GetStatus(indexName)
+                    match status with
+                    | IndexState.Online -> 
+                        let! flexIndex = state.GetRegisteration(indexName)
+                        closeIndex (state, flexIndex)
+                        persistanceStore.Delete<Index> indexName |> ignore
+                        // It is possible that directory might not exist if the index has never been opened
+                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+                            Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
+                        return! Choice1Of2()
+                    | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+                    | IndexState.Offline | IndexState.Closing -> 
+                        persistanceStore.Delete<Index> indexName |> ignore
+                        // It is possible that directory might not exist if the index has never been opened
+                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+                            Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
+                        return! Choice1Of2()
+                }
+            
+            member this.CloseIndex indexName = 
+                maybe { 
+                    let! flexIndex = state.GetRegisteration(indexName)
+                    closeIndex (state, flexIndex)
+                    let index = persistanceStore.Get<Index>(indexName)
+                    index.Value.Online <- false
+                    persistanceStore.Put indexName index.Value |> ignore
+                    return! Choice1Of2()
+                }
+            
+            member this.OpenIndex indexName = 
+                maybe { 
+                    let! status = state.GetStatus(indexName)
+                    match status with
+                    | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+                    | IndexState.Offline | IndexState.Closing -> 
+                        let index = persistanceStore.Get<Index>(indexName)
+                        let! settings = settingsParser.BuildSetting(index.Value)
+                        do! addIndex (state, settings)
+                        index.Value.Online <- true
+                        persistanceStore.Put indexName index.Value |> ignore
+                        return! Choice1Of2()
+                }
+            
+            member this.ShutDown() = 
+                for index in state.IndexRegisteration do
+                    closeIndex (state, index.Value)
+                true

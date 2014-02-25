@@ -242,20 +242,6 @@ module Interface =
 
 
     // ---------------------------------------------------------------------------- 
-    /// General key value based settings store used across Flex to store all settings
-    /// Do not use this as a cache store
-    // ---------------------------------------------------------------------------- 
-    type IKeyValueStore =
-        abstract member GetIndexSetting     :   string -> Option<Index>
-        abstract member DeleteIndexSetting  :   string -> unit
-        abstract member UpdateIndexSetting  :   Index -> unit
-        abstract member GetAllIndexSettings :   unit -> List<Index>
-        abstract member GetItem<'T>         :   string -> Option<'T>
-        abstract member UpdateItem<'T>      :   string -> 'T -> unit
-        abstract member DeleteItem<'T>      :   string  -> unit
-
-
-    // ---------------------------------------------------------------------------- 
     /// Version cache store used across the system. This helps in resolving 
     /// conflicts arising out of concrrent threads trying to update a lucene document.
     // ---------------------------------------------------------------------------- 
@@ -297,11 +283,11 @@ module Interface =
 
         abstract member UpdateIndex                 :   Index -> Choice<unit, OperationMessage>
 
-        abstract member OpenIndex                   :   string -> Choice<'T, OperationMessage>
+        abstract member OpenIndex                   :   string -> Choice<unit, OperationMessage>
 
-        abstract member CloseIndex                  :   string -> Choice<'T, OperationMessage>
+        abstract member CloseIndex                  :   string -> Choice<unit, OperationMessage>
 
-        abstract member DeleteIndex                 :   string -> Choice<'T, OperationMessage>
+        abstract member DeleteIndex                 :   string -> Choice<unit, OperationMessage>
 
         abstract member IndexExists                 :   string -> bool
 
