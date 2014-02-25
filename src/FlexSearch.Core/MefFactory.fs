@@ -9,12 +9,10 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
 namespace FlexSearch
-// ----------------------------------------------------------------------------
 
 open FlexSearch.Core
+open FlexSearch.Api.Message
 open FlexSearch.Core.State
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous
@@ -29,131 +27,112 @@ open System.Reflection
 // ----------------------------------------------------------------------------
 // Contains mef container and other factory implementation
 // ----------------------------------------------------------------------------
-module Factories =
-    
-    //let factoryLogger = LogManager.GetLogger("Factory")
-
+module Factories = 
     // Mef container which loads all the related plugins
-    let PluginContainer(readPluginDirectory)  =
-        lazy
-        (
-            // A catalog that can aggregate other catalogs  
-            let aggrCatalog = new AggregateCatalog()
-
-            // An assembly catalog to load information about part from this assembly  
-            let asmCatalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());
-
-            // A directory catalog, to load parts from dlls in the Extensions folder
-            if readPluginDirectory then
-                let dirCatalog = new DirectoryCatalog(Constants.PluginFolder.Force(), "*.dll")
-                aggrCatalog.Catalogs.Add(dirCatalog);  
-                       
-            aggrCatalog.Catalogs.Add(asmCatalog);
-
-            // Create a container  
-            new CompositionContainer(aggrCatalog, CompositionOptions.IsThreadSafe)
-        )
-    
+    let PluginContainer(readPluginDirectory) = 
+        lazy (let aggrCatalog = new AggregateCatalog()
+              // An assembly catalog to load information about part from this assembly  
+              let asmCatalog = new AssemblyCatalog(Assembly.GetExecutingAssembly())
+              // A directory catalog, to load parts from dlls in the Extensions folder
+              if readPluginDirectory then 
+                  let dirCatalog = new DirectoryCatalog(Constants.PluginFolder.Force(), "*.dll")
+                  aggrCatalog.Catalogs.Add(dirCatalog)
+              aggrCatalog.Catalogs.Add(asmCatalog)
+              // Create a container  
+              new CompositionContainer(aggrCatalog, CompositionOptions.IsThreadSafe))
     
     // ----------------------------------------------------------------------------
     // Concerete implementation of IResourceLoader
     // ----------------------------------------------------------------------------   
-    type ResourceLoader() =
+    type ResourceLoader() = 
         interface IResourceLoader with
-            member this.LoadResourceAsString(resourceName) =
+            
+            member this.LoadResourceAsString(resourceName) = 
                 let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
                 Utility.Helpers.LoadFile(path)
-
-            member this.LoadResourceAsList(resourceName) =
+            
+            member this.LoadResourceAsList(resourceName) = 
                 let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
                 let readLines = System.IO.File.ReadLines(path)
                 let result = new List<string>()
-
                 for line in readLines do
-                    if System.String.IsNullOrWhiteSpace(line) = false && line.StartsWith("#") = false then
+                    if System.String.IsNullOrWhiteSpace(line) = false && line.StartsWith("#") = false then 
                         result.Add(line.Trim().ToLowerInvariant())
                 result
             
-            member this.LoadResourceAsMap(resourceName) =
+            member this.LoadResourceAsMap(resourceName) = 
                 let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
                 let readLines = System.IO.File.ReadLines(path)
-                let result = new List<string[]>()
-
+                let result = new List<string []>()
                 for line in readLines do
-                    if System.String.IsNullOrWhiteSpace(line) = false && line.StartsWith("#") = false then
+                    if System.String.IsNullOrWhiteSpace(line) = false && line.StartsWith("#") = false then 
                         let lineLower = line.ToLowerInvariant()
-                        let values = lineLower.Split([|":"; ","|], System.StringSplitOptions.RemoveEmptyEntries)
-                        if values.Length > 1 then
-                            result.Add(values)
+                        let values = lineLower.Split([| ":"; "," |], System.StringSplitOptions.RemoveEmptyEntries)
+                        if values.Length > 1 then result.Add(values)
                 result
-
-
+    
     // ----------------------------------------------------------------------------
     // Concerete implementation of IFlexFactory
     // ----------------------------------------------------------------------------    
-    type FlexFactory<'a>(container: CompositionContainer, moduleType) as self = 
+    type FlexFactory<'a>(container : CompositionContainer, moduleType) as self = 
         
         [<ImportMany(RequiredCreationPolicy = CreationPolicy.NonShared)>]
         let factory : seq<ExportFactory<'a, IFlexMetaData>> = null
         
-        do 
-            container.ComposeParts(self)
-            for operation in factory do
-                ()
-                //factoryLogger.Info(sprintf "Discovered %s module: %s" moduleType operation.Metadata.Name)
-            
+        do container.ComposeParts(self)
         interface IFlexFactory<'a> with
+            
             member this.GetModuleByName(moduleName) = 
-                if(System.String.IsNullOrWhiteSpace(moduleName)) then 
-                    None
-                else    
-                    let injectMeta = factory.FirstOrDefault(fun a -> String.Equals(a.Metadata.Name, moduleName, StringComparison.OrdinalIgnoreCase))
+                if (System.String.IsNullOrWhiteSpace(moduleName)) then 
+                    Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.MODULE_NOT_FOUND, moduleName))
+                else 
+                    let injectMeta = 
+                        factory.FirstOrDefault
+                            (fun a -> String.Equals(a.Metadata.Name, moduleName, StringComparison.OrdinalIgnoreCase))
                     match injectMeta with
-                    | null -> None
-                    | _ -> Some(injectMeta.CreateExport().Value)
-
+                    | null -> 
+                        Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.MODULE_NOT_FOUND, moduleName))
+                    | _ -> Choice1Of2(injectMeta.CreateExport().Value)
+            
             member this.ModuleExists(moduleName) = 
-                let injectMeta = factory.FirstOrDefault(fun a -> String.Equals(a.Metadata.Name, moduleName, StringComparison.OrdinalIgnoreCase))
+                let injectMeta = 
+                    factory.FirstOrDefault
+                        (fun a -> String.Equals(a.Metadata.Name, moduleName, StringComparison.OrdinalIgnoreCase))
                 match injectMeta with
                 | null -> false
                 | _ -> true
-
+            
             member this.GetAllModules() = 
                 let modules = new Dictionary<string, 'a>(StringComparer.OrdinalIgnoreCase)
-                factory |>
-                    Seq.iter(fun x ->
-                        modules.Add(x.Metadata.Name, x.CreateExport().Value))                
-                modules   
+                factory |> Seq.iter (fun x -> modules.Add(x.Metadata.Name, x.CreateExport().Value))
+                modules
     
-
     /// Loads all the http modules
-    let GetHttpModules() =
-        lazy
-        (
-            let httpModule = new FlexFactory<IHttpModule>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<IHttpModule>
-            httpModule.GetAllModules()
-        )
-
-
+    let GetHttpModules() = 
+        lazy (let httpModule = 
+                  new FlexFactory<IHttpModule>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<IHttpModule>
+              httpModule.GetAllModules())
+    
     // ---------------------------------------------------------------------------- 
     // Concerete implementation of IFactoryCollection
     // ---------------------------------------------------------------------------- 
-    type FactoryCollection(container: CompositionContainer) =
+    type FactoryCollection(container : CompositionContainer) = 
         let filterFactory = new FlexFactory<IFlexFilterFactory>(container, "Filter") :> IFlexFactory<IFlexFilterFactory>
-        let tokenizerFactory = new FlexFactory<IFlexTokenizerFactory>(container, "Tokenizer") :> IFlexFactory<IFlexTokenizerFactory>
+        let tokenizerFactory = 
+            new FlexFactory<IFlexTokenizerFactory>(container, "Tokenizer") :> IFlexFactory<IFlexTokenizerFactory>
         let analyzerFactory = new FlexFactory<Analyzer>(container, "Analyzer") :> IFlexFactory<Analyzer>
         //let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
-        let computationOpertionFactory = new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
+        let computationOpertionFactory = 
+            new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
         //let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
         let scriptFactory = new CompilerService.ScriptFactoryCollection() :> IScriptFactoryCollection
         let resourceLoader = new ResourceLoader() :> IResourceLoader
-
-        interface IFactoryCollection with 
+        interface IFactoryCollection with
             member this.FilterFactory = filterFactory
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
             //member this.SearchQueryFactory = searchQueryFactory
-            member this.ComputationOpertionFactory = computationOpertionFactory           
+            member this.ComputationOpertionFactory = computationOpertionFactory
             //member this.PluginsFactory = pluginsFactory
             member this.ScriptFactoryCollection = scriptFactory
             member this.ResourceLoader = resourceLoader

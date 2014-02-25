@@ -40,6 +40,7 @@ namespace FlexSearch.Api.Message
     public static OperationMessage TOKENIZER_NOT_FOUND = new OperationMessage();
     public static OperationMessage ATLEAST_ONE_FILTER_REQUIRED = new OperationMessage();
     public static OperationMessage SCRIPT_CANT_BE_COMPILED = new OperationMessage();
+    public static OperationMessage MODULE_NOT_FOUND = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -108,6 +109,9 @@ namespace FlexSearch.Api.Message
       SCRIPT_CANT_BE_COMPILED.DeveloperMessage = "Script:{propertyName} cannot be compiled. {value}";
       SCRIPT_CANT_BE_COMPILED.UserMessage = "Script:{propertyName} cannot be compiled.";
       SCRIPT_CANT_BE_COMPILED.ErrorCode = 3000;
+      MODULE_NOT_FOUND.DeveloperMessage = "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.";
+      MODULE_NOT_FOUND.UserMessage = "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.";
+      MODULE_NOT_FOUND.ErrorCode = 4000;
     }
   }
 }

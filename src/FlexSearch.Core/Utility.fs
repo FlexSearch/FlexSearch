@@ -37,6 +37,13 @@ type ValidationBuilder() =
     member this.Zero() = Choice1Of2()
     member this.Combine(a, b) = a
     member this.Delay(f) = f()
+    member this.While(guard, body) =
+        if not (guard()) 
+        then 
+            this.Zero() 
+        else
+            this.Bind( body(), fun () -> 
+                this.While(guard, body))  
 
 //    member this.Run(f) = f()
 

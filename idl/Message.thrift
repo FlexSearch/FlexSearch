@@ -204,3 +204,14 @@ const OperationMessage SCRIPT_CANT_BE_COMPILED =
 		"UserMessage" : "Script:{propertyName} cannot be compiled.", 
 		"ErrorCode": 3000
 	}
+	
+
+// ----------------------------------------------------------------------------
+//	Mef Related
+// ----------------------------------------------------------------------------	
+const OperationMessage MODULE_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
+		"UserMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
+		"ErrorCode": 4000
+	}

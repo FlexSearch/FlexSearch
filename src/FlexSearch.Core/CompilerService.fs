@@ -21,7 +21,6 @@ open System.Collections.Generic
 open System.Reflection
 
 [<AutoOpen>]
-[<RequireQualifiedAccess>]
 module CompilerService = 
     let private codeBaseProfileSelector = 
         lazy (let path = Helpers.GenerateAbsolutePath(".\Conf\Scripts\_ProfileSelectorScriptTemplate.cs")

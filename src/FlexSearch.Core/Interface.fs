@@ -114,10 +114,10 @@ module Interface =
     // ---------------------------------------------------------------------------- 
     /// General fatory Interface for all mef based factories
     // ---------------------------------------------------------------------------- 
-    type IFlexFactory<'a> = 
-        abstract member GetModuleByName     :   string -> 'a option
+    type IFlexFactory<'T> = 
+        abstract member GetModuleByName     :   string -> Choice<'T, OperationMessage>
         abstract member ModuleExists        :   string -> bool
-        abstract member GetAllModules       :   unit -> Dictionary<string, 'a>
+        abstract member GetAllModules       :   unit -> Dictionary<string, 'T>
 
 
     // ---------------------------------------------------------------------------- 

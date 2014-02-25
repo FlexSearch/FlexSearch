@@ -30,7 +30,7 @@ namespace csharp FlexSearch.Api.Dto
 namespace java org.FlexSearch.Api.Dto
 
 include "Api.thrift"
-include "Exception.thrift"
+include "Message.thrift"
 
 // ----------------------------------------------------------------------------
 //	Index related
