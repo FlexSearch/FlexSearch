@@ -149,6 +149,7 @@ type IndexState =
 // ----------------------------------------------------------------------------
 type ScriptsManager = 
     {
+        ComputedFieldScripts        :   Dictionary<string, (IReadOnlyDictionary<string, string> -> string)>
         ProfileSelectorScripts      :   Dictionary<string, (IReadOnlyDictionary<string, string> -> string)>
         CustomScoringScripts        :   Dictionary<string, (IReadOnlyDictionary<string, string> * double -> double)>
     }
@@ -162,7 +163,7 @@ type FlexIndexSetting =
         Fields                  :   FlexField[]
         FieldsLookup            :   Dictionary<string, FlexField>
         SearchProfiles          :   Dictionary<string, SearchQuery>
-        ScriptsManager          :   ScriptsManager   
+        ScriptsManager          :   ScriptsManager 
         IndexConfiguration      :   IndexConfiguration
         BaseFolder              :   string
         ShardConfiguration      :   ShardConfiguration
@@ -247,10 +248,9 @@ type IndexCommand =
     | Commit                              
     
 
-type IndexQuery = 
-    //| SearchProfileQuery of SearchProfileQuery
-    | SearchQuery of SearchQuery
-
+//type IndexQuery = 
+//    //| SearchProfileQuery of SearchProfileQuery
+//    | SearchQuery of SearchQuery
 
 /// Message used by cluster for intra cluster communication
 type CommunicationMessage =

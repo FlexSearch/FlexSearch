@@ -12,6 +12,7 @@ namespace FlexSearch.Core
 
 
 [<RequireQualifiedAccess>]
+[<AutoOpen>]
 module Logger = 
     open FlexSearch.Api
     open FlexSearch.Logging

@@ -107,6 +107,7 @@
       <HintPath>..\..\lib\SuperWebSocket.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
@@ -115,9 +116,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="SocketServerTests.fs" />
     <Compile Include="PoolTests.fs" />
+    <Compile Include="PersistanceStoreTests.fs" />
+    <Compile Include="ValidatorsTests.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
@@ -131,6 +135,16 @@
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Logging\FlexSearch.Logging.csproj">
+      <Name>FlexSearch.Logging</Name>
+      <Project>{cd741727-1160-4832-addf-0cad1a2bca31}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Server\FlexSearch.Server.csproj">
+      <Name>FlexSearch.Server</Name>
+      <Project>{06f48daa-3928-458d-af20-5ffb55e23d74}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
