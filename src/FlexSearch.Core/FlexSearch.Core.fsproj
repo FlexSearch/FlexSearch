@@ -309,8 +309,6 @@
     <Compile Include="Server.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />
-    <EmbeddedResource Include="FlexSearchGrammar.cgt" />
-    <None Include="Scripting.cs" />
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
