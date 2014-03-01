@@ -55,6 +55,8 @@ namespace FlexSearch.Api.Message
     public static OperationMessage MISSING_FIELD_VALUE_1 = new OperationMessage();
     public static OperationMessage UNKNOWN_MISSING_VALUE_OPTION = new OperationMessage();
     public static OperationMessage QUERYSTRING_PARSING_ERROR = new OperationMessage();
+    public static OperationMessage DATA_CANNOT_BE_PARSED = new OperationMessage();
+    public static OperationMessage QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -168,6 +170,12 @@ namespace FlexSearch.Api.Message
       QUERYSTRING_PARSING_ERROR.DeveloperMessage = "Unable to parse the passed query string. {value}";
       QUERYSTRING_PARSING_ERROR.UserMessage = "Unable to parse the passed query string.";
       QUERYSTRING_PARSING_ERROR.ErrorCode = 5005;
+      DATA_CANNOT_BE_PARSED.DeveloperMessage = "Field:{propertyName} The passed data cannot be parsed. Check if the passed data is in the correct format required by the query operator";
+      DATA_CANNOT_BE_PARSED.UserMessage = "Field:{propertyName} The passed data cannot be parsed. Check if the passed data is in the correct format required by the query operator";
+      DATA_CANNOT_BE_PARSED.ErrorCode = 5006;
+      QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED.DeveloperMessage = "Field:{propertyName} Query operator does not support the passed field type.";
+      QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED.UserMessage = "Field:{propertyName} Query operator does not support the passed field type.";
+      QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED.ErrorCode = 5007;
     }
   }
 }

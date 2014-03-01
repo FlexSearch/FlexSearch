@@ -103,6 +103,13 @@ module JavaHelpers =
     let inline GetJavaDouble(value : Double) = java.lang.Double(value)
     let inline GetJavaInt(value : int) = java.lang.Integer(value)
     let inline GetJavaLong(value : int64) = java.lang.Long(value)
+    let JavaLongMax = java.lang.Long(java.lang.Long.MAX_VALUE)
+    let JavaLongMin = java.lang.Long(java.lang.Long.MIN_VALUE)
+    let JavaDoubleMax = java.lang.Double(java.lang.Double.MAX_VALUE)
+    let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
+    let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
+    let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
+
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns

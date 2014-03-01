@@ -90,6 +90,21 @@ id,givenname,surname,cvv2
             Output = 1 }
           { Note = "Searching for givenname 'aaron' & surname 'jhonson or Garner' should return 2 record"
             Input = "givenname eq 'aaron' and (surname eq 'jhonson' or surname eq 'Garner')"
+            Output = 2 }
+          { Note = "Searching for 'id eq 1' should return 1 records"
+            Input = "_id = '1'"
+            Output = 1 }
+          { Note = "Searching for int field 'cvv2 eq 44' should return 1 records"
+            Input = "cvv2 = '44'"
+            Output = 1 }
+          { Note = "Searching for 'aaron' should return 3 records"
+            Input = "givenname = 'aaron'"
+            Output = 3 }
+          { Note = "Searching for 'aaron' & 'jhonson' should return 1 record"
+            Input = "givenname = 'aaron' and surname = 'jhonson'"
+            Output = 1 }
+          { Note = "Searching for givenname 'aaron' & surname 'jhonson or Garner' should return 2 record"
+            Input = "givenname = 'aaron' and (surname = 'jhonson' or surname = 'Garner')"
             Output = 2 } ]
     
     let tests = 
@@ -123,6 +138,124 @@ id,topic,abstract
     
     let tests = 
         { Title = "Term Match tests (Complex)"
+          TestData = testData
+          TestObjects = testCases }
+    
+    SearchTestRunner tests
+
+[<Tests>]
+let fuzzyWildCardMatchTests = 
+    let testData = """
+id,givenname,surname,cvv2
+1,Aaron,jhonson,23
+2,aron,hewitt,32
+3,Airon,Garner,44
+4,aroon,Garner,43
+5,aronn,jhonson,332
+6,aroonn,jhonson,332
+7,boat,,jhonson,332
+8,moat,jhonson,332
+"""
+    
+    let testCases = 
+        [ { Note = "Searching for 'givenname = aron' with default slop of 1 should return 5 records"
+            Input = "givenname fuzzy 'aron'"
+            Output = 5 }
+          { Note = "Searching for 'givenname = aron' with specified slop of 1 should return 5 records"
+            Input = "givenname fuzzy ['aron', 'slop:1']"
+            Output = 5 }
+          { Note = "Searching for 'givenname = aron' with slop of 2 should return 6 records"
+            Input = "givenname fuzzy ['aron', 'slop:2']"
+            Output = 6 }
+          { Note = "Searching for 'givenname = aron' with default slop of 1 should return 5 records"
+            Input = "givenname ~= 'aron'"
+            Output = 5 }
+          { Note = "Searching for 'givenname = aron' with specified slop of 1 should return 5 records"
+            Input = "givenname ~= ['aron', 'slop:1']"
+            Output = 5 }
+          { Note = "Searching for 'givenname = aron' with slop of 2 should return 6 records"
+            Input = "givenname ~= ['aron', 'slop:2']"
+            Output = 6 }
+          { Note = "Searching for 'givenname = aron?' should return 1 records"
+            Input = "givenname like 'aron?'"
+            Output = 1 }
+          { Note = "Searching for 'givenname = aron*' should return 2 records"
+            Input = "givenname like 'aron*'"
+            Output = 2 }
+          { Note = "Searching for 'givenname = ar?n' should return 1 records"
+            Input = "givenname like 'ar?n'"
+            Output = 1 }
+          { Note = 
+                "Searching for 'givenname = AR?N' should return 0 records as matching is case sensitive and like bypasses analysis"
+            Input = "givenname like 'AR?N'"
+            Output = 0 }
+          { Note = "Searching for 'givenname = aron?' should return 1 records"
+            Input = "givenname %= 'aron?'"
+            Output = 1 }
+          { Note = "Searching for 'givenname = aron*' should return 2 records"
+            Input = "givenname %= 'aron*'"
+            Output = 2 }
+          { Note = "Searching for 'givenname = ar?n' should return 1 records"
+            Input = "givenname %= 'ar?n'"
+            Output = 1 }
+          { Note = 
+                "Searching for 'givenname = AR?N' should return 0 records as matching is case sensitive and like bypasses analysis"
+            Input = "givenname %= 'AR?N'"
+            Output = 0 }
+          { Note = "Searching for 'givenname = [mb]oat' should return 2 records"
+            Input = "givenname regex '[mb]oat'"
+            Output = 2 } ]
+    
+    let tests = 
+        { Title = "Fuzzy/Wildcard tests"
+          TestData = testData
+          TestObjects = testCases }
+    
+    SearchTestRunner tests
+
+[<Tests>]
+let rangeQueryTests = 
+    let testData = """
+id,givenname,surname,cvv2
+1,Aaron,jhonson,1
+2,aaron,hewitt,5
+3,Fred,Garner,10
+4,aaron,Garner,15
+5,fred,jhonson,20
+"""
+    
+    let testCases = 
+        [ { Note = 
+                "Searching for records with cvv in range 1 to 20 inclusive upper & lower bound should return 5 records"
+            Input = "cvv2 >= '1' and cvv2 <= '20'"
+            Output = 5 }
+          { Note = 
+                "Searching for records with cvv in range 1 to 20 exclusive upper & lower bound should return 3 records"
+            Input = "cvv2 > '1' and cvv2 < '20'"
+            Output = 3 }
+          { Note = 
+                "Searching for records with cvv in range 1 to 20 inclusive upper & exclusive lower bound should return 4 records"
+            Input = "cvv2 >= '1' and cvv2 < '20'"
+            Output = 4 }
+          { Note = 
+                "Searching for records with cvv in range 1 to 20 excluding upper & including lower bound should return 4 records"
+            Input = "cvv2 > '1' and cvv2 <= '20'"
+            Output = 4 }
+          { Note = "Searching for records with cvv2 > '1' should return 4"
+            Input = "cvv2 > '1'"
+            Output = 4 }
+          { Note = "Searching for records with cvv2 >= '1' should return 5"
+            Input = "cvv2 >= '1'"
+            Output = 5 }
+          { Note = "Searching for records with cvv2 < '20' should return 4"
+            Input = "cvv2 < '20'"
+            Output = 4 }
+          { Note = "Searching for records with cvv2 <= '20' should return 5"
+            Input = "cvv2 <= '20'"
+            Output = 5 } ]
+    
+    let tests = 
+        { Title = "Range query tests"
           TestData = testData
           TestObjects = testCases }
     

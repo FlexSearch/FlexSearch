@@ -316,3 +316,17 @@ const OperationMessage QUERYSTRING_PARSING_ERROR =
 		"UserMessage" : "Unable to parse the passed query string.", 
 		"ErrorCode": 5005
 	}
+	
+const OperationMessage DATA_CANNOT_BE_PARSED = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} The passed data cannot be parsed. Check if the passed data is in the correct format required by the query operator", 
+		"UserMessage" : "Field:{propertyName} The passed data cannot be parsed. Check if the passed data is in the correct format required by the query operator", 
+		"ErrorCode": 5006
+	}
+	
+const OperationMessage QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} Query operator does not support the passed field type.", 
+		"UserMessage" : "Field:{propertyName} Query operator does not support the passed field type.", 
+		"ErrorCode": 5007
+	}	
