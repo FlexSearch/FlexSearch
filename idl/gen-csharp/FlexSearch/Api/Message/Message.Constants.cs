@@ -29,6 +29,7 @@ namespace FlexSearch.Api.Message
     public static OperationMessage ERROR_ADDING_INDEX_STATUS = new OperationMessage();
     public static OperationMessage INDEX_IS_ALREADY_ONLINE = new OperationMessage();
     public static OperationMessage INDEX_IS_ALREADY_OFFLINE = new OperationMessage();
+    public static OperationMessage INDEX_IS_IN_INVALID_STATE = new OperationMessage();
     public static OperationMessage PROPERTY_CANNOT_BE_EMPTY = new OperationMessage();
     public static OperationMessage REGEX_NOT_MATCHED = new OperationMessage();
     public static OperationMessage VALUE_NOT_IN = new OperationMessage();
@@ -100,6 +101,9 @@ namespace FlexSearch.Api.Message
       INDEX_IS_ALREADY_OFFLINE.DeveloperMessage = "The index is already offline or closing at the moment.";
       INDEX_IS_ALREADY_OFFLINE.UserMessage = "The index is already offline or closing at the moment.";
       INDEX_IS_ALREADY_OFFLINE.ErrorCode = 1011;
+      INDEX_IS_IN_INVALID_STATE.DeveloperMessage = "Index is in invalid state.";
+      INDEX_IS_IN_INVALID_STATE.UserMessage = "Index is in invalid state.";
+      INDEX_IS_IN_INVALID_STATE.ErrorCode = 1012;
       PROPERTY_CANNOT_BE_EMPTY.DeveloperMessage = "Field:{propertyName} cannot be empty.";
       PROPERTY_CANNOT_BE_EMPTY.UserMessage = "Field:{propertyName} cannot be empty.";
       PROPERTY_CANNOT_BE_EMPTY.ErrorCode = 2001;

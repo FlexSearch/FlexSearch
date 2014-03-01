@@ -77,11 +77,11 @@ module Index =
             | (true, state) -> Choice1Of2(state)
             | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
         
-        member this.AddStatus (indexName, status) =
+        member this.AddStatus(indexName, status) = 
             match this.IndexStatus.TryAdd(indexName, status) with
             | true -> Choice1Of2()
             | false -> Choice2Of2(MessageConstants.ERROR_ADDING_INDEX_STATUS)
-
+    
     // Index auto commit changes job
     let private commitJob (flexIndex : FlexIndex) = 
         // Looping over array by index number is usually the fastest
@@ -110,10 +110,9 @@ module Index =
                 do! Async.Sleep(time)
                 if (cts.IsCancellationRequested) then cts.Dispose()
                 else 
-                    try
+                    try 
                         work (flexIndex)
-                    with e -> 
-                        cts.Dispose()
+                    with e -> cts.Dispose()
                 return! loop delay cts
             }
         loop delay flexIndex.Token
@@ -194,8 +193,8 @@ module Index =
             // Update status from online to closing
             state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Closing
             flexIndex.Token.Cancel()
-            for shard in flexIndex.Shards do 
-                try
+            for shard in flexIndex.Shards do
+                try 
                     shard.NRTManager.close()
                     shard.IndexWriter.commit()
                     shard.IndexWriter.close()
@@ -216,6 +215,7 @@ module Index =
                 | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
             | IndexState.Opening -> Choice2Of2(MessageConstants.INDEX_IS_OPENING)
             | IndexState.Offline | IndexState.Closing -> Choice2Of2(MessageConstants.INDEX_IS_OFFLINE)
+            | _ -> Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
         | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
     
     // ----------------------------------------------------------------------------               
@@ -401,6 +401,7 @@ module Index =
                     | _ -> 
                         let! settings = settingsParser.BuildSetting(flexIndex)
                         persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
+                        Logger.AddIndex(flexIndex.IndexName, flexIndex)
                         if flexIndex.Online then do! addIndex (state, settings)
                         else do! state.AddStatus(flexIndex.IndexName, IndexState.Offline)
                 }
@@ -415,12 +416,15 @@ module Index =
                         closeIndex (state, flexIndex)
                         do! addIndex (state, settings)
                         persistanceStore.Put index.IndexName index |> ignore
+                        Logger.AddIndex(index.IndexName,index)
                         return! Choice1Of2()
                     | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
                     | IndexState.Offline | IndexState.Closing -> 
                         let settings = settingsParser.BuildSetting(index)
                         persistanceStore.Put index.IndexName index |> ignore
+                        Logger.AddIndex(index.IndexName,index)
                         return! Choice1Of2()
+                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
                 }
             
             member this.DeleteIndex indexName = 
@@ -436,6 +440,7 @@ module Index =
                         // It is possible that directory might not exist if the index has never been opened
                         if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
                             Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
+                        Logger.DeleteIndex(indexName)
                         return! Choice1Of2()
                     | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
                     | IndexState.Offline | IndexState.Closing -> 
@@ -445,7 +450,9 @@ module Index =
                         // It is possible that directory might not exist if the index has never been opened
                         if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
                             Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
+                        Logger.DeleteIndex(indexName)
                         return! Choice1Of2()
+                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
                 }
             
             member this.CloseIndex indexName = 
@@ -460,6 +467,7 @@ module Index =
                         let index' = persistanceStore.Get<Index>(indexName)
                         index'.Value.Online <- false
                         persistanceStore.Put indexName index'.Value |> ignore
+                        Logger.CloseIndex(indexName)
                         return! Choice1Of2()
                 }
             
@@ -474,12 +482,16 @@ module Index =
                         do! addIndex (state, settings)
                         index.Value.Online <- true
                         persistanceStore.Put indexName index.Value |> ignore
+                        Logger.OpenIndex(indexName)
                         return! Choice1Of2()
+                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
                 }
             
             member this.ShutDown() = 
+                Logger.Shutdown()
                 for index in state.IndexRegisteration do
                     closeIndex (state, index.Value)
+                    Logger.CloseIndex(index.Key)
                 true
             
             member this.PerformQuery(indexName, query) = maybe { let! flexIndex = state.GetRegisteration(indexName)

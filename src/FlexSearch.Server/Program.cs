@@ -5,18 +5,17 @@
     using FlexSearch.Core;
     using Topshelf;
     using Owin;
-
+    using Gibraltar.Agent;
+    using System.IO;
     internal class Program
     {
         #region Methods
-
-
         private static void Main(string[] args)
         {
+            Logger.StartSession();
             try
             {
-                var settings = Core.Main.GetServerSettings(Constants.ConfFolder.Value + "Config.json");
-
+                var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder.Value, "Config.json"));
                 HostFactory.Run(
                     x =>
                     {
@@ -36,10 +35,10 @@
             }
             catch (Exception e)
             {
-                //logger.Fatal(e.Message, e);
+                Logger.TraceCritical(e);
             }
+            Logger.EndSession();
         }
-
         #endregion
     }
 }

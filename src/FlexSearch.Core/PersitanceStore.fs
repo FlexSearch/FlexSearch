@@ -76,7 +76,7 @@ module Store =
             let instanceType = typeof<'T>.FullName
             if key = "" then None
             else 
-                let sql = sprintf "select * from keyvalue where type = '%s' and key = '%s' limit 1" instanceType key
+                let sql = sprintf "SELECT * FROM keyvalue WHERE type = '%s' AND key = '%s' LIMIT 1" instanceType key
                 let command = new SQLiteCommand(sql, db.Value)
                 let reader = command.ExecuteReader()
                 let mutable result : 'T = Unchecked.defaultof<'T>
@@ -88,7 +88,7 @@ module Store =
             member this.Get<'T>(key) = this.get<'T> (key)
             
             member this.GetAll<'T>() = 
-                let sql = sprintf "select * from keyvalue where type= '%s'" typeof<'T>.FullName
+                let sql = sprintf "SELECT * FROM keyvalue WHERE type= '%s'" typeof<'T>.FullName
                 let command = new SQLiteCommand(sql, db.Value)
                 let reader = command.ExecuteReader()
                 let mutable result : List<'T> = new List<'T>()
@@ -100,7 +100,7 @@ module Store =
                 let instanceType = typeof<'T>.FullName
                 if key = "" then false
                 else 
-                    let sql = sprintf "DELETE FROM keyvalue WHERE type='%s' and key='%s'" instanceType key
+                    let sql = sprintf "DELETE FROM keyvalue WHERE type='%s' AND key='%s'" instanceType key
                     let command = new SQLiteCommand(sql, db.Value)
                     command.ExecuteNonQuery() |> ignore
                     true
@@ -109,7 +109,7 @@ module Store =
                 let instanceType = typeof<'T>.FullName
                 if key = "" then false
                 else 
-                    let sql = sprintf "select * from keyvalue where type='%s' and key='%s' limit 1" instanceType key
+                    let sql = sprintf "SELECT * FROM keyvalue WHERE type='%s' AND key='%s' LIMIT 1" instanceType key
                     let command = new SQLiteCommand(sql, db.Value)
                     let reader = command.ExecuteReader()
                     let mutable result = false
@@ -118,7 +118,8 @@ module Store =
                     let value = Newtonsoft.Json.JsonConvert.SerializeObject(instance)
                     if result then 
                         // Exists so lets update it 
-                        let sql = "update keyvalue SET type = @type, key = @key, value = @value, timestamp = @timestamp where type = @type and key = @key" 
+                        let sql = 
+                            "UPDATE keyvalue SET type = @type, key = @key, value = @value, timestamp = @timestamp WHERE type = @type AND key = @key"
                         let command = new SQLiteCommand(sql, db.Value)
                         command.Parameters.Add("@type", Data.DbType.String).Value <- instanceType
                         command.Parameters.Add("@key", Data.DbType.String).Value <- key
@@ -127,13 +128,14 @@ module Store =
                         command.ExecuteNonQuery() |> ignore
                     else 
                         // Does not exist so create it
-                        let sql = "insert into keyvalue (type, key, value, timestamp) values (@type, @key, @value, @timestamp)" 
+                        let sql = 
+                            "INSERT INTO keyvalue (type, key, value, timestamp) VALUES (@type, @key, @value, @timestamp)"
                         let command = new SQLiteCommand(sql, db.Value)
                         command.Parameters.Add("@type", Data.DbType.String).Value <- instanceType
                         command.Parameters.Add("@key", Data.DbType.String).Value <- key
                         command.Parameters.Add("@value", Data.DbType.String).Value <- value
                         command.Parameters.Add("@timestamp", Data.DbType.String).Value <- DateTime.Now.ToString()
-                        try
+                        try 
                             command.ExecuteNonQuery() |> ignore
                         with e -> ()
                     true

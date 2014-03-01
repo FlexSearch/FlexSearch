@@ -198,7 +198,7 @@ type StatusModule() =
     override this.Get(indexName, owin, state) = 
         let processRequest = 
             match state.IndexService.IndexStatus(indexName) with
-            | Choice1Of2(status) -> Choice1Of2(new IndexStatus(status))
+            | Choice1Of2(status) -> Choice1Of2(new IndexStatusResponse(status))
             | Choice2Of2(e) -> Choice2Of2(e)
         owin |> responseProcessor processRequest OK BAD_REQUEST
     

@@ -24,7 +24,7 @@ module Main =
     open System.Net
     open System.Threading
     open System.Threading.Tasks
-    
+    open System.IO
     /// <summary>
     /// A container used by OWIN to perform dependency injection
     /// </summary>
@@ -118,13 +118,13 @@ module Main =
         let factoryCollection = new FactoryCollection(pluginContainer) :> IFactoryCollection
         let settingBuilder = 
             SettingsBuilder.SettingsBuilder factoryCollection (new Validator.IndexValidator(factoryCollection))
-        let persistanceStore = new PersistanceStore(Constants.ConfFolder.Value, testServer)
+        let persistanceStore = new PersistanceStore(Path.Combine(Constants.ConfFolder.Value, "Conf.db"), testServer)
         let searchService = new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
         let indexService = 
             new IndexService(settingBuilder, persistanceStore, new VersioningCacheStore(), searchService) :> IIndexService
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
         let nodeState = 
-            { PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
+            { PersistanceStore = persistanceStore
               ServerSettings = serverSettings
               CacheStore = Unchecked.defaultof<_>
               IndexService = indexService

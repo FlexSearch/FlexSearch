@@ -83,7 +83,10 @@ module Factories =
         [<ImportMany(RequiredCreationPolicy = CreationPolicy.NonShared)>]
         let factory : seq<ExportFactory<'a, IFlexMetaData>> = null
         
-        do container.ComposeParts(self)
+        do 
+            container.ComposeParts(self)
+            factory |> Seq.iter (fun x -> Logger.MefComponentLoaded(x.Metadata.Name, moduleType))
+        
         interface IFlexFactory<'a> with
             
             member this.GetModuleByName(moduleName) = 

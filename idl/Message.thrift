@@ -120,7 +120,13 @@ const OperationMessage INDEX_IS_ALREADY_OFFLINE =
 		"UserMessage" : "The index is already offline or closing at the moment.", 
 		"ErrorCode": 1011
 	}
-	
+
+const OperationMessage INDEX_IS_IN_INVALID_STATE = 
+	{
+		"DeveloperMessage" : "Index is in invalid state.", 
+		"UserMessage" : "Index is in invalid state.", 
+		"ErrorCode": 1012
+	}	
 // ----------------------------------------------------------------------------
 //	Validation Exceptions
 // ----------------------------------------------------------------------------
