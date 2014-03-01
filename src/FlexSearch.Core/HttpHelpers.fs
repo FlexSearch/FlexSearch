@@ -8,10 +8,8 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
 module HttpHelpers = 
     open FlexSearch
     open FlexSearch.Api
@@ -20,6 +18,7 @@ module HttpHelpers =
     open FlexSearch.Utility
     open Microsoft.Owin
     open Newtonsoft.Json
+    open Newtonsoft.Json.Converters
     open ProtoBuf
     open System
     open System.Collections.Concurrent
@@ -28,12 +27,11 @@ module HttpHelpers =
     open System.Net
     open System.Text
     open System.Threading
-    open Newtonsoft.Json
-    open Newtonsoft.Json.Converters
     
     let jsonSettings = new JsonSerializerSettings()
+    
     jsonSettings.Converters.Add(new StringEnumConverter())
-
+    
     /// Helper method to serialize cluster messages
     let protoSerialize (message : 'a) = 
         use stream = new MemoryStream()
@@ -46,58 +44,97 @@ module HttpHelpers =
         Serializer.Deserialize<'T>(stream)
     
     /// Write http response
-    let writeResponse (statusCode : System.Net.HttpStatusCode) (res : obj) (owin : IOwinContext) = 
+    let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
         let matchType format res = 
             match format with
             | "text/json" | "application/json" | "json" -> 
                 owin.Response.ContentType <- "text/json"
-                let result = JsonConvert.SerializeObject(res, jsonSettings)
-                Some(Encoding.UTF8.GetBytes(result))
+                match owin.Request.Query.Get("callback") with
+                | null -> 
+                    let result = JsonConvert.SerializeObject(res, jsonSettings)
+                    Some(Encoding.UTF8.GetBytes(result))
+                | fname -> 
+                    let result = sprintf "%s(%s);" fname (JsonConvert.SerializeObject(res, jsonSettings))
+                    Some(Encoding.UTF8.GetBytes(result))
             | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 owin.Response.ContentType <- "application/x-protobuf"
                 Some(protoSerialize (res))
             | _ -> None
-        
-        let result = 
-            if owin.Request.Uri.Segments.Last().Contains(".") then 
-                matchType (owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf(".") + 1)) 
-                    res
-            else if owin.Request.Accept = null then matchType owin.Request.ContentType res
-            else 
-                if owin.Request.Accept.Contains(",") then
-                    let header = owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
-                    matchType header res
-                else
-                    matchType owin.Request.Accept res
-        
         owin.Response.StatusCode <- int statusCode
-        match result with
-        | None -> owin.Response.StatusCode <- int HttpStatusCode.NotAcceptable
-        | Some(x) -> await (owin.Response.WriteAsync(x))
+        if response <> Unchecked.defaultof<_> then 
+            let result = 
+                if owin.Request.Uri.Segments.Last().Contains(".") then 
+                    matchType 
+                        (owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf(".") + 1)) 
+                        response
+                else if owin.Request.Accept = null then matchType "application/json" response
+                else if owin.Request.Accept.Contains(",") then 
+                    let header = owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
+                    matchType header response
+                else matchType owin.Request.Accept response
+            match result with
+            | None -> owin.Response.StatusCode <- int HttpStatusCode.NotAcceptable
+            | Some(x) -> await (owin.Response.WriteAsync(x))
     
     /// Write http response
     let getRequestBody<'T when 'T : null> (request : IOwinRequest) = 
+        let contentType = 
+            if String.IsNullOrWhiteSpace(request.ContentType) then 
+                if request.Uri.Segments.Last().Contains(".") then 
+                    request.Uri.Segments.Last().Substring(request.Uri.Segments.Last().IndexOf(".") + 1)
+                else 
+                    // Default to json
+                    "application/json"
+            else request.ContentType
         if request.Body.CanRead then 
-            match request.ContentType with
-            | "text/json" | "application/json" -> 
+            match contentType with
+            | "text/json" | "application/json" | "json" -> 
                 let body = 
                     use reader = new System.IO.StreamReader(request.Body)
                     reader.ReadToEnd()
-                try 
-                    match JsonConvert.DeserializeObject<'T>(body) with
-                    | null -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, "No body is defined."))
-                    | result -> Choice1Of2(result)
-                with ex -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
-            | "application/x-protobuf" | "application/octet-stream" -> 
+                if String.IsNullOrWhiteSpace(body) <> true then 
+                    try 
+                        match JsonConvert.DeserializeObject<'T>(body) with
+                        | null -> 
+                            Choice2Of2
+                                (OperationMessage.WithDeveloperMessage
+                                     (MessageConstants.HTTP_UNABLE_TO_PARSE, "No body is defined."))
+                        | result -> Choice1Of2(result)
+                    with ex -> 
+                        Choice2Of2
+                            (OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
+                else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
+            | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 try 
                     Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
-                with ex -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
+                with ex -> 
+                    Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
             | _ -> Choice2Of2(MessageConstants.HTTP_UNSUPPORTED_CONTENT_TYPE)
         else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
     
     let OK (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.OK value owin
     let BAD_REQUEST (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.BadRequest value owin
-    let getValueFromQueryString key defaultValue (owin : IOwinContext) = owin.Request.Query.Get(key)
+    
+    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> value
+    
+    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Int32.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue
+    
+    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Boolean.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue
     
     let inline checkIdPresent (owin : IOwinContext) = 
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
@@ -107,14 +144,3 @@ module HttpHelpers =
         match f with
         | Choice1Of2(r) -> success r owin
         | Choice2Of2(r) -> failure r owin
-    
-    type HttpBuilder() = 
-        
-        member this.Bind(v, f) = 
-            match v with
-            | Choice1Of2(x) -> f x
-            | Choice2Of2(s) -> Choice2Of2(s)
-        
-        member this.ReturnFrom v = v
-        member this.Return v = Choice1Of2(v)
-        member this.Zero() = Choice1Of2()
