@@ -8,63 +8,101 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Utility
 
-// ----------------------------------------------------------------------------
 open FlexSearch.Api.Message
 open System
+open System.Collections.Generic
 open System.IO
 open System.Threading
 
-// ----------------------------------------------------------------------------
-// A generic result object used by flex to pass around the result. Similar to
-// choice 
-// ----------------------------------------------------------------------------
-type Result<'T> = 
-    | Success of 'T
-    | Error of MessageConstants
-
-type ValidationBuilder() = 
+[<AutoOpen>]
+module MonadHelpers = 
+    type ValidationBuilder() = 
+        
+        member this.Bind(v, f) = 
+            match v with
+            | Choice1Of2(x) -> f x
+            | Choice2Of2(s) -> Choice2Of2(s)
+        
+        member this.ReturnFrom v = v
+        member this.Return v = Choice1Of2(v)
+        member this.Zero() = Choice1Of2()
+        
+        member this.Combine(a, b) = 
+            match a, b with
+            | Choice1Of2 a', Choice1Of2 b' -> Choice1Of2 b'
+            | Choice2Of2 a', Choice1Of2 b' -> Choice2Of2 a'
+            | Choice1Of2 a', Choice2Of2 b' -> Choice2Of2 b'
+            | Choice2Of2 a', Choice2Of2 b' -> Choice2Of2 a'
+        
+        member this.Delay(f) = f()
+        
+        member this.TryFinally(body, compensation) = 
+            try 
+                this.ReturnFrom(body())
+            finally
+                compensation()
+        
+        member this.Using(disposable : #System.IDisposable, body) = 
+            let body' = fun () -> body disposable
+            this.TryFinally(body', 
+                            fun () -> 
+                                match disposable with
+                                | disp -> disp.Dispose())
     
-    member this.Bind(v, f) = 
-        match v with
-        | Choice1Of2(x) -> f x
-        | Choice2Of2(s) -> Choice2Of2(s)
+    let maybe = new ValidationBuilder()
     
-    member this.ReturnFrom v = v
-    member this.Return v = Choice1Of2(v)
-    member this.Zero() = Choice1Of2()
-    member this.Combine(a, b) = a
-    member this.Delay(f) = f()
-    member this.While(guard, body) =
-        if not (guard()) 
-        then 
-            this.Zero() 
-        else
-            this.Bind( body(), fun () -> 
-                this.While(guard, body))  
+    /// <summary>
+    /// Applies the given function to each element of the collection and returns on encountering
+    /// error.
+    /// </summary>
+    /// <param name="list"></param>
+    /// <param name="f"></param>
+    let inline iterExitOnFailure (list : 'T list) f = 
+        let rec loop (list : 'T list) f = 
+            match list with
+            | head :: tail -> 
+                match f (head) with
+                | Choice1Of2(_) -> loop tail f
+                | Choice2Of2(e) -> Choice2Of2(e)
+            | [] -> Choice1Of2()
+        loop list f
+    
+    /// <summary>
+    /// Creates a new collection whose elements are the results of applying the given function 
+    /// to each of the elements of the collection. The method will return on encountering the first
+    /// error. This is to be used with the maybe monad.
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="f"></param>
+    let inline mapExitOnFailure (input : 'T list) (f : 'T -> Choice<'U, OperationMessage>) = 
+        let res = new ResizeArray<'U>()
+        
+        let rec loop (input : 'T list) f = 
+            match input with
+            | head :: tail -> 
+                match f (head) with
+                | Choice1Of2(result) -> 
+                    res.Add(result)
+                    loop tail f
+                | Choice2Of2(e) -> Choice2Of2(e)
+            | [] -> Choice1Of2()
+        match loop input f with
+        | Choice1Of2(_) -> Choice1Of2(res)
+        | Choice2Of2(e) -> Choice2Of2(e)
+    
+    let inline getValue (dictionary : Dictionary<string, 'T>) key (error : OperationMessage) = 
+        match dictionary.TryGetValue(key) with
+        | (true, x) -> Choice1Of2(x)
+        | _ -> Choice2Of2(OperationMessage.WithPropertyName(error, key))
 
-//    member this.Run(f) = f()
-
-//    member this.TryWith(m, h) =
-//        try this.ReturnFrom(m)
-//        with e -> h e
-//
-//    member this.TryFinally(m, compensation) =
-//        try this.ReturnFrom(m)
-//        finally compensation()
-//
-//    member this.Using(res:#IDisposable, body) =
-//        this.TryFinally(body res, fun () -> match res with null -> () | disp -> disp.Dispose())
-//    
-//    member this.While(guard, f) =
-//        if not (guard()) then this.Zero() else
-//        this.Bind(f(), fun _ -> this.While(guard, f))
-//
-//    member this.For(sequence:seq<_>, body) =
-//        this.Using(sequence.GetEnumerator(),
-//                        fun enum -> this.While(enum.MoveNext, this.Delay(fun () -> body enum.Current)))
+[<AutoOpen>]
+module JavaHelpers = 
+    // These are needed to satsfy certain lucene query requirements
+    let inline GetJavaDouble(value : Double) = java.lang.Double(value)
+    let inline GetJavaInt(value : int) = java.lang.Integer(value)
+    let inline GetJavaLong(value : int64) = java.lang.Long(value)
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
@@ -115,33 +153,15 @@ module Helpers =
     open System.Security.AccessControl
     open System.Security.Principal
     
-    let maybe = new ValidationBuilder()
-
-    let loopValidation (list: 'T list) f =
-        let rec loop (list: 'T list) f =
-            match list with
-            | head :: tail -> 
-                match f (head) with
-                | Choice1Of2(_) -> 
-                    loop tail f
-                | Choice2Of2(e) -> Choice2Of2(e)
-            | [] -> Choice1Of2()
-        loop list f
-
-    let inline getValue (dictionary: Dictionary<string, 'T>) key (error : OperationMessage) =
-        match  dictionary.TryGetValue(key) with
-        | (true, x) -> Choice1Of2(x)
-        | _ -> Choice2Of2(error)
-
-    // Returns current date time in Flex compatible format
+    /// Returns current date time in Flex compatible format
     let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmss"))
     
-    // Utility method to load a file into text string
+    /// Utility method to load a file into text string
     let LoadFile(filePath : string) = 
         if File.Exists(filePath) = false then failwithf "File does not exist: {0}" filePath
         File.ReadAllText(filePath)
     
-    // Deals with checking if the local admin privledges
+    /// Deals with checking if the local admin privledges
     let CheckIfAdministrator() = 
         let currentUser : WindowsIdentity = WindowsIdentity.GetCurrent()
         if currentUser <> null then 
@@ -161,14 +181,14 @@ module Helpers =
             if Directory.Exists(dataPath) || File.Exists(dataPath) then dataPath
             else failwithf "message=The specified path does not exist.; path=%s" dataPath
     
-    // Wrapper around dict lookup. Useful for validation in tokenizers and filters
+    /// Wrapper around dict lookup. Useful for validation in tokenizers and filters
     let inline KeyExists(key, dict : Dictionary<string, string>) = 
         match dict.TryGetValue(key) with
         | (true, value) -> value
         | _ -> failwithf "'%s' is required." key
     
-    // Helper method to check if the passed key exists in the dictionary and if it does then the
-    // specified value is in the enum list
+    /// Helper method to check if the passed key exists in the dictionary and if it does then the
+    /// specified value is in the enum list
     let inline ValidateIsInList(key, param : Dictionary<string, string>, enumValues : HashSet<string>) = 
         let value = KeyExists(key, param)
         match enumValues.Contains(value) with
