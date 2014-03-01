@@ -192,9 +192,44 @@ const OperationMessage ATLEAST_ONE_FILTER_REQUIRED =
 	{
 		"DeveloperMessage" : "Atleast one filter should be specified for a custom analyzer.", 
 		"UserMessage" : "Atleast one filter should be specified for a custom analyzer.", 
-		"ErrorCode": 2010
-	}	
+		"ErrorCode": 2011
+	}
+	
+const OperationMessage UNKNOWN_FIELD_TYPE = 
+	{
+		"DeveloperMessage" : "Unsupported field type specified in the Field Properties.", 
+		"UserMessage" : "Unsupported field type specified in the Field Properties.", 
+		"ErrorCode": 2012
+	}
 
+const OperationMessage SCRIPT_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "Script{propertyName} not found.", 
+		"UserMessage" : "Script{propertyName} not found.", 
+		"ErrorCode": 2013
+	}
+
+const OperationMessage ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE = 
+	{
+		"DeveloperMessage" : "FieldType:{propertyName} does not support custom analyzer.", 
+		"UserMessage" : "FieldType:{propertyName} does not support custom analyzer.", 
+		"ErrorCode": 2014
+	}
+
+const OperationMessage UNKNOWN_SCRIPT_TYPE = 
+	{
+		"DeveloperMessage" : "ScriptType:{propertyName} is not supported.", 
+		"UserMessage" : "ScriptType:{propertyName} is not supported.", 
+		"ErrorCode": 2015
+	}
+	
+const OperationMessage ANALYZER_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "Analyzer:{propertyName} not found.", 
+		"UserMessage" : "Analyzer:{propertyName} not found.", 
+		"ErrorCode": 2016
+	}
+	
 // ----------------------------------------------------------------------------
 //	Compilation Exceptions
 // ----------------------------------------------------------------------------	
@@ -214,4 +249,50 @@ const OperationMessage MODULE_NOT_FOUND =
 		"DeveloperMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
 		"UserMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
 		"ErrorCode": 4000
+	}
+	
+	
+// ----------------------------------------------------------------------------
+//	Search Related
+// ----------------------------------------------------------------------------	
+const OperationMessage INVALID_QUERY_TYPE = 
+	{
+		"DeveloperMessage" : "QueryType:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
+		"UserMessage" : "QueryType:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
+		"ErrorCode": 5000
+	}
+	
+const OperationMessage INVALID_FIELD_NAME = 
+	{
+		"DeveloperMessage" : "FieldName:{propertyName} can not be found.", 
+		"UserMessage" : "FieldName:{propertyName} can not be found.", 
+		"ErrorCode": 5001
+	}
+	
+const OperationMessage MISSING_FIELD_VALUE = 
+	{
+		"DeveloperMessage" : "Search value canot be empty.", 
+		"UserMessage" : "Search value canot be empty. No value provided for the field.", 
+		"ErrorCode": 5002
+	}
+	
+const OperationMessage MISSING_FIELD_VALUE_1 = 
+	{
+		"DeveloperMessage" : "FieldName:{propertyName} No value provided for the field.", 
+		"UserMessage" : "FieldName:{propertyName} No value provided for the field.", 
+		"ErrorCode": 5003
+	}
+	
+const OperationMessage UNKNOWN_MISSING_VALUE_OPTION = 
+	{
+		"DeveloperMessage" : "MissingValueOption:{propertyName} is not supported.", 
+		"UserMessage" : "MissingValueOption:{propertyName} is not supported.", 
+		"ErrorCode": 5004
+	}
+	
+const OperationMessage QUERYSTRING_PARSING_ERROR = 
+	{
+		"DeveloperMessage" : "Unable to parse the passed query string. {value}", 
+		"UserMessage" : "Unable to parse the passed query string.", 
+		"ErrorCode": 5005
 	}

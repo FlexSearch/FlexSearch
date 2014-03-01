@@ -215,14 +215,13 @@ enum MissingValueOption {
 
 
 struct MissingValue {
-	1:	required string FieldName
-	2:	required MissingValueOption MissingValueOption
-	3:	optional string DefaultValue
+	1:	required MissingValueOption MissingValueOption
+	2:	optional string DefaultValue
 }
 
 
 struct HighlightOption {
-	1:	optional i16 FragmentsToReturn = 2
+	1:	optional i32 FragmentsToReturn = 2
 	2:	required list<string> HighlightedFields
 	3:	optional string PostTag = "</B>"
 	4:	optional string PreTag = "</B>"
@@ -237,8 +236,12 @@ struct SearchQuery {
 	5:	optional string OrderBy = "score"
 	6:	optional i32 Skip = 0
 	7:	required string QueryString
-	8:	optional list<MissingValue> MissingValueCofiguration = {}
+	8:	optional map<string, MissingValueOption> MissingValueCofiguration = {}
 	9:	optional MissingValueOption GlobalMissingValue = 1
+	10:	optional bool ReturnFlatResult = true
+	11:	optional bool ReturnScore = true
+	12: optional string SearchProfile
+	13: optional string SearchProfileSelector
 }
 
 
@@ -264,7 +267,6 @@ struct Document {
 	2:	optional list<string> Highlights = {}
 	3:	required string Id
 	4:	optional i64 LastModified
-	5:	required i32 Version = 1
 	7:	required string Index
 	8:	optional double Score = 0.0
 }
@@ -279,4 +281,11 @@ struct Index {
 	6:	optional map<string, ScriptProperties> Scripts = {}
 	7:	optional map<string, SearchQuery> SearchProfiles = {}
 	8:	required ShardConfiguration ShardConfiguration = {}
+}
+
+
+struct SearchResults{
+	1:	optional list<Document> Documents = {}
+	2:	optional i32 RecordsReturned
+	3:	optional i32 TotalAvailable
 }

@@ -76,12 +76,9 @@ namespace FlexSearch.Api
     }
 
     [DataMember(Order = 5)]
-    public int Version { get; set; }
-
-    [DataMember(Order = 6)]
     public string Index { get; set; }
 
-    [DataMember(Order = 7)]
+    [DataMember(Order = 6)]
     public double Score
     {
       get
@@ -113,21 +110,18 @@ namespace FlexSearch.Api
       this.__isset.Fields = true;
       this._Highlights = new List<string>();
       this.__isset.Highlights = true;
-      this.Version = 1;
       this._Score = 0;
       this.__isset.Score = true;
     }
 
-    public Document(string Id, int Version, string Index) : this() {
+    public Document(string Id, string Index) : this() {
       this.Id = Id;
-      this.Version = Version;
       this.Index = Index;
     }
 
     public void Read (TProtocol iprot)
     {
       bool isset_Id = false;
-      bool isset_Version = false;
       bool isset_Index = false;
       TField field;
       iprot.ReadStructBegin();
@@ -143,14 +137,14 @@ namespace FlexSearch.Api
             if (field.Type == TType.Map) {
               {
                 Fields = new Dictionary<string, string>();
-                TMap _map26 = iprot.ReadMapBegin();
-                for( int _i27 = 0; _i27 < _map26.Count; ++_i27)
+                TMap _map27 = iprot.ReadMapBegin();
+                for( int _i28 = 0; _i28 < _map27.Count; ++_i28)
                 {
-                  string _key28;
-                  string _val29;
-                  _key28 = iprot.ReadString();
-                  _val29 = iprot.ReadString();
-                  Fields[_key28] = _val29;
+                  string _key29;
+                  string _val30;
+                  _key29 = iprot.ReadString();
+                  _val30 = iprot.ReadString();
+                  Fields[_key29] = _val30;
                 }
                 iprot.ReadMapEnd();
               }
@@ -162,12 +156,12 @@ namespace FlexSearch.Api
             if (field.Type == TType.List) {
               {
                 Highlights = new List<string>();
-                TList _list30 = iprot.ReadListBegin();
-                for( int _i31 = 0; _i31 < _list30.Count; ++_i31)
+                TList _list31 = iprot.ReadListBegin();
+                for( int _i32 = 0; _i32 < _list31.Count; ++_i32)
                 {
-                  string _elem32 = null;
-                  _elem32 = iprot.ReadString();
-                  Highlights.Add(_elem32);
+                  string _elem33 = null;
+                  _elem33 = iprot.ReadString();
+                  Highlights.Add(_elem33);
                 }
                 iprot.ReadListEnd();
               }
@@ -186,14 +180,6 @@ namespace FlexSearch.Api
           case 4:
             if (field.Type == TType.I64) {
               LastModified = iprot.ReadI64();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 5:
-            if (field.Type == TType.I32) {
-              Version = iprot.ReadI32();
-              isset_Version = true;
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -222,8 +208,6 @@ namespace FlexSearch.Api
       iprot.ReadStructEnd();
       if (!isset_Id)
         throw new TProtocolException(TProtocolException.INVALID_DATA);
-      if (!isset_Version)
-        throw new TProtocolException(TProtocolException.INVALID_DATA);
       if (!isset_Index)
         throw new TProtocolException(TProtocolException.INVALID_DATA);
     }
@@ -239,10 +223,10 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteMapBegin(new TMap(TType.String, TType.String, Fields.Count));
-          foreach (string _iter33 in Fields.Keys)
+          foreach (string _iter34 in Fields.Keys)
           {
-            oprot.WriteString(_iter33);
-            oprot.WriteString(Fields[_iter33]);
+            oprot.WriteString(_iter34);
+            oprot.WriteString(Fields[_iter34]);
           }
           oprot.WriteMapEnd();
         }
@@ -255,9 +239,9 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteListBegin(new TList(TType.String, Highlights.Count));
-          foreach (string _iter34 in Highlights)
+          foreach (string _iter35 in Highlights)
           {
-            oprot.WriteString(_iter34);
+            oprot.WriteString(_iter35);
           }
           oprot.WriteListEnd();
         }
@@ -277,12 +261,6 @@ namespace FlexSearch.Api
         oprot.WriteI64(LastModified);
         oprot.WriteFieldEnd();
       }
-      field.Name = "Version";
-      field.Type = TType.I32;
-      field.ID = 5;
-      oprot.WriteFieldBegin(field);
-      oprot.WriteI32(Version);
-      oprot.WriteFieldEnd();
       field.Name = "Index";
       field.Type = TType.String;
       field.ID = 7;
@@ -309,7 +287,6 @@ namespace FlexSearch.Api
         && ((__isset.Highlights == other.__isset.Highlights) && ((!__isset.Highlights) || (TCollections.Equals(Highlights, other.Highlights))))
         && System.Object.Equals(Id, other.Id)
         && ((__isset.LastModified == other.__isset.LastModified) && ((!__isset.LastModified) || (System.Object.Equals(LastModified, other.LastModified))))
-        && System.Object.Equals(Version, other.Version)
         && System.Object.Equals(Index, other.Index)
         && ((__isset.Score == other.__isset.Score) && ((!__isset.Score) || (System.Object.Equals(Score, other.Score))));
     }
@@ -321,7 +298,6 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.Highlights ? 0 : (TCollections.GetHashCode(Highlights)));
         hashcode = (hashcode * 397) ^ ((Id.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.LastModified ? 0 : (LastModified.GetHashCode()));
-        hashcode = (hashcode * 397) ^ ((Version.GetHashCode()));
         hashcode = (hashcode * 397) ^ ((Index.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.Score ? 0 : (Score.GetHashCode()));
       }
@@ -338,8 +314,6 @@ namespace FlexSearch.Api
       sb.Append(Id);
       sb.Append(",LastModified: ");
       sb.Append(LastModified);
-      sb.Append(",Version: ");
-      sb.Append(Version);
       sb.Append(",Index: ");
       sb.Append(Index);
       sb.Append(",Score: ");

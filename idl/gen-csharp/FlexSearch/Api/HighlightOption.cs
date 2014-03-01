@@ -25,12 +25,12 @@ namespace FlexSearch.Api
   [DataContract(Namespace="")]
   public partial class HighlightOption : TBase
   {
-    private short _FragmentsToReturn;
+    private int _FragmentsToReturn;
     private string _PostTag;
     private string _PreTag;
 
     [DataMember(Order = 1)]
-    public short FragmentsToReturn
+    public int FragmentsToReturn
     {
       get
       {
@@ -113,8 +113,8 @@ namespace FlexSearch.Api
         switch (field.ID)
         {
           case 1:
-            if (field.Type == TType.I16) {
-              FragmentsToReturn = iprot.ReadI16();
+            if (field.Type == TType.I32) {
+              FragmentsToReturn = iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -168,10 +168,10 @@ namespace FlexSearch.Api
       TField field = new TField();
       if (__isset.FragmentsToReturn) {
         field.Name = "FragmentsToReturn";
-        field.Type = TType.I16;
+        field.Type = TType.I32;
         field.ID = 1;
         oprot.WriteFieldBegin(field);
-        oprot.WriteI16(FragmentsToReturn);
+        oprot.WriteI32(FragmentsToReturn);
         oprot.WriteFieldEnd();
       }
       field.Name = "HighlightedFields";

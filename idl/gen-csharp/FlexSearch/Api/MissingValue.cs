@@ -27,17 +27,14 @@ namespace FlexSearch.Api
   {
     private string _DefaultValue;
 
-    [DataMember(Order = 1)]
-    public string FieldName { get; set; }
-
     /// <summary>
     /// 
     /// <seealso cref="MissingValueOption"/>
     /// </summary>
-    [DataMember(Order = 2)]
+    [DataMember(Order = 1)]
     public MissingValueOption MissingValueOption { get; set; }
 
-    [DataMember(Order = 3)]
+    [DataMember(Order = 2)]
     public string DefaultValue
     {
       get
@@ -64,14 +61,12 @@ namespace FlexSearch.Api
     public MissingValue() {
     }
 
-    public MissingValue(string FieldName, MissingValueOption MissingValueOption) : this() {
-      this.FieldName = FieldName;
+    public MissingValue(MissingValueOption MissingValueOption) : this() {
       this.MissingValueOption = MissingValueOption;
     }
 
     public void Read (TProtocol iprot)
     {
-      bool isset_FieldName = false;
       bool isset_MissingValueOption = false;
       TField field;
       iprot.ReadStructBegin();
@@ -84,14 +79,6 @@ namespace FlexSearch.Api
         switch (field.ID)
         {
           case 1:
-            if (field.Type == TType.String) {
-              FieldName = iprot.ReadString();
-              isset_FieldName = true;
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 2:
             if (field.Type == TType.I32) {
               MissingValueOption = (MissingValueOption)iprot.ReadI32();
               isset_MissingValueOption = true;
@@ -99,7 +86,7 @@ namespace FlexSearch.Api
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
-          case 3:
+          case 2:
             if (field.Type == TType.String) {
               DefaultValue = iprot.ReadString();
             } else { 
@@ -113,8 +100,6 @@ namespace FlexSearch.Api
         iprot.ReadFieldEnd();
       }
       iprot.ReadStructEnd();
-      if (!isset_FieldName)
-        throw new TProtocolException(TProtocolException.INVALID_DATA);
       if (!isset_MissingValueOption)
         throw new TProtocolException(TProtocolException.INVALID_DATA);
     }
@@ -123,22 +108,16 @@ namespace FlexSearch.Api
       TStruct struc = new TStruct("MissingValue");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
-      field.Name = "FieldName";
-      field.Type = TType.String;
-      field.ID = 1;
-      oprot.WriteFieldBegin(field);
-      oprot.WriteString(FieldName);
-      oprot.WriteFieldEnd();
       field.Name = "MissingValueOption";
       field.Type = TType.I32;
-      field.ID = 2;
+      field.ID = 1;
       oprot.WriteFieldBegin(field);
       oprot.WriteI32((int)MissingValueOption);
       oprot.WriteFieldEnd();
       if (DefaultValue != null && __isset.DefaultValue) {
         field.Name = "DefaultValue";
         field.Type = TType.String;
-        field.ID = 3;
+        field.ID = 2;
         oprot.WriteFieldBegin(field);
         oprot.WriteString(DefaultValue);
         oprot.WriteFieldEnd();
@@ -151,15 +130,13 @@ namespace FlexSearch.Api
       var other = that as MissingValue;
       if (other == null) return false;
       if (ReferenceEquals(this, other)) return true;
-      return System.Object.Equals(FieldName, other.FieldName)
-        && System.Object.Equals(MissingValueOption, other.MissingValueOption)
+      return System.Object.Equals(MissingValueOption, other.MissingValueOption)
         && ((__isset.DefaultValue == other.__isset.DefaultValue) && ((!__isset.DefaultValue) || (System.Object.Equals(DefaultValue, other.DefaultValue))));
     }
 
     public override int GetHashCode() {
       int hashcode = 0;
       unchecked {
-        hashcode = (hashcode * 397) ^ ((FieldName.GetHashCode()));
         hashcode = (hashcode * 397) ^ ((MissingValueOption.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.DefaultValue ? 0 : (DefaultValue.GetHashCode()));
       }
@@ -168,9 +145,7 @@ namespace FlexSearch.Api
 
     public override string ToString() {
       StringBuilder sb = new StringBuilder("MissingValue(");
-      sb.Append("FieldName: ");
-      sb.Append(FieldName);
-      sb.Append(",MissingValueOption: ");
+      sb.Append("MissingValueOption: ");
       sb.Append(MissingValueOption);
       sb.Append(",DefaultValue: ");
       sb.Append(DefaultValue);

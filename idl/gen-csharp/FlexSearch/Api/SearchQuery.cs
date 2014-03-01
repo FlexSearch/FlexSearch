@@ -30,8 +30,12 @@ namespace FlexSearch.Api
     private HighlightOption _Highlights;
     private string _OrderBy;
     private int _Skip;
-    private List<MissingValue> _MissingValueCofiguration;
+    private Dictionary<string, MissingValueOption> _MissingValueCofiguration;
     private MissingValueOption _GlobalMissingValue;
+    private bool _ReturnFlatResult;
+    private bool _ReturnScore;
+    private string _SearchProfile;
+    private string _SearchProfileSelector;
 
     [DataMember(Order = 1)]
     public List<string> Columns
@@ -110,7 +114,7 @@ namespace FlexSearch.Api
     public string QueryString { get; set; }
 
     [DataMember(Order = 8)]
-    public List<MissingValue> MissingValueCofiguration
+    public Dictionary<string, MissingValueOption> MissingValueCofiguration
     {
       get
       {
@@ -141,6 +145,62 @@ namespace FlexSearch.Api
       }
     }
 
+    [DataMember(Order = 10)]
+    public bool ReturnFlatResult
+    {
+      get
+      {
+        return _ReturnFlatResult;
+      }
+      set
+      {
+        __isset.ReturnFlatResult = true;
+        this._ReturnFlatResult = value;
+      }
+    }
+
+    [DataMember(Order = 11)]
+    public bool ReturnScore
+    {
+      get
+      {
+        return _ReturnScore;
+      }
+      set
+      {
+        __isset.ReturnScore = true;
+        this._ReturnScore = value;
+      }
+    }
+
+    [DataMember(Order = 12)]
+    public string SearchProfile
+    {
+      get
+      {
+        return _SearchProfile;
+      }
+      set
+      {
+        __isset.SearchProfile = true;
+        this._SearchProfile = value;
+      }
+    }
+
+    [DataMember(Order = 13)]
+    public string SearchProfileSelector
+    {
+      get
+      {
+        return _SearchProfileSelector;
+      }
+      set
+      {
+        __isset.SearchProfileSelector = true;
+        this._SearchProfileSelector = value;
+      }
+    }
+
 
     public Isset __isset;
     #if !SILVERLIGHT
@@ -155,6 +215,10 @@ namespace FlexSearch.Api
       public bool Skip;
       public bool MissingValueCofiguration;
       public bool GlobalMissingValue;
+      public bool ReturnFlatResult;
+      public bool ReturnScore;
+      public bool SearchProfile;
+      public bool SearchProfileSelector;
     }
 
     public SearchQuery() {
@@ -168,10 +232,14 @@ namespace FlexSearch.Api
       this.__isset.OrderBy = true;
       this._Skip = 0;
       this.__isset.Skip = true;
-      this._MissingValueCofiguration = new List<MissingValue>();
+      this._MissingValueCofiguration = new Dictionary<string, MissingValueOption>();
       this.__isset.MissingValueCofiguration = true;
       this._GlobalMissingValue = MissingValueOption.ThrowError;
       this.__isset.GlobalMissingValue = true;
+      this._ReturnFlatResult = true;
+      this.__isset.ReturnFlatResult = true;
+      this._ReturnScore = true;
+      this.__isset.ReturnScore = true;
     }
 
     public SearchQuery(string IndexName, string QueryString) : this() {
@@ -256,18 +324,19 @@ namespace FlexSearch.Api
             }
             break;
           case 8:
-            if (field.Type == TType.List) {
+            if (field.Type == TType.Map) {
               {
-                MissingValueCofiguration = new List<MissingValue>();
-                TList _list21 = iprot.ReadListBegin();
-                for( int _i22 = 0; _i22 < _list21.Count; ++_i22)
+                MissingValueCofiguration = new Dictionary<string, MissingValueOption>();
+                TMap _map21 = iprot.ReadMapBegin();
+                for( int _i22 = 0; _i22 < _map21.Count; ++_i22)
                 {
-                  MissingValue _elem23 = new MissingValue();
-                  _elem23 = new MissingValue();
-                  _elem23.Read(iprot);
-                  MissingValueCofiguration.Add(_elem23);
+                  string _key23;
+                  MissingValueOption _val24;
+                  _key23 = iprot.ReadString();
+                  _val24 = (MissingValueOption)iprot.ReadI32();
+                  MissingValueCofiguration[_key23] = _val24;
                 }
-                iprot.ReadListEnd();
+                iprot.ReadMapEnd();
               }
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
@@ -276,6 +345,34 @@ namespace FlexSearch.Api
           case 9:
             if (field.Type == TType.I32) {
               GlobalMissingValue = (MissingValueOption)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 10:
+            if (field.Type == TType.Bool) {
+              ReturnFlatResult = iprot.ReadBool();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 11:
+            if (field.Type == TType.Bool) {
+              ReturnScore = iprot.ReadBool();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 12:
+            if (field.Type == TType.String) {
+              SearchProfile = iprot.ReadString();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 13:
+            if (field.Type == TType.String) {
+              SearchProfileSelector = iprot.ReadString();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -304,9 +401,9 @@ namespace FlexSearch.Api
         oprot.WriteFieldBegin(field);
         {
           oprot.WriteListBegin(new TList(TType.String, Columns.Count));
-          foreach (string _iter24 in Columns)
+          foreach (string _iter25 in Columns)
           {
-            oprot.WriteString(_iter24);
+            oprot.WriteString(_iter25);
           }
           oprot.WriteListEnd();
         }
@@ -358,16 +455,17 @@ namespace FlexSearch.Api
       oprot.WriteFieldEnd();
       if (MissingValueCofiguration != null && __isset.MissingValueCofiguration) {
         field.Name = "MissingValueCofiguration";
-        field.Type = TType.List;
+        field.Type = TType.Map;
         field.ID = 8;
         oprot.WriteFieldBegin(field);
         {
-          oprot.WriteListBegin(new TList(TType.Struct, MissingValueCofiguration.Count));
-          foreach (MissingValue _iter25 in MissingValueCofiguration)
+          oprot.WriteMapBegin(new TMap(TType.String, TType.I32, MissingValueCofiguration.Count));
+          foreach (string _iter26 in MissingValueCofiguration.Keys)
           {
-            _iter25.Write(oprot);
+            oprot.WriteString(_iter26);
+            oprot.WriteI32((int)MissingValueCofiguration[_iter26]);
           }
-          oprot.WriteListEnd();
+          oprot.WriteMapEnd();
         }
         oprot.WriteFieldEnd();
       }
@@ -377,6 +475,38 @@ namespace FlexSearch.Api
         field.ID = 9;
         oprot.WriteFieldBegin(field);
         oprot.WriteI32((int)GlobalMissingValue);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.ReturnFlatResult) {
+        field.Name = "ReturnFlatResult";
+        field.Type = TType.Bool;
+        field.ID = 10;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteBool(ReturnFlatResult);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.ReturnScore) {
+        field.Name = "ReturnScore";
+        field.Type = TType.Bool;
+        field.ID = 11;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteBool(ReturnScore);
+        oprot.WriteFieldEnd();
+      }
+      if (SearchProfile != null && __isset.SearchProfile) {
+        field.Name = "SearchProfile";
+        field.Type = TType.String;
+        field.ID = 12;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteString(SearchProfile);
+        oprot.WriteFieldEnd();
+      }
+      if (SearchProfileSelector != null && __isset.SearchProfileSelector) {
+        field.Name = "SearchProfileSelector";
+        field.Type = TType.String;
+        field.ID = 13;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteString(SearchProfileSelector);
         oprot.WriteFieldEnd();
       }
       oprot.WriteFieldStop();
@@ -395,7 +525,11 @@ namespace FlexSearch.Api
         && ((__isset.Skip == other.__isset.Skip) && ((!__isset.Skip) || (System.Object.Equals(Skip, other.Skip))))
         && System.Object.Equals(QueryString, other.QueryString)
         && ((__isset.MissingValueCofiguration == other.__isset.MissingValueCofiguration) && ((!__isset.MissingValueCofiguration) || (TCollections.Equals(MissingValueCofiguration, other.MissingValueCofiguration))))
-        && ((__isset.GlobalMissingValue == other.__isset.GlobalMissingValue) && ((!__isset.GlobalMissingValue) || (System.Object.Equals(GlobalMissingValue, other.GlobalMissingValue))));
+        && ((__isset.GlobalMissingValue == other.__isset.GlobalMissingValue) && ((!__isset.GlobalMissingValue) || (System.Object.Equals(GlobalMissingValue, other.GlobalMissingValue))))
+        && ((__isset.ReturnFlatResult == other.__isset.ReturnFlatResult) && ((!__isset.ReturnFlatResult) || (System.Object.Equals(ReturnFlatResult, other.ReturnFlatResult))))
+        && ((__isset.ReturnScore == other.__isset.ReturnScore) && ((!__isset.ReturnScore) || (System.Object.Equals(ReturnScore, other.ReturnScore))))
+        && ((__isset.SearchProfile == other.__isset.SearchProfile) && ((!__isset.SearchProfile) || (System.Object.Equals(SearchProfile, other.SearchProfile))))
+        && ((__isset.SearchProfileSelector == other.__isset.SearchProfileSelector) && ((!__isset.SearchProfileSelector) || (System.Object.Equals(SearchProfileSelector, other.SearchProfileSelector))));
     }
 
     public override int GetHashCode() {
@@ -410,6 +544,10 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ ((QueryString.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.MissingValueCofiguration ? 0 : (TCollections.GetHashCode(MissingValueCofiguration)));
         hashcode = (hashcode * 397) ^ (!__isset.GlobalMissingValue ? 0 : (GlobalMissingValue.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.ReturnFlatResult ? 0 : (ReturnFlatResult.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.ReturnScore ? 0 : (ReturnScore.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.SearchProfile ? 0 : (SearchProfile.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.SearchProfileSelector ? 0 : (SearchProfileSelector.GetHashCode()));
       }
       return hashcode;
     }
@@ -434,6 +572,14 @@ namespace FlexSearch.Api
       sb.Append(MissingValueCofiguration);
       sb.Append(",GlobalMissingValue: ");
       sb.Append(GlobalMissingValue);
+      sb.Append(",ReturnFlatResult: ");
+      sb.Append(ReturnFlatResult);
+      sb.Append(",ReturnScore: ");
+      sb.Append(ReturnScore);
+      sb.Append(",SearchProfile: ");
+      sb.Append(SearchProfile);
+      sb.Append(",SearchProfileSelector: ");
+      sb.Append(SearchProfileSelector);
       sb.Append(")");
       return sb.ToString();
     }

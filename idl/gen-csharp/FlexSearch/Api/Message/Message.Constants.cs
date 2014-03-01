@@ -39,8 +39,19 @@ namespace FlexSearch.Api.Message
     public static OperationMessage TOKENIZER_CANNOT_BE_INITIALIZED = new OperationMessage();
     public static OperationMessage TOKENIZER_NOT_FOUND = new OperationMessage();
     public static OperationMessage ATLEAST_ONE_FILTER_REQUIRED = new OperationMessage();
+    public static OperationMessage UNKNOWN_FIELD_TYPE = new OperationMessage();
+    public static OperationMessage SCRIPT_NOT_FOUND = new OperationMessage();
+    public static OperationMessage ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE = new OperationMessage();
+    public static OperationMessage UNKNOWN_SCRIPT_TYPE = new OperationMessage();
+    public static OperationMessage ANALYZER_NOT_FOUND = new OperationMessage();
     public static OperationMessage SCRIPT_CANT_BE_COMPILED = new OperationMessage();
     public static OperationMessage MODULE_NOT_FOUND = new OperationMessage();
+    public static OperationMessage INVALID_QUERY_TYPE = new OperationMessage();
+    public static OperationMessage INVALID_FIELD_NAME = new OperationMessage();
+    public static OperationMessage MISSING_FIELD_VALUE = new OperationMessage();
+    public static OperationMessage MISSING_FIELD_VALUE_1 = new OperationMessage();
+    public static OperationMessage UNKNOWN_MISSING_VALUE_OPTION = new OperationMessage();
+    public static OperationMessage QUERYSTRING_PARSING_ERROR = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -105,13 +116,46 @@ namespace FlexSearch.Api.Message
       TOKENIZER_NOT_FOUND.ErrorCode = 2010;
       ATLEAST_ONE_FILTER_REQUIRED.DeveloperMessage = "Atleast one filter should be specified for a custom analyzer.";
       ATLEAST_ONE_FILTER_REQUIRED.UserMessage = "Atleast one filter should be specified for a custom analyzer.";
-      ATLEAST_ONE_FILTER_REQUIRED.ErrorCode = 2010;
+      ATLEAST_ONE_FILTER_REQUIRED.ErrorCode = 2011;
+      UNKNOWN_FIELD_TYPE.DeveloperMessage = "Unsupported field type specified in the Field Properties.";
+      UNKNOWN_FIELD_TYPE.UserMessage = "Unsupported field type specified in the Field Properties.";
+      UNKNOWN_FIELD_TYPE.ErrorCode = 2012;
+      SCRIPT_NOT_FOUND.DeveloperMessage = "Script{propertyName} not found.";
+      SCRIPT_NOT_FOUND.UserMessage = "Script{propertyName} not found.";
+      SCRIPT_NOT_FOUND.ErrorCode = 2013;
+      ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE.DeveloperMessage = "FieldType:{propertyName} does not support custom analyzer.";
+      ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE.UserMessage = "FieldType:{propertyName} does not support custom analyzer.";
+      ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE.ErrorCode = 2014;
+      UNKNOWN_SCRIPT_TYPE.DeveloperMessage = "ScriptType:{propertyName} is not supported.";
+      UNKNOWN_SCRIPT_TYPE.UserMessage = "ScriptType:{propertyName} is not supported.";
+      UNKNOWN_SCRIPT_TYPE.ErrorCode = 2015;
+      ANALYZER_NOT_FOUND.DeveloperMessage = "Analyzer:{propertyName} not found.";
+      ANALYZER_NOT_FOUND.UserMessage = "Analyzer:{propertyName} not found.";
+      ANALYZER_NOT_FOUND.ErrorCode = 2016;
       SCRIPT_CANT_BE_COMPILED.DeveloperMessage = "Script:{propertyName} cannot be compiled. {value}";
       SCRIPT_CANT_BE_COMPILED.UserMessage = "Script:{propertyName} cannot be compiled.";
       SCRIPT_CANT_BE_COMPILED.ErrorCode = 3000;
       MODULE_NOT_FOUND.DeveloperMessage = "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.";
       MODULE_NOT_FOUND.UserMessage = "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.";
       MODULE_NOT_FOUND.ErrorCode = 4000;
+      INVALID_QUERY_TYPE.DeveloperMessage = "QueryType:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.";
+      INVALID_QUERY_TYPE.UserMessage = "QueryType:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.";
+      INVALID_QUERY_TYPE.ErrorCode = 5000;
+      INVALID_FIELD_NAME.DeveloperMessage = "FieldName:{propertyName} can not be found.";
+      INVALID_FIELD_NAME.UserMessage = "FieldName:{propertyName} can not be found.";
+      INVALID_FIELD_NAME.ErrorCode = 5001;
+      MISSING_FIELD_VALUE.DeveloperMessage = "Search value canot be empty.";
+      MISSING_FIELD_VALUE.UserMessage = "Search value canot be empty. No value provided for the field.";
+      MISSING_FIELD_VALUE.ErrorCode = 5002;
+      MISSING_FIELD_VALUE_1.DeveloperMessage = "FieldName:{propertyName} No value provided for the field.";
+      MISSING_FIELD_VALUE_1.UserMessage = "FieldName:{propertyName} No value provided for the field.";
+      MISSING_FIELD_VALUE_1.ErrorCode = 5003;
+      UNKNOWN_MISSING_VALUE_OPTION.DeveloperMessage = "MissingValueOption:{propertyName} is not supported.";
+      UNKNOWN_MISSING_VALUE_OPTION.UserMessage = "MissingValueOption:{propertyName} is not supported.";
+      UNKNOWN_MISSING_VALUE_OPTION.ErrorCode = 5004;
+      QUERYSTRING_PARSING_ERROR.DeveloperMessage = "Unable to parse the passed query string. {value}";
+      QUERYSTRING_PARSING_ERROR.UserMessage = "Unable to parse the passed query string.";
+      QUERYSTRING_PARSING_ERROR.ErrorCode = 5005;
     }
   }
 }
