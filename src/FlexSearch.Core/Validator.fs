@@ -24,13 +24,6 @@ open System.Linq
 // Contains all validators used for domain validation 
 // ----------------------------------------------------------------------------
 module Validator = 
-    // General validation exception thrown by all validators
-    exception ValidationException of PropertyName : string * ErrorMessage : string * ErrorCode : string
-    
-    type ValidationResult<'T> = 
-        | Success of 'T
-        | Error of PropertyName : string * ErrorMessage : string * ErrorCode : string
-    
     // Validation helper wrapper function
     let validate propName (v : 'a) = (propName, v)
     
@@ -50,15 +43,13 @@ module Validator =
         if values.Contains(value) <> true then Choice1Of2()
         else 
             Choice2Of2
-                (OperationMessage.WithPropertyName
-                     (MessageConstants.VALUE_NOT_IN, propName, (String.Join(",", values))))
+                (OperationMessage.WithPropertyName(MessageConstants.VALUE_NOT_IN, propName, (String.Join(",", values))))
     
     let onlyIn (values : string []) (propName : string, value : string) = 
         if values.Contains(value) = true then Choice1Of2()
         else 
             Choice2Of2
-                (OperationMessage.WithPropertyName
-                     (MessageConstants.VALUE_ONLY_IN, propName, (String.Join(",", values))))
+                (OperationMessage.WithPropertyName(MessageConstants.VALUE_ONLY_IN, propName, (String.Join(",", values))))
     
     let greaterThanOrEqualTo (range : int) (propName : string, value : int) = 
         if value >= range then Choice1Of2()
@@ -86,7 +77,7 @@ module Validator =
     let mustGenerateFilterInstance (factoryCollection : Interface.IFactoryCollection) 
         (propName : string, value : TokenFilter) = 
         match factoryCollection.FilterFactory.GetModuleByName(value.FilterName) with
-        | Some(instance) -> 
+        | Choice1Of2(instance) -> 
             try 
                 instance.Initialize(value.Parameters, factoryCollection.ResourceLoader)
                 Choice1Of2()
@@ -99,7 +90,7 @@ module Validator =
     let mustGenerateTokenizerInstance (factoryCollection : Interface.IFactoryCollection) 
         (propName : string, value : Tokenizer) = 
         match factoryCollection.TokenizerFactory.GetModuleByName(value.TokenizerName) with
-        | Some(instance) -> 
+        | Choice1Of2(instance) -> 
             try 
                 instance.Initialize(value.Parameters, factoryCollection.ResourceLoader)
                 Choice1Of2()
@@ -116,8 +107,8 @@ module Validator =
     let propertyNameValidator (propName : string, value : string) = 
         maybe { 
             do! (propName, value) |> notNullAndEmpty
-            do! (propName, value) |> regexMatch "^[a-z0-9]*$"
-            do! (propName, value) |> notIn [| "id"; "lastmodified"; "type" |]
+            do! (propName, value) |> regexMatch "^[a-z0-9_]*$"
+            do! (propName, value) |> notIn [| Constants.IdField; Constants.LastModifiedField; Constants.TypeField |]
         }
     
     /// Filter validator which checks both the input parameters and naming convention
@@ -138,7 +129,7 @@ module Validator =
         maybe { 
             do! TokenizerValidator(factoryCollection, value.Tokenizer)
             if value.Filters.Count = 0 then return! Choice2Of2(MessageConstants.ATLEAST_ONE_FILTER_REQUIRED)
-            else do! loopValidation (List.ofSeq (value.Filters)) (FilterValidator factoryCollection)
+            else do! iterExitOnFailure (List.ofSeq (value.Filters)) (FilterValidator factoryCollection)
         }
     
     let IndexConfigurationValidator(propName : string, value : IndexConfiguration) = 
@@ -147,82 +138,88 @@ module Validator =
             do! validate "RefreshTimeMilliSec" value.RefreshTimeMilliSec |> greaterThanOrEqualTo 25
             do! validate "RamBufferSizeMb" value.RamBufferSizeMb |> greaterThanOrEqualTo 100
         }
-
-    let ScriptValidator(factoryCollection : Interface.IFactoryCollection)  (propName: string, value: ScriptProperties) = maybe {
-        do! validate "ScriptSource" value.Source |> notNullAndEmpty        
-        match value.ScriptType with
-        | ScriptType.SearchProfileSelector ->
-            do! factoryCollection.ScriptFactoryCollection.ProfileSelectorScriptFactory.CompileScript(value)
-        | ScriptType.CustomScoring ->
-            do! factoryCollection.ScriptFactoryCollection.CustomScoringScriptFactory.CompileScript(value)
-                
-        | ScriptType.ComputedField ->
-            do! factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript(value)
-        | _ -> raise (ValidationException("Script", "The requested script type does not exist: " + value.ScriptType.ToString() + ".", "3000"))
+    
+    let ScriptValidator (factoryCollection : Interface.IFactoryCollection) (propName : string, value : ScriptProperties) = 
+        maybe { 
+            do! validate "ScriptSource" value.Source |> notNullAndEmpty
+            match value.ScriptType with
+            | ScriptType.SearchProfileSelector -> let! script = factoryCollection.ScriptFactoryCollection.ProfileSelectorScriptFactory.CompileScript
+                                                                    (value)
+                                                  return! Choice1Of2()
+            | ScriptType.ComputedField -> let! script = factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript
+                                                            (value)
+                                          return! Choice1Of2()
+            | _ -> 
+                return! Choice2Of2
+                            (OperationMessage.WithPropertyName
+                                 (MessageConstants.UNKNOWN_SCRIPT_TYPE, value.ScriptType.ToString()))
         }
-//
-//
-////    let IndexFieldValidator(factoryCollection : Interface.IFactoryCollection) (analyzers: Dictionary<string, AnalyzerProperties>) (scripts : Dictionary<string, ScriptProperties>) (propName: string, value: IndexFieldProperties) =
-////        if String.IsNullOrWhiteSpace(value.Source) <> true then
-////            validate "ScriptName" value.Source |> propertyNameValidator |> ignore
-////            if scripts.ContainsKey(value.Source) <> true then
-////                raise (ValidationException("IndexField", "The specified script does not exist: " + value.Source + ".", "3000"))
-//        
-////        match value.FieldType with
-////        | FieldType.Custom
-////        | FieldType.Highlight
-////        | FieldType.Text ->
-////            if String.IsNullOrWhiteSpace(value.SearchAnalyzer) <> true then
-////                if analyzers.ContainsKey(value.SearchAnalyzer) <> true then
-////                    if factoryCollection.AnalyzerFactory.ModuleExists(value.SearchAnalyzer) <> true then
-////                        raise (ValidationException("IndexField", "The specified 'SearchAnalyzer' does not exist: " + value.SearchAnalyzer + ".", "3000"))
-////
-////            if String.IsNullOrWhiteSpace(value.IndexAnalyzer) <> true then
-////                if analyzers.ContainsKey(value.IndexAnalyzer) <> true then
-////                    if factoryCollection.AnalyzerFactory.ModuleExists(value.IndexAnalyzer) <> true then
-////                        raise (ValidationException("IndexField", "The specified 'IndexAnalyzer' does not exist: " + value.SearchAnalyzer + ".", "3000"))
-////        | _ -> ()
-//
-//    
-////    let SearchConditionValidator(factoryCollection : Interface.IFactoryCollection, fields: Dictionary<string, IndexFieldProperties>, value: SearchCondition) =
-////        if fields.ContainsKey(value.FieldName) <> true then
-////            raise (ValidationException("SeachCondition", "The specified 'FieldName' does not exist: " + value.FieldName + ".", "3000"))
-////        if value.Boost <> 0 then
-////            validate "Boost" value.Boost |> greaterThanOrEqualTo 1 |> ignore
-////        if factoryCollection.SearchQueryFactory.ModuleExists(value.Operator) <> true then
-////            raise (ValidationException("SeachCondition", "The specified 'Operator' does not exist: " + value.Operator + ".", "3000"))
-//
-//
-////    let SearchFilterValidator(factoryCollection : Interface.IFactoryCollection, fields: Dictionary<string, FieldProperties>, value: SearchFilter) =
-////        ()
-//
-//
-//    let SearchProfileValidator (fields : Dictionary<string, FieldProperties>) (propName: string, value: SearchQuery) =
-//        ()
-//
-//
-//    type IndexValidator(factoryCollection : Interface.IFactoryCollection) =
-//        interface IIndexValidator with
-//            member this.Validate(value: Index) = 
-//                validate "IndexName" value.IndexName |> propertyNameValidator |> ignore
-//                //validate "Configuration" value.Configuration |> IndexConfigurationValidator |> ignore
-//        
-//                value.Analyzers.ToArray() |> Array.iter(fun x ->
-//                    validate "AnalyzerName" x.Key |> propertyNameValidator |> ignore
-//                    validate "AnalyzerProperties" x.Value |> AnalyzerValidator factoryCollection |> ignore
-//                )
-//
-//                value.Scripts.ToArray() |> Array.iter(fun x ->
-//                    validate "ScriptName" x.Key |> propertyNameValidator |> ignore
-//                    validate "ScriptProperties" x.Value |> ScriptValidator factoryCollection |> ignore
-//                )
-//
-//                value.Fields.ToArray() |> Array.iter(fun x ->
-//                    validate "FieldName" x.Key |> propertyNameValidator |> ignore
-////                    validate "FieldProperties" x.Value 
-////                        |> IndexFieldValidator factoryCollection value.Analyzers value.Scripts |> ignore
-//                )
-//
+    
+    let IndexFieldValidator (factoryCollection : Interface.IFactoryCollection) 
+        (analyzers : Dictionary<string, AnalyzerProperties>) (scripts : Dictionary<string, ScriptProperties>) 
+        (propName : string, value : FieldProperties) = 
+        maybe { 
+            if String.IsNullOrWhiteSpace(value.ScriptName) <> true then 
+                do! validate "ScriptName" value.ScriptName |> propertyNameValidator
+                if scripts.ContainsKey(value.ScriptName) <> true then 
+                    return! Choice2Of2
+                                (OperationMessage.WithPropertyName(MessageConstants.SCRIPT_NOT_FOUND, value.ScriptName))
+            match value.FieldType with
+            | FieldType.Custom | FieldType.Highlight | FieldType.Text -> 
+                if String.IsNullOrWhiteSpace(value.SearchAnalyzer) <> true then 
+                    if analyzers.ContainsKey(value.SearchAnalyzer) <> true then 
+                        if factoryCollection.AnalyzerFactory.ModuleExists(value.SearchAnalyzer) <> true then 
+                            return! Choice2Of2
+                                        (OperationMessage.WithPropertyName
+                                             (MessageConstants.ANALYZER_NOT_FOUND, value.SearchAnalyzer))
+                if String.IsNullOrWhiteSpace(value.IndexAnalyzer) <> true then 
+                    if analyzers.ContainsKey(value.IndexAnalyzer) <> true then 
+                        if factoryCollection.AnalyzerFactory.ModuleExists(value.IndexAnalyzer) <> true then 
+                            return! Choice2Of2
+                                        (OperationMessage.WithPropertyName
+                                             (MessageConstants.ANALYZER_NOT_FOUND, value.IndexAnalyzer))
+            | _ -> return! Choice1Of2()
+        }
+    
+    //    let SearchConditionValidator(factoryCollection : Interface.IFactoryCollection, fields: Dictionary<string, IndexFieldProperties>, value: SearchCondition) =
+    //        if fields.ContainsKey(value.FieldName) <> true then
+    //            raise (ValidationException("SeachCondition", "The specified 'FieldName' does not exist: " + value.FieldName + ".", "3000"))
+    //        if value.Boost <> 0 then
+    //            validate "Boost" value.Boost |> greaterThanOrEqualTo 1 |> ignore
+    //        if factoryCollection.SearchQueryFactory.ModuleExists(value.Operator) <> true then
+    //            raise (ValidationException("SeachCondition", "The specified 'Operator' does not exist: " + value.Operator + ".", "3000"))
+    //
+    //
+    //    let SearchFilterValidator(factoryCollection : Interface.IFactoryCollection, fields: Dictionary<string, FieldProperties>, value: SearchFilter) =
+    //        ()
+    //
+    //
+    //    let SearchProfileValidator (fields : Dictionary<string, FieldProperties>) (propName: string, value: SearchQuery) =
+    //        ()
+    type IndexValidator(factoryCollection : Interface.IFactoryCollection) = 
+        interface IIndexValidator with
+            member this.Validate(value : Index) = 
+                maybe { 
+                    do! validate "IndexName" value.IndexName |> propertyNameValidator
+                    do! validate "Configuration" value.IndexConfiguration |> IndexConfigurationValidator
+                    do! iterExitOnFailure (Seq.toList (value.Analyzers)) (fun x -> 
+                            maybe { 
+                                do! validate "AnalyzerName" x.Key |> propertyNameValidator
+                                do! validate "AnalyzerProperties" x.Value |> AnalyzerValidator factoryCollection
+                            })
+                    do! iterExitOnFailure (Seq.toList (value.Scripts)) (fun x -> 
+                            maybe { 
+                                do! validate "ScriptName" x.Key |> propertyNameValidator
+                                do! validate "ScriptProperties" x.Value |> ScriptValidator factoryCollection
+                            })
+                    do! iterExitOnFailure (Seq.toList (value.Fields)) (fun x -> 
+                            maybe { 
+                                do! validate "FieldName" x.Key |> propertyNameValidator
+                                do! validate "FieldProperties" x.Value 
+                                    |> IndexFieldValidator factoryCollection value.Analyzers value.Scripts
+                            })
+                    return! Choice1Of2()
+                }
 //                value.SearchProfiles.ToArray() |> Array.iter(fun x ->
 //                    validate "SearchProfileName" x.Key |> propertyNameValidator |> ignore
 //                    validate "SearchProfileProperties" x.Value 
