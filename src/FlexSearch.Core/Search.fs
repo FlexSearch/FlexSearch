@@ -303,8 +303,10 @@ module SearchDsl =
                         use parser = queryParsersPool.Acquire()
                         let! predicate = parser.Parse(search.QueryString)
                         parser.Release()
-                        let! query = GenerateQuery flexIndex predicate search None queryTypes
-                        return! SearchQuery(flexIndex, query, search)
+                        match predicate with
+                        | NotPredicate(_) -> return! Choice2Of2(MessageConstants.NEGATIVE_QUERY_NOT_SUPPORTED)
+                        | _ -> let! query = GenerateQuery flexIndex predicate search None queryTypes
+                               return! SearchQuery(flexIndex, query, search)
                 }
     
     // Check if the passed field is numeric field
@@ -443,6 +445,17 @@ module SearchDsl =
                             (new BooleanClause(new FuzzyQuery(new Term(flexIndexField.FieldName, term), slop, 
                                                               prefixLength), BooleanClause.Occur.MUST))
                     Choice1Of2(boolQuery :> Query)
+    
+    // ----------------------------------------------------------------------------
+    /// Match all Query
+    // ---------------------------------------------------------------------------- 
+    [<Export(typeof<IFlexQuery>)>]
+    [<PartCreationPolicy(CreationPolicy.NonShared)>]
+    [<ExportMetadata("Name", "match_all")>]
+    type FlexMatchAllQuery() = 
+        interface IFlexQuery with
+            member this.QueryName() = [| "matchall" |]
+            member this.GetQuery(flexIndexField, values, parameters) = Choice1Of2(new MatchAllDocsQuery() :> Query)
     
     // ----------------------------------------------------------------------------
     /// Phrase Query
