@@ -123,7 +123,7 @@ module Interface =
     /// Interface class from which all tokenizers will derive
     // ---------------------------------------------------------------------------- 
     type IFlexTokenizerFactory = 
-        abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
+        abstract member Initialize  :   IDictionary<string,string> * IResourceLoader -> unit
         abstract member Create      :   Reader -> Tokenizer
     
 
@@ -131,7 +131,7 @@ module Interface =
     /// Interface from which all filters will derive
     // ----------------------------------------------------------------------------     
     type IFlexFilterFactory = 
-        abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
+        abstract member Initialize  :   IDictionary<string,string> * IResourceLoader -> unit
         abstract member Create      :   TokenStream -> TokenStream
 
 

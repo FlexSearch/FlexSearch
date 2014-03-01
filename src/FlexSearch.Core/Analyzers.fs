@@ -11,7 +11,7 @@
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Analysis
+namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Core
@@ -35,6 +35,7 @@ open System.Linq
 // Contains all predefined analyzer. The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------
+[<AutoOpen>]
 module Analyzers =
             
     // ----------------------------------------------------------------------------

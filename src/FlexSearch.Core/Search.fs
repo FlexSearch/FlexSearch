@@ -370,7 +370,7 @@ module SearchDsl =
         | None -> new List<string>([ value ])
     
     let getKeyValue (value : string) = 
-        if (value.Contains(":")) then Some(value.Substring(0, value.IndexOf(":")), value.Substring(value.IndexOf(":")))
+        if (value.Contains(":")) then Some(value.Substring(0, value.IndexOf(":")), value.Substring(value.IndexOf(":") + 1))
         else None
     
     let inline getParametersAsDict (arr : string array) (skip : int) = 

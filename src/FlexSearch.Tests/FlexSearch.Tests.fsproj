@@ -229,7 +229,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers.fs" />
+    <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
+    <Compile Include="SearchQueryTests.fs" />
+    <Compile Include="AnalysisTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="SocketServerTests.fs" />
     <Compile Include="PoolTests.fs" />

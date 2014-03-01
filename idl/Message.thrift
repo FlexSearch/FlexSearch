@@ -100,6 +100,26 @@ const OperationMessage ERROR_OPENING_INDEXWRITER =
 		"ErrorCode": 1008
 	}	
 
+const OperationMessage ERROR_ADDING_INDEX_STATUS = 
+	{
+		"DeveloperMessage" : "Unable to set the index status.", 
+		"UserMessage" : "Unable to set the index status.",
+		"ErrorCode": 1009
+	}
+
+const OperationMessage INDEX_IS_ALREADY_ONLINE = 
+	{
+		"DeveloperMessage" : "The index is already online or opening at the moment.", 
+		"UserMessage" : "The index is already online or opening at the moment.", 
+		"ErrorCode": 1010
+	}
+	
+const OperationMessage INDEX_IS_ALREADY_OFFLINE = 
+	{
+		"DeveloperMessage" : "The index is already offline or closing at the moment.", 
+		"UserMessage" : "The index is already offline or closing at the moment.", 
+		"ErrorCode": 1011
+	}
 	
 // ----------------------------------------------------------------------------
 //	Validation Exceptions

@@ -13,7 +13,6 @@
 namespace FlexSearch.Core
 
 // ----------------------------------------------------------------------------
-open FlexSearch.Analysis.Analyzers
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
@@ -162,7 +161,7 @@ module SettingsBuilder =
                     let! filters = mapExitOnFailure (Seq.toList (analyzer.Value.Filters)) getFilter
                     return (analyzer.Key, 
                             
-                            new FlexSearch.Analysis.CustomAnalyzer(tokenizerFactory, filters.ToArray()) :> org.apache.lucene.analysis.Analyzer)
+                            new CustomAnalyzer(tokenizerFactory, filters.ToArray()) :> org.apache.lucene.analysis.Analyzer)
                 }
             
             let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)

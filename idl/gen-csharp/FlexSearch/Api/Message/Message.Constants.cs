@@ -26,6 +26,9 @@ namespace FlexSearch.Api.Message
     public static OperationMessage INDEX_REGISTERATION_MISSING = new OperationMessage();
     public static OperationMessage INDEXING_DOCUMENT_ID_MISSING = new OperationMessage();
     public static OperationMessage ERROR_OPENING_INDEXWRITER = new OperationMessage();
+    public static OperationMessage ERROR_ADDING_INDEX_STATUS = new OperationMessage();
+    public static OperationMessage INDEX_IS_ALREADY_ONLINE = new OperationMessage();
+    public static OperationMessage INDEX_IS_ALREADY_OFFLINE = new OperationMessage();
     public static OperationMessage PROPERTY_CANNOT_BE_EMPTY = new OperationMessage();
     public static OperationMessage REGEX_NOT_MATCHED = new OperationMessage();
     public static OperationMessage VALUE_NOT_IN = new OperationMessage();
@@ -78,6 +81,15 @@ namespace FlexSearch.Api.Message
       ERROR_OPENING_INDEXWRITER.DeveloperMessage = "{To be populated by the developer code}";
       ERROR_OPENING_INDEXWRITER.UserMessage = "Unable to open index writer.";
       ERROR_OPENING_INDEXWRITER.ErrorCode = 1008;
+      ERROR_ADDING_INDEX_STATUS.DeveloperMessage = "Unable to set the index status.";
+      ERROR_ADDING_INDEX_STATUS.UserMessage = "Unable to set the index status.";
+      ERROR_ADDING_INDEX_STATUS.ErrorCode = 1009;
+      INDEX_IS_ALREADY_ONLINE.DeveloperMessage = "The index is already online or opening at the moment.";
+      INDEX_IS_ALREADY_ONLINE.UserMessage = "The index is already online or opening at the moment.";
+      INDEX_IS_ALREADY_ONLINE.ErrorCode = 1010;
+      INDEX_IS_ALREADY_OFFLINE.DeveloperMessage = "The index is already offline or closing at the moment.";
+      INDEX_IS_ALREADY_OFFLINE.UserMessage = "The index is already offline or closing at the moment.";
+      INDEX_IS_ALREADY_OFFLINE.ErrorCode = 1011;
       PROPERTY_CANNOT_BE_EMPTY.DeveloperMessage = "Field:{propertyName} cannot be empty.";
       PROPERTY_CANNOT_BE_EMPTY.UserMessage = "Field:{propertyName} cannot be empty.";
       PROPERTY_CANNOT_BE_EMPTY.ErrorCode = 2001;

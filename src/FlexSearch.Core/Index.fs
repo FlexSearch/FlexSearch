@@ -76,7 +76,12 @@ module Index =
             match this.IndexRegisteration.TryGetValue(indexName) with
             | (true, state) -> Choice1Of2(state)
             | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
-    
+        
+        member this.AddStatus (indexName, status) =
+            match this.IndexStatus.TryAdd(indexName, status) with
+            | true -> Choice1Of2()
+            | false -> Choice2Of2(MessageConstants.ERROR_ADDING_INDEX_STATUS)
+
     // Index auto commit changes job
     let private commitJob (flexIndex : FlexIndex) = 
         // Looping over array by index number is usually the fastest
@@ -391,8 +396,7 @@ module Index =
                         let! settings = settingsParser.BuildSetting(flexIndex)
                         persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
                         if flexIndex.Online then do! addIndex (state, settings)
-                        else state.IndexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
-                        return! Choice1Of2()
+                        else do! state.AddStatus(flexIndex.IndexName, IndexState.Offline)
                 }
             
             member this.UpdateIndex index = 
@@ -436,12 +440,17 @@ module Index =
             
             member this.CloseIndex indexName = 
                 maybe { 
-                    let! flexIndex = state.GetRegisteration(indexName)
-                    closeIndex (state, flexIndex)
-                    let index = persistanceStore.Get<Index>(indexName)
-                    index.Value.Online <- false
-                    persistanceStore.Put indexName index.Value |> ignore
-                    return! Choice1Of2()
+                    let! status = state.GetStatus(indexName)
+                    match status with
+                    | IndexState.Closing | IndexState.Offline -> 
+                        return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+                    | _ -> 
+                        let! index = state.GetRegisteration(indexName)
+                        closeIndex (state, index)
+                        let index' = persistanceStore.Get<Index>(indexName)
+                        index'.Value.Online <- false
+                        persistanceStore.Put indexName index'.Value |> ignore
+                        return! Choice1Of2()
                 }
             
             member this.OpenIndex indexName = 

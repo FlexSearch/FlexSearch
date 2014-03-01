@@ -1,8 +1,12 @@
 ﻿module Helpers
 
 open FlexSearch.Api
+open FlexSearch.Api.Message
 open FlexSearch.Core
+open FsUnit
+open Fuchu
 open System
+open System.Collections.Generic
 open System.Linq
 open System.Threading
 
@@ -10,8 +14,7 @@ let pluginContainer = PluginContainer(false).Value
 let factoryCollection = new FactoryCollection(pluginContainer) :> IFactoryCollection
 let settingBuilder = SettingsBuilder.SettingsBuilder factoryCollection (new Validator.IndexValidator(factoryCollection))
 let persistanceStore = new PersistanceStore("", true)
-let searchService = 
-    new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
+let searchService = new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
 let indexService = 
     new IndexService(settingBuilder, persistanceStore, new VersioningCacheStore(), searchService) :> IIndexService
 
@@ -53,7 +56,8 @@ let GetBasicIndexSettingsForContact() =
     // Computed fields
     index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
     index.Scripts.Add
-        ("fullname", new ScriptProperties("""return fields["givenname"] + " " + fields["surname"];""", ScriptType.ComputedField))
+        ("fullname", 
+         new ScriptProperties("""return fields["givenname"] + " " + fields["surname"];""", ScriptType.ComputedField))
     index
 
 /// <summary>
@@ -75,3 +79,29 @@ let AddTestDataToIndex(indexService : IIndexService, index : Index, testData : s
         indexService.PerformCommand(index.IndexName, Create(indexDocument.Id, indexDocument.Fields)) |> ignore
     indexService.PerformCommand(index.IndexName, IndexCommand.Commit) |> ignore
     Thread.Sleep(100)
+
+let expectedFailureMessage (message : OperationMessage) (f : Choice<_, OperationMessage>) = 
+    match f with
+    | Choice1Of2(_) -> Assert.AreEqual(1, 2, sprintf "Expected an error of type: %i." message.ErrorCode)
+    | Choice2Of2(error) -> 
+        if message.ErrorCode = error.ErrorCode then Assert.AreEqual(1, 1)
+        else Assert.AreEqual(1, 2, sprintf "Expected an error of type: %i." message.ErrorCode)
+
+let expectedSuccessMessage (message : 'T) (f : Choice<'T, _>) = 
+    match f with
+    | Choice1Of2(a) -> Assert.AreEqual(message, a)
+    | Choice2Of2(error) -> Assert.AreEqual(1, 2, "Expected Choice1Of1 but received Choice1Of2.")
+
+let getResult (f : Choice<SearchResults, OperationMessage>) = 
+    match f with
+    | Choice1Of2(a) -> a
+    | Choice2Of2(b) -> failtest b.DeveloperMessage
+
+let resourceLoaderMock = 
+    { new IResourceLoader with
+          member this.LoadResourceAsString str = "hello"
+          member this.LoadResourceAsList str = ([| "hello"; "world" |].ToList())
+          member this.LoadResourceAsMap str = 
+              let result = new List<string []>()
+              result.Add([| "easy"; "simple"; "clear" |])
+              result }

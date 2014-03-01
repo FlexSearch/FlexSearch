@@ -11,7 +11,7 @@
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Analysis
+namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Core
@@ -32,6 +32,7 @@ open System.Collections.Generic
 // Contains all predefined tokenizers. The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------
+[<AutoOpen>]
 module Tokenizers =
 
     // ----------------------------------------------------------------------------
@@ -42,7 +43,7 @@ module Tokenizers =
     [<ExportMetadata("Name", "KeywordTokenizer")>]
     type KeywordTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new KeywordTokenizer(reader) :> Tokenizer
 
@@ -55,7 +56,7 @@ module Tokenizers =
     [<ExportMetadata("Name", "StandardTokenizer")>]
     type StandardTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new StandardTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer
 
@@ -68,7 +69,7 @@ module Tokenizers =
     [<ExportMetadata("Name", "ClassicTokenizer")>]
     type ClassicTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new ClassicTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer
 
@@ -81,7 +82,7 @@ module Tokenizers =
     [<ExportMetadata("Name", "LowercaseTokenizer")>]
     type LowercaseTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new LowerCaseTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer
 
@@ -94,7 +95,7 @@ module Tokenizers =
     [<ExportMetadata("Name", "LetterTokenizer")>]
     type LetterTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new LetterTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer
 
@@ -107,7 +108,7 @@ module Tokenizers =
     [<ExportMetadata("Name", "WhitespaceTokenizer")>]
     type WhitespaceTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new WhitespaceTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer
 
@@ -120,6 +121,6 @@ module Tokenizers =
     [<ExportMetadata("Name", "UAX29URLEmailTokenizer")>]
     type UAX29URLEmailTokenizerFactory() =
         interface IFlexTokenizerFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(reader: Reader) =
                 new UAX29URLEmailTokenizer(Constants.LuceneVersion ,reader) :> Tokenizer

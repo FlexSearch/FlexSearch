@@ -182,20 +182,20 @@ module Helpers =
             else failwithf "message=The specified path does not exist.; path=%s" dataPath
     
     /// Wrapper around dict lookup. Useful for validation in tokenizers and filters
-    let inline KeyExists(key, dict : Dictionary<string, string>) = 
+    let inline KeyExists(key, dict : IDictionary<string, string>) = 
         match dict.TryGetValue(key) with
         | (true, value) -> value
         | _ -> failwithf "'%s' is required." key
     
     /// Helper method to check if the passed key exists in the dictionary and if it does then the
     /// specified value is in the enum list
-    let inline ValidateIsInList(key, param : Dictionary<string, string>, enumValues : HashSet<string>) = 
+    let inline ValidateIsInList(key, param : IDictionary<string, string>, enumValues : HashSet<string>) = 
         let value = KeyExists(key, param)
         match enumValues.Contains(value) with
         | true -> value
         | _ -> failwithf "'%s' is not a valid value for '%s'." value key
     
-    let inline ParseValueAsInteger(key, param : Dictionary<string, string>) = 
+    let inline ParseValueAsInteger(key, param : IDictionary<string, string>) = 
         let value = KeyExists(key, param)
         match Int32.TryParse(value) with
         | (true, value) -> value
