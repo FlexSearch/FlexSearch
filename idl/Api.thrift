@@ -231,14 +231,14 @@ struct HighlightOption {
 struct SearchQuery {
 	1:	optional list<string> Columns = {}
 	2:	optional i32 Count = 10
-	3:	optional HighlightOption Highlights = {}
+	3:	optional HighlightOption Highlights
 	4:	required string IndexName
 	5:	optional string OrderBy = "score"
 	6:	optional i32 Skip = 0
 	7:	required string QueryString
 	8:	optional map<string, MissingValueOption> MissingValueCofiguration = {}
 	9:	optional MissingValueOption GlobalMissingValue = 1
-	10:	optional bool ReturnFlatResult = true
+	10:	optional bool ReturnFlatResult = false
 	11:	optional bool ReturnScore = true
 	12: optional string SearchProfile
 	13: optional string SearchProfileSelector

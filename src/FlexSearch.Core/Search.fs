@@ -41,11 +41,10 @@ open org.apache.lucene.search.postingshighlight
 // The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------
-[<AutoOpen>] 
+[<AutoOpen>]
 module SearchDsl = 
     let FlexCharTermAttribute = 
         lazy java.lang.Class.forName ("org.apache.lucene.analysis.tokenattributes.CharTermAttribute")
-    
     
     /// Utility function to get tokens from the search string based upon the passed analyzer
     /// This will enable us to avoid using the lucene query parser
@@ -66,6 +65,14 @@ module SearchDsl =
         finally
             source.close()
         tokens
+    
+    let GetQueryModules(factoryCollection : IFactoryCollection) = 
+        let queries = factoryCollection.SearchQueryFactory.GetAllModules()
+        let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
+        for query in queries do
+            for name in query.Value.QueryName() do
+                result.Add(name, query.Value)
+        result
     
     let private GenerateQuery (flexIndex : FlexIndex) (predicate : Predicate) (searchQuery : SearchQuery) 
         (isProfileBased : Dictionary<string, string> option) (queryTypes : Dictionary<string, IFlexQuery>) = 
@@ -231,17 +238,17 @@ module SearchDsl =
     // Search service class which will be dynamically injected using IOC. This will
     // provide the interface for all kind of search functionality in flex.
     // ----------------------------------------------------------------------------    
-    type SearchService(queryTypes: Dictionary<string, IFlexQuery>, queryParsersPool: ObjectPool<FlexParser>) =
+    type SearchService(queryTypes : Dictionary<string, IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
         interface ISearchService with
-            member x.Search(flexIndex: FlexIndex, search: SearchQuery) = maybe {
-                use parser = queryParsersPool.Acquire()
-                let! predicate = parser.Parse(search.QueryString)
-                parser.Release()
-                let! query = GenerateQuery flexIndex predicate search None queryTypes
-                return! SearchQuery(flexIndex, query, search)
+            member x.Search(flexIndex : FlexIndex, search : SearchQuery) = 
+                maybe { 
+                    use parser = queryParsersPool.Acquire()
+                    let! predicate = parser.Parse(search.QueryString)
+                    parser.Release()
+                    let! query = GenerateQuery flexIndex predicate search None queryTypes
+                    return! SearchQuery(flexIndex, query, search)
                 }
-                
-            
+    
     // ----------------------------------------------------------------------------
     // Method responsible for generating top level boolean query for the search query
     // ----------------------------------------------------------------------------   

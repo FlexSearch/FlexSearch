@@ -38,7 +38,7 @@ module CompilerService =
             member this.CompileScript(script : ScriptProperties) = 
                 let sourceCode = codeTemplate.Replace("[SourceCode]", script.Source)
                 try 
-                    let compiledScript = CSScript.Evaluator.LoadCode(script.Source)
+                    let compiledScript = CSScript.Evaluator.LoadCode(sourceCode)
                     let castMethod = compiledScript :?> 'a
                     Choice1Of2(castMethod)
                 with e -> 

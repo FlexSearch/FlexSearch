@@ -128,3 +128,11 @@ module Parsers =
             | Success(result, _, _) -> Choice1Of2(result)
             | Failure(errorMsg, _, _) -> 
                 Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
+    
+    /// <summary>
+    /// Generates an object pool for the parser
+    /// </summary>
+    /// <param name="poolSize"></param>
+    let getParserPool (poolSize : int) = 
+        let factory() = new FlexParser()
+        new ObjectPool<FlexParser>(factory, poolSize)

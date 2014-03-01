@@ -385,11 +385,14 @@ module Index =
             
             member this.AddIndex flexIndex = 
                 maybe { 
-                    let! status = state.GetStatus(flexIndex.IndexName)
-                    let! settings = settingsParser.BuildSetting(flexIndex)
-                    persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
-                    if flexIndex.Online then do! addIndex (state, settings)
-                    else state.IndexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
+                    match state.IndexStatus.TryGetValue(flexIndex.IndexName) with
+                    | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
+                    | _ -> 
+                        let! settings = settingsParser.BuildSetting(flexIndex)
+                        persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
+                        if flexIndex.Online then do! addIndex (state, settings)
+                        else state.IndexStatus.TryAdd(flexIndex.IndexName, IndexState.Offline) |> ignore
+                        return! Choice1Of2()
                 }
             
             member this.UpdateIndex index = 

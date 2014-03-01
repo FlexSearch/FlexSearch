@@ -19,7 +19,7 @@ let main argv =
     let result = Tests.defaultMainThisAssembly(argv)
     
     // Uncheck the below for debuggin individual test
-    //let result = run ValidatorsTests.indexFieldTests
+    //let result = run SearchTests.simpleHighlightingTests
     
     Console.WriteLine(result)
     Console.ReadKey() |> ignore

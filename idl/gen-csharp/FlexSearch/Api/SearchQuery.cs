@@ -226,8 +226,6 @@ namespace FlexSearch.Api
       this.__isset.Columns = true;
       this._Count = 10;
       this.__isset.Count = true;
-      this._Highlights = new HighlightOption();
-      this.__isset.Highlights = true;
       this._OrderBy = "score";
       this.__isset.OrderBy = true;
       this._Skip = 0;
@@ -236,7 +234,7 @@ namespace FlexSearch.Api
       this.__isset.MissingValueCofiguration = true;
       this._GlobalMissingValue = MissingValueOption.ThrowError;
       this.__isset.GlobalMissingValue = true;
-      this._ReturnFlatResult = true;
+      this._ReturnFlatResult = false;
       this.__isset.ReturnFlatResult = true;
       this._ReturnScore = true;
       this.__isset.ReturnScore = true;
