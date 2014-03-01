@@ -319,7 +319,7 @@ module Index =
     // loadAllIndex - This is used to bypass loading of index at initialization time.
     // Helpful for testing
     // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser : ISettingsBuilder, persistanceStore : IPersistanceStore, versionCache : IVersioningCacheStore) = 
+    type IndexService(settingsParser : ISettingsBuilder, persistanceStore : IPersistanceStore, versionCache : IVersioningCacheStore, searchService : ISearchService) = 
         
         let state = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
@@ -461,3 +461,6 @@ module Index =
                 for index in state.IndexRegisteration do
                     closeIndex (state, index.Value)
                 true
+            
+            member this.PerformQuery(indexName, query) = maybe { let! flexIndex = state.GetRegisteration(indexName)
+                                                                 return! searchService.Search(flexIndex, query) }
