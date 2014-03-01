@@ -100,6 +100,12 @@ module Parsers =
     
     type Assoc = Associativity
     
+    /// Generates all possible case combinations for the key words
+    let private orCases = [ "or"; "oR"; "Or"; "OR" ]
+    
+    let private andCases = [ "and"; "anD"; "aNd"; "aND"; "And"; "AnD"; "ANd"; "AND" ]
+    let private notCases = [ "not"; "noT"; "nOt"; "nOT"; "Not"; "NoT"; "NOt"; "NOT" ]
+    
     /// <summary>
     /// Default Parser for query parsing. 
     /// Note: The reason to create a parser class is to hide FParsec OperatorPrecedenceParser
@@ -119,9 +125,11 @@ module Parsers =
         
         do 
             opp.TermParser <- term
-            opp.AddOperator(InfixOperator("or", ws, 1, Assoc.Left, fun x y -> OrPredidate(x, y)))
-            opp.AddOperator(InfixOperator("and", ws, 2, Assoc.Left, fun x y -> AndPredidate(x, y)))
-            opp.AddOperator(PrefixOperator("not", ws, 3, true, fun x -> NotPredicate(x)))
+            orCases 
+            |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 1, Assoc.Left, fun x y -> OrPredidate(x, y))))
+            andCases 
+            |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 2, Assoc.Left, fun x y -> AndPredidate(x, y))))
+            notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, fun x -> NotPredicate(x))))
         
         member this.Parse(input : string) = 
             match run Parser input with

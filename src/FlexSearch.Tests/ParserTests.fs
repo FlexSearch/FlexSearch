@@ -50,5 +50,6 @@ let parserTests =
                              12, "abc > '12'"
                              13, "abc >= '12'"
                              14, "abc >= '1\\'2'"
-                             15, "not (abc eq 'sdsd' and abc eq 'asasa') and pqr eq 'asas'" ] -> 
+                             15, "not (abc eq 'sdsd' and abc eq 'asasa') and pqr eq 'asas'"
+                             16, "abc eq 'a' AND pr eq 'b'" ] -> 
                     testCase (sprintf "%i: Function call should parse" (fst (exp))) <| fun _ -> test2 (snd (exp)) ] ]
