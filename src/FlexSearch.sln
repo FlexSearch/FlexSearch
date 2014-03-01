@@ -6,14 +6,11 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{527581E3-C4E4-447D-918D-675C7D7FB9E5}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
 	EndProjectSection
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Core", "FlexSearch.Core\FlexSearch.Core.fsproj", "{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Server", "FlexSearch.Server\FlexSearch.Server.csproj", "{06F48DAA-3928-458D-AF20-5FFB55E23D74}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Specs", "FlexSearch.Specs\FlexSearch.Specs.csproj", "{48EB0B88-5EC1-4C26-A559-476E296EE598}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.csproj", "{5EE56459-9341-4335-991E-041F0C769047}"
 EndProject
@@ -35,10 +32,6 @@ Global
 		{06F48DAA-3928-458D-AF20-5FFB55E23D74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{06F48DAA-3928-458D-AF20-5FFB55E23D74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{06F48DAA-3928-458D-AF20-5FFB55E23D74}.Release|Any CPU.Build.0 = Release|Any CPU
-		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{48EB0B88-5EC1-4C26-A559-476E296EE598}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5EE56459-9341-4335-991E-041F0C769047}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5EE56459-9341-4335-991E-041F0C769047}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5EE56459-9341-4335-991E-041F0C769047}.Release|Any CPU.ActiveCfg = Release|Any CPU
