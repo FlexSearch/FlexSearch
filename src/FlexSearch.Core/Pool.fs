@@ -30,7 +30,7 @@ module Pool =
                 if self.AllowRegeneration = true then
                     if reRegisterForFinalization then 
                         GC.ReRegisterForFinalize(self)
-                        self.ReturnToPool(self)
+                    self.ReturnToPool(self)
                 else
                     disposed <- true
         
