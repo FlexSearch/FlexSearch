@@ -18,7 +18,7 @@ let test p str =
 let test2 str = 
     match parser.Parse(str) with
     | Choice1Of2(a) -> Assert.AreEqual(1, 1)
-    | Choice2Of2(errorMsg) -> Assert.AreEqual(1, 2, errorMsg)
+    | Choice2Of2(errorMsg) -> Assert.AreEqual(1, 2, errorMsg.DeveloperMessage)
 
 [<Tests>]
 let parserTests = 
