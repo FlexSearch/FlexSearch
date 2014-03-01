@@ -21,7 +21,7 @@ type SampleClass() =
     [<DataMember(Order = 1)>]
     member val Name = "test" with get, set
 
-[<Tests>]
+//[<Tests>]
 let socketServerTests =
     let port = 10000
     testList "Socket server tests" [
