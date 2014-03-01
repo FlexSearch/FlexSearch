@@ -14,14 +14,31 @@ module Parsers =
     open FParsec
     open FParsec.CharParsers
     open FParsec.Primitives
+    open FlexSearch.Api.Message
+    open FlexSearch.Core.Pool
     open System
+    open System.Linq
     
     /// <summary>
     /// Represents the Values which can be used in the querystring
     /// </summary>
     type Value = 
         | SingleValue of string
-        | ValueList of Value list
+        | ValueList of string list
+        
+        member this.GetValueAsList() = 
+            match this with
+            | SingleValue(v) -> [ v ]
+            | ValueList(v) -> v
+        
+        member this.GetValueAsArray() = 
+            match this with
+            | SingleValue(v) -> 
+                if String.IsNullOrWhiteSpace(v) then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+                else Choice1Of2([| v |])
+            | ValueList(v) -> 
+                if v.Length = 0 then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+                else Choice1Of2(v.ToArray())
     
     /// <summary>
     /// Acceptable Predicates for a query
@@ -46,7 +63,13 @@ module Parsers =
             (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) |>> SingleValue 
         .>> ws
     
-    let listOfValues = (str_ws "[" >>. sepBy1 stringLiteral (str_ws ",") .>> str_ws "]") |>> ValueList .>> ws
+    let stringLiteralList = 
+        let escape = anyOf "'" |>> function 
+                     | c -> string c // every other char is mapped to itself
+        between (pstring "\'") (pstring "\'") 
+            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) .>> ws
+    
+    let listOfValues = (str_ws "[" >>. sepBy1 stringLiteralList (str_ws ",") .>> str_ws "]") |>> ValueList .>> ws
     
     /// <summary>
     /// Value parser
@@ -82,6 +105,7 @@ module Parsers =
     /// as it is not thread safe. This class will be created using object pool
     /// </summary>    
     type FlexParser() = 
+        inherit PooledObject()
         let opp = new OperatorPrecedenceParser<Predicate, unit, unit>()
         let expr = opp.ExpressionParser
         
@@ -101,4 +125,4 @@ module Parsers =
         member this.Parse(input : string) = 
             match run Parser input with
             | Success(result, _, _) -> Choice1Of2(result)
-            | Failure(errorMsg, _, _) -> Choice2Of2(errorMsg)
+            | Failure(errorMsg, _, _) -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
