@@ -2,10 +2,7 @@
 {
     using System;
     using System.Collections.Specialized;
-
-
     using FlexSearch.Core;
-
     using Topshelf;
     using Owin;
 

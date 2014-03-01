@@ -14,8 +14,6 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
-open FlexSearch.Core.Pool
-open FlexSearch.Core.Parsers
 open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
@@ -43,16 +41,16 @@ open org.apache.lucene.search.postingshighlight
 // The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------
+[<AutoOpen>] 
 module SearchDsl = 
     let FlexCharTermAttribute = 
         lazy java.lang.Class.forName ("org.apache.lucene.analysis.tokenattributes.CharTermAttribute")
     
-    // ----------------------------------------------------------------------------
-    // Utility function to get tokens from the search string based upon the passed analyzer
-    // This will enable us to avoid using the lucene query parser
-    // We cannot use simple white space based token generation as it really depends 
-    // upon the analyzer used
-    // ----------------------------------------------------------------------------
+    
+    /// Utility function to get tokens from the search string based upon the passed analyzer
+    /// This will enable us to avoid using the lucene query parser
+    /// We cannot use simple white space based token generation as it really depends 
+    /// upon the analyzer used
     let inline ParseTextUsingAnalyzer(analyzer : Analyzer, fieldName, queryText) = 
         let tokens = new List<string>()
         let source : TokenStream = analyzer.tokenStream (fieldName, new StringReader(queryText))

@@ -13,7 +13,6 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
-open FlexSearch.Core.State
 open FlexSearch.Utility
 open System
 open System.Collections.Concurrent

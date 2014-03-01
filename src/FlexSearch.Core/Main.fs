@@ -11,11 +11,8 @@
 namespace FlexSearch.Core
 
 module Main = 
-    open FlexSearch
     open FlexSearch.Api
     open FlexSearch.Core
-    open FlexSearch.Core.Server
-    open FlexSearch.Core.State
     open FlexSearch.Utility
     open Microsoft.Owin
     open Newtonsoft.Json

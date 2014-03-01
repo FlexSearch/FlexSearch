@@ -9,13 +9,11 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch
+namespace FlexSearch.Core
 
-open FlexSearch.Core
 open FlexSearch.Api.Message
-open FlexSearch.Core.State
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.miscellaneous
+open FlexSearch.Core
+open FlexSearch.Utility
 open System
 open System.Collections.Generic
 open System.ComponentModel.Composition
@@ -23,12 +21,18 @@ open System.ComponentModel.Composition.Hosting
 open System.IO
 open System.Linq
 open System.Reflection
+open org.apache.lucene.analysis
+open org.apache.lucene.analysis.miscellaneous
 
 // ----------------------------------------------------------------------------
 // Contains mef container and other factory implementation
 // ----------------------------------------------------------------------------
+[<AutoOpen>]
 module Factories = 
-    // Mef container which loads all the related plugins
+    /// <summary>
+    /// Mef container which loads all the related plugins
+    /// </summary>
+    /// <param name="readPluginDirectory">Whether to load plugins from plugin directory</param>
     let PluginContainer(readPluginDirectory) = 
         lazy (let aggrCatalog = new AggregateCatalog()
               // An assembly catalog to load information about part from this assembly  
@@ -41,18 +45,18 @@ module Factories =
               // Create a container  
               new CompositionContainer(aggrCatalog, CompositionOptions.IsThreadSafe))
     
-    // ----------------------------------------------------------------------------
-    // Concerete implementation of IResourceLoader
-    // ----------------------------------------------------------------------------   
+    /// <summary>
+    /// Concerete implementation of IResourceLoader
+    /// </summary>
     type ResourceLoader() = 
         interface IResourceLoader with
             
             member this.LoadResourceAsString(resourceName) = 
-                let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
-                Utility.Helpers.LoadFile(path)
+                let path = Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
+                Helpers.LoadFile(path)
             
             member this.LoadResourceAsList(resourceName) = 
-                let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
+                let path = Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
                 let readLines = System.IO.File.ReadLines(path)
                 let result = new List<string>()
                 for line in readLines do
@@ -61,7 +65,7 @@ module Factories =
                 result
             
             member this.LoadResourceAsMap(resourceName) = 
-                let path = Utility.Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
+                let path = Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
                 let readLines = System.IO.File.ReadLines(path)
                 let result = new List<string []>()
                 for line in readLines do
@@ -71,9 +75,9 @@ module Factories =
                         if values.Length > 1 then result.Add(values)
                 result
     
-    // ----------------------------------------------------------------------------
-    // Concerete implementation of IFlexFactory
-    // ----------------------------------------------------------------------------    
+    /// <summary>
+    /// Concerete implementation of IFlexFactory
+    /// </summary>
     type FlexFactory<'a>(container : CompositionContainer, moduleType) as self = 
         
         [<ImportMany(RequiredCreationPolicy = CreationPolicy.NonShared)>]
@@ -107,21 +111,23 @@ module Factories =
                 factory |> Seq.iter (fun x -> modules.Add(x.Metadata.Name, x.CreateExport().Value))
                 modules
     
+    /// <summary>
     /// Loads all the http modules
+    /// </summary>
     let GetHttpModules() = 
         lazy (let httpModule = 
                   new FlexFactory<IHttpModule>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<IHttpModule>
               httpModule.GetAllModules())
     
-    // ---------------------------------------------------------------------------- 
-    // Concerete implementation of IFactoryCollection
-    // ---------------------------------------------------------------------------- 
+    /// <summary>
+    /// Concerete implementation of IFactoryCollection
+    /// </summary>
     type FactoryCollection(container : CompositionContainer) = 
         let filterFactory = new FlexFactory<IFlexFilterFactory>(container, "Filter") :> IFlexFactory<IFlexFilterFactory>
         let tokenizerFactory = 
             new FlexFactory<IFlexTokenizerFactory>(container, "Tokenizer") :> IFlexFactory<IFlexTokenizerFactory>
         let analyzerFactory = new FlexFactory<Analyzer>(container, "Analyzer") :> IFlexFactory<Analyzer>
-        //let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
+        let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
         let computationOpertionFactory = 
             new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
         //let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
@@ -131,7 +137,7 @@ module Factories =
             member this.FilterFactory = filterFactory
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
-            //member this.SearchQueryFactory = searchQueryFactory
+            member this.SearchQueryFactory = searchQueryFactory
             member this.ComputationOpertionFactory = computationOpertionFactory
             //member this.PluginsFactory = pluginsFactory
             member this.ScriptFactoryCollection = scriptFactory

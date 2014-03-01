@@ -9,10 +9,8 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
 open FlexSearch.Api
 open FlexSearch.Core
 open FlexSearch.Utility
@@ -22,9 +20,7 @@ open System.Net
 open System.Xml
 open System.Xml.Linq
 
-// ----------------------------------------------------------------------------
-/// Top level settings parse function   
-// ----------------------------------------------------------------------------   
+[<AutoOpen>]
 module Store = 
     open System.Data.SQLite
     open System.IO

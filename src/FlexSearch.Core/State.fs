@@ -10,6 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+[<AutoOpen>]  
 module State = 
     open FlexSearch.Api
     open FlexSearch.Core

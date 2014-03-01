@@ -1,5 +1,4 @@
 ﻿module Helpers
-open FlexSearch.Factories
-open FlexSearch.Core.Interface
+open FlexSearch.Core
 let pluginContainer = PluginContainer(false).Value
 let factoryCollection = new FactoryCollection(pluginContainer) :> IFactoryCollection

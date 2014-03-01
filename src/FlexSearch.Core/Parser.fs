@@ -10,6 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+[<AutoOpen>]
 module Parsers = 
     open FParsec
     open FParsec.CharParsers
@@ -125,4 +126,5 @@ module Parsers =
         member this.Parse(input : string) = 
             match run Parser input with
             | Success(result, _, _) -> Choice1Of2(result)
-            | Failure(errorMsg, _, _) -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
+            | Failure(errorMsg, _, _) -> 
+                Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
