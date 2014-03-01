@@ -13,7 +13,9 @@ namespace FlexSearch.Core
 [<AutoOpen>]
 module State = 
     open FlexSearch.Api
+    open FlexSearch.Api.Message
     open FlexSearch.Core
+    open FlexSearch.Core.HttpHelpers
     open FlexSearch.Core.Interface
     open Microsoft.Owin
     open Owin
@@ -39,9 +41,14 @@ module State =
     // ----------------------------------------------------------------------------     
     /// Http module to handle to incoming requests
     // ----------------------------------------------------------------------------   
-    type IHttpModule = 
+    [<AbstractClass>]
+    type HttpModuleBase() = 
         //abstract Routes : unit -> ServiceRoute []
         abstract Get : string * IOwinContext * NodeState -> unit
-        abstract Post : string * IOwinContext * NodeState -> unit
+        override this.Get(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
         abstract Put : string * IOwinContext * NodeState -> unit
+        override this.Put(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
         abstract Delete : string * IOwinContext * NodeState -> unit
+        override this.Delete(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Post : string * IOwinContext * NodeState -> unit
+        override this.Post(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED

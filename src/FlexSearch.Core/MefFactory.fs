@@ -116,7 +116,7 @@ module Factories =
     /// </summary>
     let GetHttpModules() = 
         lazy (let httpModule = 
-                  new FlexFactory<IHttpModule>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<IHttpModule>
+                  new FlexFactory<HttpModuleBase>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<HttpModuleBase>
               httpModule.GetAllModules())
     
     /// <summary>

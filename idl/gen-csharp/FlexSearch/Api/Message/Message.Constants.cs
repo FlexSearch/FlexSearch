@@ -59,10 +59,12 @@ namespace FlexSearch.Api.Message
     public static OperationMessage QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED = new OperationMessage();
     public static OperationMessage STORED_FIELDS_CANNOT_BE_SEARCHED = new OperationMessage();
     public static OperationMessage SEARCH_PROFILE_NOT_FOUND = new OperationMessage();
+    public static OperationMessage NEGATIVE_QUERY_NOT_SUPPORTED = new OperationMessage();
     public static OperationMessage HTTP_UNABLE_TO_PARSE = new OperationMessage();
     public static OperationMessage HTTP_UNSUPPORTED_CONTENT_TYPE = new OperationMessage();
     public static OperationMessage HTTP_NO_BODY_DEFINED = new OperationMessage();
     public static OperationMessage HTTP_NOT_SUPPORTED = new OperationMessage();
+    public static OperationMessage HTTP_URI_ID_NOT_SUPPLIED = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -84,7 +86,7 @@ namespace FlexSearch.Api.Message
       INDEX_REGISTERATION_MISSING.UserMessage = "Registeration information associated with the index is missing.";
       INDEX_REGISTERATION_MISSING.ErrorCode = 1006;
       INDEXING_DOCUMENT_ID_MISSING.DeveloperMessage = "Document id missing.";
-      INDEXING_DOCUMENT_ID_MISSING.UserMessage = "Document Id is required in order to index an document. Please specify _documentid and submit the document for indexing.";
+      INDEXING_DOCUMENT_ID_MISSING.UserMessage = "Document Id is required in order to index an document. Please specify _id and submit the document for indexing.";
       INDEXING_DOCUMENT_ID_MISSING.ErrorCode = 1007;
       ERROR_OPENING_INDEXWRITER.DeveloperMessage = "{To be populated by the developer code}";
       ERROR_OPENING_INDEXWRITER.UserMessage = "Unable to open index writer.";
@@ -188,6 +190,9 @@ namespace FlexSearch.Api.Message
       SEARCH_PROFILE_NOT_FOUND.DeveloperMessage = "The requested search profile does not exist.";
       SEARCH_PROFILE_NOT_FOUND.UserMessage = "The requested search profile does not exist.";
       SEARCH_PROFILE_NOT_FOUND.ErrorCode = 5009;
+      NEGATIVE_QUERY_NOT_SUPPORTED.DeveloperMessage = "Purely negative queries (top not query) are not supported.";
+      NEGATIVE_QUERY_NOT_SUPPORTED.UserMessage = "Purely negative queries (top not query) are not supported.";
+      NEGATIVE_QUERY_NOT_SUPPORTED.ErrorCode = 5010;
       HTTP_UNABLE_TO_PARSE.DeveloperMessage = "The server is unable to parse the request body. {value}";
       HTTP_UNABLE_TO_PARSE.UserMessage = "The server is unable to parse the request body.";
       HTTP_UNABLE_TO_PARSE.ErrorCode = 6000;
@@ -200,6 +205,9 @@ namespace FlexSearch.Api.Message
       HTTP_NOT_SUPPORTED.DeveloperMessage = "The request Uri endpoint is not supported.";
       HTTP_NOT_SUPPORTED.UserMessage = "The request Uri endpoint is not supported.";
       HTTP_NOT_SUPPORTED.ErrorCode = 6003;
+      HTTP_URI_ID_NOT_SUPPLIED.DeveloperMessage = "The request URI expects an id to be supplied as a part of URI.";
+      HTTP_URI_ID_NOT_SUPPLIED.UserMessage = "The request URI expects an id to be supplied as a part of URI.";
+      HTTP_URI_ID_NOT_SUPPLIED.ErrorCode = 6004;
     }
   }
 }

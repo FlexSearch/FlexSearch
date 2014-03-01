@@ -164,12 +164,12 @@ type FlexField =
     }
 
 
-// All the valid states possible for an index
-type IndexState =
-    | Opening
-    | Online
-    | Offline
-    | Closing
+//// All the valid states possible for an index
+//type IndexState =
+//    | Opening
+//    | Online
+//    | Offline
+//    | Closing
 
 
 // ----------------------------------------------------------------------------

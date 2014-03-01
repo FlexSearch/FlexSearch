@@ -6,7 +6,7 @@ open System
 let main argv = 
     //let result = Tests.defaultMainThisAssembly (argv)
     // Uncheck the below for debuggin individual test
-    let result = run HttpModuleTests.indexTests
+    let result = run (HttpModuleTests.testRunHelper())
     Console.WriteLine(result)
     Console.ReadKey() |> ignore
     result

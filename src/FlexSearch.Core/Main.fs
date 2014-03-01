@@ -73,9 +73,13 @@ module Main =
                                 // Check if the requested module exists
                                 getModule "index" indexName' owin
                             else 
+                                let moduleName = 
+                                    if owin.Request.Uri.Segments.[2].EndsWith("/") then 
+                                        owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
+                                    else owin.Request.Uri.Segments.[2]
                                 // This is a specialized request to an existing index
                                 // Check if the requested module exists 
-                                getModule owin.Request.Uri.Segments.[2] indexName' owin
+                                getModule moduleName indexName' owin
                         | _ -> 
                             // This can be an index creation request
                             getModule "index" indexName' owin

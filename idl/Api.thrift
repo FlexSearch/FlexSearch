@@ -121,6 +121,15 @@ enum ScriptType {
     ComputedField = 3
 }
 
+
+enum IndexState {
+    Opening = 1
+    Online = 2
+    Offline = 3
+    Closing = 4
+}
+
+
 enum JobStatus {
 	Initializing = 1
 	Initialized = 2
@@ -284,8 +293,12 @@ struct Index {
 }
 
 
-struct SearchResults{
+struct SearchResults {
 	1:	optional list<Document> Documents = {}
 	2:	optional i32 RecordsReturned
 	3:	optional i32 TotalAvailable
+}
+
+struct IndexStatusResponse {
+	1:	required IndexState Status
 }

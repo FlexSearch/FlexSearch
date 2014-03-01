@@ -89,7 +89,7 @@ const OperationMessage INDEX_REGISTERATION_MISSING =
 const OperationMessage INDEXING_DOCUMENT_ID_MISSING = 
 	{
 		"DeveloperMessage" : "Document id missing.", 
-		"UserMessage" : "Document Id is required in order to index an document. Please specify _documentid and submit the document for indexing.",
+		"UserMessage" : "Document Id is required in order to index an document. Please specify _id and submit the document for indexing.",
 		"ErrorCode": 1007
 	}	
 
@@ -344,6 +344,13 @@ const OperationMessage SEARCH_PROFILE_NOT_FOUND =
 		"UserMessage" : "The requested search profile does not exist.", 
 		"ErrorCode": 5009
 	}
+
+const OperationMessage NEGATIVE_QUERY_NOT_SUPPORTED = 
+	{
+		"DeveloperMessage" : "Purely negative queries (top not query) are not supported.", 
+		"UserMessage" : "Purely negative queries (top not query) are not supported.", 
+		"ErrorCode": 5010
+	}
 	
 // ----------------------------------------------------------------------------
 //	Http Server
@@ -375,3 +382,10 @@ const OperationMessage HTTP_NOT_SUPPORTED =
 		"UserMessage" : "The request Uri endpoint is not supported.", 
 		"ErrorCode": 6003
 	}
+	
+const OperationMessage HTTP_URI_ID_NOT_SUPPLIED = 
+	{
+		"DeveloperMessage" : "The request URI expects an id to be supplied as a part of URI.", 
+		"UserMessage" : "The request URI expects an id to be supplied as a part of URI.", 
+		"ErrorCode": 6004
+	}	

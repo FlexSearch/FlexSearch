@@ -68,6 +68,10 @@
       <HintPath>..\packages\Fuchu.FsCheck.0.3.0.1\lib\net40-client\Fuchu.FsCheck.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="HttpClient">
+      <HintPath>..\packages\Http.fs.0.8.1.0\lib\net40\HttpClient.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="IKVM.AWT.WinForms">
       <HintPath>..\packages\IKVM.7.3.4830.0\lib\IKVM.AWT.WinForms.dll</HintPath>
       <Private>True</Private>
@@ -188,10 +192,6 @@
       <HintPath>..\packages\protobuf-net.2.0.0.668\lib\net40\protobuf-net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="RestSharp">
-      <HintPath>..\packages\RestSharp.104.4.0\lib\net4\RestSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="SuperSocket.ClientEngine.Common">
       <HintPath>..\..\lib\SuperSocket.ClientEngine.Common.dll</HintPath>
     </Reference>
@@ -229,6 +229,8 @@
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.91.3\lib\net451\System.Data.SQLite.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Threading.Tasks.Dataflow">

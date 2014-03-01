@@ -109,7 +109,11 @@ module Index =
             async { 
                 do! Async.Sleep(time)
                 if (cts.IsCancellationRequested) then cts.Dispose()
-                else work (flexIndex)
+                else 
+                    try
+                        work (flexIndex)
+                    with e -> 
+                        cts.Dispose()
                 return! loop delay cts
             }
         loop delay flexIndex.Token
@@ -190,10 +194,12 @@ module Index =
             // Update status from online to closing
             state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Closing
             flexIndex.Token.Cancel()
-            flexIndex.Shards |> Array.iter (fun x -> 
-                                    x.NRTManager.close()
-                                    x.IndexWriter.commit()
-                                    x.IndexWriter.close())
+            for shard in flexIndex.Shards do 
+                try
+                    shard.NRTManager.close()
+                    shard.IndexWriter.commit()
+                    shard.IndexWriter.close()
+                with e -> ()
         with e -> () //logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
         state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Offline
     
@@ -425,6 +431,8 @@ module Index =
                         let! flexIndex = state.GetRegisteration(indexName)
                         closeIndex (state, flexIndex)
                         persistanceStore.Delete<Index> indexName |> ignore
+                        state.IndexRegisteration.TryRemove(indexName) |> ignore
+                        state.IndexStatus.TryRemove(indexName) |> ignore
                         // It is possible that directory might not exist if the index has never been opened
                         if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
                             Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
@@ -432,6 +440,8 @@ module Index =
                     | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
                     | IndexState.Offline | IndexState.Closing -> 
                         persistanceStore.Delete<Index> indexName |> ignore
+                        state.IndexRegisteration.TryRemove(indexName) |> ignore
+                        state.IndexStatus.TryRemove(indexName) |> ignore
                         // It is possible that directory might not exist if the index has never been opened
                         if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
                             Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
