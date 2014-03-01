@@ -15,13 +15,15 @@
         {
             try
             {
+                var settings = Core.Main.GetServerSettings(Constants.ConfFolder.Value + "Config.json");
+
                 HostFactory.Run(
                     x =>
                     {
                         x.Service<Main.NodeService>(
                             s =>
                             {
-                                s.ConstructUsing(name => new Main.NodeService());
+                                s.ConstructUsing(name => new Main.NodeService(settings, false));
                                 s.WhenStarted(tc => tc.Start());
                                 s.WhenStopped(tc => tc.Stop());
                             });

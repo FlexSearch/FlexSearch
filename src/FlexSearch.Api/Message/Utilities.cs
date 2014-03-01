@@ -13,7 +13,7 @@ namespace FlexSearch.Api.Message
         {
             return new OperationMessage
             {
-                DeveloperMessage = developerMessage,
+                DeveloperMessage = op.DeveloperMessage.Replace("{value}", developerMessage),
                 UserMessage = op.UserMessage,
                 ErrorCode = op.ErrorCode
             };

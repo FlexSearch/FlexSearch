@@ -10,6 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+[<AutoOpen>]
 module Main = 
     open FlexSearch.Api
     open FlexSearch.Core
@@ -46,10 +47,6 @@ module Main =
                     | _ -> owin.Response.StatusCode <- 500
                 | _ -> owin.Response.StatusCode <- 500
             try 
-                let dataType = 
-                    if owin.Request.Uri.Segments.Last().Contains(".") then 
-                        owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf("."))
-                    else "json"
                 // Root path
                 if owin.Request.Uri.Segments.Length = 1 then getModule "/" "/" owin
                 else 
@@ -57,15 +54,31 @@ module Main =
                         if owin.Request.Uri.Segments.[1].EndsWith("/") then 
                             owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
                         else owin.Request.Uri.Segments.[1]
+
                     if indexName.EndsWith(".ico") <> true then 
-                        // This is the root index module request
-                        if owin.Request.Uri.Segments.Length = 2 then 
-                            // Check if the requested module exists
-                            getModule "index" indexName owin
-                        else 
-                            // This is a specialized request to an existing index
-                            // Check if the requested module exists 
-                            getModule owin.Request.Uri.Segments.[2] indexName owin
+                        
+                        // This covers the case when the expected response format is specified as a part of
+                        // the request
+                        let indexName' =
+                            if indexName.Contains(".") then
+                                indexName.Substring(0, indexName.IndexOf("."))
+                            else
+                                indexName
+
+                        // Check if the passed index exists     
+                        match container.[owin.Request.Uri.Port].IndexService.IndexExists(indexName') with
+                        | true -> 
+                            // This is the root index module request
+                            if owin.Request.Uri.Segments.Length = 2 then 
+                                // Check if the requested module exists
+                                getModule "index" indexName' owin
+                            else 
+                                // This is a specialized request to an existing index
+                                // Check if the requested module exists 
+                                getModule owin.Request.Uri.Segments.[2] indexName' owin
+                        | _ -> 
+                            // This can be an index creation request
+                            getModule "index" indexName' owin
                     else owin.Response.StatusCode <- 500
             with ex -> ()
         }
@@ -85,7 +98,7 @@ module Main =
     /// Generate server settings from the json text file
     /// </summary>
     /// <param name="path">File path to load settings from</param>
-    let getServerSettings (path) = 
+    let GetServerSettings(path) = 
         let fileText = Helpers.LoadFile(path)
         let parsedResult = JsonConvert.DeserializeObject<ServerSettings>(fileText)
         parsedResult.ConfFolder <- Helpers.GenerateAbsolutePath(parsedResult.ConfFolder)
@@ -96,34 +109,52 @@ module Main =
     /// <summary>
     /// Initialize all the service locator member
     /// </summary>
-    let initServiceLocator() = 
-        let pluginContainer = Factories.PluginContainer(true).Value
-        ServiceLocator.FactoryCollection <- new Factories.FactoryCollection(pluginContainer)
+    let initServiceLocator (serverSettings, testServer) = 
+        let pluginContainer = PluginContainer(not testServer).Value
+        let factoryCollection = new FactoryCollection(pluginContainer) :> IFactoryCollection
+        let settingBuilder = 
+            SettingsBuilder.SettingsBuilder factoryCollection (new Validator.IndexValidator(factoryCollection))
+        let persistanceStore = new PersistanceStore(Constants.ConfFolder.Value, testServer)
+        let searchService = new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
+        let indexService = 
+            new IndexService(settingBuilder, persistanceStore, new VersioningCacheStore(), searchService) :> IIndexService
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
-        ServiceLocator.SettingsBuilder <- SettingsBuilder.SettingsBuilder ServiceLocator.FactoryCollection 
-                                              (new Validator.IndexValidator(ServiceLocator.FactoryCollection))
+        let nodeState = 
+            { PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
+              ServerSettings = serverSettings
+              CacheStore = Unchecked.defaultof<_>
+              IndexService = indexService
+              SettingsBuilder = settingBuilder }
+        nodeState
     
     /// <summary>
     /// Main entrypoint to load node
     /// </summary>
-    let loadNode() = 
-        initServiceLocator()
-        let settings = getServerSettings (Constants.ConfFolder.Value + "Config.json")
-        
-        let nodeState = 
-            { PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
-              ServerSettings = settings
-              Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
-              CacheStore = Unchecked.defaultof<_>
-              IndexService = Unchecked.defaultof<_>
-              SettingsBuilder = Unchecked.defaultof<_> }
-        container.TryAdd(settings.HttpPort, nodeState) |> ignore
-        Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>(sprintf "http://*:%i" settings.HttpPort)
+    let loadNode (serverSettings : ServerSettings, testServer : bool) = 
+        // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
+        // To verify that this works, run `netsh http show servicestate`.
+        if testServer <> true then MaximizeThreads() |> ignore
+        let nodeState = initServiceLocator (serverSettings, testServer)
+        container.TryAdd(nodeState.ServerSettings.HttpPort, nodeState) |> ignore
     
     /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
-    type NodeService() = 
-        let mutable node = Unchecked.defaultof<IDisposable>
-        member this.Start() = node <- loadNode()
-        member this.Stop() = node.Dispose()
+    type NodeService(serverSettings : ServerSettings, testServer : bool) = 
+        let mutable server = Unchecked.defaultof<IDisposable>
+        let mutable thread = Unchecked.defaultof<_>
+        
+        let startServer() = 
+            server <- Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>(sprintf "http://*:%i" serverSettings.HttpPort)
+            Console.ReadKey() |> ignore
+        
+        member this.Start() = 
+            loadNode (serverSettings, testServer)
+            try 
+                thread <- Task.Factory.StartNew(startServer)
+            with e -> ()
+            ()
+        
+        member this.Stop() = 
+            container.TryRemove(serverSettings.HttpPort) |> ignore
+            server.Dispose()

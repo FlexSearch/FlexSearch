@@ -350,7 +350,7 @@ const OperationMessage SEARCH_PROFILE_NOT_FOUND =
 // ----------------------------------------------------------------------------	
 const OperationMessage HTTP_UNABLE_TO_PARSE = 
 	{
-		"DeveloperMessage" : "The server is unable to parse the request body.", 
+		"DeveloperMessage" : "The server is unable to parse the request body. {value}", 
 		"UserMessage" : "The server is unable to parse the request body.", 
 		"ErrorCode": 6000
 	}

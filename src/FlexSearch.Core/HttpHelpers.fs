@@ -28,7 +28,12 @@ module HttpHelpers =
     open System.Net
     open System.Text
     open System.Threading
+    open Newtonsoft.Json
+    open Newtonsoft.Json.Converters
     
+    let jsonSettings = new JsonSerializerSettings()
+    jsonSettings.Converters.Add(new StringEnumConverter())
+
     /// Helper method to serialize cluster messages
     let protoSerialize (message : 'a) = 
         use stream = new MemoryStream()
@@ -44,21 +49,26 @@ module HttpHelpers =
     let writeResponse (statusCode : System.Net.HttpStatusCode) (res : obj) (owin : IOwinContext) = 
         let matchType format res = 
             match format with
-            | "text/json" | "application/json" -> 
+            | "text/json" | "application/json" | "json" -> 
                 owin.Response.ContentType <- "text/json"
-                let result = JsonConvert.SerializeObject(res)
+                let result = JsonConvert.SerializeObject(res, jsonSettings)
                 Some(Encoding.UTF8.GetBytes(result))
-            | "application/x-protobuf" | "application/octet-stream" -> 
+            | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 owin.Response.ContentType <- "application/x-protobuf"
                 Some(protoSerialize (res))
             | _ -> None
         
         let result = 
             if owin.Request.Uri.Segments.Last().Contains(".") then 
-                matchType (owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf("."))) 
+                matchType (owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf(".") + 1)) 
                     res
             else if owin.Request.Accept = null then matchType owin.Request.ContentType res
-            else matchType owin.Request.Accept res
+            else 
+                if owin.Request.Accept.Contains(",") then
+                    let header = owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
+                    matchType header res
+                else
+                    matchType owin.Request.Accept res
         
         owin.Response.StatusCode <- int statusCode
         match result with
@@ -66,7 +76,7 @@ module HttpHelpers =
         | Some(x) -> await (owin.Response.WriteAsync(x))
     
     /// Write http response
-    let getRequestBody<'T> (request : IOwinRequest) = 
+    let getRequestBody<'T when 'T : null> (request : IOwinRequest) = 
         if request.Body.CanRead then 
             match request.ContentType with
             | "text/json" | "application/json" -> 
@@ -74,13 +84,14 @@ module HttpHelpers =
                     use reader = new System.IO.StreamReader(request.Body)
                     reader.ReadToEnd()
                 try 
-                    let result = JsonConvert.DeserializeObject<'T>(body)
-                    Choice1Of2(result)
-                with ex -> Choice2Of2(MessageConstants.HTTP_UNABLE_TO_PARSE)
+                    match JsonConvert.DeserializeObject<'T>(body) with
+                    | null -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, "No body is defined."))
+                    | result -> Choice1Of2(result)
+                with ex -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
             | "application/x-protobuf" | "application/octet-stream" -> 
                 try 
                     Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
-                with ex -> Choice2Of2(MessageConstants.HTTP_UNABLE_TO_PARSE)
+                with ex -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
             | _ -> Choice2Of2(MessageConstants.HTTP_UNSUPPORTED_CONTENT_TYPE)
         else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
     

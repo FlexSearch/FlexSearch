@@ -43,7 +43,7 @@ type IndexModule() =
             owin |> responseProcessor (state.IndexService.DeleteIndex(indexName)) OK BAD_REQUEST
         member this.Put(indexName, owin, state) = 
             match getRequestBody<Index> (owin.Request) with
-            | Choice1Of2(index) -> owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
+            | Choice1Of2(index) -> owin |> responseProcessor (state.IndexService.UpdateIndex(index)) OK BAD_REQUEST
             | Choice2Of2(error) -> owin |> BAD_REQUEST error
 
 [<Export(typeof<IHttpModule>)>]

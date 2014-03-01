@@ -188,7 +188,7 @@ namespace FlexSearch.Api.Message
       SEARCH_PROFILE_NOT_FOUND.DeveloperMessage = "The requested search profile does not exist.";
       SEARCH_PROFILE_NOT_FOUND.UserMessage = "The requested search profile does not exist.";
       SEARCH_PROFILE_NOT_FOUND.ErrorCode = 5009;
-      HTTP_UNABLE_TO_PARSE.DeveloperMessage = "The server is unable to parse the request body.";
+      HTTP_UNABLE_TO_PARSE.DeveloperMessage = "The server is unable to parse the request body. {value}";
       HTTP_UNABLE_TO_PARSE.UserMessage = "The server is unable to parse the request body.";
       HTTP_UNABLE_TO_PARSE.ErrorCode = 6000;
       HTTP_UNSUPPORTED_CONTENT_TYPE.DeveloperMessage = "Unsupported content-type.";
