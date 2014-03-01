@@ -159,23 +159,23 @@ module Interface =
     /// difficult
     // ----------------------------------------------------------------------------  
     type IIndexValidator =
-        abstract Validate               :   Index -> Unit
+        abstract Validate               :   Index -> Choice<unit, OperationMessage>
 
 
     // ----------------------------------------------------------------------------     
     /// FlexQuery interface
     // ----------------------------------------------------------------------------     
     type IFlexQuery =
-        // abstract member QueryName   :   unit -> string[]
-        abstract member GetQuery    :   FlexField * string[] -> Option<Query>
-//
-//
-//    // ----------------------------------------------------------------------------     
-//    /// Search service interface
-//    // ----------------------------------------------------------------------------     
-//    type ISearchService =
-//        abstract member Search          :   FlexIndex * SearchQuery -> SearchResults
-//        abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
+        abstract member QueryName   :   unit -> string[]
+        abstract member GetQuery    :   FlexField * string[] -> Choice<Query, OperationMessage>
+
+
+    // ----------------------------------------------------------------------------     
+    /// Search service interface
+    // ----------------------------------------------------------------------------     
+    type ISearchService =
+        abstract member Search          :   FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
+        //abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
         
 
     // ----------------------------------------------------------------------------     
@@ -271,11 +271,11 @@ module Interface =
 
         /// Default Search operation. The associated search object will encapsulate
         /// all possible search variations
-        //abstract member PerformQuery                :   string * IndexQuery -> SearchResults
+        abstract member PerformQuery                :   string * SearchQuery -> Choice<SearchResults, OperationMessage>
 
         /// Default Search operation. The associated search object will encapsulate
         /// all possible search variations
-        //abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
+        //abstract member PerformQueryAsync           :   string * SearchQuery * AsyncReplyChannel<SearchResult> -> unit
         
         abstract member GetIndex                    :   string -> Choice<Index, OperationMessage>
 
