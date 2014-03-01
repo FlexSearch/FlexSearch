@@ -16,12 +16,12 @@ let test (f : Choice<SearchResults, OperationMessage>) =
 [<Tests>]
 let columnTests = 
     let testData = """
-id,topic,surname,cvv2
-1,a,jhonson,1
-2,c,hewitt,1
-3,b,Garner,1
-4,e,Garner,1
-5,d,jhonson,1
+id,topic,surname,cvv2,company
+1,a,jhonson,1,test1
+2,c,hewitt,1,test2
+3,b,Garner,1,test3
+4,e,Garner,1,test4
+5,d,jhonson,1,test5
 """
     let index = Helpers.GetBasicIndexSettingsForContact()
     let result = Helpers.indexService.AddIndex(index)
@@ -65,6 +65,41 @@ id,topic,surname,cvv2
           
           testCase "The returned columns should contain column 'surname'" 
           <| fun _ -> result.contents.Documents.[0].Fields.ContainsKey("surname") |> should equal true
+          testCase "If Flat structure is requested then id column will be be populated in Fields" <| fun _ -> 
+              query.Columns.Clear()
+              query.ReturnFlatResult <- true
+              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result.contents.Documents.[0].Fields.ContainsKey(Constants.IdField) |> should equal true
+          
+          testCase "If Flat structure is requested then lastmodified column will be be populated in Fields" 
+          <| fun _ -> result.contents.Documents.[0].Fields.ContainsKey(Constants.LastModifiedField) |> should equal true
+          
+          testCase "If Flat structure is requested then type column will be be populated in Fields" 
+          <| fun _ -> result.contents.Documents.[0].Fields.ContainsKey(Constants.TypeField) |> should equal true
+          
+          testCase "If Flat structure is requested then _score column will be be populated in Fields" 
+          <| fun _ -> result.contents.Documents.[0].Fields.ContainsKey("_score") |> should equal true
+          testCase "No score will be returned if ReturnScore is set to false" <| fun _ -> 
+              query.ReturnScore <- false
+              query.ReturnFlatResult <- false
+              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result.contents.Documents.[0].Score = 0.0
+              |> should equal true
+          
+          testCase "Stored field cannot be searched" 
+          <| fun _ -> 
+              query.ReturnScore <- false
+              query.ReturnFlatResult <- false
+              query.QueryString <- "company = 'test1'"
+              Helpers.indexService.PerformQuery(index.IndexName, query) 
+              |> Helpers.expectedFailureMessage (MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED)
+          
+          testCase "Stored fields can be retrieved" <| fun _ -> 
+              query.Columns.Clear()
+              query.Columns.Add("company")
+              query.QueryString <- "cvv2 = '1'"
+              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result.contents.Documents.[0].Fields.ContainsKey("company") |> should equal true
           testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
 
 [<Tests>]
@@ -179,4 +214,47 @@ id,topic,abstract
           
           testCase "The highlighted should contain 'approach' with in pre and post tags" 
           <| fun _ -> result.contents.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") |> should equal true
+          testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+
+[<Tests>]
+let simpleSearchProfileTests = 
+    let testData = """
+id,topic,surname,cvv2,givenname
+1,a,jhonson,1,aron
+2,c,hewitt,1,jhon
+3,c,hewitt,1,jhon
+4,d,hewitt,1,jhon
+5,d,hewitt,1,jhon
+6,b,Garner,1,joe
+7,e,Garner,1,sam
+8,d,jhonson,1,andrew
+"""
+    let index = Helpers.GetBasicIndexSettingsForContact()
+    let result = Helpers.indexService.AddIndex(index)
+    Helpers.AddTestDataToIndex(Helpers.indexService, index, testData)
+    let query = 
+        let q = new SearchQuery(index.IndexName, "")
+        // "givenname = '' AND surname = '' AND (cvv2 = '1' OR topic = '')"
+        q.SearchProfile <- "test1"
+        q
+    let result = ref Unchecked.defaultof<SearchResults>
+    testList "Search results sorting tests" 
+        [ testCase "Searching with searchprofile 'test1' will return 2 record" <| fun _ -> 
+              query.QueryString <- "{givenname:'jhon',surname:'hewitt',cvv2:'1',topic:'c'}"
+              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result.Value.Documents.Count |> should equal 2
+          testCase "If no value for cvv2 is passed then the default configured value of 1 will be used" <| fun _ -> 
+              query.QueryString <- "{givenname:'jhon',surname:'hewitt',topic:'c'}"
+              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result.Value.Documents.Count |> should equal 2
+          testCase "If no value for cvv2 is passed and no value for topic is passed then topic will be ignored" <| fun _ -> 
+              query.QueryString <- "{givenname:'jhon',surname:'hewitt'}"
+              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result.Value.Documents.Count |> should equal 4
+          testCase "If no value for givenname is passed then the profile will throw error as that option is set" <| fun _ -> 
+              query.QueryString <- "{surname:'hewitt'}"
+              Helpers.indexService.PerformQuery(index.IndexName, query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE_1)
+          testCase "If no value for surname is passed then the profile will throw error as the value is missing" <| fun _ -> 
+              query.QueryString <- "{givenname:'jhon'}"
+              Helpers.indexService.PerformQuery(index.IndexName, query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE)
           testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]

@@ -30,7 +30,7 @@ namespace FlexSearch.Api
     private HighlightOption _Highlights;
     private string _OrderBy;
     private int _Skip;
-    private Dictionary<string, MissingValueOption> _MissingValueCofiguration;
+    private Dictionary<string, MissingValueOption> _MissingValueConfiguration;
     private MissingValueOption _GlobalMissingValue;
     private bool _ReturnFlatResult;
     private bool _ReturnScore;
@@ -114,16 +114,16 @@ namespace FlexSearch.Api
     public string QueryString { get; set; }
 
     [DataMember(Order = 8)]
-    public Dictionary<string, MissingValueOption> MissingValueCofiguration
+    public Dictionary<string, MissingValueOption> MissingValueConfiguration
     {
       get
       {
-        return _MissingValueCofiguration;
+        return _MissingValueConfiguration;
       }
       set
       {
-        __isset.MissingValueCofiguration = true;
-        this._MissingValueCofiguration = value;
+        __isset.MissingValueConfiguration = true;
+        this._MissingValueConfiguration = value;
       }
     }
 
@@ -213,7 +213,7 @@ namespace FlexSearch.Api
       public bool Highlights;
       public bool OrderBy;
       public bool Skip;
-      public bool MissingValueCofiguration;
+      public bool MissingValueConfiguration;
       public bool GlobalMissingValue;
       public bool ReturnFlatResult;
       public bool ReturnScore;
@@ -230,8 +230,8 @@ namespace FlexSearch.Api
       this.__isset.OrderBy = true;
       this._Skip = 0;
       this.__isset.Skip = true;
-      this._MissingValueCofiguration = new Dictionary<string, MissingValueOption>();
-      this.__isset.MissingValueCofiguration = true;
+      this._MissingValueConfiguration = new Dictionary<string, MissingValueOption>();
+      this.__isset.MissingValueConfiguration = true;
       this._GlobalMissingValue = MissingValueOption.ThrowError;
       this.__isset.GlobalMissingValue = true;
       this._ReturnFlatResult = false;
@@ -324,7 +324,7 @@ namespace FlexSearch.Api
           case 8:
             if (field.Type == TType.Map) {
               {
-                MissingValueCofiguration = new Dictionary<string, MissingValueOption>();
+                MissingValueConfiguration = new Dictionary<string, MissingValueOption>();
                 TMap _map21 = iprot.ReadMapBegin();
                 for( int _i22 = 0; _i22 < _map21.Count; ++_i22)
                 {
@@ -332,7 +332,7 @@ namespace FlexSearch.Api
                   MissingValueOption _val24;
                   _key23 = iprot.ReadString();
                   _val24 = (MissingValueOption)iprot.ReadI32();
-                  MissingValueCofiguration[_key23] = _val24;
+                  MissingValueConfiguration[_key23] = _val24;
                 }
                 iprot.ReadMapEnd();
               }
@@ -451,17 +451,17 @@ namespace FlexSearch.Api
       oprot.WriteFieldBegin(field);
       oprot.WriteString(QueryString);
       oprot.WriteFieldEnd();
-      if (MissingValueCofiguration != null && __isset.MissingValueCofiguration) {
-        field.Name = "MissingValueCofiguration";
+      if (MissingValueConfiguration != null && __isset.MissingValueConfiguration) {
+        field.Name = "MissingValueConfiguration";
         field.Type = TType.Map;
         field.ID = 8;
         oprot.WriteFieldBegin(field);
         {
-          oprot.WriteMapBegin(new TMap(TType.String, TType.I32, MissingValueCofiguration.Count));
-          foreach (string _iter26 in MissingValueCofiguration.Keys)
+          oprot.WriteMapBegin(new TMap(TType.String, TType.I32, MissingValueConfiguration.Count));
+          foreach (string _iter26 in MissingValueConfiguration.Keys)
           {
             oprot.WriteString(_iter26);
-            oprot.WriteI32((int)MissingValueCofiguration[_iter26]);
+            oprot.WriteI32((int)MissingValueConfiguration[_iter26]);
           }
           oprot.WriteMapEnd();
         }
@@ -522,7 +522,7 @@ namespace FlexSearch.Api
         && ((__isset.OrderBy == other.__isset.OrderBy) && ((!__isset.OrderBy) || (System.Object.Equals(OrderBy, other.OrderBy))))
         && ((__isset.Skip == other.__isset.Skip) && ((!__isset.Skip) || (System.Object.Equals(Skip, other.Skip))))
         && System.Object.Equals(QueryString, other.QueryString)
-        && ((__isset.MissingValueCofiguration == other.__isset.MissingValueCofiguration) && ((!__isset.MissingValueCofiguration) || (TCollections.Equals(MissingValueCofiguration, other.MissingValueCofiguration))))
+        && ((__isset.MissingValueConfiguration == other.__isset.MissingValueConfiguration) && ((!__isset.MissingValueConfiguration) || (TCollections.Equals(MissingValueConfiguration, other.MissingValueConfiguration))))
         && ((__isset.GlobalMissingValue == other.__isset.GlobalMissingValue) && ((!__isset.GlobalMissingValue) || (System.Object.Equals(GlobalMissingValue, other.GlobalMissingValue))))
         && ((__isset.ReturnFlatResult == other.__isset.ReturnFlatResult) && ((!__isset.ReturnFlatResult) || (System.Object.Equals(ReturnFlatResult, other.ReturnFlatResult))))
         && ((__isset.ReturnScore == other.__isset.ReturnScore) && ((!__isset.ReturnScore) || (System.Object.Equals(ReturnScore, other.ReturnScore))))
@@ -540,7 +540,7 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.OrderBy ? 0 : (OrderBy.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.Skip ? 0 : (Skip.GetHashCode()));
         hashcode = (hashcode * 397) ^ ((QueryString.GetHashCode()));
-        hashcode = (hashcode * 397) ^ (!__isset.MissingValueCofiguration ? 0 : (TCollections.GetHashCode(MissingValueCofiguration)));
+        hashcode = (hashcode * 397) ^ (!__isset.MissingValueConfiguration ? 0 : (TCollections.GetHashCode(MissingValueConfiguration)));
         hashcode = (hashcode * 397) ^ (!__isset.GlobalMissingValue ? 0 : (GlobalMissingValue.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.ReturnFlatResult ? 0 : (ReturnFlatResult.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.ReturnScore ? 0 : (ReturnScore.GetHashCode()));
@@ -566,8 +566,8 @@ namespace FlexSearch.Api
       sb.Append(Skip);
       sb.Append(",QueryString: ");
       sb.Append(QueryString);
-      sb.Append(",MissingValueCofiguration: ");
-      sb.Append(MissingValueCofiguration);
+      sb.Append(",MissingValueConfiguration: ");
+      sb.Append(MissingValueConfiguration);
       sb.Append(",GlobalMissingValue: ");
       sb.Append(GlobalMissingValue);
       sb.Append(",ReturnFlatResult: ");

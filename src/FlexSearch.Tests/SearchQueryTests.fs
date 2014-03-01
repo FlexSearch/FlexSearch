@@ -42,7 +42,7 @@ id,topic,abstract
     
     let testCases = 
         [ { Note = "Searching for 'practical approach' with a slop of 1 will return 1 result"
-            Input = "abstract match ['practical approach', 'slop:1']"
+            Input = "abstract match 'practical approach' {slop:'1'}"
             Output = 1 }
           { Note = "Searching for 'practical approach' with a default slop of 1 will return 1 result"
             Input = "abstract match 'practical approach'"
@@ -51,10 +51,10 @@ id,topic,abstract
             Input = "abstract match 'approach practical'"
             Output = 0 }
           { Note = "Searching for 'approach computation' with a slop of 2 will return 1 result"
-            Input = "abstract match ['approach computation', 'slop:2']"
+            Input = "abstract match 'approach computation' {slop:'2'}"
             Output = 1 }
           { Note = "Searching for 'comprehensive process leads' with a slop of 1 will return 1 result"
-            Input = "abstract match ['comprehensive process leads', 'slop:1']"
+            Input = "abstract match 'comprehensive process leads' {slop:'1'}"
             Output = 1 } ]
     
     let tests = 
@@ -133,7 +133,7 @@ id,topic,abstract
             Output = 0 }
           { Note = 
                 "Setting 'clausetype' in condition properties can override the default clause construction from AND style to OR"
-            Input = "abstract eq ['CompSci abbreviated approach undefinedword' , 'clausetype:or']"
+            Input = "abstract eq 'CompSci abbreviated approach undefinedword' {clausetype:'or'}"
             Output = 1 } ]
     
     let tests = 
@@ -162,19 +162,19 @@ id,givenname,surname,cvv2
             Input = "givenname fuzzy 'aron'"
             Output = 5 }
           { Note = "Searching for 'givenname = aron' with specified slop of 1 should return 5 records"
-            Input = "givenname fuzzy ['aron', 'slop:1']"
+            Input = "givenname fuzzy 'aron' {slop:'1'}"
             Output = 5 }
           { Note = "Searching for 'givenname = aron' with slop of 2 should return 6 records"
-            Input = "givenname fuzzy ['aron', 'slop:2']"
+            Input = "givenname fuzzy 'aron' {slop:'2'}"
             Output = 6 }
           { Note = "Searching for 'givenname = aron' with default slop of 1 should return 5 records"
             Input = "givenname ~= 'aron'"
             Output = 5 }
           { Note = "Searching for 'givenname = aron' with specified slop of 1 should return 5 records"
-            Input = "givenname ~= ['aron', 'slop:1']"
+            Input = "givenname ~= 'aron' {slop:'1'}"
             Output = 5 }
           { Note = "Searching for 'givenname = aron' with slop of 2 should return 6 records"
-            Input = "givenname ~= ['aron', 'slop:2']"
+            Input = "givenname ~= 'aron' {slop:'2'}"
             Output = 6 }
           { Note = "Searching for 'givenname = aron?' should return 1 records"
             Input = "givenname like 'aron?'"

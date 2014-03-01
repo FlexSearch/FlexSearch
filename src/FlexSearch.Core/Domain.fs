@@ -15,7 +15,7 @@ namespace FlexSearch.Core
 
 open FlexSearch.Utility
 open FlexSearch.Api
-
+open FlexSearch.Api.Message
 open java.io
 open java.util
 
@@ -43,6 +43,35 @@ open System.Linq
 // ----------------------------------------------------------------------------
 // Contains all the indexing related datatype definitions 
 // ----------------------------------------------------------------------------
+/// <summary>
+/// Represents the Values which can be used in the querystring
+/// </summary>
+type Value = 
+    | SingleValue of string
+    | ValueList of string list
+        
+    member this.GetValueAsList() = 
+        match this with
+        | SingleValue(v) -> [ v ]
+        | ValueList(v) -> v
+        
+    member this.GetValueAsArray() = 
+        match this with
+        | SingleValue(v) -> 
+            if String.IsNullOrWhiteSpace(v) then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            else Choice1Of2([| v |])
+        | ValueList(v) -> 
+            if v.Length = 0 then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            else Choice1Of2(v.ToArray())
+    
+/// <summary>
+/// Acceptable Predicates for a query
+/// </summary>
+type Predicate = 
+    | NotPredicate of Predicate
+    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Map<string, string> option
+    | OrPredidate of Lhs : Predicate * Rhs : Predicate
+    | AndPredidate of Lhs : Predicate * Rhs : Predicate
 
 // Represents details about field storage related option
 type FieldStoreInformation = 
@@ -161,7 +190,7 @@ type FlexIndexSetting =
         SearchAnalyzer          :   PerFieldAnalyzerWrapper
         Fields                  :   FlexField[]
         FieldsLookup            :   Dictionary<string, FlexField>
-        SearchProfiles          :   Dictionary<string, SearchQuery>
+        SearchProfiles          :   Dictionary<string, Predicate * SearchQuery>
         ScriptsManager          :   ScriptsManager 
         IndexConfiguration      :   IndexConfiguration
         BaseFolder              :   string

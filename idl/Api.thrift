@@ -236,7 +236,7 @@ struct SearchQuery {
 	5:	optional string OrderBy = "score"
 	6:	optional i32 Skip = 0
 	7:	required string QueryString
-	8:	optional map<string, MissingValueOption> MissingValueCofiguration = {}
+	8:	optional map<string, MissingValueOption> MissingValueConfiguration = {}
 	9:	optional MissingValueOption GlobalMissingValue = 1
 	10:	optional bool ReturnFlatResult = false
 	11:	optional bool ReturnScore = true

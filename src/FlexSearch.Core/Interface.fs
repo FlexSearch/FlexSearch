@@ -166,7 +166,7 @@ module Interface =
     // ----------------------------------------------------------------------------     
     type IFlexQuery =
         abstract member QueryName   :   unit -> string[]
-        abstract member GetQuery    :   FlexField * string[] -> Choice<Query, OperationMessage>
+        abstract member GetQuery    :   FlexField * string[] * Map<string,string> option -> Choice<Query, OperationMessage>
 
 
     // ----------------------------------------------------------------------------     

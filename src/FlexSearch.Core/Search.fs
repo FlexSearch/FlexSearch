@@ -74,8 +74,48 @@ module SearchDsl =
                 result.Add(name, query.Value)
         result
     
+    let private isStoredField (flexField : FlexField) = 
+        match flexField.FieldType with
+        | FlexFieldType.FlexStored -> 
+            Choice2Of2
+                (OperationMessage.WithPropertyName
+                     (MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED, flexField.FieldName))
+        | _ -> Choice1Of2()
+    
+    let inline private getIntValueFromMap (parameters : Map<string, string> option) key defaultValue = 
+        match parameters with
+        | Some(p) -> 
+            match p.TryFind(key) with
+            | Some(value) -> 
+                match System.Int32.TryParse(value) with
+                | (true, result) -> result
+                | _ -> defaultValue
+            | _ -> defaultValue
+        | _ -> defaultValue
+    
+    let inline private getStringValueFromMap (parameters : Map<string, string> option) key defaultValue = 
+        match parameters with
+        | Some(p) -> 
+            match p.TryFind(key) with
+            | Some(value) -> 
+                if String.IsNullOrWhiteSpace(value) then value
+                else defaultValue
+            | _ -> defaultValue
+        | _ -> defaultValue
+    
+    let inline private getBoolValueFromMap (parameters : Map<string, string> option) key defaultValue = 
+        match parameters with
+        | Some(p) -> 
+            match p.TryFind(key) with
+            | Some(value) -> 
+                match System.Boolean.TryParse(value) with
+                | (true, result) -> result
+                | _ -> defaultValue
+            | _ -> defaultValue
+        | _ -> defaultValue
+    
     let private GenerateQuery (flexIndex : FlexIndex) (predicate : Predicate) (searchQuery : SearchQuery) 
-        (isProfileBased : Dictionary<string, string> option) (queryTypes : Dictionary<string, IFlexQuery>) = 
+        (isProfileBased : Map<string, string> option) (queryTypes : Dictionary<string, IFlexQuery>) = 
         let rec generateQuery (pred : Predicate) = 
             maybe { 
                 let generateMatchAllQuery = ref false
@@ -85,16 +125,17 @@ module SearchDsl =
                     let query = new BooleanQuery()
                     query.add (new BooleanClause(notQuery, BooleanClause.Occur.MUST_NOT))
                     return (query :> Query)
-                | Condition(f, o, v, b) -> 
-                    let! fieldType = getValue flexIndex.IndexSetting.FieldsLookup f MessageConstants.INVALID_FIELD_NAME
+                | Condition(f, o, v, p) -> 
+                    let! field = getValue flexIndex.IndexSetting.FieldsLookup f MessageConstants.INVALID_FIELD_NAME
+                    do! isStoredField field
                     let! query = getValue queryTypes o MessageConstants.INVALID_QUERY_TYPE
                     let! value = maybe { 
                                      match isProfileBased with
                                      | Some(source) -> 
-                                         match source.TryGetValue(f) with
-                                         | true, v' -> return [| v' |]
+                                         match source.TryFind(f) with
+                                         | Some(v') -> return [| v' |]
                                          | _ -> 
-                                             match searchQuery.MissingValueCofiguration.TryGetValue(f) with
+                                             match searchQuery.MissingValueConfiguration.TryGetValue(f) with
                                              | true, configuration -> 
                                                  match configuration with
                                                  | MissingValueOption.Default -> return! v.GetValueAsArray()
@@ -116,9 +157,15 @@ module SearchDsl =
                                  }
                     if generateMatchAllQuery.Value = true then return! Choice1Of2(new MatchAllDocsQuery() :> Query)
                     else 
-                        let! q = query.GetQuery(fieldType, value.ToArray())
-                        match b with
-                        | Some(b') -> q.setBoost (float32 (b'))
+                        let! q = query.GetQuery(field, value.ToArray(), p)
+                        match p with
+                        | Some(p') -> 
+                            match p'.TryFind("boost") with
+                            | Some(b) -> 
+                                match Int32.TryParse(b) with
+                                | true, b' -> q.setBoost (float32 (b'))
+                                | _ -> ()
+                            | _ -> ()
                         | None -> ()
                         return q
                 | OrPredidate(lhs, rhs) -> 
@@ -242,11 +289,22 @@ module SearchDsl =
         interface ISearchService with
             member x.Search(flexIndex : FlexIndex, search : SearchQuery) = 
                 maybe { 
-                    use parser = queryParsersPool.Acquire()
-                    let! predicate = parser.Parse(search.QueryString)
-                    parser.Release()
-                    let! query = GenerateQuery flexIndex predicate search None queryTypes
-                    return! SearchQuery(flexIndex, query, search)
+                    if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
+                        // Search profile based
+                        match flexIndex.IndexSetting.SearchProfiles.TryGetValue(search.SearchProfile) with
+                        | true, p -> 
+                            let (p', sq) = p
+                            search.MissingValueConfiguration <- sq.MissingValueConfiguration
+                            let! values = Parsers.ParseQueryString(search.QueryString)
+                            let! query = GenerateQuery flexIndex p' search (Some(values)) queryTypes
+                            return! SearchQuery(flexIndex, query, search)
+                        | _ -> return! Choice2Of2(MessageConstants.SEARCH_PROFILE_NOT_FOUND)
+                    else 
+                        use parser = queryParsersPool.Acquire()
+                        let! predicate = parser.Parse(search.QueryString)
+                        parser.Release()
+                        let! query = GenerateQuery flexIndex predicate search None queryTypes
+                        return! SearchQuery(flexIndex, query, search)
                 }
     
     // Check if the passed field is numeric field
@@ -290,25 +348,34 @@ module SearchDsl =
         | FlexDate | FlexDateTime -> 
             match Int64.TryParse(value) with
             | (true, val1) -> 
-                Some
+                Choice1Of2
                     (NumericRangeQuery.newLongRange 
                          (flexIndexField.FieldName, GetJavaLong(val1), GetJavaLong(val1), true, true) :> Query)
-            | _ -> failwithf "Passed data is not in correct format."
+            | _ -> 
+                Choice2Of2
+                    (OperationMessage.WithPropertyName(MessageConstants.DATA_CANNOT_BE_PARSED, flexIndexField.FieldName))
         | FlexInt -> 
             match Int32.TryParse(value) with
             | (true, val1) -> 
-                Some
+                Choice1Of2
                     (NumericRangeQuery.newIntRange 
                          (flexIndexField.FieldName, GetJavaInt(val1), GetJavaInt(val1), true, true) :> Query)
-            | _ -> failwithf "Passed data is not in correct format."
+            | _ -> 
+                Choice2Of2
+                    (OperationMessage.WithPropertyName(MessageConstants.DATA_CANNOT_BE_PARSED, flexIndexField.FieldName))
         | FlexDouble -> 
             match Double.TryParse(value) with
             | (true, val1) -> 
-                Some
+                Choice1Of2
                     (NumericRangeQuery.newDoubleRange 
                          (flexIndexField.FieldName, GetJavaDouble(val1), GetJavaDouble(val1), true, true) :> Query)
-            | _ -> failwithf "Passed data is not in correct format."
-        | _ -> failwith "Numeric range query is not supported on the passed data type."
+            | _ -> 
+                Choice2Of2
+                    (OperationMessage.WithPropertyName(MessageConstants.DATA_CANNOT_BE_PARSED, flexIndexField.FieldName))
+        | _ -> 
+            Choice2Of2
+                (OperationMessage.WithPropertyName
+                     (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
     // ----------------------------------------------------------------------------
     /// Term Query
@@ -319,9 +386,9 @@ module SearchDsl =
     type FlexTermQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "eq"; "=" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 match IsNumericField(flexIndexField) with
-                | true -> Choice1Of2(NumericTermQuery(flexIndexField, values.[0]).Value)
+                | true -> NumericTermQuery(flexIndexField, values.[0])
                 | false -> 
                     let terms = GetTerms(flexIndexField, values.[0])
                     // If there are multiple terms returned by the parser then we will create a boolean query
@@ -334,17 +401,15 @@ module SearchDsl =
                     | _ -> 
                         // Generate boolean query
                         let boolClause = 
-                            if values.Length > 1 then 
-                                match getKeyValue (values.[1]) with
-                                | Some(a, b) -> 
-                                    match a with
-                                    | InvariantEqual "clausetype" -> 
-                                        match b with
-                                        | InvariantEqual "or" -> BooleanClause.Occur.SHOULD
-                                        | _ -> BooleanClause.Occur.MUST
+                            match parameters with
+                            | Some(p) -> 
+                                match p.TryFind("clausetype") with
+                                | Some(b) -> 
+                                    match b with
+                                    | InvariantEqual "or" -> BooleanClause.Occur.SHOULD
                                     | _ -> BooleanClause.Occur.MUST
                                 | _ -> BooleanClause.Occur.MUST
-                            else BooleanClause.Occur.MUST
+                            | _ -> BooleanClause.Occur.MUST
                         
                         let boolQuery = new BooleanQuery()
                         for term in terms do
@@ -361,26 +426,10 @@ module SearchDsl =
     type FlexFuzzyQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "fuzzy"; "~=" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 let terms = GetTerms(flexIndexField, values.[0])
-                let parameters = getParametersAsDict (values, 1)
-                
-                let slop = 
-                    match parameters.TryGetValue("slop") with
-                    | (true, value) -> 
-                        match System.Int32.TryParse(value) with
-                        | (true, result) -> result
-                        | _ -> 1
-                    | _ -> 1
-                
-                let prefixLength = 
-                    match parameters.TryGetValue("prefixlength") with
-                    | (true, value) -> 
-                        match System.Int32.TryParse(value) with
-                        | (true, result) -> result
-                        | _ -> 0
-                    | _ -> 0
-                
+                let slop = getIntValueFromMap parameters "slop" 1
+                let prefixLength = getIntValueFromMap parameters "prefixlength" 0
                 match terms.Count with
                 | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
                 | 1 -> 
@@ -404,23 +453,13 @@ module SearchDsl =
     type FlexPhraseQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "match" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 let terms = GetTerms(flexIndexField, values.[0])
                 let query = new PhraseQuery()
                 for term in terms do
                     query.add (new Term(flexIndexField.FieldName, term))
-                if values.Length > 1 then 
-                    let slop = 
-                        match getKeyValue (values.[1]) with
-                        | Some(a, b) -> 
-                            match a with
-                            | InvariantEqual "slop" -> 
-                                match System.Int32.TryParse(b) with
-                                | (true, result) -> result
-                                | _ -> 0
-                            | _ -> 0
-                        | _ -> 0
-                    query.setSlop (slop)
+                let slop = getIntValueFromMap parameters "slop" 0
+                query.setSlop (slop)
                 Choice1Of2(query :> Query)
     
     // ----------------------------------------------------------------------------
@@ -432,7 +471,7 @@ module SearchDsl =
     type FlexWildcardQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "like"; "%=" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 // Like query does not go through analysis phase as the analyzer would remove the
                 // special character
                 match values.Count() with
@@ -455,7 +494,7 @@ module SearchDsl =
     type RegexQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "regex" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 // Regex query does not go through analysis phase as the analyzer would remove the
                 // special character
                 match values.Count() with
@@ -478,7 +517,7 @@ module SearchDsl =
     type FlexGreaterQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| ">" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 // Greater query does not go through analysis phase as the analyzer would remove the
                 // special character
                 let includeLower = false
@@ -533,7 +572,7 @@ module SearchDsl =
     type FlexGreaterThanEqualQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| ">=" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 // Greater query does not go through analysis phase as the analyzer would remove the
                 // special character
                 let includeLower = true
@@ -588,7 +627,7 @@ module SearchDsl =
     type FlexLessThanQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "<" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 // Greater query does not go through analysis phase as the analyzer would remove the
                 // special character
                 let includeLower = true
@@ -643,7 +682,7 @@ module SearchDsl =
     type FlexLessThanEqualQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "<=" |]
-            member this.GetQuery(flexIndexField, values) = 
+            member this.GetQuery(flexIndexField, values, parameters) = 
                 // Greater query does not go through analysis phase as the analyzer would remove the
                 // special character
                 let includeLower = true

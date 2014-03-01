@@ -330,3 +330,48 @@ const OperationMessage QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED =
 		"UserMessage" : "Field:{propertyName} Query operator does not support the passed field type.", 
 		"ErrorCode": 5007
 	}	
+	
+const OperationMessage STORED_FIELDS_CANNOT_BE_SEARCHED = 
+	{
+		"DeveloperMessage" : "Field:{propertyName} is of type stored and cannot be searched.", 
+		"UserMessage" : "Field:{propertyName} is of type stored and cannot be searched.", 
+		"ErrorCode": 5008
+	}		
+	
+const OperationMessage SEARCH_PROFILE_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "The requested search profile does not exist.", 
+		"UserMessage" : "The requested search profile does not exist.", 
+		"ErrorCode": 5009
+	}
+	
+// ----------------------------------------------------------------------------
+//	Http Server
+// ----------------------------------------------------------------------------	
+const OperationMessage HTTP_UNABLE_TO_PARSE = 
+	{
+		"DeveloperMessage" : "The server is unable to parse the request body.", 
+		"UserMessage" : "The server is unable to parse the request body.", 
+		"ErrorCode": 6000
+	}
+	
+const OperationMessage HTTP_UNSUPPORTED_CONTENT_TYPE = 
+	{
+		"DeveloperMessage" : "Unsupported content-type.", 
+		"UserMessage" : "Unsupported content-type.", 
+		"ErrorCode": 6001
+	}
+	
+const OperationMessage HTTP_NO_BODY_DEFINED = 
+	{
+		"DeveloperMessage" : "No body defined.", 
+		"UserMessage" : "Expecting body. But no body defined.", 
+		"ErrorCode": 6002
+	}
+	
+const OperationMessage HTTP_NOT_SUPPORTED = 
+	{
+		"DeveloperMessage" : "The request Uri endpoint is not supported.", 
+		"UserMessage" : "The request Uri endpoint is not supported.", 
+		"ErrorCode": 6003
+	}

@@ -58,18 +58,14 @@ module Main =
                             owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
                         else owin.Request.Uri.Segments.[1]
                     if indexName.EndsWith(".ico") <> true then 
-                        // Check if the passed index exists     
-                        match container.[owin.Request.Uri.Port].IndexExists(indexName) with
-                        | Some(index) -> 
-                            // This is the root index module request
-                            if owin.Request.Uri.Segments.Length = 2 then 
-                                // Check if the requested module exists
-                                getModule "index" indexName owin
-                            else 
-                                // This is a specialized reuest to an existing index
-                                // Check if the requested module exists 
-                                getModule owin.Request.Uri.Segments.[2] indexName owin
-                        | _ -> owin.Response.StatusCode <- 500
+                        // This is the root index module request
+                        if owin.Request.Uri.Segments.Length = 2 then 
+                            // Check if the requested module exists
+                            getModule "index" indexName owin
+                        else 
+                            // This is a specialized request to an existing index
+                            // Check if the requested module exists 
+                            getModule owin.Request.Uri.Segments.[2] indexName owin
                     else owin.Response.StatusCode <- 500
             with ex -> ()
         }
@@ -117,16 +113,17 @@ module Main =
         let nodeState = 
             { PersistanceStore = new Store.PersistanceStore(Constants.ConfFolder.Value + "Conf.db", false)
               ServerSettings = settings
-              Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase) 
+              Indices = new ConcurrentDictionary<string, Index>(StringComparer.OrdinalIgnoreCase)
               CacheStore = Unchecked.defaultof<_>
               IndexService = Unchecked.defaultof<_>
-              SettingsBuilder = Unchecked.defaultof<_>}
+              SettingsBuilder = Unchecked.defaultof<_> }
         container.TryAdd(settings.HttpPort, nodeState) |> ignore
-        Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>(sprintf "http://*:%i" settings.HttpPort) |> ignore
+        Microsoft.Owin.Hosting.WebApp.Start<OwinStartUp>(sprintf "http://*:%i" settings.HttpPort)
     
     /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
     type NodeService() = 
-        member this.Start() = loadNode()
-        member this.Stop() = ()
+        let mutable node = Unchecked.defaultof<IDisposable>
+        member this.Start() = node <- loadNode()
+        member this.Stop() = node.Dispose()

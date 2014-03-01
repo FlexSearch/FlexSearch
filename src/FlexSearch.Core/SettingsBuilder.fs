@@ -212,6 +212,20 @@ module SettingsBuilder =
             return scriptsManager
         }
     
+    let private getSearchProfiles (profiles : Dictionary<string, SearchQuery>) = 
+        maybe { 
+            let getProfile (parser : FlexParser) (profile : KeyValuePair<string, SearchQuery>) = 
+                maybe { let! predicate = parser.Parse(profile.Value.QueryString)
+                        return (profile.Key, (predicate, profile.Value)) }
+            let parser = new Parsers.FlexParser()
+            let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
+            let! searchProfiles = mapExitOnFailure (Seq.toList (profiles)) (getProfile parser)
+            searchProfiles |> Seq.iter (fun x -> 
+                                  let (key, value) = x
+                                  result.Add(key, value))
+            return result
+        }
+    
     // ----------------------------------------------------------------------------
     // Top level settings builder   
     // ----------------------------------------------------------------------------   
@@ -224,13 +238,14 @@ module SettingsBuilder =
                       let! fields = buildFields (index.Fields, analyzers, index.Scripts, factoryCollection)
                       let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                       fields.Values.CopyTo(fieldsArray, 0)
+                      let! searchProfiles = getSearchProfiles (index.SearchProfiles)
                       let! scriptsManager = getScriptsManager (index.Scripts, factoryCollection)
                       let flexIndexSetting = 
                           { IndexName = index.IndexName
                             IndexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
                             SearchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
                             Fields = fieldsArray
-                            SearchProfiles = index.SearchProfiles
+                            SearchProfiles = searchProfiles
                             ScriptsManager = scriptsManager
                             FieldsLookup = fields
                             IndexConfiguration = index.IndexConfiguration

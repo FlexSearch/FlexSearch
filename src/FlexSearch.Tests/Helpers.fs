@@ -43,7 +43,7 @@ let GetBasicIndexSettingsForContact() =
     index.Fields.Add("cvv2", new FieldProperties(FieldType = FieldType.Int))
     index.Fields.Add("nationalid", new FieldProperties(FieldType = FieldType.ExactText))
     index.Fields.Add("ups", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("company", new FieldProperties(FieldType = FieldType.Text))
+    index.Fields.Add("company", new FieldProperties(FieldType = FieldType.Stored))
     index.Fields.Add("pounds", new FieldProperties(FieldType = FieldType.Double))
     index.Fields.Add("centimeters", new FieldProperties(FieldType = FieldType.Int))
     index.Fields.Add("guid", new FieldProperties(FieldType = FieldType.ExactText))
@@ -58,6 +58,12 @@ let GetBasicIndexSettingsForContact() =
     index.Scripts.Add
         ("fullname", 
          new ScriptProperties("""return fields["givenname"] + " " + fields["surname"];""", ScriptType.ComputedField))
+    let searchProfileQuery = 
+        new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''")
+    searchProfileQuery.MissingValueConfiguration.Add("givenname", MissingValueOption.ThrowError)
+    searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
+    searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
+    index.SearchProfiles.Add("test1", searchProfileQuery)
     index
 
 /// <summary>

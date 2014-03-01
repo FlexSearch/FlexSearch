@@ -39,7 +39,8 @@ let parserTests =
               [ for exp in [ 1, "abc eq 'a'"
                              2, "not abc eq 'a'"
                              3, "(abc eq '1')"
-                             4, "abc eq 'as' boost 21"
+                             4, "abc eq 'as' {boost: '21'}"
+                             41, "abc eq 'as' {boost:'21',applydelete:'true'}"
                              5, "abc eq 'a' and pqr eq 'b'"
                              6, "abc eq 'a' or pqr eq 'b'"
                              7, "abc eq 'a' and ( pqr eq 'b')"
@@ -53,3 +54,16 @@ let parserTests =
                              15, "not (abc eq 'sdsd' and abc eq 'asasa') and pqr eq 'asas'"
                              16, "abc eq 'a' AND pr eq 'b'" ] -> 
                     testCase (sprintf "%i: Function call should parse" (fst (exp))) <| fun _ -> test2 (snd (exp)) ] ]
+
+[<Tests>]
+let searchProfileQueryStringTests = 
+    testList "Search Profile QueryString Tests" 
+        [ for exp in [ 2, "{f1: 'v1',f2 : 'v2'}"
+                       2, " { f1:  'v1' , f2 : 'v2'}"
+                       1, "{   f1           : 'v1'  }   "
+                       3, "        {f1: 'v1',f2:'v2',f3 : 'v3'}"
+                       2, "{f1 : 'v\\'1',f2 : 'v2'}" ] -> 
+              testCase (sprintf "%s: Function call should parse" (snd (exp))) <| fun _ -> 
+                  match ParseQueryString(snd (exp)) with
+                  | Choice1Of2(result) -> Assert.AreEqual(result.Count, fst(exp))
+                  | Choice2Of2(_) -> failtestf "Expected querystring %s to pass" (snd (exp)) ]

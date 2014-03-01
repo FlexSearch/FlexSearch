@@ -57,6 +57,12 @@ namespace FlexSearch.Api.Message
     public static OperationMessage QUERYSTRING_PARSING_ERROR = new OperationMessage();
     public static OperationMessage DATA_CANNOT_BE_PARSED = new OperationMessage();
     public static OperationMessage QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED = new OperationMessage();
+    public static OperationMessage STORED_FIELDS_CANNOT_BE_SEARCHED = new OperationMessage();
+    public static OperationMessage SEARCH_PROFILE_NOT_FOUND = new OperationMessage();
+    public static OperationMessage HTTP_UNABLE_TO_PARSE = new OperationMessage();
+    public static OperationMessage HTTP_UNSUPPORTED_CONTENT_TYPE = new OperationMessage();
+    public static OperationMessage HTTP_NO_BODY_DEFINED = new OperationMessage();
+    public static OperationMessage HTTP_NOT_SUPPORTED = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -176,6 +182,24 @@ namespace FlexSearch.Api.Message
       QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED.DeveloperMessage = "Field:{propertyName} Query operator does not support the passed field type.";
       QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED.UserMessage = "Field:{propertyName} Query operator does not support the passed field type.";
       QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED.ErrorCode = 5007;
+      STORED_FIELDS_CANNOT_BE_SEARCHED.DeveloperMessage = "Field:{propertyName} is of type stored and cannot be searched.";
+      STORED_FIELDS_CANNOT_BE_SEARCHED.UserMessage = "Field:{propertyName} is of type stored and cannot be searched.";
+      STORED_FIELDS_CANNOT_BE_SEARCHED.ErrorCode = 5008;
+      SEARCH_PROFILE_NOT_FOUND.DeveloperMessage = "The requested search profile does not exist.";
+      SEARCH_PROFILE_NOT_FOUND.UserMessage = "The requested search profile does not exist.";
+      SEARCH_PROFILE_NOT_FOUND.ErrorCode = 5009;
+      HTTP_UNABLE_TO_PARSE.DeveloperMessage = "The server is unable to parse the request body.";
+      HTTP_UNABLE_TO_PARSE.UserMessage = "The server is unable to parse the request body.";
+      HTTP_UNABLE_TO_PARSE.ErrorCode = 6000;
+      HTTP_UNSUPPORTED_CONTENT_TYPE.DeveloperMessage = "Unsupported content-type.";
+      HTTP_UNSUPPORTED_CONTENT_TYPE.UserMessage = "Unsupported content-type.";
+      HTTP_UNSUPPORTED_CONTENT_TYPE.ErrorCode = 6001;
+      HTTP_NO_BODY_DEFINED.DeveloperMessage = "No body defined.";
+      HTTP_NO_BODY_DEFINED.UserMessage = "Expecting body. But no body defined.";
+      HTTP_NO_BODY_DEFINED.ErrorCode = 6002;
+      HTTP_NOT_SUPPORTED.DeveloperMessage = "The request Uri endpoint is not supported.";
+      HTTP_NOT_SUPPORTED.UserMessage = "The request Uri endpoint is not supported.";
+      HTTP_NOT_SUPPORTED.ErrorCode = 6003;
     }
   }
 }

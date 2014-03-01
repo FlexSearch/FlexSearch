@@ -18,37 +18,8 @@ module Parsers =
     open FlexSearch.Api.Message
     open FlexSearch.Core.Pool
     open System
+    open System.Collections.Generic
     open System.Linq
-    
-    /// <summary>
-    /// Represents the Values which can be used in the querystring
-    /// </summary>
-    type Value = 
-        | SingleValue of string
-        | ValueList of string list
-        
-        member this.GetValueAsList() = 
-            match this with
-            | SingleValue(v) -> [ v ]
-            | ValueList(v) -> v
-        
-        member this.GetValueAsArray() = 
-            match this with
-            | SingleValue(v) -> 
-                if String.IsNullOrWhiteSpace(v) then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
-                else Choice1Of2([| v |])
-            | ValueList(v) -> 
-                if v.Length = 0 then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
-                else Choice1Of2(v.ToArray())
-    
-    /// <summary>
-    /// Acceptable Predicates for a query
-    /// </summary>
-    type Predicate = 
-        | NotPredicate of Predicate
-        | Condition of FieldName : string * Operator : string * Value : Value * Boost : int option
-        | OrPredidate of Lhs : Predicate * Rhs : Predicate
-        | AndPredidate of Lhs : Predicate * Rhs : Predicate
     
     let ws = spaces
     let str_ws s = pstringCI s .>> ws
@@ -63,6 +34,12 @@ module Parsers =
         between (pstring "\'") (pstring "\'") 
             (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) |>> SingleValue 
         .>> ws
+    
+    let stringLiteralAsString = 
+        let escape = anyOf "'" |>> function 
+                     | c -> string c // every other char is mapped to itself
+        between (pstring "\'") (pstring "\'") 
+            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) .>> ws
     
     let stringLiteralList = 
         let escape = anyOf "'" |>> function 
@@ -80,23 +57,45 @@ module Parsers =
     let value = choice [ stringLiteral; listOfValues ]
     
     /// <summary>
-    /// Boost parser implemented using optional argument for optimization
-    /// </summary>
-    let boost = opt (str_ws "boost" >>. pint32 .>> ws)
-    
-    /// <summary>
     /// Indentifier implementation. Alphanumric character without spaces
     /// </summary>
     let identifier = 
-        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')') 
+        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':') 
             "Field name should be alphanumber without '(', ')' and ' '." .>> ws
     
+    // ----------------------------------------------------------------------------
+    // Query string parser 
+    // Format: fieldname:'value',fieldname:'value',fieldname:'value'
+    // ----------------------------------------------------------------------------
+    let private keyValue = identifier .>>. (str_ws ":" >>. ws >>. stringLiteralAsString) .>> ws
+    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> Map.ofList .>> ws
+    let private keyValuePairsBetweenBracket = between (str_ws "{") (str_ws "}") keyValuePairs .>> ws
+    let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
+    
+    /// <summary>
+    /// Searchprofile query string parser 
+    /// Format: fieldname:'value',fieldname:'value',fieldname:'value'
+    /// </summary>
+    /// <param name="input"></param>
+    let ParseQueryString(input : string) = 
+        match run queryStringParser input with
+        | Success(result, _, _) -> Choice1Of2(result)
+        | Failure(errorMsg, _, _) -> 
+            Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
+    
+    /// <summary>
+    /// Boost parser implemented using optional argument for optimization
+    /// </summary>
+    //let boost = opt (str_ws "boost" >>. pint32 .>> ws)
+    let parameters = opt (ws >>. keyValuePairsBetweenBracket .>> ws)
+    
+    // ----------------------------------------------------------------------------
     /// <summary>
     /// Method to implement predicate matching
     /// Syntax: {FieldName} {Operator} {SingleValue|MultiFieldValue} {optional Boost}
     /// Example: firstname eq 'a'
     /// </summary>
-    let predicate = pipe4 identifier identifier value boost (fun l o r b -> Condition(l, o, r, b))
+    let predicate = pipe4 identifier identifier value parameters (fun l o r b -> Condition(l, o, r, b))
     
     type Assoc = Associativity
     

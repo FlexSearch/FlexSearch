@@ -118,17 +118,22 @@ module Store =
                     let value = Newtonsoft.Json.JsonConvert.SerializeObject(instance)
                     if result then 
                         // Exists so lets update it 
-                        let sql = 
-                            sprintf 
-                                "update keyvalue SET type = '%s', key = '%s', value = '%s', timestamp = '%s' where type = '%s' and key = '%s'" 
-                                instanceType key value (DateTime.Now.ToString()) instanceType key
+                        let sql = "update keyvalue SET type = @type, key = @key, value = @value, timestamp = @timestamp where type = @type and key = @key" 
                         let command = new SQLiteCommand(sql, db.Value)
+                        command.Parameters.Add("@type", Data.DbType.String).Value <- instanceType
+                        command.Parameters.Add("@key", Data.DbType.String).Value <- key
+                        command.Parameters.Add("@value", Data.DbType.String).Value <- value
+                        command.Parameters.Add("@timestamp", Data.DbType.String).Value <- DateTime.Now.ToString()
                         command.ExecuteNonQuery() |> ignore
                     else 
                         // Does not exist so create it
-                        let sql = 
-                            sprintf "insert into keyvalue (type, key, value, timestamp) values ('%s', '%s', '%s', '%s')" 
-                                instanceType key value (DateTime.Now.ToString())
+                        let sql = "insert into keyvalue (type, key, value, timestamp) values (@type, @key, @value, @timestamp)" 
                         let command = new SQLiteCommand(sql, db.Value)
-                        command.ExecuteNonQuery() |> ignore
+                        command.Parameters.Add("@type", Data.DbType.String).Value <- instanceType
+                        command.Parameters.Add("@key", Data.DbType.String).Value <- key
+                        command.Parameters.Add("@value", Data.DbType.String).Value <- value
+                        command.Parameters.Add("@timestamp", Data.DbType.String).Value <- DateTime.Now.ToString()
+                        try
+                            command.ExecuteNonQuery() |> ignore
+                        with e -> ()
                     true

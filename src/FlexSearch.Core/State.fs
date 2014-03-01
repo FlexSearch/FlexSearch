@@ -10,7 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-[<AutoOpen>]  
+[<AutoOpen>]
 module State = 
     open FlexSearch.Api
     open FlexSearch.Core
@@ -26,9 +26,9 @@ module State =
         { PersistanceStore : IPersistanceStore
           ServerSettings : ServerSettings
           Indices : ConcurrentDictionary<string, Index>
-          CacheStore : IVersioningCacheStore 
+          CacheStore : IVersioningCacheStore
           IndexService : IIndexService
-          SettingsBuilder: ISettingsBuilder}
+          SettingsBuilder : ISettingsBuilder }
         member this.IndexExists(indexName : string) = 
             match this.Indices.TryGetValue(indexName) with
             | true, x -> Some(x)
@@ -45,7 +45,7 @@ module State =
     /// Http module to handle to incoming requests
     // ----------------------------------------------------------------------------   
     type IHttpModule = 
-        abstract Routes : unit -> ServiceRoute []
+        //abstract Routes : unit -> ServiceRoute []
         abstract Get : string * IOwinContext * NodeState -> unit
         abstract Post : string * IOwinContext * NodeState -> unit
         abstract Put : string * IOwinContext * NodeState -> unit
