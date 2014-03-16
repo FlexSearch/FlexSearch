@@ -43,6 +43,30 @@ module HttpHelpers =
         use stream = new MemoryStream(message)
         Serializer.Deserialize<'T>(stream)
     
+    /// Get request format from the request object
+    /// Defaults to json
+    let private getRequestFormat (request : IOwinRequest)  =
+        if String.IsNullOrWhiteSpace(request.ContentType) then 
+            if request.Uri.Segments.Last().Contains(".") then 
+                request.Uri.Segments.Last().Substring(request.Uri.Segments.Last().IndexOf(".") + 1)
+            else 
+                // Default to json
+                "application/json"
+        else request.ContentType
+
+    /// Get response format from the owin context
+    /// Defaults to json
+    let private getResponseFormat (owin : IOwinContext) = 
+        if owin.Request.Uri.Segments.Last().Contains(".") then 
+                owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().LastIndexOf(".") + 1) 
+        else if owin.Request.Accept = null then 
+            "application/json"
+        else if owin.Request.Accept = "*/*" then
+            "application/json"
+        else if owin.Request.Accept.Contains(",") then 
+            owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
+        else owin.Request.Accept
+
     /// Write http response
     let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
         let matchType format res = 
@@ -62,30 +86,15 @@ module HttpHelpers =
             | _ -> None
         owin.Response.StatusCode <- int statusCode
         if response <> Unchecked.defaultof<_> then 
-            let result = 
-                if owin.Request.Uri.Segments.Last().Contains(".") then 
-                    matchType 
-                        (owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().IndexOf(".") + 1)) 
-                        response
-                else if owin.Request.Accept = null then matchType "application/json" response
-                else if owin.Request.Accept.Contains(",") then 
-                    let header = owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
-                    matchType header response
-                else matchType owin.Request.Accept response
+            let format = getResponseFormat owin
+            let result = matchType format response   
             match result with
-            | None -> owin.Response.StatusCode <- int HttpStatusCode.NotAcceptable
+            | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
             | Some(x) -> await (owin.Response.WriteAsync(x))
     
     /// Write http response
     let getRequestBody<'T when 'T : null> (request : IOwinRequest) = 
-        let contentType = 
-            if String.IsNullOrWhiteSpace(request.ContentType) then 
-                if request.Uri.Segments.Last().Contains(".") then 
-                    request.Uri.Segments.Last().Substring(request.Uri.Segments.Last().IndexOf(".") + 1)
-                else 
-                    // Default to json
-                    "application/json"
-            else request.ContentType
+        let contentType = getRequestFormat request
         if request.Body.CanRead then 
             match contentType with
             | "text/json" | "application/json" | "application/json; charset=utf-8" | "application/json;charset=utf-8" | "json" -> 
