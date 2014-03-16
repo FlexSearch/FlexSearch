@@ -88,7 +88,7 @@ module HttpHelpers =
             else request.ContentType
         if request.Body.CanRead then 
             match contentType with
-            | "text/json" | "application/json" | "json" -> 
+            | "text/json" | "application/json" | "application/json; charset=utf-8" | "application/json;charset=utf-8" | "json" -> 
                 let body = 
                     use reader = new System.IO.StreamReader(request.Body)
                     reader.ReadToEnd()
