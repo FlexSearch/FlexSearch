@@ -44,7 +44,7 @@ let responseContainsProperty (message : string) (group : string) (key: string) (
 
 let responseBodyIsNull (response : Response) = 
     testCase "Should not have any response body" <| fun _ -> response.EntityBody |> should equal None
-let httpUrl = "http://localhost:9800"
+let httpUrl = "http://seemant-pc:9800"
 let response = ref Unchecked.defaultof<Response>
 
 [<Tests>]

@@ -357,7 +357,7 @@ module Index =
         do 
             let executionBlockOption = new ExecutionDataflowBlockOptions()
             executionBlockOption.MaxDegreeOfParallelism <- -1
-            executionBlockOption.BoundedCapacity <- 1000
+            executionBlockOption.BoundedCapacity <- 100
             queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
             loadAllIndex (state, persistanceStore)
         
