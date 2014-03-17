@@ -13,6 +13,7 @@ namespace FlexSearch.Core
 [<AutoOpen>]
 module Main = 
     open FlexSearch.Api
+    open FlexSearch.Api.Message
     open FlexSearch.Core
     open FlexSearch.Utility
     open Microsoft.Owin
@@ -20,11 +21,12 @@ module Main =
     open Owin
     open System
     open System.Collections.Concurrent
+    open System.IO
     open System.Linq
     open System.Net
     open System.Threading
     open System.Threading.Tasks
-    open System.IO
+    
     /// <summary>
     /// A container used by OWIN to perform dependency injection
     /// </summary>
@@ -44,46 +46,39 @@ module Main =
                     | "POST" -> x.Post(indexName, owin, container.[owin.Request.Uri.Port])
                     | "PUT" -> x.Put(indexName, owin, container.[owin.Request.Uri.Port])
                     | "DELETE" -> x.Delete(indexName, owin, container.[owin.Request.Uri.Port])
-                    | _ -> owin.Response.StatusCode <- 500
-                | _ -> owin.Response.StatusCode <- 500
+                    | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+            
+            let getIndexName (owin : IOwinContext) = 
+                if owin.Request.Uri.Segments.[1].EndsWith("/") then 
+                    owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
+                else owin.Request.Uri.Segments.[1]
+            
             try 
-                // Root path
-                if owin.Request.Uri.Segments.Length = 1 then getModule "/" "/" owin
-                else 
-                    let indexName = 
-                        if owin.Request.Uri.Segments.[1].EndsWith("/") then 
-                            owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
-                        else owin.Request.Uri.Segments.[1]
-
-                    if indexName.EndsWith(".ico") <> true then 
-                        
-                        // This covers the case when the expected response format is specified as a part of
-                        // the request
-                        let indexName' =
-                            if indexName.Contains(".") then
-                                indexName.Substring(0, indexName.IndexOf("."))
-                            else
-                                indexName
-
-                        // Check if the passed index exists     
-                        match container.[owin.Request.Uri.Port].IndexService.IndexExists(indexName') with
-                        | true -> 
-                            // This is the root index module request
-                            if owin.Request.Uri.Segments.Length = 2 then 
-                                // Check if the requested module exists
-                                getModule "index" indexName' owin
-                            else 
-                                let moduleName = 
-                                    if owin.Request.Uri.Segments.[2].EndsWith("/") then 
-                                        owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
-                                    else owin.Request.Uri.Segments.[2]
-                                // This is a specialized request to an existing index
-                                // Check if the requested module exists 
-                                getModule moduleName indexName' owin
-                        | _ -> 
-                            // This can be an index creation request
-                            getModule "index" indexName' owin
-                    else owin.Response.StatusCode <- 500
+                match owin.Request.Uri.Segments.Length with
+                // Server root
+                | 1 -> getModule "/" "/" owin
+                // Root index request
+                | 2 -> 
+                    let indexName = getIndexName owin
+                    match container.[owin.Request.Uri.Port].IndexService.IndexExists(indexName) with
+                    | true -> getModule "index" indexName owin
+                    | false -> 
+                        // This can be an index creation request
+                        if owin.Request.Method = "POST" then getModule "index" indexName owin
+                        else owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
+                // Index module request
+                | x when x > 2 && x < 5 -> 
+                    let indexName = getIndexName owin
+                    match container.[owin.Request.Uri.Port].IndexService.IndexExists(indexName) with
+                    | true -> 
+                        let moduleName = 
+                            if owin.Request.Uri.Segments.[2].EndsWith("/") then 
+                                owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
+                            else owin.Request.Uri.Segments.[2]
+                        getModule moduleName indexName owin
+                    | false -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
             with ex -> ()
         }
     

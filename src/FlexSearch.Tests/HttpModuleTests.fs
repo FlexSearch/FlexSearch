@@ -101,9 +101,8 @@ let indexCreateTest3 () =
 
 [<Tests>]
 let indexCreateTest4 () = 
-    testList "Index can be accessed using .json notation." [ 
-        response := createRequest Get (sprintf "%s/testindex.json" httpUrl)
-                    |> withHeader (ContentType "application/json")
+    testList "Index can be accessed without provding accepttype notation." [ 
+        response := createRequest Get (sprintf "%s/testindex" httpUrl)
                     |> getResponse
         yield !response |> responseStatusEquals 200
         yield !response 
@@ -352,7 +351,8 @@ let indexDeleteTest1 () =
 let testRunHelper () =
     testList "Debug only runner" [
         yield indexCreateTest1()
-        yield documentsTest1()
-        yield documentsTest2()
-        yield searchTestParameters4()
+        yield indexCreateTest4()
+//        yield documentsTest1()
+//        yield documentsTest2()
+//        yield searchTestParameters4()
     ]

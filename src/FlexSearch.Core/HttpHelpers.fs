@@ -10,6 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+[<AutoOpen>]
 module HttpHelpers = 
     open FlexSearch
     open FlexSearch.Api
@@ -47,19 +48,13 @@ module HttpHelpers =
     /// Defaults to json
     let private getRequestFormat (request : IOwinRequest)  =
         if String.IsNullOrWhiteSpace(request.ContentType) then 
-            if request.Uri.Segments.Last().Contains(".") then 
-                request.Uri.Segments.Last().Substring(request.Uri.Segments.Last().IndexOf(".") + 1)
-            else 
-                // Default to json
-                "application/json"
+            "application/json"
         else request.ContentType
 
     /// Get response format from the owin context
     /// Defaults to json
     let private getResponseFormat (owin : IOwinContext) = 
-        if owin.Request.Uri.Segments.Last().Contains(".") then 
-                owin.Request.Uri.Segments.Last().Substring(owin.Request.Uri.Segments.Last().LastIndexOf(".") + 1) 
-        else if owin.Request.Accept = null then 
+        if owin.Request.Accept = null then 
             "application/json"
         else if owin.Request.Accept = "*/*" then
             "application/json"
