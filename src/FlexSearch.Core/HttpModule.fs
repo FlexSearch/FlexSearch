@@ -40,7 +40,14 @@ type IndexModule() =
             // Index name passed in url taskes precedence
             index.IndexName <- indexName
             owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
-        | Choice2Of2(error) -> owin |> BAD_REQUEST error
+        | Choice2Of2(error) -> 
+            if error.ErrorCode = 6002 then
+                // In case the error is no body defined then still try to create the index based on index name
+                let index = new Index()
+                index.IndexName <- indexName
+                owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
+            else
+                owin |> BAD_REQUEST error
     
     override this.Delete(indexName, owin, state) = 
         owin |> responseProcessor (state.IndexService.DeleteIndex(indexName)) OK BAD_REQUEST
