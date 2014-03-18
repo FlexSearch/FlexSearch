@@ -4,8 +4,9 @@ open System
 open FlexSearch.Core
 [<EntryPoint>]
 let main argv = 
-    let result = Tests.defaultMainThisAssembly (argv)
+    //let result = Tests.defaultMainThisAssembly (argv)
     
+    HttpDocumentation.generateDocumentation()
     // Uncheck for wikipedia based performance test
     //BenchmarkTests.createSingleFileFromWikiExtractor "F:\wikipedia\extracted" "F:\wikipedia\wikidump.txt"
     //BenchmarkTests.indexingWikiExtractorDumpBenchMarkTests "F:\wikipedia\wikidump.txt"
