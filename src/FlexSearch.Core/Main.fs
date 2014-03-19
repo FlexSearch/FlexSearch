@@ -77,7 +77,7 @@ module Main =
                                 owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
                             else owin.Request.Uri.Segments.[2]
                         getModule moduleName indexName owin
-                    | false -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                    | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
                 | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
             with ex -> ()
         }
