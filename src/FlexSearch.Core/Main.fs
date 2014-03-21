@@ -41,7 +41,7 @@ module Main =
             let getModule moduleName indexName (owin : IOwinContext) = 
                 match ServiceLocator.HttpModule.TryGetValue(moduleName) with
                 | (true, x) -> 
-                    match owin.Request.Method with
+                    match owin.Request.Method.ToUpperInvariant() with
                     | "GET" -> x.Get(indexName, owin, container.[owin.Request.Uri.Port])
                     | "POST" -> x.Post(indexName, owin, container.[owin.Request.Uri.Port])
                     | "PUT" -> x.Put(indexName, owin, container.[owin.Request.Uri.Port])
