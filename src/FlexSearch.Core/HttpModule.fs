@@ -41,13 +41,12 @@ type IndexModule() =
             index.IndexName <- indexName
             owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
         | Choice2Of2(error) -> 
-            if error.ErrorCode = 6002 then
+            if error.ErrorCode = 6002 then 
                 // In case the error is no body defined then still try to create the index based on index name
                 let index = new Index()
                 index.IndexName <- indexName
                 owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
-            else
-                owin |> BAD_REQUEST error
+            else owin |> BAD_REQUEST error
     
     override this.Delete(indexName, owin, state) = 
         owin |> responseProcessor (state.IndexService.DeleteIndex(indexName)) OK BAD_REQUEST
@@ -72,15 +71,32 @@ type DocumentModule() =
                 | Some(id) -> 
                     // documents/{id}
                     // Return the requested document
-                    return! state.IndexService.PerformQuery
-                                (indexName, new SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField id)))
+                    let q = new SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField id))
+                    q.ReturnScore <- false
+                    q.ReturnFlatResult <- true
+                    q.Columns.Add("*")
+                    match state.IndexService.PerformQuery(indexName, q) with
+                    | Choice1Of2(v') -> 
+                        let result = v'.Documents.First().Fields
+                        return! Choice1Of2(result :> obj)
+                    | Choice2Of2(e) -> return! Choice2Of2(e)
                 | None -> 
                     // documents
                     // Return top 10 documents
                     let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
+                    q.ReturnScore <- false
+                    q.ReturnFlatResult <- true
                     q.Columns.Add("*")
                     q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
-                    return! state.IndexService.PerformQuery(indexName, q)
+                    match state.IndexService.PerformQuery(indexName, q) with
+                    | Choice1Of2(v') -> 
+                        if q.ReturnFlatResult then 
+                            owin.Response.Headers.Add("RecordsReturned", [| v'.RecordsReturned.ToString() |])
+                            owin.Response.Headers.Add("TotalAvailable", [| v'.TotalAvailable.ToString() |])
+                            let result = v'.Documents |> Seq.map (fun x -> x.Fields)
+                            return! Choice1Of2(result :> obj)
+                        else return! Choice1Of2(v' :> obj)
+                    | Choice2Of2(e) -> return! Choice2Of2(e)
             }
         owin |> responseProcessor processRequest OK BAD_REQUEST
     
@@ -94,7 +110,7 @@ type DocumentModule() =
                     let! fields = getRequestBody<Dictionary<string, string>> (owin.Request)
                     match fields.TryGetValue(Constants.IdField) with
                     | true, _ -> 
-                        // Overide dictinary id with the url id
+                        // Overide dictionary id with the url id
                         fields.[Constants.IdField] <- id
                     | _ -> fields.Add(Constants.IdField, id)
                     return! state.IndexService.PerformCommand(indexName, IndexCommand.Create(id, fields))
