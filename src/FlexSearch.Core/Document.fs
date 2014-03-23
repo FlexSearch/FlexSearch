@@ -49,12 +49,14 @@ module Document =
     /// <param name="id">Id of the document</param>
     /// <param name="shardCount">Total available shards</param>
     let mapToShard (id : string) shardCount = 
-        let mutable total = 0
-        for i in id do
-            total <- total + System.Convert.ToInt32(i)
-        total % shardCount
+        if (shardCount = 1) then 0
+        else    
+            let mutable total = 0
+            for i in id do
+                total <- total + System.Convert.ToInt32(i)
+            total % shardCount
     
-    /// Generates a lucene daocument from a flex document    
+    /// Generates a lucene document from a flex document    
     let Generate (document : FlexSearch.Api.Document) flexIndexSetting = 
         let luceneDocument = new Document()
         luceneDocument.add (new StringField(Constants.IdField, document.Id, Field.Store.YES))

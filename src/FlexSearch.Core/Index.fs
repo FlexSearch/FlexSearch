@@ -309,7 +309,7 @@ module Index =
                     .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, documentId), documentTemplate.Document) |> ignore
                 return! Choice1Of2()
             | Delete(documentId) -> 
-                let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length - 1
+                let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length
                 flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) |> ignore
                 return! Choice1Of2()
             | BulkDeleteByIndexName -> 
@@ -322,7 +322,7 @@ module Index =
         }
     
     // ----------------------------------------------------------------------------   
-    // Concerete implementation of the index service interface. This class will be 
+    // Concrete implementation of the index service interface. This class will be 
     // injected using DI thus exposing the necessary
     // functionality at any web service
     // loadAllIndex - This is used to bypass loading of index at initialization time.
