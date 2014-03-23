@@ -46,7 +46,6 @@ enum FieldSimilarity {
 }
 
 /*
-<div id="FieldPostingsFormat" type="glossary"></div>
 ## FieldPostingsFormat
 Encodes/decodes terms, postings, and proximity data.
 
@@ -57,7 +56,7 @@ Postings and DocValues formats that are read entirely into memory.
 A PostingsFormat useful for low doc-frequency fields such as primary keys.
 
 **Pulsing FieldPostingsFormat**
-Pulsing Codec: inlines low frequency terms' postings into terms dictionary.
+Pulsing Codec: in-lines low frequency terms' postings into terms dictionary.
 ``` java
 */
 enum FieldPostingsFormat {
@@ -68,10 +67,8 @@ enum FieldPostingsFormat {
 	Lucene41PostingsFormat = 5
 }
 //```
-//<div></div>
 
 /*
-<div id="DirectoryType" type="glossary"></div>
 ## DirectoryType
 
 **Directory**
@@ -82,7 +79,7 @@ A memory-resident Directory implementation. This is not intended to work with hu
 It is recommended to materialize large indexes on disk and use MMapDirectory, which is a high-performance directory implementation working directly on the file system cache of the operating system.
 
 **MemoryMapped Directory**
-File-based Directory implementation that uses mmap for reading, and FSDirectory.FSIndexOutput for writing.
+File-based Directory implementation that uses memory map for reading, and FSDirectory.FSIndexOutput for writing.
 NOTE: memory mapping uses up a portion of the virtual memory address space in your process equal to the size of the file being mapped. Before using this class, be sure your have plenty of virtual address space, e.g. by using a 64 bit JRE, or a 32 bit JRE with indexes that are guaranteed to fit within the address space. On 32 bit platforms also consult MMapDirectory(File, LockFactory, int) if you have problems with mmap failing because of fragmented address space. If you get an OutOfMemoryException, it is recommended to reduce the chunk size, until it works.
 
 Due to this bug in Sun's JRE, MMapDirectory's IndexInput.close() is unable to close the underlying OS file handle. Only when GC finally collects the underlying objects, which could be quite some time later, will the file handle be closed.
@@ -100,11 +97,15 @@ enum DirectoryType {
 	Ram = 3
 }
 //``` 
-//<div></div>
 
 /*
-<div id="FieldTermVector" type="glossary"></div>
 ## FieldTermVector
+
+These options instruct FlexSearch to maintain full term vectors for each document, optionally 
+including the position and offset information for each term occurrence in those vectors. These 
+can be used to accelerate highlighting and other ancillary functionality, but impose a substantial 
+cost in terms of index size. These can only be configured for custom field type.
+
 **DoNotStoreTermVector**
 Do not store term vectors.
 
@@ -126,10 +127,8 @@ enum FieldTermVector {
 	StoreTermVectorsWithPositionsandOffsets = 4
 }
 //```
-//<div></div>
 
 /*
-<div id="FieldIndexOptions" type="glossary"></div>
 ## FieldIndexOptions
 **DocsOnly**
 Only documents are indexed: term frequencies and positions are omitted. Phrase and other positional queries on the field will throw an exception, and scoring will behave as if any term in the document appears only once.
@@ -152,12 +151,51 @@ enum FieldIndexOptions {
 	DocsAndFreqsAndPositionsAndOffsets = 4
 }
 //```
-//<div></div>
 
 /*
-<div id="FieldType" type="glossary"></div>
 ## FieldType
-For detailed information refer to [Index Fields](|filename|indexfield.md).
+
+The field type defines how FlexSearch should interpret data in a field and how the field can be queried. There are many field types included with FlexSearch by default, and custom types can also be defined.
+
+The below table list the various field types supported by FlexSearch.
+
+| Field Type | Description                                                                                                                                                                                                                                      |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Int        | Integer                                                                                                                                                                                                                                          |
+| Double     | Double                                                                                                                                                                                                                                           |
+| ExactText  | Field to store keywords. The entire input will be treated as a single word. This is useful for fields like customerid, referenceid etc. These fields only support complete text matching while searching and no partial word match is available. |
+| Text       | General purpose field to store normal textual data                                                                                                                                                                                               |
+| Highlight  | Similar to Text field but supports highlighting of search results                                                                                                                                                                                |
+| Bool       | Boolean                                                                                                                                                                                                                                          |
+| Date       | Fixed format date field (Supported format: YYYYmmdd)                                                                                                                                                                                             |
+| DateTime   | Fixed format datetime field (Supported format: YYYYMMDDhhmmss)                                                                                                                                                                                   |
+| Custom     | Custom field type which gives more granular control over the field configuration                                                                                                                                                                 |
+| Stored     | Non-indexed field. Only used for retrieving stored text. Searching is not possible over these fields.                                                                                                                                            |
+
+
+The below table lists the various parameters which can be configured for each field type.
+
+| Field Type | Search Analyzer | Index Analyzer | Store | Index | Analyze | Term Vector |
+|------------|-----------------|----------------|-------|-------|---------|-------------|
+| Int        | No              | No             | Yes   | No    | No      | No          |
+| Double     | No              | No             | Yes   | No    | No      | No          |
+| ExactText  | No              | No             | Yes   | No    | No      | No          |
+| Text       | Yes             | Yes            | Yes   | No    | No      | No          |
+| Highlight  | Yes             | Yes            | Yes   | No    | No      | No          |
+| Bool       | No              | No             | Yes   | No    | No      | No          |
+| Date       | No              | No             | Yes   | No    | No      | No          |
+| DateTime   | No              | No             | Yes   | No    | No      | No          |
+| Custom     | Yes             | Yes            | Yes   | Yes   | Yes     | Yes         |
+| Stored     | No              | No             | No    | No    | No      | No          |
+
+**Note**
+    
+	By default Text, Highlight and Custom use Standard Analyzer for searching and indexing.
+
+**Warning**
+
+	Configuring any unsupported combination for a field type will be ignored and will result in unexpected behaviour.
+
 ``` java
 */
 enum FieldType {
@@ -174,7 +212,6 @@ enum FieldType {
 	Long = 11
 }
 //```
-//<div></div>
 
 enum ShardAllocationStrategy {
 	Automatic = 1
@@ -182,7 +219,6 @@ enum ShardAllocationStrategy {
 }
 
 /*
-<div id="IndexVersion" type="glossary"></div>
 ## IndexVersion
 Version of the Lucene index used behind the scene. 
 ``` java
@@ -191,10 +227,8 @@ enum IndexVersion {
 	Lucene47 = 1
 }
 //```
-//<div></div>
 
 /*
-<div id="ScriptType" type="glossary"></div>
 ## ScriptType
 
 ``` java
@@ -205,10 +239,8 @@ enum ScriptType {
     ComputedField = 3
 }
 //```
-//<div></div>
 
 /*
-<div id="IndexState" type="glossary"></div>
 ## IndexState
 
 ``` java
@@ -220,10 +252,8 @@ enum IndexState {
     Closing = 4
 }
 //```
-//<div></div>
 
 /*
-<div id="JobStatus" type="glossary"></div>
 ## JobStatus
 
 ``` java
@@ -236,14 +266,12 @@ enum JobStatus {
 	CompletedWithErrors = 5
 }
 //```
-//<div></div>
 
 // ----------------------------------------------------------------------------
 //	Structs
 // ----------------------------------------------------------------------------
 
 /*
-<div id="ShardConfiguration" type="glossary"></div>
 ## ShardConfiguration
 
 ``` java
@@ -252,10 +280,8 @@ struct ShardConfiguration {
 	1:	optional i32 ShardCount = 1
 }
 //```
-//<div></div>
 
 /*
-<div id="IndexConfiguration" type="glossary"></div>
 ## IndexConfiguration
 **CommitTimeSec**
 
@@ -283,12 +309,25 @@ struct IndexConfiguration {
 	6:	optional IndexVersion IndexVersion = IndexVersion.Lucene47
 }
 //```
-//<div></div>
 
 /*
-<div id="FieldProperties" type="glossary"></div>
-## FieldType
-Refer to Index Fields.
+## FieldProperties
+
+The below table lists the various parameters supported by index field.
+
+| Parameter           | Description                                                                                                                                                                |
+|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ``fieldname``       | The name of the field. This should be lower case and should only contain alphabetical characters.                                                                           |
+| ``Analyze``         | Signifies if the field should be analyzed using an analyzer. Refer: [FlexSearch Analysis](./analysis.html)                                                               |
+| ``Index``           | Signifies if a field should be indexed. A field can only be stored without indexing. Refer: [FlexSearch Analysis](./analysis.html)                                       |
+| ``Store``           | Signifies if a field should be stored so that it can retrieved while searching.                                                                                            |
+| ``FieldTermVector`` | Advance property used for highlighting.                                                                                                                                    |
+| ``FieldType``       | The type of field                                                                                                                                                          |
+| ``IndexAnalyzer``   | Analyzer to be used while indexing                                                                                                                                         |
+| ``SearchAnalyzer``  | Analyzer to be used while searching                                                                                                                                        |
+| ``ScriptName``      | Fields can get their content dynamically through scripts. This is the name of the script to be used for getting field data at index time. Refer: [Script](./script.html)|
+
+
 ``` java
 */
 struct FieldProperties {
@@ -305,7 +344,6 @@ struct FieldProperties {
 	11:	optional string ScriptName = ""
 }
 //```
-//<div></div>
 
 struct Job {
 	1:	required string JobId
@@ -321,9 +359,22 @@ struct Job {
 //	Analyzer related
 // ----------------------------------------------------------------------------
 /*
-<div id="TokenFilter" type="glossary"></div>
 ## TokenFilter
-Refer to 'FlexSearch Analysis'
+
+Like tokenizers, filters consume input and produce a stream of tokens. The job of a filter is usually 
+easier than that of a tokenizer since in most cases a filter looks at each token in the stream 
+sequentially and decides whether to pass it along, replace it or discard it.
+
+A filter may also do more complex analysis by looking ahead to consider multiple tokens at once, 
+although this is less common. One hypothetical use for such a filter might be to normalize state 
+names that would be tokenized as two words. For example, the single token "california" would be 
+replaced with "CA", while the token pair "rhode" followed by "island" would become the single token "RI".
+
+Because filters consume one Token Stream and produce a new Token Stream, they can be chained one after 
+another indefinitely. Each filter in the chain in turn processes the tokens produced by its predecessor. 
+The order in which you specify the filters is therefore significant. Typically, the most general filtering 
+is done first, and later filtering stages are more specialized.
+
 ``` java
 */
 struct TokenFilter {
@@ -331,12 +382,23 @@ struct TokenFilter {
     2:	optional map<string, string> Parameters
 }
 //```
-//<div></div>
 
 /*
-<div id="Tokenizer" type="glossary"></div>
 ## Tokenizer
-Refer to 'FlexSearch Analysis'
+
+The job of a tokenizer is to break up a stream of text into tokens, where each token 
+is (usually) a sub-sequence of the characters in the text. An analyzer is aware of the
+field it is configured for, but a tokenizer is not. Tokenizers read from a character 
+stream (a Reader) and produce a Characters in the input stream may be discarded, such 
+as whitespace or other delimiters. They may also be added to or replaced, such as mapping 
+aliases or abbreviations to normalized forms. A token contains various metadata in addition
+to its text value, such as the location at which the token occurs in the field. Because a 
+tokenizer may produce tokens that diverge from the input text, you should not assume that 
+the text of the token is the same text that occurs in the field, or that its length is the 
+same as the original text. It's also possible for more than one token to have the same position 
+or refer to the same offset in the original text. Keep this in mind if you use token metadata 
+for things like highlighting search results in the field text.
+
 ``` java
 */
 struct Tokenizer {
@@ -344,12 +406,31 @@ struct Tokenizer {
     2:	optional map<string, string> Parameters
 }
 //```
-//<div></div>
 
 /*
-<div id="AnalyzerProperties" type="glossary"></div>
 ## AnalyzerProperties
-Refer to 'FlexSearch Analysis'
+
+An analyzer examines the text of fields and generates a token stream. Analyzers 
+are specified as part of the ``Field Properties`` element in the ``Fields`` section 
+of index configuration.
+
+Only the following field types can have an analyzer, if specified the analyzer will 
+be ignored for other field types.
+
+- Text
+- Highlight
+- Custom
+
+	StandardAnalyzer is used when no analyzer is specified.
+
+For simple cases, such as plain English prose, a single analyzer class like this may 
+be sufficient. But it's often necessary to do more complex analysis of the field 
+content. Even the most complex analysis requirements can usually be decomposed into 
+a series of discrete, relatively simple processing steps. As you will soon discover, 
+the FlexSearch distribution comes with a large selection of tokenizers and filters that 
+covers most scenarios you are likely to encounter.
+
+Refer to [FlexSearch Analysis](../../flexsearch-analysis/) for examples of supported tokenizers and filters.
 ``` java
 */
 struct AnalyzerProperties {
@@ -357,13 +438,11 @@ struct AnalyzerProperties {
 	2:	required list<TokenFilter> Filters
 }
 //```
-//<div></div>
 
 // ----------------------------------------------------------------------------
 //	Scripting related
 // ----------------------------------------------------------------------------
 /*
-<div id="ScriptProperties" type="glossary"></div>
 ## ScriptProperties
 
 ``` java
@@ -373,13 +452,11 @@ struct ScriptProperties {
 	2:	required ScriptType ScriptType
 }
 //```
-//<div></div>
 
 // ----------------------------------------------------------------------------
 //	Search related
 // ----------------------------------------------------------------------------
 /*
-<div id="MissingValueOption" type="glossary"></div>
 ## MissingValueOption
 Refer to 'Search profile basics'.
 ``` java
@@ -390,7 +467,6 @@ enum MissingValueOption {
 	Ignore = 3
 }
 //```
-//<div></div>
 
 struct MissingValue {
 	1:	required MissingValueOption MissingValueOption
@@ -398,7 +474,6 @@ struct MissingValue {
 }
 
 /*
-<div id="HighlightOption" type="glossary"></div>
 ## HighlightOption
 Refer to 'Search basics'.
 ``` java
@@ -410,12 +485,33 @@ struct HighlightOption {
 	4:	optional string PreTag = "</B>"
 }
 //```
-//<div></div>
 
 /*
-<div id="SearchQuery" type="glossary"></div>
+## SearchProfile
+
+A Search profile is a user configurable search criteria which can be saved as a
+part of index configuration enabling an user to pass a set of values to match 
+against it. Search profile utilizes the ``Search Query`` object to define a profile.
+In nutshell any valid query can be saved as a search profile. Search profile uses a
+special configuration called ``MissingValueConfiguration`` which allows it to 
+respond to missing values in the passed ``QueryString`` thus giving complete control
+over how the query will be parsed by the server.
+
+** Query String Format for Search profile**
+
+Search profile expects the caller to populate ``SearchProfile`` and ``QueryString`` properties.
+The Search profile ``QueryString`` uses a specialized format to pass key value pairs.
+
+``` javascript
+
+{fieldName1: 'fieldValue1', fieldName2 : 'fieldValue2', ..}
+
+//```
+*/
+
+/*
 ## SearchQuery
-Refer to 'Search basics'.
+
 ``` java
 */
 struct SearchQuery {
@@ -434,13 +530,11 @@ struct SearchQuery {
 	13: optional string SearchProfileSelector
 }
 //```
-//<div></div>
 
 // ----------------------------------------------------------------------------
 //	Server Settings
 // ----------------------------------------------------------------------------
 /*
-<div id="ServerSettings" type="glossary"></div>
 ## ServerSettings
 
 ``` java
@@ -455,15 +549,13 @@ struct ServerSettings {
 	7:	optional NodeRole NodeRole = 1
 }
 //```
-//<div></div>
 
 // ----------------------------------------------------------------------------
 //	Index & Document related
 // ----------------------------------------------------------------------------
 /*
-<div id="Document" type="glossary"></div>
 ## Document
-Refer to 'Indexing basics'.
+
 ``` java
 */
 struct Document {
@@ -475,12 +567,17 @@ struct Document {
 	8:	optional double Score = 0.0
 }
 //```
-//<div></div>
 
 /*
-<div id="Index" type="glossary"></div>
 ## Index
 
+In case of a database analogy an index represents a table in a database where one has to define 
+a schema upfront before performing any kind of operation on the table. There are various properties
+that can be defined at the index creation time. Only ``IndexName`` is a mandatory property, though
+one should always define ``Fields`` in an index to make any use of it.
+
+By default a newly created index stays offline. This is by design to force the user to enable
+an index before using it.
 ``` java
 */
 struct Index {
@@ -494,12 +591,15 @@ struct Index {
 	8:	required ShardConfiguration ShardConfiguration = {}
 }
 //```
-//<div></div>
 
 /*
-<div id="SearchResults" type="glossary"></div>
 ## SearchResults
+Used to return structured search results. This is useful in case when there is a requirement to merge results from
+multiple indices or sort on scores. The structured result can be de-serialized and sorted in any
+programming language.
 
+There is an option to get flat results from the rest service by using the ``Returnflatresult`` parameter which can 
+be easily bound to a grid.
 ``` java
 */
 struct SearchResults {
@@ -508,7 +608,6 @@ struct SearchResults {
 	3:	optional i32 TotalAvailable
 }
 //```
-//<div></div>
 
 struct IndexStatusResponse {
 	1:	required IndexState Status

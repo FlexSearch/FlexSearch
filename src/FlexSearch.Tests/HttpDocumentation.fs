@@ -17,308 +17,316 @@ open System.Net.Http
 open System.Text
 open System.Threading
 
-let GetBasicIndexSettings() = 
-    let index = new Index()
-    index.IndexName <- Guid.NewGuid().ToString("N")
-    index.Online <- true
-    index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
-    index.Fields.Add("gender", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("title", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("givenname", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("middleinitial", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("surname", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("streetaddress", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("city", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("state", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("zipcode", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("country", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("emailaddress", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("username", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("password", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("cctype", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("ccnumber", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("occupation", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("cvv2", new FieldProperties(FieldType = FieldType.Int))
-    index.Fields.Add("nationalid", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("ups", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("company", new FieldProperties(FieldType = FieldType.Stored))
-    index.Fields.Add("pounds", new FieldProperties(FieldType = FieldType.Double))
-    index.Fields.Add("centimeters", new FieldProperties(FieldType = FieldType.Int))
-    index.Fields.Add("guid", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("latitude", new FieldProperties(FieldType = FieldType.Double))
-    index.Fields.Add("longitude", new FieldProperties(FieldType = FieldType.Double))
-    index.Fields.Add("importdate", new FieldProperties(FieldType = FieldType.Date))
-    index.Fields.Add("timestamp", new FieldProperties(FieldType = FieldType.DateTime))
-    // Computed fields
-    index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
-    index.Scripts.Add
-        ("fullname", 
-         new ScriptProperties("""return fields["givenname"] + " " + fields["surname"];""", ScriptType.ComputedField))
-    let searchProfileQuery = 
-        new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''")
-    searchProfileQuery.MissingValueConfiguration.Add("givenname", MissingValueOption.ThrowError)
-    searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
-    searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
-    index.SearchProfiles.Add("test1", searchProfileQuery)
-    index
+let mutable startDate = DateTime.Parse("2012-03-23")
 
-let url = "http://localhost:9800"
-let rootFolder = @"E:\Python27\Scripts\pelican\Scripts\OneDrive\Sites\documentation\content\posts\requests"
+let getDate() = 
+    startDate <- startDate.AddDays(-1.0)
+    startDate.ToString("yyyy-MM-dd")
 
-//let rootFolder = @"C:\Python27\Scripts\pelican\Scripts\SkyDrive\Sites\documentation\content\requests"
-let request uri httpMethod (body : string option) (result : ResizeArray<string>) = 
-    result.Add((sprintf "%s %s HTTP/1.1" httpMethod uri))
-    // Create & configure HTTP web request
-    let req = HttpWebRequest.Create(sprintf "%s%s" url uri) :?> HttpWebRequest
-    req.ProtocolVersion <- HttpVersion.Version11
-    req.Method <- httpMethod
-    // Encode body with POST data as array of bytes
-    if body.IsSome then 
-        let postBytes = Encoding.ASCII.GetBytes(body.Value)
-        req.ContentLength <- int64 postBytes.Length
-        // Write data to the request
-        let reqStream = req.GetRequestStream()
-        reqStream.Write(postBytes, 0, postBytes.Length)
-        reqStream.Close()
-    else req.ContentLength <- int64 0
-    let printHeaders (headerCollection : WebHeaderCollection) = 
-        for i = 0 to headerCollection.Count - 1 do
-            result.Add(sprintf "%s:%s" headerCollection.Keys.[i] (headerCollection.GetValues(i).[0]))
-    
-    let print (resp : HttpWebResponse) = 
-        printHeaders (req.Headers)
-        if body.IsSome then 
-            let parsedJson = JsonConvert.DeserializeObject(body.Value)
-            result.Add(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
-        result.Add("")
-        result.Add("")
-        result.Add((sprintf "HTTP/1.1 %i %s" (int resp.StatusCode) (resp.StatusCode.ToString())))
-        printHeaders (resp.Headers)
-        if req.HaveResponse then 
-            let stream = resp.GetResponseStream()
-            let reader = new StreamReader(stream)
-            let responseBody = reader.ReadToEnd()
-            let parsedJson = JsonConvert.DeserializeObject(responseBody)
-            if parsedJson <> Unchecked.defaultof<_> then 
-                result.Add("")
-                result.Add(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
-    
-    try 
-        print (req.GetResponse() :?> HttpWebResponse)
-    with :? WebException as e -> print (e.Response :?> HttpWebResponse)
-    result
+/// <summary>
+/// Generate Api glossary documentation
+/// </summary>
+[<Tests>]
+let GenerateApiDocumentation() = 
+    let file = File.ReadAllLines(Helpers.DocumentationConf.ApiFile)
+    let output = new ResizeArray<string>()
+    let mutable title = ""
+    let mutable insideGroup = false
+    for line in file do
+        if line.StartsWith("##") then 
+            insideGroup <- true
+            output.Add("<!--- start -->")
+            title <- line.Substring(3)
+        else if line.StartsWith("//```") then 
+            insideGroup <- false
+            output.Add("```")
+            output.Insert(0, "Slug: " + title)
+            output.Insert(0, "Date: " + getDate())
+            output.Insert(0, "Category: Glossary")
+            output.Insert(0, "Method: Glossary")
+            output.Insert(0, "Uri: " + title)
+            output.Insert(0, "Title: " + title)
+            File.WriteAllLines
+                (Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "glossary", title + ".md"), 
+                 output.ToArray())
+            output.Clear()
+        else if line.StartsWith("*/") && insideGroup then ()
+        else 
+            if insideGroup then output.Add(line)
+    printfn "Finished Api document generation."
+    testCase "" <| fun _ -> Assert.AreEqual(1, 1)
 
-let document (result : ResizeArray<string>) = 
-    result.Add("```")
-    let fileName = result.[4].Substring(result.[4].IndexOf(":") + 2)
-    let path = Path.Combine(rootFolder, fileName + ".md")
-    File.WriteAllLines(path, result)
+/// <summary>
+/// Represent a resource to document
+/// </summary>
+type ResourceDocumentation = 
+    { Title : string
+      Category : string
+      Method : string
+      Uri : string
+      Examples : string list
+      Dtos : string list
+      Description : string }
 
-let id id (result : ResizeArray<string>) = 
-    result.Add("Slug: " + id)
-    result.Add("Date: 2010-12-03 10:20")
-    result
+let resource (category : string) (title : string) = 
+    { Title = title
+      Category = category
+      Method = "post"
+      Uri = "{indexName}/"
+      Examples = []
+      Dtos = []
+      Description = "" }
 
-let example name = 
-    let result = new ResizeArray<string>()
-    result.Add("Title: " + name)
-    result.Add("Category: examples")
-    result.Add("Method: Example")
-    result.Add("Uri: " + name)
-    result
+let request (meth : string) (uri : string) (result : ResourceDocumentation) = 
+    { result with Method = meth
+                  Uri = uri }
 
-let description desc (result : ResizeArray<string>) = 
-    result.Add("<!--- start -->")
-    result.Add(desc)
-    result.Add("```javascript")
-    result
+let examples examples (result : ResourceDocumentation) = { result with Examples = examples }
+let dtos dtos (result : ResourceDocumentation) = { result with Dtos = dtos }
+let description description (result : ResourceDocumentation) = { result with Description = description }
 
-let generateDocumentation() = 
-    let serverSettings = GetServerSettings(ConfFolder.Value + "\\Config.json")
-    let node = new NodeService(serverSettings, true)
-    node.Start()
-    let mutable response = Unchecked.defaultof<_>
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Create index without any field"
-    |> id "index-create-1"
-    |> description """
-The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
-"""
-    |> request "/test1" "POST" None
+let document (result : ResourceDocumentation) = 
+    let output = new ResizeArray<string>()
+    output.Add(result.Description)
+    if result.Dtos.Count() > 0 then output.Add("## Objects Used")
+    for exampleName in result.Dtos do
+        let content = 
+            File.ReadAllLines
+                (Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "glossary", exampleName + ".md"))
+        let mutable inBody = false
+        for line in content do
+            if line.StartsWith("Title") then 
+                output.Add("### " + (line.Substring(line.IndexOf(":") + 1)))
+                output.Add("")
+            else if line.StartsWith("<!---") then inBody <- true
+            else 
+                if inBody then output.Add(line)
+    if result.Examples.Count() <> 0 then output.Add("## Usage Examples")
+    for exampleName in result.Examples do
+        let content = 
+            File.ReadAllLines
+                (Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "requests", exampleName + ".md"))
+        let mutable inBody = false
+        for line in content do
+            if line.StartsWith("Title") then 
+                output.Add("### " + (line.Substring(line.IndexOf(":") + 1)))
+                output.Add("")
+            else if line.StartsWith("<!---") then inBody <- true
+            else 
+                if inBody then output.Add(line)
+    output.Insert(0, "Slug: " + result.Title)
+    output.Insert(0, "Date: " + getDate())
+    output.Insert(0, "Category: " + result.Category)
+    output.Insert(0, "Method: " + result.Method)
+    output.Insert(0, "Uri: " + result.Uri)
+    output.Insert(0, "Title: " + result.Title)
+    File.WriteAllLines
+        (Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "resources", result.Title + ".md"), 
+         output.ToArray())
+    testCase "" <| fun _ -> Assert.AreEqual(1, 1)
+
+[<Tests>]
+let IndexIntroductionDocumentation() = 
+    resource "Index" "index-introduction"
+    |> request "introduction" "Index Basics"
+    |> examples []
+    |> dtos 
+           [ "Index"; "AnalyzerProperties"; "Tokenizer"; "TokenFilter"; "IndexConfiguration"; "FieldProperties"; 
+             "FieldType"; "FieldTermVector"; "ScriptProperties"; "ScriptType" ;"SearchProfile"; "SearchQuery"; "ShardConfiguration" ]
+    |> description """ 
+
+[TOC]
+
+FlexSearch index is a logical index built on top of Lucene's index in a manner to 
+support features like schema and sharding. So in this sense a FlexSearch index 
+consists of multiple Lucene's index. Also, each FlexSearch shard is a valid Lucene 
+index.
+    """
     |> document
-    example "Create index with two field 'firstname' & 'lastname'"
-    |> id "index-create-2"
-    |> description """
-All field names should be lower case and should not contain any spaces. This is to avoid case based mismatching on field names. Fields have many 
-other configurable properties but Field Type is the only mandatory parameter. Refer to Index Field for more information about field properties.
-"""
-    |> request "/test2" "POST" (Some(""" 
-    {
-        "Fields" : {
-            "firstname" : { FieldType : "Text" },
-            "lastname" : { FieldType : "Text" }
-        }
-    }
-    """))
-    |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Create index with computed field"
-    |> id "index-create-3"
-    |> description """
-Fields can be dynamic in nature and can be computed at index time from the passed data. Computed field requires custom scripts which defines the 
-field data creation logic. Let’s create an index field called fullname which is a concatenation of ‘firstname’ and ‘lastname’.
 
-Computed fields requires ScriptName property to be set in order load a custom script. FlexSearch scripts are 
-dynamically compiled to .net dlls so performance wise they are similar to native .net code. Scripts are written 
-in C#. But it would be difficult to write complex scripts in single line to pass to the Script source, that 
-is why Flex supports Multi-line and File based scripts. Refer to Script for more information about scripts.
-"""
-    |> request "/test3" "POST" (Some(""" 
-    {
-        "Fields" : {
-            "firstname" : { FieldType : "Text" },
-            "lastname" : { FieldType : "Text" },
-            "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"}
-        },
-        "Scripts" : {
-            fullnamescript : {
-                ScriptType : "ComputedField",
-                Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
-            }
-        }
-    }
-    """))
+[<Tests>]
+let GetIndexDocumentation() = 
+    resource "Index" "get-index"
+    |> request "get" "{indexName}/"
+    |> examples [ "get-index-1"; "get-index-2" ]
+    |> description """ 
+Fetch details of an existing index. 
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    let indexSettings = GetBasicIndexSettings()
-    indexSettings.IndexName <- "test31"
-    example "Create index by setting all properties"
-    |> id "index-create-4"
-    |> description """
-There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
-"""
-    |> request "/test31" "POST" (Some(JsonConvert.SerializeObject(indexSettings, jsonSettings)))
-    |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Updating an existing index"
-    |> id "update-index-1"
-    |> description """
 
-"""
-    |> request "/test3" "PUT" (Some(""" 
-        {
-            "Fields" : {
-                "firstname" : { FieldType : "Text" },
-                "lastname" : { FieldType : "Text" },
-                "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
-                "desc" : { FieldType : "Stored" },
-            },
-            "Scripts" : {
-                fullnamescript : {
-                    ScriptType : "ComputedField",
-                    Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
-                }
-            }
-        }
-        """))
+[<Tests>]
+let PostIndexDocumentation() = 
+    resource "Index" "post-index"
+    |> request "post" "{indexName}/"
+    |> examples [ "post-index-1"; "post-index-2"; "post-index-3"; "post-index-4"; "post-index-5" ]
+    |> dtos [ "Index"; "ShardConfiguration" ]
+    |> description """ 
+Creates a new index.     
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Deleting an existing index"
-    |> id "delete-index-1"
-    |> description """
 
-"""
-    |> request "/test31" "DELETE" None
+[<Tests>]
+let PutIndexDocumentation() = 
+    resource "Index" "put-index"
+    |> request "put" "{indexName}/"
+    |> examples [ "put-index-1"; "put-index-2" ]
+    |> description """ 
+Update an existing index.
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Deleting an non-existing index will return an error "
-    |> id "delete-index-2"
-    |> description """
 
-"""
-    |> request "/indexdoesnotexist" "DELETE" None
+[<Tests>]
+let DeleteIndexDocumentation() = 
+    resource "Index" "delete-index"
+    |> request "delete" "{indexName}/"
+    |> examples [ "delete-index-1"; "delete-index-2" ]
+    |> description """ 
+Delete an existing index. This will also remove the data from the physical disk.  
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Getting an index detail by name"
-    |> id "get-index-1"
-    |> description """
 
-"""
-    |> request "/test3" "GET" None
+[<Tests>]
+let GetIndexStatusDocumentation() = 
+    resource "Status" "get-index-status"
+    |> request "get" "{indexName}/status"
+    |> examples [ "get-index-status-1" ]
+    |> description """ 
+Get the status of an existing index.
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Getting an index detail by name (non existing index)"
-    |> id "get-index-2"
-    |> description """
 
-"""
-    |> request "/indexdoesnotexist" "GET" None
+[<Tests>]
+let PostIndexStatusDocumentation() = 
+    resource "Status" "post-index-status"
+    |> request "post" "{indexName}/status/{online|offline}"
+    |> examples [ "post-index-status-1"; "post-index-status-2" ]
+    |> description """ 
+Set the status of an existing index to online or offline.
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Checking if an index exists (true case)"
-    |> id "index-exists-1"
-    |> description """
 
-"""
-    |> request "/test1/exists" "GET" None
+[<Tests>]
+let GetIndexExistsDocumentation() = 
+    resource "Exists" "get-index-exists"
+    |> request "get" "{indexName}/exists"
+    |> examples [ "get-index-exists-1"; "get-index-exists-2" ]
+    |> description """ 
+Check if a given index exists or not.
+    """
     |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Checking if an index exists (false case)"
-    |> id "index-exists-2"
-    |> description """
 
-"""
-    |> request "/indexdoesnotexist/exists" "GET" None
-    |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Getting status of an index"
-    |> id "index-status-1"
-    |> description """
+[<Tests>]
+let DocumentIntroductionDocumentation() = 
+    resource "Document" "document-introduction"
+    |> request "introduction" "Document basics"
+    |> dtos [ "Document" ]
+    |> description """ 
 
-"""
-    |> request "/test1/status" "GET" None
-    |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Setting status of an index to on-line"
-    |> id "index-status-2"
-    |> description """
 
-"""
-    |> request "/test1/status/online" "POST" None
-    |> document
-    // -----------------------------------------------
-    // Example
-    // -----------------------------------------------
-    example "Setting status of an index to off-line"
-    |> id "index-status-3"
-    |> description """
+In FlexSearch a document represents the basic unit of information which can be added or 
+retrieved from the index. A document consists of several fields. A field represents the 
+actual data to be indexed. In database analogy an index can be considered as a table while 
+a document is a row of that table. Like a table a FlexSearch document requires a fix 
+schema and all fields should have a field type.
 
-"""
-    |> request "/test1/status/offline" "POST" None
+Fields can contain different kinds of data. A name field, for example, is text 
+(character data). A shoe size field might be a floating point number so that it could 
+contain values like 6 and 9.5. Obviously, the definition of fields is flexible (you 
+could define a shoe size field as a text field rather than a floating point number, for 
+example), but if you define your fields correctly, FlexSearch will be able to interpret 
+them correctly and your users will get better results when they perform a query.
+
+You can tell FlexSearch about the kind of data a field contains by specifying its field 
+type. The field type tells FlexSearch how to interpret the field and how it can be queried. 
+When you add a document, FlexSearch takes the information in the document's fields and 
+adds that information to an index. When you perform a query, FlexSearch can quickly consult 
+the index and return the matching documents.
+
+Field Analysis Field analysis tells FlexSearch what to do with incoming data when building 
+an index. A more accurate name for this process would be processing or even digestion, but 
+the official name is analysis. Consider, for example, a biography field in a person document. 
+Every word of the biography must be indexed so that you can quickly find people whose lives
+have had anything to do with ketchup or dragonflies or cryptography.
+
+However, a biography will likely contains lots of words you don't care about and don't want
+clogging up your index, words like 'the', 'a', 'to', and so forth. Furthermore, suppose the
+biography contains the word 'Ketchup', capitalized at the beginning of a sentence. If a user 
+makes a query for 'ketchup', you want FlexSearch to tell you about the person even though 
+the biography contains the capitalized word.
+
+The solution to both these problems is field analysis. For the biography field, you can tell
+FlexSearch how to break apart the biography into words. You can tell FlexSearch that you 
+want to make all the words lower case, and you can tell FlexSearch to remove accents marks. 
+Field analysis is an important part of a field type.
+
+    """
     |> document
-    printfn "Finished document generation."
-    ()
+
+[<Tests>]
+let GetIndexDocumentIdDocumentation() = 
+    resource "Document" "get-index-document-id"
+    |> request "get" "{indexName}/documents/{id}"
+    |> examples [ "get-index-document-id-1" ]
+    |> description """ 
+Get a document from an existing index.
+    """
+    |> document
+
+[<Tests>]
+let GetIndexDocumentDocumentation() = 
+    resource "Document" "get-index-document"
+    |> request "get" "{indexName}/documents/"
+    |> examples [ "get-index-document-1" ]
+    |> description """ 
+Returns top 10 documents from the index.
+    """
+    |> document
+
+[<Tests>]
+let PostIndexDocumentIdDocumentation() = 
+    resource "Document" "post-index-document-id"
+    |> request "post" "{indexName}/documents/{id}"
+    |> examples [ "post-index-document-id-1" ]
+    |> description """ 
+Add a new document to an existing index. This will always add a new document even if the id already exists. In case you want to perform add or update operation, use the PUT method.       
+    """
+    |> document
+
+[<Tests>]
+let PutIndexDocumentIdDocumentation() = 
+    resource "Document" "put-index-document-id"
+    |> request "put" "{indexName}/documents/{id}"
+    |> examples [ "put-index-document-id-1" ]
+    |> description """ 
+Update or create a document in an existing index.
+    """
+    |> document
+
+[<Tests>]
+let DeleteIndexDocumentIdDocumentation() = 
+    resource "Document" "delete-index-document-id"
+    |> request "delete" "{indexName}/documents/{id}"
+    |> examples [ "delete-index-document-id-1" ]
+    |> description """ 
+Delete a document in an existing index.
+    """
+    |> document
+
+[<Tests>]
+let SearchIntroductionDocumentation() = 
+    resource "Search" "search-introduction"
+    |> request "introduction" "Search basics"
+    |> dtos [ "SearchQuery"; "SearchResults"; "Document" ]
+    |> description """ 
+    """
+    |> document
+
+[<Tests>]
+let PostIndexSearchDocumentation() = 
+    resource "Search" "post-index-search"
+    |> request "post" "{indexName}/search/"
+    |> examples [ "post-index-search-1" ]
+    |> description """ 
+Search for documents in an index.
+    """
+    |> document

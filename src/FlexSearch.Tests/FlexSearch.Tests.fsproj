@@ -287,6 +287,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="x86\SQLite.Interop.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="x64\SQLite.Interop.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="BenchmarkTests.fs" />
@@ -301,15 +307,10 @@
     <Compile Include="PersistanceStoreTests.fs" />
     <Compile Include="ValidatorsTests.fs" />
     <Compile Include="HttpDocumentation.fs" />
+    <Compile Include="HttpTests.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="x86\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="x64\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
