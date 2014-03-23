@@ -306,11 +306,11 @@ module Index =
                 let (targetIndex, documentTemplate) = 
                     updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
                 flexIndex.Shards.[targetIndex]
-                    .TrackingIndexWriter.updateDocument(new Term("id", documentId), documentTemplate.Document) |> ignore
+                    .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, documentId), documentTemplate.Document) |> ignore
                 return! Choice1Of2()
             | Delete(documentId) -> 
                 let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length - 1
-                flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term("id", documentId)) |> ignore
+                flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) |> ignore
                 return! Choice1Of2()
             | BulkDeleteByIndexName -> 
                 flexIndex.Shards |> Array.iter (fun shard -> shard.TrackingIndexWriter.deleteAll() |> ignore)
