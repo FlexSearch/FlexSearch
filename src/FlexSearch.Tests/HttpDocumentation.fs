@@ -219,7 +219,6 @@ Check if a given index exists or not.
 let DocumentIntroductionDocumentation() = 
     resource "Document" "document-introduction"
     |> request "introduction" "Document basics"
-    |> dtos [ "Document" ]
     |> description """ 
 
 
@@ -318,7 +317,52 @@ let SearchIntroductionDocumentation() =
     |> request "introduction" "Search basics"
     |> dtos [ "SearchQuery"; "SearchResults"; "Document" ]
     |> description """ 
+
+FlexSearch follows a consistent search dsl to execute all kind of search request. 
+This enables a unified search experience for the developers. Before getting into 
+the various types of search queries supported by FlexSearch we will cover the basic 
+search mechanics.
+
     """
+    |> document
+
+[<Tests>]
+let SearchQueryFormatDocumentation() = 
+    resource "Search" "search-queryformat"
+    |> request "introduction" "Query format"
+    |> description """ 
+
+FlexSearch utilizes custom query format inspired by SQL. This is done to
+reduce the learning curve when moving to FlexSearch as most of the modern day programmers have
+written SQL at some point of time in there life.
+
+The below is the query format:
+    
+    <search_condition> ::= 
+        { [ NOT ] <predicate> | ( <search_condition> ) } 
+        [ { AND | OR } [ NOT ] { <predicate> | ( <search_condition> ) } ] 
+    [ ,...n ] 
+
+    <predicate> ::= <field name> <operator> <values>
+
+    <values> ::= <value>
+                |   <value> <options>
+
+    <value> ::= <single value>
+                | <list values>
+
+    <single value> ::= '<any_search_value>'
+                    | `<any_search_value> <escape> <any_search_value>'
+
+    <escape> ::= \\'
+
+    <list values> = [ <single value> , <single value> , ..n ]
+
+    <options> ::= { <parameter key> : '<parameter value>' , <parameter key> : '<parameter value>', ...n }
+
+The parser implements operator precedence as NOT >> AND >> OR.
+
+"""
     |> document
 
 [<Tests>]

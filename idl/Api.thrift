@@ -512,6 +512,35 @@ The Search profile ``QueryString`` uses a specialized format to pass key value p
 /*
 ## SearchQuery
 
+**Columns** 
+Columns to be returned as a part of search result. Use ‘*’ to return all columns. 
+Specifying no columns returns nothing. Note: You still get id, lastmodified and type column back.
+
+Columns can also be specified as a part of query string by using ``c=field1;field2,..`` etc.
+
+**Count**
+The number of results to be returned.
+
+**OrderBy**
+The field which is used to sort the results. But default the results are 
+ordered by relevance.
+
+**Skip**
+The total number of records to be skipped from the top. Useful for 
+implementing paging.
+
+**QueryString**
+The search query to be executed.
+
+**ReturnFlatResult**
+Return the results as simple json array enabling easy binding to the a grid.
+
+**ReturnScore**
+Return score as a part of search result. In case you are using ``ReturnFlatResult`` then the 
+score will be returned in ``_score`` field.
+
+**SearchProfile**
+Pass the name of the search profile in case of profile based searching.
 ``` java
 */
 struct SearchQuery {
@@ -537,6 +566,9 @@ struct SearchQuery {
 /*
 ## ServerSettings
 
+Represents server settings to be defined in ``conf.json``. These are loaded initially when the server 
+loads.
+
 ``` java
 */
 struct ServerSettings {
@@ -555,6 +587,10 @@ struct ServerSettings {
 // ----------------------------------------------------------------------------
 /*
 ## Document
+
+Represents the result document returned from Search service when ``Returnflatresult`` parameter is set
+to false. This offers more structured result compared to Flat results. This is the only supported output
+when Highlight is used.
 
 ``` java
 */
