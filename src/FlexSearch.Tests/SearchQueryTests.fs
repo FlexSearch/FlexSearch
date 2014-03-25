@@ -185,10 +185,6 @@ id,givenname,surname,cvv2
           { Note = "Searching for 'givenname = ar?n' should return 1 records"
             Input = "givenname like 'ar?n'"
             Output = 1 }
-          { Note = 
-                "Searching for 'givenname = AR?N' should return 0 records as matching is case sensitive and like bypasses analysis"
-            Input = "givenname like 'AR?N'"
-            Output = 0 }
           { Note = "Searching for 'givenname = aron?' should return 1 records"
             Input = "givenname %= 'aron?'"
             Output = 1 }
@@ -199,9 +195,9 @@ id,givenname,surname,cvv2
             Input = "givenname %= 'ar?n'"
             Output = 1 }
           { Note = 
-                "Searching for 'givenname = AR?N' should return 0 records as matching is case sensitive and like bypasses analysis"
+                "Searching for 'givenname = AR?N' should return 1 records as matching is case in-sensitive even though like bypasses analysis"
             Input = "givenname %= 'AR?N'"
-            Output = 0 }
+            Output = 1 }
           { Note = "Searching for 'givenname = [mb]oat' should return 2 records"
             Input = "givenname regex '[mb]oat'"
             Output = 2 } ]

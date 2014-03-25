@@ -489,13 +489,13 @@ module SearchDsl =
                 // special character
                 match values.Count() with
                 | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
-                | 1 -> Choice1Of2(new WildcardQuery(new Term(flexIndexField.FieldName, values.[0])) :> Query)
+                | 1 -> Choice1Of2(new WildcardQuery(new Term(flexIndexField.FieldName, values.[0].ToLowerInvariant())) :> Query)
                 | _ -> 
                     // Generate boolean query
                     let boolQuery = new BooleanQuery()
                     for term in values do
                         boolQuery.add 
-                            (new WildcardQuery(new Term(flexIndexField.FieldName, term)), BooleanClause.Occur.MUST)
+                            (new WildcardQuery(new Term(flexIndexField.FieldName, term.ToLowerInvariant())), BooleanClause.Occur.MUST)
                     Choice1Of2(boolQuery :> Query)
     
     // ----------------------------------------------------------------------------
