@@ -499,7 +499,7 @@ module SearchDsl =
                     Choice1Of2(boolQuery :> Query)
     
     // ----------------------------------------------------------------------------
-    /// Wildcard Query
+    /// Regex Query
     // ---------------------------------------------------------------------------- 
     [<Export(typeof<IFlexQuery>)>]
     [<PartCreationPolicy(CreationPolicy.NonShared)>]
@@ -512,13 +512,13 @@ module SearchDsl =
                 // special character
                 match values.Count() with
                 | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
-                | 1 -> Choice1Of2(new RegexpQuery(new Term(flexIndexField.FieldName, values.[0])) :> Query)
+                | 1 -> Choice1Of2(new RegexpQuery(new Term(flexIndexField.FieldName, values.[0].ToLowerInvariant())) :> Query)
                 | _ -> 
                     // Generate boolean query
                     let boolQuery = new BooleanQuery()
                     for term in values do
                         boolQuery.add 
-                            (new RegexpQuery(new Term(flexIndexField.FieldName, term)), BooleanClause.Occur.MUST)
+                            (new RegexpQuery(new Term(flexIndexField.FieldName, term.ToLowerInvariant())), BooleanClause.Occur.MUST)
                     Choice1Of2(boolQuery :> Query)
     
     // ----------------------------------------------------------------------------
