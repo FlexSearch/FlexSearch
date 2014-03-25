@@ -576,13 +576,20 @@ let IndexDocumentsTest5() =
     |> runAssertions
 
 [<Tests>]
-let SearchTest1() = 
-    let query = new SearchQuery("contact", "firstname = 'Kathy' and lastname = 'Banks'")
-    example "post-index-search-1" "Search document where firstname = 'Kathy' and lastname = 'Banks'"
+let SearchTermQueryTest1() = 
+    example "post-index-search-termquery-1" "Term match query using ``=``"
     |> ofResource "Search"
-    |> withDescription "Refer to test data to verify the result."
-    |> request "POST" "/contact/search"
-    |> withBody (JsonConvert.SerializeObject(query, jsonSettings))
+    |> withDescription """
+The below is the query to match all documents where firstname = 'Kathy' and lastname = 'Banks'
+
+    firstname = 'Kathy' and lastname = 'Banks'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname = 'Kathy' and lastname = 'Banks'"
+}    
+"""
     |> execute
     |> responseStatusEquals HttpStatusCode.OK
     |> responseMatches "RecordsReturned" "1"
@@ -590,4 +597,364 @@ let SearchTest1() =
     |> document
     |> runAssertions
 
+[<Tests>]
+let SearchTermQueryTest2() = 
+    example "post-index-search-termquery-2" "Term match query using ``eq``"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to match all documents where firstname eq 'Kathy' and lastname eq 'Banks'
+
+    firstname eq 'Kathy' and lastname eq 'Banks'
+"""
+    |> request "POST" "/contact/search?c=*"
+    |> withBody """
+{
+  "QueryString": "firstname eq 'Kathy' and lastname eq 'Banks'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "1"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchFuzzyQueryTest1() = 
+    example "post-index-search-fuzzyquery-1" "Fuzzy operator using ``fuzzy``"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is 'Kathy'
+
+    firstname fuzzy 'Kathy'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname fuzzy 'Kathy'"
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseMatches "RecordsReturned" "3"
+    |> responseMatches "TotalAvailable" "3"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchFuzzyQueryTest2() = 
+    example "post-index-search-fuzzyquery-2" "Fuzzy operator using ``~=``"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is 'Kathy'
+
+    firstname ~= 'Kathy'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname ~= 'Kathy'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "3"
+    |> responseContainsHeader "TotalAvailable" "3"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchFuzzyQueryTest3() = 
+    example "post-index-search-fuzzyquery-3" "Fuzzy operator using slop parameter"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is 'Kathy' and slop is 2
+
+    firstname ~= 'Kathy'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname ~= 'Kathy' {slop : '2'}",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "3"
+    |> responseContainsHeader "TotalAvailable" "3"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchPhraseQueryTest1() = 
+    example "post-index-search-phrasequery-1" "Phrase match using ``match`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where description is 'Nunc purus'
+
+    description match 'Nunc purus'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "description match 'Nunc purus'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "4"
+    |> responseContainsHeader "TotalAvailable" "4"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchWildCardQueryTest1() = 
+    example "post-index-search-wildcardquery-1" "Wildcard using ``like`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is like 'Ca*'
+
+    firstname like 'Ca*'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname like 'ca*'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "3"
+    |> responseContainsHeader "TotalAvailable" "3"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchWildCardQueryTest2() = 
+    example "post-index-search-wildcardquery-2" "Wildcard using ``%=`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is like 'Ca*'
+
+    firstname %= 'Ca*'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname %= 'Ca*'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "3"
+    |> responseContainsHeader "TotalAvailable" "3"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchWildCardQueryTest3() = 
+    example "post-index-search-wildcardquery-3" "Wildcard using ``%=`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is like 'Cat?y'. This can
+be used to match one character.
+
+    firstname %= 'Cat?y'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname %= 'Cat?y'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "1"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchRegexQueryTest1() = 
+    example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to fuzzy match all documents where firstname is like '[ck]athy'. This can
+be used to match one character.
+
+    firstname regex '[ck]Athy'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname regex '[ck]Athy'",
+  "ReturnFlatResult": true
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "3"
+    |> responseContainsHeader "TotalAvailable" "3"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchMatchallQueryTest1() = 
+    example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to to match all documents in the index.
+
+    firstname matchall '*'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "firstname matchall '*'",
+  "ReturnFlatResult": true,
+  Count: 1
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "50"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchNumericRangeQueryTest1() = 
+    example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to to match all documents with cvv2 greater than 100 in the index.
+
+    cvv2 > '100'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "cvv2 > '100'",
+  "ReturnFlatResult": true,
+  Count: 1
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "48"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchNumericRangeQueryTest2() = 
+    example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to to match all documents with cvv2 greater than or equal to 200 in the index.
+
+    cvv2 >= '200'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "cvv2 >= '200'",
+  "ReturnFlatResult": true,
+  Count: 1
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "41"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchNumericRangeQueryTest3() = 
+    example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to to match all documents with cvv2 less than 150 in the index.
+
+    cvv2 < '150'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "cvv2 < '150'",
+  "ReturnFlatResult": true,
+  Count: 1
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "7"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchNumericRangeQueryTest4() = 
+    example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to to match all documents with cvv2 less than or equal to 500 in the index.
+
+    cvv2 <= '500'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname"
+    |> withBody """
+{
+  "QueryString": "cvv2 <= '500'",
+  "ReturnFlatResult": true,
+  Count: 1
+}    
+"""
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> responseContainsHeader "RecordsReturned" "1"
+    |> responseContainsHeader "TotalAvailable" "26"
+    |> document
+    |> runAssertions
+
+[<Tests>]
+let SearchHighlightFeatureTest1() = 
+    let query = new SearchQuery("contact", " description = 'Nullam'")
+    let highlight = new List<string>()
+    highlight.Add("description")
+    query.Highlights <- new HighlightOption(highlight)
+    example "post-index-search-highlightfeature-1" "Text highlight basic example"
+    |> ofResource "Search"
+    |> withDescription """
+The below is the query to highlight 'Nullam' is description field.
+
+    description = 'Nullam'
+"""
+    |> request "POST" "/contact/search?c=firstname,lastname,description"
+    |> withBody """
+{
+  "Count": 2,  
+  "Highlights": {
+    "FragmentsToReturn": 2,
+    "HighlightedFields": [
+      "description"
+    ],
+    "PostTag": "</B>",
+    "PreTag": "</B>"
+  },
+  "QueryString": " description = 'Nullam'",
+  }   
+"""    
+    |> execute
+    |> responseStatusEquals HttpStatusCode.OK
+    |> document
+    |> runAssertions
 let testRunHelper() = IndexCreationTest1()

@@ -362,6 +362,164 @@ The below is the query format:
 
 The parser implements operator precedence as NOT >> AND >> OR.
 
+FlexSearch supports a number of query operators, more explanation about these can be accessed
+from the query dropdowns.
+"""
+    |> document
+
+
+[<Tests>]
+let SearchTermQueryDocumentation() = 
+    resource "Search" "search-termquery"
+    |> request "query" "Term match operator"
+    |> examples ["post-index-search-termquery-1" ; "post-index-search-termquery-2"]
+    |> description """ 
+A Query that matches documents containing a term. 
+
+| Parameter      | Default | Type   | Description                                                                                                                                                                                                                                      |
+|----------------|---------|--------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ``clausetype`` | and     | string | In case more than one term is searched then the query is converted into a number of sub-queries and the clausetype operator is used to determine the matching logic. For example an ``and`` clause will match all the terms passed to the query. |
+
+Do not use term query for phrase matches as you might get unexpected results.
+
+    Term match supports both ``=`` and ``eq`` operator.
+"""
+    |> document
+
+
+[<Tests>]
+let SearchFuzzyQueryDocumentation() = 
+    resource "Search" "search-fuzzyquery"
+    |> request "query" "Fuzzy operator"
+    |> examples ["post-index-search-fuzzyquery-1"; "post-index-search-fuzzyquery-2"; "post-index-search-fuzzyquery-3"]
+    |> description """ 
+Implements the fuzzy search query. The similarity measurement is based on the Damerau-Levenshtein (optimal string alignment) algorithm. At most, this query will match terms up to 2 edits. Higher distances, are generally not useful and will match a significant amount of the term dictionary. If you really want this, consider using an n-gram indexing technique (such as the SpellChecker in the suggest module) instead.
+    
+| Parameter        | Default | Type | Description                          |
+|------------------|---------|------|--------------------------------------|
+| ``prefixlength`` | 0       | int  | Length of common (non-fuzzy) prefix. |
+| ``slop``         | 1       | int  | The number of allowed edits          |
+
+
+    Fuzzy supports both ``"fuzzy`` and ``~=`` operator.
+
+"""
+    |> document
+
+
+[<Tests>]
+let SearchPhraseQueryDocumentation() = 
+    resource "Search" "search-phrasequery"
+    |> request "query" "Phrase match operator"
+    |> examples ["post-index-search-phrasequery-1"; ]
+    |> description """ 
+A Query that matches documents containing a particular sequence of terms. A PhraseQuery is built by QueryParser for input like "new york".
+
+| Parameter | Default | Type | Description                 |
+|-----------|---------|------|-----------------------------|
+| ``slop``  | 1       | int  | The number of allowed edits |
+
+
+    Phrase match supports ``"match``.
+
+"""
+    |> document
+
+
+[<Tests>]
+let SearchWildcardQueryDocumentation() = 
+    resource "Search" "search-wildcardquery"
+    |> request "query" "Wildcard operator"
+    |> examples ["post-index-search-wildcardquery-1"; "post-index-search-wildcardquery-2"]
+    |> description """ 
+Implements the wildcard search query. Supported wildcards are \*, which matches 
+any character sequence (including the empty one), and ?, which matches any single 
+character. '\' is the escape character. Note this query can be slow, as it needs 
+to iterate over many terms. In order to prevent extremely slow WildcardQueries, 
+a Wildcard term should not start with the wildcard \*
+
+```
+Phrase match supports `like` and `%=` operators.
+```
+
+```
+Like query does not go through analysis phase as the analyzer would remove the special characters. This 
+will convert the input to lowercase before comparison.
+```
+"""
+    |> document
+
+[<Tests>]
+let SearchRegexQueryDocumentation() = 
+    resource "Search" "search-regexquery"
+    |> request "query" "Regex operator"
+    |> examples ["post-index-search-regexquery-1";]
+    |> description """ 
+A fast regular expression query based on the org.apache.lucene.util.automaton package.
+Comparisons are fast
+
+The term dictionary is enumerated in an intelligent way, to avoid comparisons. See AutomatonQuery for more details.
+The supported syntax is documented in the RegExp class. Note this might be different than other regular expression 
+implementations. For some alternatives with different syntax, look under the sandbox.
+
+Note this query can be slow, as it needs to iterate over many terms. In order to prevent extremely slow RegexpQueries, a Regexp term should not start with the expression .*
+
+
+
+```
+Regex supports `regex` operator.
+```
+
+```
+Regex query does not go through analysis phase as the analyzer would remove the special characters. This 
+will convert the input to lowercase before comparison.
+```
+"""
+    |> document
+
+[<Tests>]
+let SearchMatchAllQueryDocumentation() = 
+    resource "Search" "search-matchallquery"
+    |> request "query" "Matchall operator"
+    |> examples ["post-index-search-matchallquery-1";]
+    |> description """ 
+A query that matches all documents. It is a useful query to iterate over all documents in an index.
+
+```
+Matchall supports `matchall` operator.
+```
+
+"""
+    |> document
+
+[<Tests>]
+let SearchNumericRangeQueryDocumentation() = 
+    resource "Search" "search-numericrangequery"
+    |> request "query" "Numeric range operators"
+    |> examples ["post-index-search-numericrangequery-1";"post-index-search-numericrangequery-2";"post-index-search-numericrangequery-3";"post-index-search-numericrangequery-4"]
+    |> description """ 
+A Query that matches numeric values within a specified range. To use this, you must first index the numeric values using Int. DateTime, Date or Double. 
+
+```
+Range supports '>', '>=', '<' and '<='  operators.
+```
+"""
+    |> document
+
+[<Tests>]
+let SearchHighlightFeatureDocumentation() = 
+    resource "Search" "search-highlightfeature"
+    |> request "feature" "Text Highlighting"
+    |> examples ["post-index-search-highlightfeature-1"]
+    |> description """ 
+FlexSearch supports text highlighting across all query types provided correct highlighting options are set in 
+the request query. Text highlighting is supported only for ``Highlight`` and ``Custom`` field types.
+
+PreTag and PostTag can be specified and the returned result will contain the matched text between pre and post
+tags. This is helpful in case the results are to be expressed in a web page.
+
+    `returnFlatResults` should be set to false in order to get highlight results.
+
 """
     |> document
 

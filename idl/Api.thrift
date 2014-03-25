@@ -513,27 +513,34 @@ The Search profile ``QueryString`` uses a specialized format to pass key value p
 ## SearchQuery
 
 **Columns** 
-Columns to be returned as a part of search result. Use ‘*’ to return all columns. 
+Columns to be returned as a part of search result. Use ``*`` to return all columns. 
 Specifying no columns returns nothing. Note: You still get id, lastmodified and type column back.
 
 Columns can also be specified as a part of query string by using ``c=field1;field2,..`` etc.
 
+Note
+	The format used by ``c`` and ``Columns`` is different. One uses a set of ``,`` separated fields
+	while the other uses a List of string. The reason for having two different representation is
+	is due to the fact that one allows easy option to add fields programatically while the other
+	is easy for use with JavaScript.
+	
 **Count**
-The number of results to be returned.
+The number of results to be returned. Can also be passed as a part of query string as ``count``.
 
 **OrderBy**
 The field which is used to sort the results. But default the results are 
-ordered by relevance.
+ordered by relevance.  Can also be passed as a part of query string as ``orderby``.
 
 **Skip**
 The total number of records to be skipped from the top. Useful for 
-implementing paging.
+implementing paging.  Can also be passed as a part of query string as ``skip``.
 
 **QueryString**
-The search query to be executed.
+The search query to be executed.  Can also be passed as a part of query string as ``q``.
 
 **ReturnFlatResult**
 Return the results as simple json array enabling easy binding to the a grid.
+ Can also be passed as a part of query string as ``returnflatresult``.
 
 **ReturnScore**
 Return score as a part of search result. In case you are using ``ReturnFlatResult`` then the 
