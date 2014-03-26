@@ -11,7 +11,7 @@
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Analysis
+namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Core
@@ -42,6 +42,7 @@ open System.Linq
 // Contains all predefined filters. The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------                        
+[<AutoOpen>]
 module Filters =
     
     // ----------------------------------------------------------------------------
@@ -52,7 +53,7 @@ module Filters =
     [<ExportMetadata("Name", "AsciiFoldingFilter")>]
     type AsciiFoldingFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters: IDictionary<string,string>, resourceLoader: IResourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new ASCIIFoldingFilter(ts) :> TokenStream
 
@@ -65,7 +66,7 @@ module Filters =
     [<ExportMetadata("Name", "StandardFilter")>]
     type StandardFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters: IDictionary<string,string>, resourceLoader: IResourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new StandardFilter(Constants.LuceneVersion, ts) :> TokenStream
 
@@ -79,7 +80,7 @@ module Filters =
     type BeiderMorseFilterFactory() =
         let mutable phoneticEngine = null
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = 
+            member this.Initialize(parameters: IDictionary<string,string>, resourceLoader: IResourceLoader) = 
                 let nametype =
                     match parameters.TryGetValue("nametype") with
                     | (true, a) -> 
@@ -113,7 +114,7 @@ module Filters =
     [<ExportMetadata("Name", "CapitalizationFilter")>]
     type CapitalizationFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new CapitalizationFilter(ts) :> TokenStream
 
@@ -127,7 +128,7 @@ module Filters =
     type Caverphone2FilterFactory() =
         let caverphone = new Caverphone2()
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new PhoneticFilter(ts, caverphone, false) :> TokenStream
 
@@ -141,7 +142,7 @@ module Filters =
     type MetaphoneFilterFactory() =
         let metaphone = new Metaphone()
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new PhoneticFilter(ts, metaphone, false) :> TokenStream
 
@@ -154,7 +155,7 @@ module Filters =
     [<ExportMetadata("Name", "DoubleMetaphoneFilter")>]
     type DoubleMetaphoneFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new DoubleMetaphoneFilter(ts, 4, false) :> TokenStream
 
@@ -168,7 +169,7 @@ module Filters =
     type RefinedSoundexFilterFactory() =
         let refinedSoundex = new RefinedSoundex()
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new PhoneticFilter(ts, refinedSoundex, false) :> TokenStream
 
@@ -182,7 +183,7 @@ module Filters =
     type SoundexFilterFactory() =
         let soundex = new Soundex()
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new PhoneticFilter(ts, soundex, false) :> TokenStream
 
@@ -196,7 +197,7 @@ module Filters =
     type KeepWordsFilterFactory() =
         let keepWords: CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true) 
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) =
+            member this.Initialize(parameters, resourceLoader) =
                 let fileName = Helpers.KeyExists("filename", parameters)    
                 resourceLoader.LoadResourceAsList(fileName)
                 |> Seq.iter(fun x -> keepWords.Add(x))
@@ -215,7 +216,7 @@ module Filters =
         let mutable min = 0
         let mutable max = 0
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) =
+            member this.Initialize(parameters, resourceLoader) =
                 min <- Helpers.ParseValueAsInteger("min", parameters)    
                 max <- Helpers.ParseValueAsInteger("max", parameters)
                            
@@ -231,7 +232,7 @@ module Filters =
     [<ExportMetadata("Name", "LowerCaseFilter")>]
     type LowerCaseFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new LowerCaseFilter(Constants.LuceneVersion, ts) :> TokenStream
 
@@ -247,7 +248,7 @@ module Filters =
         let mutable replaceText : string = ""
          
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) =
+            member this.Initialize(parameters, resourceLoader) =
                 pattern <- Pattern.compile(Helpers.KeyExists("pattern", parameters))                
                 replaceText <- Helpers.KeyExists("replacementtext", parameters)
                     
@@ -263,7 +264,7 @@ module Filters =
     [<ExportMetadata("Name", "RemoveDuplicatesTokenFilter")>]
     type RemoveDuplicatesTokenFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new RemoveDuplicatesTokenFilter(ts) :> TokenStream
 
@@ -276,7 +277,7 @@ module Filters =
     [<ExportMetadata("Name", "ReverseStringFilter")>]
     type ReverseStringFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new ReverseStringFilter(Constants.LuceneVersion, ts) :> TokenStream
 
@@ -290,7 +291,7 @@ module Filters =
     type StopFilterFactory() =
         let stopWords: CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true) 
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) =
+            member this.Initialize(parameters, resourceLoader) =
                 let fileName = Helpers.KeyExists("filename", parameters)      
                 resourceLoader.LoadResourceAsList(fileName)
                 |> Seq.iter(fun x -> stopWords.Add(x))
@@ -308,7 +309,7 @@ module Filters =
     type SynonymFilter() =
         let mutable map: SynonymMap = null
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) =
+            member this.Initialize(parameters, resourceLoader) =
                 let fileName = Helpers.KeyExists("filename", parameters) 
                 let builder = new SynonymMap.Builder(false)
                 resourceLoader.LoadResourceAsMap(fileName)
@@ -331,7 +332,7 @@ module Filters =
     [<ExportMetadata("Name", "TrimFilter")>]
     type TrimFilterFactory() =
         interface IFlexFilterFactory with
-            member this.Initialize(parameters: Dictionary<string,string>, resourceLoader: IResourceLoader) = ()
+            member this.Initialize(parameters, resourceLoader) = ()
             member this.Create(ts: TokenStream) =
                 new TrimFilter(Constants.LuceneVersion, ts) :> TokenStream   
                 

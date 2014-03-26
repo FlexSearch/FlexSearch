@@ -15,7 +15,7 @@ namespace FlexSearch.Core
 
 open FlexSearch.Utility
 open FlexSearch.Api
-
+open FlexSearch.Api.Message
 open java.io
 open java.util
 
@@ -26,7 +26,6 @@ open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.codecs
 open org.apache.lucene.codecs.lucene42
 open org.apache.lucene.document
-open org.apache.lucene.facet.search
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
@@ -40,23 +39,39 @@ open System.Text.RegularExpressions
 open System.Threading
 open System.Linq       
 
-type ServerSettings =
-    {
-        LuceneVersion   :   org.apache.lucene.util.Version
-        HttpPort        :   int
-        TcpPort         :   int
-        DataFolder      :   string
-        PluginFolder    :   string
-        ConfFolder      :   string
-        NodeName        :   string
-        NodeRole        :   NodeRole
-        MasterNode      :   System.Net.IPAddress
-    }
-
 
 // ----------------------------------------------------------------------------
 // Contains all the indexing related datatype definitions 
 // ----------------------------------------------------------------------------
+/// <summary>
+/// Represents the Values which can be used in the querystring
+/// </summary>
+type Value = 
+    | SingleValue of string
+    | ValueList of string list
+        
+    member this.GetValueAsList() = 
+        match this with
+        | SingleValue(v) -> [ v ]
+        | ValueList(v) -> v
+        
+    member this.GetValueAsArray() = 
+        match this with
+        | SingleValue(v) -> 
+            if String.IsNullOrWhiteSpace(v) then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            else Choice1Of2([| v |])
+        | ValueList(v) -> 
+            if v.Length = 0 then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            else Choice1Of2(v.ToArray())
+    
+/// <summary>
+/// Acceptable Predicates for a query
+/// </summary>
+type Predicate = 
+    | NotPredicate of Predicate
+    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Map<string, string> option
+    | OrPredidate of Lhs : Predicate * Rhs : Predicate
+    | AndPredidate of Lhs : Predicate * Rhs : Predicate
 
 // Represents details about field storage related option
 type FieldStoreInformation = 
@@ -149,12 +164,12 @@ type FlexField =
     }
 
 
-// All the valid states possible for an index
-type IndexState =
-    | Opening
-    | Online
-    | Offline
-    | Closing
+//// All the valid states possible for an index
+//type IndexState =
+//    | Opening
+//    | Online
+//    | Offline
+//    | Closing
 
 
 // ----------------------------------------------------------------------------
@@ -162,6 +177,7 @@ type IndexState =
 // ----------------------------------------------------------------------------
 type ScriptsManager = 
     {
+        ComputedFieldScripts        :   Dictionary<string, (IReadOnlyDictionary<string, string> -> string)>
         ProfileSelectorScripts      :   Dictionary<string, (IReadOnlyDictionary<string, string> -> string)>
         CustomScoringScripts        :   Dictionary<string, (IReadOnlyDictionary<string, string> * double -> double)>
     }
@@ -174,10 +190,11 @@ type FlexIndexSetting =
         SearchAnalyzer          :   PerFieldAnalyzerWrapper
         Fields                  :   FlexField[]
         FieldsLookup            :   Dictionary<string, FlexField>
-        SearchProfiles          :   Dictionary<string, SearchQuery>
-        ScriptsManager          :   ScriptsManager   
-        IndexConfig             :   IndexConfiguration
+        SearchProfiles          :   Dictionary<string, Predicate * SearchQuery>
+        ScriptsManager          :   ScriptsManager 
+        IndexConfiguration      :   IndexConfiguration
         BaseFolder              :   string
+        ShardConfiguration      :   ShardConfiguration
     }
     
 
@@ -244,13 +261,13 @@ type IndexCommand =
     | Delete of id: string                     
     
     /// Optimistic concurrency controlled create of a document
-    | OptimisticCreate of id: string * fields: Dictionary<string,string>
+    //| OptimisticCreate of id: string * fields: Dictionary<string,string>
     
     /// Optimistic concurrency controlled update of a document
     | OptimisticUpdate of id: string * fields: Dictionary<string,string> * version: int
     
     /// Optimistic concurrency controlled delete of a document
-    | OptimisticDelete of id: string * version: int
+    //| OptimisticDelete of id: string * version: int
     
     /// Bulk delete all the documents in a index
     | BulkDeleteByIndexName               
@@ -259,10 +276,9 @@ type IndexCommand =
     | Commit                              
     
 
-type IndexQuery = 
-    | SearchProfileQuery of SearchProfileQuery
-    | SearchQuery of SearchQuery
-
+//type IndexQuery = 
+//    //| SearchProfileQuery of SearchProfileQuery
+//    | SearchQuery of SearchQuery
 
 /// Message used by cluster for intra cluster communication
 type CommunicationMessage =

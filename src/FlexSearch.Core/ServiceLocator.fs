@@ -8,32 +8,19 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
 
 /// Even though service locator is an anti pattern, after experimenting with DI and other things 
 /// this seems like a more natrual fit for f#
-
 // All the services exposed here are singleton across the application with no state. 
 // Note: This will not affect unit testing when simuating multiple nodes as these services are
 // same across all the nodes and don't have any node specific functionality
- 
-module ServiceLocator =
+[<RequireQualifiedAccess>]
+module ServiceLocator = 
+    open FlexSearch.Core
+    open FlexSearch.Core.State
     open System.Collections.Generic
-    open  System.Diagnostics.Tracing
-
+    
     let mutable FactoryCollection : IFactoryCollection = Unchecked.defaultof<_>
     let mutable SettingsBuilder : ISettingsBuilder = Unchecked.defaultof<_>
-    let mutable HttpModule : Dictionary<string, IHttpModule> = Unchecked.defaultof<_>
-
-    
-    type Logger() as self =
-        inherit EventSource()
-            
-            [<Event(1, Level = EventLevel.Informational)>]
-            member this.ApplicationStarted() = self.WriteEvent(1)
-
-    
-    let EventLogger = new Logger()     
+    let mutable HttpModule : Dictionary<string, HttpModuleBase> = Unchecked.defaultof<_>

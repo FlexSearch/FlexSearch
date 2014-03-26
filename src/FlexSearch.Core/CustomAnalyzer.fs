@@ -9,7 +9,7 @@
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Analysis
+namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Core.Interface

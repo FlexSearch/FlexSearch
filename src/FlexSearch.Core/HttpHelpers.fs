@@ -8,153 +8,143 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
 
-module HttpHelpers =
+[<AutoOpen>]
+module HttpHelpers = 
+    open FlexSearch
+    open FlexSearch.Api
+    open FlexSearch.Api.Message
+    open FlexSearch.Core
+    open FlexSearch.Utility
+    open Microsoft.Owin
+    open Newtonsoft.Json
+    open Newtonsoft.Json.Converters
+    open ProtoBuf
     open System
+    open System.Collections.Concurrent
+    open System.IO
+    open System.Linq
     open System.Net
     open System.Text
     open System.Threading
-    open FlexSearch.Core
-    open FlexSearch
-    open FlexSearch.Api
-    open Newtonsoft.Json
-    open System.Collections.Concurrent
-    open ProtoBuf
-    open System.IO
-    open Newtonsoft.Json
-
-    type HttpResponseError =
-        {
-            DeveloperMessage : string
-            UserMessage : string
-            ErrorCode : int
-        }
-
+    
+    let jsonSettings = new JsonSerializerSettings()
+    
+    jsonSettings.Converters.Add(new StringEnumConverter())
     
     /// Helper method to serialize cluster messages
-    let protoSerialize (message: 'a) =
+    let protoSerialize (message : 'a) = 
         use stream = new MemoryStream()
         Serializer.Serialize(stream, message)
-        stream.GetBuffer()
+        stream.ToArray()
     
-
     /// Helper method to deserialize cluster messages
-    let protoDeserialize<'T> (message: byte[]) =
+    let protoDeserialize<'T> (message : byte []) = 
         use stream = new MemoryStream(message)
         Serializer.Deserialize<'T>(stream)
-     
+    
+    /// Get request format from the request object
+    /// Defaults to json
+    let private getRequestFormat (request : IOwinRequest)  =
+        if String.IsNullOrWhiteSpace(request.ContentType) then 
+            "application/json"
+        else request.ContentType
+
+    /// Get response format from the owin context
+    /// Defaults to json
+    let private getResponseFormat (owin : IOwinContext) = 
+        if owin.Request.Accept = null then 
+            "application/json"
+        else if owin.Request.Accept = "*/*" then
+            "application/json"
+        else if owin.Request.Accept.Contains(",") then 
+            owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
+        else owin.Request.Accept
 
     /// Write http response
-    let writeResponse (statusCode: System.Net.HttpStatusCode) (res: obj) (request: HttpListenerRequest) (response: HttpListenerResponse) =
-        let matchType format res =
+    let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
+        let matchType format res = 
             match format with
-            | "text/json"
-            | "application/json" ->
-                response.ContentType <- "text/json" 
-                let result = JsonConvert.SerializeObject(res)
-                Some(Encoding.UTF8.GetBytes(result))
-            | "application/x-protobuf" 
-            | "application/octet-stream" ->
-                response.ContentType <- "application/x-protobuf"
-                Some(protoSerialize(res))
+            | "text/json" | "application/json" | "json" -> 
+                owin.Response.ContentType <- "text/json"
+                match owin.Request.Query.Get("callback") with
+                | null -> 
+                    let result = JsonConvert.SerializeObject(res, jsonSettings)
+                    Some(Encoding.UTF8.GetBytes(result))
+                | fname -> 
+                    let result = sprintf "%s(%s);" fname (JsonConvert.SerializeObject(res, jsonSettings))
+                    Some(Encoding.UTF8.GetBytes(result))
+            | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
+                owin.Response.ContentType <- "application/x-protobuf"
+                Some(protoSerialize (res))
             | _ -> None
-
-        let result =
-            if request.AcceptTypes = null then
-                matchType request.ContentType res
-            else
-                matchType request.AcceptTypes.[0] res
-        
-        response.StatusCode <- int statusCode
-        match result with
-        | None -> 
-            response.StatusCode <- int HttpStatusCode.NotAcceptable
-        | Some(x) -> 
-            response.ContentLength64 <- int64 x.Length 
-            response.OutputStream.Write(x, 0, x.Length)   
-        
-        response.Close()
-
-
+        owin.Response.StatusCode <- int statusCode
+        if response <> Unchecked.defaultof<_> then 
+            let format = getResponseFormat owin
+            let result = matchType format response   
+            match result with
+            | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
+            | Some(x) -> await (owin.Response.WriteAsync(x))
+    
     /// Write http response
-    let getRequestBody<'T> (request: HttpListenerRequest) =
-        if request.HasEntityBody then
-            match request.ContentType with
-            | "text/json"
-            | "application/json" -> 
-                let body =
-                    use reader = new System.IO.StreamReader(request.InputStream, request.ContentEncoding)
+    let getRequestBody<'T when 'T : null> (request : IOwinRequest) = 
+        let contentType = getRequestFormat request
+        if request.Body.CanRead then 
+            match contentType with
+            | "text/json" | "application/json" | "application/json; charset=utf-8" | "application/json;charset=utf-8" | "json" -> 
+                let body = 
+                    use reader = new System.IO.StreamReader(request.Body)
                     reader.ReadToEnd()
-                try
-                    let result = JsonConvert.DeserializeObject<'T>(body)
-                    Choice1Of2(result)
-                with
-                    | ex -> 
-                        Choice2Of2({ DeveloperMessage = ex.Message; UserMessage = "The server is unable to parse the request body."; ErrorCode = 1004})
-            | "application/x-protobuf" 
-            | "application/octet-stream" -> 
-                try
-                    Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.InputStream))
-                with
-                    | ex -> Choice2Of2({ DeveloperMessage = ex.Message; UserMessage = "The server is unable to parse the request body."; ErrorCode = 1004})
-            | _ -> Choice2Of2({ DeveloperMessage = "Unsupported content-type."; UserMessage = "Unsupported content-type."; ErrorCode = 1004})
-        else
-            Choice2Of2({ DeveloperMessage = "No body defined."; UserMessage = "No body defined."; ErrorCode = 1004})
-              
-                
-
-    let (|GET|_|) (value: string) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "GET" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let (|POST|_|) (value) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "POST" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let (|PUT|_|) (value) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "PUT" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let (|DELETE|_|) (value) (request: System.Net.HttpListenerRequest) = 
-        if request.HttpMethod = "DELETE" && request.Url.Segments.Length >= 2 && (value = "*" || request.Url.Segments.[2] = value) then               
-            Some(value)
-        else
-            None
-
-    let OK (value : obj) (request: System.Net.HttpListenerRequest) (response: System.Net.HttpListenerResponse) =
-        writeResponse HttpStatusCode.OK value request response
-
-    let BAD_REQUEST (error : HttpResponseError) (request: System.Net.HttpListenerRequest) (response: System.Net.HttpListenerResponse) =
-        writeResponse HttpStatusCode.OK error request response
-        
-            
-    let indexShouldBeOffline =
-        {
-            DeveloperMessage = "Index should be made offline before attempting to update index settings."
-            UserMessage = "Index should be made offline before attempting the operation."
-            ErrorCode = 1001
-        }
-
-    let indexDoesNotExist =
-        {
-            DeveloperMessage = "The requested index does not exist."
-            UserMessage = "The requested index does not exist."
-            ErrorCode = 1001
-        } 
-
-    let indexAlreadyExist =
-        {
-            DeveloperMessage = "The requested index already exist."
-            UserMessage = "The requested index already exists."
-            ErrorCode = 1001
-        } 
+                if String.IsNullOrWhiteSpace(body) <> true then 
+                    try 
+                        match JsonConvert.DeserializeObject<'T>(body) with
+                        | null -> 
+                            Choice2Of2
+                                (OperationMessage.WithDeveloperMessage
+                                     (MessageConstants.HTTP_UNABLE_TO_PARSE, "No body is defined."))
+                        | result -> Choice1Of2(result)
+                    with ex -> 
+                        Choice2Of2
+                            (OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
+                else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
+            | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
+                try 
+                    Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
+                with ex -> 
+                    Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
+            | _ -> Choice2Of2(MessageConstants.HTTP_UNSUPPORTED_CONTENT_TYPE)
+        else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
+    
+    let OK (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.OK value owin
+    let BAD_REQUEST (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.BadRequest value owin
+    
+    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> value
+    
+    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Int32.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue
+    
+    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Boolean.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue
+    
+    let inline checkIdPresent (owin : IOwinContext) = 
+        if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
+        else None
+    
+    let responseProcessor (f : Choice<'T, 'U>) success failure (owin : IOwinContext) = 
+        match f with
+        | Choice1Of2(r) -> success r owin
+        | Choice2Of2(r) -> failure r owin

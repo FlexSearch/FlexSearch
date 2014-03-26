@@ -14,8 +14,10 @@ namespace FlexSearch.Core
 // ----------------------------------------------------------------------------
 
 open FlexSearch.Api
+open FlexSearch.Api.Message
 open FlexSearch.Utility
 open FlexSearch.Core
+open FlexSearch.Api.Service
 
 open java.io
 open java.util
@@ -27,7 +29,6 @@ open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.codecs
 open org.apache.lucene.codecs.lucene42
 open org.apache.lucene.document
-open org.apache.lucene.facet.search
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
@@ -63,15 +64,16 @@ module Interface =
         abstract member Start   :   unit -> unit
         abstract member Stop    :   unit -> unit
     
-    type IConnectionPool<'T> =
-        abstract member PoolSize    :   int
-        abstract member TryExecute  :   int -> ('T -> unit) -> 'T
-
+    type IConnectionPool =
+        abstract member PoolSize            :   int
+        abstract member Initialize          :   unit -> bool
+        abstract member TryExecute          :   (FlexSearchService.Iface -> unit) -> bool
+        //abstract member TryExecuteOneWay    :   (FlexSearchService.Iface -> unit) -> bool
 
     type ISessionServer =
         inherit IServer
         abstract member SessionCount        :   unit -> int
-        abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
+        //abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
 
 
     // ---------------------------------------------------------------------------- 
@@ -83,7 +85,7 @@ module Interface =
         abstract member GetAll<'T>  :   unit -> IEnumerable<'T>
         abstract member Get<'T>     :   string -> 'T option
         abstract member Put<'T>     :   string -> 'T -> bool
-  
+        abstract member Delete<'T>  :   string -> bool
 
     // ---------------------------------------------------------------------------- 
     /// General Interface to offload all resource loading resposibilities. This will
@@ -111,17 +113,17 @@ module Interface =
     // ---------------------------------------------------------------------------- 
     /// General fatory Interface for all mef based factories
     // ---------------------------------------------------------------------------- 
-    type IFlexFactory<'a> = 
-        abstract member GetModuleByName     :   string -> 'a option
+    type IFlexFactory<'T> = 
+        abstract member GetModuleByName     :   string -> Choice<'T, OperationMessage>
         abstract member ModuleExists        :   string -> bool
-        abstract member GetAllModules       :   unit -> Dictionary<string, 'a>
+        abstract member GetAllModules       :   unit -> Dictionary<string, 'T>
 
 
     // ---------------------------------------------------------------------------- 
     /// Interface class from which all tokenizers will derive
     // ---------------------------------------------------------------------------- 
     type IFlexTokenizerFactory = 
-        abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
+        abstract member Initialize  :   IDictionary<string,string> * IResourceLoader -> unit
         abstract member Create      :   Reader -> Tokenizer
     
 
@@ -129,7 +131,7 @@ module Interface =
     /// Interface from which all filters will derive
     // ----------------------------------------------------------------------------     
     type IFlexFilterFactory = 
-        abstract member Initialize  :   Dictionary<string,string> * IResourceLoader -> unit
+        abstract member Initialize  :   IDictionary<string,string> * IResourceLoader -> unit
         abstract member Create      :   TokenStream -> TokenStream
 
 
@@ -146,7 +148,7 @@ module Interface =
     /// This will take api objects and tranform them into Flex domain objects
     // ----------------------------------------------------------------------------     
     type ISettingsBuilder =
-        abstract BuildSetting           :   Index -> FlexIndexSetting
+        abstract BuildSetting           :   Index -> Choice<FlexIndexSetting, OperationMessage>
 
 
     // ----------------------------------------------------------------------------     
@@ -156,23 +158,23 @@ module Interface =
     /// difficult
     // ----------------------------------------------------------------------------  
     type IIndexValidator =
-        abstract Validate               :   Index -> Unit
+        abstract Validate               :   Index -> Choice<unit, OperationMessage>
 
 
     // ----------------------------------------------------------------------------     
     /// FlexQuery interface
     // ----------------------------------------------------------------------------     
     type IFlexQuery =
-        // abstract member QueryName   :   unit -> string[]
-        abstract member GetQuery    :   FlexField * SearchCondition -> Option<Query>
+        abstract member QueryName   :   unit -> string[]
+        abstract member GetQuery    :   FlexField * string[] * Map<string,string> option -> Choice<Query, OperationMessage>
 
 
     // ----------------------------------------------------------------------------     
     /// Search service interface
     // ----------------------------------------------------------------------------     
     type ISearchService =
-        abstract member Search          :   FlexIndex * SearchQuery -> SearchResults
-        abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
+        abstract member Search          :   FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
+        //abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
         
 
     // ----------------------------------------------------------------------------     
@@ -194,8 +196,8 @@ module Interface =
     /// Scripting realted interfaces
     // ----------------------------------------------------------------------------   
     // Compile different types of scripts
-    type IScriptFactory<'a> =
-        abstract member CompileScript   :   ScriptProperties -> 'a
+    type IScriptFactory<'T> =
+        abstract member CompileScript   :   ScriptProperties -> Choice<'T, OperationMessage>
     
 
     /// Profile selection scripts used to dynamically select an search profile
@@ -239,20 +241,6 @@ module Interface =
 
 
     // ---------------------------------------------------------------------------- 
-    /// General key value based settings store used across Flex to store all settings
-    /// Do not use this as a cache store
-    // ---------------------------------------------------------------------------- 
-    type IKeyValueStore =
-        abstract member GetIndexSetting     :   string -> Option<Index>
-        abstract member DeleteIndexSetting  :   string -> unit
-        abstract member UpdateIndexSetting  :   Index -> unit
-        abstract member GetAllIndexSettings :   unit -> List<Index>
-        abstract member GetItem<'T>         :   string -> Option<'T>
-        abstract member UpdateItem<'T>      :   string -> 'T -> unit
-        abstract member DeleteItem<'T>      :   string  -> unit
-
-
-    // ---------------------------------------------------------------------------- 
     /// Version cache store used across the system. This helps in resolving 
     /// conflicts arising out of concrrent threads trying to update a lucene document.
     // ---------------------------------------------------------------------------- 
@@ -260,7 +248,7 @@ module Interface =
         abstract member GetVersion     :   string -> string -> Option<int * DateTime>
         abstract member AddVersion     :   string -> string -> int -> bool
         abstract member UpdateVersion  :   string -> string -> int -> DateTime -> int -> bool
-
+        abstract member DeleteVersion  :   string -> string -> bool
 
     // ---------------------------------------------------------------------------- 
     /// Interface which exposes all index related operations
@@ -269,11 +257,11 @@ module Interface =
 
         /// This method is for synchronous index operations. This will return the 
         /// operation status along with a description message.
-        abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<bool * string> -> unit
+        abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
 
         /// This method is for synchronous index operations. This will return the 
         /// operation status along with a description message.
-        abstract member PerformCommand              :   string * IndexCommand -> bool * string
+        abstract member PerformCommand              :   string * IndexCommand -> Choice<unit, OperationMessage>
 
         /// Index queue which is used for async operations. This is useful for
         /// bulk indexing tasks where the producer can send more than one record
@@ -282,34 +270,34 @@ module Interface =
 
         /// Default Search operation. The associated search object will encapsulate
         /// all possible search variations
-        abstract member PerformQuery                :   string * IndexQuery -> SearchResults
+        abstract member PerformQuery                :   string * SearchQuery -> Choice<SearchResults, OperationMessage>
 
         /// Default Search operation. The associated search object will encapsulate
         /// all possible search variations
-        abstract member PerformQueryAsync           :   string * IndexQuery * AsyncReplyChannel<SearchResults> -> unit
+        //abstract member PerformQueryAsync           :   string * SearchQuery * AsyncReplyChannel<SearchResult> -> unit
         
-        abstract member GetIndex                    :   string -> Index
+        abstract member GetIndex                    :   string -> Choice<Index, OperationMessage>
 
-        abstract member AddIndex                    :   Index -> unit
+        abstract member AddIndex                    :   Index -> Choice<unit, OperationMessage>
 
-        abstract member UpdateIndex                 :   Index -> unit
+        abstract member UpdateIndex                 :   Index -> Choice<unit, OperationMessage>
 
-        abstract member OpenIndex                   :   string -> unit
+        abstract member OpenIndex                   :   string -> Choice<unit, OperationMessage>
 
-        abstract member CloseIndex                  :   string -> unit
+        abstract member CloseIndex                  :   string -> Choice<unit, OperationMessage>
 
-        abstract member DeleteIndex                 :   string -> unit
+        abstract member DeleteIndex                 :   string -> Choice<unit, OperationMessage>
 
         abstract member IndexExists                 :   string -> bool
 
-        abstract member IndexStatus                 :   string -> IndexState
+        abstract member IndexStatus                 :   string -> Choice<IndexState, OperationMessage>
 
         /// Method to close all indexing indexing operation. Usually called before
         /// a server shutdown.
         abstract member ShutDown                    :   unit -> bool
 
 
-    open SuperWebSocket
+    //open SuperWebSocket
 
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
@@ -319,18 +307,12 @@ module Interface =
         abstract member HttpServer          :   IServer
         //abstract member 
         abstract member ActiveConnections   :   ConcurrentDictionary<string, string>
-        abstract member IncomingSessions    :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
-        abstract member OutgoingConnections :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
+        //abstract member IncomingSessions    :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
+        //abstract member OutgoingConnections :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
 
     
     type ISocketClient =
         abstract member Open        :   unit -> unit
         abstract member Send        :   byte[] -> unit
         abstract member Connected   :   unit -> bool
-
-
-    // ----------------------------------------------------------------------------     
-    /// Http module to handle to incoming requests
-    // ----------------------------------------------------------------------------     
-    type IHttpModule =
-        abstract Process    :   System.Net.HttpListenerRequest -> System.Net.HttpListenerResponse -> NodeState -> unit        
+    

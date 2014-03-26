@@ -45,7 +45,7 @@ local.properties
 
 [Dd]ebug/
 [Rr]elease/
-x64/
+# x64/
 build/
 build-test/
 deploy/
@@ -217,4 +217,5 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
-/idl/gen-csharp
+#/idl/gen-csharp
+build-debug

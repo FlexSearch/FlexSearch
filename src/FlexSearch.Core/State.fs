@@ -8,33 +8,47 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
+namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
-namespace FlexSearch.Core.Server
-// ----------------------------------------------------------------------------
-
+[<AutoOpen>]
 module State = 
-    open FlexSearch.Core
-    open FlexSearch.Core.Interface
-    open System.Collections.Immutable
-    open SuperWebSocket
     open FlexSearch.Api
-
+    open FlexSearch.Api.Message
+    open FlexSearch.Core
+    open FlexSearch.Core.HttpHelpers
+    open FlexSearch.Core.Interface
+    open Microsoft.Owin
+    open Owin
+    open System.Collections.Concurrent
+    open System.Net
+    
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
-    type NodeState =
-        {
-            PersistanceStore    :   IPersistanceStore
-            ServerSettings      :   ServerSettings
-            HttpConnections     :   ImmutableDictionary<string, System.Net.Http.HttpClient>
-            IncomingSessions    :   ImmutableDictionary<string, WebSocketSession>
-            OutgoingConnections :   ImmutableDictionary<string, ISocketClient>
-            Indices             :   ImmutableDictionary<string, Index>
-        }
-        with 
-            member this.IndexExists(indexName: string) = 
-                match this.Indices.TryGetValue(indexName) with
-                | true, x -> Some(x)
-                | _ -> None
-
-
+    type NodeState = 
+        { PersistanceStore : IPersistanceStore
+          ServerSettings : ServerSettings
+          CacheStore : IVersioningCacheStore
+          IndexService : IIndexService
+          SettingsBuilder : ISettingsBuilder }
+    
+    type ServiceRoute = 
+        { RequestType : System.Type
+          RestPath : string
+          Verbs : string
+          Summary : string
+          Notes : string }
+    
+    // ----------------------------------------------------------------------------     
+    /// Http module to handle to incoming requests
+    // ----------------------------------------------------------------------------   
+    [<AbstractClass>]
+    type HttpModuleBase() = 
+        //abstract Routes : unit -> ServiceRoute []
+        abstract Get : string * IOwinContext * NodeState -> unit
+        override this.Get(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Put : string * IOwinContext * NodeState -> unit
+        override this.Put(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Delete : string * IOwinContext * NodeState -> unit
+        override this.Delete(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Post : string * IOwinContext * NodeState -> unit
+        override this.Post(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
