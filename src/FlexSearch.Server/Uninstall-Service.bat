@@ -1,1 +1,2 @@
-﻿FlexSearch.exe uninstall
+﻿:: un-install server
+FlexSearch.exe uninstall

@@ -1,1 +1,2 @@
-﻿FlexSearch.exe install
+﻿:: Install server
+FlexSearch.exe install

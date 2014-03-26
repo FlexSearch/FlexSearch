@@ -577,7 +577,7 @@ let IndexDocumentsTest5() =
 
 [<Tests>]
 let SearchTermQueryTest1() = 
-    example "post-index-search-termquery-1" "Term match query using ``=``"
+    example "post-index-search-termquery-1" "Term search using ``=`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to match all documents where firstname = 'Kathy' and lastname = 'Banks'
@@ -599,7 +599,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
 
 [<Tests>]
 let SearchTermQueryTest2() = 
-    example "post-index-search-termquery-2" "Term match query using ``eq``"
+    example "post-index-search-termquery-2" "Term search using ``eq`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to match all documents where firstname eq 'Kathy' and lastname eq 'Banks'
@@ -622,7 +622,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
 
 [<Tests>]
 let SearchFuzzyQueryTest1() = 
-    example "post-index-search-fuzzyquery-1" "Fuzzy operator using ``fuzzy``"
+    example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where firstname is 'Kathy'
@@ -644,7 +644,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
 
 [<Tests>]
 let SearchFuzzyQueryTest2() = 
-    example "post-index-search-fuzzyquery-2" "Fuzzy operator using ``~=``"
+    example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where firstname is 'Kathy'
@@ -667,7 +667,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
 
 [<Tests>]
 let SearchFuzzyQueryTest3() = 
-    example "post-index-search-fuzzyquery-3" "Fuzzy operator using slop parameter"
+    example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where firstname is 'Kathy' and slop is 2
@@ -690,7 +690,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
 
 [<Tests>]
 let SearchPhraseQueryTest1() = 
-    example "post-index-search-phrasequery-1" "Phrase match using ``match`` operator"
+    example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where description is 'Nunc purus'
@@ -713,7 +713,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
 
 [<Tests>]
 let SearchWildCardQueryTest1() = 
-    example "post-index-search-wildcardquery-1" "Wildcard using ``like`` operator"
+    example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where firstname is like 'Ca*'
@@ -736,7 +736,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
 
 [<Tests>]
 let SearchWildCardQueryTest2() = 
-    example "post-index-search-wildcardquery-2" "Wildcard using ``%=`` operator"
+    example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where firstname is like 'Ca*'
@@ -759,7 +759,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
 
 [<Tests>]
 let SearchWildCardQueryTest3() = 
-    example "post-index-search-wildcardquery-3" "Wildcard using ``%=`` operator"
+    example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to fuzzy match all documents where firstname is like 'Cat?y'. This can
@@ -931,7 +931,7 @@ let SearchHighlightFeatureTest1() =
     let highlight = new List<string>()
     highlight.Add("description")
     query.Highlights <- new HighlightOption(highlight)
-    example "post-index-search-highlightfeature-1" "Text highlight basic example"
+    example "post-index-search-highlightfeature-1" "Text highlighting basic example"
     |> ofResource "Search"
     |> withDescription """
 The below is the query to highlight 'Nullam' is description field.

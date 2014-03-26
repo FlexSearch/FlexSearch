@@ -101,7 +101,11 @@ let document (result : ResourceDocumentation) =
             else if line.StartsWith("<!---") then inBody <- true
             else 
                 if inBody then output.Add(line)
-    if result.Examples.Count() <> 0 then output.Add("## Usage Examples")
+    if result.Examples.Count() <> 0 then 
+        output.Add("**Usage Examples**")
+        output.Add("")
+        output.Add("[TOC]")
+
     for exampleName in result.Examples do
         let content = 
             File.ReadAllLines
