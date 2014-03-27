@@ -7,22 +7,32 @@ FlexSearch is written in F# & C# 5.0 (.net framework 4.5). It exposes REST, SOAP
 More information is available at http://www.flexsearch.net/
 
 
-**This is a pre-release version and subjected to major changes.** 
+**This is a pre-release version and might introduce breaking changes.** 
 
-There are a number of features which are in progress:
+**Roadmap**
 
-- Optimistic concurrency
-- PerField Postings Format support
-- ~~Proper Http status codes support (Dropping support for SOAP as it is screwing up the REST endpoint). Hopefully once this work is done then the whole API will be very easy to understand.~~
-- Complete documentation and a testing tool
-- Configuration UI
-- ~~Upgrading to F# 3.1 (some specific features are of particular interest)~~
-- ~~Move toward NancyFx~~
-- ~~New SQL like search syntax~~
-- ~~Move towards more F# like code structure. It is too Object oriented at the moment.~~
+Most of the road map is suggestive at the moment and might change depending upon other requirements. The focus is to have a stable bug free core even at the expense of reduced functionality.
 
+- 0.21 is already out which marks the relases of a stable core.
 
-**Update 27/02/2013**
+- 0.22 (To be released)
+  - There are around 400 tests at the moment but there are still few hotspots in the codebase which are not covered through tests. The major goal of this release will be to plug all those gaps and have a 100 percent testable codbase.
+  - More examples: There are around 100 examples in the documentation but a lot more could be done to improve the quality of those examples.
+  - Bug fixes 
+  - Stable API for connector model
+  - SQL and CSV connectors
+  - Add stress tests
+  - Finalize wikipedia based tests
+  - Add FSCheck based random testing
+  - Add analysis service
+  - Create a homepage at the server root to display basic inforamtion. At the moent it just reports FlexSearch with version number.
+  
+- 0.23 (TBR)
+  -   Release duplicate detection studio application (free WPF application)
+  -   Release Background duplicate matching functionality
 
-- A lot of work is already completed in the 0.21 release branch. Everything is coming together and I am hoping for an end of March release of alpha edition. This will not be the distributed version but will have stable web services and a stable core to build upon. 
-- Most of the work to make FlexSearch distributed is also complete but the feature won't be exposed till 0.30 release.
+-   0.25 (TBR)
+  - Freeze all API for version 1.0     
+
+- 1.1 (TBR)
+  - A lot of work is already completed in the 0.21 release branch. Most of the work to make FlexSearch distributed is also complete but the feature won't be exposed till 0.30 release and will slowly be baked into the product after 1.0 release.
