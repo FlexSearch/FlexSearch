@@ -66,6 +66,7 @@ namespace FlexSearch.Api.Message
     public static OperationMessage HTTP_NO_BODY_DEFINED = new OperationMessage();
     public static OperationMessage HTTP_NOT_SUPPORTED = new OperationMessage();
     public static OperationMessage HTTP_URI_ID_NOT_SUPPLIED = new OperationMessage();
+    public static OperationMessage KEY_NOT_FOUND = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -212,6 +213,9 @@ namespace FlexSearch.Api.Message
       HTTP_URI_ID_NOT_SUPPLIED.DeveloperMessage = "The request URI expects an id to be supplied as a part of URI.";
       HTTP_URI_ID_NOT_SUPPLIED.UserMessage = "The request URI expects an id to be supplied as a part of URI.";
       HTTP_URI_ID_NOT_SUPPLIED.ErrorCode = 6004;
+      KEY_NOT_FOUND.DeveloperMessage = "The requested key is not present in the persistences store.";
+      KEY_NOT_FOUND.UserMessage = "The requested key is not present in the persistences store.";
+      KEY_NOT_FOUND.ErrorCode = 7001;
     }
   }
 }

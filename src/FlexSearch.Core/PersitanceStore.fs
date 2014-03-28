@@ -12,6 +12,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
+open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -26,7 +27,7 @@ module Store =
     open System.IO
     open System.Linq
     
-    /// A reusable key value persistance store build on top of sqlite
+    /// A reusable key value persistence store build on top of sql-lite
     type PersistanceStore(path : string, isMemory : bool) = 
         let sqlCreateTable = """
             CREATE TABLE [keyvalue] (
@@ -72,9 +73,9 @@ module Store =
             
             db <- Some(dbConnection)
         
-        member private this.get<'T> (key) = 
+        member private this.get<'T when 'T : equality> (key) = 
             let instanceType = typeof<'T>.FullName
-            if key = "" then None
+            if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
             else 
                 let sql = sprintf "SELECT * FROM keyvalue WHERE type = '%s' AND key = '%s' LIMIT 1" instanceType key
                 let command = new SQLiteCommand(sql, db.Value)
@@ -82,10 +83,11 @@ module Store =
                 let mutable result : 'T = Unchecked.defaultof<'T>
                 while reader.Read() do
                     result <- Newtonsoft.Json.JsonConvert.DeserializeObject<'T>(reader.GetString(2))
-                Some(result)
+                if result <> Unchecked.defaultof<_> then Choice1Of2(result)
+                else Choice2Of2(MessageConstants.KEY_NOT_FOUND)
         
         interface IPersistanceStore with
-            member this.Get<'T>(key) = this.get<'T> (key)
+            member this.Get<'T when 'T : equality>(key : string) = this.get<'T> (key)
             
             member this.GetAll<'T>() = 
                 let sql = sprintf "SELECT * FROM keyvalue WHERE type= '%s'" typeof<'T>.FullName
@@ -98,16 +100,16 @@ module Store =
             
             member this.Delete<'T>(key) = 
                 let instanceType = typeof<'T>.FullName
-                if key = "" then false
+                if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
                 else 
                     let sql = sprintf "DELETE FROM keyvalue WHERE type='%s' AND key='%s'" instanceType key
                     let command = new SQLiteCommand(sql, db.Value)
                     command.ExecuteNonQuery() |> ignore
-                    true
+                    Choice1Of2()
             
             member this.Put<'T> (key) (instance : 'T) = 
                 let instanceType = typeof<'T>.FullName
-                if key = "" then false
+                if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
                 else 
                     let sql = sprintf "SELECT * FROM keyvalue WHERE type='%s' AND key='%s' LIMIT 1" instanceType key
                     let command = new SQLiteCommand(sql, db.Value)
@@ -135,7 +137,5 @@ module Store =
                         command.Parameters.Add("@key", Data.DbType.String).Value <- key
                         command.Parameters.Add("@value", Data.DbType.String).Value <- value
                         command.Parameters.Add("@timestamp", Data.DbType.String).Value <- DateTime.Now.ToString()
-                        try 
-                            command.ExecuteNonQuery() |> ignore
-                        with e -> ()
-                    true
+                        command.ExecuteNonQuery() |> ignore
+                    Choice1Of2()

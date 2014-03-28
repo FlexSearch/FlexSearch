@@ -390,8 +390,8 @@ module Index =
                 match state.IndexStatus.TryGetValue(indexName) with
                 | (true, _) -> 
                     match persistanceStore.Get<Index>(indexName) with
-                    | Some(a) -> Choice1Of2(a)
-                    | None -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+                    | Choice1Of2(a) -> Choice1Of2(a)
+                    | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
                 | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
             
             member this.AddIndex flexIndex = 
@@ -464,9 +464,9 @@ module Index =
                     | _ -> 
                         let! index = state.GetRegisteration(indexName)
                         closeIndex (state, index)
-                        let index' = persistanceStore.Get<Index>(indexName)
-                        index'.Value.Online <- false
-                        persistanceStore.Put indexName index'.Value |> ignore
+                        let! index' = persistanceStore.Get<Index>(indexName)
+                        index'.Online <- false
+                        persistanceStore.Put indexName index' |> ignore
                         Logger.CloseIndex(indexName)
                         return! Choice1Of2()
                 }
@@ -477,11 +477,11 @@ module Index =
                     match status with
                     | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
                     | IndexState.Offline | IndexState.Closing -> 
-                        let index = persistanceStore.Get<Index>(indexName)
-                        let! settings = settingsParser.BuildSetting(index.Value)
+                        let! index = persistanceStore.Get<Index>(indexName)
+                        let! settings = settingsParser.BuildSetting(index)
                         do! addIndex (state, settings)
-                        index.Value.Online <- true
-                        persistanceStore.Put indexName index.Value |> ignore
+                        index.Online <- true
+                        persistanceStore.Put indexName index |> ignore
                         Logger.OpenIndex(indexName)
                         return! Choice1Of2()
                     | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
