@@ -395,3 +395,13 @@ const OperationMessage HTTP_URI_ID_NOT_SUPPLIED =
 		"UserMessage" : "The request URI expects an id to be supplied as a part of URI.", 
 		"ErrorCode": 6004
 	}	
+
+// ----------------------------------------------------------------------------
+//	Persistence store related
+// ----------------------------------------------------------------------------	
+const OperationMessage KEY_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "The requested key is not present in the persistences store.", 
+		"UserMessage" : "The requested key is not present in the persistences store.", 
+		"ErrorCode": 7001
+	}	

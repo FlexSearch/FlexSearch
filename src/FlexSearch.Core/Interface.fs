@@ -45,7 +45,7 @@ open System.Threading
 
 
 // ----------------------------------------------------------------------------
-/// Contains all the flex iterface definitions 
+/// Contains all the flex interface definitions 
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module Interface =
@@ -53,7 +53,7 @@ module Interface =
     /// Interface to represent communication channel 
     type ICommuncationChannel =
         
-        /// One way communcation channel
+        /// One way commutation channel
         abstract member OneWay          :   CommunicationMessage -> bool
 
         /// Two way communication channel
@@ -83,12 +83,12 @@ module Interface =
     type IPersistanceStore =
        // abstract member Settings    :   ServerSettings
         abstract member GetAll<'T>  :   unit -> IEnumerable<'T>
-        abstract member Get<'T>     :   string -> 'T option
-        abstract member Put<'T>     :   string -> 'T -> bool
-        abstract member Delete<'T>  :   string -> bool
+        abstract member Get<'T when 'T : equality>     :   string -> Choice<'T, OperationMessage>
+        abstract member Put<'T>     :   string -> 'T -> Choice<unit, OperationMessage>
+        abstract member Delete<'T>  :   string -> Choice<unit, OperationMessage>
 
     // ---------------------------------------------------------------------------- 
-    /// General Interface to offload all resource loading resposibilities. This will
+    /// General Interface to offload all resource loading responsibilities. This will
     /// be used to parse settings, load text files etc. This will enable easy mocking 
     /// and central management of all such activities
     // ---------------------------------------------------------------------------- 
@@ -111,7 +111,7 @@ module Interface =
         
 
     // ---------------------------------------------------------------------------- 
-    /// General fatory Interface for all mef based factories
+    /// General factory Interface for all mef based factories
     // ---------------------------------------------------------------------------- 
     type IFlexFactory<'T> = 
         abstract member GetModuleByName     :   string -> Choice<'T, OperationMessage>
@@ -145,7 +145,7 @@ module Interface =
 
     // ----------------------------------------------------------------------------     
     /// Flex Setting builder interface
-    /// This will take api objects and tranform them into Flex domain objects
+    /// This will take api objects and transform them into Flex domain objects
     // ----------------------------------------------------------------------------     
     type ISettingsBuilder =
         abstract BuildSetting           :   Index -> Choice<FlexIndexSetting, OperationMessage>
@@ -193,7 +193,7 @@ module Interface =
         abstract member GetCondition    :   Dictionary<string,string> -> string 
     
     // ----------------------------------------------------------------------------     
-    /// Scripting realted interfaces
+    /// Scripting related interfaces
     // ----------------------------------------------------------------------------   
     // Compile different types of scripts
     type IScriptFactory<'T> =
