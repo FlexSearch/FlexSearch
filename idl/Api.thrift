@@ -655,3 +655,8 @@ struct SearchResults {
 struct IndexStatusResponse {
 	1:	required IndexState Status
 }
+
+struct ImporterResponse {
+	1:	optional string JobId
+	2:	optional string Message
+}

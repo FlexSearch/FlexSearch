@@ -39,7 +39,7 @@ module State =
           Notes : string }
     
     // ----------------------------------------------------------------------------     
-    /// Http module to handle to incoming requests
+    /// HTTP module to handle to incoming requests
     // ----------------------------------------------------------------------------   
     [<AbstractClass>]
     type HttpModuleBase() = 
@@ -52,3 +52,12 @@ module State =
         override this.Delete(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
         abstract Post : string * IOwinContext * NodeState -> unit
         override this.Post(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+
+    /// <summary>
+    /// Import handler interface to support
+    /// </summary>
+    type IImportHandler =
+        abstract SupportsBulkIndexing           :   unit -> bool
+        abstract SupportsIncrementalIndexing    :   unit -> bool
+        abstract ProcessBulkRequest             :   (string * IReadableStringCollection) -> unit
+        abstract ProcessIncrementalRequest      :   (string * string * IReadableStringCollection) -> Choice<ImporterResponse, OperationMessage>

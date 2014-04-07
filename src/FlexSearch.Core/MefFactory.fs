@@ -25,14 +25,14 @@ open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous
 
 // ----------------------------------------------------------------------------
-// Contains mef container and other factory implementation
+// Contains MEF container and other factory implementation
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module Factories = 
     /// <summary>
-    /// Mef container which loads all the related plugins
+    /// MEF container which loads all the related plug-ins
     /// </summary>
-    /// <param name="readPluginDirectory">Whether to load plugins from plugin directory</param>
+    /// <param name="readPluginDirectory">Whether to load plug-ins from plug-in directory</param>
     let PluginContainer(readPluginDirectory) = 
         lazy (let aggrCatalog = new AggregateCatalog()
               // An assembly catalog to load information about part from this assembly  
@@ -46,7 +46,7 @@ module Factories =
               new CompositionContainer(aggrCatalog, CompositionOptions.IsThreadSafe))
     
     /// <summary>
-    /// Concerete implementation of IResourceLoader
+    /// Concrete implementation of IResourceLoader
     /// </summary>
     type ResourceLoader() = 
         interface IResourceLoader with
@@ -76,7 +76,7 @@ module Factories =
                 result
     
     /// <summary>
-    /// Concerete implementation of IFlexFactory
+    /// Concrete implementation of IFlexFactory
     /// </summary>
     type FlexFactory<'a>(container : CompositionContainer, moduleType) as self = 
         
@@ -115,15 +115,23 @@ module Factories =
                 modules
     
     /// <summary>
-    /// Loads all the http modules
+    /// Loads all the HTTP modules
     /// </summary>
     let GetHttpModules() = 
         lazy (let httpModule = 
                   new FlexFactory<HttpModuleBase>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<HttpModuleBase>
               httpModule.GetAllModules())
-    
+
     /// <summary>
-    /// Concerete implementation of IFactoryCollection
+    /// Get all import handler modules
+    /// </summary>
+    let GetImportHandlerModules() = 
+        lazy (let importModules = 
+                  new FlexFactory<IImportHandler>(PluginContainer(false).Value, "ImportHandlersModule") :> IFlexFactory<IImportHandler>
+              importModules.GetAllModules())
+                  
+    /// <summary>
+    /// Concrete implementation of IFactoryCollection
     /// </summary>
     type FactoryCollection(container : CompositionContainer) = 
         let filterFactory = new FlexFactory<IFlexFilterFactory>(container, "Filter") :> IFlexFactory<IFlexFilterFactory>

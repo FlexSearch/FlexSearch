@@ -40,6 +40,7 @@ let addDataMemberOrder() =
                 
         File.WriteAllLines(file, targetFile.ToArray())
 
+generateThriftFiles("Connector.thrift")
 generateThriftFiles("Service.thrift")
 generateThriftFiles("Api.thrift")
 generateThriftFiles("Message.thrift")

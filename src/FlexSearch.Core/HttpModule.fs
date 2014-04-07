@@ -19,6 +19,7 @@ open FlexSearch.Utility
 open Microsoft.Owin
 open Newtonsoft.Json
 open Owin
+open System
 open System.Collections.Generic
 open System.ComponentModel
 open System.ComponentModel.Composition
@@ -37,7 +38,7 @@ type IndexModule() =
     override this.Post(indexName, owin, state) = 
         match getRequestBody<Index> (owin.Request) with
         | Choice1Of2(index) -> 
-            // Index name passed in url taskes precedence
+            // Index name passed in URL takes precedence
             index.IndexName <- indexName
             owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
         | Choice2Of2(error) -> 
@@ -53,7 +54,7 @@ type IndexModule() =
     override this.Put(indexName, owin, state) = 
         match getRequestBody<Index> (owin.Request) with
         | Choice1Of2(index) -> 
-            // Index name passed in url taskes precedence
+            // Index name passed in URL takes precedence
             index.IndexName <- indexName
             owin |> responseProcessor (state.IndexService.UpdateIndex(index)) OK BAD_REQUEST
         | Choice2Of2(error) -> owin |> BAD_REQUEST error
@@ -110,7 +111,7 @@ type DocumentModule() =
                     let! fields = getRequestBody<Dictionary<string, string>> (owin.Request)
                     match fields.TryGetValue(Constants.IdField) with
                     | true, _ -> 
-                        // Overide dictionary id with the url id
+                        // Override dictionary id with the URL id
                         fields.[Constants.IdField] <- id
                     | _ -> fields.Add(Constants.IdField, id)
                     return! state.IndexService.PerformCommand(indexName, IndexCommand.Create(id, fields))
@@ -146,7 +147,7 @@ type DocumentModule() =
                     let! fields = getRequestBody<Dictionary<string, string>> (owin.Request)
                     match fields.TryGetValue(Constants.IdField) with
                     | true, _ -> 
-                        // Overide dictinary id with the url id
+                        // Override dictionary id with the URL id
                         fields.[Constants.IdField] <- id
                     | _ -> fields.Add(Constants.IdField, id)
                     return! state.IndexService.PerformCommand(indexName, IndexCommand.Update(id, fields))
@@ -169,7 +170,7 @@ type SearchModule() =
                 match getRequestBody<SearchQuery> (owin.Request) with
                 | Choice1Of2(q) -> q
                 | Choice2Of2(_) -> 
-                    // It is possible that the query is supplied through querystring
+                    // It is possible that the query is supplied through query-string
                     new SearchQuery()
             query.QueryString <- getValueFromQueryString "q" query.QueryString owin
             query.Columns <- match owin.Request.Query.Get("c") with
@@ -260,3 +261,55 @@ type RootModule() =
         await 
             (owin.Response.WriteAsync
                  ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()))
+
+open System.Data
+open System.Data.SqlClient
+open System.IO
+open System.Threading.Tasks.Dataflow
+
+[<Export(typeof<HttpModuleBase>)>]
+[<PartCreationPolicy(CreationPolicy.NonShared)>]
+[<ExportMetadata("Name", "importer")>]
+type ImporterModule() = 
+    inherit HttpModuleBase()
+    let importHandlers = GetImportHandlerModules().Value
+    let incrementalIndexMessage = "Incremental index request completed."
+    let bulkIndexMessage = 
+        "Bulk-index request submitted to the importer module. Please use the provided jobId to query the job status."
+    let processQueueItem (indexName : string, jobId : System.Guid, parameters : IReadableStringCollection) = ()
+    
+    let requestQueue = 
+        let executionBlockOption = new ExecutionDataflowBlockOptions()
+        executionBlockOption.MaxDegreeOfParallelism <- -1
+        executionBlockOption.BoundedCapacity <- 10
+        let queue = new ActionBlock<string * Guid * IReadableStringCollection>(processQueueItem, executionBlockOption)
+        queue
+    
+    let processRequest (indexName, owin, state : NodeState) = 
+        maybe { 
+            match checkIdPresent (owin) with
+            | Some(id) -> 
+                match importHandlers.TryGetValue(id) with
+                | (true, x) -> 
+                    // Check if id is provided if yes then it is a single select query otherwise
+                    // a multi-select query
+                    match owin.Request.Query.Get("id") with
+                    | null -> 
+                        if x.SupportsBulkIndexing() then 
+                            let jobId = Guid.NewGuid()
+                            let job = new Job(jobId.ToString(), JobStatus.Initializing, Message = bulkIndexMessage)
+                            state.PersistanceStore.Put (jobId.ToString()) job |> ignore
+                            await (requestQueue.SendAsync((indexName, jobId, owin.Request.Query)))
+                            return! Choice1Of2
+                                        (new ImporterResponse(JobId = jobId.ToString(), Message = bulkIndexMessage))
+                        else return! Choice2Of2(MessageConstants.IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING)
+                    | y -> 
+                        if x.SupportsIncrementalIndexing() then 
+                            return! x.ProcessIncrementalRequest(indexName, y, owin.Request.Query)
+                        else return! Choice2Of2(MessageConstants.IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING)
+                | _ -> return! Choice2Of2(MessageConstants.IMPORTER_NOT_FOUND)
+            | None -> return! Choice2Of2(MessageConstants.IMPORTER_NOT_FOUND)
+        }
+    
+    override this.Post(indexName, owin, state) = 
+        owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST

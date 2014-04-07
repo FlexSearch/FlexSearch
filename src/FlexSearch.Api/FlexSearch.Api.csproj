@@ -74,6 +74,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\idl\Connector.thrift">
+      <Link>Assets\Connector.thrift</Link>
+    </None>
     <None Include="..\..\idl\Service.thrift">
       <Link>Assets\Service.thrift</Link>
     </None>

@@ -405,3 +405,27 @@ const OperationMessage KEY_NOT_FOUND =
 		"UserMessage" : "The requested key is not present in the persistences store.", 
 		"ErrorCode": 7001
 	}	
+
+// ----------------------------------------------------------------------------
+//	Connectors related
+// ----------------------------------------------------------------------------	
+const OperationMessage IMPORTER_NOT_FOUND = 
+	{
+		"DeveloperMessage" : "The requested importer does not exist.", 
+		"UserMessage" : "The requested importer does not exist.", 
+		"ErrorCode": 8001
+	}
+
+const OperationMessage IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING = 
+	{
+		"DeveloperMessage" : "The requested importer does not support bulk indexing.", 
+		"UserMessage" : "The requested importer does not support bulk indexing", 
+		"ErrorCode": 8002
+	}
+
+const OperationMessage IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING = 
+	{
+		"DeveloperMessage" : "The requested importer does not support incremental indexing.", 
+		"UserMessage" : "The requested importer does not support incremental indexing", 
+		"ErrorCode": 8003
+	}

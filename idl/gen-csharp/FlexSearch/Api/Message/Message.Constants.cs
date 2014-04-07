@@ -67,6 +67,9 @@ namespace FlexSearch.Api.Message
     public static OperationMessage HTTP_NOT_SUPPORTED = new OperationMessage();
     public static OperationMessage HTTP_URI_ID_NOT_SUPPLIED = new OperationMessage();
     public static OperationMessage KEY_NOT_FOUND = new OperationMessage();
+    public static OperationMessage IMPORTER_NOT_FOUND = new OperationMessage();
+    public static OperationMessage IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING = new OperationMessage();
+    public static OperationMessage IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -216,6 +219,15 @@ namespace FlexSearch.Api.Message
       KEY_NOT_FOUND.DeveloperMessage = "The requested key is not present in the persistences store.";
       KEY_NOT_FOUND.UserMessage = "The requested key is not present in the persistences store.";
       KEY_NOT_FOUND.ErrorCode = 7001;
+      IMPORTER_NOT_FOUND.DeveloperMessage = "The requested importer does not exist.";
+      IMPORTER_NOT_FOUND.UserMessage = "The requested importer does not exist.";
+      IMPORTER_NOT_FOUND.ErrorCode = 8001;
+      IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING.DeveloperMessage = "The requested importer does not support bulk indexing.";
+      IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING.UserMessage = "The requested importer does not support bulk indexing";
+      IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING.ErrorCode = 8002;
+      IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING.DeveloperMessage = "The requested importer does not support incremental indexing.";
+      IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING.UserMessage = "The requested importer does not support incremental indexing";
+      IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING.ErrorCode = 8003;
     }
   }
 }
