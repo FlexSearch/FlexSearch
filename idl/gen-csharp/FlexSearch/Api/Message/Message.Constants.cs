@@ -70,6 +70,7 @@ namespace FlexSearch.Api.Message
     public static OperationMessage IMPORTER_NOT_FOUND = new OperationMessage();
     public static OperationMessage IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING = new OperationMessage();
     public static OperationMessage IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING = new OperationMessage();
+    public static OperationMessage JOBID_IS_NOT_FOUND = new OperationMessage();
     static MessageConstants()
     {
       INDEX_NOT_FOUND.DeveloperMessage = "The requested index does not exist.";
@@ -228,6 +229,9 @@ namespace FlexSearch.Api.Message
       IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING.DeveloperMessage = "The requested importer does not support incremental indexing.";
       IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING.UserMessage = "The requested importer does not support incremental indexing";
       IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING.ErrorCode = 8003;
+      JOBID_IS_NOT_FOUND.DeveloperMessage = "The requested job id does not exist.";
+      JOBID_IS_NOT_FOUND.UserMessage = "The requested job id does not exist.";
+      JOBID_IS_NOT_FOUND.ErrorCode = 8004;
     }
   }
 }

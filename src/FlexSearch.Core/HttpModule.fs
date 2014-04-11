@@ -313,3 +313,19 @@ type ImporterModule() =
     
     override this.Post(indexName, owin, state) = 
         owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST
+
+[<Export(typeof<HttpModuleBase>)>]
+[<PartCreationPolicy(CreationPolicy.NonShared)>]
+[<ExportMetadata("Name", "jobs")>]
+type JobModule() = 
+    inherit HttpModuleBase()
+    
+    let processRequest (indexName, owin, state : NodeState) = 
+        maybe { 
+            match checkIdPresent (owin) with
+            | Some(id) -> return! state.PersistanceStore.Get<Job>(id)
+            | None -> return! Choice2Of2(MessageConstants.JOBID_IS_NOT_FOUND)
+        }
+    
+    override this.Post(indexName, owin, state) = 
+        owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST

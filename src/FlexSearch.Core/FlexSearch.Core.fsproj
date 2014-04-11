@@ -287,7 +287,6 @@
     <Compile Include="Constants.fs" />
     <Compile Include="Domain.fs" />
     <Compile Include="Interface.fs" />
-    <Compile Include="SocketServer.fs" />
     <Compile Include="State.fs" />
     <Compile Include="ServiceLocator.fs" />
     <Compile Include="FlexField.fs" />
@@ -307,6 +306,7 @@
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="PersitanceStore.fs" />
     <Compile Include="Server.fs" />
+    <Compile Include="SocketServer.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
