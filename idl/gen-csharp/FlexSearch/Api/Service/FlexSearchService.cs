@@ -21,6 +21,83 @@ namespace FlexSearch.Api.Service
   public partial class FlexSearchService {
     [ServiceContract(Namespace="")]
     public interface Iface {
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      FlexSearch.Api.Index GetIndex(string indexName);
+      #if SILVERLIGHT
+      IAsyncResult Begin_GetIndex(AsyncCallback callback, object state, string indexName);
+      FlexSearch.Api.Index End_GetIndex(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      void UpdateIndex(FlexSearch.Api.Index index);
+      #if SILVERLIGHT
+      IAsyncResult Begin_UpdateIndex(AsyncCallback callback, object state, FlexSearch.Api.Index index);
+      void End_UpdateIndex(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      void DeleteIndex(string indexName);
+      #if SILVERLIGHT
+      IAsyncResult Begin_DeleteIndex(AsyncCallback callback, object state, string indexName);
+      void End_DeleteIndex(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      void CreateIndex(FlexSearch.Api.Index index);
+      #if SILVERLIGHT
+      IAsyncResult Begin_CreateIndex(AsyncCallback callback, object state, FlexSearch.Api.Index index);
+      void End_CreateIndex(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      List<FlexSearch.Api.Index> GetAllIndex();
+      #if SILVERLIGHT
+      IAsyncResult Begin_GetAllIndex(AsyncCallback callback, object state);
+      List<FlexSearch.Api.Index> End_GetAllIndex(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      bool CheckIndexExists(string indexName);
+      #if SILVERLIGHT
+      IAsyncResult Begin_CheckIndexExists(AsyncCallback callback, object state, string indexName);
+      bool End_CheckIndexExists(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      FlexSearch.Api.IndexState GetIndexStatus(string indexName);
+      #if SILVERLIGHT
+      IAsyncResult Begin_GetIndexStatus(AsyncCallback callback, object state, string indexName);
+      FlexSearch.Api.IndexState End_GetIndexStatus(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      void SetIndexStatus(string indexName, FlexSearch.Api.IndexState state);
+      #if SILVERLIGHT
+      IAsyncResult Begin_SetIndexStatus(AsyncCallback callback, object state, string indexName, FlexSearch.Api.IndexState state);
+      void End_SetIndexStatus(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      FlexSearch.Api.Job GetJob(string jobId);
+      #if SILVERLIGHT
+      IAsyncResult Begin_GetJob(AsyncCallback callback, object state, string jobId);
+      FlexSearch.Api.Job End_GetJob(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      FlexSearch.Api.SearchResults Search(FlexSearch.Api.SearchQuery query);
+      #if SILVERLIGHT
+      IAsyncResult Begin_Search(AsyncCallback callback, object state, FlexSearch.Api.SearchQuery query);
+      FlexSearch.Api.SearchResults End_Search(IAsyncResult asyncResult);
+      #endif
+      [OperationContract]
+      [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
+      List<Dictionary<string, string>> FlatSearch(FlexSearch.Api.SearchQuery query);
+      #if SILVERLIGHT
+      IAsyncResult Begin_FlatSearch(AsyncCallback callback, object state, FlexSearch.Api.SearchQuery query);
+      List<Dictionary<string, string>> End_FlatSearch(IAsyncResult asyncResult);
+      #endif
     }
 
     public class Client : IDisposable, Iface {
@@ -79,11 +156,725 @@ namespace FlexSearch.Api.Service
       #endregion
 
 
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_GetIndex(AsyncCallback callback, object state, string indexName)
+      {
+        return send_GetIndex(callback, state, indexName);
+      }
+
+      public FlexSearch.Api.Index End_GetIndex(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_GetIndex();
+      }
+
+      #endif
+
+      public FlexSearch.Api.Index GetIndex(string indexName)
+      {
+        #if !SILVERLIGHT
+        send_GetIndex(indexName);
+        return recv_GetIndex();
+
+        #else
+        var asyncResult = Begin_GetIndex(null, null, indexName);
+        return End_GetIndex(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_GetIndex(AsyncCallback callback, object state, string indexName)
+      #else
+      public void send_GetIndex(string indexName)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("GetIndex", TMessageType.Call, seqid_));
+        GetIndex_args args = new GetIndex_args();
+        args.IndexName = indexName;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public FlexSearch.Api.Index recv_GetIndex()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        GetIndex_result result = new GetIndex_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "GetIndex failed: unknown result");
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_UpdateIndex(AsyncCallback callback, object state, FlexSearch.Api.Index index)
+      {
+        return send_UpdateIndex(callback, state, index);
+      }
+
+      public void End_UpdateIndex(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        recv_UpdateIndex();
+      }
+
+      #endif
+
+      public void UpdateIndex(FlexSearch.Api.Index index)
+      {
+        #if !SILVERLIGHT
+        send_UpdateIndex(index);
+        recv_UpdateIndex();
+
+        #else
+        var asyncResult = Begin_UpdateIndex(null, null, index);
+        End_UpdateIndex(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_UpdateIndex(AsyncCallback callback, object state, FlexSearch.Api.Index index)
+      #else
+      public void send_UpdateIndex(FlexSearch.Api.Index index)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("UpdateIndex", TMessageType.Call, seqid_));
+        UpdateIndex_args args = new UpdateIndex_args();
+        args.Index = index;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public void recv_UpdateIndex()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        UpdateIndex_result result = new UpdateIndex_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        return;
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_DeleteIndex(AsyncCallback callback, object state, string indexName)
+      {
+        return send_DeleteIndex(callback, state, indexName);
+      }
+
+      public void End_DeleteIndex(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        recv_DeleteIndex();
+      }
+
+      #endif
+
+      public void DeleteIndex(string indexName)
+      {
+        #if !SILVERLIGHT
+        send_DeleteIndex(indexName);
+        recv_DeleteIndex();
+
+        #else
+        var asyncResult = Begin_DeleteIndex(null, null, indexName);
+        End_DeleteIndex(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_DeleteIndex(AsyncCallback callback, object state, string indexName)
+      #else
+      public void send_DeleteIndex(string indexName)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("DeleteIndex", TMessageType.Call, seqid_));
+        DeleteIndex_args args = new DeleteIndex_args();
+        args.IndexName = indexName;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public void recv_DeleteIndex()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        DeleteIndex_result result = new DeleteIndex_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        return;
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_CreateIndex(AsyncCallback callback, object state, FlexSearch.Api.Index index)
+      {
+        return send_CreateIndex(callback, state, index);
+      }
+
+      public void End_CreateIndex(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        recv_CreateIndex();
+      }
+
+      #endif
+
+      public void CreateIndex(FlexSearch.Api.Index index)
+      {
+        #if !SILVERLIGHT
+        send_CreateIndex(index);
+        recv_CreateIndex();
+
+        #else
+        var asyncResult = Begin_CreateIndex(null, null, index);
+        End_CreateIndex(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_CreateIndex(AsyncCallback callback, object state, FlexSearch.Api.Index index)
+      #else
+      public void send_CreateIndex(FlexSearch.Api.Index index)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("CreateIndex", TMessageType.Call, seqid_));
+        CreateIndex_args args = new CreateIndex_args();
+        args.Index = index;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public void recv_CreateIndex()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        CreateIndex_result result = new CreateIndex_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        return;
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_GetAllIndex(AsyncCallback callback, object state)
+      {
+        return send_GetAllIndex(callback, state);
+      }
+
+      public List<FlexSearch.Api.Index> End_GetAllIndex(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_GetAllIndex();
+      }
+
+      #endif
+
+      public List<FlexSearch.Api.Index> GetAllIndex()
+      {
+        #if !SILVERLIGHT
+        send_GetAllIndex();
+        return recv_GetAllIndex();
+
+        #else
+        var asyncResult = Begin_GetAllIndex(null, null);
+        return End_GetAllIndex(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_GetAllIndex(AsyncCallback callback, object state)
+      #else
+      public void send_GetAllIndex()
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("GetAllIndex", TMessageType.Call, seqid_));
+        GetAllIndex_args args = new GetAllIndex_args();
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public List<FlexSearch.Api.Index> recv_GetAllIndex()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        GetAllIndex_result result = new GetAllIndex_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "GetAllIndex failed: unknown result");
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_CheckIndexExists(AsyncCallback callback, object state, string indexName)
+      {
+        return send_CheckIndexExists(callback, state, indexName);
+      }
+
+      public bool End_CheckIndexExists(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_CheckIndexExists();
+      }
+
+      #endif
+
+      public bool CheckIndexExists(string indexName)
+      {
+        #if !SILVERLIGHT
+        send_CheckIndexExists(indexName);
+        return recv_CheckIndexExists();
+
+        #else
+        var asyncResult = Begin_CheckIndexExists(null, null, indexName);
+        return End_CheckIndexExists(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_CheckIndexExists(AsyncCallback callback, object state, string indexName)
+      #else
+      public void send_CheckIndexExists(string indexName)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("CheckIndexExists", TMessageType.Call, seqid_));
+        CheckIndexExists_args args = new CheckIndexExists_args();
+        args.IndexName = indexName;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public bool recv_CheckIndexExists()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        CheckIndexExists_result result = new CheckIndexExists_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "CheckIndexExists failed: unknown result");
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_GetIndexStatus(AsyncCallback callback, object state, string indexName)
+      {
+        return send_GetIndexStatus(callback, state, indexName);
+      }
+
+      public FlexSearch.Api.IndexState End_GetIndexStatus(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_GetIndexStatus();
+      }
+
+      #endif
+
+      public FlexSearch.Api.IndexState GetIndexStatus(string indexName)
+      {
+        #if !SILVERLIGHT
+        send_GetIndexStatus(indexName);
+        return recv_GetIndexStatus();
+
+        #else
+        var asyncResult = Begin_GetIndexStatus(null, null, indexName);
+        return End_GetIndexStatus(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_GetIndexStatus(AsyncCallback callback, object state, string indexName)
+      #else
+      public void send_GetIndexStatus(string indexName)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("GetIndexStatus", TMessageType.Call, seqid_));
+        GetIndexStatus_args args = new GetIndexStatus_args();
+        args.IndexName = indexName;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public FlexSearch.Api.IndexState recv_GetIndexStatus()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        GetIndexStatus_result result = new GetIndexStatus_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "GetIndexStatus failed: unknown result");
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_SetIndexStatus(AsyncCallback callback, object state, string indexName, FlexSearch.Api.IndexState state)
+      {
+        return send_SetIndexStatus(callback, state, indexName, state);
+      }
+
+      public void End_SetIndexStatus(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        recv_SetIndexStatus();
+      }
+
+      #endif
+
+      public void SetIndexStatus(string indexName, FlexSearch.Api.IndexState state)
+      {
+        #if !SILVERLIGHT
+        send_SetIndexStatus(indexName, state);
+        recv_SetIndexStatus();
+
+        #else
+        var asyncResult = Begin_SetIndexStatus(null, null, indexName, state);
+        End_SetIndexStatus(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_SetIndexStatus(AsyncCallback callback, object state, string indexName, FlexSearch.Api.IndexState state)
+      #else
+      public void send_SetIndexStatus(string indexName, FlexSearch.Api.IndexState state)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("SetIndexStatus", TMessageType.Call, seqid_));
+        SetIndexStatus_args args = new SetIndexStatus_args();
+        args.IndexName = indexName;
+        args.State = state;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public void recv_SetIndexStatus()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        SetIndexStatus_result result = new SetIndexStatus_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        return;
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_GetJob(AsyncCallback callback, object state, string jobId)
+      {
+        return send_GetJob(callback, state, jobId);
+      }
+
+      public FlexSearch.Api.Job End_GetJob(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_GetJob();
+      }
+
+      #endif
+
+      public FlexSearch.Api.Job GetJob(string jobId)
+      {
+        #if !SILVERLIGHT
+        send_GetJob(jobId);
+        return recv_GetJob();
+
+        #else
+        var asyncResult = Begin_GetJob(null, null, jobId);
+        return End_GetJob(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_GetJob(AsyncCallback callback, object state, string jobId)
+      #else
+      public void send_GetJob(string jobId)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("GetJob", TMessageType.Call, seqid_));
+        GetJob_args args = new GetJob_args();
+        args.JobId = jobId;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public FlexSearch.Api.Job recv_GetJob()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        GetJob_result result = new GetJob_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "GetJob failed: unknown result");
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_Search(AsyncCallback callback, object state, FlexSearch.Api.SearchQuery query)
+      {
+        return send_Search(callback, state, query);
+      }
+
+      public FlexSearch.Api.SearchResults End_Search(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_Search();
+      }
+
+      #endif
+
+      public FlexSearch.Api.SearchResults Search(FlexSearch.Api.SearchQuery query)
+      {
+        #if !SILVERLIGHT
+        send_Search(query);
+        return recv_Search();
+
+        #else
+        var asyncResult = Begin_Search(null, null, query);
+        return End_Search(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_Search(AsyncCallback callback, object state, FlexSearch.Api.SearchQuery query)
+      #else
+      public void send_Search(FlexSearch.Api.SearchQuery query)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("Search", TMessageType.Call, seqid_));
+        Search_args args = new Search_args();
+        args.Query = query;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public FlexSearch.Api.SearchResults recv_Search()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        Search_result result = new Search_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "Search failed: unknown result");
+      }
+
+      
+      #if SILVERLIGHT
+      public IAsyncResult Begin_FlatSearch(AsyncCallback callback, object state, FlexSearch.Api.SearchQuery query)
+      {
+        return send_FlatSearch(callback, state, query);
+      }
+
+      public List<Dictionary<string, string>> End_FlatSearch(IAsyncResult asyncResult)
+      {
+        oprot_.Transport.EndFlush(asyncResult);
+        return recv_FlatSearch();
+      }
+
+      #endif
+
+      public List<Dictionary<string, string>> FlatSearch(FlexSearch.Api.SearchQuery query)
+      {
+        #if !SILVERLIGHT
+        send_FlatSearch(query);
+        return recv_FlatSearch();
+
+        #else
+        var asyncResult = Begin_FlatSearch(null, null, query);
+        return End_FlatSearch(asyncResult);
+
+        #endif
+      }
+      #if SILVERLIGHT
+      public IAsyncResult send_FlatSearch(AsyncCallback callback, object state, FlexSearch.Api.SearchQuery query)
+      #else
+      public void send_FlatSearch(FlexSearch.Api.SearchQuery query)
+      #endif
+      {
+        oprot_.WriteMessageBegin(new TMessage("FlatSearch", TMessageType.Call, seqid_));
+        FlatSearch_args args = new FlatSearch_args();
+        args.Query = query;
+        args.Write(oprot_);
+        oprot_.WriteMessageEnd();
+        #if SILVERLIGHT
+        return oprot_.Transport.BeginFlush(callback, state);
+        #else
+        oprot_.Transport.Flush();
+        #endif
+      }
+
+      public List<Dictionary<string, string>> recv_FlatSearch()
+      {
+        TMessage msg = iprot_.ReadMessageBegin();
+        if (msg.Type == TMessageType.Exception) {
+          TApplicationException x = TApplicationException.Read(iprot_);
+          iprot_.ReadMessageEnd();
+          throw x;
+        }
+        FlatSearch_result result = new FlatSearch_result();
+        result.Read(iprot_);
+        iprot_.ReadMessageEnd();
+        if (result.__isset.success) {
+          return result.Success;
+        }
+        if (result.__isset.ex) {
+          throw result.Ex;
+        }
+        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "FlatSearch failed: unknown result");
+      }
+
     }
     public class Processor : TProcessor {
       public Processor(Iface iface)
       {
         iface_ = iface;
+        processMap_["GetIndex"] = GetIndex_Process;
+        processMap_["UpdateIndex"] = UpdateIndex_Process;
+        processMap_["DeleteIndex"] = DeleteIndex_Process;
+        processMap_["CreateIndex"] = CreateIndex_Process;
+        processMap_["GetAllIndex"] = GetAllIndex_Process;
+        processMap_["CheckIndexExists"] = CheckIndexExists_Process;
+        processMap_["GetIndexStatus"] = GetIndexStatus_Process;
+        processMap_["SetIndexStatus"] = SetIndexStatus_Process;
+        processMap_["GetJob"] = GetJob_Process;
+        processMap_["Search"] = Search_Process;
+        processMap_["FlatSearch"] = FlatSearch_Process;
       }
 
       protected delegate void ProcessFunction(int seqid, TProtocol iprot, TProtocol oprot);
@@ -114,6 +905,2856 @@ namespace FlexSearch.Api.Service
           return false;
         }
         return true;
+      }
+
+      public void GetIndex_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        GetIndex_args args = new GetIndex_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        GetIndex_result result = new GetIndex_result();
+        try {
+          result.Success = iface_.GetIndex(args.IndexName);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("GetIndex", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void UpdateIndex_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        UpdateIndex_args args = new UpdateIndex_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        UpdateIndex_result result = new UpdateIndex_result();
+        try {
+          iface_.UpdateIndex(args.Index);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("UpdateIndex", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void DeleteIndex_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        DeleteIndex_args args = new DeleteIndex_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        DeleteIndex_result result = new DeleteIndex_result();
+        try {
+          iface_.DeleteIndex(args.IndexName);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("DeleteIndex", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void CreateIndex_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        CreateIndex_args args = new CreateIndex_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        CreateIndex_result result = new CreateIndex_result();
+        try {
+          iface_.CreateIndex(args.Index);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("CreateIndex", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void GetAllIndex_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        GetAllIndex_args args = new GetAllIndex_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        GetAllIndex_result result = new GetAllIndex_result();
+        try {
+          result.Success = iface_.GetAllIndex();
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("GetAllIndex", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void CheckIndexExists_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        CheckIndexExists_args args = new CheckIndexExists_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        CheckIndexExists_result result = new CheckIndexExists_result();
+        try {
+          result.Success = iface_.CheckIndexExists(args.IndexName);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("CheckIndexExists", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void GetIndexStatus_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        GetIndexStatus_args args = new GetIndexStatus_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        GetIndexStatus_result result = new GetIndexStatus_result();
+        try {
+          result.Success = iface_.GetIndexStatus(args.IndexName);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("GetIndexStatus", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void SetIndexStatus_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        SetIndexStatus_args args = new SetIndexStatus_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        SetIndexStatus_result result = new SetIndexStatus_result();
+        try {
+          iface_.SetIndexStatus(args.IndexName, args.State);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("SetIndexStatus", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void GetJob_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        GetJob_args args = new GetJob_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        GetJob_result result = new GetJob_result();
+        try {
+          result.Success = iface_.GetJob(args.JobId);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("GetJob", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void Search_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        Search_args args = new Search_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        Search_result result = new Search_result();
+        try {
+          result.Success = iface_.Search(args.Query);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("Search", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+      public void FlatSearch_Process(int seqid, TProtocol iprot, TProtocol oprot)
+      {
+        FlatSearch_args args = new FlatSearch_args();
+        args.Read(iprot);
+        iprot.ReadMessageEnd();
+        FlatSearch_result result = new FlatSearch_result();
+        try {
+          result.Success = iface_.FlatSearch(args.Query);
+        } catch (FlexSearch.Api.Message.InvalidOperation ex) {
+          result.Ex = ex;
+        }
+        oprot.WriteMessageBegin(new TMessage("FlatSearch", TMessageType.Reply, seqid)); 
+        result.Write(oprot);
+        oprot.WriteMessageEnd();
+        oprot.Transport.Flush();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetIndex_args : TBase
+    {
+      private string _indexName;
+
+      [DataMember(Order = 1)]
+      public string IndexName
+      {
+        get
+        {
+          return _indexName;
+        }
+        set
+        {
+          __isset.indexName = true;
+          this._indexName = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool indexName;
+      }
+
+      public GetIndex_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.String) {
+                IndexName = iprot.ReadString();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetIndex_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (IndexName != null && __isset.indexName) {
+          field.Name = "indexName";
+          field.Type = TType.String;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteString(IndexName);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetIndex_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.indexName == other.__isset.indexName) && ((!__isset.indexName) || (System.Object.Equals(IndexName, other.IndexName))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.indexName ? 0 : (IndexName.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetIndex_args(");
+        sb.Append("IndexName: ");
+        sb.Append(IndexName);
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetIndex_result : TBase
+    {
+      private FlexSearch.Api.Index _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 2)]
+      public FlexSearch.Api.Index Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 3)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public GetIndex_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.Struct) {
+                Success = new FlexSearch.Api.Index();
+                Success.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetIndex_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          if (Success != null) {
+            field.Name = "Success";
+            field.Type = TType.Struct;
+            field.ID = 0;
+            oprot.WriteFieldBegin(field);
+            Success.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetIndex_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetIndex_result(");
+        sb.Append("Success: ");
+        sb.Append(Success== null ? "<null>" : Success.ToString());
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class UpdateIndex_args : TBase
+    {
+      private FlexSearch.Api.Index _index;
+
+      [DataMember(Order = 4)]
+      public FlexSearch.Api.Index Index
+      {
+        get
+        {
+          return _index;
+        }
+        set
+        {
+          __isset.index = true;
+          this._index = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool index;
+      }
+
+      public UpdateIndex_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Index = new FlexSearch.Api.Index();
+                Index.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("UpdateIndex_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (Index != null && __isset.index) {
+          field.Name = "index";
+          field.Type = TType.Struct;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          Index.Write(oprot);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as UpdateIndex_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.index == other.__isset.index) && ((!__isset.index) || (System.Object.Equals(Index, other.Index))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.index ? 0 : (Index.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("UpdateIndex_args(");
+        sb.Append("Index: ");
+        sb.Append(Index== null ? "<null>" : Index.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class UpdateIndex_result : TBase
+    {
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 5)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool ex;
+      }
+
+      public UpdateIndex_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("UpdateIndex_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as UpdateIndex_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("UpdateIndex_result(");
+        sb.Append("Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class DeleteIndex_args : TBase
+    {
+      private string _indexName;
+
+      [DataMember(Order = 6)]
+      public string IndexName
+      {
+        get
+        {
+          return _indexName;
+        }
+        set
+        {
+          __isset.indexName = true;
+          this._indexName = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool indexName;
+      }
+
+      public DeleteIndex_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.String) {
+                IndexName = iprot.ReadString();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("DeleteIndex_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (IndexName != null && __isset.indexName) {
+          field.Name = "indexName";
+          field.Type = TType.String;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteString(IndexName);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as DeleteIndex_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.indexName == other.__isset.indexName) && ((!__isset.indexName) || (System.Object.Equals(IndexName, other.IndexName))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.indexName ? 0 : (IndexName.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("DeleteIndex_args(");
+        sb.Append("IndexName: ");
+        sb.Append(IndexName);
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class DeleteIndex_result : TBase
+    {
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 7)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool ex;
+      }
+
+      public DeleteIndex_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("DeleteIndex_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as DeleteIndex_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("DeleteIndex_result(");
+        sb.Append("Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class CreateIndex_args : TBase
+    {
+      private FlexSearch.Api.Index _index;
+
+      [DataMember(Order = 8)]
+      public FlexSearch.Api.Index Index
+      {
+        get
+        {
+          return _index;
+        }
+        set
+        {
+          __isset.index = true;
+          this._index = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool index;
+      }
+
+      public CreateIndex_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Index = new FlexSearch.Api.Index();
+                Index.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("CreateIndex_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (Index != null && __isset.index) {
+          field.Name = "index";
+          field.Type = TType.Struct;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          Index.Write(oprot);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as CreateIndex_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.index == other.__isset.index) && ((!__isset.index) || (System.Object.Equals(Index, other.Index))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.index ? 0 : (Index.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("CreateIndex_args(");
+        sb.Append("Index: ");
+        sb.Append(Index== null ? "<null>" : Index.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class CreateIndex_result : TBase
+    {
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 9)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool ex;
+      }
+
+      public CreateIndex_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("CreateIndex_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as CreateIndex_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("CreateIndex_result(");
+        sb.Append("Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetAllIndex_args : TBase
+    {
+
+      public GetAllIndex_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetAllIndex_args");
+        oprot.WriteStructBegin(struc);
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetAllIndex_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return true;
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetAllIndex_args(");
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetAllIndex_result : TBase
+    {
+      private List<FlexSearch.Api.Index> _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 10)]
+      public List<FlexSearch.Api.Index> Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 11)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public GetAllIndex_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.List) {
+                {
+                  Success = new List<FlexSearch.Api.Index>();
+                  TList _list0 = iprot.ReadListBegin();
+                  for( int _i1 = 0; _i1 < _list0.Count; ++_i1)
+                  {
+                    FlexSearch.Api.Index _elem2 = new FlexSearch.Api.Index();
+                    _elem2 = new FlexSearch.Api.Index();
+                    _elem2.Read(iprot);
+                    Success.Add(_elem2);
+                  }
+                  iprot.ReadListEnd();
+                }
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetAllIndex_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          if (Success != null) {
+            field.Name = "Success";
+            field.Type = TType.List;
+            field.ID = 0;
+            oprot.WriteFieldBegin(field);
+            {
+              oprot.WriteListBegin(new TList(TType.Struct, Success.Count));
+              foreach (FlexSearch.Api.Index _iter3 in Success)
+              {
+                _iter3.Write(oprot);
+              }
+              oprot.WriteListEnd();
+            }
+            oprot.WriteFieldEnd();
+          }
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetAllIndex_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (TCollections.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (TCollections.GetHashCode(Success)));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetAllIndex_result(");
+        sb.Append("Success: ");
+        sb.Append(Success);
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class CheckIndexExists_args : TBase
+    {
+      private string _indexName;
+
+      [DataMember(Order = 12)]
+      public string IndexName
+      {
+        get
+        {
+          return _indexName;
+        }
+        set
+        {
+          __isset.indexName = true;
+          this._indexName = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool indexName;
+      }
+
+      public CheckIndexExists_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.String) {
+                IndexName = iprot.ReadString();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("CheckIndexExists_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (IndexName != null && __isset.indexName) {
+          field.Name = "indexName";
+          field.Type = TType.String;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteString(IndexName);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as CheckIndexExists_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.indexName == other.__isset.indexName) && ((!__isset.indexName) || (System.Object.Equals(IndexName, other.IndexName))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.indexName ? 0 : (IndexName.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("CheckIndexExists_args(");
+        sb.Append("IndexName: ");
+        sb.Append(IndexName);
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class CheckIndexExists_result : TBase
+    {
+      private bool _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 13)]
+      public bool Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 14)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public CheckIndexExists_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.Bool) {
+                Success = iprot.ReadBool();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("CheckIndexExists_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          field.Name = "Success";
+          field.Type = TType.Bool;
+          field.ID = 0;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteBool(Success);
+          oprot.WriteFieldEnd();
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as CheckIndexExists_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("CheckIndexExists_result(");
+        sb.Append("Success: ");
+        sb.Append(Success);
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetIndexStatus_args : TBase
+    {
+      private string _indexName;
+
+      [DataMember(Order = 15)]
+      public string IndexName
+      {
+        get
+        {
+          return _indexName;
+        }
+        set
+        {
+          __isset.indexName = true;
+          this._indexName = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool indexName;
+      }
+
+      public GetIndexStatus_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.String) {
+                IndexName = iprot.ReadString();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetIndexStatus_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (IndexName != null && __isset.indexName) {
+          field.Name = "indexName";
+          field.Type = TType.String;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteString(IndexName);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetIndexStatus_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.indexName == other.__isset.indexName) && ((!__isset.indexName) || (System.Object.Equals(IndexName, other.IndexName))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.indexName ? 0 : (IndexName.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetIndexStatus_args(");
+        sb.Append("IndexName: ");
+        sb.Append(IndexName);
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetIndexStatus_result : TBase
+    {
+      private FlexSearch.Api.IndexState _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      /// <summary>
+      /// 
+      /// <seealso cref="FlexSearch.Api.IndexState"/>
+      /// </summary>
+      [DataMember(Order = 16)]
+      public FlexSearch.Api.IndexState Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 17)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public GetIndexStatus_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.I32) {
+                Success = (FlexSearch.Api.IndexState)iprot.ReadI32();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetIndexStatus_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          field.Name = "Success";
+          field.Type = TType.I32;
+          field.ID = 0;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteI32((int)Success);
+          oprot.WriteFieldEnd();
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetIndexStatus_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetIndexStatus_result(");
+        sb.Append("Success: ");
+        sb.Append(Success);
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class SetIndexStatus_args : TBase
+    {
+      private string _indexName;
+      private FlexSearch.Api.IndexState _state;
+
+      [DataMember(Order = 18)]
+      public string IndexName
+      {
+        get
+        {
+          return _indexName;
+        }
+        set
+        {
+          __isset.indexName = true;
+          this._indexName = value;
+        }
+      }
+
+      /// <summary>
+      /// 
+      /// <seealso cref="FlexSearch.Api.IndexState"/>
+      /// </summary>
+      [DataMember(Order = 19)]
+      public FlexSearch.Api.IndexState State
+      {
+        get
+        {
+          return _state;
+        }
+        set
+        {
+          __isset.state = true;
+          this._state = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool indexName;
+        public bool state;
+      }
+
+      public SetIndexStatus_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.String) {
+                IndexName = iprot.ReadString();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 2:
+              if (field.Type == TType.I32) {
+                State = (FlexSearch.Api.IndexState)iprot.ReadI32();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("SetIndexStatus_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (IndexName != null && __isset.indexName) {
+          field.Name = "indexName";
+          field.Type = TType.String;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteString(IndexName);
+          oprot.WriteFieldEnd();
+        }
+        if (__isset.state) {
+          field.Name = "state";
+          field.Type = TType.I32;
+          field.ID = 2;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteI32((int)State);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as SetIndexStatus_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.indexName == other.__isset.indexName) && ((!__isset.indexName) || (System.Object.Equals(IndexName, other.IndexName))))
+          && ((__isset.state == other.__isset.state) && ((!__isset.state) || (System.Object.Equals(State, other.State))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.indexName ? 0 : (IndexName.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.state ? 0 : (State.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("SetIndexStatus_args(");
+        sb.Append("IndexName: ");
+        sb.Append(IndexName);
+        sb.Append(",State: ");
+        sb.Append(State);
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class SetIndexStatus_result : TBase
+    {
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 20)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool ex;
+      }
+
+      public SetIndexStatus_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("SetIndexStatus_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as SetIndexStatus_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("SetIndexStatus_result(");
+        sb.Append("Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetJob_args : TBase
+    {
+      private string _jobId;
+
+      [DataMember(Order = 21)]
+      public string JobId
+      {
+        get
+        {
+          return _jobId;
+        }
+        set
+        {
+          __isset.jobId = true;
+          this._jobId = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool jobId;
+      }
+
+      public GetJob_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.String) {
+                JobId = iprot.ReadString();
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetJob_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (JobId != null && __isset.jobId) {
+          field.Name = "jobId";
+          field.Type = TType.String;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          oprot.WriteString(JobId);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetJob_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.jobId == other.__isset.jobId) && ((!__isset.jobId) || (System.Object.Equals(JobId, other.JobId))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.jobId ? 0 : (JobId.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetJob_args(");
+        sb.Append("JobId: ");
+        sb.Append(JobId);
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class GetJob_result : TBase
+    {
+      private FlexSearch.Api.Job _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 22)]
+      public FlexSearch.Api.Job Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 23)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public GetJob_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.Struct) {
+                Success = new FlexSearch.Api.Job();
+                Success.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("GetJob_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          if (Success != null) {
+            field.Name = "Success";
+            field.Type = TType.Struct;
+            field.ID = 0;
+            oprot.WriteFieldBegin(field);
+            Success.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as GetJob_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("GetJob_result(");
+        sb.Append("Success: ");
+        sb.Append(Success== null ? "<null>" : Success.ToString());
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class Search_args : TBase
+    {
+      private FlexSearch.Api.SearchQuery _query;
+
+      [DataMember(Order = 24)]
+      public FlexSearch.Api.SearchQuery Query
+      {
+        get
+        {
+          return _query;
+        }
+        set
+        {
+          __isset.query = true;
+          this._query = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool query;
+      }
+
+      public Search_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Query = new FlexSearch.Api.SearchQuery();
+                Query.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("Search_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (Query != null && __isset.query) {
+          field.Name = "query";
+          field.Type = TType.Struct;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          Query.Write(oprot);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as Search_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.query == other.__isset.query) && ((!__isset.query) || (System.Object.Equals(Query, other.Query))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.query ? 0 : (Query.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("Search_args(");
+        sb.Append("Query: ");
+        sb.Append(Query== null ? "<null>" : Query.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class Search_result : TBase
+    {
+      private FlexSearch.Api.SearchResults _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 25)]
+      public FlexSearch.Api.SearchResults Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 26)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public Search_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.Struct) {
+                Success = new FlexSearch.Api.SearchResults();
+                Success.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("Search_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          if (Success != null) {
+            field.Name = "Success";
+            field.Type = TType.Struct;
+            field.ID = 0;
+            oprot.WriteFieldBegin(field);
+            Success.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as Search_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("Search_result(");
+        sb.Append("Success: ");
+        sb.Append(Success== null ? "<null>" : Success.ToString());
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class FlatSearch_args : TBase
+    {
+      private FlexSearch.Api.SearchQuery _query;
+
+      [DataMember(Order = 27)]
+      public FlexSearch.Api.SearchQuery Query
+      {
+        get
+        {
+          return _query;
+        }
+        set
+        {
+          __isset.query = true;
+          this._query = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool query;
+      }
+
+      public FlatSearch_args() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 1:
+              if (field.Type == TType.Struct) {
+                Query = new FlexSearch.Api.SearchQuery();
+                Query.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("FlatSearch_args");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+        if (Query != null && __isset.query) {
+          field.Name = "query";
+          field.Type = TType.Struct;
+          field.ID = 1;
+          oprot.WriteFieldBegin(field);
+          Query.Write(oprot);
+          oprot.WriteFieldEnd();
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as FlatSearch_args;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.query == other.__isset.query) && ((!__isset.query) || (System.Object.Equals(Query, other.Query))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.query ? 0 : (Query.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("FlatSearch_args(");
+        sb.Append("Query: ");
+        sb.Append(Query== null ? "<null>" : Query.ToString());
+        sb.Append(")");
+        return sb.ToString();
+      }
+
+    }
+
+
+    #if !SILVERLIGHT
+    [Serializable]
+    #endif
+    [DataContract(Namespace="")]
+    public partial class FlatSearch_result : TBase
+    {
+      private List<Dictionary<string, string>> _success;
+      private FlexSearch.Api.Message.InvalidOperation _ex;
+
+      [DataMember(Order = 28)]
+      public List<Dictionary<string, string>> Success
+      {
+        get
+        {
+          return _success;
+        }
+        set
+        {
+          __isset.success = true;
+          this._success = value;
+        }
+      }
+
+      [DataMember(Order = 29)]
+      public FlexSearch.Api.Message.InvalidOperation Ex
+      {
+        get
+        {
+          return _ex;
+        }
+        set
+        {
+          __isset.ex = true;
+          this._ex = value;
+        }
+      }
+
+
+      public Isset __isset;
+      #if !SILVERLIGHT
+      [Serializable]
+      #endif
+      [DataContract]
+      public struct Isset {
+        public bool success;
+        public bool ex;
+      }
+
+      public FlatSearch_result() {
+      }
+
+      public void Read (TProtocol iprot)
+      {
+        TField field;
+        iprot.ReadStructBegin();
+        while (true)
+        {
+          field = iprot.ReadFieldBegin();
+          if (field.Type == TType.Stop) { 
+            break;
+          }
+          switch (field.ID)
+          {
+            case 0:
+              if (field.Type == TType.List) {
+                {
+                  Success = new List<Dictionary<string, string>>();
+                  TList _list4 = iprot.ReadListBegin();
+                  for( int _i5 = 0; _i5 < _list4.Count; ++_i5)
+                  {
+                    Dictionary<string, string> _elem6 = new Dictionary<string, string>();
+                    {
+                      _elem6 = new Dictionary<string, string>();
+                      TMap _map7 = iprot.ReadMapBegin();
+                      for( int _i8 = 0; _i8 < _map7.Count; ++_i8)
+                      {
+                        string _key9;
+                        string _val10;
+                        _key9 = iprot.ReadString();
+                        _val10 = iprot.ReadString();
+                        _elem6[_key9] = _val10;
+                      }
+                      iprot.ReadMapEnd();
+                    }
+                    Success.Add(_elem6);
+                  }
+                  iprot.ReadListEnd();
+                }
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            case 1:
+              if (field.Type == TType.Struct) {
+                Ex = new FlexSearch.Api.Message.InvalidOperation();
+                Ex.Read(iprot);
+              } else { 
+                TProtocolUtil.Skip(iprot, field.Type);
+              }
+              break;
+            default: 
+              TProtocolUtil.Skip(iprot, field.Type);
+              break;
+          }
+          iprot.ReadFieldEnd();
+        }
+        iprot.ReadStructEnd();
+      }
+
+      public void Write(TProtocol oprot) {
+        TStruct struc = new TStruct("FlatSearch_result");
+        oprot.WriteStructBegin(struc);
+        TField field = new TField();
+
+        if (this.__isset.success) {
+          if (Success != null) {
+            field.Name = "Success";
+            field.Type = TType.List;
+            field.ID = 0;
+            oprot.WriteFieldBegin(field);
+            {
+              oprot.WriteListBegin(new TList(TType.Map, Success.Count));
+              foreach (Dictionary<string, string> _iter11 in Success)
+              {
+                {
+                  oprot.WriteMapBegin(new TMap(TType.String, TType.String, _iter11.Count));
+                  foreach (string _iter12 in _iter11.Keys)
+                  {
+                    oprot.WriteString(_iter12);
+                    oprot.WriteString(_iter11[_iter12]);
+                  }
+                  oprot.WriteMapEnd();
+                }
+              }
+              oprot.WriteListEnd();
+            }
+            oprot.WriteFieldEnd();
+          }
+        } else if (this.__isset.ex) {
+          if (Ex != null) {
+            field.Name = "Ex";
+            field.Type = TType.Struct;
+            field.ID = 1;
+            oprot.WriteFieldBegin(field);
+            Ex.Write(oprot);
+            oprot.WriteFieldEnd();
+          }
+        }
+        oprot.WriteFieldStop();
+        oprot.WriteStructEnd();
+      }
+
+      public override bool Equals(object that) {
+        var other = that as FlatSearch_result;
+        if (other == null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (TCollections.Equals(Success, other.Success))))
+          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+      }
+
+      public override int GetHashCode() {
+        int hashcode = 0;
+        unchecked {
+          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (TCollections.GetHashCode(Success)));
+          hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
+        }
+        return hashcode;
+      }
+
+      public override string ToString() {
+        StringBuilder sb = new StringBuilder("FlatSearch_result(");
+        sb.Append("Success: ");
+        sb.Append(Success);
+        sb.Append(",Ex: ");
+        sb.Append(Ex== null ? "<null>" : Ex.ToString());
+        sb.Append(")");
+        return sb.ToString();
       }
 
     }

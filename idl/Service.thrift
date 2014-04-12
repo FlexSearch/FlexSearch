@@ -34,6 +34,23 @@ include "Dto.thrift"
 include "Api.thrift"
 
 service FlexSearchService {
+	// Index related operations
+	Api.Index GetIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
+	void UpdateIndex(1:Api.Index index) throws (1:Message.InvalidOperation ex),
+	void DeleteIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
+	void CreateIndex(1:Api.Index index) throws (1:Message.InvalidOperation ex),
 
+	list<Api.Index> GetAllIndex() throws (1:Message.InvalidOperation ex),
+	bool CheckIndexExists(1:string indexName) throws (1:Message.InvalidOperation ex),
+
+	Api.IndexState GetIndexStatus(1:string indexName) throws (1:Message.InvalidOperation ex),
+	void SetIndexStatus(1:string indexName, 2:Api.IndexState state) throws (1:Message.InvalidOperation ex),
+	
+	// Job status related operations
+	Api.Job GetJob(1:string jobId) throws (1:Message.InvalidOperation ex),
+
+	// Search operations
+	Api.SearchResults Search(1:Api.SearchQuery query) throws (1:Message.InvalidOperation ex),
+	list<map<string, string>> FlatSearch(1:Api.SearchQuery query) throws (1:Message.InvalidOperation ex)
 }
 

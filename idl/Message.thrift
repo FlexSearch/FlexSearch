@@ -33,18 +33,16 @@ namespace java org.FlexSearch.Api.Message
 // ----------------------------------------------------------------------------
 //	Exceptions
 // ----------------------------------------------------------------------------
-// A wrapper around operation message to be used for thrift based
-// communication
-exception InvalidOperation {
+struct OperationMessage {
 	1: string DeveloperMessage
 	2: string UserMessage
 	3: i32 ErrorCode
 }
 
-struct OperationMessage {
-	1: string DeveloperMessage
-	2: string UserMessage
-	3: i32 ErrorCode
+// A wrapper around operation message to be used for thrift based
+// communication
+exception InvalidOperation {
+	1: OperationMessage Message
 }
 
 // ----------------------------------------------------------------------------
