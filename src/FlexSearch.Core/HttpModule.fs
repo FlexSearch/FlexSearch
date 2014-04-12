@@ -133,7 +133,7 @@ type DocumentModule() =
                 | None -> 
                     // documents
                     // Bulk delete of the documents
-                    return! Choice2Of2(MessageConstants.HTTP_NOT_SUPPORTED)
+                    return! state.IndexService.PerformCommand(indexName, IndexCommand.BulkDeleteByIndexName)
             }
         owin |> responseProcessor processRequest OK BAD_REQUEST
     
@@ -262,8 +262,7 @@ type RootModule() =
             (owin.Response.WriteAsync
                  ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()))
 
-open System.Data
-open System.Data.SqlClient
+
 open System.IO
 open System.Threading.Tasks.Dataflow
 
