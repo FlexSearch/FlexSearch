@@ -303,6 +303,7 @@
     <Compile Include="Tokenizers.fs" />
     <Compile Include="Validator.fs" />
     <Compile Include="HttpModule.fs" />
+    <Compile Include="ImportHandlers.fs" />
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="PersitanceStore.fs" />
     <Compile Include="Server.fs" />

@@ -21,7 +21,8 @@ module State =
     open Owin
     open System.Collections.Concurrent
     open System.Net
-    
+    open System.Collections.Generic
+
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
     type NodeState = 
@@ -59,5 +60,5 @@ module State =
     type IImportHandler =
         abstract SupportsBulkIndexing           :   unit -> bool
         abstract SupportsIncrementalIndexing    :   unit -> bool
-        abstract ProcessBulkRequest             :   (string * IReadableStringCollection) -> unit
-        abstract ProcessIncrementalRequest      :   (string * string * IReadableStringCollection) -> Choice<ImporterResponse, OperationMessage>
+        abstract ProcessBulkRequest             :   string * ImportRequest * NodeState -> unit
+        abstract ProcessIncrementalRequest      :   string * ImportRequest * NodeState -> Choice<unit, OperationMessage>

@@ -656,7 +656,14 @@ struct IndexStatusResponse {
 	1:	required IndexState Status
 }
 
-struct ImporterResponse {
+struct ImportRequest {
+	1:	optional string Id
+	2:	optional map<string,string> Parameters = {}
+	3:	optional bool ForceCreate = false
+	4:	optional string JobId
+}
+
+struct ImportResponse {
 	1:	optional string JobId
 	2:	optional string Message
 }

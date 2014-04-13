@@ -23,7 +23,7 @@ namespace FlexSearch.Api
   [Serializable]
   #endif
   [DataContract(Namespace="")]
-  public partial class ImporterResponse : TBase
+  public partial class ImportResponse : TBase
   {
     private string _JobId;
     private string _Message;
@@ -67,7 +67,7 @@ namespace FlexSearch.Api
       public bool Message;
     }
 
-    public ImporterResponse() {
+    public ImportResponse() {
     }
 
     public void Read (TProtocol iprot)
@@ -106,7 +106,7 @@ namespace FlexSearch.Api
     }
 
     public void Write(TProtocol oprot) {
-      TStruct struc = new TStruct("ImporterResponse");
+      TStruct struc = new TStruct("ImportResponse");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
       if (JobId != null && __isset.JobId) {
@@ -130,7 +130,7 @@ namespace FlexSearch.Api
     }
 
     public override bool Equals(object that) {
-      var other = that as ImporterResponse;
+      var other = that as ImportResponse;
       if (other == null) return false;
       if (ReferenceEquals(this, other)) return true;
       return ((__isset.JobId == other.__isset.JobId) && ((!__isset.JobId) || (System.Object.Equals(JobId, other.JobId))))
@@ -147,7 +147,7 @@ namespace FlexSearch.Api
     }
 
     public override string ToString() {
-      StringBuilder sb = new StringBuilder("ImporterResponse(");
+      StringBuilder sb = new StringBuilder("ImportResponse(");
       sb.Append("JobId: ");
       sb.Append(JobId);
       sb.Append(",Message: ");

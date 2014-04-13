@@ -262,57 +262,6 @@ type RootModule() =
             (owin.Response.WriteAsync
                  ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()))
 
-
-open System.IO
-open System.Threading.Tasks.Dataflow
-
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "importer")>]
-type ImporterModule() = 
-    inherit HttpModuleBase()
-    let importHandlers = GetImportHandlerModules().Value
-    let incrementalIndexMessage = "Incremental index request completed."
-    let bulkIndexMessage = 
-        "Bulk-index request submitted to the importer module. Please use the provided jobId to query the job status."
-    let processQueueItem (indexName : string, jobId : System.Guid, parameters : IReadableStringCollection) = ()
-    
-    let requestQueue = 
-        let executionBlockOption = new ExecutionDataflowBlockOptions()
-        executionBlockOption.MaxDegreeOfParallelism <- -1
-        executionBlockOption.BoundedCapacity <- 10
-        let queue = new ActionBlock<string * Guid * IReadableStringCollection>(processQueueItem, executionBlockOption)
-        queue
-    
-    let processRequest (indexName, owin, state : NodeState) = 
-        maybe { 
-            match checkIdPresent (owin) with
-            | Some(id) -> 
-                match importHandlers.TryGetValue(id) with
-                | (true, x) -> 
-                    // Check if id is provided if yes then it is a single select query otherwise
-                    // a multi-select query
-                    match owin.Request.Query.Get("id") with
-                    | null -> 
-                        if x.SupportsBulkIndexing() then 
-                            let jobId = Guid.NewGuid()
-                            let job = new Job(jobId.ToString(), JobStatus.Initializing, Message = bulkIndexMessage)
-                            state.PersistanceStore.Put (jobId.ToString()) job |> ignore
-                            await (requestQueue.SendAsync((indexName, jobId, owin.Request.Query)))
-                            return! Choice1Of2
-                                        (new ImporterResponse(JobId = jobId.ToString(), Message = bulkIndexMessage))
-                        else return! Choice2Of2(MessageConstants.IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING)
-                    | y -> 
-                        if x.SupportsIncrementalIndexing() then 
-                            return! x.ProcessIncrementalRequest(indexName, y, owin.Request.Query)
-                        else return! Choice2Of2(MessageConstants.IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING)
-                | _ -> return! Choice2Of2(MessageConstants.IMPORTER_NOT_FOUND)
-            | None -> return! Choice2Of2(MessageConstants.IMPORTER_NOT_FOUND)
-        }
-    
-    override this.Post(indexName, owin, state) = 
-        owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST
-
 [<Export(typeof<HttpModuleBase>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
 [<ExportMetadata("Name", "jobs")>]
