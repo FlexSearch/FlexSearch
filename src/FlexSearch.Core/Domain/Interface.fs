@@ -201,6 +201,51 @@ module Interface =
         abstract DeleteVersion : string -> string -> bool
     
     /// <summary>
+    /// Index related operations
+    /// </summary>
+    type IIndexOperation = 
+        abstract GetIndex : string -> Choice<Index, OperationMessage>
+        abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
+        abstract DeleteIndex : string -> Choice<unit, OperationMessage>
+        abstract AddIndex : Index -> Choice<unit, OperationMessage>
+        abstract GetAllIndex : unit -> Choice<List<Index>, OperationMessage>
+        abstract IndexExists : string -> bool
+        abstract GetIndexStatus : string -> Choice<IndexState, OperationMessage>
+        abstract SetIndexStatus : string * IndexState -> Choice<IndexState, OperationMessage>
+        abstract OpenIndex : string -> Choice<unit, OperationMessage>
+        abstract CloseIndex : string -> Choice<unit, OperationMessage>
+    
+    /// <summary>
+    /// Document related operations
+    /// </summary>
+    type IDocumentOperation = 
+        abstract GetDocument : string * string -> Choice<Dictionary<string, string>, OperationMessage>
+        abstract GetDocuments : string -> Choice<List<Dictionary<string, string>>, OperationMessage>
+        abstract AddOrUpdateDocument : string * Dictionary<string, string> -> Choice<unit, OperationMessage>
+        abstract DeleteDocument : string * string -> Choice<unit, OperationMessage>
+        abstract AddDocument : string * string -> Choice<unit, OperationMessage>
+    
+    /// <summary>
+    /// Search related operations
+    /// </summary>
+    type ISearchOperation = 
+        abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
+        abstract SearchWithFlatResults : SearchQuery -> Choice<List<Dictionary<string, string>>, OperationMessage>
+    
+    /// <summary>
+    /// Job related operations
+    /// </summary>
+    type IJobOperation = 
+        abstract GetJob : string -> Choice<Job, OperationMessage>
+    
+    /// <summary>
+    /// Node related operations
+    /// </summary>
+    type INodeOperation = 
+        abstract LoadAllIndex : unit -> unit
+        abstract ShutDown : unit -> bool
+    
+    /// <summary>
     /// Interface which exposes all index related operations
     /// </summary>
     type IIndexService = 

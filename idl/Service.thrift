@@ -38,19 +38,26 @@ service FlexSearchService {
 	Api.Index GetIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
 	void UpdateIndex(1:Api.Index index) throws (1:Message.InvalidOperation ex),
 	void DeleteIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
-	void CreateIndex(1:Api.Index index) throws (1:Message.InvalidOperation ex),
-
+	void AddIndex(1:Api.Index index) throws (1:Message.InvalidOperation ex),
 	list<Api.Index> GetAllIndex() throws (1:Message.InvalidOperation ex),
-	bool CheckIndexExists(1:string indexName) throws (1:Message.InvalidOperation ex),
-
+	bool IndexExists(1:string indexName) throws (1:Message.InvalidOperation ex),
 	Api.IndexState GetIndexStatus(1:string indexName) throws (1:Message.InvalidOperation ex),
 	void SetIndexStatus(1:string indexName, 2:Api.IndexState state) throws (1:Message.InvalidOperation ex),
+	bool OpenIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
+	bool CloseIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
 	
 	// Job status related operations
 	Api.Job GetJob(1:string jobId) throws (1:Message.InvalidOperation ex),
 
 	// Search operations
 	Api.SearchResults Search(1:Api.SearchQuery query) throws (1:Message.InvalidOperation ex),
-	list<map<string, string>> FlatSearch(1:Api.SearchQuery query) throws (1:Message.InvalidOperation ex)
+	list<map<string, string>> SearchWithFlatResults(1:Api.SearchQuery query) throws (1:Message.InvalidOperation ex),
+	
+	// Document operations
+	map<string, string> GetDocument(1:string indexName, 2:string documentId) throws (1:Message.InvalidOperation ex),
+	list<map<string, string>> GetDocuments(1:string indexName) throws (1:Message.InvalidOperation ex),
+	void AddOrUpdateDocument(1:string indexName, 2:map<string, string> document) throws (1:Message.InvalidOperation ex),
+	void AddDocument(1:string indexName, 2:map<string, string> document) throws (1:Message.InvalidOperation ex),
+	void DeleteDocument(1:string indexName, 2:string documentId) throws (1:Message.InvalidOperation ex)
 }
 
