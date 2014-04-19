@@ -74,7 +74,7 @@ module Validator =
     // ----------------------------------------------------------------------------
     // FlexSearch related validation helpers
     // ----------------------------------------------------------------------------
-    let mustGenerateFilterInstance (factoryCollection : Interface.IFactoryCollection) 
+    let mustGenerateFilterInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : TokenFilter) = 
         match factoryCollection.FilterFactory.GetModuleByName(value.FilterName) with
         | Choice1Of2(instance) -> 
@@ -87,7 +87,7 @@ module Validator =
                          (MessageConstants.FILTER_CANNOT_BE_INITIALIZED, propName, e.Message))
         | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.FILTER_NOT_FOUND, propName))
     
-    let mustGenerateTokenizerInstance (factoryCollection : Interface.IFactoryCollection) 
+    let mustGenerateTokenizerInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : Tokenizer) = 
         match factoryCollection.TokenizerFactory.GetModuleByName(value.TokenizerName) with
         | Choice1Of2(instance) -> 
@@ -112,19 +112,19 @@ module Validator =
         }
     
     /// Filter validator which checks both the input parameters and naming convention
-    let FilterValidator (factoryCollection : Interface.IFactoryCollection) (value : TokenFilter) = 
+    let FilterValidator (factoryCollection : IFactoryCollection) (value : TokenFilter) = 
         maybe { 
             do! ("FilterName", value.FilterName) |> propertyNameValidator
             do! ("FilterName", value) |> mustGenerateFilterInstance factoryCollection
         }
     
-    let TokenizerValidator(factoryCollection : Interface.IFactoryCollection, value : Tokenizer) = 
+    let TokenizerValidator(factoryCollection : IFactoryCollection, value : Tokenizer) = 
         maybe { 
             do! validate "TokenizerName" value.TokenizerName |> propertyNameValidator
             do! validate "Tokenizer" value |> mustGenerateTokenizerInstance factoryCollection
         }
     
-    let AnalyzerValidator (factoryCollection : Interface.IFactoryCollection) 
+    let AnalyzerValidator (factoryCollection : IFactoryCollection) 
         (propName : string, value : AnalyzerProperties) = 
         maybe { 
             do! TokenizerValidator(factoryCollection, value.Tokenizer)
@@ -139,7 +139,7 @@ module Validator =
             do! validate "RamBufferSizeMb" value.RamBufferSizeMb |> greaterThanOrEqualTo 100
         }
     
-    let ScriptValidator (factoryCollection : Interface.IFactoryCollection) (propName : string, value : ScriptProperties) = 
+    let ScriptValidator (factoryCollection : IFactoryCollection) (propName : string, value : ScriptProperties) = 
         maybe { 
             do! validate "ScriptSource" value.Source |> notNullAndEmpty
             match value.ScriptType with
@@ -155,7 +155,7 @@ module Validator =
                                  (MessageConstants.UNKNOWN_SCRIPT_TYPE, value.ScriptType.ToString()))
         }
     
-    let IndexFieldValidator (factoryCollection : Interface.IFactoryCollection) 
+    let IndexFieldValidator (factoryCollection : IFactoryCollection) 
         (analyzers : Dictionary<string, AnalyzerProperties>) (scripts : Dictionary<string, ScriptProperties>) 
         (propName : string, value : FieldProperties) = 
         maybe { 
@@ -196,7 +196,7 @@ module Validator =
     //
     //    let SearchProfileValidator (fields : Dictionary<string, FieldProperties>) (propName: string, value: SearchQuery) =
     //        ()
-    type IndexValidator(factoryCollection : Interface.IFactoryCollection) = 
+    type IndexValidator(factoryCollection : IFactoryCollection) = 
         interface IIndexValidator with
             member this.Validate(value : Index) = 
                 maybe { 

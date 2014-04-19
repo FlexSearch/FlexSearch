@@ -20,9 +20,10 @@ module State =
     open Microsoft.Owin
     open Owin
     open System.Collections.Concurrent
-    open System.Net
     open System.Collections.Generic
-
+    open System.Net
+    open org.apache.lucene.analysis
+    
     /// This will hold all the mutable data related to the node. Everything outside will be
     /// immutable. This will be passed around. 
     type NodeState = 
@@ -31,13 +32,6 @@ module State =
           CacheStore : IVersioningCacheStore
           IndexService : IIndexService
           SettingsBuilder : ISettingsBuilder }
-    
-    type ServiceRoute = 
-        { RequestType : System.Type
-          RestPath : string
-          Verbs : string
-          Summary : string
-          Notes : string }
     
     // ----------------------------------------------------------------------------     
     /// HTTP module to handle to incoming requests
@@ -53,12 +47,30 @@ module State =
         override this.Delete(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
         abstract Post : string * IOwinContext * NodeState -> unit
         override this.Post(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
-
+    
     /// <summary>
     /// Import handler interface to support
     /// </summary>
-    type IImportHandler =
-        abstract SupportsBulkIndexing           :   unit -> bool
-        abstract SupportsIncrementalIndexing    :   unit -> bool
-        abstract ProcessBulkRequest             :   string * ImportRequest * NodeState -> unit
-        abstract ProcessIncrementalRequest      :   string * ImportRequest * NodeState -> Choice<unit, OperationMessage>
+    type IImportHandler = 
+        abstract SupportsBulkIndexing : unit -> bool
+        abstract SupportsIncrementalIndexing : unit -> bool
+        abstract ProcessBulkRequest : string * ImportRequest * NodeState -> unit
+        abstract ProcessIncrementalRequest : string * ImportRequest * NodeState -> Choice<unit, OperationMessage>
+    
+    /// <summary>
+    /// Interface which exposes all top level factories
+    /// Could have exposed all these through a simple dictionary over IFlexFactory
+    /// but then we would have to perform a look up to get each factory instance.
+    /// This is fairly easy to manage as all the logic is in IFlexFactory.
+    /// Also reduces passing of parameters.
+    /// </summary>
+    type IFactoryCollection = 
+        abstract FilterFactory : IFlexFactory<IFlexFilterFactory> with get
+        abstract TokenizerFactory : IFlexFactory<IFlexTokenizerFactory> with get
+        abstract AnalyzerFactory : IFlexFactory<Analyzer> with get
+        abstract SearchQueryFactory : IFlexFactory<IFlexQuery> with get
+        abstract ComputationOperationFactory : IFlexFactory<IComputationOperation> with get
+        abstract ImportHandlerFactory : IFlexFactory<IImportHandler> with get
+        abstract HttpModuleFactory : IFlexFactory<HttpModuleBase> with get
+        abstract ScriptFactoryCollection : IScriptFactoryCollection with get
+        abstract ResourceLoader : IResourceLoader with get

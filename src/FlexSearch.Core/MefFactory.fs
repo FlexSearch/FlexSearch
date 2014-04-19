@@ -121,7 +121,7 @@ module Factories =
         lazy (let httpModule = 
                   new FlexFactory<HttpModuleBase>(PluginContainer(false).Value, "HttpModule") :> IFlexFactory<HttpModuleBase>
               httpModule.GetAllModules())
-
+    
     /// <summary>
     /// Get all import handler modules
     /// </summary>
@@ -129,7 +129,7 @@ module Factories =
         lazy (let importModules = 
                   new FlexFactory<IImportHandler>(PluginContainer(false).Value, "ImportHandlersModule") :> IFlexFactory<IImportHandler>
               importModules.GetAllModules())
-                  
+    
     /// <summary>
     /// Concrete implementation of IFactoryCollection
     /// </summary>
@@ -139,9 +139,12 @@ module Factories =
             new FlexFactory<IFlexTokenizerFactory>(container, "Tokenizer") :> IFlexFactory<IFlexTokenizerFactory>
         let analyzerFactory = new FlexFactory<Analyzer>(container, "Analyzer") :> IFlexFactory<Analyzer>
         let searchQueryFactory = new FlexFactory<IFlexQuery>(container, "Query") :> IFlexFactory<IFlexQuery>
-        let computationOpertionFactory = 
+        let computationOperationFactory = 
             new FlexFactory<IComputationOperation>(container, "Computation Operation") :> IFlexFactory<IComputationOperation>
-        //let pluginsFactory = new FlexFactory<IPlugin>(container, "Computation Operation") :> IFlexFactory<IPlugin>
+        let httpModuleFactory = 
+            new FlexFactory<HttpModuleBase>(container, "HTTP modules") :> IFlexFactory<HttpModuleBase>
+        let importHandlerFactory = 
+            new FlexFactory<IImportHandler>(container, "Import Handler") :> IFlexFactory<IImportHandler>
         let scriptFactory = new CompilerService.ScriptFactoryCollection() :> IScriptFactoryCollection
         let resourceLoader = new ResourceLoader() :> IResourceLoader
         interface IFactoryCollection with
@@ -149,7 +152,8 @@ module Factories =
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
             member this.SearchQueryFactory = searchQueryFactory
-            member this.ComputationOpertionFactory = computationOpertionFactory
-            //member this.PluginsFactory = pluginsFactory
+            member this.ComputationOperationFactory = computationOperationFactory
+            member this.HttpModuleFactory = httpModuleFactory
+            member this.ImportHandlerFactory = importHandlerFactory
             member this.ScriptFactoryCollection = scriptFactory
             member this.ResourceLoader = resourceLoader

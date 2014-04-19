@@ -8,24 +8,30 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
 
+// ----------------------------------------------------------------------------
 open FlexSearch.Api
 open FlexSearch.Api.Message
-open FlexSearch.Utility
-open FlexSearch.Core
 open FlexSearch.Api.Service
-
+open FlexSearch.Core
+open FlexSearch.Utility
+open System
+open System.Collections.Concurrent
+open System.Collections.Generic
+open System.ComponentModel.Composition
+open System.IO
+open System.Reactive.Subjects
+open System.Reflection
+open System.Threading
+open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
-
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.core
-open org.apache.lucene.analysis.util
 open org.apache.lucene.analysis.miscellaneous
+open org.apache.lucene.analysis.util
 open org.apache.lucene.codecs
 open org.apache.lucene.codecs.lucene42
 open org.apache.lucene.document
@@ -33,73 +39,44 @@ open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
 
-open System
-open System.ComponentModel.Composition
-open System.Collections.Generic
-open System.Collections.Concurrent
-open System.IO
-open System.Reactive.Subjects
-open System.Threading.Tasks.Dataflow
-open System.Reflection
-open System.Threading
-
-
 // ----------------------------------------------------------------------------
 /// Contains all the flex interface definitions 
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
-module Interface =
-
-    /// Interface to represent communication channel 
-    type ICommuncationChannel =
-        
-        /// One way commutation channel
-        abstract member OneWay          :   CommunicationMessage -> bool
-
-        /// Two way communication channel
-        abstract member RequestReply    :   CommunicationMessage -> CommunicationMessage
-
-
-    type IServer =
-        abstract member Start   :   unit -> unit
-        abstract member Stop    :   unit -> unit
+module Interface = 
+    type IServer = 
+        abstract Start : unit -> unit
+        abstract Stop : unit -> unit
     
-    type IConnectionPool =
-        abstract member PoolSize            :   int
-        abstract member Initialize          :   unit -> bool
-        abstract member TryExecute          :   (FlexSearchService.Iface -> unit) -> bool
-        //abstract member TryExecuteOneWay    :   (FlexSearchService.Iface -> unit) -> bool
-
-    type ISessionServer =
-        inherit IServer
-        abstract member SessionCount        :   unit -> int
-        //abstract member GetSessionByName    :   string -> option<SuperWebSocket.IWebSocketSession>
-
-
-    // ---------------------------------------------------------------------------- 
+    /// <summary>
     /// General key value based settings store used across Flex to store all settings
     /// Do not use this as a cache store
-    // ---------------------------------------------------------------------------- 
-    type IPersistanceStore =
-       // abstract member Settings    :   ServerSettings
-        abstract member GetAll<'T>  :   unit -> IEnumerable<'T>
-        abstract member Get<'T when 'T : equality>     :   string -> Choice<'T, OperationMessage>
-        abstract member Put<'T>     :   string -> 'T -> Choice<unit, OperationMessage>
-        abstract member Delete<'T>  :   string -> Choice<unit, OperationMessage>
-
-    // ---------------------------------------------------------------------------- 
+    /// </summary>
+    type IPersistanceStore = 
+        abstract GetAll<'T> : unit -> IEnumerable<'T>
+        abstract Get<'T when 'T : equality> : string -> Choice<'T, OperationMessage>
+        abstract Put<'T> : string -> 'T -> Choice<unit, OperationMessage>
+        abstract Delete<'T> : string -> Choice<unit, OperationMessage>
+    
+    /// <summary>
     /// General Interface to offload all resource loading responsibilities. This will
     /// be used to parse settings, load text files etc. This will enable easy mocking 
     /// and central management of all such activities
-    // ---------------------------------------------------------------------------- 
-    type IResourceLoader =
+    /// </summary> 
+    type IResourceLoader = 
+        
+        /// <summary>
         /// Reads the resource from the location and returns all the content as a string
-        abstract member LoadResourceAsString    :   string -> string
-
+        /// </summary>
+        abstract LoadResourceAsString : string -> string
+        
+        /// <summary>
         /// Reads the resource and returns it as a List<string>. Also ignores
         /// any blank lines or lines starting with #. Mostly used by filters
-        abstract member LoadResourceAsList      :   string -> List<string>
-
+        /// </summary>
+        abstract LoadResourceAsList : string -> List<string>
+        
+        /// <summary>
         /// Reads the resource and returns it as a List<string[]>. This is used to load 
         /// settings files in the below format
         /// test:test1,test2
@@ -107,212 +84,136 @@ module Interface =
         /// This is used by certain filters to load map kind of data where first field maps to
         /// a number of secondary fields. Also ignores
         /// any blank lines or lines starting with #. Mostly used by filters
-        abstract member LoadResourceAsMap       :   string -> List<string[]>
-        
-
-    // ---------------------------------------------------------------------------- 
-    /// General factory Interface for all mef based factories
-    // ---------------------------------------------------------------------------- 
+        /// </summary>
+        abstract LoadResourceAsMap : string -> List<string []>
+    
+    /// <summary>
+    /// General factory Interface for all MEF based factories
+    /// </summary>
     type IFlexFactory<'T> = 
-        abstract member GetModuleByName     :   string -> Choice<'T, OperationMessage>
-        abstract member ModuleExists        :   string -> bool
-        abstract member GetAllModules       :   unit -> Dictionary<string, 'T>
-
-
-    // ---------------------------------------------------------------------------- 
-    /// Interface class from which all tokenizers will derive
-    // ---------------------------------------------------------------------------- 
+        abstract GetModuleByName : string -> Choice<'T, OperationMessage>
+        abstract ModuleExists : string -> bool
+        abstract GetAllModules : unit -> Dictionary<string, 'T>
+    
+    /// <summary>
+    /// Interface to be implemented by all tokenizers
+    /// </summary>
     type IFlexTokenizerFactory = 
-        abstract member Initialize  :   IDictionary<string,string> * IResourceLoader -> unit
-        abstract member Create      :   Reader -> Tokenizer
+        abstract Initialize : IDictionary<string, string> * IResourceLoader -> unit
+        abstract Create : Reader -> Tokenizer
     
-
-    // ---------------------------------------------------------------------------- 
-    /// Interface from which all filters will derive
-    // ----------------------------------------------------------------------------     
+    /// <summary>
+    /// Interface to be implemented by all filters
+    /// </summary>    
     type IFlexFilterFactory = 
-        abstract member Initialize  :   IDictionary<string,string> * IResourceLoader -> unit
-        abstract member Create      :   TokenStream -> TokenStream
-
-
-    // ----------------------------------------------------------------------------     
-    /// The meta data interface which is used to read mef based
-    /// meta data properties 
-    // ---------------------------------------------------------------------------- 
-    type IFlexMetaData =
-        abstract Name   :   string
+        abstract Initialize : IDictionary<string, string> * IResourceLoader -> unit
+        abstract Create : TokenStream -> TokenStream
     
-
-    // ----------------------------------------------------------------------------     
+    /// <summary>
+    /// The meta data interface which is used to read MEF based
+    /// meta data properties 
+    /// </summary>
+    type IFlexMetaData = 
+        abstract Name : string with get
+    
+    /// <summary>
     /// Flex Setting builder interface
-    /// This will take api objects and transform them into Flex domain objects
-    // ----------------------------------------------------------------------------     
-    type ISettingsBuilder =
-        abstract BuildSetting           :   Index -> Choice<FlexIndexSetting, OperationMessage>
-
-
-    // ----------------------------------------------------------------------------     
+    /// This will take API objects and transform them into Flex domain objects
+    /// </summary>
+    type ISettingsBuilder = 
+        abstract BuildSetting : Index -> Choice<FlexIndexSetting, OperationMessage>
+    
+    /// <summary>
     /// Flex Index validator interface
     /// This will validate all index settings. This could be easily replaced by 
     /// a higher order function but it makes C# to F# interoperability a bit 
     /// difficult
-    // ----------------------------------------------------------------------------  
-    type IIndexValidator =
-        abstract Validate               :   Index -> Choice<unit, OperationMessage>
-
-
-    // ----------------------------------------------------------------------------     
-    /// FlexQuery interface
-    // ----------------------------------------------------------------------------     
-    type IFlexQuery =
-        abstract member QueryName   :   unit -> string[]
-        abstract member GetQuery    :   FlexField * string[] * Map<string,string> option -> Choice<Query, OperationMessage>
-
-
-    // ----------------------------------------------------------------------------     
+    /// </summary>
+    type IIndexValidator = 
+        abstract Validate : Index -> Choice<unit, OperationMessage>
+    
+    /// <summary>
+    /// FlexQuery interface     
+    /// </summary>
+    type IFlexQuery = 
+        abstract QueryName : unit -> string []
+        abstract GetQuery : FlexField * string [] * Map<string, string> option -> Choice<Query, OperationMessage>
+    
+    /// <summary>
     /// Search service interface
-    // ----------------------------------------------------------------------------     
-    type ISearchService =
-        abstract member Search          :   FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
-        //abstract member SearchProfile   :   FlexIndex * SearchProfileQuery -> SearchResults
-        
-
-    // ----------------------------------------------------------------------------     
+    /// </summary>
+    type ISearchService = 
+        abstract Search : FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
+    
+    /// <summary>
     /// Computation operation interface
-    // ----------------------------------------------------------------------------     
-    type IComputationOperation =
-                                        // destination * sources * parameters
-        abstract member Initialize  :   string * string[] * Dictionary<string,string> -> bool
-        abstract member Compute     :   IReadOnlyDictionary<string, string> -> string 
-
-
-    // ----------------------------------------------------------------------------     
+    /// </summary>
+    type IComputationOperation = 
+        abstract Initialize : string * string [] * Dictionary<string, string> -> bool
+        abstract Compute : IReadOnlyDictionary<string, string> -> string
+    
+    /// <summary>
     /// Search condition interface
-    // ----------------------------------------------------------------------------     
-    type ISearchCondition =
-        abstract member GetCondition    :   Dictionary<string,string> -> string 
+    /// </summary>
+    type ISearchCondition = 
+        abstract GetCondition : Dictionary<string, string> -> string
     
-    // ----------------------------------------------------------------------------     
-    /// Scripting related interfaces
-    // ----------------------------------------------------------------------------   
-    // Compile different types of scripts
-    type IScriptFactory<'T> =
-        abstract member CompileScript   :   ScriptProperties -> Choice<'T, OperationMessage>
+    /// <summary>
+    /// Compile different types of scripts
+    /// </summary>
+    type IScriptFactory<'T> = 
+        abstract CompileScript : ScriptProperties -> Choice<'T, OperationMessage>
     
-
+    /// <summary>
     /// Profile selection scripts used to dynamically select an search profile
-    type IFlexProfileSelectorScript =
-        abstract Execute  :   IReadOnlyDictionary<string, string> -> string
-
-
+    /// </summary>
+    type IFlexProfileSelectorScript = 
+        abstract Execute : IReadOnlyDictionary<string, string> -> string
+    
+    /// <summary>
     /// Scripts used by dynamic or computed fields
-    type IComputedFieldScript =
-        abstract Execute  :   IReadOnlyDictionary<string, string> -> string
-
-
+    /// </summary>
+    type IComputedFieldScript = 
+        abstract Execute : IReadOnlyDictionary<string, string> -> string
+    
+    /// <summary>
     /// Scripts used for custom scoring
-    type ICustomScoringScript =
-        abstract Execute  :   IReadOnlyDictionary<string, string> * double -> double
-
-
+    /// </summary>
+    type ICustomScoringScript = 
+        abstract Execute : IReadOnlyDictionary<string, string> * double -> double
+    
+    /// <summary>
     /// A helper factory exposing all the script factories
-     type IScriptFactoryCollection =
-        abstract member ProfileSelectorScriptFactory    :   IScriptFactory<IFlexProfileSelectorScript>
-        abstract member ComputedFieldScriptFactory      :   IScriptFactory<IComputedFieldScript>
-        abstract member CustomScoringScriptFactory      :   IScriptFactory<ICustomScoringScript>
-
-
-    // ---------------------------------------------------------------------------- 
-    /// Interface which exposes all top level factories
-    /// Could have exposed all these through a simple dictionary over IFlexFactory
-    /// but then we would have to perform a look up to get each factory instace.
-    /// This is fairly easy to manage as all the logic is in IFlexFactory.
-    /// Also reduces passing of parameters.
-    // ---------------------------------------------------------------------------- 
-    type IFactoryCollection =
-         abstract member FilterFactory              :   IFlexFactory<IFlexFilterFactory>
-         abstract member TokenizerFactory           :   IFlexFactory<IFlexTokenizerFactory>
-         abstract member AnalyzerFactory            :   IFlexFactory<Analyzer>
-         abstract member SearchQueryFactory         :   IFlexFactory<IFlexQuery>
-         abstract member ComputationOpertionFactory :   IFlexFactory<IComputationOperation>
-         //abstract member PluginsFactory             :   IFlexFactory<IPlugin>
-         abstract member ScriptFactoryCollection    :   IScriptFactoryCollection
-         abstract member ResourceLoader             :   IResourceLoader
-
-
-    // ---------------------------------------------------------------------------- 
+    /// </summary>
+    type IScriptFactoryCollection = 
+        abstract ProfileSelectorScriptFactory : IScriptFactory<IFlexProfileSelectorScript> with get
+        abstract ComputedFieldScriptFactory : IScriptFactory<IComputedFieldScript> with get
+        abstract CustomScoringScriptFactory : IScriptFactory<ICustomScoringScript> with get
+    
+    /// <summary>
     /// Version cache store used across the system. This helps in resolving 
-    /// conflicts arising out of concrrent threads trying to update a lucene document.
-    // ---------------------------------------------------------------------------- 
-    type IVersioningCacheStore =
-        abstract member GetVersion     :   string -> string -> Option<int * DateTime>
-        abstract member AddVersion     :   string -> string -> int -> bool
-        abstract member UpdateVersion  :   string -> string -> int -> DateTime -> int -> bool
-        abstract member DeleteVersion  :   string -> string -> bool
-
-    // ---------------------------------------------------------------------------- 
+    /// conflicts arising out of concurrent threads trying to update a lucene document.
+    /// </summary>
+    type IVersioningCacheStore = 
+        abstract GetVersion : string -> string -> Option<int * DateTime>
+        abstract AddVersion : string -> string -> int -> bool
+        abstract UpdateVersion : string -> string -> int -> DateTime -> int -> bool
+        abstract DeleteVersion : string -> string -> bool
+    
+    /// <summary>
     /// Interface which exposes all index related operations
-    // ---------------------------------------------------------------------------- 
-    type IIndexService =
-
-        /// This method is for synchronous index operations. This will return the 
-        /// operation status along with a description message.
-        abstract member PerformCommandAsync         :  string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
-
-        /// This method is for synchronous index operations. This will return the 
-        /// operation status along with a description message.
-        abstract member PerformCommand              :   string * IndexCommand -> Choice<unit, OperationMessage>
-
-        /// Index queue which is used for async operations. This is useful for
-        /// bulk indexing tasks where the producer can send more than one record
-        /// to the buffer queue.
-        abstract member CommandQueue                :   unit -> ActionBlock<string * IndexCommand>
-
-        /// Default Search operation. The associated search object will encapsulate
-        /// all possible search variations
-        abstract member PerformQuery                :   string * SearchQuery -> Choice<SearchResults, OperationMessage>
-
-        /// Default Search operation. The associated search object will encapsulate
-        /// all possible search variations
-        //abstract member PerformQueryAsync           :   string * SearchQuery * AsyncReplyChannel<SearchResult> -> unit
-        
-        abstract member GetIndex                    :   string -> Choice<Index, OperationMessage>
-
-        abstract member AddIndex                    :   Index -> Choice<unit, OperationMessage>
-
-        abstract member UpdateIndex                 :   Index -> Choice<unit, OperationMessage>
-
-        abstract member OpenIndex                   :   string -> Choice<unit, OperationMessage>
-
-        abstract member CloseIndex                  :   string -> Choice<unit, OperationMessage>
-
-        abstract member DeleteIndex                 :   string -> Choice<unit, OperationMessage>
-
-        abstract member IndexExists                 :   string -> bool
-
-        abstract member IndexStatus                 :   string -> Choice<IndexState, OperationMessage>
-
-        /// Method to close all indexing indexing operation. Usually called before
-        /// a server shutdown.
-        abstract member ShutDown                    :   unit -> bool
-
-
-    //open SuperWebSocket
-
-    /// This will hold all the mutable data related to the node. Everything outside will be
-    /// immutable. This will be passed around. 
-    type INodeState =
-        abstract member PersistanceStore    :   IPersistanceStore
-        abstract member TcpServer           :   IServer
-        abstract member HttpServer          :   IServer
-        //abstract member 
-        abstract member ActiveConnections   :   ConcurrentDictionary<string, string>
-        //abstract member IncomingSessions    :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
-        //abstract member OutgoingConnections :   ConcurrentDictionary<string, SuperWebSocket.WebSocketSession>
-
-    
-    type ISocketClient =
-        abstract member Open        :   unit -> unit
-        abstract member Send        :   byte[] -> unit
-        abstract member Connected   :   unit -> bool
-    
+    /// </summary>
+    type IIndexService = 
+        abstract PerformCommandAsync : string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
+        abstract PerformCommand : string * IndexCommand -> Choice<unit, OperationMessage>
+        abstract CommandQueue : unit -> ActionBlock<string * IndexCommand>
+        abstract PerformQuery : string * SearchQuery -> Choice<SearchResults, OperationMessage>
+        abstract GetIndex : string -> Choice<Index, OperationMessage>
+        abstract AddIndex : Index -> Choice<unit, OperationMessage>
+        abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
+        abstract OpenIndex : string -> Choice<unit, OperationMessage>
+        abstract CloseIndex : string -> Choice<unit, OperationMessage>
+        abstract DeleteIndex : string -> Choice<unit, OperationMessage>
+        abstract IndexExists : string -> bool
+        abstract IndexStatus : string -> Choice<IndexState, OperationMessage>
+        abstract ShutDown : unit -> bool
