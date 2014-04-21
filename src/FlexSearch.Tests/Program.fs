@@ -1,7 +1,7 @@
 ﻿open FsUnit
 open Fuchu
 open System
-open FlexSearch.Core
+
 [<EntryPoint>]
 let main argv = 
     let result = Tests.defaultMainThisAssembly (argv)
@@ -10,7 +10,7 @@ let main argv =
     //BenchmarkTests.indexingWikiExtractorDumpBenchMarkTests "F:\wikipedia\wikidump.txt"
     
     // Uncheck the below for debugging individual test
-    //let result = run (HttpModuleTests.testRunHelper())
+    //let result = run (SearchTests.simpleSortingTests())
     //Console.WriteLine(result)
     
     Console.ReadKey() |> ignore

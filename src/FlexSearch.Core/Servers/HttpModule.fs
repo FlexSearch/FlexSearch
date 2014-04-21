@@ -33,30 +33,30 @@ open System.Net.Http
 type IndexModule() = 
     inherit HttpModuleBase()
     override this.Get(indexName, owin, state) = 
-        owin |> responseProcessor (state.IndexService.GetIndex(indexName)) OK BAD_REQUEST
+        owin |> responseProcessor (IndexService.GetIndex indexName state) OK BAD_REQUEST
     
     override this.Post(indexName, owin, state) = 
         match getRequestBody<Index> (owin.Request) with
         | Choice1Of2(index) -> 
             // Index name passed in URL takes precedence
             index.IndexName <- indexName
-            owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
+            owin |> responseProcessor (IndexService.AddIndex index state) OK BAD_REQUEST
         | Choice2Of2(error) -> 
             if error.ErrorCode = 6002 then 
                 // In case the error is no body defined then still try to create the index based on index name
                 let index = new Index()
                 index.IndexName <- indexName
-                owin |> responseProcessor (state.IndexService.AddIndex(index)) OK BAD_REQUEST
+                owin |> responseProcessor (IndexService.AddIndex index state) OK BAD_REQUEST
             else owin |> BAD_REQUEST error
     
     override this.Delete(indexName, owin, state) = 
-        owin |> responseProcessor (state.IndexService.DeleteIndex(indexName)) OK BAD_REQUEST
+        owin |> responseProcessor (IndexService.DeleteIndex indexName state) OK BAD_REQUEST
     override this.Put(indexName, owin, state) = 
         match getRequestBody<Index> (owin.Request) with
         | Choice1Of2(index) -> 
             // Index name passed in URL takes precedence
             index.IndexName <- indexName
-            owin |> responseProcessor (state.IndexService.UpdateIndex(index)) OK BAD_REQUEST
+            owin |> responseProcessor (IndexService.UpdateIndex index state) OK BAD_REQUEST
         | Choice2Of2(error) -> owin |> BAD_REQUEST error
 
 [<Export(typeof<HttpModuleBase>)>]
@@ -72,31 +72,14 @@ type DocumentModule() =
                 | Some(id) -> 
                     // documents/{id}
                     // Return the requested document
-                    let q = new SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField id))
-                    q.ReturnScore <- false
-                    q.ReturnFlatResult <- true
-                    q.Columns.Add("*")
-                    match state.IndexService.PerformQuery(indexName, q) with
-                    | Choice1Of2(v') -> 
-                        let result = v'.Documents.First().Fields
-                        return! Choice1Of2(result :> obj)
+                    match DocumentService.GetDocument indexName id state with
+                    | Choice1Of2(v') -> return! Choice1Of2(v' :> obj)
                     | Choice2Of2(e) -> return! Choice2Of2(e)
                 | None -> 
                     // documents
                     // Return top 10 documents
-                    let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
-                    q.ReturnScore <- false
-                    q.ReturnFlatResult <- true
-                    q.Columns.Add("*")
-                    q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
-                    match state.IndexService.PerformQuery(indexName, q) with
-                    | Choice1Of2(v') -> 
-                        if q.ReturnFlatResult then 
-                            owin.Response.Headers.Add("RecordsReturned", [| v'.RecordsReturned.ToString() |])
-                            owin.Response.Headers.Add("TotalAvailable", [| v'.TotalAvailable.ToString() |])
-                            let result = v'.Documents |> Seq.map (fun x -> x.Fields)
-                            return! Choice1Of2(result :> obj)
-                        else return! Choice1Of2(v' :> obj)
+                    match DocumentService.GetDocuments indexName state with
+                    | Choice1Of2(v') -> return! Choice1Of2(v' :> obj)
                     | Choice2Of2(e) -> return! Choice2Of2(e)
             }
         owin |> responseProcessor processRequest OK BAD_REQUEST
@@ -114,7 +97,7 @@ type DocumentModule() =
                         // Override dictionary id with the URL id
                         fields.[Constants.IdField] <- id
                     | _ -> fields.Add(Constants.IdField, id)
-                    return! state.IndexService.PerformCommand(indexName, IndexCommand.Create(id, fields))
+                    return! state |> DocumentService.AddDocument indexName id fields
                 | None -> 
                     // documents
                     // Bulk addition of the documents
@@ -129,11 +112,11 @@ type DocumentModule() =
                 | Some(id) -> 
                     // documents/{id}
                     // Delete the document by id
-                    return! state.IndexService.PerformCommand(indexName, IndexCommand.Delete(id))
+                    return! state |> DocumentService.DeleteDocument indexName id
                 | None -> 
                     // documents
                     // Bulk delete of the documents
-                    return! state.IndexService.PerformCommand(indexName, IndexCommand.BulkDeleteByIndexName)
+                    return! state |> DocumentService.DeleteAllDocuments indexName
             }
         owin |> responseProcessor processRequest OK BAD_REQUEST
     
@@ -150,7 +133,7 @@ type DocumentModule() =
                         // Override dictionary id with the URL id
                         fields.[Constants.IdField] <- id
                     | _ -> fields.Add(Constants.IdField, id)
-                    return! state.IndexService.PerformCommand(indexName, IndexCommand.Update(id, fields))
+                    return! state |> DocumentService.AddorUpdateDocument indexName id fields
                 | None -> 
                     // documents
                     // Bulk addition of the documents
@@ -181,7 +164,7 @@ type SearchModule() =
             query.OrderBy <- getValueFromQueryString "orderby" query.OrderBy owin
             query.ReturnFlatResult <- getBoolValueFromQueryString "returnflatresult" query.ReturnFlatResult owin
             query.IndexName <- indexName
-            match state.IndexService.PerformQuery(indexName, query) with
+            match SearchService.Search query state with
             | Choice1Of2(v') -> 
                 if query.ReturnFlatResult then 
                     owin.Response.Headers.Add("RecordsReturned", [| v'.RecordsReturned.ToString() |])
@@ -204,9 +187,9 @@ type ExistsModule() =
     inherit HttpModuleBase()
     
     let processRequest (indexName : string, owin : IOwinContext, state : NodeState) = 
-        match state.IndexService.IndexStatus(indexName) with
-        | Choice1Of2(_) -> Choice1Of2()
-        | Choice2Of2(e) -> Choice2Of2(e)
+        match IndexService.IndexExists indexName state with
+        | true -> Choice1Of2()
+        | false -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
     
     override this.Get(indexName, owin, state) = 
         owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST
@@ -221,7 +204,7 @@ type StatusModule() =
     
     override this.Get(indexName, owin, state) = 
         let processRequest = 
-            match state.IndexService.IndexStatus(indexName) with
+            match IndexService.GetIndexStatus indexName state with
             | Choice1Of2(status) -> Choice1Of2(new IndexStatusResponse(status))
             | Choice2Of2(e) -> Choice2Of2(e)
         owin |> responseProcessor processRequest OK BAD_REQUEST
@@ -231,8 +214,8 @@ type StatusModule() =
             match checkIdPresent (owin) with
             | Some(id) -> 
                 match id with
-                | InvariantEqual "online" -> state.IndexService.OpenIndex(indexName)
-                | InvariantEqual "offline" -> state.IndexService.CloseIndex(indexName)
+                | InvariantEqual "online" -> IndexService.OpenIndex indexName state
+                | InvariantEqual "offline" -> IndexService.CloseIndex indexName state
                 | _ -> Choice2Of2(MessageConstants.HTTP_NOT_SUPPORTED)
             | None -> Choice2Of2(MessageConstants.HTTP_NOT_SUPPORTED)
         owin |> responseProcessor processRequest OK BAD_REQUEST
@@ -242,9 +225,7 @@ type StatusModule() =
 [<ExportMetadata("Name", "analysis")>]
 type AnalysisModule() = 
     inherit HttpModuleBase()
-    let processRequest (indexName, owin, state : NodeState) = maybe { let! index = state.IndexService.GetIndex
-                                                                                       (indexName)
-                                                                      return! Choice1Of2() }
+    let processRequest (indexName, owin, state : NodeState) = maybe { return! Choice1Of2() }
     override this.Get(indexName, owin, state) = 
         owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST
     override this.Post(indexName, owin, state) = 

@@ -24,17 +24,17 @@ id,topic,surname,cvv2,company
 5,d,jhonson,1,test5
 """
     let index = Helpers.GetBasicIndexSettingsForContact()
-    let result = Helpers.indexService.AddIndex(index)
-    Helpers.AddTestDataToIndex(Helpers.indexService, index, testData)
+    Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
+    Helpers.AddTestDataToIndex(index, testData)
     let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
     let result = ref Unchecked.defaultof<SearchResults>
     testList "Search results columns test" 
         [ testCase "Searching with no columns specified will return no additional columns" <| fun _ -> 
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.[0].Fields.Count |> should equal 0
           testCase "Searching with columns specified with '*' will return all column" <| fun _ -> 
               query.Columns.Add("*")
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.contents.Documents.[0].Fields.Count |> should equal index.Fields.Count
           
           testCase "The returned columns should contain column 'topic'" 
@@ -48,7 +48,7 @@ id,topic,surname,cvv2,company
           testCase "Searching with columns specified as 'topic' will return just one column" <| fun _ -> 
               query.Columns.Clear()
               query.Columns.Add("topic")
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.contents.Documents.[0].Fields.Count |> should equal 1
           
           testCase "The returned columns should be 'topic'" 
@@ -57,7 +57,7 @@ id,topic,surname,cvv2,company
               query.Columns.Clear()
               query.Columns.Add("topic")
               query.Columns.Add("surname")
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.contents.Documents.[0].Fields.Count |> should equal 2
           
           testCase "The returned columns should contain column 'topic'" 
@@ -68,7 +68,7 @@ id,topic,surname,cvv2,company
           testCase "If Flat structure is requested then id column will be be populated in Fields" <| fun _ -> 
               query.Columns.Clear()
               query.ReturnFlatResult <- true
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.contents.Documents.[0].Fields.ContainsKey(Constants.IdField) |> should equal true
           
           testCase "If Flat structure is requested then lastmodified column will be be populated in Fields" 
@@ -82,7 +82,7 @@ id,topic,surname,cvv2,company
           testCase "No score will be returned if ReturnScore is set to false" <| fun _ -> 
               query.ReturnScore <- false
               query.ReturnFlatResult <- false
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.contents.Documents.[0].Score = 0.0
               |> should equal true
           
@@ -91,16 +91,16 @@ id,topic,surname,cvv2,company
               query.ReturnScore <- false
               query.ReturnFlatResult <- false
               query.QueryString <- "company = 'test1'"
-              Helpers.indexService.PerformQuery(index.IndexName, query) 
+              Helpers.nodeState |> SearchService.Search(query) 
               |> Helpers.expectedFailureMessage (MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED)
           
           testCase "Stored fields can be retrieved" <| fun _ -> 
               query.Columns.Clear()
               query.Columns.Add("company")
               query.QueryString <- "cvv2 = '1'"
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.contents.Documents.[0].Fields.ContainsKey("company") |> should equal true
-          testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+          testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]
 
 [<Tests>]
 let pagingTests = 
@@ -114,35 +114,35 @@ id,givenname,surname,cvv2
 6,aroonn,jhonson,1
 """
     let index = Helpers.GetBasicIndexSettingsForContact()
-    let result = Helpers.indexService.AddIndex(index)
-    Helpers.AddTestDataToIndex(Helpers.indexService, index, testData)
+    let result = Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
+    Helpers.AddTestDataToIndex(index, testData)
     let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
     let result = ref Unchecked.defaultof<SearchResults>
     testList "Search results paging tests" 
         [ testCase "Searching for 'cvv2 = 1' with Count = 2 will return 2 records" <| fun _ -> 
               query.Count <- 2
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 2
           testCase "First record will be with id = 1" <| fun _ -> result.contents.Documents.[0].Id |> should equal "1"
           testCase "Second record will be with id = 2" <| fun _ -> result.contents.Documents.[1].Id |> should equal "2"
           testCase "Searching for 'cvv2 = 1' with records to return = 2 and skip = 2 will return 2 records" <| fun _ -> 
               query.Count <- 2
               query.Skip <- 2
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 2
           testCase "First record will be with id = 3" <| fun _ -> result.contents.Documents.[0].Id |> should equal "3"
           testCase "Second record will be with id = 4" <| fun _ -> result.contents.Documents.[1].Id |> should equal "4"
           testCase "Searching for 'cvv2 = 1' with records to return = 2 and skip = 3 will return 2 records" <| fun _ -> 
               query.Count <- 2
               query.Skip <- 3
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 2
           testCase "First record will be with id = 4" <| fun _ -> result.contents.Documents.[0].Id |> should equal "4"
           testCase "Second record will be with id = 5" <| fun _ -> result.contents.Documents.[1].Id |> should equal "5"
-          testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+          testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]
 
 [<Tests>]
-let simpleSortingTests = 
+let simpleSortingTests() = 
     let testData = """
 id,topic,surname,cvv2
 1,a,jhonson,1
@@ -152,15 +152,15 @@ id,topic,surname,cvv2
 5,d,jhonson,1
 """
     let index = Helpers.GetBasicIndexSettingsForContact()
-    let result = Helpers.indexService.AddIndex(index)
-    Helpers.AddTestDataToIndex(Helpers.indexService, index, testData)
+    Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
+    Helpers.AddTestDataToIndex(index, testData)
     let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
     let result = ref Unchecked.defaultof<SearchResults>
     testList "Search results sorting tests" 
         [ testCase "Searching for 'cvv2 = 1' with orderby topic should return 5 records" <| fun _ -> 
               query.OrderBy <- "topic"
               query.Columns.Add("topic")
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 5
           
           testCase "1st record should be a" 
@@ -177,7 +177,7 @@ id,topic,surname,cvv2
           
           testCase "5th record should be a" 
           <| fun _ -> result.contents.Documents.[4].Fields.["topic"] |> should equal "e"
-          testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+          testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]
 
 [<Tests>]
 let simpleHighlightingTests = 
@@ -187,8 +187,8 @@ id,topic,abstract
 2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artefacts such as machine code of computer programs.
 """
     let index = Helpers.GetBasicIndexSettingsForContact()
-    let result = Helpers.indexService.AddIndex(index)
-    Helpers.AddTestDataToIndex(Helpers.indexService, index, testData)
+    Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
+    Helpers.AddTestDataToIndex(index, testData)
     let query = new SearchQuery(index.IndexName, "abstract match 'practical approach'")
     let result = ref Unchecked.defaultof<SearchResults>
     testList "Search results highlighting tests" 
@@ -197,7 +197,7 @@ id,topic,abstract
               query.Highlights.FragmentsToReturn <- 1
               query.Highlights.PreTag <- "<imp>"
               query.Highlights.PostTag <- "</imp>"
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 1
           
           testCase "It will return a highlighted passage" 
@@ -214,7 +214,7 @@ id,topic,abstract
           
           testCase "The highlighted should contain 'approach' with in pre and post tags" 
           <| fun _ -> result.contents.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") |> should equal true
-          testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+          testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]
 
 [<Tests>]
 let simpleSearchProfileTests = 
@@ -230,8 +230,8 @@ id,topic,surname,cvv2,givenname
 8,d,jhonson,1,andrew
 """
     let index = Helpers.GetBasicIndexSettingsForContact()
-    let result = Helpers.indexService.AddIndex(index)
-    Helpers.AddTestDataToIndex(Helpers.indexService, index, testData)
+    Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
+    Helpers.AddTestDataToIndex(index, testData)
     let query = 
         let q = new SearchQuery(index.IndexName, "")
         // "givenname = '' AND surname = '' AND (cvv2 = '1' OR topic = '')"
@@ -241,20 +241,20 @@ id,topic,surname,cvv2,givenname
     testList "Search results sorting tests" 
         [ testCase "Searching with searchprofile 'test1' will return 2 record" <| fun _ -> 
               query.QueryString <- "{givenname:'jhon',surname:'hewitt',cvv2:'1',topic:'c'}"
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 2
           testCase "If no value for cvv2 is passed then the default configured value of 1 will be used" <| fun _ -> 
               query.QueryString <- "{givenname:'jhon',surname:'hewitt',topic:'c'}"
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 2
           testCase "If no value for cvv2 is passed and no value for topic is passed then topic will be ignored" <| fun _ -> 
               query.QueryString <- "{givenname:'jhon',surname:'hewitt'}"
-              result := test (Helpers.indexService.PerformQuery(index.IndexName, query))
+              result := test (Helpers.nodeState |> SearchService.Search(query))
               result.Value.Documents.Count |> should equal 4
           testCase "If no value for givenname is passed then the profile will throw error as that option is set" <| fun _ -> 
               query.QueryString <- "{surname:'hewitt'}"
-              Helpers.indexService.PerformQuery(index.IndexName, query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE_1)
+              Helpers.nodeState |> SearchService.Search(query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE_1)
           testCase "If no value for surname is passed then the profile will throw error as the value is missing" <| fun _ -> 
               query.QueryString <- "{givenname:'jhon'}"
-              Helpers.indexService.PerformQuery(index.IndexName, query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE)
-          testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+              Helpers.nodeState |> SearchService.Search(query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE)
+          testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]

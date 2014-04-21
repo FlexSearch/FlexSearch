@@ -37,51 +37,7 @@ open org.apache.lucene.store
 
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
-module Index = 
-    /// <summary>
-    /// Represents a dummy lucene document. There will be one per index stored in a dictionary
-    /// </summary>
-    type private ThreadLocalDocument = 
-        { Document : Document
-          FieldsLookup : Dictionary<string, Field>
-          LastGeneration : int }
-    
-    /// <summary>
-    /// Stores all mutable index realted state data. This will be passed around
-    /// in a controlled manner and is thread-safe.
-    /// </summary>
-    type private IndicesState = 
-        { /// Dictionary to hold the current status of the indices. This is a thread 
-          /// safe dictionary so it is easier to update it compared to a
-          /// mutable field on index setting 
-          IndexStatus : ConcurrentDictionary<string, IndexState>
-          /// Dictionary to hold all the information about currently active index and their status
-          IndexRegisteration : ConcurrentDictionary<string, FlexIndex>
-          /// For optimal indexing performance, re-use the Field and Document 
-          /// instance for more than one document. But that is not easily possible
-          /// in a multi-threaded scenario using TPL dataflow as we don't know which 
-          /// thread it is using to execute each task. The easiest way
-          /// is to use ThreadLocal value to create a local copy of the index document.
-          /// The implication of creating one lucene document class per document to 
-          /// be indexed is the penalty it has in terms of garbage collection. Also,
-          /// lucene's document and index classes can't be shared across threads.
-          ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> }
-        
-        member this.GetStatus(indexName) = 
-            match this.IndexStatus.TryGetValue(indexName) with
-            | (true, state) -> Choice1Of2(state)
-            | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-        
-        member this.GetRegisteration(indexName) = 
-            match this.IndexRegisteration.TryGetValue(indexName) with
-            | (true, state) -> Choice1Of2(state)
-            | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
-        
-        member this.AddStatus(indexName, status) = 
-            match this.IndexStatus.TryAdd(indexName, status) with
-            | true -> Choice1Of2()
-            | false -> Choice2Of2(MessageConstants.ERROR_ADDING_INDEX_STATUS)
-    
+module Index =     
     // Index auto commit changes job
     let private commitJob (flexIndex : FlexIndex) = 
         // Looping over array by index number is usually the fastest
@@ -98,10 +54,10 @@ module Index =
             flexIndex.Shards.[i].NRTManager.maybeRefresh() |> ignore
     
     /// <summary>
-    /// Creates a async timer which can be used to execute a funtion at specified
+    /// Creates a async timer which can be used to execute a function at specified
     /// period of time. This is used to schedule all recurring indexing tasks
     /// </summary>
-    /// <param name="delay">Dealy to be applied</param>
+    /// <param name="delay">Delay to be applied</param>
     /// <param name="work">Method to perform the work</param>
     /// <param name="flexIndex">Index on which the job is to be scheduled</param>
     let private scheduleIndexJob delay (work : FlexIndex -> unit) flexIndex = 
@@ -118,11 +74,11 @@ module Index =
         loop delay flexIndex.Token
     
     /// <summary>
-    /// Add index to the registeration
+    /// Add index to the registration
     /// </summary>
     /// <param name="state">Index state</param>
     /// <param name="flexIndexSetting">Index setting</param>
-    let private addIndex (state : IndicesState, flexIndexSetting : FlexIndexSetting) = 
+    let addIndex (state : IndicesState, flexIndexSetting : FlexIndexSetting) = 
         maybe { 
             /// Generate shards for the newly added index
             let generateShards flexIndexSetting = 
@@ -135,7 +91,7 @@ module Index =
                             match writers with
                             | Choice2Of2(e) -> failwith e.UserMessage
                             | Choice1Of2(indexWriter, trackingIndexWriter) -> 
-                                // Based on Lucene 4.4 the nrtmanager is replaced with ControlledRealTimeReopenThread which can take any
+                                // Based on Lucene 4.4 the NRT manager is replaced with ControlledRealTimeReopenThread which can take any
                                 // reference manager
                                 let nrtManager = new SearcherManager(indexWriter, true, new SearcherFactory())
                                 
@@ -165,29 +121,15 @@ module Index =
             // NRT Scheduler
             Async.Start
                 (scheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliSec refreshIndexJob flexIndex)
-            // Add the index to the registeration
+            // Add the index to the registration
             state.IndexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore
             state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
         }
-    
-    let private loadAllIndex (state : IndicesState, persistanceStore : IPersistanceStore) = 
-        for x in persistanceStore.GetAll<Index>() do
-            if x.Online then 
-                try 
-                    match ServiceLocator.SettingsBuilder.BuildSetting(x) with
-                    | Choice1Of2(flexIndexSetting) -> addIndex (state, flexIndexSetting) |> ignore
-                    | Choice2Of2(e) -> ()
-                //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
-                with ex -> ()
-            //indexLogger.Error("Loading index from file failed.", ex)
-            else 
-                //indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
-                state.IndexStatus.TryAdd(x.IndexName, IndexState.Offline) |> ignore
-    
+        
     // ----------------------------------------------------------------------------
     // Close an open index
     // ----------------------------------------------------------------------------
-    let private closeIndex (state : IndicesState, flexIndex : FlexIndex) = 
+    let closeIndex (state : IndicesState, flexIndex : FlexIndex) = 
         try 
             state.IndexRegisteration.TryRemove(flexIndex.IndexSetting.IndexName) |> ignore
             // Update status from online to closing
@@ -203,9 +145,9 @@ module Index =
         state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Offline
     
     // ----------------------------------------------------------------------------
-    // Utility method to return index registeration information
+    // Utility method to return index registration information
     // ----------------------------------------------------------------------------
-    let private getIndexRegisteration (state : IndicesState, indexName) = 
+    let getIndexRegisteration (state : IndicesState, indexName) = 
         match state.IndexStatus.TryGetValue(indexName) with
         | (true, status) -> 
             match status with
@@ -220,11 +162,11 @@ module Index =
     
     // ----------------------------------------------------------------------------               
     // Function to check if the requested index is available. If yes then tries to 
-    // retrieve the dcument template associated with the index from threadlocal store.
+    // retrieve the document template associated with the index from thread local store.
     // If there is no template document for the requested index then goes ahead
     // and creates one. 
     // ----------------------------------------------------------------------------   
-    let private indexExists (state : IndicesState, indexName) = 
+    let indexExists (state : IndicesState, indexName) = 
         match state.IndexRegisteration.TryGetValue(indexName) with
         | (true, flexIndex) -> 
             match state.ThreadLocalStore.Value.TryGetValue(indexName) with
@@ -261,7 +203,7 @@ module Index =
     // ----------------------------------------------------------------------------     
     // Updates the current thread local index document with the incoming data
     // ----------------------------------------------------------------------------     
-    let private updateDocument (flexIndex : FlexIndex, documentTemplate : ThreadLocalDocument, documentId : string, 
+    let updateDocument (flexIndex : FlexIndex, documentTemplate : ThreadLocalDocument, documentId : string, 
                                 version : int, fields : Dictionary<string, string>) = 
         documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(documentId)
         documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(GetCurrentTimeAsLong())
@@ -276,7 +218,7 @@ module Index =
                     try 
                         // Wrong values for the data type will still be handled as update lucene field will
                         // check the data type
-                        let value = s fields
+                        let value = s.Invoke(fields)
                         FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value
                     with e -> FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
                 | None -> 
@@ -289,210 +231,179 @@ module Index =
             else Document.mapToShard documentId flexIndex.Shards.Length
         (targetIndex, documentTemplate)
     
-    // ----------------------------------------------------------------------------     
-    // Function to process the 
-    // ----------------------------------------------------------------------------                                         
-    let private processItem (state : IndicesState, indexMessage : IndexCommand, flexIndex : FlexIndex, 
-                             versionCache : IVersioningCacheStore) = 
-        maybe { 
-            let! (flexIndex, documentTemplate) = indexExists (state, flexIndex.IndexSetting.IndexName)
-            match indexMessage with
-            | Create(documentId, fields) -> 
-                let (targetIndex, documentTemplate) = 
-                    updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
-                flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
-                return! Choice1Of2()
-            | Update(documentId, fields) -> 
-                let (targetIndex, documentTemplate) = 
-                    updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
-                flexIndex.Shards.[targetIndex]
-                    .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, documentId), documentTemplate.Document) |> ignore
-                return! Choice1Of2()
-            | Delete(documentId) -> 
-                let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length
-                flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) |> ignore
-                return! Choice1Of2()
-            | BulkDeleteByIndexName -> 
-                flexIndex.Shards |> Array.iter (fun shard -> shard.TrackingIndexWriter.deleteAll() |> ignore)
-                return! Choice1Of2()
-            | Commit -> 
-                flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit())
-                return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-        }
     
-    // ----------------------------------------------------------------------------   
-    // Concrete implementation of the index service interface. This class will be 
-    // injected using DI thus exposing the necessary
-    // functionality at any web service
-    // loadAllIndex - This is used to bypass loading of index at initialization time.
-    // Helpful for testing
-    // ----------------------------------------------------------------------------   
-    type IndexService(settingsParser : ISettingsBuilder, persistanceStore : IPersistanceStore, versionCache : IVersioningCacheStore, searchService : ISearchService) = 
-        
-        let state = 
-            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
-              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
-              ThreadLocalStore = 
-                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
-                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
-        
-        /// Default buffering queue
-        /// This is TPL Dataflow based approach. Can replace it with parallel.foreach
-        /// on blocking collection. 
-        /// Advantages - Faster, EnumerablePartitionerOptions.NoBuffering takes care of the
-        /// older .net partitioner bug, Can reduce the number of lucene documents which will be
-        /// generated 
-        let mutable queue : ActionBlock<string * IndexCommand> = null
-        
-        let processQueueItem (indexName, indexMessage : IndexCommand) = 
-            let registeration = getIndexRegisteration (state, indexName)
-            match registeration with
-            | Choice1Of2(index) -> processItem (state, indexMessage, index, versionCache) |> ignore
-            | Choice2Of2(_) -> ()
-        
-        // ----------------------------------------------------------------------------
-        // Load all index configuration data on start of application
-        // ----------------------------------------------------------------------------
-        do 
-            let executionBlockOption = new ExecutionDataflowBlockOptions()
-            executionBlockOption.MaxDegreeOfParallelism <- -1
-            executionBlockOption.BoundedCapacity <- 100
-            queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
-            loadAllIndex (state, persistanceStore)
-        
-        // ----------------------------------------------------------------------------
-        // Interface implementation
-        // ----------------------------------------------------------------------------        
-        interface IIndexService with
-            
-            member this.PerformCommandAsync(indexName, indexMessage, replyChannel) = 
-                match getIndexRegisteration (state, indexName) with
-                | Choice1Of2(index) -> replyChannel.Reply(processItem (state, indexMessage, index, versionCache))
-                | Choice2Of2(error) -> replyChannel.Reply(Choice2Of2(error))
-            
-            member this.PerformCommand(indexName, indexMessage) = 
-                maybe { let! index = getIndexRegisteration (state, indexName)
-                        return! processItem (state, indexMessage, index, versionCache) }
-            member this.CommandQueue() = queue
-            
-            member this.IndexExists(indexName) = 
-                match state.IndexStatus.TryGetValue(indexName) with
-                | (true, _) -> true
-                | _ -> false
-            
-            member this.IndexStatus(indexName) = 
-                match state.IndexStatus.TryGetValue(indexName) with
-                | (true, status) -> Choice1Of2(status)
-                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-            
-            member this.GetIndex indexName = 
-                match state.IndexStatus.TryGetValue(indexName) with
-                | (true, _) -> 
-                    match persistanceStore.Get<Index>(indexName) with
-                    | Choice1Of2(a) -> Choice1Of2(a)
-                    | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-            
-            member this.AddIndex flexIndex = 
-                maybe { 
-                    match state.IndexStatus.TryGetValue(flexIndex.IndexName) with
-                    | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
-                    | _ -> 
-                        let! settings = settingsParser.BuildSetting(flexIndex)
-                        persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
-                        Logger.AddIndex(flexIndex.IndexName, flexIndex)
-                        if flexIndex.Online then do! addIndex (state, settings)
-                        else do! state.AddStatus(flexIndex.IndexName, IndexState.Offline)
-                }
-            
-            member this.UpdateIndex index = 
-                maybe { 
-                    let! status = state.GetStatus(index.IndexName)
-                    match status with
-                    | IndexState.Online -> 
-                        let! flexIndex = state.GetRegisteration(index.IndexName)
-                        let! settings = settingsParser.BuildSetting(index)
-                        closeIndex (state, flexIndex)
-                        do! addIndex (state, settings)
-                        persistanceStore.Put index.IndexName index |> ignore
-                        Logger.AddIndex(index.IndexName,index)
-                        return! Choice1Of2()
-                    | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-                    | IndexState.Offline | IndexState.Closing -> 
-                        let settings = settingsParser.BuildSetting(index)
-                        persistanceStore.Put index.IndexName index |> ignore
-                        Logger.AddIndex(index.IndexName,index)
-                        return! Choice1Of2()
-                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-                }
-            
-            member this.DeleteIndex indexName = 
-                maybe { 
-                    let! status = state.GetStatus(indexName)
-                    match status with
-                    | IndexState.Online -> 
-                        let! flexIndex = state.GetRegisteration(indexName)
-                        closeIndex (state, flexIndex)
-                        persistanceStore.Delete<Index> indexName |> ignore
-                        state.IndexRegisteration.TryRemove(indexName) |> ignore
-                        state.IndexStatus.TryRemove(indexName) |> ignore
-                        // It is possible that directory might not exist if the index has never been opened
-                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
-                            Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
-                        Logger.DeleteIndex(indexName)
-                        return! Choice1Of2()
-                    | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-                    | IndexState.Offline | IndexState.Closing -> 
-                        persistanceStore.Delete<Index> indexName |> ignore
-                        state.IndexRegisteration.TryRemove(indexName) |> ignore
-                        state.IndexStatus.TryRemove(indexName) |> ignore
-                        // It is possible that directory might not exist if the index has never been opened
-                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
-                            Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
-                        Logger.DeleteIndex(indexName)
-                        return! Choice1Of2()
-                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-                }
-            
-            member this.CloseIndex indexName = 
-                maybe { 
-                    let! status = state.GetStatus(indexName)
-                    match status with
-                    | IndexState.Closing | IndexState.Offline -> 
-                        return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
-                    | _ -> 
-                        let! index = state.GetRegisteration(indexName)
-                        closeIndex (state, index)
-                        let! index' = persistanceStore.Get<Index>(indexName)
-                        index'.Online <- false
-                        persistanceStore.Put indexName index' |> ignore
-                        Logger.CloseIndex(indexName)
-                        return! Choice1Of2()
-                }
-            
-            member this.OpenIndex indexName = 
-                maybe { 
-                    let! status = state.GetStatus(indexName)
-                    match status with
-                    | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-                    | IndexState.Offline | IndexState.Closing -> 
-                        let! index = persistanceStore.Get<Index>(indexName)
-                        let! settings = settingsParser.BuildSetting(index)
-                        do! addIndex (state, settings)
-                        index.Online <- true
-                        persistanceStore.Put indexName index |> ignore
-                        Logger.OpenIndex(indexName)
-                        return! Choice1Of2()
-                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-                }
-            
-            member this.ShutDown() = 
-                Logger.Shutdown()
-                for index in state.IndexRegisteration do
-                    closeIndex (state, index.Value)
-                    Logger.CloseIndex(index.Key)
-                true
-            
-            member this.PerformQuery(indexName, query) = maybe { let! flexIndex = state.GetRegisteration(indexName)
-                                                                 return! searchService.Search(flexIndex, query) }
+//    // ----------------------------------------------------------------------------   
+//    // Concrete implementation of the index service interface. This class will be 
+//    // injected using DI thus exposing the necessary
+//    // functionality at any web service
+//    // loadAllIndex - This is used to bypass loading of index at initialization time.
+//    // Helpful for testing
+//    // ----------------------------------------------------------------------------   
+//    type IndexService(settingsParser : ISettingsBuilder, persistanceStore : IPersistanceStore, versionCache : IVersioningCacheStore, searchService : ISearchService) = 
+//        
+//        let state = 
+//            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
+//              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
+//              ThreadLocalStore = 
+//                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
+//                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
+//        
+//        /// Default buffering queue
+//        /// This is TPL Data-flow based approach. Can replace it with parallel.foreach
+//        /// on blocking collection. 
+//        /// Advantages - Faster, EnumerablePartitionerOptions.NoBuffering takes care of the
+//        /// older .net partitioner bug, Can reduce the number of lucene documents which will be
+//        /// generated 
+//        let mutable queue : ActionBlock<string * IndexCommand> = null
+//        
+//        let processQueueItem (indexName, indexMessage : IndexCommand) = 
+//            let registeration = getIndexRegisteration (state, indexName)
+//            match registeration with
+//            | Choice1Of2(index) -> processItem (state, indexMessage, index, versionCache) |> ignore
+//            | Choice2Of2(_) -> ()
+//        
+//        // ----------------------------------------------------------------------------
+//        // Load all index configuration data on start of application
+//        // ----------------------------------------------------------------------------
+//        do 
+//            let executionBlockOption = new ExecutionDataflowBlockOptions()
+//            executionBlockOption.MaxDegreeOfParallelism <- -1
+//            executionBlockOption.BoundedCapacity <- 100
+//            queue <- new ActionBlock<string * IndexCommand>(processQueueItem, executionBlockOption)
+//            loadAllIndex (state, persistanceStore)
+//        
+//        // ----------------------------------------------------------------------------
+//        // Interface implementation
+//        // ----------------------------------------------------------------------------        
+//        interface IIndexService with
+//            
+//            member this.PerformCommandAsync(indexName, indexMessage, replyChannel) = 
+//                match getIndexRegisteration (state, indexName) with
+//                | Choice1Of2(index) -> replyChannel.Reply(processItem (state, indexMessage, index, versionCache))
+//                | Choice2Of2(error) -> replyChannel.Reply(Choice2Of2(error))
+//            
+//            member this.PerformCommand(indexName, indexMessage) = 
+//                maybe { let! index = getIndexRegisteration (state, indexName)
+//                        return! processItem (state, indexMessage, index, versionCache) }
+//            member this.CommandQueue() = queue
+//            
+//            member this.IndexExists(indexName) = 
+//                match state.IndexStatus.TryGetValue(indexName) with
+//                | (true, _) -> true
+//                | _ -> false
+//            
+//            member this.IndexStatus(indexName) = 
+//                match state.IndexStatus.TryGetValue(indexName) with
+//                | (true, status) -> Choice1Of2(status)
+//                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+//            
+//            member this.GetIndex indexName = 
+//                match state.IndexStatus.TryGetValue(indexName) with
+//                | (true, _) -> 
+//                    match persistanceStore.Get<Index>(indexName) with
+//                    | Choice1Of2(a) -> Choice1Of2(a)
+//                    | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+//                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+//            
+//            member this.AddIndex flexIndex = 
+//                maybe { 
+//                    match state.IndexStatus.TryGetValue(flexIndex.IndexName) with
+//                    | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
+//                    | _ -> 
+//                        let! settings = settingsParser.BuildSetting(flexIndex)
+//                        persistanceStore.Put flexIndex.IndexName flexIndex |> ignore
+//                        Logger.AddIndex(flexIndex.IndexName, flexIndex)
+//                        if flexIndex.Online then do! addIndex (state, settings)
+//                        else do! state.AddStatus(flexIndex.IndexName, IndexState.Offline)
+//                }
+//            
+//            member this.UpdateIndex index = 
+//                maybe { 
+//                    let! status = state.GetStatus(index.IndexName)
+//                    match status with
+//                    | IndexState.Online -> 
+//                        let! flexIndex = state.GetRegisteration(index.IndexName)
+//                        let! settings = settingsParser.BuildSetting(index)
+//                        closeIndex (state, flexIndex)
+//                        do! addIndex (state, settings)
+//                        persistanceStore.Put index.IndexName index |> ignore
+//                        Logger.AddIndex(index.IndexName,index)
+//                        return! Choice1Of2()
+//                    | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+//                    | IndexState.Offline | IndexState.Closing -> 
+//                        let settings = settingsParser.BuildSetting(index)
+//                        persistanceStore.Put index.IndexName index |> ignore
+//                        Logger.AddIndex(index.IndexName,index)
+//                        return! Choice1Of2()
+//                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+//                }
+//            
+//            member this.DeleteIndex indexName = 
+//                maybe { 
+//                    let! status = state.GetStatus(indexName)
+//                    match status with
+//                    | IndexState.Online -> 
+//                        let! flexIndex = state.GetRegisteration(indexName)
+//                        closeIndex (state, flexIndex)
+//                        persistanceStore.Delete<Index> indexName |> ignore
+//                        state.IndexRegisteration.TryRemove(indexName) |> ignore
+//                        state.IndexStatus.TryRemove(indexName) |> ignore
+//                        // It is possible that directory might not exist if the index has never been opened
+//                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+//                            Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
+//                        Logger.DeleteIndex(indexName)
+//                        return! Choice1Of2()
+//                    | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+//                    | IndexState.Offline | IndexState.Closing -> 
+//                        persistanceStore.Delete<Index> indexName |> ignore
+//                        state.IndexRegisteration.TryRemove(indexName) |> ignore
+//                        state.IndexStatus.TryRemove(indexName) |> ignore
+//                        // It is possible that directory might not exist if the index has never been opened
+//                        if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+//                            Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
+//                        Logger.DeleteIndex(indexName)
+//                        return! Choice1Of2()
+//                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+//                }
+//            
+//            member this.CloseIndex indexName = 
+//                maybe { 
+//                    let! status = state.GetStatus(indexName)
+//                    match status with
+//                    | IndexState.Closing | IndexState.Offline -> 
+//                        return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+//                    | _ -> 
+//                        let! index = state.GetRegisteration(indexName)
+//                        closeIndex (state, index)
+//                        let! index' = persistanceStore.Get<Index>(indexName)
+//                        index'.Online <- false
+//                        persistanceStore.Put indexName index' |> ignore
+//                        Logger.CloseIndex(indexName)
+//                        return! Choice1Of2()
+//                }
+//            
+//            member this.OpenIndex indexName = 
+//                maybe { 
+//                    let! status = state.GetStatus(indexName)
+//                    match status with
+//                    | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+//                    | IndexState.Offline | IndexState.Closing -> 
+//                        let! index = persistanceStore.Get<Index>(indexName)
+//                        let! settings = settingsParser.BuildSetting(index)
+//                        do! addIndex (state, settings)
+//                        index.Online <- true
+//                        persistanceStore.Put indexName index |> ignore
+//                        Logger.OpenIndex(indexName)
+//                        return! Choice1Of2()
+//                    | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+//                }
+//            
+//            member this.ShutDown() = 
+//                Logger.Shutdown()
+//                for index in state.IndexRegisteration do
+//                    closeIndex (state, index.Value)
+//                    Logger.CloseIndex(index.Key)
+//                true
+//            
+//            member this.PerformQuery(indexName, query) = maybe { let! flexIndex = state.GetRegisteration(indexName)
+//                                                                 return! searchService.Search(flexIndex, query) }

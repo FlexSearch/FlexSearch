@@ -8,10 +8,8 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
@@ -50,53 +48,20 @@ module Document =
     /// <param name="shardCount">Total available shards</param>
     let mapToShard (id : string) shardCount = 
         if (shardCount = 1) then 0
-        else    
+        else 
             let mutable total = 0
             for i in id do
                 total <- total + System.Convert.ToInt32(i)
             total % shardCount
     
-    /// Generates a lucene document from a flex document    
-    let Generate (document : FlexSearch.Api.Document) flexIndexSetting = 
-        let luceneDocument = new Document()
-        luceneDocument.add (new StringField(Constants.IdField, document.Id, Field.Store.YES))
-        luceneDocument.add (new StringField(Constants.TypeField, document.Index, Field.Store.YES))
-        luceneDocument.add (new LongField(Constants.LastModifiedField, GetCurrentTimeAsLong(), Field.Store.YES))
-        for field in flexIndexSetting.Fields do
-            match document.Fields.TryGetValue(field.FieldName) with
-            | (true, value) -> luceneDocument.add (FlexField.CreateLuceneField field value)
-            | _ -> luceneDocument.add (FlexField.CreateDefaultLuceneField field)
-        luceneDocument
-    
-    // Add a flex document to an index    
-    let Add (document : FlexSearch.Api.Document) flexIndex optimistic (versionCache : IVersioningCacheStore) = 
-        if (System.String.IsNullOrWhiteSpace(document.Id) = true) then failwith "Missing Id"
-        let targetIndex = mapToShard document.Id flexIndex.Shards.Length
-        let targetDocument = Generate document flexIndex.IndexSetting
-        flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(targetDocument)
-    
-    // Update a flex document in an index    
-    let Update (document : FlexSearch.Api.Document) flexIndex = 
-        if (System.String.IsNullOrWhiteSpace(document.Id) = true) then failwith "Missing Id"
-        let targetIndex = mapToShard document.Id flexIndex.Shards.Length
-        let targetDocument = Generate document flexIndex.IndexSetting
-        flexIndex.Shards.[targetIndex]
-            .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, document.Id), targetDocument)
-    
-    // Delete a flex document in an index    
-    let Delete (id : string) flexIndex = 
-        if (System.String.IsNullOrWhiteSpace(id) = true) then failwith "Missing Id"
-        let targetIndex = mapToShard id flexIndex.Shards.Length
-        flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, id))
-
 // ----------------------------------------------------------------------------
-// Contains lucene writer IO and infracture related operations
+// Contains lucene writer IO and infrastructure related operations
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module IO = 
     // ----------------------------------------------------------------------------     
-    // Creates lucene index writer config from flex index setting 
+    // Creates lucene index writer configuration from flex index setting 
     // ---------------------------------------------------------------------------- 
     let private getIndexWriterConfig (flexIndexSetting : FlexIndexSetting) = 
         try 
@@ -110,11 +75,11 @@ module IO =
             Choice2Of2(error)
     
     // ----------------------------------------------------------------------------                  
-    // Create a lucene filesystem lock over a directory    
+    // Create a lucene file-system lock over a directory    
     // ---------------------------------------------------------------------------- 
     let private getIndexDirectory (directoryPath : string) (directoryType : DirectoryType) = 
         // Note: Might move to SingleInstanceLockFactory to provide other services to open
-        // the index in readonly mode
+        // the index in read-only mode
         let lockFactory = new NativeFSLockFactory()
         let file = new java.io.File(directoryPath)
         try 
@@ -136,10 +101,11 @@ module IO =
     // ---------------------------------------------------------------------------- 
     // Creates lucene index writer from flex index setting  
     // ----------------------------------------------------------------------------                    
-    let GetIndexWriter(indexSetting : FlexIndexSetting, directoryPath : string) = maybe {
-        let! iwc = getIndexWriterConfig indexSetting
-        let! indexDirectory = getIndexDirectory directoryPath indexSetting.IndexConfiguration.DirectoryType
-        let indexWriter = new IndexWriter(indexDirectory, iwc)
-        let trackingIndexWriter = new TrackingIndexWriter(indexWriter)
-        return! Choice1Of2(indexWriter, trackingIndexWriter)
+    let GetIndexWriter(indexSetting : FlexIndexSetting, directoryPath : string) = 
+        maybe { 
+            let! iwc = getIndexWriterConfig indexSetting
+            let! indexDirectory = getIndexDirectory directoryPath indexSetting.IndexConfiguration.DirectoryType
+            let indexWriter = new IndexWriter(indexDirectory, iwc)
+            let trackingIndexWriter = new TrackingIndexWriter(indexWriter)
+            return! Choice1Of2(indexWriter, trackingIndexWriter)
         }

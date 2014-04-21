@@ -185,10 +185,6 @@
       <HintPath>..\packages\Microsoft.Owin.Hosting.2.1.0\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Mono.CSharp">
-      <HintPath>..\packages\CS-Script.3.7.2.0\lib\net45\Mono.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.6.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -294,19 +290,23 @@
     <Compile Include="Analysis\Tokenizers.fs" />
     <Compile Include="Utilities\PersitanceStore.fs" />
     <Compile Include="Utilities\LocalCacheStore.fs" />
-    <Compile Include="Utilities\CompilerService.fs" />
     <Compile Include="Utilities\MefFactory.fs" />
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\Validator.fs" />
-    <Compile Include="Servers\HttpModule.fs" />
-    <Compile Include="Servers\ImportHandlers.fs" />
-    <Compile Include="Servers\Server.fs" />
-    <Compile Include="Servers\SocketServer.fs" />
     <Compile Include="ServiceLocator.fs" />
     <Compile Include="FlexField.fs" />
     <Compile Include="Document.fs" />
     <Compile Include="Index.fs" />
     <Compile Include="Search.fs" />
+    <Compile Include="Services\IndexService.fs" />
+    <Compile Include="Services\DocumentService.fs" />
+    <Compile Include="Services\QueueService.fs" />
+    <Compile Include="Services\SearchService..fs" />
+    <Compile Include="Services\CompilerService.fs" />
+    <Compile Include="Servers\HttpModule.fs" />
+    <Compile Include="Servers\ImportHandlers.fs" />
+    <Compile Include="Servers\Server.fs" />
+    <Compile Include="Servers\SocketServer.fs" />
     <Compile Include="SettingsBuilder.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />

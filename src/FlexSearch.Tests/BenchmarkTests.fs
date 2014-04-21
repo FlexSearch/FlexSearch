@@ -45,7 +45,7 @@ let createWikipediaDump (path : string) (outputFile : string) =
     ()
 
 let indexingLunceneWikipediaDumpBenchMarkTests (inputFile : string) = 
-    Helpers.indexService.AddIndex(getWikiIndex()) |> ignore
+    Helpers.nodeState |> IndexService.AddIndex(getWikiIndex()) |> ignore
     let file = new StreamReader(inputFile)
     let document = new Dictionary<string, string>()
     document.Add("datetime", "")
@@ -66,10 +66,7 @@ let indexingLunceneWikipediaDumpBenchMarkTests (inputFile : string) =
             file.ReadLine() |> ignore
             document.["body"] <- file.ReadLine()
             file.ReadLine() |> ignore
-            await 
-                (Helpers.indexService.CommandQueue()
-                        .SendAsync(("wikipedia", 
-                                    IndexCommand.Create(i.ToString(), document))))
+            Helpers.nodeState |> QueueService.AddDocumentQueue "wikipedia" (i.ToString()) document
     stopwatch.Stop()
     let fileInfo = new FileInfo(inputFile)
     let fileSize = float (fileInfo.Length) / 1073741824.0
@@ -109,7 +106,7 @@ let createSingleFileFromWikiExtractor (path : string) (outputFile : string) =
 // Total Data Size (MB): 8954.854471
 // Indexing Speed (GB/Hr): 52.709062
 let indexingWikiExtractorDumpBenchMarkTests (inputFile : string) = 
-    Helpers.indexService.AddIndex(getWikiIndex()) |> ignore
+    Helpers.nodeState |> IndexService.AddIndex(getWikiIndex()) |> ignore
     let file = new StreamReader(inputFile)
     //let document = new Dictionary<string, string>()
     //document.Add("title", "")
@@ -129,10 +126,7 @@ let indexingWikiExtractorDumpBenchMarkTests (inputFile : string) =
             //document.["title"] <- line.Substring(0, line.IndexOf('|') - 1)
             //document.["body"] <- line.Substring(line.IndexOf('|') + 1)
             //Helpers.indexService.PerformCommand("wikipedia", Create(i.ToString(), document)) |> ignore
-            await 
-                (Helpers.indexService.CommandQueue()
-                        .SendAsync(("wikipedia", 
-                                    IndexCommand.Create(i.ToString(), document))))
+            Helpers.nodeState |> QueueService.AddDocumentQueue "wikipedia" (i.ToString()) document
             i <- i + 1
             line <- file.ReadLine()
     stopwatch.Stop()

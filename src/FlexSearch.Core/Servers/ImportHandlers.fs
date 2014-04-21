@@ -142,13 +142,8 @@ type SqlImporter() =
                             for i = 1 to reader.FieldCount do
                                 document.Add(reader.GetName(i), reader.GetValue(i).ToString())
                             if request.ForceCreate then 
-                                await 
-                                    (state.IndexService.CommandQueue()
-                                          .SendAsync((indexName, IndexCommand.Create(reader.[0].ToString(), document))))
-                            else 
-                                await 
-                                    (state.IndexService.CommandQueue()
-                                          .SendAsync((indexName, IndexCommand.Update(reader.[0].ToString(), document))))
+                                QueueService.AddDocumentQueue indexName (reader.[0].ToString()) document state
+                            else QueueService.AddOrUpdateDocumentQueue indexName (reader.[0].ToString()) document state
                             rows <- rows + 1
                             if String.IsNullOrWhiteSpace(request.JobId) <> true && rows % 5000 = 0 then 
                                 let job = 

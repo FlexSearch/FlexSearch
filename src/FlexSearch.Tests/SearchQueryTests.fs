@@ -20,17 +20,17 @@ type SearchTest =
 
 let search indexName testObject () = 
     let query = new SearchQuery(indexName, testObject.Input)
-    (Helpers.getResult (Helpers.indexService.PerformQuery(indexName, query))).RecordsReturned 
+    (Helpers.getResult (Helpers.nodeState |> SearchService.Search query)).RecordsReturned 
     |> should equal testObject.Output
     ()
 
 let SearchTestRunner(tests : SearchTest) = 
     let index = Helpers.GetBasicIndexSettingsForContact()
-    let result = Helpers.indexService.AddIndex(index)
-    Helpers.AddTestDataToIndex(Helpers.indexService, index, tests.TestData)
+    Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
+    Helpers.AddTestDataToIndex(index, tests.TestData)
     testList tests.Title 
         [ for test in tests.TestObjects -> testCase test.Note (search index.IndexName test)
-          yield testCase "Cleanup" <| fun _ -> Helpers.indexService.DeleteIndex(index.IndexName) |> ignore ]
+          yield testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]
 
 [<Tests>]
 let phraseMatchTests = 

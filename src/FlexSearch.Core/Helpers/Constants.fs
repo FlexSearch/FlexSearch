@@ -39,7 +39,7 @@ open org.apache.lucene.store
 [<RequireQualifiedAccess>]
 module Constants = 
     // Lucene version to be used across the application
-    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_45
+    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_47
     let IdField = "_id"
     let LastModifiedField = "_lastmodified"
     let TypeField = "_type"

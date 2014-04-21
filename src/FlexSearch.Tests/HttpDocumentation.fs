@@ -5,7 +5,6 @@ open FlexSearch.Api.Message
 open FlexSearch.Core
 open FsUnit
 open Fuchu
-open HttpClient
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System

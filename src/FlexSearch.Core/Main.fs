@@ -33,9 +33,9 @@ module Main =
     let container = new ConcurrentDictionary<int, NodeState>()
     
     /// <summary>
-    /// Default Owin method to process request
+    /// Default OWIN method to process request
     /// </summary>
-    /// <param name="owin">Owin Context</param>
+    /// <param name="owin">OWIN Context</param>
     let exec (owin : IOwinContext) = 
         async { 
             let getModule moduleName indexName (owin : IOwinContext) = 
@@ -61,7 +61,7 @@ module Main =
                 // Root index request
                 | 2 -> 
                     let indexName = getIndexName owin
-                    match container.[owin.Request.Uri.Port].IndexService.IndexExists(indexName) with
+                    match IndexService.IndexExists indexName container.[owin.Request.Uri.Port] with
                     | true -> getModule "index" indexName owin
                     | false -> 
                         // This can be an index creation request
@@ -70,7 +70,7 @@ module Main =
                 // Index module request
                 | x when x > 2 && x < 5 -> 
                     let indexName = getIndexName owin
-                    match container.[owin.Request.Uri.Port].IndexService.IndexExists(indexName) with
+                    match IndexService.IndexExists indexName container.[owin.Request.Uri.Port] with
                     | true -> 
                         let moduleName = 
                             if owin.Request.Uri.Segments.[2].EndsWith("/") then 
@@ -83,18 +83,18 @@ module Main =
         }
     
     /// <summary>
-    /// Default owin handler to tranform C# functiom to F#
+    /// Default OWIN handler to transform C# function to F#
     /// </summary>
     let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
     
     /// <summary>
-    /// Owin startup class
+    /// OWIN startup class
     /// </summary>
     type OwinStartUp() = 
         member this.Configuration(app : IAppBuilder) = app.Run(handler)
     
     /// <summary>
-    /// Generate server settings from the json text file
+    /// Generate server settings from the JSON text file
     /// </summary>
     /// <param name="path">File path to load settings from</param>
     let GetServerSettings(path) = 
@@ -106,7 +106,7 @@ module Main =
         parsedResult
     
     /// <summary>
-    /// Initialize all the service locator member
+    /// Initialize all the service locater member
     /// </summary>
     let initServiceLocator (serverSettings, testServer) = 
         let pluginContainer = PluginContainer(not testServer).Value
@@ -115,19 +115,26 @@ module Main =
             SettingsBuilder.SettingsBuilder factoryCollection (new Validator.IndexValidator(factoryCollection))
         let persistanceStore = new PersistanceStore(Path.Combine(Constants.ConfFolder.Value, "Conf.db"), testServer)
         let searchService = new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
-        let indexService = 
-            new IndexService(settingBuilder, persistanceStore, new VersioningCacheStore(), searchService) :> IIndexService
         ServiceLocator.HttpModule <- Factories.GetHttpModules().Value
+        let indicesState = 
+            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
+              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
+              ThreadLocalStore = 
+                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
+                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
+        
         let nodeState = 
             { PersistanceStore = persistanceStore
               ServerSettings = serverSettings
               CacheStore = Unchecked.defaultof<_>
-              IndexService = indexService
-              SettingsBuilder = settingBuilder }
+              IndicesState = indicesState
+              SettingsBuilder = settingBuilder
+              SearchService = searchService }
+        
         nodeState
     
     /// <summary>
-    /// Main entrypoint to load node
+    /// Main entry point to load node
     /// </summary>
     let loadNode (serverSettings : ServerSettings, testServer : bool) = 
         // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.

@@ -8,10 +8,8 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Api.Service
@@ -96,7 +94,7 @@ module Interface =
         abstract GetAllModules : unit -> Dictionary<string, 'T>
     
     /// <summary>
-    /// Interface to be implemented by all tokenizers
+    /// Interface to be implemented by all tokenizer
     /// </summary>
     type IFlexTokenizerFactory = 
         abstract Initialize : IDictionary<string, string> * IResourceLoader -> unit
@@ -203,7 +201,7 @@ module Interface =
     /// <summary>
     /// Index related operations
     /// </summary>
-    type IIndexOperation = 
+    type IIndexService = 
         abstract GetIndex : string -> Choice<Index, OperationMessage>
         abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
         abstract DeleteIndex : string -> Choice<unit, OperationMessage>
@@ -211,24 +209,29 @@ module Interface =
         abstract GetAllIndex : unit -> Choice<List<Index>, OperationMessage>
         abstract IndexExists : string -> bool
         abstract GetIndexStatus : string -> Choice<IndexState, OperationMessage>
-        abstract SetIndexStatus : string * IndexState -> Choice<IndexState, OperationMessage>
         abstract OpenIndex : string -> Choice<unit, OperationMessage>
         abstract CloseIndex : string -> Choice<unit, OperationMessage>
+        abstract Commit : string -> Choice<unit, OperationMessage>
     
     /// <summary>
     /// Document related operations
     /// </summary>
-    type IDocumentOperation = 
+    type IDocumentService = 
         abstract GetDocument : string * string -> Choice<Dictionary<string, string>, OperationMessage>
         abstract GetDocuments : string -> Choice<List<Dictionary<string, string>>, OperationMessage>
-        abstract AddOrUpdateDocument : string * Dictionary<string, string> -> Choice<unit, OperationMessage>
+        abstract AddOrUpdateDocument : string * string * Dictionary<string, string> -> Choice<unit, OperationMessage>
         abstract DeleteDocument : string * string -> Choice<unit, OperationMessage>
-        abstract AddDocument : string * string -> Choice<unit, OperationMessage>
+        abstract AddDocument : string * string * Dictionary<string, string> -> Choice<unit, OperationMessage>
+        abstract DeleteAllDocuments : string -> Choice<unit, OperationMessage>
+        
+    type IQueueService =
+        abstract AddDocumentQueue : string * string * Dictionary<string, string> -> unit
+        abstract AddOrUpdateDocumentQueue : string * string * Dictionary<string, string> -> unit
     
     /// <summary>
     /// Search related operations
     /// </summary>
-    type ISearchOperation = 
+    type ISearch = 
         abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
         abstract SearchWithFlatResults : SearchQuery -> Choice<List<Dictionary<string, string>>, OperationMessage>
     
@@ -244,21 +247,20 @@ module Interface =
     type INodeOperation = 
         abstract LoadAllIndex : unit -> unit
         abstract ShutDown : unit -> bool
-    
-    /// <summary>
-    /// Interface which exposes all index related operations
-    /// </summary>
-    type IIndexService = 
-        abstract PerformCommandAsync : string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
-        abstract PerformCommand : string * IndexCommand -> Choice<unit, OperationMessage>
-        abstract CommandQueue : unit -> ActionBlock<string * IndexCommand>
-        abstract PerformQuery : string * SearchQuery -> Choice<SearchResults, OperationMessage>
-        abstract GetIndex : string -> Choice<Index, OperationMessage>
-        abstract AddIndex : Index -> Choice<unit, OperationMessage>
-        abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
-        abstract OpenIndex : string -> Choice<unit, OperationMessage>
-        abstract CloseIndex : string -> Choice<unit, OperationMessage>
-        abstract DeleteIndex : string -> Choice<unit, OperationMessage>
-        abstract IndexExists : string -> bool
-        abstract IndexStatus : string -> Choice<IndexState, OperationMessage>
-        abstract ShutDown : unit -> bool
+//    /// <summary>
+//    /// Interface which exposes all index related operations
+//    /// </summary>
+//    type IIndexService = 
+//        abstract PerformCommandAsync : string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
+//        abstract PerformCommand : string * IndexCommand -> Choice<unit, OperationMessage>
+//        abstract CommandQueue : unit -> ActionBlock<string * IndexCommand>
+//        abstract PerformQuery : string * SearchQuery -> Choice<SearchResults, OperationMessage>
+//        abstract GetIndex : string -> Choice<Index, OperationMessage>
+//        abstract AddIndex : Index -> Choice<unit, OperationMessage>
+//        abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
+//        abstract OpenIndex : string -> Choice<unit, OperationMessage>
+//        abstract CloseIndex : string -> Choice<unit, OperationMessage>
+//        abstract DeleteIndex : string -> Choice<unit, OperationMessage>
+//        abstract IndexExists : string -> bool
+//        abstract IndexStatus : string -> Choice<IndexState, OperationMessage>
+//        abstract ShutDown : unit -> bool

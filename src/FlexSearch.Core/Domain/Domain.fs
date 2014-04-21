@@ -14,6 +14,7 @@ open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Utility
 open System
+open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
@@ -139,7 +140,7 @@ type FlexField =
     { FieldName : string
       StoreInformation : FieldStoreInformation
       FieldType : FlexFieldType
-      Source : (IReadOnlyDictionary<string, string> -> string) option
+      Source : (System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>) option
       /// This is applicable to all fields apart from stored only so making
       /// it an optional field. 
       FieldInformation : FieldInformation option
@@ -154,8 +155,8 @@ type FlexField =
 // Search profile related types
 // ----------------------------------------------------------------------------
 type ScriptsManager = 
-    { ComputedFieldScripts : Dictionary<string, IReadOnlyDictionary<string, string> -> string>
-      ProfileSelectorScripts : Dictionary<string, IReadOnlyDictionary<string, string> -> string>
+    { ComputedFieldScripts : Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
+      ProfileSelectorScripts : Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
       CustomScoringScripts : Dictionary<string, IReadOnlyDictionary<string, string> * double -> double> }
 
 /// <summary>
@@ -193,7 +194,6 @@ type FlexShard =
 type FlexIndex = 
     { IndexSetting : FlexIndexSetting
       Shards : FlexShardWriter []
-      //      State               :   IndexState
       Token : CancellationTokenSource }
 
 /// <summary>
@@ -210,27 +210,45 @@ type CaseInsensitiveKeywordAnalyzer() =
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
 
 /// <summary>
-/// Messages which can be send to the indexing queue to indicate the type of operation
-/// and the associated data
-/// Indexing related message. The model could be considered similar to
-/// Command–query separation pattern where are side effect free queries are 
-/// kept separate from side effect based command. Also side effect operations
-/// don't support
+/// Represents a dummy lucene document. There will be one per index stored in a dictionary
 /// </summary>
-type IndexCommand = 
-    /// Create a new document
-    | Create of id : string * fields : Dictionary<string, string>
-    /// Update an existing document
-    | Update of id : string * fields : Dictionary<string, string>
-    /// Delete an existing document by id
-    | Delete of id : string
-    /// Optimistic concurrency controlled create of a document
-    //| OptimisticCreate of id: string * fields: Dictionary<string,string>
-    /// Optimistic concurrency controlled update of a document
-    | OptimisticUpdate of id : string * fields : Dictionary<string, string> * version : int
-    /// Optimistic concurrency controlled delete of a document
-    //| OptimisticDelete of id: string * version: int
-    /// Bulk delete all the documents in a index
-    | BulkDeleteByIndexName
-    /// Commit pending index changes
-    | Commit
+type ThreadLocalDocument = 
+    { Document : Document
+      FieldsLookup : Dictionary<string, Field>
+      LastGeneration : int }
+
+/// <summary>
+/// Stores all mutable index related state data. This will be passed around
+/// in a controlled manner and is thread-safe.
+/// </summary>
+type IndicesState = 
+    { /// Dictionary to hold the current status of the indices. This is a thread 
+      /// safe dictionary so it is easier to update it compared to a
+      /// mutable field on index setting 
+      IndexStatus : ConcurrentDictionary<string, IndexState>
+      /// Dictionary to hold all the information about currently active index and their status
+      IndexRegisteration : ConcurrentDictionary<string, FlexIndex>
+      /// For optimal indexing performance, re-use the Field and Document 
+      /// instance for more than one document. But that is not easily possible
+      /// in a multi-threaded scenario using TPL data flow as we don't know which 
+      /// thread it is using to execute each task. The easiest way
+      /// is to use ThreadLocal value to create a local copy of the index document.
+      /// The implication of creating one lucene document class per document to 
+      /// be indexed is the penalty it has in terms of garbage collection. Also,
+      /// lucene's document and index classes can't be shared across threads.
+      ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> }
+    
+    member this.GetStatus(indexName) = 
+        match this.IndexStatus.TryGetValue(indexName) with
+        | (true, state) -> Choice1Of2(state)
+        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+    
+    member this.GetRegisteration(indexName) = 
+        match this.IndexRegisteration.TryGetValue(indexName) with
+        | (true, state) -> Choice1Of2(state)
+        | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
+    
+    member this.AddStatus(indexName, status) = 
+        match this.IndexStatus.TryAdd(indexName, status) with
+        | true -> Choice1Of2()
+        | false -> Choice2Of2(MessageConstants.ERROR_ADDING_INDEX_STATUS)

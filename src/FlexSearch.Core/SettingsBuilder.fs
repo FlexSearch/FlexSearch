@@ -55,8 +55,8 @@ module SettingsBuilder =
                 else 
                     match scripts.TryGetValue(field.ScriptName) with
                     | (true, a) -> 
-                        match factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript(a) with
-                        | Choice1Of2(x) -> Choice1Of2(Some(x.Execute))
+                        match CompilerService.GenerateStringReturnScript(a.Source) with
+                        | Choice1Of2(x) -> Choice1Of2(Some(x))
                         | Choice2Of2(e) -> Choice2Of2(e)
                     | _ -> 
                         Choice2Of2
@@ -180,12 +180,10 @@ module SettingsBuilder =
                 maybe { 
                     match script.Value.ScriptType with
                     | ScriptType.SearchProfileSelector -> 
-                        let! compiledScript = factoryCollection.ScriptFactoryCollection.ProfileSelectorScriptFactory.CompileScript
-                                                  (script.Value)
-                        return (script.Key, script.Value.ScriptType, compiledScript.Execute)
-                    | ScriptType.ComputedField -> let! compiledScript = factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript
-                                                                            (script.Value)
-                                                  return (script.Key, script.Value.ScriptType, compiledScript.Execute)
+                        let! compiledScript = CompilerService.GenerateStringReturnScript(script.Value.Source)
+                        return (script.Key, script.Value.ScriptType, compiledScript)
+                    | ScriptType.ComputedField -> let! compiledScript = CompilerService.GenerateStringReturnScript(script.Value.Source)
+                                                  return (script.Key, script.Value.ScriptType, compiledScript)
                     | _ -> 
                         return! Choice2Of2
                                     (OperationMessage.WithPropertyName
@@ -193,9 +191,9 @@ module SettingsBuilder =
                 }
             
             let profileSelectorScripts = 
-                new Dictionary<string, IReadOnlyDictionary<string, string> -> string>(StringComparer.OrdinalIgnoreCase)
+                new Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>(StringComparer.OrdinalIgnoreCase)
             let computedFieldScripts = 
-                new Dictionary<string, IReadOnlyDictionary<string, string> -> string>(StringComparer.OrdinalIgnoreCase)
+                new Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>(StringComparer.OrdinalIgnoreCase)
             let customScoringScripts = 
                 new Dictionary<string, IReadOnlyDictionary<string, string> * double -> double>(StringComparer.OrdinalIgnoreCase)
             let! scripts = mapExitOnFailure (Seq.toList (scripts)) getScript

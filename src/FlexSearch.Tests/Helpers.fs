@@ -9,14 +9,27 @@ open System
 open System.Collections.Generic
 open System.Linq
 open System.Threading
+open System.Collections.Concurrent
 
 let pluginContainer = PluginContainer(false).Value
 let factoryCollection = new FactoryCollection(pluginContainer) :> IFactoryCollection
 let settingBuilder = SettingsBuilder.SettingsBuilder factoryCollection (new Validator.IndexValidator(factoryCollection))
 let persistanceStore = new PersistanceStore("", true)
 let searchService = new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
-let indexService = 
-    new IndexService(settingBuilder, persistanceStore, new VersioningCacheStore(), searchService) :> IIndexService
+let indicesState = 
+            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
+              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
+              ThreadLocalStore = 
+                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
+                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
+let nodeState = 
+    { 
+        PersistanceStore = persistanceStore
+        ServerSettings = Unchecked.defaultof<_>
+        CacheStore = Unchecked.defaultof<_>
+        IndicesState = indicesState
+        SettingsBuilder = settingBuilder
+        SearchService = searchService }
 
 let GetBasicIndexSettingsForContact() = 
     let index = new Index()
@@ -72,7 +85,7 @@ let GetBasicIndexSettingsForContact() =
 /// <param name="indexService"></param>
 /// <param name="index"></param>
 /// <param name="testData"></param>
-let AddTestDataToIndex(indexService : IIndexService, index : Index, testData : string) = 
+let AddTestDataToIndex(index : Index, testData : string) = 
     let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
     let headers = lines.[0].Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
     for line in lines.Skip(1) do
@@ -82,8 +95,9 @@ let AddTestDataToIndex(indexService : IIndexService, index : Index, testData : s
         indexDocument.Index <- index.IndexName
         for i in 1..items.Length - 1 do
             indexDocument.Fields.Add(headers.[i], items.[i])
-        indexService.PerformCommand(index.IndexName, Create(indexDocument.Id, indexDocument.Fields)) |> ignore
-    indexService.PerformCommand(index.IndexName, IndexCommand.Commit) |> ignore
+        let result = nodeState |> DocumentService.AddDocument index.IndexName indexDocument.Id indexDocument.Fields
+        ()
+    nodeState |> IndexService.Commit index.IndexName |> ignore
     Thread.Sleep(100)
 
 /// <summary>

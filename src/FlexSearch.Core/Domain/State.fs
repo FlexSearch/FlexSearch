@@ -30,8 +30,10 @@ module State =
         { PersistanceStore : IPersistanceStore
           ServerSettings : ServerSettings
           CacheStore : IVersioningCacheStore
-          IndexService : IIndexService
-          SettingsBuilder : ISettingsBuilder }
+          SettingsBuilder : ISettingsBuilder
+          IndicesState : IndicesState
+          SearchService : ISearchService }
+
     
     // ----------------------------------------------------------------------------     
     /// HTTP module to handle to incoming requests
@@ -72,5 +74,4 @@ module State =
         abstract ComputationOperationFactory : IFlexFactory<IComputationOperation> with get
         abstract ImportHandlerFactory : IFlexFactory<IImportHandler> with get
         abstract HttpModuleFactory : IFlexFactory<HttpModuleBase> with get
-        abstract ScriptFactoryCollection : IScriptFactoryCollection with get
         abstract ResourceLoader : IResourceLoader with get

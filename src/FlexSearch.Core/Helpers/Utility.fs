@@ -99,7 +99,7 @@ module MonadHelpers =
 
 [<AutoOpen>]
 module JavaHelpers = 
-    // These are needed to satsfy certain lucene query requirements
+    // These are needed to satisfy certain lucene query requirements
     let inline GetJavaDouble(value : Double) = java.lang.Double(value)
     let inline GetJavaInt(value : int) = java.lang.Integer(value)
     let inline GetJavaLong(value : int64) = java.lang.Long(value)
@@ -168,7 +168,7 @@ module Helpers =
         if File.Exists(filePath) = false then failwithf "File does not exist: {0}" filePath
         File.ReadAllText(filePath)
     
-    /// Deals with checking if the local admin privledges
+    /// Deals with checking if the local admin privileges
     let CheckIfAdministrator() = 
         let currentUser : WindowsIdentity = WindowsIdentity.GetCurrent()
         if currentUser <> null then 

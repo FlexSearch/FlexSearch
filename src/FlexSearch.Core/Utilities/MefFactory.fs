@@ -145,7 +145,7 @@ module Factories =
             new FlexFactory<HttpModuleBase>(container, "HTTP modules") :> IFlexFactory<HttpModuleBase>
         let importHandlerFactory = 
             new FlexFactory<IImportHandler>(container, "Import Handler") :> IFlexFactory<IImportHandler>
-        let scriptFactory = new CompilerService.ScriptFactoryCollection() :> IScriptFactoryCollection
+        
         let resourceLoader = new ResourceLoader() :> IResourceLoader
         interface IFactoryCollection with
             member this.FilterFactory = filterFactory
@@ -155,5 +155,5 @@ module Factories =
             member this.ComputationOperationFactory = computationOperationFactory
             member this.HttpModuleFactory = httpModuleFactory
             member this.ImportHandlerFactory = importHandlerFactory
-            member this.ScriptFactoryCollection = scriptFactory
+//            member this.ScriptFactoryCollection = scriptFactory
             member this.ResourceLoader = resourceLoader

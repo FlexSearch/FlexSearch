@@ -77,10 +77,6 @@
       <HintPath>..\packages\Gibraltar.Agent.3.5.6.1696\lib\4.0\Gibraltar.Agent.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="HttpClient">
-      <HintPath>..\packages\Http.fs.0.9.0.0\lib\net40\HttpClient.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="IKVM.AWT.WinForms">
       <HintPath>..\packages\IKVM.7.4.5196.0\lib\IKVM.AWT.WinForms.dll</HintPath>
       <Private>True</Private>
@@ -197,10 +193,6 @@
       <HintPath>..\packages\Microsoft.Owin.Hosting.2.1.0\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Mono.CSharp">
-      <HintPath>..\packages\CS-Script.3.7.2.0\lib\net45\Mono.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
@@ -295,7 +287,6 @@
     <Compile Include="SearchQueryTests.fs" />
     <Compile Include="AnalysisTests.fs" />
     <Compile Include="ParserTests.fs" />
-    <Compile Include="HttpModuleTests.fs" />
     <Compile Include="SocketServerTests.fs" />
     <Compile Include="PoolTests.fs" />
     <Compile Include="PersistanceStoreTests.fs" />

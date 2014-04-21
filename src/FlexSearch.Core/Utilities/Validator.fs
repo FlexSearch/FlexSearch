@@ -142,17 +142,6 @@ module Validator =
     let ScriptValidator (factoryCollection : IFactoryCollection) (propName : string, value : ScriptProperties) = 
         maybe { 
             do! validate "ScriptSource" value.Source |> notNullAndEmpty
-            match value.ScriptType with
-            | ScriptType.SearchProfileSelector -> let! script = factoryCollection.ScriptFactoryCollection.ProfileSelectorScriptFactory.CompileScript
-                                                                    (value)
-                                                  return! Choice1Of2()
-            | ScriptType.ComputedField -> let! script = factoryCollection.ScriptFactoryCollection.ComputedFieldScriptFactory.CompileScript
-                                                            (value)
-                                          return! Choice1Of2()
-            | _ -> 
-                return! Choice2Of2
-                            (OperationMessage.WithPropertyName
-                                 (MessageConstants.UNKNOWN_SCRIPT_TYPE, value.ScriptType.ToString()))
         }
     
     let IndexFieldValidator (factoryCollection : IFactoryCollection) 
