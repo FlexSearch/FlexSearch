@@ -34,11 +34,12 @@ open org.apache.lucene.store
 
 // ----------------------------------------------------------------------------
 // Top level settings parse function   
-// ----------------------------------------------------------------------------   
-module SettingsBuilder = 
+// ---------------------------------------------------------------------------- 
+[<AutoOpen>]
+module Builder = 
     let private keyWordAnalyzer = new CaseInsensitiveKeywordAnalyzer()
     
-    /// Convert Api field objects to domain flex fields  
+    /// Convert API field objects to domain flex fields  
     let private buildFields (fieldsDict : Dictionary<string, FieldProperties>, 
                              flexAnalyzers : Dictionary<string, Analyzer>, 
                              scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
@@ -140,7 +141,7 @@ module SettingsBuilder =
         }
     
     // ----------------------------------------------------------------------------
-    // Build analyzer definition for flexindexsettings from api analyzers
+    // Build analyzer definition for index settings from API analyzers
     // ----------------------------------------------------------------------------
     let private buildAnalyzers (analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, 
                                 factoryCollection : IFactoryCollection) = 
@@ -179,10 +180,11 @@ module SettingsBuilder =
             let getScript (script : KeyValuePair<string, ScriptProperties>) = 
                 maybe { 
                     match script.Value.ScriptType with
-                    | ScriptType.SearchProfileSelector -> 
-                        let! compiledScript = CompilerService.GenerateStringReturnScript(script.Value.Source)
-                        return (script.Key, script.Value.ScriptType, compiledScript)
-                    | ScriptType.ComputedField -> let! compiledScript = CompilerService.GenerateStringReturnScript(script.Value.Source)
+                    | ScriptType.SearchProfileSelector -> let! compiledScript = CompilerService.GenerateStringReturnScript
+                                                                                    (script.Value.Source)
+                                                          return (script.Key, script.Value.ScriptType, compiledScript)
+                    | ScriptType.ComputedField -> let! compiledScript = CompilerService.GenerateStringReturnScript
+                                                                            (script.Value.Source)
                                                   return (script.Key, script.Value.ScriptType, compiledScript)
                     | _ -> 
                         return! Choice2Of2
@@ -224,32 +226,32 @@ module SettingsBuilder =
             return result
         }
     
-    // ----------------------------------------------------------------------------
-    // Top level settings builder   
-    // ----------------------------------------------------------------------------   
-    let public SettingsBuilder (factoryCollection : IFactoryCollection) (indexValidator : IIndexValidator) = 
-        { new ISettingsBuilder with
-              member x.BuildSetting(index) = 
-                  maybe { 
-                      do! indexValidator.Validate(index)
-                      let! analyzers = buildAnalyzers (index.Analyzers, factoryCollection)
-                      let! fields = buildFields (index.Fields, analyzers, index.Scripts, factoryCollection)
-                      let fieldsArray : FlexField array = Array.zeroCreate fields.Count
-                      fields.Values.CopyTo(fieldsArray, 0)
-                      let! searchProfiles = getSearchProfiles (index.SearchProfiles)
-                      let! scriptsManager = getScriptsManager (index.Scripts, factoryCollection)
-                      let flexIndexSetting = 
-                          { IndexName = index.IndexName
-                            IndexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
-                            SearchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
-                            Fields = fieldsArray
-                            SearchProfiles = searchProfiles
-                            ScriptsManager = scriptsManager
-                            FieldsLookup = fields
-                            IndexConfiguration = index.IndexConfiguration
-                            ShardConfiguration = index.ShardConfiguration
-                            BaseFolder = 
-                                if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then index.IndexName
-                                else Constants.DataFolder.Value + "\\" + index.IndexName }
-                      return flexIndexSetting
-                  } }
+    /// <summary>
+    /// Top level settings builder
+    /// </summary>
+    type SettingsBuilder(factoryCollection : IFactoryCollection, indexValidator : IIndexValidator) = 
+        interface ISettingsBuilder with
+            member this.BuildSetting(index) = 
+                maybe { 
+                    do! indexValidator.Validate(index)
+                    let! analyzers = buildAnalyzers (index.Analyzers, factoryCollection)
+                    let! fields = buildFields (index.Fields, analyzers, index.Scripts, factoryCollection)
+                    let fieldsArray : FlexField array = Array.zeroCreate fields.Count
+                    fields.Values.CopyTo(fieldsArray, 0)
+                    let! searchProfiles = getSearchProfiles (index.SearchProfiles)
+                    let! scriptsManager = getScriptsManager (index.Scripts, factoryCollection)
+                    let flexIndexSetting = 
+                        { IndexName = index.IndexName
+                          IndexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
+                          SearchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
+                          Fields = fieldsArray
+                          SearchProfiles = searchProfiles
+                          ScriptsManager = scriptsManager
+                          FieldsLookup = fields
+                          IndexConfiguration = index.IndexConfiguration
+                          ShardConfiguration = index.ShardConfiguration
+                          BaseFolder = 
+                              if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then index.IndexName
+                              else Constants.DataFolder.Value + "\\" + index.IndexName }
+                    return flexIndexSetting
+                }

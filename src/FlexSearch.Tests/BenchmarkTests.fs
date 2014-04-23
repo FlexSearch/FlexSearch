@@ -44,7 +44,7 @@ let createWikipediaDump (path : string) (outputFile : string) =
         File.AppendAllLines(outputFile, lines)
     ()
 
-let indexingLunceneWikipediaDumpBenchMarkTests (inputFile : string) = 
+let indexingLunceneWikipediaDumpBenchMarkTests (inputFile : string) (queueService: IQueueService) = 
     Helpers.nodeState |> IndexService.AddIndex(getWikiIndex()) |> ignore
     let file = new StreamReader(inputFile)
     let document = new Dictionary<string, string>()
@@ -66,7 +66,7 @@ let indexingLunceneWikipediaDumpBenchMarkTests (inputFile : string) =
             file.ReadLine() |> ignore
             document.["body"] <- file.ReadLine()
             file.ReadLine() |> ignore
-            Helpers.nodeState |> QueueService.AddDocumentQueue "wikipedia" (i.ToString()) document
+            queueService.AddDocumentQueue("wikipedia",(i.ToString()), document)
     stopwatch.Stop()
     let fileInfo = new FileInfo(inputFile)
     let fileSize = float (fileInfo.Length) / 1073741824.0
@@ -105,7 +105,7 @@ let createSingleFileFromWikiExtractor (path : string) (outputFile : string) =
 // Total Elapsed time (ms): 597277
 // Total Data Size (MB): 8954.854471
 // Indexing Speed (GB/Hr): 52.709062
-let indexingWikiExtractorDumpBenchMarkTests (inputFile : string) = 
+let indexingWikiExtractorDumpBenchMarkTests (inputFile : string) (queueService: IQueueService) =
     Helpers.nodeState |> IndexService.AddIndex(getWikiIndex()) |> ignore
     let file = new StreamReader(inputFile)
     //let document = new Dictionary<string, string>()
@@ -126,7 +126,7 @@ let indexingWikiExtractorDumpBenchMarkTests (inputFile : string) =
             //document.["title"] <- line.Substring(0, line.IndexOf('|') - 1)
             //document.["body"] <- line.Substring(line.IndexOf('|') + 1)
             //Helpers.indexService.PerformCommand("wikipedia", Create(i.ToString(), document)) |> ignore
-            Helpers.nodeState |> QueueService.AddDocumentQueue "wikipedia" (i.ToString()) document
+            queueService.AddDocumentQueue("wikipedia",(i.ToString()), document)
             i <- i + 1
             line <- file.ReadLine()
     stopwatch.Stop()

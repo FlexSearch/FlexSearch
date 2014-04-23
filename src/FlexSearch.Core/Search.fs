@@ -114,7 +114,7 @@ module SearchDsl =
             | _ -> defaultValue
         | _ -> defaultValue
     
-    let private GenerateQuery (flexIndex : FlexIndex) (predicate : Predicate) (searchQuery : SearchQuery) 
+    let GenerateQuery (flexIndex : FlexIndex) (predicate : Predicate) (searchQuery : SearchQuery) 
         (isProfileBased : Map<string, string> option) (queryTypes : Dictionary<string, IFlexQuery>) = 
         let rec generateQuery (pred : Predicate) = 
             maybe { 
@@ -185,7 +185,7 @@ module SearchDsl =
             }
         generateQuery predicate
     
-    let private SearchQuery(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
+    let SearchQuery(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
         let indexSearchers = new List<IndexSearcher>()
         for i in 0..flexIndex.Shards.Length - 1 do
             let searcher = (flexIndex.Shards.[i].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
@@ -280,34 +280,6 @@ module SearchDsl =
         for i in 0..indexSearchers.Count - 1 do
             (flexIndex.Shards.[i].NRTManager :> ReferenceManager).release(indexSearchers.[i])
         Choice1Of2 searchResults
-    
-    // ----------------------------------------------------------------------------
-    // Search service class which will be dynamically injected using IOC. This will
-    // provide the interface for all kind of search functionality in flex.
-    // ----------------------------------------------------------------------------    
-    type SearchService(queryTypes : Dictionary<string, IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
-        interface ISearchService with
-            member x.Search(flexIndex : FlexIndex, search : SearchQuery) = 
-                maybe { 
-                    if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
-                        // Search profile based
-                        match flexIndex.IndexSetting.SearchProfiles.TryGetValue(search.SearchProfile) with
-                        | true, p -> 
-                            let (p', sq) = p
-                            search.MissingValueConfiguration <- sq.MissingValueConfiguration
-                            let! values = Parsers.ParseQueryString(search.QueryString)
-                            let! query = GenerateQuery flexIndex p' search (Some(values)) queryTypes
-                            return! SearchQuery(flexIndex, query, search)
-                        | _ -> return! Choice2Of2(MessageConstants.SEARCH_PROFILE_NOT_FOUND)
-                    else 
-                        use parser = queryParsersPool.Acquire()
-                        let! predicate = parser.Parse(search.QueryString)
-                        parser.Release()
-                        match predicate with
-                        | NotPredicate(_) -> return! Choice2Of2(MessageConstants.NEGATIVE_QUERY_NOT_SUPPORTED)
-                        | _ -> let! query = GenerateQuery flexIndex predicate search None queryTypes
-                               return! SearchQuery(flexIndex, query, search)
-                }
     
     // Check if the passed field is numeric field
     let inline IsNumericField(flexField : FlexField) = 

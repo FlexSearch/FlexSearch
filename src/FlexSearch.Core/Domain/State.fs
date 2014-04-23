@@ -25,15 +25,19 @@ module State =
     open org.apache.lucene.analysis
     
     /// This will hold all the mutable data related to the node. Everything outside will be
-    /// immutable. This will be passed around. 
-    type NodeState = 
-        { PersistanceStore : IPersistanceStore
-          ServerSettings : ServerSettings
-          CacheStore : IVersioningCacheStore
-          SettingsBuilder : ISettingsBuilder
-          IndicesState : IndicesState
-          SearchService : ISearchService }
+    /// immutable. This will be passed around.
+    type INodeState =
+        abstract member PersistanceStore: IPersistanceStore
+        abstract member ServerSettings: ServerSettings
+        abstract member CahceStore: IVersioningCacheStore
+        abstract member IndicesState: IndicesState
 
+    type NodeState(persistanceStore, serversettings, cacheStore, indicesState) = 
+        interface INodeState with
+            member this.PersistanceStore = persistanceStore
+            member this.ServerSettings = serversettings
+            member this.CahceStore = cacheStore
+            member this.IndicesState = indicesState
     
     // ----------------------------------------------------------------------------     
     /// HTTP module to handle to incoming requests
@@ -41,14 +45,14 @@ module State =
     [<AbstractClass>]
     type HttpModuleBase() = 
         //abstract Routes : unit -> ServiceRoute []
-        abstract Get : string * IOwinContext * NodeState -> unit
-        override this.Get(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
-        abstract Put : string * IOwinContext * NodeState -> unit
-        override this.Put(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
-        abstract Delete : string * IOwinContext * NodeState -> unit
-        override this.Delete(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
-        abstract Post : string * IOwinContext * NodeState -> unit
-        override this.Post(indexName, owin, state) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Get : string * IOwinContext -> unit
+        override this.Get(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Put : string * IOwinContext -> unit
+        override this.Put(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Delete : string * IOwinContext -> unit
+        override this.Delete(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+        abstract Post : string * IOwinContext -> unit
+        override this.Post(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
     
     /// <summary>
     /// Import handler interface to support
@@ -56,8 +60,8 @@ module State =
     type IImportHandler = 
         abstract SupportsBulkIndexing : unit -> bool
         abstract SupportsIncrementalIndexing : unit -> bool
-        abstract ProcessBulkRequest : string * ImportRequest * NodeState -> unit
-        abstract ProcessIncrementalRequest : string * ImportRequest * NodeState -> Choice<unit, OperationMessage>
+        abstract ProcessBulkRequest : string * ImportRequest -> unit
+        abstract ProcessIncrementalRequest : string * ImportRequest -> Choice<unit, OperationMessage>
     
     /// <summary>
     /// Interface which exposes all top level factories
@@ -71,7 +75,6 @@ module State =
         abstract TokenizerFactory : IFlexFactory<IFlexTokenizerFactory> with get
         abstract AnalyzerFactory : IFlexFactory<Analyzer> with get
         abstract SearchQueryFactory : IFlexFactory<IFlexQuery> with get
-        abstract ComputationOperationFactory : IFlexFactory<IComputationOperation> with get
         abstract ImportHandlerFactory : IFlexFactory<IImportHandler> with get
         abstract HttpModuleFactory : IFlexFactory<HttpModuleBase> with get
         abstract ResourceLoader : IResourceLoader with get

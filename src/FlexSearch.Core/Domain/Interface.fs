@@ -92,7 +92,8 @@ module Interface =
         abstract GetModuleByName : string -> Choice<'T, OperationMessage>
         abstract ModuleExists : string -> bool
         abstract GetAllModules : unit -> Dictionary<string, 'T>
-    
+        abstract GetMetaData : string -> Choice<IDictionary<string, obj>, OperationMessage>
+
     /// <summary>
     /// Interface to be implemented by all tokenizer
     /// </summary>
@@ -141,8 +142,9 @@ module Interface =
     /// Search service interface
     /// </summary>
     type ISearchService = 
+        abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
         abstract Search : FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
-    
+
     /// <summary>
     /// Computation operation interface
     /// </summary>
@@ -217,16 +219,16 @@ module Interface =
     /// Document related operations
     /// </summary>
     type IDocumentService = 
-        abstract GetDocument : string * string -> Choice<Dictionary<string, string>, OperationMessage>
-        abstract GetDocuments : string -> Choice<List<Dictionary<string, string>>, OperationMessage>
-        abstract AddOrUpdateDocument : string * string * Dictionary<string, string> -> Choice<unit, OperationMessage>
-        abstract DeleteDocument : string * string -> Choice<unit, OperationMessage>
-        abstract AddDocument : string * string * Dictionary<string, string> -> Choice<unit, OperationMessage>
-        abstract DeleteAllDocuments : string -> Choice<unit, OperationMessage>
+        abstract GetDocument : indexName: string * id: string -> Choice<Dictionary<string, string>, OperationMessage>
+        abstract GetDocuments : indexName: string -> Choice<List<Dictionary<string, string>>, OperationMessage>
+        abstract AddOrUpdateDocument : indexName: string * id: string * fields: Dictionary<string, string> -> Choice<unit, OperationMessage>
+        abstract DeleteDocument : indexName: string * id: string -> Choice<unit, OperationMessage>
+        abstract AddDocument : indexName: string * id: string * fields: Dictionary<string, string> -> Choice<unit, OperationMessage>
+        abstract DeleteAllDocuments : indexName: string -> Choice<unit, OperationMessage>
         
     type IQueueService =
-        abstract AddDocumentQueue : string * string * Dictionary<string, string> -> unit
-        abstract AddOrUpdateDocumentQueue : string * string * Dictionary<string, string> -> unit
+        abstract AddDocumentQueue : indexName: string * id: string * fields: Dictionary<string, string> -> unit
+        abstract AddOrUpdateDocumentQueue : indexName: string * id: string * fields: Dictionary<string, string> -> unit
     
     /// <summary>
     /// Search related operations

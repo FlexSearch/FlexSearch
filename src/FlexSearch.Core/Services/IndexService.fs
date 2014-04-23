@@ -44,202 +44,204 @@ open org.apache.lucene.store
 /// module but to only pass mutable state as an instance of NodeState
 module IndexService = 
     /// <summary>
-    /// Get an existing index details
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let GetIndex indexName (nodeState : NodeState) = 
-        match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
-        | (true, _) -> 
-            match nodeState.PersistanceStore.Get<Index>(indexName) with
-            | Choice1Of2(a) -> Choice1Of2(a)
-            | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-    
-    /// <summary>
-    /// Update an existing index
-    /// </summary>
-    /// <param name="index"></param>
-    /// <param name="nodeState"></param>
-    let UpdateIndex (index : Index) (nodeState : NodeState) = 
-        maybe { 
-            let! status = nodeState.IndicesState.GetStatus(index.IndexName)
-            match status with
-            | IndexState.Online -> 
-                let! flexIndex = nodeState.IndicesState.GetRegisteration(index.IndexName)
-                let! settings = nodeState.SettingsBuilder.BuildSetting(index)
-                Index.closeIndex (nodeState.IndicesState, flexIndex)
-                do! Index.addIndex (nodeState.IndicesState, settings)
-                nodeState.PersistanceStore.Put index.IndexName index |> ignore
-                Logger.AddIndex(index.IndexName, index)
-                return! Choice1Of2()
-            | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-            | IndexState.Offline | IndexState.Closing -> 
-                let settings = nodeState.SettingsBuilder.BuildSetting(index)
-                nodeState.PersistanceStore.Put index.IndexName index |> ignore
-                Logger.AddIndex(index.IndexName, index)
-                return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-        }
-    
-    /// <summary>
-    /// Delete an existing index
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let DeleteIndex indexName (nodeState : NodeState) = 
-        maybe { 
-            let! status = nodeState.IndicesState.GetStatus(indexName)
-            match status with
-            | IndexState.Online -> 
-                let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
-                closeIndex (nodeState.IndicesState, flexIndex)
-                nodeState.PersistanceStore.Delete<Index> indexName |> ignore
-                nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
-                nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
-                // It is possible that directory might not exist if the index has never been opened
-                if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
-                    Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
-                Logger.DeleteIndex(indexName)
-                return! Choice1Of2()
-            | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-            | IndexState.Offline | IndexState.Closing -> 
-                nodeState.PersistanceStore.Delete<Index> indexName |> ignore
-                nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
-                nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
-                // It is possible that directory might not exist if the index has never been opened
-                if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
-                    Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
-                Logger.DeleteIndex(indexName)
-                return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-        }
-    
-    /// <summary>
-    /// Add a new index
-    /// </summary>
-    /// <param name="index"></param>
-    /// <param name="nodeState"></param>
-    let AddIndex (index : Index) (nodeState : NodeState) = 
-        maybe { 
-            match nodeState.IndicesState.IndexStatus.TryGetValue(index.IndexName) with
-            | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
-            | _ -> 
-                let! settings = nodeState.SettingsBuilder.BuildSetting(index)
-                nodeState.PersistanceStore.Put index.IndexName index |> ignore
-                Logger.AddIndex(index.IndexName, index)
-                if index.Online then do! addIndex (nodeState.IndicesState, settings)
-                else do! nodeState.IndicesState.AddStatus(index.IndexName, IndexState.Offline)
-        }
-    
-    /// <summary>
-    /// Get all index information
-    /// </summary>
-    /// <param name="nodeState"></param>
-    let GetAllIndex(nodeState : NodeState) = nodeState.PersistanceStore.GetAll<Index>().ToList()
-    
-    /// <summary>
-    /// Check whether a given index exists in the system
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let IndexExists indexName (nodeState : NodeState) = 
-        match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
-        | (true, _) -> true
-        | _ -> false
-    
-    /// <summary>
-    /// Get the status of a given index
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let GetIndexStatus indexName (nodeState : NodeState) = 
-        match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
-        | (true, status) -> Choice1Of2(status)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-    
-    /// <summary>
-    /// Open an existing index
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let OpenIndex indexName (nodeState : NodeState) = 
-        maybe { 
-            let! status = nodeState.IndicesState.GetStatus(indexName)
-            match status with
-            | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-            | IndexState.Offline | IndexState.Closing -> 
-                let! index = nodeState.PersistanceStore.Get<Index>(indexName)
-                let! settings = nodeState.SettingsBuilder.BuildSetting(index)
-                do! addIndex (nodeState.IndicesState, settings)
-                index.Online <- true
-                nodeState.PersistanceStore.Put indexName index |> ignore
-                Logger.OpenIndex(indexName)
-                return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-        }
-    
-    /// <summary>
-    /// Close an existing index
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let CloseIndex indexName (nodeState : NodeState) = 
-        maybe { 
-            let! status = nodeState.IndicesState.GetStatus(indexName)
-            match status with
-            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
-            | _ -> 
-                let! index = nodeState.IndicesState.GetRegisteration(indexName)
-                closeIndex (nodeState.IndicesState, index)
-                let! index' = nodeState.PersistanceStore.Get<Index>(indexName)
-                index'.Online <- false
-                nodeState.PersistanceStore.Put indexName index' |> ignore
-                Logger.CloseIndex(indexName)
-                return! Choice1Of2()
-        }
-    
-    /// <summary>
-    /// Commit changes to the disk
-    /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="nodeState"></param>
-    let Commit indexName (nodeState : NodeState) = 
-        maybe { let! (flexIndex, documentTemplate) = indexExists (nodeState.IndicesState, indexName)
-                flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit()) }
-    
-    /// <summary>
-    /// Load all indices for the node
-    /// </summary>
-    /// <param name="nodeState"></param>
-    let LoadAllIndex(nodeState : NodeState) = 
-        for x in nodeState.PersistanceStore.GetAll<Index>() do
-            if x.Online then 
-                try 
-                    match nodeState.SettingsBuilder.BuildSetting(x) with
-                    | Choice1Of2(flexIndexSetting) -> 
-                        Index.addIndex (nodeState.IndicesState, flexIndexSetting) |> ignore
-                    | Choice2Of2(e) -> ()
-                //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
-                with ex -> ()
-            //indexLogger.Error("Loading index from file failed.", ex)
-            else 
-                //indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
-                nodeState.IndicesState.IndexStatus.TryAdd(x.IndexName, IndexState.Offline) |> ignore
-    
-    /// <summary>
     /// Service wrapper around all index related services
     /// </summary>
     /// <param name="state"></param>
-    let Service state = 
-        { new IIndexService with
-              member this.GetIndex indexName = GetIndex indexName state
-              member this.UpdateIndex index = UpdateIndex index state
-              member this.DeleteIndex indexName = DeleteIndex indexName state
-              member this.AddIndex index = AddIndex index state
-              member this.GetAllIndex() = Choice1Of2(GetAllIndex state)
-              member this.IndexExists indexName = IndexExists indexName state
-              member this.GetIndexStatus indexName = GetIndexStatus indexName state
-              member this.OpenIndex indexName = OpenIndex indexName state
-              member this.CloseIndex indexName = CloseIndex indexName state
-              member this.Commit indexName = Commit indexName state }
+    type Service(nodeState : INodeState, settingsBuilder : ISettingsBuilder) = 
+        
+        /// <summary>
+        /// Get an existing index details
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let GetIndex indexName = 
+            match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
+            | (true, _) -> 
+                match nodeState.PersistanceStore.Get<Index>(indexName) with
+                | Choice1Of2(a) -> Choice1Of2(a)
+                | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+            | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+        
+        /// <summary>
+        /// Update an existing index
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="nodeState"></param>
+        let UpdateIndex(index : Index) = 
+            maybe { 
+                let! status = nodeState.IndicesState.GetStatus(index.IndexName)
+                match status with
+                | IndexState.Online -> 
+                    let! flexIndex = nodeState.IndicesState.GetRegisteration(index.IndexName)
+                    let! settings = settingsBuilder.BuildSetting(index)
+                    Index.closeIndex (nodeState.IndicesState, flexIndex)
+                    do! Index.addIndex (nodeState.IndicesState, settings)
+                    nodeState.PersistanceStore.Put index.IndexName index |> ignore
+                    Logger.AddIndex(index.IndexName, index)
+                    return! Choice1Of2()
+                | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+                | IndexState.Offline | IndexState.Closing -> 
+                    let settings = settingsBuilder.BuildSetting(index)
+                    nodeState.PersistanceStore.Put index.IndexName index |> ignore
+                    Logger.AddIndex(index.IndexName, index)
+                    return! Choice1Of2()
+                | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+            }
+        
+        /// <summary>
+        /// Delete an existing index
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let DeleteIndex indexName = 
+            maybe { 
+                let! status = nodeState.IndicesState.GetStatus(indexName)
+                match status with
+                | IndexState.Online -> 
+                    let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
+                    closeIndex (nodeState.IndicesState, flexIndex)
+                    nodeState.PersistanceStore.Delete<Index> indexName |> ignore
+                    nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
+                    nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
+                    // It is possible that directory might not exist if the index has never been opened
+                    if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+                        Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
+                    Logger.DeleteIndex(indexName)
+                    return! Choice1Of2()
+                | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+                | IndexState.Offline | IndexState.Closing -> 
+                    nodeState.PersistanceStore.Delete<Index> indexName |> ignore
+                    nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
+                    nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
+                    // It is possible that directory might not exist if the index has never been opened
+                    if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+                        Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
+                    Logger.DeleteIndex(indexName)
+                    return! Choice1Of2()
+                | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+            }
+        
+        /// <summary>
+        /// Add a new index
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="nodeState"></param>
+        let AddIndex(index : Index) = 
+            maybe { 
+                match nodeState.IndicesState.IndexStatus.TryGetValue(index.IndexName) with
+                | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
+                | _ -> 
+                    let! settings = settingsBuilder.BuildSetting(index)
+                    nodeState.PersistanceStore.Put index.IndexName index |> ignore
+                    Logger.AddIndex(index.IndexName, index)
+                    if index.Online then do! addIndex (nodeState.IndicesState, settings)
+                    else do! nodeState.IndicesState.AddStatus(index.IndexName, IndexState.Offline)
+            }
+        
+        /// <summary>
+        /// Get all index information
+        /// </summary>
+        /// <param name="nodeState"></param>
+        let GetAllIndex() = nodeState.PersistanceStore.GetAll<Index>().ToList()
+        
+        /// <summary>
+        /// Check whether a given index exists in the system
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let IndexExists indexName = 
+            match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
+            | (true, _) -> true
+            | _ -> false
+        
+        /// <summary>
+        /// Get the status of a given index
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let GetIndexStatus indexName = 
+            match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
+            | (true, status) -> Choice1Of2(status)
+            | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+        
+        /// <summary>
+        /// Open an existing index
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let OpenIndex indexName = 
+            maybe { 
+                let! status = nodeState.IndicesState.GetStatus(indexName)
+                match status with
+                | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+                | IndexState.Offline | IndexState.Closing -> 
+                    let! index = nodeState.PersistanceStore.Get<Index>(indexName)
+                    let! settings = settingsBuilder.BuildSetting(index)
+                    do! addIndex (nodeState.IndicesState, settings)
+                    index.Online <- true
+                    nodeState.PersistanceStore.Put indexName index |> ignore
+                    Logger.OpenIndex(indexName)
+                    return! Choice1Of2()
+                | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+            }
+        
+        /// <summary>
+        /// Close an existing index
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let CloseIndex indexName = 
+            maybe { 
+                let! status = nodeState.IndicesState.GetStatus(indexName)
+                match status with
+                | IndexState.Closing | IndexState.Offline -> 
+                    return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+                | _ -> 
+                    let! index = nodeState.IndicesState.GetRegisteration(indexName)
+                    closeIndex (nodeState.IndicesState, index)
+                    let! index' = nodeState.PersistanceStore.Get<Index>(indexName)
+                    index'.Online <- false
+                    nodeState.PersistanceStore.Put indexName index' |> ignore
+                    Logger.CloseIndex(indexName)
+                    return! Choice1Of2()
+            }
+        
+        /// <summary>
+        /// Commit changes to the disk
+        /// </summary>
+        /// <param name="indexName"></param>
+        /// <param name="nodeState"></param>
+        let Commit indexName = maybe { let! (flexIndex, documentTemplate) = indexExists 
+                                                                                (nodeState.IndicesState, indexName)
+                                       flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit()) }
+        
+        /// <summary>
+        /// Load all indices for the node
+        /// </summary>
+        /// <param name="nodeState"></param>
+        let LoadAllIndex() = 
+            for x in nodeState.PersistanceStore.GetAll<Index>() do
+                if x.Online then 
+                    try 
+                        match settingsBuilder.BuildSetting(x) with
+                        | Choice1Of2(flexIndexSetting) -> 
+                            Index.addIndex (nodeState.IndicesState, flexIndexSetting) |> ignore
+                        | Choice2Of2(e) -> ()
+                    //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
+                    with ex -> ()
+                //indexLogger.Error("Loading index from file failed.", ex)
+                else 
+                    //indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
+                    nodeState.IndicesState.IndexStatus.TryAdd(x.IndexName, IndexState.Offline) |> ignore
+        
+        interface IIndexService with
+            member this.GetIndex indexName = GetIndex indexName
+            member this.UpdateIndex index = UpdateIndex index
+            member this.DeleteIndex indexName = DeleteIndex indexName
+            member this.AddIndex index = AddIndex index
+            member this.GetAllIndex() = Choice1Of2(GetAllIndex())
+            member this.IndexExists indexName = IndexExists indexName
+            member this.GetIndexStatus indexName = GetIndexStatus indexName
+            member this.OpenIndex indexName = OpenIndex indexName
+            member this.CloseIndex indexName = CloseIndex indexName
+            member this.Commit indexName = Commit indexName

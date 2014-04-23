@@ -42,10 +42,38 @@ open org.apache.lucene.store
 /// Most of the services basically act as a wrapper around the functions 
 /// here. Care should be taken to not introduce any mutable state in the
 /// module but to only pass mutable state as an instance of NodeState
-module SearchService =
-    
-    let Search (query: SearchQuery) (nodeState: NodeState) =
-        maybe {
-            let! flexIndex = nodeState.IndicesState.GetRegisteration(query.IndexName)
-            return! nodeState.SearchService.Search(flexIndex, query)
-        }
+module SearchService = 
+    // ----------------------------------------------------------------------------
+    // Search service class which will be dynamically injected using IOC. This will
+    // provide the interface for all kind of search functionality in flex.
+    // ----------------------------------------------------------------------------    
+    type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
+        let queryTypes = queryFactory.GetAllModules()
+        
+        let search (flexIndex : FlexIndex, search : SearchQuery) = 
+            maybe { 
+                if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
+                    // Search profile based
+                    match flexIndex.IndexSetting.SearchProfiles.TryGetValue(search.SearchProfile) with
+                    | true, p -> 
+                        let (p', sq) = p
+                        search.MissingValueConfiguration <- sq.MissingValueConfiguration
+                        let! values = Parsers.ParseQueryString(search.QueryString)
+                        let! query = SearchDsl.GenerateQuery flexIndex p' search (Some(values)) queryTypes
+                        return! SearchDsl.SearchQuery(flexIndex, query, search)
+                    | _ -> return! Choice2Of2(MessageConstants.SEARCH_PROFILE_NOT_FOUND)
+                else 
+                    use parser = queryParsersPool.Acquire()
+                    let! predicate = parser.Parse(search.QueryString)
+                    parser.Release()
+                    match predicate with
+                    | NotPredicate(_) -> return! Choice2Of2(MessageConstants.NEGATIVE_QUERY_NOT_SUPPORTED)
+                    | _ -> let! query = GenerateQuery flexIndex predicate search None queryTypes
+                           return! SearchDsl.SearchQuery(flexIndex, query, search)
+            }
+        
+        interface ISearchService with
+            member this.Search(query) = maybe { let! flexIndex = nodeState.IndicesState.GetRegisteration
+                                                                     (query.IndexName)
+                                                return! search (flexIndex, query) }
+            member this.Search(flexIndex, query) = search (flexIndex, query)

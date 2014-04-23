@@ -41,6 +41,10 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Autofac">
+      <HintPath>..\packages\Autofac.3.3.1\lib\net40\Autofac.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="CSScriptLibrary">
       <HintPath>..\packages\CS-Script.3.7.2.0\lib\net45\CSScriptLibrary.dll</HintPath>
       <Private>True</Private>
@@ -279,7 +283,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
+    <None Include="x64\SQLite.Interop.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="x86\SQLite.Interop.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Compile Include="Helpers.fs" />
     <Compile Include="BenchmarkTests.fs" />
     <Compile Include="IndexTests.fs" />
@@ -293,15 +302,10 @@
     <Compile Include="ValidatorsTests.fs" />
     <Compile Include="HttpDocumentation.fs" />
     <Compile Include="HttpTests.fs" />
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="x86\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="x64\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">

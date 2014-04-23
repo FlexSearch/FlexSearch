@@ -37,9 +37,9 @@ open System.Threading.Tasks.Dataflow
 [<Export(typeof<HttpModuleBase>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
 [<ExportMetadata("Name", "importer")>]
-type ImporterModule() = 
+type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state : INodeState) = 
     inherit HttpModuleBase()
-    let importHandlers = GetImportHandlerModules().Value
+    let importHandlers = importHandlerFactory.GetAllModules()
     let incrementalIndexMessage = "Incremental index request completed."
     let bulkIndexMessage = 
         "Bulk-index request submitted to the importer module. Please use the provided jobId to query the job status."
@@ -52,7 +52,7 @@ type ImporterModule() =
         let queue = new ActionBlock<string * Guid * IReadableStringCollection>(processQueueItem, executionBlockOption)
         queue
     
-    let processRequest (indexName, owin : IOwinContext, state : NodeState) = 
+    let processRequest (indexName, owin : IOwinContext) = 
         maybe { 
             let! importRequest = getRequestBody<ImportRequest> (owin.Request)
             match checkIdPresent (owin) with
@@ -73,7 +73,7 @@ type ImporterModule() =
                         else return! Choice2Of2(MessageConstants.IMPORTER_DOES_NOT_SUPPORT_BULK_INDEXING)
                     | true -> 
                         if x.SupportsIncrementalIndexing() then 
-                            match x.ProcessIncrementalRequest(indexName, importRequest, state) with
+                            match x.ProcessIncrementalRequest(indexName, importRequest) with
                             | Choice1Of2(_) -> 
                                 return! Choice1Of2(new ImportResponse(JobId = "", Message = incrementalIndexMessage))
                             | Choice2Of2(e) -> return! Choice2Of2(e)
@@ -82,13 +82,12 @@ type ImporterModule() =
             | None -> return! Choice2Of2(MessageConstants.IMPORTER_NOT_FOUND)
         }
     
-    override this.Post(indexName, owin, state) = 
-        owin |> responseProcessor (processRequest (indexName, owin, state)) OK BAD_REQUEST
+    override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
 [<Export(typeof<IImportHandler>)>]
 [<PartCreationPolicy(CreationPolicy.NonShared)>]
 [<ExportMetadata("Name", "sql")>]
-type SqlImporter() = 
+type SqlImporter(queueService : IQueueService, state : INodeState) = 
     
     let sqlSettings = 
         let path = Path.Combine(Constants.ConfFolder.Value, "Sql.json")
@@ -123,7 +122,7 @@ type SqlImporter() =
                 | _ -> Choice2Of2(Connector.ConnectorConstants.QUERY_NAME_NOT_FOUND)
         | (true, x) -> Choice1Of2(x)
     
-    let executeSql (indexName, request : ImportRequest, state : NodeState) = 
+    let executeSql (indexName, request : ImportRequest) = 
         match getConnectionName request with
         | Choice1Of2(connectionName) -> 
             match getQuery (request, connectionName) with
@@ -142,8 +141,8 @@ type SqlImporter() =
                             for i = 1 to reader.FieldCount do
                                 document.Add(reader.GetName(i), reader.GetValue(i).ToString())
                             if request.ForceCreate then 
-                                QueueService.AddDocumentQueue indexName (reader.[0].ToString()) document state
-                            else QueueService.AddOrUpdateDocumentQueue indexName (reader.[0].ToString()) document state
+                                queueService.AddDocumentQueue(indexName, (reader.[0].ToString()), document)
+                            else queueService.AddOrUpdateDocumentQueue(indexName, (reader.[0].ToString()), document)
                             rows <- rows + 1
                             if String.IsNullOrWhiteSpace(request.JobId) <> true && rows % 5000 = 0 then 
                                 let job = 
@@ -169,9 +168,9 @@ type SqlImporter() =
         member this.SupportsBulkIndexing() = true
         member this.SupportsIncrementalIndexing() = true
         
-        member this.ProcessBulkRequest(indexName, request, state) = 
-            match executeSql (indexName, request, state) with
+        member this.ProcessBulkRequest(indexName, request) = 
+            match executeSql (indexName, request) with
             | Choice1Of2() -> ()
             | Choice2Of2(e) -> Logger.TraceOperationMessageError("SQL connector error", e)
         
-        member this.ProcessIncrementalRequest(indexName, request, state) = executeSql (indexName, request, state)
+        member this.ProcessIncrementalRequest(indexName, request) = executeSql (indexName, request)
