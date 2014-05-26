@@ -40,11 +40,22 @@ open org.apache.lucene.store
 module Constants = 
     // Lucene version to be used across the application
     let LuceneVersion = org.apache.lucene.util.Version.LUCENE_47
+    
+    [<Literal>]
     let IdField = "_id"
+    
+    [<Literal>]
     let LastModifiedField = "_lastmodified"
+    
+    [<Literal>]
     let TypeField = "_type"
+    
+    [<Literal>]
     let VersionField = "_version"
+    
+    [<Literal>]
     let DocumentField = "_document"
+    
     // Flex root folder path
     let private rootFolder = lazy AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     

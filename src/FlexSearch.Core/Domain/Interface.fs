@@ -144,51 +144,6 @@ module Interface =
     type ISearchService = 
         abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
         abstract Search : FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
-
-    /// <summary>
-    /// Computation operation interface
-    /// </summary>
-    type IComputationOperation = 
-        abstract Initialize : string * string [] * Dictionary<string, string> -> bool
-        abstract Compute : IReadOnlyDictionary<string, string> -> string
-    
-    /// <summary>
-    /// Search condition interface
-    /// </summary>
-    type ISearchCondition = 
-        abstract GetCondition : Dictionary<string, string> -> string
-    
-    /// <summary>
-    /// Compile different types of scripts
-    /// </summary>
-    type IScriptFactory<'T> = 
-        abstract CompileScript : ScriptProperties -> Choice<'T, OperationMessage>
-    
-    /// <summary>
-    /// Profile selection scripts used to dynamically select an search profile
-    /// </summary>
-    type IFlexProfileSelectorScript = 
-        abstract Execute : IReadOnlyDictionary<string, string> -> string
-    
-    /// <summary>
-    /// Scripts used by dynamic or computed fields
-    /// </summary>
-    type IComputedFieldScript = 
-        abstract Execute : IReadOnlyDictionary<string, string> -> string
-    
-    /// <summary>
-    /// Scripts used for custom scoring
-    /// </summary>
-    type ICustomScoringScript = 
-        abstract Execute : IReadOnlyDictionary<string, string> * double -> double
-    
-    /// <summary>
-    /// A helper factory exposing all the script factories
-    /// </summary>
-    type IScriptFactoryCollection = 
-        abstract ProfileSelectorScriptFactory : IScriptFactory<IFlexProfileSelectorScript> with get
-        abstract ComputedFieldScriptFactory : IScriptFactory<IComputedFieldScript> with get
-        abstract CustomScoringScriptFactory : IScriptFactory<ICustomScoringScript> with get
     
     /// <summary>
     /// Version cache store used across the system. This helps in resolving 
@@ -249,20 +204,3 @@ module Interface =
     type INodeOperation = 
         abstract LoadAllIndex : unit -> unit
         abstract ShutDown : unit -> bool
-//    /// <summary>
-//    /// Interface which exposes all index related operations
-//    /// </summary>
-//    type IIndexService = 
-//        abstract PerformCommandAsync : string * IndexCommand * AsyncReplyChannel<Choice<unit, OperationMessage>> -> unit
-//        abstract PerformCommand : string * IndexCommand -> Choice<unit, OperationMessage>
-//        abstract CommandQueue : unit -> ActionBlock<string * IndexCommand>
-//        abstract PerformQuery : string * SearchQuery -> Choice<SearchResults, OperationMessage>
-//        abstract GetIndex : string -> Choice<Index, OperationMessage>
-//        abstract AddIndex : Index -> Choice<unit, OperationMessage>
-//        abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
-//        abstract OpenIndex : string -> Choice<unit, OperationMessage>
-//        abstract CloseIndex : string -> Choice<unit, OperationMessage>
-//        abstract DeleteIndex : string -> Choice<unit, OperationMessage>
-//        abstract IndexExists : string -> bool
-//        abstract IndexStatus : string -> Choice<IndexState, OperationMessage>
-//        abstract ShutDown : unit -> bool
