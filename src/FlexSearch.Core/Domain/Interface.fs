@@ -139,6 +139,12 @@ module Interface =
         abstract GetQuery : FlexField * string [] * Map<string, string> option -> Choice<Query, OperationMessage>
     
     /// <summary>
+    /// FlexParser interface
+    /// </summary>
+    type IFlexParser =
+        abstract Parse : string -> Choice<Predicate, OperationMessage>
+
+    /// <summary>
     /// Search service interface
     /// </summary>
     type ISearchService = 
