@@ -28,6 +28,7 @@ module Store =
     open System.Linq
     
     /// A reusable key value persistence store build on top of sql-lite
+    [<Sealed>]
     type PersistanceStore(?path0 : string, ?isMemory0 : bool) = 
         let path = defaultArg path0 (Path.Combine(Constants.ConfFolder.Value, "Conf.db"))
         let isMemory = defaultArg isMemory0 false
