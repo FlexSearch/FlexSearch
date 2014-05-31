@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<InfoWarnings>
+  <Info>Begin full analysis with NDepend v5.2.1.8320</Info>
+  <Info>No Baseline for Comparison loaded.</Info>
+  <Info>Concurrent mode</Info>
+  <Warning>Versioning issue: Assembly {FlexSearch.Core v0.21.1.0} references both versions {4.3.1.0} and {4.0.0.0} of the assembly {FSharp.Core}. NDepend will only consider the highest version.</Warning>
+  <Warning>Assembly {IKVM.Runtime} doesn't contain any type.</Warning>
+  <Warning>Assembly {System.Runtime} doesn't contain any type.</Warning>
+  <Warning>Assembly {System.Threading.Tasks} doesn't contain any type.</Warning>
+  <Info>.NET Assemblies loaded from {C:\Windows\Microsoft.NET\Framework\v4.0.30319} 
+   mscorlib.dll   v4.0.0.0
+   System.Core.dll   v4.0.0.0
+   System.ComponentModel.Composition.dll   v4.0.0.0
+   System.dll   v4.0.0.0
+   System.Runtime.dll   v4.0.0.0
+   System.Data.dll   v4.0.0.0
+   System.Threading.Tasks.dll   v4.0.0.0</Info>
+  <Warning>No application or third party assembly found in directory {C:\Windows\Microsoft.NET\Framework\v4.0.30319\WPF}</Warning>
+  <Info>.NET Assemblies loaded from {F:\GitHub\FlexSearch\build-debug} 
+   FlexSearch.Core.dll   v0.21.1.0
+   FlexLucene.dll   v4.7.2.0
+   FSharp.Core.dll   v4.3.1.0
+   FlexSearch.Api.dll   v0.21.1.0
+   Microsoft.Owin.dll   v2.1.0.0
+   SuperSocket.Facility.dll   v1.7.0.1
+   SuperSocket.SocketBase.dll   v1.7.0.1
+   SuperSocket.ClientEngine.Core.dll   v0.3.0.0
+   Autofac.dll   v3.3.0.0
+   IKVM.OpenJDK.Core.dll   v7.4.5196.0
+   FParsecCS.dll   v1.0.0.0
+   IKVM.Runtime.dll   v7.4.5196.0
+   System.Threading.Tasks.Dataflow.dll   v4.5.14.0
+   Newtonsoft.Json.dll   v6.0.0.0
+   Owin.dll   v1.0.0.0
+   Microsoft.Owin.Hosting.dll   v2.1.0.0
+   SuperSocket.ClientEngine.Common.dll   v0.3.0.0
+   Thrift.dll   v1.0.0.1
+   CSScriptLibrary.dll   v3.7.2.0
+   FParsec.dll   v1.0.0.0
+   System.Reactive.Linq.dll   v2.2.0.0
+   System.Reactive.Core.dll   v2.2.0.0
+   System.Data.SQLite.dll   v1.0.92.0
+   protobuf-net.dll   v2.0.0.668
+   Gibraltar.Agent.dll   v3.5.4.0</Info>
+  <Info>0 code rule has been extracted from code.</Info>
+  <Info>No dependency cycle detected in assemblies referencement graph.</Info>
+  <Info>05/31/2014 11:23:14 Log trend metrics values.</Info>
+  <Info>05/31/2014 11:23:16 NDepend analysis done. Duration: 00:04</Info>
+</InfoWarnings>
