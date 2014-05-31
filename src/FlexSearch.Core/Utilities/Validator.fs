@@ -184,15 +184,15 @@ module Validator =
         /// <param name="analyzers"></param>
         /// <param name="scripts"></param>
         /// <param name="propName"></param>
-        member this.Validate (factoryCollection : IFactoryCollection) 
-               (analyzers : Dictionary<string, AnalyzerProperties>) (scripts : Dictionary<string, ScriptProperties>) 
-               (propName : string) = 
+        member this.Validate(factoryCollection : IFactoryCollection, analyzers : Dictionary<string, AnalyzerProperties>, 
+                             scripts : Dictionary<string, ScriptProperties>, propName : string) = 
             maybe { 
                 if String.IsNullOrWhiteSpace(this.ScriptName) <> true then 
                     do! this.ScriptName.ValidatePropertyValue("ScriptName")
-                if scripts.ContainsKey(this.ScriptName) <> true then 
-                    return! Choice2Of2
-                                (OperationMessage.WithPropertyName(MessageConstants.SCRIPT_NOT_FOUND, this.ScriptName))
+                    if scripts.ContainsKey(this.ScriptName) <> true then 
+                        return! Choice2Of2
+                                    (OperationMessage.WithPropertyName
+                                         (MessageConstants.SCRIPT_NOT_FOUND, this.ScriptName))
                 match this.FieldType with
                 | FieldType.Custom | FieldType.Highlight | FieldType.Text -> 
                     if String.IsNullOrWhiteSpace(this.SearchAnalyzer) <> true then 
@@ -208,6 +208,20 @@ module Validator =
                                             (OperationMessage.WithPropertyName
                                                  (MessageConstants.ANALYZER_NOT_FOUND, this.IndexAnalyzer))
                 | _ -> return! Choice1Of2()
+            }
+    
+    type Api.SearchQuery with
+        /// <summary>
+        /// Validate a search query. This will be used as apart of SettingBuilder creation.
+        /// Most of the related validation has to performed at search time.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="parser"></param>
+        member this.Validate(index: Index, parser: FlexParser) = 
+            maybe {
+                do! ("QueryString", this.QueryString) |> notNullAndEmpty
+                let! query = parser.Parse(this.QueryString)
+                return! Choice1Of2()
             }
     
     type Api.Index with
@@ -232,27 +246,7 @@ module Validator =
                 do! iterExitOnFailure (Seq.toList (this.Fields)) (fun x -> 
                         maybe { 
                             do! x.Key.ValidatePropertyValue("FieldName")
-                            do! x.Value.Validate (factoryCollection) (this.Analyzers) (this.Scripts) (x.Key)
+                            do! x.Value.Validate(factoryCollection, this.Analyzers, this.Scripts, x.Key)
                         })
                 return! Choice1Of2()
             }
-//    let SearchConditionValidator(factoryCollection : Interface.IFactoryCollection, fields: Dictionary<string, IndexFieldProperties>, value: SearchCondition) =
-//        if fields.ContainsKey(value.FieldName) <> true then
-//            raise (ValidationException("SeachCondition", "The specified 'FieldName' does not exist: " + value.FieldName + ".", "3000"))
-//        if value.Boost <> 0 then
-//            validate "Boost" value.Boost |> greaterThanOrEqualTo 1 |> ignore
-//        if factoryCollection.SearchQueryFactory.ModuleExists(value.Operator) <> true then
-//            raise (ValidationException("SeachCondition", "The specified 'Operator' does not exist: " + value.Operator + ".", "3000"))
-//
-//
-//    let SearchFilterValidator(factoryCollection : Interface.IFactoryCollection, fields: Dictionary<string, FieldProperties>, value: SearchFilter) =
-//        ()
-//
-//
-//    let SearchProfileValidator (fields : Dictionary<string, FieldProperties>) (propName: string, value: SearchQuery) =
-//        ()
-//                value.SearchProfiles.ToArray() |> Array.iter(fun x ->
-//                    validate "SearchProfileName" x.Key |> propertyNameValidator |> ignore
-//                    validate "SearchProfileProperties" x.Value 
-//                        |> SearchProfileValidator value.Fields |> ignore
-//                )
