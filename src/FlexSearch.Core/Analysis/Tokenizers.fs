@@ -38,9 +38,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // Keyword Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "KeywordTokenizer")>]
+    [<Name("KeywordTokenizer")>]
     type KeywordTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -51,9 +49,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // Standard Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "StandardTokenizer")>]
+    [<Name("StandardTokenizer")>]
     type StandardTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -64,9 +60,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // Classic Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "ClassicTokenizer")>]
+    [<Name("ClassicTokenizer")>]
     type ClassicTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -77,9 +71,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // Lowercase Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "LowercaseTokenizer")>]
+    [<Name("LowercaseTokenizer")>]
     type LowercaseTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -90,9 +82,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // Letter Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "LetterTokenizer")>]
+    [<Name("LetterTokenizer")>]
     type LetterTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -103,9 +93,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // Whitespace Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "WhitespaceTokenizer")>]
+    [<Name("WhitespaceTokenizer")>]
     type WhitespaceTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -116,9 +104,7 @@ module Tokenizers =
     // ----------------------------------------------------------------------------
     // UAX29URLEmail Tokenizer
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexTokenizerFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "UAX29URLEmailTokenizer")>]
+    [<Name("UAX29URLEmailTokenizer")>]
     type UAX29URLEmailTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()

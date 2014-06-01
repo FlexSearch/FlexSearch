@@ -198,10 +198,8 @@ type FlexIndex =
 
 /// <summary>
 /// Case insensitive keyword analyzer 
+[<Name("CaseInsensitiveKeywordAnalyzer")>]
 /// </summary>
-[<Export(typeof<Analyzer>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "CaseInsensitiveKeywordAnalyzer")>]
 type CaseInsensitiveKeywordAnalyzer() = 
     inherit Analyzer()
     override this.createComponents (fieldName : string, reader : Reader) = 

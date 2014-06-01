@@ -67,7 +67,7 @@ module ``Analysis tests`` =
         
         // Creating a dummy filter which won't do anything so that we can test the effect of tokenizer 
         // in a stand alone manner
-        let filter = new Filters.PatternReplaceFilterFactory() :> IFlexFilterFactory
+        let filter = new PatternReplaceFilterFactory() :> IFlexFilterFactory
         let filterParameters = new Dictionary<string, string>()
         filterParameters.Add("pattern", "1")
         filterParameters.Add("replacementtext", "")   

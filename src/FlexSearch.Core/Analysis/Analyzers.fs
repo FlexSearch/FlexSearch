@@ -42,9 +42,7 @@ module Analyzers =
     // Html analyzer which uses lucene character filter. Character Filters are not
     // supported by flex through configuration.
     // ----------------------------------------------------------------------------                
-    [<Export(typeof<Analyzer>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "HtmlAnalyzer")>]
+    [<Name("HtmlAnalyzer")>]
     type HtmlAnalyzer() =
         inherit Analyzer()
         override this.createComponents(fieldName: string, reader: Reader) =
@@ -57,9 +55,7 @@ module Analyzers =
     // ----------------------------------------------------------------------------
     // A phonetic analyzer using double metaphone filter
     // ----------------------------------------------------------------------------
-    [<Export(typeof<Analyzer>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "DoubleMetaPhonePhoneticAnalyzer")>]
+    [<Name("DoubleMetaPhonePhoneticAnalyzer")>]
     type DoubleMetaPhonePhoneticAnalyzer() =
         inherit Analyzer()
         override this.createComponents(fieldName: string, reader: Reader) =
@@ -73,15 +69,13 @@ module Analyzers =
     // ----------------------------------------------------------------------------
     // Wrapper around standard analyzer
     // ----------------------------------------------------------------------------
-    [<Export(typeof<Analyzer>)>]
-    [<ExportMetadata("Name", "StandardAnalyzer")>]
+    [<Name("StandardAnalyzer")>]
     let FlexStandardAnalyzer: Analyzer = new StandardAnalyzer(Constants.LuceneVersion) :> Analyzer
 
 
     // ----------------------------------------------------------------------------
     // Wrapper around keyword analyzer
     // ----------------------------------------------------------------------------
-    [<Export(typeof<Analyzer>)>]
-    [<ExportMetadata("Name", "KeywordAnalyzer")>]
+    [<Name("KeywordAnalyzer")>]
     let FlexKeywordAnalyzer: Analyzer = new KeywordAnalyzer() :> Analyzer
 

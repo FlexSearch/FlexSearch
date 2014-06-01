@@ -48,9 +48,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // AsciiFolding Filter 
     // ----------------------------------------------------------------------------
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "AsciiFoldingFilter")>]
+    [<Name("AsciiFoldingFilter")>]
     type AsciiFoldingFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters: IDictionary<string,string>, resourceLoader: IResourceLoader) = ()
@@ -61,9 +59,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Standard Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "StandardFilter")>]
+    [<Name("StandardFilter")>]
     type StandardFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters: IDictionary<string,string>, resourceLoader: IResourceLoader) = ()
@@ -74,9 +70,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // BeiderMorse Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "BeiderMorseFilter")>]
+    [<Name("BeiderMorseFilter")>]
     type BeiderMorseFilterFactory() =
         let mutable phoneticEngine = null
         interface IFlexFilterFactory with
@@ -109,9 +103,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Capitalization Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "CapitalizationFilter")>]
+    [<Name("CapitalizationFilter")>]
     type CapitalizationFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -122,9 +114,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Caverphone2 Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "Caverphone2Filter")>]
+    [<Name("Caverphone2Filter")>]
     type Caverphone2FilterFactory() =
         let caverphone = new Caverphone2()
         interface IFlexFilterFactory with
@@ -136,9 +126,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // MetaphoneFilter Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "MetaphoneFilter")>]
+   [<Name("MetaphoneFilter")>]
     type MetaphoneFilterFactory() =
         let metaphone = new Metaphone()
         interface IFlexFilterFactory with
@@ -150,9 +138,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Caverphone2 Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "DoubleMetaphoneFilter")>]
+    [<Name("DoubleMetaphoneFilter")>]
     type DoubleMetaphoneFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -163,9 +149,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // RefinedSoundex Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "RefinedSoundexFilter")>]
+    [<Name("RefinedSoundexFilter")>]
     type RefinedSoundexFilterFactory() =
         let refinedSoundex = new RefinedSoundex()
         interface IFlexFilterFactory with
@@ -177,9 +161,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Soundex Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "SoundexFilter")>]
+    [<Name("SoundexFilter")>]
     type SoundexFilterFactory() =
         let soundex = new Soundex()
         interface IFlexFilterFactory with
@@ -191,9 +173,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // KeepWordsFilter Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "KeepWordsFilter")>]
+    [<Name("KeepWordsFilter")>]
     type KeepWordsFilterFactory() =
         let keepWords: CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true) 
         interface IFlexFilterFactory with
@@ -209,9 +189,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Length Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "LengthFilter")>]
+    [<Name("LengthFilter")>]
     type LengthFilterFactory() =
         let mutable min = 0
         let mutable max = 0
@@ -227,9 +205,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // LowerCase Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "LowerCaseFilter")>]
+    [<Name("LowerCaseFilter")>]
     type LowerCaseFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -240,9 +216,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // PatternReplace Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "PatternReplaceFilter")>]
+    [<Name("PatternReplaceFilter")>]
     type PatternReplaceFilterFactory() =
         let mutable pattern : Pattern = null
         let mutable replaceText : string = ""
@@ -259,9 +233,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // RemoveDuplicatesToken Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "RemoveDuplicatesTokenFilter")>]
+    [<Name("RemoveDuplicatesTokenFilter")>]
     type RemoveDuplicatesTokenFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -272,9 +244,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // ReverseString Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "ReverseStringFilter")>]
+    [<Name("ReverseStringFilter")>]
     type ReverseStringFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -285,9 +255,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Stop Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "StopFilter")>]
+    [<Name("StopFilter")>]
     type StopFilterFactory() =
         let stopWords: CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true) 
         interface IFlexFilterFactory with
@@ -303,9 +271,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Stop Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "SynonymFilter")>]
+    [<Name("SynonymFilter")>]
     type SynonymFilter() =
         let mutable map: SynonymMap = null
         interface IFlexFilterFactory with
@@ -327,9 +293,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Trim Filter 
     // ----------------------------------------------------------------------------    
-    [<Export(typeof<IFlexFilterFactory>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "TrimFilter")>]
+    [<Name("TrimFilter")>]
     type TrimFilterFactory() =
         interface IFlexFilterFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -340,9 +304,7 @@ module Filters =
     // ----------------------------------------------------------------------------
     // Word Delimiter Filter 
     // ----------------------------------------------------------------------------    
-//    [<Export(typeof<IFlexFilterFactory>)>]
-//    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-//    [<ExportMetadata("Name", "WordDelimiterFilter")>]
+//    [<Name("WordDelimiterFilter")>]
 //    type WordDelimiterFilterFactory() =
 //        interface IFlexFilterFactory with
 //            member this.Initialize(parameters: Dictionary<string,string>) =

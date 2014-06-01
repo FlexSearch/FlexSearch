@@ -354,9 +354,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     /// Term Query
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "term_match")>]
+    [<Name("term_match")>]
     type FlexTermQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "eq"; "=" |]
@@ -394,9 +392,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     /// Fuzzy Query
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "fuzzy_match")>]
+    [<Name("fuzzy_match")>]
     type FlexFuzzyQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "fuzzy"; "~=" |]
@@ -421,9 +417,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     /// Match all Query
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "match_all")>]
+    [<Name("match_all")>]
     type FlexMatchAllQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "matchall" |]
@@ -432,9 +426,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     /// Phrase Query
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "phrase_match")>]
+    [<Name("phrase_match")>]
     type FlexPhraseQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "match" |]
@@ -450,9 +442,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     /// Wildcard Query
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "like")>]
+    [<Name("like")>]
     type FlexWildcardQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "like"; "%=" |]
@@ -473,9 +463,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     /// Regex Query
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "regex")>]
+    [<Name("regex")>]
     type RegexQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "regex" |]
@@ -496,9 +484,7 @@ module SearchDsl =
     // ----------------------------------------------------------------------------
     // Range Queries
     // ---------------------------------------------------------------------------- 
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "greater")>]
+    [<Name("greater")>]
     type FlexGreaterQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| ">" |]
@@ -551,9 +537,7 @@ module SearchDsl =
                         (OperationMessage.WithPropertyName
                              (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "greater_than_equal")>]
+    [<Name("greater_than_equal")>]
     type FlexGreaterThanEqualQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| ">=" |]
@@ -606,9 +590,7 @@ module SearchDsl =
                         (OperationMessage.WithPropertyName
                              (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "less_than")>]
+    [<Name("less_than")>]
     type FlexLessThanQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "<" |]
@@ -661,9 +643,7 @@ module SearchDsl =
                         (OperationMessage.WithPropertyName
                              (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
-    [<Export(typeof<IFlexQuery>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "less_than_equal")>]
+    [<Name("less_than_equal")>]
     type FlexLessThanEqualQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "<=" |]

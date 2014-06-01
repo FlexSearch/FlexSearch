@@ -293,8 +293,8 @@
     <Compile Include="Helpers\Pool.fs" />
     <Compile Include="Helpers\HttpHelpers.fs" />
     <Compile Include="Helpers\Constants.fs" />
-    <Compile Include="Domain\Domain.fs" />
     <Compile Include="Domain\Attributes.fs" />
+    <Compile Include="Domain\Domain.fs" />
     <Compile Include="Domain\Interface.fs" />
     <Compile Include="Domain\State.fs" />
     <Compile Include="Analysis\CustomAnalyzer.fs" />

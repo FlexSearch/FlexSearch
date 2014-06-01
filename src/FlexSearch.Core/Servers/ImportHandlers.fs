@@ -82,9 +82,7 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
     
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
-[<Export(typeof<IImportHandler>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "sql")>]
+[<Name("sql")>]
 type SqlImporter(queueService : IQueueService, state : INodeState) = 
     
     let sqlSettings = 

@@ -35,9 +35,7 @@ module Owin =
     /// <summary>
     /// Thrift server
     /// </summary>
-    [<Export(typeof<IServer>)>]
-    [<PartCreationPolicy(CreationPolicy.NonShared)>]
-    [<ExportMetadata("Name", "Http")>]
+    [<Name("Http")>]
     type Server(indexService : IIndexService, httpFactory : IFlexFactory<HttpModuleBase>, ?port0 : int) = 
         let port = defaultArg port0 9800
         let httpModule = httpFactory.GetAllModules()
