@@ -8,11 +8,11 @@
     <ProjectGuid>7879d589-02a7-45bd-b80b-a37bb560457f</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>FlexSearch.Tests</RootNamespace>
-    <AssemblyName>FlexSearch.Tests</AssemblyName>
+    <AssemblyName>FlexSearch.IntegrationTests</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
-    <Name>FlexSearch.Tests</Name>
+    <Name>FlexSearch.IntegrationTests</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
@@ -42,7 +42,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Autofac">
-      <HintPath>..\packages\Autofac.3.3.1\lib\net40\Autofac.dll</HintPath>
+      <HintPath>..\packages\Autofac.3.4.1\lib\net40\Autofac.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Autofac.Extras.Attributed">
+      <HintPath>..\packages\Autofac.Extras.Attributed.3.2.1\lib\net40\Autofac.Extras.Attributed.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="CSScriptLibrary">
@@ -281,6 +285,14 @@
     <Reference Include="Thrift">
       <HintPath>..\..\lib\Thrift.dll</HintPath>
     </Reference>
+    <Reference Include="xunit">
+      <HintPath>..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="x64\SQLite.Interop.dll">
@@ -289,17 +301,12 @@
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="UnitTests\ValidatorsTests.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="BenchmarkTests.fs" />
     <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
     <Compile Include="SearchQueryTests.fs" />
-    <Compile Include="AnalysisTests.fs" />
-    <Compile Include="ParserTests.fs" />
     <Compile Include="SocketServerTests.fs" />
-    <Compile Include="PoolTests.fs" />
-    <Compile Include="PersistanceStoreTests.fs" />
     <Compile Include="HttpDocumentation.fs" />
     <Compile Include="HttpTests.fs" />
     <Compile Include="AssemblyInfo.fs" />
@@ -310,6 +317,11 @@
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
       <Name>FlexSearch.Api</Name>
       <Project>{5ee56459-9341-4335-991e-041f0c769047}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Core.Tests\FlexSearch.Core.Tests.fsproj">
+      <Name>FlexSearch.Core.Tests</Name>
+      <Project>{c3f496ff-abfe-4504-9e75-a0c1b1091d59}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">

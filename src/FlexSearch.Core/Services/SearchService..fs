@@ -47,7 +47,7 @@ module SearchService =
     // Search service class which will be dynamically injected using IOC. This will
     // provide the interface for all kind of search functionality in flex.
     // ----------------------------------------------------------------------------    
-    type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
+    type Service(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
         let queryTypes = queryFactory.GetAllModules()
         
         let search (flexIndex : FlexIndex, search : SearchQuery) = 

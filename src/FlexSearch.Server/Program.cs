@@ -15,7 +15,7 @@
             Logger.StartSession();
             try
             {
-                var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder.Value, "Config.json"));
+                var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder, "Config.json"));
                 HostFactory.Run(
                     x =>
                     {

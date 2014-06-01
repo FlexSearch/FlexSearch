@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <NDepend AppName="FlexSearch" Platform="DotNet">
   <OutputDir KeepXmlFiles="False">F:\GitHub\FlexSearch\src\NDependOut</OutputDir>
   <Assemblies>
@@ -38,9 +38,9 @@
     <Name>Gibraltar.Agent</Name>
   </FrameworkAssemblies>
   <Dirs>
-    <Dir>F:\GitHub\FlexSearch\build-debug</Dir>
     <Dir>C:\Windows\Microsoft.NET\Framework\v4.0.30319</Dir>
     <Dir>C:\Windows\Microsoft.NET\Framework\v4.0.30319\WPF</Dir>
+    <Dir>F:\GitHub\FlexSearch\build-debug</Dir>
   </Dirs>
   <Report Kind="0" SectionsEnabled="45055" XslPath="" Flags="64512" />
   <BuildComparisonSetting ProjectMode="DontCompare" BuildMode="MostRecentAnalysisResultAvailable" ProjectFileToCompareWith="" BuildFileToCompareWith="" NDaysAgo="1" FocusOnRecentRulesViolations="False" />
@@ -87,8 +87,7 @@
   </TrendMetrics>
   <HistoricAnalysisResult PersistRecurrence="2" UseCustomDir="False" CustomDir="" />
   <SourceFileRebasing FromPath="" ToPath="" />
-  <PathVariables />
-  <Queries>
+  <PathVariables /><Queries>
     <Group Name="Code Quality" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Types too big - critical</Name>
 warnif count > 0 from t in JustMyCode.Types where 
@@ -145,9 +144,8 @@ select new { m, m.NbParameters }
 // http://www.ndepend.com/Metrics.aspx#NbParameters
 ]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Quick summary of methods to refactor</Name>
-warnif count > 0 from m in JustMyCode.Methods where 
-                                    // Code Metrics' definitions
-  m.NbLinesOfCode > 30 ||           // http://www.ndepend.com/Metrics.aspx#NbLinesOfCode
+warnif count > 0 from m in JustMyCode.Methods where                                 // Code Metrics' definitions
+  (m.NbLinesOfCode > 30 ||           // http://www.ndepend.com/Metrics.aspx#NbLinesOfCode
   // We've commented # IL Instructions, because with LINQ syntax, a few lines of code can compile to hundreds of IL instructions.
   // m.NbILInstructions > 200 ||       // http://www.ndepend.com/Metrics.aspx#NbILInstructions
   m.CyclomaticComplexity > 20 ||    // http://www.ndepend.com/Metrics.aspx#CC
@@ -156,8 +154,8 @@ warnif count > 0 from m in JustMyCode.Methods where
   m.NbParameters > 5 ||             // http://www.ndepend.com/Metrics.aspx#NbParameters
   m.NbVariables > 8 ||              // http://www.ndepend.com/Metrics.aspx#NbVariables
   m.NbOverloads > 6                 // http://www.ndepend.com/Metrics.aspx#NbOverloads
-
-select new { m, m.NbLinesOfCode, m.NbILInstructions, m.CyclomaticComplexity, 
+  ) && !m.FullName.Contains("@")
+select new { m, m.FullName, m.NbLinesOfCode, m.NbILInstructions, m.CyclomaticComplexity, 
              m.ILCyclomaticComplexity, m.ILNestingDepth, 
              m.NbParameters, m.NbVariables, m.NbOverloads } ]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods too big</Name>
@@ -223,7 +221,8 @@ select new { m, m.NbParameters }
 // http://www.ndepend.com/Metrics.aspx#NbParameters]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods with too many local variables</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
-  m.NbVariables > 15 
+  m.NbVariables > 15
+  && !m.Name.Contains("@")  
   orderby m.NbVariables descending
 select new { m, m.NbVariables }
 
@@ -625,8 +624,10 @@ select new { m, baseMethodsHidden }]]></Query>
 warnif count > 0 from t in JustMyCode.Types where
   !t.IsStatic &&                  
   !t.IsGeneric &&
-   t.InstanceFields.Count() == 0 &&
+   t.InstanceFields.Count() == 0
 
+    && !t.Name.Contains("@") &&
+ 
    // Don't match:
    // --> types that implement some interfaces.
    t.NbInterfacesImplemented == 0 &&
@@ -648,7 +649,7 @@ select t
 warnif count > 0
 from t in JustMyCode.Types
 where  t.IsClass &&
-    //!t.IsPublic &&   // if you are developing a framework, 
+      !t.IsPublic &&   // if you are developing a framework, 
                        // you might not want to match public classes
       !t.IsStatic && 
       !t.IsAttributeClass && // Attributes class are never seen as instantiated
@@ -674,8 +675,8 @@ warnif count > 0
 from t in JustMyCode.Types.Where(t =>
    !t.IsStatic && !t.IsInterface &&
    !t.IsEnumeration && !t.IsDelegate &&
-   !t.IsGeneratedByCompiler)
-
+   !t.IsGeneratedByCompiler
+    && !t.Name.Contains("@"))
 let methodsThatCanBeMadeStatic = 
    from m in t.InstanceMethods
 
@@ -2197,7 +2198,7 @@ warnif count > 0 from f in Application.Fields where
  !f.IsInitOnly && 
  !f.IsLiteral && 
  !f.IsEnumValue
-
+ && !f.FullName.Contains("@")
 // A non-private field assigned from outside its class,
 // usually leads to complicated field state management.
 let outsideMethodsAssigningMe = 
@@ -2650,7 +2651,9 @@ warnif count > 0 from t in JustMyCode.Types where
   // Except if it is generated by compiler or ...
   !t.IsSpecialName &&
   !t.IsGeneratedByCompiler
-
+  
+  // Added to tackle F# case
+  && !t.Name.Contains("@")
 
 select new { t, t.NbLinesOfCode }]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods name should begin with an Upper character</Name>
@@ -3355,8 +3358,9 @@ select new { t, t.Visibility, t.IsStatic }
 from m in Application.Methods where 
  (m.ReadsMutableObjectState || m.ReadsMutableTypeState) && 
  !m.IsUsing ("System.Threading.Monitor".AllowNoMatch()) && 
+ !m.FullName.Contains("@") &&
  !m.IsUsing ("System.Threading.ReaderWriterLock".AllowNoMatch())
-select new { m, mutableFieldsUsed = m.FieldsUsed.Where(f => !f.IsImmutable) }
+select new { m, m.FullName ,mutableFieldsUsed = m.FieldsUsed.Where(f => !f.IsImmutable) }
 
 // Mutable object states are instance fields that 
 // can be modifed throught the lifetime of the object.
@@ -4087,6 +4091,4 @@ warnif count > 0 from n in Application.Namespaces where
 select new { n, n.NbLinesOfCode } ]]></Query>
       </Group>
     </Group>
-  </Queries>
-  <WarnFilter />
-</NDepend>
+  </Queries></NDepend>

@@ -175,7 +175,7 @@ module Interface =
         abstract OpenIndex : string -> Choice<unit, OperationMessage>
         abstract CloseIndex : string -> Choice<unit, OperationMessage>
         abstract Commit : string -> Choice<unit, OperationMessage>
-    
+        
     /// <summary>
     /// Document related operations
     /// </summary>

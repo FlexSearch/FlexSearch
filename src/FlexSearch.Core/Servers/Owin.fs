@@ -22,6 +22,7 @@ open Owin
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
+open System.ComponentModel.Composition
 open System.IO
 open System.Linq
 open System.Net
@@ -34,6 +35,9 @@ module Owin =
     /// <summary>
     /// Thrift server
     /// </summary>
+    [<Export(typeof<IServer>)>]
+    [<PartCreationPolicy(CreationPolicy.NonShared)>]
+    [<ExportMetadata("Name", "Http")>]
     type Server(indexService : IIndexService, httpFactory : IFlexFactory<HttpModuleBase>, ?port0 : int) = 
         let port = defaultArg port0 9800
         let httpModule = httpFactory.GetAllModules()

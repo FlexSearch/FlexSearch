@@ -34,9 +34,7 @@ open System.Threading.Tasks.Dataflow
 /// <summary>
 /// Generic Importer module
 /// </summary>
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "importer")>]
+[<Name("importer")>]
 type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state : INodeState) = 
     inherit HttpModuleBase()
     let importHandlers = importHandlerFactory.GetAllModules()
@@ -90,7 +88,7 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
 type SqlImporter(queueService : IQueueService, state : INodeState) = 
     
     let sqlSettings = 
-        let path = Path.Combine(Constants.ConfFolder.Value, "Sql.json")
+        let path = Path.Combine(Constants.ConfFolder, "Sql.json")
         if File.Exists(path) then 
             let fileText = Helpers.LoadFile(path)
             let parsedResult = JsonConvert.DeserializeObject<Dictionary<string, Connector.SqlSetting>>(fileText)

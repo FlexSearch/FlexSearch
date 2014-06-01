@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Server", "FlexSe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.csproj", "{5EE56459-9341-4335-991E-041F0C769047}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Tests", "FlexSearch.Tests\FlexSearch.Tests.fsproj", "{7879D589-02A7-45BD-B80B-A37BB560457F}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.IntegrationTests", "FlexSearch.Tests\FlexSearch.IntegrationTests.fsproj", "{7879D589-02A7-45BD-B80B-A37BB560457F}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Core.Tests", "FlexSearch.Core.Tests\FlexSearch.Core.Tests.fsproj", "{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}"
 EndProject

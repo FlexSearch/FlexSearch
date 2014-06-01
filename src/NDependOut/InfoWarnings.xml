@@ -25,7 +25,7 @@
    SuperSocket.Facility.dll   v1.7.0.1
    SuperSocket.SocketBase.dll   v1.7.0.1
    SuperSocket.ClientEngine.Core.dll   v0.3.0.0
-   Autofac.dll   v3.3.0.0
+   Autofac.dll   v3.4.0.0
    IKVM.OpenJDK.Core.dll   v7.4.5196.0
    FParsecCS.dll   v1.0.0.0
    IKVM.Runtime.dll   v7.4.5196.0
@@ -42,8 +42,18 @@
    System.Data.SQLite.dll   v1.0.92.0
    protobuf-net.dll   v2.0.0.668
    Gibraltar.Agent.dll   v3.5.4.0</Info>
+  <Warning>Assembly {Autofac.Extras.Attributed} is referenced by {FlexSearch.Core} but is not found.</Warning>
   <Info>0 code rule has been extracted from code.</Info>
   <Info>No dependency cycle detected in assemblies referencement graph.</Info>
-  <Info>05/31/2014 11:23:14 Log trend metrics values.</Info>
-  <Info>05/31/2014 11:23:16 NDepend analysis done. Duration: 00:04</Info>
+  <Info>06/01/2014 20:55:23 Analyse dependencies of your application.</Info>
+  <Info>06/01/2014 20:55:23 Execute queries and rules</Info>
+  <Warning>6 critical rules are violated.
+  - Methods too complex - critical
+  - Methods with too many parameters - critical
+  - Potentially dead Types
+  - Potentially dead Methods
+  - Constructors of abstract classes should be declared as protected or private
+  - Avoid having different types with same name</Warning>
+  <Info>06/01/2014 20:55:24 NDepend analysis done. Duration: 00:02</Info>
+  <Info>06/01/2014 20:55:24 Building the report (standard).</Info>
 </InfoWarnings>

@@ -22,7 +22,7 @@ open System.Threading
 let mutable serverRunning = false
 let initializeServer() =
     if serverRunning <> true then
-        let serverSettings = GetServerSettings(ConfFolder.Value + "\\Config.json")
+        let serverSettings = GetServerSettings(ConfFolder + "\\Config.json")
         let node = new NodeService(serverSettings, true)
         node.Start()
         serverRunning <- true

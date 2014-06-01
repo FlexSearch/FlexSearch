@@ -57,31 +57,22 @@ module Constants =
     let DocumentField = "_document"
     
     // Flex root folder path
-    let private rootFolder = lazy AppDomain.CurrentDomain.SetupInformation.ApplicationBase
+    let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
+    let private dataFolder = Path.Combine(rootFolder, "Data")
+    let private confFolder = Path.Combine(rootFolder, "Conf")
+    let private pluginFolder = Path.Combine(rootFolder, "Plugins")
     
     // Flex data folder
     let DataFolder = 
-        lazy (match Directory.Exists(Path.Combine(rootFolder.Force(), "Data")) with
-              | true -> Path.Combine(rootFolder.Force(), "Data")
-              | _ -> 
-                  failwithf 
-                      "Terminating Lunar due to a fatal error. Root cause: 'Data' Indices configuration directory does not exist at the root location.; rootFolder=%s" 
-                      rootFolder.Value)
+        Directory.CreateDirectory(dataFolder) |> ignore
+        dataFolder
     
     // Flex index folder
     let ConfFolder = 
-        lazy (match Directory.Exists(Path.Combine(rootFolder.Force(), "conf")) with
-              | true -> Path.Combine(rootFolder.Force(), "conf")
-              | _ -> 
-                  failwithf 
-                      "message=Terminating Lunar due to a fatal error.; cause='\\Conf\\' configuration directory does not exist at the root location.; rootFolder=%s" 
-                      rootFolder.Value)
+        Directory.CreateDirectory(confFolder) |> ignore
+        confFolder
     
     // Flex plugins folder
     let PluginFolder = 
-        lazy (match Directory.Exists(Path.Combine(rootFolder.Force(), "plugins")) with
-              | true -> Path.Combine(rootFolder.Force(), "plugins")
-              | _ -> 
-                  failwithf 
-                      "Terminating Lunar due to a fatal error. Root cause: '\\Plugins' Plugin directory does not exist at the root location.; rootFolder=%s" 
-                      rootFolder.Value)
+        Directory.CreateDirectory(pluginFolder) |> ignore
+        pluginFolder

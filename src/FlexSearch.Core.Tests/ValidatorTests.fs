@@ -101,6 +101,38 @@ module ``Index configuration tests`` =
         sut.RamBufferSizeMb <- 100
         ExpectErrorCode (sut.Validate()) MessageConstants.GREATER_THAN_EQUAL_TO
 
+module ``Default value tests`` =
+    let sut = new FieldProperties()
+
+    [<Fact>]
+    let ``'standardanalyzer' should be the default 'SearchAnalyzer'`` () =
+        Assert.Equal<string>("standardanalyzer", sut.SearchAnalyzer)
+
+    [<Fact>]
+    let ``'standardanalyzer' should be the default 'IndexAnalyzer'`` () =
+        Assert.Equal<string>("standardanalyzer", sut.IndexAnalyzer)
+
+    [<Fact>]
+    let ``'Analyze' should default to 'true'`` () =
+        Assert.Equal(true, sut.Analyze)
+
+    [<Fact>]
+    let ``'Store' should default to 'true'`` () =
+        Assert.Equal(true, sut.Store)
+
+    [<Fact>]
+    let ``'Index' should default to 'true'`` () =
+        Assert.Equal(true, sut.Index)
+
+    [<Fact>]
+    let ``'FieldType' should default to 'Text'`` () =
+        Assert.Equal(FieldType.Text, sut.FieldType)
+
+    [<Fact>]
+    let ``'TermVector' should default to 'StoreTermVectorsWithPositions'`` () =
+        Assert.Equal(FieldTermVector.StoreTermVectorsWithPositions, sut.TermVector)
+
+
 module ``Index Field tests`` = 
     
     [<Theory>]

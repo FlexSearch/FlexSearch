@@ -1,13 +1,27 @@
-﻿module IndexTests
+﻿namespace FlexSearch.IntegrationTests
 
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
-open FsUnit
-open Fuchu
+open Xunit
 open System.Collections.Generic
 open System.Linq
+open Autofac
+open FlexSearch.Core.Tests.Helpers
 
+module ``Basic index operation tests`` =
+//    [<Fact>]
+//    let ``It is not possible to close an closed index`` () =
+//        let index = Helpers.GetBasicIndexSettingsForContact()
+//        index.Online <- false
+//        
+//        let indexService = Helpers.Container.Resolve<IIndexService>()
+//        indexService.AddIndex(index) |> ignore
+//        indexService.CloseIndex(index.IndexName)
+//        |> Tests.Helpers.ExpectSuccess
+//                (MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+//        Helpers.Container.Resolve<IIndexService>().DeleteIndex(index.IndexName) |> ignore
+ 
 //[<Tests>]
 //let indexCreationTests() = 
 //    testList "Basic index operation tests" 

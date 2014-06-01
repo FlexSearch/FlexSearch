@@ -10,26 +10,15 @@ open System.Collections.Generic
 open System.Linq
 open System.Threading
 open System.Collections.Concurrent
+open System.IO
+open Autofac
 
-//let pluginContainer = PluginContainer(false).Value
-//let factoryCollection = new FactoryCollection(pluginContainer) :> IFactoryCollection
-//let settingBuilder = SettingsBuilder.SettingsBuilder factoryCollection (new Validator.IndexValidator(factoryCollection))
-//let persistanceStore = new PersistanceStore("", true)
-//let searchService = new SearchService(GetQueryModules(factoryCollection), getParserPool (2)) :> ISearchService
-//let indicesState = 
-//            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
-//              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
-//              ThreadLocalStore = 
-//                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
-//                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
-//let nodeState = 
-//    { 
-//        PersistanceStore = persistanceStore
-//        ServerSettings = Unchecked.defaultof<_>
-//        CacheStore = Unchecked.defaultof<_>
-//        IndicesState = indicesState
-//        SettingsBuilder = settingBuilder
-//        SearchService = searchService }
+let serverSettings = new ServerSettings()
+let Container = Main.GetContainer(serverSettings, true)
+let indexService = Container.Resolve<IIndexService>()
+let httpFactory = Container.Resolve<IFlexFactory<HttpModuleBase>>()
+let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
+httpServer.Start()
 
 let GetBasicIndexSettingsForContact() = 
     let index = new Index()

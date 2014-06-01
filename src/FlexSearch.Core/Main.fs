@@ -29,7 +29,8 @@ module Main =
     open System.Threading
     open System.Threading.Tasks
     open org.apache.lucene.analysis
-    
+    open Autofac.Extras.Attributed
+
     /// <summary>
     /// Generate server settings from the JSON text file
     /// </summary>
@@ -49,6 +50,13 @@ module Main =
     /// <param name="testServer"></param>
     let GetContainer(serverSettings : ServerSettings, testServer : bool) = 
         let builder = new ContainerBuilder()
+
+        // Register the service to consume with meta-data.
+        // Since we're using attributed meta-data, we also
+        // need to register the AttributedMetadataModule
+        // so the meta-data attributes get read.
+        builder.RegisterModule<AttributedMetadataModule>() |> ignore
+
         // Interface scanning
         builder |> FactoryService.RegisterInterfaceAssemblies<IImportHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexFilterFactory>
@@ -64,20 +72,34 @@ module Main =
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexQuery>
         builder |> FactoryService.RegisterSingleFactoryInstance<HttpModuleBase>
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
+        
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
-        builder |> FactoryService.RegisterSingleInstance<PersistanceStore, IPersistanceStore>
+        
+        builder |> FactoryService.RegisterSingleInstance<VersioningCacheStore, IVersioningCacheStore>
+        builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
+
         let indicesState = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
               IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
               ThreadLocalStore = 
                   new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
                   new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
+
+        builder.RegisterInstance(new PersistanceStore("", true)).As<IPersistanceStore>().SingleInstance() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
         builder.RegisterInstance(indicesState).SingleInstance() |> ignore
-        builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
+        builder.RegisterInstance(Parsers.getParserPool(50)).SingleInstance() |> ignore
+
+        // Register services
+        builder |> FactoryService.RegisterSingleInstance<IndexService.Service, IIndexService>
+        builder |> FactoryService.RegisterSingleInstance<DocumentService.Service, IDocumentService>
+        builder |> FactoryService.RegisterSingleInstance<QueueService.Service, IQueueService>
+        builder |> FactoryService.RegisterSingleInstance<SearchService.Service, ISearchService>
+        builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
+
         // Register server
-        builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
+        //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
         builder.Build()
     
     /// <summary>
@@ -85,11 +107,19 @@ module Main =
     /// </summary>
     type NodeService(serverSettings : ServerSettings, testServer : bool) = 
         let container = GetContainer(serverSettings, testServer)
-        
+        let mutable httpServer = Unchecked.defaultof<IServer>
         do 
             // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
             // To verify that this works, run `netsh http show servicestate`.
             if testServer <> true then MaximizeThreads() |> ignore
         
-        member this.Start() = container.ResolveNamed<IServer>("http").Start()
-        member this.Stop() = container.ResolveNamed<IServer>("http").Start()
+        member this.Start() = 
+            try 
+                let indexService = container.Resolve<IIndexService>()
+                let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
+                httpServer <- new Owin.Server(indexService, httpFactory)
+                httpServer.Start()
+            with e -> 
+                printfn "%A" e
+
+        member this.Stop() = container.ResolveNamed<IServer>("http").Stop()

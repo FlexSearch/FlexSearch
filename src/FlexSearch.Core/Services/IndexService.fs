@@ -104,7 +104,7 @@ module IndexService =
                     nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
                     nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
                     // It is possible that directory might not exist if the index has never been opened
-                    if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
+                    if Directory.Exists(Constants.DataFolder + "\\" + indexName) then 
                         Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
                     Logger.DeleteIndex(indexName)
                     return! Choice1Of2()
@@ -114,8 +114,8 @@ module IndexService =
                     nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
                     nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
                     // It is possible that directory might not exist if the index has never been opened
-                    if Directory.Exists(Constants.DataFolder.Value + "\\" + indexName) then 
-                        Directory.Delete(Constants.DataFolder.Value + "\\" + indexName, true)
+                    if Directory.Exists(Constants.DataFolder + "\\" + indexName) then 
+                        Directory.Delete(Constants.DataFolder + "\\" + indexName, true)
                     Logger.DeleteIndex(indexName)
                     return! Choice1Of2()
                 | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
@@ -234,6 +234,7 @@ module IndexService =
                     //indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
                     nodeState.IndicesState.IndexStatus.TryAdd(x.IndexName, IndexState.Offline) |> ignore
         
+        do LoadAllIndex()
         interface IIndexService with
             member this.GetIndex indexName = GetIndex indexName
             member this.UpdateIndex index = UpdateIndex index

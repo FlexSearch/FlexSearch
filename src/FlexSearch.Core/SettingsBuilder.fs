@@ -9,10 +9,8 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
@@ -23,6 +21,7 @@ open System.Diagnostics
 open System.IO
 open System.Xml
 open System.Xml.Linq
+open Validator
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.codecs
@@ -32,17 +31,17 @@ open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
 
+[<AutoOpen>]
 // ----------------------------------------------------------------------------
 // Top level settings parse function   
 // ---------------------------------------------------------------------------- 
-[<AutoOpen>]
 module Builder = 
     let private keyWordAnalyzer = new CaseInsensitiveKeywordAnalyzer()
     
     /// Convert API field objects to domain flex fields  
-    let private buildFields (fieldsDict : Dictionary<string, FieldProperties>, 
-                             flexAnalyzers : Dictionary<string, Analyzer>, 
-                             scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
+    let private BuildFields(fieldsDict : Dictionary<string, FieldProperties>, 
+                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, ScriptProperties>, 
+                            factoryCollection : IFactoryCollection) = 
         maybe { 
             /// Utility function to get analyzer by name  
             let getAnalyzer (analyzerName) = 
@@ -143,8 +142,8 @@ module Builder =
     // ----------------------------------------------------------------------------
     // Build analyzer definition for index settings from API analyzers
     // ----------------------------------------------------------------------------
-    let private buildAnalyzers (analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, 
-                                factoryCollection : IFactoryCollection) = 
+    let private BuildAnalyzers(analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, 
+                               factoryCollection : IFactoryCollection) = 
         maybe { 
             let getFilter (filterProperties : FlexSearch.Api.TokenFilter) = 
                 maybe { 
@@ -174,8 +173,7 @@ module Builder =
         }
     
     /// Build all the scripts for the index
-    let private getScriptsManager (scripts : Dictionary<string, ScriptProperties>, 
-                                   factoryCollection : IFactoryCollection) = 
+    let private GetScriptsManager(scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
         maybe { 
             let getScript (script : KeyValuePair<string, ScriptProperties>) = 
                 maybe { 
@@ -212,7 +210,7 @@ module Builder =
             return scriptsManager
         }
     
-    let private getSearchProfiles (profiles : Dictionary<string, SearchQuery>) = 
+    let private GetSearchProfiles(profiles : Dictionary<string, SearchQuery>) = 
         maybe { 
             let getProfile (parser : FlexParser) (profile : KeyValuePair<string, SearchQuery>) = 
                 maybe { let! predicate = parser.Parse(profile.Value.QueryString)
@@ -229,17 +227,18 @@ module Builder =
     /// <summary>
     /// Top level settings builder
     /// </summary>
-    type SettingsBuilder(factoryCollection : IFactoryCollection, indexValidator : IIndexValidator) = 
+    [<Sealed>]
+    type SettingsBuilder(factoryCollection : IFactoryCollection) = 
         interface ISettingsBuilder with
             member this.BuildSetting(index) = 
                 maybe { 
-                    do! indexValidator.Validate(index)
-                    let! analyzers = buildAnalyzers (index.Analyzers, factoryCollection)
-                    let! fields = buildFields (index.Fields, analyzers, index.Scripts, factoryCollection)
+                    do! index.Validate(factoryCollection)
+                    let! analyzers = BuildAnalyzers(index.Analyzers, factoryCollection)
+                    let! fields = BuildFields(index.Fields, analyzers, index.Scripts, factoryCollection)
                     let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                     fields.Values.CopyTo(fieldsArray, 0)
-                    let! searchProfiles = getSearchProfiles (index.SearchProfiles)
-                    let! scriptsManager = getScriptsManager (index.Scripts, factoryCollection)
+                    let! searchProfiles = GetSearchProfiles(index.SearchProfiles)
+                    let! scriptsManager = GetScriptsManager(index.Scripts, factoryCollection)
                     let flexIndexSetting = 
                         { IndexName = index.IndexName
                           IndexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
@@ -252,6 +251,6 @@ module Builder =
                           ShardConfiguration = index.ShardConfiguration
                           BaseFolder = 
                               if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then index.IndexName
-                              else Constants.DataFolder.Value + "\\" + index.IndexName }
+                              else Constants.DataFolder + "\\" + index.IndexName }
                     return flexIndexSetting
                 }

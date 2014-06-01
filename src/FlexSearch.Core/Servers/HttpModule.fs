@@ -27,13 +27,10 @@ open System.Linq
 open System.Net
 open System.Net.Http
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "index")>]
-type IndexModule(indexService: IIndexService) = 
+[<Name("index")>]
+type IndexModule(indexService : IIndexService) = 
     inherit HttpModuleBase()
-    override this.Get(indexName, owin) = 
-        owin |> responseProcessor (indexService.GetIndex(indexName)) OK BAD_REQUEST
+    override this.Get(indexName, owin) = owin |> responseProcessor (indexService.GetIndex(indexName)) OK BAD_REQUEST
     
     override this.Post(indexName, owin) = 
         match getRequestBody<Index> (owin.Request) with
@@ -59,9 +56,7 @@ type IndexModule(indexService: IIndexService) =
             owin |> responseProcessor (indexService.UpdateIndex(index)) OK BAD_REQUEST
         | Choice2Of2(error) -> owin |> BAD_REQUEST error
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "documents")>]
+[<Name("documents")>]
 type DocumentModule(state : INodeState, documentService : IDocumentService) = 
     inherit HttpModuleBase()
     
@@ -135,9 +130,7 @@ type DocumentModule(state : INodeState, documentService : IDocumentService) =
             }
         owin |> responseProcessor processRequest OK BAD_REQUEST
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "search")>]
+[<Name("search")>]
 type SearchModule(searchService : ISearchService) = 
     inherit HttpModuleBase()
     
@@ -172,9 +165,7 @@ type SearchModule(searchService : ISearchService) =
     override this.Get(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "exists")>]
+[<Name("exists")>]
 type ExistsModule(indexService : IIndexService) = 
     inherit HttpModuleBase()
     
@@ -186,9 +177,7 @@ type ExistsModule(indexService : IIndexService) =
     override this.Get(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "status")>]
+[<Name("status")>]
 type StatusModule(indexService : IIndexService) = 
     inherit HttpModuleBase()
     
@@ -210,18 +199,14 @@ type StatusModule(indexService : IIndexService) =
             | None -> Choice2Of2(MessageConstants.HTTP_NOT_SUPPORTED)
         owin |> responseProcessor processRequest OK BAD_REQUEST
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "analysis")>]
+[<Name("analysis")>]
 type AnalysisModule() = 
     inherit HttpModuleBase()
     let processRequest (indexName, owin) = maybe { return! Choice1Of2() }
     override this.Get(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "/")>]
+[<Name("/")>]
 type RootModule() = 
     inherit HttpModuleBase()
     override this.Get(indexName, owin) = 
@@ -231,9 +216,7 @@ type RootModule() =
             (owin.Response.WriteAsync
                  ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()))
 
-[<Export(typeof<HttpModuleBase>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "jobs")>]
+[<Name("jobs")>]
 type JobModule(state : INodeState) = 
     inherit HttpModuleBase()
     
