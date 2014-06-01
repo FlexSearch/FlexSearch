@@ -11,11 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Server", "FlexSe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.csproj", "{5EE56459-9341-4335-991E-041F0C769047}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.IntegrationTests", "FlexSearch.Tests\FlexSearch.IntegrationTests.fsproj", "{7879D589-02A7-45BD-B80B-A37BB560457F}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Core.Tests", "FlexSearch.Core.Tests\FlexSearch.Core.Tests.fsproj", "{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.TestSupport", "FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj", "{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.IntegrationTests", "FlexSearch.IntegrationTests\FlexSearch.IntegrationTests.fsproj", "{7879D589-02A7-45BD-B80B-A37BB560457F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,18 +63,6 @@ Global
 		{5EE56459-9341-4335-991E-041F0C769047}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{5EE56459-9341-4335-991E-041F0C769047}.Release|x64.ActiveCfg = Release|Any CPU
 		{5EE56459-9341-4335-991E-041F0C769047}.Release|x64.Build.0 = Release|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|x64.ActiveCfg = Debug|x64
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|x64.Build.0 = Debug|x64
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.ActiveCfg = Release|x64
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.Build.0 = Release|x64
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -95,6 +83,18 @@ Global
 		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|x64.ActiveCfg = Release|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|x64.ActiveCfg = Debug|x64
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Debug|x64.Build.0 = Debug|x64
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.ActiveCfg = Release|x64
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

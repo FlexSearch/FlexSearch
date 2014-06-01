@@ -209,6 +209,10 @@
       <HintPath>..\packages\Newtonsoft.Json.6.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NSubstitute">
+      <HintPath>..\packages\NSubstitute.1.7.2.0\lib\NET45\NSubstitute.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
       <Private>True</Private>
@@ -223,6 +227,18 @@
     </Reference>
     <Reference Include="Owin.Types">
       <HintPath>..\packages\Owin.Types.0.8.5\lib\net40\Owin.Types.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Ploeh.AutoFixture">
+      <HintPath>..\packages\AutoFixture.3.18.7\lib\net40\Ploeh.AutoFixture.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Ploeh.AutoFixture.AutoNSubstitute">
+      <HintPath>..\packages\AutoFixture.AutoNSubstitute.3.18.7\lib\net40\Ploeh.AutoFixture.AutoNSubstitute.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Ploeh.AutoFixture.Xunit">
+      <HintPath>..\packages\AutoFixture.Xunit.3.18.7\lib\net40\Ploeh.AutoFixture.Xunit.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="protobuf-net">
@@ -319,11 +335,6 @@
       <Project>{5ee56459-9341-4335-991e-041f0c769047}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Core.Tests\FlexSearch.Core.Tests.fsproj">
-      <Name>FlexSearch.Core.Tests</Name>
-      <Project>{c3f496ff-abfe-4504-9e75-a0c1b1091d59}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
@@ -332,6 +343,11 @@
     <ProjectReference Include="..\FlexSearch.Server\FlexSearch.Server.csproj">
       <Name>FlexSearch.Server</Name>
       <Project>{06f48daa-3928-458d-af20-5ffb55e23d74}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj">
+      <Name>FlexSearch.TestSupport</Name>
+      <Project>{6f26a1d2-ef8a-4ec7-adba-25844be00b74}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
