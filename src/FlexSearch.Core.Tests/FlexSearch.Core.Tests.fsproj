@@ -67,7 +67,6 @@
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Helpers.fs" />
     <Compile Include="ValidatorTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="PoolTests.fs" />
@@ -77,6 +76,11 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj">
+      <Name>FlexSearch.TestSupport</Name>
+      <Project>{6f26a1d2-ef8a-4ec7-adba-25844be00b74}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="Autofac">
       <HintPath>..\packages\Autofac.3.4.1\lib\net40\Autofac.dll</HintPath>
       <Private>True</Private>

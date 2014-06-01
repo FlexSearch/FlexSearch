@@ -15,6 +15,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.IntegrationTests
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Core.Tests", "FlexSearch.Core.Tests\FlexSearch.Core.Tests.fsproj", "{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.TestSupport", "FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj", "{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,16 @@ Global
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Release|x64.ActiveCfg = Release|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

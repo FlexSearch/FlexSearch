@@ -2,6 +2,7 @@
 
 open FlexSearch.Core
 open FlexSearch.Core.Store
+open FlexSearch.TestSupport
 open System
 open System.Linq
 open Xunit

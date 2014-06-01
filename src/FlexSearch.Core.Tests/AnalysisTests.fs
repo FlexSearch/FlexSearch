@@ -3,6 +3,7 @@
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
+open FlexSearch.TestSupport
 open Xunit
 open System.Collections.Generic
 open System.Linq

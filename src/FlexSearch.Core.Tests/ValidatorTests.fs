@@ -5,6 +5,7 @@ open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.Validator
+open FlexSearch.TestSupport
 open NSubstitute
 open Ploeh.AutoFixture
 open Ploeh.AutoFixture.Xunit
@@ -37,7 +38,7 @@ module ``Token filter validator tests`` =
         sut.FilterName <- "notexists"
         factoryCollection.FilterFactory.GetModuleByName("notexists")
                          .Returns(Choice2Of2(MessageConstants.FILTER_NOT_FOUND)) |> ignore
-        ExpectErrorCode (sut.Validate(factoryCollection)) MessageConstants.FILTER_NOT_FOUND
+        sut.Validate(factoryCollection) |> ExpectErrorCode MessageConstants.FILTER_NOT_FOUND
         factoryCollection.FilterFactory.Received().GetModuleByName("notexists") |> ignore
     
     [<Theory>]
@@ -57,7 +58,7 @@ module ``Tokenizer validator tests`` =
         sut.TokenizerName <- "notexists"
         factoryCollection.TokenizerFactory.GetModuleByName("notexists")
                          .Returns(Choice2Of2(MessageConstants.FILTER_NOT_FOUND)) |> ignore
-        ExpectErrorCode (sut.Validate(factoryCollection)) MessageConstants.TOKENIZER_NOT_FOUND
+        sut.Validate(factoryCollection) |> ExpectErrorCode  MessageConstants.TOKENIZER_NOT_FOUND
         factoryCollection.TokenizerFactory.Received().GetModuleByName("notexists") |> ignore
     
     [<Theory>]
@@ -79,7 +80,7 @@ module ``Analyzer properties tests`` =
         factoryCollection.TokenizerFactory.GetModuleByName("exists")
                          .Returns(Choice1Of2(new StandardTokenizerFactory() :> IFlexTokenizerFactory)) |> ignore
         sut.Filters.Clear()
-        ExpectErrorCode (sut.Validate("test", factoryCollection)) MessageConstants.ATLEAST_ONE_FILTER_REQUIRED
+        sut.Validate("test", factoryCollection) |> ExpectErrorCode MessageConstants.ATLEAST_ONE_FILTER_REQUIRED
         factoryCollection.TokenizerFactory.Received().GetModuleByName("exists") |> ignore
 
 module ``Index configuration tests`` =
@@ -99,7 +100,7 @@ module ``Index configuration tests`` =
         sut.CommitTimeSec <- value
         sut.RefreshTimeMilliSec <- 25
         sut.RamBufferSizeMb <- 100
-        ExpectErrorCode (sut.Validate()) MessageConstants.GREATER_THAN_EQUAL_TO
+        sut.Validate() |> ExpectErrorCode MessageConstants.GREATER_THAN_EQUAL_TO
 
 module ``Default value tests`` =
     let sut = new FieldProperties()
@@ -181,7 +182,7 @@ module ``Index Field tests`` =
         sut.ScriptName <- ""
         sut.FieldType <- fieldType
         sut.IndexAnalyzer <- "dummy"
-        ExpectErrorCode (sut.Validate(factoryCollection, analyzers, scripts, "test")) MessageConstants.ANALYZER_NOT_FOUND
+        sut.Validate(factoryCollection, analyzers, scripts, "test") |> ExpectErrorCode MessageConstants.ANALYZER_NOT_FOUND
 
     [<Theory>]
     [<InlineAutoMockDataAttribute(FieldType.Text)>]
@@ -194,4 +195,4 @@ module ``Index Field tests`` =
         sut.ScriptName <- ""
         sut.FieldType <- fieldType
         sut.IndexAnalyzer <- "dummy"
-        ExpectErrorCode (sut.Validate(factoryCollection, analyzers, scripts, "test")) MessageConstants.ANALYZER_NOT_FOUND
+        sut.Validate(factoryCollection, analyzers, scripts, "test") |> ExpectErrorCode MessageConstants.ANALYZER_NOT_FOUND
