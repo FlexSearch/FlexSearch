@@ -54,7 +54,7 @@ module FactoryService =
     /// <summary>
     /// Factory implementation
     /// </summary>
-    type FlexFactory<'T>(container : IContainer, moduleType) = 
+    type FlexFactory<'T>(container : ILifetimeScope) = 
         
         /// Returns a module by name.
         /// Choice1of3 -> instance of T
@@ -98,7 +98,10 @@ module FactoryService =
             member this.GetAllModules() = 
                 let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
                 let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                factory |> Seq.iter (fun x -> modules.Add(x.Metadata.["Name"].ToString(), x.Value.Value))
+                factory |> Seq.iter (fun x -> 
+                    if x.Metadata.ContainsKey("Name") then
+                        modules.Add(x.Metadata.["Name"].ToString(), x.Value.Value)
+                    )
                 modules
     
     /// <summary>
