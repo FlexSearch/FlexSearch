@@ -46,11 +46,10 @@ module FactoryService =
     let RegisterAbstractClassAssemblies<'T>(builder : ContainerBuilder) = 
         builder.RegisterAssemblyTypes(AppDomain.CurrentDomain.GetAssemblies()).Where(fun t -> t.BaseType = typeof<'T>).As<'T>
             () |> ignore
-    
+        
     let RegisterSingleInstance<'T, 'U> (builder: ContainerBuilder) =
         builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore 
-
-    
+   
     /// <summary>
     /// Factory implementation
     /// </summary>
@@ -92,8 +91,8 @@ module FactoryService =
             
             member this.ModuleExists(moduleName) = 
                 match getModuleByName (moduleName, true) with
-                | Choice1Of3(_) -> true
-                | _ -> false
+                | Choice1Of3(_) -> false
+                | _ -> true
             
             member this.GetAllModules() = 
                 let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
