@@ -70,8 +70,13 @@ module Analyzers =
     // Wrapper around standard analyzer
     // ----------------------------------------------------------------------------
     [<Name("StandardAnalyzer")>]
-    let FlexStandardAnalyzer: Analyzer = new StandardAnalyzer(Constants.LuceneVersion) :> Analyzer
-
+    type FlexStandardAnalyzer() = 
+        inherit Analyzer()
+        override this.createComponents(fieldName: string, reader: Reader) =
+            let source = new StandardTokenizer(Constants.LuceneVersion, reader)
+            let mutable result = new StandardFilter(Constants.LuceneVersion, source) :> TokenStream
+            result <- new LowerCaseFilter(Constants.LuceneVersion, source)
+            new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
 
     // ----------------------------------------------------------------------------
     // Wrapper around keyword analyzer
