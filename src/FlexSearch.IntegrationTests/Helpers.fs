@@ -69,27 +69,6 @@ let GetBasicIndexSettingsForContact() =
     index
 
 /// <summary>
-/// Utility method to add data to an index
-/// </summary>
-/// <param name="indexService"></param>
-/// <param name="index"></param>
-/// <param name="testData"></param>
-let AddTestDataToIndex(index : Index, testData : string, documentService: IDocumentService, indexService: IIndexService) = 
-    let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
-    let headers = lines.[0].Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
-    for line in lines.Skip(1) do
-        let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
-        let indexDocument = new Document()
-        indexDocument.Id <- items.[0]
-        indexDocument.Index <- index.IndexName
-        for i in 1..items.Length - 1 do
-            indexDocument.Fields.Add(headers.[i], items.[i])
-        let result = documentService.AddDocument(index.IndexName, indexDocument.Id, indexDocument.Fields)
-        ()
-    indexService.Commit(index.IndexName) |> ignore
-    Thread.Sleep(100)
-
-/// <summary>
 /// Utility to generate test data one line at a time from the source
 /// </summary>
 /// <param name="testData"></param>
