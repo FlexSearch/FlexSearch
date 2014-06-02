@@ -30,10 +30,10 @@ module Helpers =
     /// Gets the Choice1 (success) option
     /// </summary>
     /// <param name="choice"></param>
-    let GetSuccessChoice(choice : Choice<'T, 'U>) = 
+    let GetSuccessChoice(choice : Choice<'T, OperationMessage>) = 
         match choice with
         | Choice1Of2(success) -> success
-        | Choice2Of2(error) -> failwith "Expected the result to be success but received failure."
+        | Choice2Of2(error) -> failwithf "Expected the result to be success but received failure: %s" error.DeveloperMessage
     
     /// <summary>
     /// Returns success if Choice1 is present
@@ -44,7 +44,17 @@ module Helpers =
         | Choice1Of2(success) -> Assert.True(true)
         | Choice2Of2(error) -> 
             Assert.True(false, "Expected the result to be success but received failure: " + error.DeveloperMessage)
-    
+
+    /// <summary>
+    /// Returns success if Choice1 is present
+    /// </summary>
+    /// <param name="choice"></param>
+    let TestSuccess (expected: 'T) (choice : Choice<'T, OperationMessage>) = 
+        match choice with
+        | Choice1Of2(success) -> Assert.Equal<'T>(expected, success)
+        | Choice2Of2(error) -> 
+            Assert.True(false, "Expected the result to be success but received failure: " + error.DeveloperMessage)
+                
     /// <summary>
     /// Expects the DU to contains Choice2 (Error)
     /// </summary>
