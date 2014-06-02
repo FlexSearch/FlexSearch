@@ -48,8 +48,15 @@ module SearchService =
     // provide the interface for all kind of search functionality in flex.
     // ----------------------------------------------------------------------------    
     type Service(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
-        let queryTypes = queryFactory.GetAllModules()
-        
+        // Generate query types from query factory. This is necessary as a single query can support multiple
+        // query names
+        let queryTypes = 
+            let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase) 
+            for pair in queryFactory.GetAllModules() do
+                for queryName in pair.Value.QueryName() do
+                    result.Add(queryName, pair.Value)
+            result
+            
         let search (flexIndex : FlexIndex, search : SearchQuery) = 
             maybe { 
                 if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
