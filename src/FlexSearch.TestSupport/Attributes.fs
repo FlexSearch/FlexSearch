@@ -40,8 +40,10 @@ module UnitTestAttributes =
                                           new AutoMockDataAttribute() :> DataAttribute |])
 
 [<AutoOpen>]
-module IntegrationTestDataBuilders =
-    
+module IntegrationTestHelpers = 
+    let serverSettings = new ServerSettings()
+    let Container = Main.GetContainer(serverSettings, true)
+
     let GetBasicIndexSettingsForContact() = 
         let index = new Index()
         index.IndexName <- Guid.NewGuid().ToString("N")
@@ -112,10 +114,14 @@ module IntegrationTestDataBuilders =
         indexService.Commit(index.IndexName) |> ignore
         Thread.Sleep(100)
 
-[<AutoOpen>]
-module IntegrationTestAttributes = 
-    let serverSettings = new ServerSettings()
-    let Container = Main.GetContainer(serverSettings, true)
+    /// <summary>
+    /// Helper method to generate test index with supplied data
+    /// </summary>
+    /// <param name="testData"></param>
+    let GenerateIndexWithTestData(testData: string) =
+        let index = GetBasicIndexSettingsForContact()
+        AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>() ,Container.Resolve<IIndexService>())
+        index
 
     /// <summary>
     /// Unit test dmain customization
@@ -140,6 +146,13 @@ module IntegrationTestAttributes =
     type AutoMockIntegrationDataAttribute() = 
         inherit AutoDataAttribute((new Fixture()).Customize(new IntegrationDomainCustomization()))
     
+    /// <summary>
+    /// Auto fixture based Xunit inline data attribute
+    /// </summary>
+    [<AttributeUsage(AttributeTargets.Method, AllowMultiple = true)>]
+    type InlineAutoMockIntegrationDataAttribute([<ParamArray>] values : Object []) = 
+        inherit CompositeDataAttribute([| new InlineDataAttribute(values) :> DataAttribute
+                                          new AutoMockIntegrationDataAttribute() :> DataAttribute |])
 
 [<AutoOpen>]
 module Attributes = 
@@ -187,3 +200,6 @@ module Attributes =
     /// </summary>
     type PrioritizedFixtureAttribute() = 
         inherit RunWithAttribute(typeof<PrioritizedFixtureAttribute>)
+
+    
+        
