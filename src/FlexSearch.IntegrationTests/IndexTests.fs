@@ -1,54 +1,42 @@
 ﻿namespace FlexSearch.IntegrationTests
 
+open Autofac
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
-open Xunit
+open FlexSearch.TestSupport
+open Ploeh.AutoFixture.Xunit
 open System.Collections.Generic
 open System.Linq
-open Autofac
-open FlexSearch.TestSupport
+open Xunit
+open Xunit.Extensions
 
-module ``Basic index operation tests`` =
+module ``Basic index operation tests`` = 
     [<Fact>]
-    let ``It is not possible to close an closed index`` () =
-        let index = Helpers.GetBasicIndexSettingsForContact()
+    let ``Dummy Test to get ncrunch working``() = Assert.Equal(1, 1)
+    
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``It is not possible to close an closed index`` (indexService : IIndexService, index : Index) = 
         index.Online <- false
-        
-        let indexService = Helpers.Container.Resolve<IIndexService>()
         indexService.AddIndex(index) |> ExpectSuccess
-        indexService.CloseIndex(index.IndexName)
-        |> ExpectErrorCode
-                (MessageConstants.INDEX_IS_ALREADY_OFFLINE)
-        Helpers.Container.Resolve<IIndexService>().DeleteIndex(index.IndexName) |> ignore
- 
-//[<Tests>]
-//let indexCreationTests() = 
-//    testList "Basic index operation tests" 
-//        [ testCase "It is not possible to close an closed index" <| fun _ -> 
-//              
-//              let index = Helpers.GetBasicIndexSettingsForContact()
-//              index.Online <- false
-//              let result = Helpers.nodeState |> IndexService.AddIndex(index)
-//              Helpers.nodeState |> IndexService.CloseIndex(index.IndexName) 
-//              |> Helpers.expectedFailureMessage 
-//                     (MessageConstants.INDEX_IS_ALREADY_OFFLINE)
-//              Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore
-//          testCase "Can not create the same index twice" <| fun _ -> 
-//              let index = Helpers.GetBasicIndexSettingsForContact()
-//              Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
-//              Helpers.nodeState |> IndexService.AddIndex(index) 
-//              |> Helpers.expectedFailureMessage 
-//                     (MessageConstants.INDEX_ALREADY_EXISTS)
-//              Helpers.nodeState |> IndexService.DeleteIndex index.IndexName |> ignore
-//          testCase "It is not possible to open an opened index" <| fun _ -> 
-//              let index = Helpers.GetBasicIndexSettingsForContact()
-//              index.Online <- true
-//              Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
-//              Helpers.nodeState |> IndexService.OpenIndex(index.IndexName) 
-//              |> Helpers.expectedFailureMessage 
-//                     (MessageConstants.INDEX_IS_OPENING)
-//              Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore
+        indexService.CloseIndex(index.IndexName) |> ExpectErrorCode(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+    
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``Can not create the same index twice`` (indexService : IIndexService, index : Index) = 
+        index.Online <- false
+        indexService.AddIndex(index) |> ExpectSuccess
+        indexService.AddIndex(index) |> ExpectErrorCode(MessageConstants.INDEX_ALREADY_EXISTS)
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``It is not possible to open an opened index`` (indexService : IIndexService, index : Index) = 
+        index.Online <- true
+        indexService.AddIndex(index) |> ExpectSuccess
+        indexService.OpenIndex(index.IndexName) |> ExpectErrorCode(MessageConstants.INDEX_IS_OPENING)
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+
+
 //          testCase "Newly created index should be online" <| fun _ -> 
 //              let index = Helpers.GetBasicIndexSettingsForContact()
 //              index.Online <- true

@@ -14,9 +14,10 @@ open System
 open System.Linq
 open Xunit.Extensions
 open Xunit.Sdk
+open Autofac 
 
 [<AutoOpen>]
-module Attributes = 
+module UnitTestAttributes = 
     /// <summary>
     /// Unit test dmain customization
     /// </summary>
@@ -36,7 +37,87 @@ module Attributes =
     type InlineAutoMockDataAttribute([<ParamArray>] values : Object []) = 
         inherit CompositeDataAttribute([| new InlineDataAttribute(values) :> DataAttribute
                                           new AutoMockDataAttribute() :> DataAttribute |])
+
+[<AutoOpen>]
+module IntegrationTestDataBuilders =
     
+    let GetBasicIndexSettingsForContact() = 
+        let index = new Index()
+        index.IndexName <- Guid.NewGuid().ToString("N")
+        index.Online <- true
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
+        index.Fields.Add("gender", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("title", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("givenname", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("middleinitial", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("surname", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("streetaddress", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("city", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("state", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("zipcode", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("country", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("countryfull", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("emailaddress", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("username", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("password", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("cctype", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("ccnumber", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("occupation", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("cvv2", new FieldProperties(FieldType = FieldType.Int))
+        index.Fields.Add("nationalid", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("ups", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("company", new FieldProperties(FieldType = FieldType.Stored))
+        index.Fields.Add("pounds", new FieldProperties(FieldType = FieldType.Double))
+        index.Fields.Add("centimeters", new FieldProperties(FieldType = FieldType.Int))
+        index.Fields.Add("guid", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("latitude", new FieldProperties(FieldType = FieldType.Double))
+        index.Fields.Add("longitude", new FieldProperties(FieldType = FieldType.Double))
+        index.Fields.Add("importdate", new FieldProperties(FieldType = FieldType.Date))
+        index.Fields.Add("timestamp", new FieldProperties(FieldType = FieldType.DateTime))
+        index.Fields.Add("topic", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("abstract", new FieldProperties(FieldType = FieldType.Text))
+        // Computed fields
+        index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
+        index.Scripts.Add
+            ("fullname", 
+             new ScriptProperties("""return fields["givenname"] + " " + fields["surname"];""", ScriptType.ComputedField))
+        let searchProfileQuery = 
+            new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''")
+        searchProfileQuery.MissingValueConfiguration.Add("givenname", MissingValueOption.ThrowError)
+        searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
+        searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
+        index.SearchProfiles.Add("test1", searchProfileQuery)
+        index
+
+[<AutoOpen>]
+module IntegrationTestAttributes = 
+    let serverSettings = new ServerSettings()
+    let Container = Main.GetContainer(serverSettings, true)
+
+    /// <summary>
+    /// Unit test dmain customization
+    /// </summary>
+    type IntegrationCustomization() = 
+        interface ICustomization with
+            member this.Customize(fixture: IFixture) =
+                fixture.Inject<IIndexService>(Container.Resolve<IIndexService>()) |> ignore
+                fixture.Register<Index>(fun _ -> GetBasicIndexSettingsForContact()) |> ignore
+
+    /// <summary>
+    /// Unit test dmain customization
+    /// </summary>
+    type IntegrationDomainCustomization() = 
+        inherit CompositeCustomization(new IntegrationCustomization(), new SupportMutableValueTypesCustomization())
+
+    /// <summary>
+    /// Auto fixture based Xunit attribute
+    /// </summary>
+    type AutoMockIntegrationDataAttribute() = 
+        inherit AutoDataAttribute((new Fixture()).Customize(new IntegrationDomainCustomization()))
+    
+
+[<AutoOpen>]
+module Attributes = 
     /// <summary>
     /// Custom Xunit attribute to signify test priority
     /// </summary>

@@ -13,12 +13,12 @@ open System.Collections.Concurrent
 open System.IO
 open Autofac
 
-let serverSettings = new ServerSettings()
-let Container = Main.GetContainer(serverSettings, true)
-let indexService = Container.Resolve<IIndexService>()
-let httpFactory = Container.Resolve<IFlexFactory<HttpModuleBase>>()
-let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
-httpServer.Start()
+//let serverSettings = new ServerSettings()
+//let Container = Main.GetContainer(serverSettings, true)
+//let indexService = Container.Resolve<IIndexService>()
+//let httpFactory = Container.Resolve<IFlexFactory<HttpModuleBase>>()
+//let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
+//httpServer.Start()
 
 let GetBasicIndexSettingsForContact() = 
     let index = new Index()
