@@ -203,9 +203,10 @@ id,topic,surname,cvv2
 5,d,jhonson,1"""
     
     [<Theory>][<AutoMockIntegrationData>]
-    let ``Searching for 'cvv2 = 1' with orderby topic should return 5 records`` (index : Index, indexService : IIndexService, 
-                                                                                   documentService : IDocumentService, 
-                                                                                   searchService : ISearchService) = 
+    let ``Searching for 'cvv2 = 1' with orderby topic should return 5 records`` (index : Index, 
+                                                                                 indexService : IIndexService, 
+                                                                                 documentService : IDocumentService, 
+                                                                                 searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
         query.OrderBy <- "topic"
@@ -227,9 +228,10 @@ id,topic,abstract
 """
     
     [<Theory>][<AutoMockIntegrationData>]
-    let ``Searching for 'cvv2 = 1' with orderby topic should return 5 records`` (index : Index, indexService : IIndexService, 
-                                                                                   documentService : IDocumentService, 
-                                                                                   searchService : ISearchService) = 
+    let ``Searching for 'cvv2 = 1' with orderby topic should return 5 records`` (index : Index, 
+                                                                                 indexService : IIndexService, 
+                                                                                 documentService : IDocumentService, 
+                                                                                 searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "abstract match 'practical approach'")
         query.Highlights <- new HighlightOption(new List<string>([ "abstract" ]))
@@ -239,51 +241,87 @@ id,topic,abstract
         let result = GetSuccessChoice(searchService.Search(query))
         Assert.Equal<int>(1, result.Documents.Count)
         Assert.Equal<int>(1, result.Documents.[0].Highlights.Count)
-        Assert.True(result.Documents.[0].Highlights.[0].Contains("practical"), "The highlighted passage should contain 'practical'")
-        Assert.True(result.Documents.[0].Highlights.[0].Contains("approach"), "The highlighted passage should contain 'approach'")
-        Assert.True(result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>"), "The highlighted should contain 'practical' with in pre and post tags")
-        Assert.True(result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>"), "The highlighted should contain 'approach' with in pre and post tags")
+        Assert.True
+            (result.Documents.[0].Highlights.[0].Contains("practical"), 
+             "The highlighted passage should contain 'practical'")
+        Assert.True
+            (result.Documents.[0].Highlights.[0].Contains("approach"), 
+             "The highlighted passage should contain 'approach'")
+        Assert.True
+            (result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>"), 
+             "The highlighted should contain 'practical' with in pre and post tags")
+        Assert.True
+            (result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>"), 
+             "The highlighted should contain 'approach' with in pre and post tags")
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
 
-//[<Tests>]
-//let simpleSearchProfileTests = 
-//    let testData = """
-//id,topic,surname,cvv2,givenname
-//1,a,jhonson,1,aron
-//2,c,hewitt,1,jhon
-//3,c,hewitt,1,jhon
-//4,d,hewitt,1,jhon
-//5,d,hewitt,1,jhon
-//6,b,Garner,1,joe
-//7,e,Garner,1,sam
-//8,d,jhonson,1,andrew
-//"""
-//    let index = Helpers.GetBasicIndexSettingsForContact()
-//    Helpers.nodeState |> IndexService.AddIndex(index) |> ignore
-//    Helpers.AddTestDataToIndex(index, testData)
-//    let query = 
-//        let q = new SearchQuery(index.IndexName, "")
-//        // "givenname = '' AND surname = '' AND (cvv2 = '1' OR topic = '')"
-//        q.SearchProfile <- "test1"
-//        q
-//    let result = ref Unchecked.defaultof<SearchResults>
-//    testList "Search results sorting tests" 
-//        [ testCase "Searching with searchprofile 'test1' will return 2 record" <| fun _ -> 
-//              query.QueryString <- "{givenname:'jhon',surname:'hewitt',cvv2:'1',topic:'c'}"
-//              result := test (Helpers.nodeState |> SearchService.Search(query))
-//              result.Value.Documents.Count |> should equal 2
-//          testCase "If no value for cvv2 is passed then the default configured value of 1 will be used" <| fun _ -> 
-//              query.QueryString <- "{givenname:'jhon',surname:'hewitt',topic:'c'}"
-//              result := test (Helpers.nodeState |> SearchService.Search(query))
-//              result.Value.Documents.Count |> should equal 2
-//          testCase "If no value for cvv2 is passed and no value for topic is passed then topic will be ignored" <| fun _ -> 
-//              query.QueryString <- "{givenname:'jhon',surname:'hewitt'}"
-//              result := test (Helpers.nodeState |> SearchService.Search(query))
-//              result.Value.Documents.Count |> should equal 4
-//          testCase "If no value for givenname is passed then the profile will throw error as that option is set" <| fun _ -> 
-//              query.QueryString <- "{surname:'hewitt'}"
-//              Helpers.nodeState |> SearchService.Search(query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE_1)
-//          testCase "If no value for surname is passed then the profile will throw error as the value is missing" <| fun _ -> 
-//              query.QueryString <- "{givenname:'jhon'}"
-//              Helpers.nodeState |> SearchService.Search(query)|> Helpers.expectedFailureMessage (MessageConstants.MISSING_FIELD_VALUE)
-//          testCase "Cleanup" <| fun _ -> Helpers.nodeState |> IndexService.DeleteIndex(index.IndexName) |> ignore ]
+module ``Search profile Tests`` = 
+    let testData = """
+id,topic,surname,cvv2,givenname
+1,a,jhonson,1,aron
+2,c,hewitt,1,jhon
+3,c,hewitt,1,jhon
+4,d,hewitt,1,jhon
+5,d,hewitt,1,jhon
+6,b,Garner,1,joe
+7,e,Garner,1,sam
+8,d,jhonson,1,andrew"""
+    
+    // "givenname = '' AND surname = '' AND (cvv2 = '1' OR topic = '')"
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``Searching with searchprofile 'test1' will return 2 record`` (index : Index, indexService : IIndexService, 
+                                                                       documentService : IDocumentService, 
+                                                                       searchService : ISearchService) = 
+        AddTestDataToIndex(index, testData, documentService, indexService)
+        let query = new SearchQuery(index.IndexName, "{givenname:'jhon',surname:'hewitt',cvv2:'1',topic:'c'}")
+        query.SearchProfile <- "test1"
+        let result = GetSuccessChoice(searchService.Search(query))
+        Assert.Equal<int>(2, result.Documents.Count)
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+    
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``If no value for cvv2 is passed then the default configured value of 1 will be used`` (index : Index, 
+                                                                                                indexService : IIndexService, 
+                                                                                                documentService : IDocumentService, 
+                                                                                                searchService : ISearchService) = 
+        AddTestDataToIndex(index, testData, documentService, indexService)
+        let query = new SearchQuery(index.IndexName, "{givenname:'jhon',surname:'hewitt',topic:'c'}")
+        query.SearchProfile <- "test1"
+        let result = GetSuccessChoice(searchService.Search(query))
+        Assert.Equal<int>(2, result.Documents.Count)
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+    
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``If no value for cvv2 is passed and no value for topic is passed then topic will be ignored`` (index : Index, 
+                                                                                                        indexService : IIndexService, 
+                                                                                                        documentService : IDocumentService, 
+                                                                                                        searchService : ISearchService) = 
+        AddTestDataToIndex(index, testData, documentService, indexService)
+        let query = new SearchQuery(index.IndexName, "{givenname:'jhon',surname:'hewitt'}")
+        query.SearchProfile <- "test1"
+        let result = GetSuccessChoice(searchService.Search(query))
+        Assert.Equal<int>(4, result.Documents.Count)
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+    
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``If no value for givenname is passed then the profile will throw error as that option is set`` (index : Index, 
+                                                                                                         indexService : IIndexService, 
+                                                                                                         documentService : IDocumentService, 
+                                                                                                         searchService : ISearchService) = 
+        AddTestDataToIndex(index, testData, documentService, indexService)
+        let query = new SearchQuery(index.IndexName, "{surname:'hewitt'}")
+        query.SearchProfile <- "test1"
+        searchService.Search(query) |> ExpectErrorCode MessageConstants.MISSING_FIELD_VALUE_1
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+    
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``If no value for surname is passed then the profile will throw error as the value is missing`` (index : Index, 
+                                                                                                         indexService : IIndexService, 
+                                                                                                         documentService : IDocumentService, 
+                                                                                                         searchService : ISearchService) = 
+        AddTestDataToIndex(index, testData, documentService, indexService)
+        let query = new SearchQuery(index.IndexName, "{givenname:'jhon'}")
+        query.SearchProfile <- "test1"
+        searchService.Search(query) |> ExpectErrorCode MessageConstants.MISSING_FIELD_VALUE
+        indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+

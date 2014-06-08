@@ -20,7 +20,7 @@ open System.Threading
 [<AutoOpen>]
 module UnitTestAttributes = 
     /// <summary>
-    /// Unit test dmain customization
+    /// Unit test domain customization
     /// </summary>
     type DomainCustomization() = 
         inherit CompositeCustomization(new AutoNSubstituteCustomization(), new SupportMutableValueTypesCustomization())
@@ -101,18 +101,20 @@ module IntegrationTestHelpers =
     let AddTestDataToIndex(index : Index, testData : string, documentService: IDocumentService, indexService: IIndexService) = 
         indexService.AddIndex(index) |> ExpectSuccess
         let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
+        if lines.Count() < 2 then failwithf "No data to index"
         let headers = lines.[0].Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
         for line in lines.Skip(1) do
             let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
             let indexDocument = new Document()
-            indexDocument.Id <- items.[0]
+            indexDocument.Id <- items.[0].Trim()
             indexDocument.Index <- index.IndexName
             for i in 1..items.Length - 1 do
-                indexDocument.Fields.Add(headers.[i], items.[i])
-            let result = documentService.AddDocument(index.IndexName, indexDocument.Id, indexDocument.Fields)
-            ()
-        indexService.Commit(index.IndexName) |> ignore
-        Thread.Sleep(100)
+                indexDocument.Fields.Add(headers.[i].Trim(), items.[i].Trim())
+            documentService.AddDocument(index.IndexName, indexDocument.Id, indexDocument.Fields) |> ExpectSuccess
+        indexService.Commit(index.IndexName) |> ExpectSuccess
+        Thread.Sleep(200)
+//        let documents = GetSuccessChoice(documentService.GetDocuments(index.IndexName))
+//        Assert.Equal<int>(lines.Count() - 1, (documents.Count))
 
     /// <summary>
     /// Helper method to generate test index with supplied data
@@ -122,9 +124,45 @@ module IntegrationTestHelpers =
         let index = GetBasicIndexSettingsForContact()
         AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>() ,Container.Resolve<IIndexService>())
         index
+    
+    /// <summary>
+    /// Test setup fixture to use with Xunit IUseFixture
+    /// </summary>
+    type IndexFixture() =
+        member val Index = Unchecked.defaultof<_> with get, set
+        member this.Setup(testData: string) =
+            if this.Index = Unchecked.defaultof<_> then
+                this.Index <- GenerateIndexWithTestData(testData)
+        
+        interface System.IDisposable with 
+            member this.Dispose() = 
+                ExpectSuccess (Container.Resolve<IIndexService>().DeleteIndex(this.Index.IndexName))
+
+    let private VerifySearchCount (expected: int) (queryString : string) (indexName : string) =
+            let query = new SearchQuery(indexName, queryString)
+            let searchService = Container.Resolve<ISearchService>()
+            let result = GetSuccessChoice(searchService.Search(query))
+            Assert.Equal<int>(expected, result.RecordsReturned)
 
     /// <summary>
-    /// Unit test dmain customization
+    /// Base for creating all Xunit based indexing integration tests
+    /// </summary>
+    [<AbstractClass>]
+    type IndexTestBase(testData : string) =
+        member val Index = Unchecked.defaultof<_> with get, set
+        member val IndexName = Unchecked.defaultof<_> with get, set
+
+        member this.VerifySearchCount (expected: int) (queryString : string) =
+            VerifySearchCount expected queryString this.IndexName
+
+        interface IUseFixture<IndexFixture> with
+            member this.SetFixture(data) =
+                data.Setup(testData)
+                this.Index <- data.Index
+                this.IndexName <- data.Index.IndexName
+
+    /// <summary>
+    /// Unit test domain customization
     /// </summary>
     type IntegrationCustomization() = 
         interface ICustomization with
@@ -135,7 +173,7 @@ module IntegrationTestHelpers =
                 fixture.Register<Index>(fun _ -> GetBasicIndexSettingsForContact()) |> ignore
 
     /// <summary>
-    /// Unit test dmain customization
+    /// Unit test domain customization
     /// </summary>
     type IntegrationDomainCustomization() = 
         inherit CompositeCustomization(new IntegrationCustomization(), new SupportMutableValueTypesCustomization())
@@ -147,59 +185,11 @@ module IntegrationTestHelpers =
         inherit AutoDataAttribute((new Fixture()).Customize(new IntegrationDomainCustomization()))
     
     /// <summary>
-    /// Auto fixture based Xunit inline data attribute
+    /// Auto fixture based Xunit in-line data attribute
     /// </summary>
     [<AttributeUsage(AttributeTargets.Method, AllowMultiple = true)>]
     type InlineAutoMockIntegrationDataAttribute([<ParamArray>] values : Object []) = 
         inherit CompositeDataAttribute([| new InlineDataAttribute(values) :> DataAttribute
                                           new AutoMockIntegrationDataAttribute() :> DataAttribute |])
-
-[<AutoOpen>]
-module Attributes = 
-    /// <summary>
-    /// Custom Xunit attribute to signify test priority
-    /// </summary>
-    type TestPriorityAttribute(priority : int) = 
-        inherit Attribute()
-        member this.Priority = priority
-    
-    /// <summary>
-    /// Xunit class command to represent test priority
-    /// </summary>
-    type PrioritizedFixtureClassCommand() = 
-        let inner = new TestClassCommand()
-        
-        let GetPriority(meth : IMethodInfo) = 
-            let priorityAttribute = meth.GetCustomAttributes(typeof<TestPriorityAttribute>).FirstOrDefault()
-            if priorityAttribute = null then 0
-            else priorityAttribute.GetPropertyValue<int>("Priority")
-        
-        interface ITestClassCommand with
-            member x.ClassFinish() : exn = raise (System.NotImplementedException())
-            member x.ClassStart() : exn = raise (System.NotImplementedException())
-            member x.EnumerateTestCommands(testMethod : IMethodInfo) : Collections.Generic.IEnumerable<ITestCommand> = 
-                raise (System.NotImplementedException())
-            member x.IsTestMethod(testMethod : IMethodInfo) : bool = raise (System.NotImplementedException())
-            member x.ObjectUnderTest : obj = raise (System.NotImplementedException())
-            
-            member x.TypeUnderTest 
-                with get () = raise (System.NotImplementedException()) : ITypeInfo
-                and set (v : ITypeInfo) = raise (System.NotImplementedException()) : unit
-            
-            member this.ChooseNextTest(testsLeftToRun : Collections.Generic.ICollection<IMethodInfo>) : int = 0
-            member x.EnumerateTestMethods() : Collections.Generic.IEnumerable<IMethodInfo> = 
-                query { 
-                    for m in inner.EnumerateTestMethods() do
-                        let p = GetPriority(m)
-                        sortBy p
-                        select m
-                }
-    
-    /// <summary>
-    /// Custom test priority attribute
-    /// </summary>
-    type PrioritizedFixtureAttribute() = 
-        inherit RunWithAttribute(typeof<PrioritizedFixtureAttribute>)
-
     
         

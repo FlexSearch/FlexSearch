@@ -15,6 +15,9 @@ open System.Net
 open System.Net.Http
 open System.Text
 open System.Threading
+open Xunit
+open FlexSearch.TestSupport
+open Autofac
 
 // ----------------------------------------------------------------------------
 // Test server initialization
@@ -22,9 +25,10 @@ open System.Threading
 let mutable serverRunning = false
 let initializeServer() =
     if serverRunning <> true then
-        let serverSettings = GetServerSettings(ConfFolder + "\\Config.json")
-        let node = new NodeService(serverSettings, true)
-        node.Start()
+        let indexService = Container.Resolve<IIndexService>()
+        let httpFactory = Container.Resolve<IFlexFactory<HttpModuleBase>>()
+        let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
+        httpServer.Start()
         serverRunning <- true
 
 // ----------------------------------------------------------------------------
@@ -197,7 +201,7 @@ let document (result : Example) =
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------
-[<Tests>]
+[<Fact>]
 let IndexCreationTest1() = 
     example "post-index-1" "Create index without any field"
     |> ofResource "Index"
@@ -211,7 +215,7 @@ The newly created index will be offline as the Online parameter is set to false 
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexCreationTest2() = 
     example "post-index-2" "Duplicate index cannot be created."
     |> ofResource "Index"
@@ -225,7 +229,7 @@ The newly created index will be offline as the Online parameter is set to false 
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexCreationTest3() = 
     example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
     |> ofResource "Index"
@@ -248,7 +252,7 @@ other configurable properties but Field Type is the only mandatory parameter. Re
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexCreationTest4() = 
     example "post-index-4" "Create index with computed field"
     |> ofResource "Index"
@@ -283,7 +287,7 @@ is why Flex supports Multi-line and File based scripts. Refer to Script for more
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexCreationTest5() = 
     example "post-index-5" "Create index by setting all properties"
     |> ofResource "Index"
@@ -298,7 +302,7 @@ There are a number of parameters which can be set for a given index. For more in
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexUpdateTest1() = 
     example "put-index-1" "Updating an existing index"
     |> ofResource "Index"
@@ -328,7 +332,7 @@ There are a number of parameters which can be set for a given index. For more in
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexUpdateTest2() = 
     example "put-index-2" "Index update request with wrong index name returns error"
     |> ofResource "Index"
@@ -356,7 +360,7 @@ let IndexUpdateTest2() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexDeleteTest1() = 
     example "delete-index-1" "Deleting an existing index"
     |> ofResource "Index"
@@ -367,7 +371,7 @@ let IndexDeleteTest1() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexDeleteTest2() = 
     example "delete-index-2" "Deleting an non-existing index will return an error"
     |> ofResource "Index"
@@ -379,7 +383,7 @@ let IndexDeleteTest2() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexGetTest1() = 
     example "get-index-1" "Getting an index detail by name"
     |> ofResource "Index"
@@ -391,7 +395,7 @@ let IndexGetTest1() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexGetTest2() = 
     example "get-index-2" "Getting an index detail by name (non existing index)"
     |> ofResource "Index"
@@ -403,7 +407,7 @@ let IndexGetTest2() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexExistsTest1() = 
     example "get-index-exists-1" "Checking if an index exists (true case)"
     |> ofResource "Exists"
@@ -415,7 +419,7 @@ let IndexExistsTest1() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexExistsTest2() = 
     example "get-index-exists-2" "Checking if an index exists (false case)"
     |> ofResource "Exists"
@@ -427,7 +431,7 @@ let IndexExistsTest2() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexStatusTest1() = 
     example "get-index-status-1" "Getting status of an index"
     |> ofResource "Status"
@@ -439,7 +443,7 @@ let IndexStatusTest1() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexStatusTest2() = 
     testList "IndexStatusTest 2" [
         yield example "post-index-status-1" "Setting status of an index to on-line"
@@ -464,7 +468,7 @@ let IndexStatusTest2() =
 
 
 
-[<Tests>]
+[<Fact>]
 let IndexStatusTest3() = 
     testList "IndexStatusTest3" [
         yield example "post-index-status-2" "Setting status of an index to off-line"
@@ -487,7 +491,7 @@ let IndexStatusTest3() =
         |> runAssertions
     ]
 
-[<Tests>]
+[<Fact>]
 let IndexDocumentsTest1() = 
     example "post-index-document-id-1" "Add a document to an index"
     |> ofResource "Documents"
@@ -505,7 +509,7 @@ let IndexDocumentsTest1() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexDocumentsTest2() = 
     Thread.Sleep(5000)
     example "get-index-document-id-1" "Get a document by an id from an index"
@@ -518,7 +522,7 @@ let IndexDocumentsTest2() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexDocumentsTest3() = 
     example "put-index-document-id-1" "Update a document by id to an index"
     |> ofResource "Documents"
@@ -536,7 +540,7 @@ let IndexDocumentsTest3() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexDocumentsTest4() = 
     example "delete-index-document-id-1" "Delete a document by id from an index"
     |> ofResource "Documents"
@@ -548,7 +552,7 @@ let IndexDocumentsTest4() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let IndexDocumentsBulkLoadingTest() =
     // Bulk generate and add data for search testing
     for id, records in Helpers.GenerateTestDataLines(Helpers.MockTestData) do 
@@ -560,7 +564,7 @@ let IndexDocumentsBulkLoadingTest() =
         |> ignore
     testCase "" <| fun _ -> Assert.AreEqual(1, 1)
 
-[<Tests>]
+[<Fact>]
 let IndexDocumentsTest5() = 
     Thread.Sleep(5000)
     example "get-index-document-1" "Get top 10 documents from an index"
@@ -574,7 +578,7 @@ let IndexDocumentsTest5() =
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchTermQueryTest1() = 
     example "post-index-search-termquery-1" "Term search using ``=`` operator"
     |> ofResource "Search"
@@ -596,7 +600,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchTermQueryTest2() = 
     example "post-index-search-termquery-2" "Term search using ``eq`` operator"
     |> ofResource "Search"
@@ -619,7 +623,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchFuzzyQueryTest1() = 
     example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
     |> ofResource "Search"
@@ -641,7 +645,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchFuzzyQueryTest2() = 
     example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
     |> ofResource "Search"
@@ -664,7 +668,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchFuzzyQueryTest3() = 
     example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
     |> ofResource "Search"
@@ -687,7 +691,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchPhraseQueryTest1() = 
     example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
     |> ofResource "Search"
@@ -710,7 +714,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchWildCardQueryTest1() = 
     example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
     |> ofResource "Search"
@@ -733,7 +737,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchWildCardQueryTest2() = 
     example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
     |> ofResource "Search"
@@ -756,7 +760,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchWildCardQueryTest3() = 
     example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
     |> ofResource "Search"
@@ -780,7 +784,7 @@ be used to match one character.
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchRegexQueryTest1() = 
     example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
     |> ofResource "Search"
@@ -804,7 +808,7 @@ be used to match one character.
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchMatchallQueryTest1() = 
     example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
     |> ofResource "Search"
@@ -828,7 +832,7 @@ The below is the query to to match all documents in the index.
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchNumericRangeQueryTest1() = 
     example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
     |> ofResource "Search"
@@ -852,7 +856,7 @@ The below is the query to to match all documents with cvv2 greater than 100 in t
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchNumericRangeQueryTest2() = 
     example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
     |> ofResource "Search"
@@ -876,7 +880,7 @@ The below is the query to to match all documents with cvv2 greater than or equal
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchNumericRangeQueryTest3() = 
     example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
     |> ofResource "Search"
@@ -900,7 +904,7 @@ The below is the query to to match all documents with cvv2 less than 150 in the 
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchNumericRangeQueryTest4() = 
     example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
     |> ofResource "Search"
@@ -924,7 +928,7 @@ The below is the query to to match all documents with cvv2 less than or equal to
     |> document
     |> runAssertions
 
-[<Tests>]
+[<Fact>]
 let SearchHighlightFeatureTest1() = 
     let query = new SearchQuery("contact", " description = 'Nullam'")
     let highlight = new List<string>()
