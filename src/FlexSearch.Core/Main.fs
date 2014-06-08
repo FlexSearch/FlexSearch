@@ -122,4 +122,4 @@ module Main =
             with e -> 
                 printfn "%A" e
 
-        member this.Stop() = container.ResolveNamed<IServer>("http").Stop()
+        member this.Stop() = httpServer.Stop()
