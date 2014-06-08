@@ -34,6 +34,11 @@ module CompilerService =
 public string Execute(System.Collections.Generic.IReadOnlyDictionary<string,string> fields) { [SourceCode] }
 """
     
+    // The below settings are to prevent locking in case of multi-threaded scenario
+    CSScript.GlobalSettings.InMemoryAsssembly <- true
+    CSScript.GlobalSettings.OptimisticConcurrencyModel <- true
+    CSScript.CacheEnabled <- false
+
     /// <summary>
     /// Generates a Function which returns a string value
     /// </summary>
