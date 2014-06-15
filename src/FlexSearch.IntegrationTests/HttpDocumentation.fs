@@ -33,28 +33,25 @@ let GenerateApiDocumentation() =
     let mutable title = ""
     let mutable insideGroup = false
     for line in file do
-        if line.StartsWith("##") then 
+        if line.StartsWith("<") then 
             insideGroup <- true
-            output.Add("<!--- start -->")
-            title <- line.Substring(3)
-        else if line.StartsWith("//```") then 
+            title <- line.Substring(1).Replace(" ", "")
+            output.Add(sprintf ".. _%s:" title)
+            output.Add("")
+            output.Add(line.Substring(1))
+        else if line.StartsWith("//>") then 
             insideGroup <- false
-            output.Add("```")
-            output.Insert(0, "Slug: " + title)
-            output.Insert(0, "Date: " + getDate())
-            output.Insert(0, "Category: Glossary")
-            output.Insert(0, "Method: Glossary")
-            output.Insert(0, "Uri: " + title)
-            output.Insert(0, "Title: " + title)
-            File.WriteAllLines
-                (Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "glossary", title + ".md"), 
-                 output.ToArray())
+            output.Add("")
+            if Directory.Exists(Helpers.DocumentationConf.DocumentationFolder) then
+                File.WriteAllLines
+                    (Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "model-" + title + ".rst"), 
+                     output.ToArray())
             output.Clear()
-        else if line.StartsWith("*/") && insideGroup then ()
+        else if (line.StartsWith("*/") || line.StartsWith("/*")) && insideGroup then ()
         else 
             if insideGroup then output.Add(line)
     printfn "Finished Api document generation."
-    testCase "" <| fun _ -> Assert.AreEqual(1, 1)
+    Assert.AreEqual(1, 1)
 
 /// <summary>
 /// Represent a resource to document

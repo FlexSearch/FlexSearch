@@ -52,7 +52,8 @@ type Example =
       Querystring : string
       Requestbody : string option
       TestCases : ResizeArray<Test>
-      Output : ResizeArray<string> }
+      Output : ResizeArray<string>
+      OutputResponse : ResizeArray<string> }
 
 let example (id : string) (name : string) = 
     let result = 
@@ -68,22 +69,23 @@ let example (id : string) (name : string) =
           Querystring = ""
           Requestbody = None
           TestCases = new ResizeArray<Test>()
-          Output = new ResizeArray<string>() }
-    result.Output.Add("Title: " + name)
-    result.Output.Add("Category: Examples")
-    result.Output.Add("Method: Example")
-    result.Output.Add("Uri: " + name)
-    result.Output.Add("Slug: " + id)
-    result.Output.Add("Date: 2010-12-03 10:20")
+          Output = new ResizeArray<string>()
+          OutputResponse = new ResizeArray<string>() }
+    result.Output.Add(name)
+    result.Output.Add("''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''")
+    result.Output.Add("")
     initializeServer()
     result
 
 let ofResource (name : string) (result : Example) = { result with Resource = name }
 
 let withDescription (desc : string) (result : Example) = 
-    result.Output.Add("<!--- start -->")
+
     result.Output.Add(desc)
-    result.Output.Add("```javascript")
+    result.Output.Add("")
+    result.Output.Add(sprintf ".. literalinclude:: example-%s.txt" result.Id)
+    result.Output.Add("\t:language: javascript")
+    result.Output.Add("")
     { result with Description = desc }
 
 let request (meth : string) (uri : string) (result : Example) = 
@@ -144,7 +146,7 @@ let runAssertions  (result : Example) =
 // Test logic
 // ----------------------------------------------------------------------------
 let execute (result : Example) = 
-    result.Output.Add((sprintf "%s %s HTTP/1.1" result.Method result.Uri))
+    result.OutputResponse.Add((sprintf "%s %s HTTP/1.1" result.Method result.Uri))
     // Create & configure HTTP web request
     let req = HttpWebRequest.Create(sprintf "%s%s" url result.Uri) :?> HttpWebRequest
     req.ProtocolVersion <- HttpVersion.Version11
@@ -160,16 +162,16 @@ let execute (result : Example) =
     else req.ContentLength <- int64 0
     let printHeaders (headerCollection : WebHeaderCollection) = 
         for i = 0 to headerCollection.Count - 1 do
-            result.Output.Add(sprintf "%s:%s" headerCollection.Keys.[i] (headerCollection.GetValues(i).[0]))
+            result.OutputResponse.Add(sprintf "%s:%s" headerCollection.Keys.[i] (headerCollection.GetValues(i).[0]))
     
     let print (resp : HttpWebResponse) = 
         printHeaders (req.Headers)
         if result.Requestbody.IsSome then 
             let parsedJson = JsonConvert.DeserializeObject(result.Requestbody.Value)
-            result.Output.Add(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
-        result.Output.Add("")
-        result.Output.Add("")
-        result.Output.Add((sprintf "HTTP/1.1 %i %s" (int resp.StatusCode) (resp.StatusCode.ToString())))
+            result.OutputResponse.Add(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
+        result.OutputResponse.Add("")
+        result.OutputResponse.Add("")
+        result.OutputResponse.Add((sprintf "HTTP/1.1 %i %s" (int resp.StatusCode) (resp.StatusCode.ToString())))
         printHeaders (resp.Headers)
         if req.HaveResponse then 
             let stream = resp.GetResponseStream()
@@ -178,8 +180,8 @@ let execute (result : Example) =
             result.ResponseBody <- responseBody
             let parsedJson = JsonConvert.DeserializeObject(responseBody)
             if parsedJson <> Unchecked.defaultof<_> then 
-                result.Output.Add("")
-                result.Output.Add(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
+                result.OutputResponse.Add("")
+                result.OutputResponse.Add(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
     
     try 
         result.Response <- req.GetResponse() :?> HttpWebResponse
@@ -193,15 +195,19 @@ let execute (result : Example) =
 // Output logic
 // ----------------------------------------------------------------------------
 let document (result : Example) = 
-    result.Output.Add("```")
-    let path = Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "requests", result.Id + ".md")
-    if Directory.Exists(Helpers.DocumentationConf.DocumentationFolder) then File.WriteAllLines(path, result.Output)
+    result.Output.Add(" ")
+    let path = Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "example-" + result.Id + ".rst")
+    let examplePath = Path.Combine(Helpers.DocumentationConf.DocumentationFolder, "example-" + result.Id + ".txt")
+    if Directory.Exists(Helpers.DocumentationConf.DocumentationFolder) then 
+        File.WriteAllLines(path, result.Output)
+        File.WriteAllLines(examplePath, result.OutputResponse)
     result
 
 // ----------------------------------------------------------------------------
 // Tests
 // ----------------------------------------------------------------------------
-[<Fact>]
+
+[<Tests>]
 let IndexCreationTest1() = 
     example "post-index-1" "Create index without any field"
     |> ofResource "Index"
@@ -215,7 +221,7 @@ The newly created index will be offline as the Online parameter is set to false 
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexCreationTest2() = 
     example "post-index-2" "Duplicate index cannot be created."
     |> ofResource "Index"
@@ -229,7 +235,7 @@ The newly created index will be offline as the Online parameter is set to false 
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexCreationTest3() = 
     example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
     |> ofResource "Index"
@@ -252,7 +258,7 @@ other configurable properties but Field Type is the only mandatory parameter. Re
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexCreationTest4() = 
     example "post-index-4" "Create index with computed field"
     |> ofResource "Index"
@@ -287,7 +293,7 @@ is why Flex supports Multi-line and File based scripts. Refer to Script for more
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexCreationTest5() = 
     example "post-index-5" "Create index by setting all properties"
     |> ofResource "Index"
@@ -302,7 +308,7 @@ There are a number of parameters which can be set for a given index. For more in
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexUpdateTest1() = 
     example "put-index-1" "Updating an existing index"
     |> ofResource "Index"
@@ -332,7 +338,7 @@ There are a number of parameters which can be set for a given index. For more in
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexUpdateTest2() = 
     example "put-index-2" "Index update request with wrong index name returns error"
     |> ofResource "Index"
@@ -360,7 +366,7 @@ let IndexUpdateTest2() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexDeleteTest1() = 
     example "delete-index-1" "Deleting an existing index"
     |> ofResource "Index"
@@ -371,7 +377,7 @@ let IndexDeleteTest1() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexDeleteTest2() = 
     example "delete-index-2" "Deleting an non-existing index will return an error"
     |> ofResource "Index"
@@ -383,7 +389,7 @@ let IndexDeleteTest2() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexGetTest1() = 
     example "get-index-1" "Getting an index detail by name"
     |> ofResource "Index"
@@ -395,7 +401,7 @@ let IndexGetTest1() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexGetTest2() = 
     example "get-index-2" "Getting an index detail by name (non existing index)"
     |> ofResource "Index"
@@ -407,7 +413,7 @@ let IndexGetTest2() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexExistsTest1() = 
     example "get-index-exists-1" "Checking if an index exists (true case)"
     |> ofResource "Exists"
@@ -419,7 +425,7 @@ let IndexExistsTest1() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexExistsTest2() = 
     example "get-index-exists-2" "Checking if an index exists (false case)"
     |> ofResource "Exists"
@@ -431,7 +437,7 @@ let IndexExistsTest2() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexStatusTest1() = 
     example "get-index-status-1" "Getting status of an index"
     |> ofResource "Status"
@@ -443,7 +449,7 @@ let IndexStatusTest1() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexStatusTest2() = 
     testList "IndexStatusTest 2" [
         yield example "post-index-status-1" "Setting status of an index to on-line"
@@ -468,7 +474,7 @@ let IndexStatusTest2() =
 
 
 
-[<Fact>]
+[<Tests>]
 let IndexStatusTest3() = 
     testList "IndexStatusTest3" [
         yield example "post-index-status-2" "Setting status of an index to off-line"
@@ -491,7 +497,7 @@ let IndexStatusTest3() =
         |> runAssertions
     ]
 
-[<Fact>]
+[<Tests>]
 let IndexDocumentsTest1() = 
     example "post-index-document-id-1" "Add a document to an index"
     |> ofResource "Documents"
@@ -509,7 +515,7 @@ let IndexDocumentsTest1() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexDocumentsTest2() = 
     Thread.Sleep(5000)
     example "get-index-document-id-1" "Get a document by an id from an index"
@@ -522,7 +528,7 @@ let IndexDocumentsTest2() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexDocumentsTest3() = 
     example "put-index-document-id-1" "Update a document by id to an index"
     |> ofResource "Documents"
@@ -540,7 +546,7 @@ let IndexDocumentsTest3() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexDocumentsTest4() = 
     example "delete-index-document-id-1" "Delete a document by id from an index"
     |> ofResource "Documents"
@@ -552,7 +558,7 @@ let IndexDocumentsTest4() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let IndexDocumentsBulkLoadingTest() =
     // Bulk generate and add data for search testing
     for id, records in Helpers.GenerateTestDataLines(Helpers.MockTestData) do 
@@ -564,7 +570,7 @@ let IndexDocumentsBulkLoadingTest() =
         |> ignore
     testCase "" <| fun _ -> Assert.AreEqual(1, 1)
 
-[<Fact>]
+[<Tests>]
 let IndexDocumentsTest5() = 
     Thread.Sleep(5000)
     example "get-index-document-1" "Get top 10 documents from an index"
@@ -578,7 +584,7 @@ let IndexDocumentsTest5() =
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchTermQueryTest1() = 
     example "post-index-search-termquery-1" "Term search using ``=`` operator"
     |> ofResource "Search"
@@ -600,7 +606,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchTermQueryTest2() = 
     example "post-index-search-termquery-2" "Term search using ``eq`` operator"
     |> ofResource "Search"
@@ -623,7 +629,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchFuzzyQueryTest1() = 
     example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
     |> ofResource "Search"
@@ -645,7 +651,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchFuzzyQueryTest2() = 
     example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
     |> ofResource "Search"
@@ -668,7 +674,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchFuzzyQueryTest3() = 
     example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
     |> ofResource "Search"
@@ -691,7 +697,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchPhraseQueryTest1() = 
     example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
     |> ofResource "Search"
@@ -714,7 +720,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchWildCardQueryTest1() = 
     example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
     |> ofResource "Search"
@@ -737,7 +743,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchWildCardQueryTest2() = 
     example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
     |> ofResource "Search"
@@ -760,7 +766,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchWildCardQueryTest3() = 
     example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
     |> ofResource "Search"
@@ -784,7 +790,7 @@ be used to match one character.
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchRegexQueryTest1() = 
     example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
     |> ofResource "Search"
@@ -808,7 +814,7 @@ be used to match one character.
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchMatchallQueryTest1() = 
     example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
     |> ofResource "Search"
@@ -832,7 +838,7 @@ The below is the query to to match all documents in the index.
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchNumericRangeQueryTest1() = 
     example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
     |> ofResource "Search"
@@ -856,7 +862,7 @@ The below is the query to to match all documents with cvv2 greater than 100 in t
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchNumericRangeQueryTest2() = 
     example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
     |> ofResource "Search"
@@ -880,7 +886,7 @@ The below is the query to to match all documents with cvv2 greater than or equal
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchNumericRangeQueryTest3() = 
     example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
     |> ofResource "Search"
@@ -904,7 +910,7 @@ The below is the query to to match all documents with cvv2 less than 150 in the 
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchNumericRangeQueryTest4() = 
     example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
     |> ofResource "Search"
@@ -928,7 +934,7 @@ The below is the query to to match all documents with cvv2 less than or equal to
     |> document
     |> runAssertions
 
-[<Fact>]
+[<Tests>]
 let SearchHighlightFeatureTest1() = 
     let query = new SearchQuery("contact", " description = 'Nullam'")
     let highlight = new List<string>()
@@ -960,4 +966,22 @@ The below is the query to highlight 'Nullam' is description field.
     |> responseStatusEquals HttpStatusCode.OK
     |> document
     |> runAssertions
-let testRunHelper() = IndexCreationTest1()
+
+[<Fact>] 
+let ``Rest webservice tests`` () =
+    Assert.AreEqual(0, run (IndexCreationTest1()), "Index Creation Test 1 Failed")
+    Assert.AreEqual(0, run (IndexCreationTest2()), "Index Creation Test 2 Failed")
+    Assert.AreEqual(0, run (IndexCreationTest3()), "Index Creation Test 3 Failed")
+    Assert.AreEqual(0, run (IndexCreationTest4()), "Index Creation Test 4 Failed")
+    Assert.AreEqual(0, run (IndexCreationTest5()), "Index Creation Test 4 Failed")
+    Assert.AreEqual(0, run (IndexUpdateTest1()), "Index update Test 1 Failed")
+    Assert.AreEqual(0, run (IndexUpdateTest2()), "Index update Test 2 Failed")
+    Assert.AreEqual(0, run (IndexGetTest1()), "Index Get Test 1 Failed")
+    Assert.AreEqual(0, run (IndexGetTest2()), "Index Get Test 2 Failed")
+    Assert.AreEqual(0, run (IndexDeleteTest1()), "Index delete Test 1 Failed")
+    Assert.AreEqual(0, run (IndexDeleteTest2()), "Index delete Test 1 Failed")
+    Assert.AreEqual(0, run (IndexExistsTest1()), "Index exists Test 1 Failed")
+    Assert.AreEqual(0, run (IndexExistsTest2()), "Index exists Test 2 Failed")
+    Assert.AreEqual(0, run (IndexStatusTest1()), "Index status Test 1 Failed")
+    Assert.AreEqual(0, run (IndexStatusTest2()), "Index status Test 2 Failed")
+    Assert.AreEqual(0, run (IndexStatusTest3()), "Index status Test 3 Failed")
