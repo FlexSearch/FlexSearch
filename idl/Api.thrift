@@ -34,19 +34,21 @@ namespace java org.FlexSearch.Api
 // ----------------------------------------------------------------------------
 
 // Node role
-enum NodeRole {
-	Master = 1
-    Slave = 2
-}
+	enum NodeRole {
+		Master = 1
+		Slave = 2
+	}
 
 
-enum FieldSimilarity {
-	BM25 = 1
-	TDF = 2
-}
+	enum FieldSimilarity {
+		BM25 = 1
+		TDF = 2
+	}
 
 /*
-## FieldPostingsFormat
+<Field Postings Format
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 Encodes/decodes terms, postings, and proximity data.
 
 **Memory FieldPostingsFormat**
@@ -57,19 +59,22 @@ A PostingsFormat useful for low doc-frequency fields such as primary keys.
 
 **Pulsing FieldPostingsFormat**
 Pulsing Codec: in-lines low frequency terms' postings into terms dictionary.
-``` java
+
+.. code-block:: c
+
 */
-enum FieldPostingsFormat {
-	Direct = 1
-	Memory = 2
-	Bloom = 3 
-	Pulsing = 4 
-	Lucene41PostingsFormat = 5
-}
-//```
+	enum FieldPostingsFormat {
+		Direct = 1
+		Memory = 2
+		Bloom = 3 
+		Pulsing = 4 
+		Lucene41PostingsFormat = 5
+	}
+//>
 
 /*
-## DirectoryType
+<Directory Type
+^^^^^^^^^^^^^^^^^
 
 **Directory**
 A Directory is a flat list of files. Files may be written once, when they are created. Once a file is created it may only be opened for read, or deleted. Random access is permitted both when reading and writing.
@@ -89,17 +94,19 @@ This will consume additional transient disk usage: on Windows, attempts to delet
 **FileSystem Directory**
 FileSystem Directory is a straightforward implementation using java.io.RandomAccessFile. However, it has poor concurrent performance (multiple threads will bottleneck) as it synchronizes when multiple threads read from the same file.
 
-``` java
+.. code-block:: c
+
 */
-enum DirectoryType {
-	FileSystem = 1
-	MemoryMapped = 2
-	Ram = 3
-}
-//``` 
+	enum DirectoryType {
+		FileSystem = 1
+		MemoryMapped = 2
+		Ram = 3
+	}
+//>
 
 /*
-## FieldTermVector
+<Field Term Vector
+^^^^^^^^^^^^^^^^^^^^
 
 These options instruct FlexSearch to maintain full term vectors for each document, optionally 
 including the position and offset information for each term occurrence in those vectors. These 
@@ -113,23 +120,26 @@ Do not store term vectors.
 Store the term vectors of each document. A term vector is a list of the document's terms and their number of occurrences in that document.
 
 **StoreTermVectorsWithPositions**
-Store the term vector + token position information
+Store the term vector < token position information
 
 **StoreTermVectorsWithPositionsandOffsets**
 Store the term vector + Token position and offset information
 
-``` java
+.. code-block:: c
+
 */
-enum FieldTermVector {
-	DoNotStoreTermVector = 1
-	StoreTermVector = 2
-	StoreTermVectorsWithPositions = 3
-	StoreTermVectorsWithPositionsandOffsets = 4
-}
-//```
+	enum FieldTermVector {
+		DoNotStoreTermVector = 1
+		StoreTermVector = 2
+		StoreTermVectorsWithPositions = 3
+		StoreTermVectorsWithPositionsandOffsets = 4
+	}
+//>
 
 /*
-## FieldIndexOptions
+<FieldIndexOptions
+^^^^^^^^^^^^^^^^^^^
+
 **DocsOnly**
 Only documents are indexed: term frequencies and positions are omitted. Phrase and other positional queries on the field will throw an exception, and scoring will behave as if any term in the document appears only once.
 
@@ -142,147 +152,186 @@ Indexes documents, frequencies and positions. This is a typical default for full
 **DocsAndFreqsAndPositionsAndOffsets**
 Indexes documents, frequencies, positions and offsets. Character offsets are encoded alongside the positions.
 
-``` java
+.. code-block:: c
+
 */
-enum FieldIndexOptions {
-	DocsOnly = 1
-	DocsAndFreqs = 2
-	DocsAndFreqsAndPositions = 3
-	DocsAndFreqsAndPositionsAndOffsets = 4
-}
-//```
+	enum FieldIndexOptions {
+		DocsOnly = 1
+		DocsAndFreqs = 2
+		DocsAndFreqsAndPositions = 3
+		DocsAndFreqsAndPositionsAndOffsets = 4
+	}
+//>
 
 /*
-## FieldType
+<Field Type
+^^^^^^^^^^^^^
 
 The field type defines how FlexSearch should interpret data in a field and how the field can be queried. There are many field types included with FlexSearch by default, and custom types can also be defined.
 
 The below table list the various field types supported by FlexSearch.
 
-| Field Type | Description                                                                                                                                                                                                                                      |
-|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Int        | Integer                                                                                                                                                                                                                                          |
-| Double     | Double                                                                                                                                                                                                                                           |
-| ExactText  | Field to store keywords. The entire input will be treated as a single word. This is useful for fields like customerid, referenceid etc. These fields only support complete text matching while searching and no partial word match is available. |
-| Text       | General purpose field to store normal textual data                                                                                                                                                                                               |
-| Highlight  | Similar to Text field but supports highlighting of search results                                                                                                                                                                                |
-| Bool       | Boolean                                                                                                                                                                                                                                          |
-| Date       | Fixed format date field (Supported format: YYYYmmdd)                                                                                                                                                                                             |
-| DateTime   | Fixed format datetime field (Supported format: YYYYMMDDhhmmss)                                                                                                                                                                                   |
-| Custom     | Custom field type which gives more granular control over the field configuration                                                                                                                                                                 |
-| Stored     | Non-indexed field. Only used for retrieving stored text. Searching is not possible over these fields.                                                                                                                                            |
-
+.. tabularcolumns:: |p{2cm}|J|
+.. rst-class:: ui celled table
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field Type   | Description                                                                                                                                                                                                                                        |
++==============+====================================================================================================================================================================================================================================================+
+| Int          | Integer                                                                                                                                                                                                                                            |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Double       | Double                                                                                                                                                                                                                                             |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ExactText    | Field to store keywords. The entire input will be treated as a single word. This is useful for fields like customerid, referenceid etc. These fields only support complete text matching while searching and no partial word match is available.   |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Text         | General purpose field to store normal textual data                                                                                                                                                                                                 |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Highlight    | Similar to Text field but supports highlighting of search results                                                                                                                                                                                  |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Bool         | Boolean                                                                                                                                                                                                                                            |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Date         | Fixed format date field (Supported format: YYYYmmdd)                                                                                                                                                                                               |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| DateTime     | Fixed format datetime field (Supported format: YYYYMMDDhhmmss)                                                                                                                                                                                     |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Custom       | Custom field type which gives more granular control over the field configuration                                                                                                                                                                   |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Stored       | Non-indexed field. Only used for retrieving stored text. Searching is not possible over these fields.                                                                                                                                              |
++--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 The below table lists the various parameters which can be configured for each field type.
 
-| Field Type | Search Analyzer | Index Analyzer | Store | Index | Analyze | Term Vector |
-|------------|-----------------|----------------|-------|-------|---------|-------------|
-| Int        | No              | No             | Yes   | No    | No      | No          |
-| Double     | No              | No             | Yes   | No    | No      | No          |
-| ExactText  | No              | No             | Yes   | No    | No      | No          |
-| Text       | Yes             | Yes            | Yes   | No    | No      | No          |
-| Highlight  | Yes             | Yes            | Yes   | No    | No      | No          |
-| Bool       | No              | No             | Yes   | No    | No      | No          |
-| Date       | No              | No             | Yes   | No    | No      | No          |
-| DateTime   | No              | No             | Yes   | No    | No      | No          |
-| Custom     | Yes             | Yes            | Yes   | Yes   | Yes     | Yes         |
-| Stored     | No              | No             | No    | No    | No      | No          |
+.. rst-class:: ui celled table
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Field Type   | Search Analyzer   | Index Analyzer   | Store   | Index   | Analyze   | Term Vector   |
++==============+===================+==================+=========+=========+===========+===============+
+| Int          | No                | No               | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Double       | No                | No               | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| ExactText    | No                | No               | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Text         | Yes               | Yes              | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Highlight    | Yes               | Yes              | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Bool         | No                | No               | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Date         | No                | No               | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| DateTime     | No                | No               | Yes     | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Custom       | Yes               | Yes              | Yes     | Yes     | Yes       | Yes           |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
+| Stored       | No                | No               | No      | No      | No        | No            |
++--------------+-------------------+------------------+---------+---------+-----------+---------------+
 
-**Note**
-    
-	By default Text, Highlight and Custom use Standard Analyzer for searching and indexing.
+.. note:: 
+    By default Text, Highlight and Custom use Standard Analyzer for searching and indexing.
 
-**Warning**
+.. note:: 
+    Configuring any unsupported combination for a field type will be ignored and will result in unexpected behaviour.
 
-	Configuring any unsupported combination for a field type will be ignored and will result in unexpected behaviour.
+.. code-block:: c
 
-``` java
 */
-enum FieldType {
-	Int = 1
-	Double = 2
-	ExactText = 3
-	Text = 4
-	Highlight = 5
-	Bool = 6
-	Date = 7
-	DateTime = 8
-	Custom = 9
-	Stored = 10
-	Long = 11
-}
-//```
+	enum FieldType {
+		Int = 1
+		Double = 2
+		ExactText = 3
+		Text = 4
+		Highlight = 5
+		Bool = 6
+		Date = 7
+		DateTime = 8
+		Custom = 9
+		Stored = 10
+		Long = 11
+	}
+//>
 
-enum ShardAllocationStrategy {
-	Automatic = 1
-	Manual = 2
-}
+	enum ShardAllocationStrategy {
+		Automatic = 1
+		Manual = 2
+	}
 
 /*
-## IndexVersion
+IndexVersion
+^^^^^^^^^^^^^^^^
+
 Version of the Lucene index used behind the scene. 
-``` java
+
+.. code-block:: c
+
 */
-enum IndexVersion {
-	Lucene47 = 1
-}
-//```
+	enum IndexVersion {
+		Lucene47 = 1
+	}
+//>
 
 /*
-## ScriptType
+<Script Type
+^^^^^^^^^^^^^
 
-``` java
+.. code-block:: c
+
 */
-enum ScriptType {
-	SearchProfileSelector = 1
-    CustomScoring = 2
-    ComputedField = 3
-}
-//```
+	enum ScriptType {
+		SearchProfileSelector = 1
+		CustomScoring = 2
+		ComputedField = 3
+	}
+//>
 
 /*
-## IndexState
+<Index State
+^^^^^^^^^^^^
 
-``` java
+.. code-block:: c
+
 */
-enum IndexState {
-    Opening = 1
-    Online = 2
-    Offline = 3
-    Closing = 4
-}
-//```
+	enum IndexState {
+		Opening = 1
+		Online = 2
+		Offline = 3
+		Closing = 4
+	}
+//>
 
 /*
-## JobStatus
+<Job Status
+^^^^^^^^^^^
 
-``` java
+.. code-block:: c
+
 */
-enum JobStatus {
-	Initializing = 1
-	Initialized = 2
-	InProgress = 3
-	Completed = 4
-	CompletedWithErrors = 5
-}
-//```
+	enum JobStatus {
+		Initializing = 1
+		Initialized = 2
+		InProgress = 3
+		Completed = 4
+		CompletedWithErrors = 5
+	}
+//>
 
 // ----------------------------------------------------------------------------
 //	Structs
 // ----------------------------------------------------------------------------
 
 /*
-## ShardConfiguration
+<Shard Configuration
+^^^^^^^^^^^^^^^^^^^^^^
 
-``` java
+.. code-block:: c
+
 */
-struct ShardConfiguration {
-	1:	optional i32 ShardCount = 1
-}
-//```
+	struct ShardConfiguration {
+		1:	optional i32 ShardCount = 1
+	}
+//>
 
 /*
-## IndexConfiguration
+<Index Configuration
+^^^^^^^^^^^^^^^^^^^^^^
+
 **CommitTimeSec**
 
 **DirectoryType**
@@ -298,52 +347,67 @@ Determines the amount of RAM that may be used for buffering added documents and 
 **IndexVersion**
 Refer to IndexVersion.
 
-``` java
+.. code-block:: c
+
 */
-struct IndexConfiguration {
-	1:	optional i32 CommitTimeSec = 60
-	2:	optional DirectoryType DirectoryType = 2
-	3:	optional i32 DefaultWriteLockTimeout =  1000
-	4:	optional i32 RamBufferSizeMb = 100
-	5:	optional i32 RefreshTimeMilliSec = 25
-	6:	optional IndexVersion IndexVersion = IndexVersion.Lucene47
-}
-//```
+	struct IndexConfiguration {
+		1:	optional i32 CommitTimeSec = 60
+		2:	optional DirectoryType DirectoryType = 2
+		3:	optional i32 DefaultWriteLockTimeout =  1000
+		4:	optional i32 RamBufferSizeMb = 100
+		5:	optional i32 RefreshTimeMilliSec = 25
+		6:	optional IndexVersion IndexVersion = IndexVersion.Lucene47
+	}
+//>
 
 /*
-## FieldProperties
+<Field Properties
+^^^^^^^^^^^^^^^^^^^
 
-The below table lists the various parameters supported by index field.
+.. rst-class:: ui celled table
+.. list-table:: Field Properties
+   :header-rows: 1
+   :widths: 10 40
+   :stub-columns: 1
 
-| Parameter           | Description                                                                                                                                                                |
-|---------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ``fieldname``       | The name of the field. This should be lower case and should only contain alphabetical characters.                                                                           |
-| ``Analyze``         | Signifies if the field should be analyzed using an analyzer. Refer: [FlexSearch Analysis](./analysis.html)                                                               |
-| ``Index``           | Signifies if a field should be indexed. A field can only be stored without indexing. Refer: [FlexSearch Analysis](./analysis.html)                                       |
-| ``Store``           | Signifies if a field should be stored so that it can retrieved while searching.                                                                                            |
-| ``FieldTermVector`` | Advance property used for highlighting.                                                                                                                                    |
-| ``FieldType``       | The type of field                                                                                                                                                          |
-| ``IndexAnalyzer``   | Analyzer to be used while indexing                                                                                                                                         |
-| ``SearchAnalyzer``  | Analyzer to be used while searching                                                                                                                                        |
-| ``ScriptName``      | Fields can get their content dynamically through scripts. This is the name of the script to be used for getting field data at index time. Refer: [Script](./script.html)|
+   *  -  Property Name
+      -  Description
+   *  -  ``FieldName``
+      -  The name of the field. This should be lower case and should only contain alphabetical characters.
+   *  -  ``Analyze``
+      -  Signifies if the field should be analyzed using an analyzer.
+   *  -  ``Index``
+      -  Signifies if a field should be indexed. A field can only be stored without indexing.
+   *  -  ``Store``
+      -  Signifies if a field should be stored so that it can retrieved while searching.
+   *  -  ``FieldTermVector``
+      -  Advance property used for highlighting.
+   *  -  ``FieldType``
+      -  The type of field
+   *  -  ``IndexAnalyzer``
+      -  Analyzer to be used while indexing 
+   *  -  ``SearchAnalyzer``
+      -  Analyzer to be used while searching
+   *  -  ``ScriptName``
+      -  Fields can get their content dynamically through scripts. This is the name of the script to be used for getting field data at index time.
 
-
-``` java
+.. code-block:: c
+ 
 */
-struct FieldProperties {
-	1:	optional bool Analyze = true
-	2:	optional bool Index = true
-	3:	optional bool Store = true
-	4:	optional string IndexAnalyzer = "standardanalyzer"
-	5:	optional string SearchAnalyzer = "standardanalyzer"
-	6:	optional FieldType FieldType = 4
-	7:	optional FieldPostingsFormat PostingsFormat = 5
-	8:	optional FieldIndexOptions IndexOptions = 3
-	9:	optional FieldTermVector TermVector = 3
-	10:	optional bool OmitNorms = true
-	11:	optional string ScriptName = ""
-}
-//```
+	struct FieldProperties {
+		1:	optional bool Analyze = true
+		2:	optional bool Index = true
+		3:	optional bool Store = true
+		4:	optional string IndexAnalyzer = "standardanalyzer"
+		5:	optional string SearchAnalyzer = "standardanalyzer"
+		6:	optional FieldType FieldType = 4
+		7:	optional FieldPostingsFormat PostingsFormat = 5
+		8:	optional FieldIndexOptions IndexOptions = 3
+		9:	optional FieldTermVector TermVector = 3
+		10:	optional bool OmitNorms = true
+		11:	optional string ScriptName = ""
+	}
+//>
 
 struct Job {
 	1:	required string JobId
@@ -354,119 +418,156 @@ struct Job {
 	6:	optional string Message
 }
 
-
 // ----------------------------------------------------------------------------
 //	Analyzer related
 // ----------------------------------------------------------------------------
 /*
-## TokenFilter
+<Token Filter
+^^^^^^^^^^^^^^^^
 
-Like tokenizers, filters consume input and produce a stream of tokens. The job of a filter is usually 
-easier than that of a tokenizer since in most cases a filter looks at each token in the stream 
-sequentially and decides whether to pass it along, replace it or discard it.
+Like tokenizers, filters consume input and produce a stream of tokens. The job of a filter is usually easier than that of a tokenizer since in most cases a filter looks 
+at each token in the stream sequentially and decides whether to pass it along, replace it or discard it.
 
-A filter may also do more complex analysis by looking ahead to consider multiple tokens at once, 
-although this is less common. One hypothetical use for such a filter might be to normalize state 
-names that would be tokenized as two words. For example, the single token "california" would be 
-replaced with "CA", while the token pair "rhode" followed by "island" would become the single token "RI".
+A filter may also do more complex analysis by looking ahead to consider multiple tokens at once, although this is less common. One hypothetical use for such a filter 
+might be to normalize state names that would be tokenized as two words. For example, the single token 'California' would be replaced with 'CA', while the token pair 
+'Rhode' followed by 'island' would become the single token 'RI'.
 
-Because filters consume one Token Stream and produce a new Token Stream, they can be chained one after 
-another indefinitely. Each filter in the chain in turn processes the tokens produced by its predecessor. 
-The order in which you specify the filters is therefore significant. Typically, the most general filtering 
+Because filters consume one Token Stream and produce a new Token Stream, they can be chained one after another indefinitely. Each filter in the chain in turn 
+processes the tokens produced by its predecessor. The order in which you specify the filters is therefore significant. Typically, the most general filtering 
 is done first, and later filtering stages are more specialized.
 
-``` java
+.. rst-class:: ui celled table
+.. list-table:: Filter Properties
+   :header-rows: 1
+   :widths: 10 40
+   :stub-columns: 1
+
+   *  -  Property Name
+      -  Description
+   *  -  ``FilterName``
+      -  The name of the filter
+   *  -  ``Parameters``
+      -  Configurable parameters which can be supplied to a tokenizer.
+
+.. code-block:: c
+
 */
-struct TokenFilter {
-	1:	required string FilterName
-    2:	optional map<string, string> Parameters
-}
-//```
+	struct TokenFilter {
+		1:	required string FilterName
+		2:	optional map<string, string> Parameters
+	}
+//>
 
 /*
-## Tokenizer
+<Tokenizer
+^^^^^^^^^^^^
 
-The job of a tokenizer is to break up a stream of text into tokens, where each token 
-is (usually) a sub-sequence of the characters in the text. An analyzer is aware of the
-field it is configured for, but a tokenizer is not. Tokenizers read from a character 
-stream (a Reader) and produce a Characters in the input stream may be discarded, such 
-as whitespace or other delimiters. They may also be added to or replaced, such as mapping 
-aliases or abbreviations to normalized forms. A token contains various metadata in addition
-to its text value, such as the location at which the token occurs in the field. Because a 
-tokenizer may produce tokens that diverge from the input text, you should not assume that 
-the text of the token is the same text that occurs in the field, or that its length is the 
-same as the original text. It's also possible for more than one token to have the same position 
-or refer to the same offset in the original text. Keep this in mind if you use token metadata 
-for things like highlighting search results in the field text.
+The job of a tokenizer is to break up a stream of text into tokens, where each token is (usually) a sub-sequence of the characters in the text. An analyzer is aware of the field it 
+is configured for, but a tokenizer is not. Tokenizers read from a character stream (a Reader) and produce a Characters in the input stream may be discarded, such as white-space 
+or other delimiters. They may also be added to or replaced, such as mapping aliases or abbreviations to normalized forms. A token contains various meta-data in addition to its text value, 
+such as the location at which the token occurs in the field. Because a tokenizer may produce tokens that diverge from the input text, you should not assume that the text of the token 
+is the same text that occurs in the field, or that its length is the same as the original text. It's also possible for more than one token to have the same position or refer to the 
+same offset in the original text. Keep this in mind if you use token meta-data for things like highlighting search results in the field text.
 
-``` java
+.. rst-class:: ui celled table
+.. list-table:: Tokenizer Properties
+   :header-rows: 1
+   :widths: 10 40
+   :stub-columns: 1
+
+   *  -  Property Name
+      -  Description
+   *  -  ``TokenizerName``
+      -  The name of the tokenizer
+   *  -  ``Parameters``
+      -  Configurable parameters which can be supplied to a tokenizer.
+
+.. code-block:: c
+
 */
-struct Tokenizer {
-	1:	required string TokenizerName
-    2:	optional map<string, string> Parameters
-}
-//```
+	struct Tokenizer {
+		1:	required string TokenizerName
+		2:	optional map<string, string> Parameters
+	}
+//>
 
 /*
-## AnalyzerProperties
+<Analyzer
+^^^^^^^^^^
 
-An analyzer examines the text of fields and generates a token stream. Analyzers 
-are specified as part of the ``Field Properties`` element in the ``Fields`` section 
-of index configuration.
+An analyzer examines the text of fields and generates a token stream. Analyzers are specified as part of the Field Properties element in the Fields section of index configuration.
 
-Only the following field types can have an analyzer, if specified the analyzer will 
-be ignored for other field types.
+Only the following field types can have an analyzer, if specified the analyzer will be ignored for other field types.
 
 - Text
 - Highlight
 - Custom
 
-	StandardAnalyzer is used when no analyzer is specified.
+.. note:: 
+    StandardAnalyzer is used when no analyzer is specified.
+    
+For simple cases, such as plain English prose, a single analyzer class like this may be sufficient. But it's often necessary to do more complex analysis of the field content. Even the 
+most complex analysis requirements can usually be decomposed into a series of discrete, relatively simple processing steps. As you will soon discover, the FlexSearch distribution 
+comes with a large selection of tokenizers and filters that covers most scenarios you are likely to encounter.
 
-For simple cases, such as plain English prose, a single analyzer class like this may 
-be sufficient. But it's often necessary to do more complex analysis of the field 
-content. Even the most complex analysis requirements can usually be decomposed into 
-a series of discrete, relatively simple processing steps. As you will soon discover, 
-the FlexSearch distribution comes with a large selection of tokenizers and filters that 
-covers most scenarios you are likely to encounter.
+Refer to FlexSearch Analysis for examples of supported tokenizers and filters.
 
-Refer to [FlexSearch Analysis](../../flexsearch-analysis/) for examples of supported tokenizers and filters.
-``` java
+.. rst-class:: ui celled table
+.. list-table:: Analyzer Properties
+   :header-rows: 1
+   :widths: 10 40
+   :stub-columns: 1
+
+   *  -  Property Name
+      -  Description
+   *  -  ``Tokenizer``
+      -  :ref:`Tokenizer <Tokenizer>`
+   *  -  ``TokenFilter``
+      -  list of :ref:`TokenFilter <TokenFilter>`
+
+.. code-block:: c
+
 */
-struct AnalyzerProperties {
-	1:	required Tokenizer Tokenizer
-	2:	required list<TokenFilter> Filters
-}
-//```
+	struct AnalyzerProperties {
+		1:	required Tokenizer Tokenizer
+		2:	required list<TokenFilter> Filters
+	}
+//>
 
 // ----------------------------------------------------------------------------
 //	Scripting related
 // ----------------------------------------------------------------------------
 /*
-## ScriptProperties
+<Script Properties
+^^^^^^^^^^^^^^^^^^^^
 
-``` java
+.. code-block:: c
+
 */
-struct ScriptProperties {
-	1:	required string Source
-	2:	required ScriptType ScriptType
-}
-//```
+	struct ScriptProperties {
+		1:	required string Source
+		2:	required ScriptType ScriptType
+	}
+//>
 
 // ----------------------------------------------------------------------------
 //	Search related
 // ----------------------------------------------------------------------------
 /*
-## MissingValueOption
+<Missing Value Option
+^^^^^^^^^^^^^^^^^^^^^
+
 Refer to 'Search profile basics'.
-``` java
+
+.. code-block:: c
+
 */
-enum MissingValueOption {
-	ThrowError = 1
-	Default = 2
-	Ignore = 3
-}
-//```
+	enum MissingValueOption {
+		ThrowError = 1
+		Default = 2
+		Ignore = 3
+	}
+//>
 
 struct MissingValue {
 	1:	required MissingValueOption MissingValueOption
@@ -474,20 +575,25 @@ struct MissingValue {
 }
 
 /*
-## HighlightOption
+<HighlightOption
+^^^^^^^^^^^^^^^^^^^^^^
+
 Refer to 'Search basics'.
-``` java
+
+.. code-block:: c
+
 */
-struct HighlightOption {
-	1:	optional i32 FragmentsToReturn = 2
-	2:	required list<string> HighlightedFields
-	3:	optional string PostTag = "</B>"
-	4:	optional string PreTag = "</B>"
-}
-//```
+	struct HighlightOption {
+		1:	optional i32 FragmentsToReturn = 2
+		2:	required list<string> HighlightedFields
+		3:	optional string PostTag = "</B>"
+		4:	optional string PreTag = "</B>"
+	}
+//>
 
 /*
-## SearchProfile
+<Search Profile
+^^^^^^^^^^^^^^^^^
 
 A Search profile is a user configurable search criteria which can be saved as a
 part of index configuration enabling an user to pass a set of values to match 
@@ -502,15 +608,16 @@ over how the query will be parsed by the server.
 Search profile expects the caller to populate ``SearchProfile`` and ``QueryString`` properties.
 The Search profile ``QueryString`` uses a specialized format to pass key value pairs.
 
-``` javascript
+.. code:: javascript
 
-{fieldName1: 'fieldValue1', fieldName2 : 'fieldValue2', ..}
+    {fieldName1: 'fieldValue1', fieldName2 : 'fieldValue2', ..}
 
-//```
 */
+//>
 
 /*
-## SearchQuery
+<Search Query
+^^^^^^^^^^^^^
 
 **Columns** 
 Columns to be returned as a part of search result. Use ``*`` to return all columns. 
@@ -540,7 +647,7 @@ The search query to be executed.  Can also be passed as a part of query string a
 
 **ReturnFlatResult**
 Return the results as simple json array enabling easy binding to the a grid.
- Can also be passed as a part of query string as ``returnflatresult``.
+Can also be passed as a part of query string as ``returnflatresult``.
 
 **ReturnScore**
 Return score as a part of search result. In case you are using ``ReturnFlatResult`` then the 
@@ -548,109 +655,157 @@ score will be returned in ``_score`` field.
 
 **SearchProfile**
 Pass the name of the search profile in case of profile based searching.
-``` java
+
+.. code-block:: c
+
 */
-struct SearchQuery {
-	1:	optional list<string> Columns = {}
-	2:	optional i32 Count = 10
-	3:	optional HighlightOption Highlights
-	4:	required string IndexName
-	5:	optional string OrderBy = "score"
-	6:	optional i32 Skip = 0
-	7:	required string QueryString
-	8:	optional map<string, MissingValueOption> MissingValueConfiguration = {}
-	9:	optional MissingValueOption GlobalMissingValue = 1
-	10:	optional bool ReturnFlatResult = false
-	11:	optional bool ReturnScore = true
-	12: optional string SearchProfile
-	13: optional string SearchProfileSelector
-}
-//```
+	struct SearchQuery {
+		1:	optional list<string> Columns = {}
+		2:	optional i32 Count = 10
+		3:	optional HighlightOption Highlights
+		4:	required string IndexName
+		5:	optional string OrderBy = "score"
+		6:	optional i32 Skip = 0
+		7:	required string QueryString
+		8:	optional map<string, MissingValueOption> MissingValueConfiguration = {}
+		9:	optional MissingValueOption GlobalMissingValue = 1
+		10:	optional bool ReturnFlatResult = false
+		11:	optional bool ReturnScore = true
+		12: optional string SearchProfile
+		13: optional string SearchProfileSelector
+	}
+//>
 
 // ----------------------------------------------------------------------------
 //	Server Settings
 // ----------------------------------------------------------------------------
 /*
-## ServerSettings
+<Server Settings
+^^^^^^^^^^^^^^^^^
 
 Represents server settings to be defined in ``conf.json``. These are loaded initially when the server 
 loads.
 
-``` java
+.. code-block:: c
+
 */
-struct ServerSettings {
-	1:	optional i32 HttpPort = 9800
-	2:	optional i32 ThriftPort = 9900
-	3:	optional string DataFolder = "./data"
-	4:	optional string PluginFolder = "./plugins"
-	5:	optional string ConfFolder = "./conf"
-	6:	optional string NodeName = "FlexNode"
-	7:	optional NodeRole NodeRole = 1
-}
-//```
+	struct ServerSettings {
+		1:	optional i32 HttpPort = 9800
+		2:	optional i32 ThriftPort = 9900
+		3:	optional string DataFolder = "./data"
+		4:	optional string PluginFolder = "./plugins"
+		5:	optional string ConfFolder = "./conf"
+		6:	optional string NodeName = "FlexNode"
+		7:	optional NodeRole NodeRole = 1
+	}
+//>
 
 // ----------------------------------------------------------------------------
 //	Index & Document related
 // ----------------------------------------------------------------------------
 /*
-## Document
+<Document
+^^^^^^^^^^
 
 Represents the result document returned from Search service when ``Returnflatresult`` parameter is set
 to false. This offers more structured result compared to Flat results. This is the only supported output
 when Highlight is used.
 
-``` java
+.. code-block:: c
+
 */
-struct Document {
-	1:	optional map<string, string> Fields = {}
-	2:	optional list<string> Highlights = {}
-	3:	required string Id
-	4:	optional i64 LastModified
-	7:	required string Index
-	8:	optional double Score = 0.0
-}
-//```
+	struct Document {
+		1:	optional map<string, string> Fields = {}
+		2:	optional list<string> Highlights = {}
+		3:	required string Id
+		4:	optional i64 LastModified
+		7:	required string Index
+		8:	optional double Score = 0.0
+	}
+//>
 
 /*
-## Index
+<Index
+^^^^^^^^^^
 
-In case of a database analogy an index represents a table in a database where one has to define 
-a schema upfront before performing any kind of operation on the table. There are various properties
-that can be defined at the index creation time. Only ``IndexName`` is a mandatory property, though
-one should always define ``Fields`` in an index to make any use of it.
+In case of a database analogy an index represents a table in a database where one has to define a schema upfront before performing any kind of operation on the table. 
+There are various properties that can be defined at the index creation time. Only ``IndexName`` is a mandatory property, though one should always define ``Fields`` in an index to make any use of it.
 
 By default a newly created index stays offline. This is by design to force the user to enable
 an index before using it.
-``` java
+
+.. rst-class:: ui celled table
+.. list-table:: Index Properties
+   :header-rows: 1
+   :widths: 10 40
+   :stub-columns: 1
+
+   *  -  Property Name
+      -  Description
+   *  -  ``IndexName``
+      -  Name of the index
+   *  -  ``Online``
+      -  Status of the index. An index should be on-line in order to enable searching over it.
+   *  -  ``Analyzers``
+      -  map of :ref:`Analyzer <Analyzer>`
+   *  -  ``IndexConfiguration``
+      -  :ref:`IndexConfiguration <IndexConfiguration>`
+   *  -  ``FieldProperties``
+      -  map of :ref:`FieldProperties <FieldProperties>`
+   *  -  ``ScriptProperties``
+      -  map of :ref:`ScriptProperties <FieldProperties>`
+   *  -  ``SearchProfiles``
+      -  map of :ref:`SearchQuery <SearchQuery>`
+   *  -  ``ShardConfiguration``
+      -  :ref:`ShardConfiguration <ShardConfiguration>`
+
+.. code-block:: c
+
 */
-struct Index {
-	1:	optional map<string, AnalyzerProperties> Analyzers = {}
-	2:	required IndexConfiguration IndexConfiguration = {}
-	3:	required map<string, FieldProperties> Fields = {}
-	4:	required string IndexName
-	5:	required bool Online = false
-	6:	optional map<string, ScriptProperties> Scripts = {}
-	7:	optional map<string, SearchQuery> SearchProfiles = {}
-	8:	required ShardConfiguration ShardConfiguration = {}
-}
-//```
+	struct Index {
+		1:	optional map<string, AnalyzerProperties> Analyzers = {}
+		2:	required IndexConfiguration IndexConfiguration = {}
+		3:	required map<string, FieldProperties> Fields = {}
+		4:	required string IndexName
+		5:	required bool Online = false
+		6:	optional map<string, ScriptProperties> Scripts = {}
+		7:	optional map<string, SearchQuery> SearchProfiles = {}
+		8:	required ShardConfiguration ShardConfiguration = {}
+	}
+/*
+.. include:: model-analyzer.rst
+.. include:: model-tokenizer.rst
+.. include:: model-tokenfilter.rst
+.. include:: model-fieldproperties.rst
+.. include:: model-fieldtype.rst
+.. include:: model-IndexConfiguration.rst
+.. include:: model-ScriptProperties.rst
+.. include:: model-ShardConfiguration.rst
+.. include:: model-SearchProfile.rst
+.. include:: model-SearchQuery.rst
+*/
+//>
 
 /*
-## SearchResults
+<Search Results
+^^^^^^^^^^^^^^^^^^^
+
 Used to return structured search results. This is useful in case when there is a requirement to merge results from
 multiple indices or sort on scores. The structured result can be de-serialized and sorted in any
 programming language.
 
 There is an option to get flat results from the rest service by using the ``Returnflatresult`` parameter which can 
 be easily bound to a grid.
-``` java
+
+.. code-block:: c
+
 */
-struct SearchResults {
-	1:	optional list<Document> Documents = {}
-	2:	optional i32 RecordsReturned
-	3:	optional i32 TotalAvailable
-}
-//```
+	struct SearchResults {
+		1:	optional list<Document> Documents = {}
+		2:	optional i32 RecordsReturned
+		3:	optional i32 TotalAvailable
+	}
+//>
 
 struct IndexStatusResponse {
 	1:	required IndexState Status
