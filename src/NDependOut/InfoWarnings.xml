@@ -45,8 +45,8 @@
   <Warning>Assembly {Autofac.Extras.Attributed} is referenced by {FlexSearch.Core} but is not found.</Warning>
   <Info>0 code rule has been extracted from code.</Info>
   <Info>No dependency cycle detected in assemblies referencement graph.</Info>
-  <Info>06/07/2014 11:02:34 Analyse dependencies of your application.</Info>
-  <Info>06/07/2014 11:02:34 Execute queries and rules</Info>
+  <Info>06/16/2014 20:29:56 Analyse dependencies of your application.</Info>
+  <Info>06/16/2014 20:29:56 Execute queries and rules</Info>
   <Warning>6 critical rules are violated.
   - Methods too complex - critical
   - Methods with too many parameters - critical
@@ -54,6 +54,6 @@
   - Potentially dead Methods
   - Constructors of abstract classes should be declared as protected or private
   - Avoid having different types with same name</Warning>
-  <Info>06/07/2014 11:02:35 NDepend analysis done. Duration: 00:02</Info>
-  <Info>06/07/2014 11:02:35 Building the report (standard).</Info>
+  <Info>06/16/2014 20:29:57 NDepend analysis done. Duration: 00:02</Info>
+  <Info>06/16/2014 20:29:57 Building the report (standard).</Info>
 </InfoWarnings>

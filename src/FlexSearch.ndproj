@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <NDepend AppName="FlexSearch" Platform="DotNet">
   <OutputDir KeepXmlFiles="False">F:\GitHub\FlexSearch\src\NDependOut</OutputDir>
   <Assemblies>
@@ -62,9 +62,6 @@
       <Serie MetricName="# Rules Violations" MetricUnit="Violations" Color="#FFFF8C00" ChartType="Area" ScaleExp="0" />
       <Serie MetricName="# Critical Rules Violations" MetricUnit="Violations" Color="#FFFF0000" ChartType="Area" ScaleExp="0" />
     </Chart>
-    <Chart Name="Percentage Coverage by Tests" ShowInReport="True">
-      <Serie MetricName="Percentage Code Coverage" MetricUnit="%" Color="#FF32CD32" ChartType="Area" ScaleExp="0" />
-    </Chart>
     <Chart Name="Max" ShowInReport="True">
       <Serie MetricName="Max IL Cyclomatic Complexity for Methods" MetricUnit="Paths" Color="#FFFF0000" ChartType="Line" ScaleExp="0" />
       <Serie MetricName="Max # Lines of Code for Methods (JustMyCode)" MetricUnit="LoC" Color="#FF0000FF" ChartType="Line" ScaleExp="0" />
@@ -87,8 +84,7 @@
   </TrendMetrics>
   <HistoricAnalysisResult PersistRecurrence="2" UseCustomDir="False" CustomDir="" />
   <SourceFileRebasing FromPath="" ToPath="" />
-  <PathVariables />
-  <Queries>
+  <PathVariables /><Queries>
     <Group Name="Code Quality" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Types too big - critical</Name>
 warnif count > 0 from t in JustMyCode.Types where 
@@ -4094,5 +4090,4 @@ warnif count > 0 from n in Application.Namespaces where
 select new { n, n.NbLinesOfCode } ]]></Query>
       </Group>
     </Group>
-  </Queries>
-</NDepend>
+  </Queries></NDepend>
