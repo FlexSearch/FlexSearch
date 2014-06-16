@@ -26,7 +26,7 @@ let getDate() =
 /// <summary>
 /// Generate Api glossary documentation
 /// </summary>
-[<Fact>]
+ 
 let GenerateApiDocumentation() = 
     let file = File.ReadAllLines(Helpers.DocumentationConf.ApiFile)
     let output = new ResizeArray<string>()
@@ -126,7 +126,7 @@ let document (result : ResourceDocumentation) =
          output.ToArray())
     testCase "" <| fun _ -> Assert.AreEqual(1, 1)
 
-[<Fact>]
+
 let IndexIntroductionDocumentation() = 
     resource "Index" "index-introduction"
     |> request "introduction" "Index Basics"
@@ -145,7 +145,7 @@ index.
     """
     |> document
 
-[<Fact>]
+ 
 let GetIndexDocumentation() = 
     resource "Index" "get-index"
     |> request "get" "{indexName}/"
@@ -155,7 +155,7 @@ Fetch details of an existing index.
     """
     |> document
 
-[<Fact>]
+ 
 let PostIndexDocumentation() = 
     resource "Index" "post-index"
     |> request "post" "{indexName}/"
@@ -166,7 +166,7 @@ Creates a new index.
     """
     |> document
 
-[<Fact>]
+ 
 let PutIndexDocumentation() = 
     resource "Index" "put-index"
     |> request "put" "{indexName}/"
@@ -176,7 +176,7 @@ Update an existing index.
     """
     |> document
 
-[<Fact>]
+ 
 let DeleteIndexDocumentation() = 
     resource "Index" "delete-index"
     |> request "delete" "{indexName}/"
@@ -186,7 +186,7 @@ Delete an existing index. This will also remove the data from the physical disk.
     """
     |> document
 
-[<Fact>]
+ 
 let GetIndexStatusDocumentation() = 
     resource "Status" "get-index-status"
     |> request "get" "{indexName}/status"
@@ -196,7 +196,7 @@ Get the status of an existing index.
     """
     |> document
 
-[<Fact>]
+ 
 let PostIndexStatusDocumentation() = 
     resource "Status" "post-index-status"
     |> request "post" "{indexName}/status/{online|offline}"
@@ -206,7 +206,7 @@ Set the status of an existing index to online or offline.
     """
     |> document
 
-[<Fact>]
+ 
 let GetIndexExistsDocumentation() = 
     resource "Exists" "get-index-exists"
     |> request "get" "{indexName}/exists"
@@ -216,7 +216,7 @@ Check if a given index exists or not.
     """
     |> document
 
-[<Fact>]
+ 
 let DocumentIntroductionDocumentation() = 
     resource "Document" "document-introduction"
     |> request "introduction" "Document basics"
@@ -262,7 +262,7 @@ Field analysis is an important part of a field type.
     """
     |> document
 
-[<Fact>]
+ 
 let GetIndexDocumentIdDocumentation() = 
     resource "Document" "get-index-document-id"
     |> request "get" "{indexName}/documents/{id}"
@@ -272,7 +272,7 @@ Get a document from an existing index.
     """
     |> document
 
-[<Fact>]
+ 
 let GetIndexDocumentDocumentation() = 
     resource "Document" "get-index-document"
     |> request "get" "{indexName}/documents/"
@@ -282,7 +282,7 @@ Returns top 10 documents from the index.
     """
     |> document
 
-[<Fact>]
+ 
 let PostIndexDocumentIdDocumentation() = 
     resource "Document" "post-index-document-id"
     |> request "post" "{indexName}/documents/{id}"
@@ -292,7 +292,7 @@ Add a new document to an existing index. This will always add a new document eve
     """
     |> document
 
-[<Fact>]
+ 
 let PutIndexDocumentIdDocumentation() = 
     resource "Document" "put-index-document-id"
     |> request "put" "{indexName}/documents/{id}"
@@ -302,7 +302,7 @@ Update or create a document in an existing index.
     """
     |> document
 
-[<Fact>]
+ 
 let DeleteIndexDocumentIdDocumentation() = 
     resource "Document" "delete-index-document-id"
     |> request "delete" "{indexName}/documents/{id}"
@@ -312,7 +312,7 @@ Delete a document in an existing index.
     """
     |> document
 
-[<Fact>]
+ 
 let SearchIntroductionDocumentation() = 
     resource "Search" "search-introduction"
     |> request "introduction" "Search basics"
@@ -327,7 +327,7 @@ search mechanics.
     """
     |> document
 
-[<Fact>]
+ 
 let SearchQueryFormatDocumentation() = 
     resource "Search" "search-queryformat"
     |> request "introduction" "Query format"
@@ -369,7 +369,7 @@ from the query dropdowns.
     |> document
 
 
-[<Fact>]
+ 
 let SearchTermQueryDocumentation() = 
     resource "Search" "search-termquery"
     |> request "query" "Term match operator"
@@ -388,7 +388,7 @@ Do not use term query for phrase matches as you might get unexpected results.
     |> document
 
 
-[<Fact>]
+ 
 let SearchFuzzyQueryDocumentation() = 
     resource "Search" "search-fuzzyquery"
     |> request "query" "Fuzzy operator"
@@ -408,7 +408,7 @@ Implements the fuzzy search query. The similarity measurement is based on the Da
     |> document
 
 
-[<Fact>]
+ 
 let SearchPhraseQueryDocumentation() = 
     resource "Search" "search-phrasequery"
     |> request "query" "Phrase match operator"
@@ -427,7 +427,7 @@ A Query that matches documents containing a particular sequence of terms. A Phra
     |> document
 
 
-[<Fact>]
+ 
 let SearchWildcardQueryDocumentation() = 
     resource "Search" "search-wildcardquery"
     |> request "query" "Wildcard operator"
@@ -450,7 +450,7 @@ will convert the input to lowercase before comparison.
 """
     |> document
 
-[<Fact>]
+ 
 let SearchRegexQueryDocumentation() = 
     resource "Search" "search-regexquery"
     |> request "query" "Regex operator"
@@ -478,7 +478,7 @@ will convert the input to lowercase before comparison.
 """
     |> document
 
-[<Fact>]
+ 
 let SearchMatchAllQueryDocumentation() = 
     resource "Search" "search-matchallquery"
     |> request "query" "Matchall operator"
@@ -493,7 +493,7 @@ Matchall supports `matchall` operator.
 """
     |> document
 
-[<Fact>]
+ 
 let SearchNumericRangeQueryDocumentation() = 
     resource "Search" "search-numericrangequery"
     |> request "query" "Numeric range operators"
@@ -507,7 +507,7 @@ Range supports '>', '>=', '<' and '<='  operators.
 """
     |> document
 
-[<Fact>]
+ 
 let SearchHighlightFeatureDocumentation() = 
     resource "Search" "search-highlightfeature"
     |> request "feature" "Text Highlighting"
@@ -524,7 +524,7 @@ tags. This is helpful in case the results are to be expressed in a web page.
 """
     |> document
 
-[<Fact>]
+ 
 let PostIndexSearchDocumentation() = 
     resource "Search" "post-index-search"
     |> request "post" "{indexName}/search/"
