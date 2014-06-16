@@ -3,8 +3,6 @@
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
-open FsUnit
-open Fuchu
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System
@@ -15,21 +13,10 @@ open System.Net
 open System.Net.Http
 open System.Text
 open System.Threading
-open Xunit
 open FlexSearch.TestSupport
 open Autofac
-
-// ----------------------------------------------------------------------------
-// Test server initialization
-// ----------------------------------------------------------------------------
-let mutable serverRunning = false
-let initializeServer() =
-    if serverRunning <> true then
-        let indexService = Container.Resolve<IIndexService>()
-        let httpFactory = Container.Resolve<IFlexFactory<HttpModuleBase>>()
-        let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
-        httpServer.Start()
-        serverRunning <- true
+open Xunit
+open Xunit.Extensions
 
 // ----------------------------------------------------------------------------
 // Global configuration
@@ -51,7 +38,6 @@ type Example =
       Uri : string
       Querystring : string
       Requestbody : string option
-      TestCases : ResizeArray<Test>
       Output : ResizeArray<string>
       OutputResponse : ResizeArray<string> }
 
@@ -68,19 +54,17 @@ let example (id : string) (name : string) =
           Uri = ""
           Querystring = ""
           Requestbody = None
-          TestCases = new ResizeArray<Test>()
           Output = new ResizeArray<string>()
           OutputResponse = new ResizeArray<string>() }
     result.Output.Add(name)
-    result.Output.Add("''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''")
+    result.Output.Add
+        ("''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''")
     result.Output.Add("")
-    initializeServer()
     result
 
 let ofResource (name : string) (result : Example) = { result with Resource = name }
 
 let withDescription (desc : string) (result : Example) = 
-
     result.Output.Add(desc)
     result.Output.Add("")
     result.Output.Add(sprintf ".. literalinclude:: example-%s.txt" result.Id)
@@ -98,49 +82,30 @@ let withBody (body : string) (result : Example) = { result with Requestbody = So
 // Test assertions
 // ----------------------------------------------------------------------------
 let responseStatusEquals (status : HttpStatusCode) (result : Example) = 
-    let test = 
-        testCase (sprintf "%s: should return %s" result.Title (status.ToString())) 
-        <| fun _ -> result.Response.StatusCode |> should equal status
-    result.TestCases.Add(test)
+    Assert.Equal<HttpStatusCode>(status, result.Response.StatusCode) // "Status code does not match"
     result
 
 let responseContainsHeader (header : string) (value : string) (result : Example) = 
-    let test = testCase "Should contain header" <| fun _ -> result.Response.Headers.Get(header) |> should equal value
-    result.TestCases.Add(test)
+    Assert.Equal<string>(value, result.Response.Headers.Get(header)) // "Header value does not match"
     result
 
 let responseMatches (select : string) (expected : string) (result : Example) = 
-    let test = 
-        testCase (sprintf "%s: response should match %s" result.Title expected) <| fun _ -> 
-            let value = JObject.Parse(result.ResponseBody)
-            value.SelectToken(select).ToString() |> should equal expected
-    result.TestCases.Add(test)
+    let value = JObject.Parse(result.ResponseBody)
+    Assert.Equal<string>(expected, value.SelectToken(select).ToString()) // "Response does not match"
     result
 
 let responseShouldContain (value : string) (result : Example) = 
-    let test = 
-        testCase (sprintf "%s: response should contain %s" result.Title value) 
-        <| fun _ -> result.ResponseBody.Contains(value) |> should equal true
-    result.TestCases.Add(test)
+    Assert.True(result.ResponseBody.Contains(value), "Response does contain the required value")
     result
 
 let responseContainsProperty (group : string) (key : string) (property : string) (expected : string) (result : Example) = 
-    let test = 
-        testCase (sprintf "%s: should contain property %s" result.Title property) <| fun _ -> 
-            let value = JObject.Parse(result.ResponseBody)
-            value.SelectToken(group).[key].[property].ToString() |> should equal expected
-    result.TestCases.Add(test)
+    let value = JObject.Parse(result.ResponseBody)
+    Assert.Equal<string>(expected, value.SelectToken(group).[key].[property].ToString()) //"Response does contain the required property"
     result
 
 let responseBodyIsNull (result : Example) = 
-    let test = 
-        testCase (sprintf "%s: response should not contain body" result.Title) 
-        <| fun _ -> String.IsNullOrWhiteSpace(result.ResponseBody) |> should equal true
-    result.TestCases.Add(test)
+    Assert.True(String.IsNullOrWhiteSpace(result.ResponseBody), "Response should not contain body")
     result
-
-let runAssertions  (result : Example) = 
-    testList result.Title result.TestCases
 
 // ----------------------------------------------------------------------------
 // Test logic
@@ -189,6 +154,8 @@ let execute (result : Example) =
     with :? WebException as e -> 
         result.Response <- e.Response :?> HttpWebResponse
         print result.Response
+    for line in result.OutputResponse do
+        printfn "%s" line
     result
 
 // ----------------------------------------------------------------------------
@@ -204,80 +171,143 @@ let document (result : Example) =
     result
 
 // ----------------------------------------------------------------------------
-// Tests
+// Test server initialization
 // ----------------------------------------------------------------------------
+/// <summary>
+/// Test setup fixture to use with Xunit IUseFixture
+/// </summary>
+type IntegrationIndexFixture() = 
+    let mutable serverRunning = false
+    member this.Setup() = 
+        if serverRunning <> true then 
+            let serverSettings = new ServerSettings()
+            let container = Main.GetContainer(serverSettings, true)
+            let indexService = container.Resolve<IIndexService>()
+            let index = Helpers.MockIndexSettings()
+            index.IndexName <- "contact"
+            AddTestDataToIndex
+                (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), container.Resolve<IIndexService>())
+            let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
+            let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
+            httpServer.Start()
+            serverRunning <- true
 
-[<Tests>]
-let IndexCreationTest1() = 
-    example "post-index-1" "Create index without any field"
-    |> ofResource "Index"
-    |> withDescription """
-The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
-"""
-    |> request "POST" "/test1"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
+/// <summary>
+/// Base for creating all Xunit based indexing integration tests
+/// </summary>
+[<AbstractClass>]
+type IntegrationTestBase() = 
+    interface IUseFixture<IntegrationIndexFixture> with
+        member this.SetFixture(data) = data.Setup()
 
-[<Tests>]
-let IndexCreationTest2() = 
-    example "post-index-2" "Duplicate index cannot be created."
-    |> ofResource "Index"
-    |> withDescription """
-The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
-"""
-    |> request "POST" "/test1"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.BadRequest
-    |> responseMatches "ErrorCode" "1002"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexCreationTest3() = 
-    example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
-    |> ofResource "Index"
-    |> withDescription """
-All field names should be lower case and should not contain any spaces. This is to avoid case based mismatching on field names. Fields have many 
-other configurable properties but Field Type is the only mandatory parameter. Refer to Index Field for more information about field properties.
-"""
-    |> request "POST" "/test2"
-    |> withBody """
-    {
-        "Fields" : {
-            "firstname" : { FieldType : "Text" },
-            "lastname" : { FieldType : "Text" }
-        }
-    }
+type ``REST Service Tests``() = 
+    inherit IntegrationTestBase()
+    
+    [<Fact>]
+    let ``Index creation test 1``() = 
+        example "post-index-1" "Create index without any field"
+        |> ofResource "Index"
+        |> withDescription """
+    The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
     """
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
+        |> request "POST" "/test1"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+    
+    [<Fact>]
+    let ``Index creation test 2``() = 
+        example "post-index-1" "Create index without any field"
+        |> ofResource "Index"
+        |> withDescription """
+    The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
+    """
+        |> request "POST" "/test101"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> ignore
+        example "post-index-2" "Duplicate index cannot be created."
+        |> ofResource "Index"
+        |> withDescription """
+    The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
+    """
+        |> request "POST" "/test101"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.BadRequest
+        |> responseMatches "ErrorCode" "1002"
+        |> document
+    
+    [<Fact>]
+    let ``Index creation test 3``() = 
+        example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
+        |> ofResource "Index"
+        |> withDescription """
+    All field names should be lower case and should not contain any spaces. This is to avoid case based mismatching on field names. Fields have many 
+    other configurable properties but Field Type is the only mandatory parameter. Refer to Index Field for more information about field properties.
+    """
+        |> request "POST" "/test2"
+        |> withBody """
+        {
+            "Fields" : {
+                "firstname" : { FieldType : "Text" },
+                "lastname" : { FieldType : "Text" }
+            }
+        }
+        """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+    
+    [<Fact>]
+    let ``Create update and delete an index``() = 
+        example "post-index-4" "Create index with computed field"
+        |> ofResource "Index"
+        |> withDescription """
+    Fields can be dynamic in nature and can be computed at index time from the passed data. Computed field requires custom scripts which defines the 
+    field data creation logic. Let’s create an index field called fullname which is a concatenation of ‘firstname’ and ‘lastname’.
 
-[<Tests>]
-let IndexCreationTest4() = 
-    example "post-index-4" "Create index with computed field"
-    |> ofResource "Index"
-    |> withDescription """
-Fields can be dynamic in nature and can be computed at index time from the passed data. Computed field requires custom scripts which defines the 
-field data creation logic. Let’s create an index field called fullname which is a concatenation of ‘firstname’ and ‘lastname’.
-
-Computed fields requires ScriptName property to be set in order load a custom script. FlexSearch scripts are 
-dynamically compiled to .net dlls so performance wise they are similar to native .net code. Scripts are written 
-in C#. But it would be difficult to write complex scripts in single line to pass to the Script source, that 
-is why Flex supports Multi-line and File based scripts. Refer to Script for more information about scripts.
-"""
-    |> request "POST" "/test3"
-    |> withBody """
+    Computed fields requires ScriptName property to be set in order load a custom script. FlexSearch scripts are 
+    dynamically compiled to .net dlls so performance wise they are similar to native .net code. Scripts are written 
+    in C#. But it would be difficult to write complex scripts in single line to pass to the Script source, that 
+    is why Flex supports Multi-line and File based scripts. Refer to Script for more information about scripts.
+    """
+        |> request "POST" "/test3"
+        |> withBody """
+        {
+            "Fields" : {
+                "firstname" : { FieldType : "Text" },
+                "lastname" : { FieldType : "Text" },
+                "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"}
+            },
+            "Scripts" : {
+                fullnamescript : {
+                    ScriptType : "ComputedField",
+                    Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
+                }
+            }
+        }
+        """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+        |> ignore
+        example "put-index-1" "Updating an existing index"
+        |> ofResource "Index"
+        |> withDescription """
+    There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
+    """
+        |> request "PUT" "/test3"
+        |> withBody """
     {
         "Fields" : {
             "firstname" : { FieldType : "Text" },
             "lastname" : { FieldType : "Text" },
-            "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"}
+            "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
+            "desc" : { FieldType : "Stored" },
         },
         "Scripts" : {
             fullnamescript : {
@@ -287,701 +317,599 @@ is why Flex supports Multi-line and File based scripts. Refer to Script for more
         }
     }
     """
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexCreationTest5() = 
-    example "post-index-5" "Create index by setting all properties"
-    |> ofResource "Index"
-    |> withDescription """
-There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
-"""
-    |> request "POST" "/contact"
-    |> withBody (JsonConvert.SerializeObject(Helpers.MockIndexSettings(), jsonSettings))
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexUpdateTest1() = 
-    example "put-index-1" "Updating an existing index"
-    |> ofResource "Index"
-    |> withDescription """
-There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
-"""
-    |> request "PUT" "/test3"
-    |> withBody """
-{
-    "Fields" : {
-        "firstname" : { FieldType : "Text" },
-        "lastname" : { FieldType : "Text" },
-        "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
-        "desc" : { FieldType : "Stored" },
-    },
-    "Scripts" : {
-        fullnamescript : {
-            ScriptType : "ComputedField",
-            Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
-        }
-    }
-}
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexUpdateTest2() = 
-    example "put-index-2" "Index update request with wrong index name returns error"
-    |> ofResource "Index"
-    |> withDescription ""
-    |> request "PUT" "/indexdoesnotexist"
-    |> withBody """
-{
-    "Fields" : {
-        "firstname" : { FieldType : "Text" },
-        "lastname" : { FieldType : "Text" },
-        "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
-        "desc" : { FieldType : "Stored" },
-    },
-    "Scripts" : {
-        fullnamescript : {
-            ScriptType : "ComputedField",
-            Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
-        }
-    }
-}
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.BadRequest
-    |> responseMatches "ErrorCode" "1000"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexDeleteTest1() = 
-    example "delete-index-1" "Deleting an existing index"
-    |> ofResource "Index"
-    |> withDescription ""
-    |> request "DELETE" "/test3"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexDeleteTest2() = 
-    example "delete-index-2" "Deleting an non-existing index will return an error"
-    |> ofResource "Index"
-    |> withDescription ""
-    |> request "DELETE" "/indexDoesNotExist"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.BadRequest
-    |> responseMatches "ErrorCode" "1000"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexGetTest1() = 
-    example "get-index-1" "Getting an index detail by name"
-    |> ofResource "Index"
-    |> withDescription ""
-    |> request "GET" "/contact"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseMatches "IndexName" "contact"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexGetTest2() = 
-    example "get-index-2" "Getting an index detail by name (non existing index)"
-    |> ofResource "Index"
-    |> withDescription ""
-    |> request "GET" "/indexDoesNotExist"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.BadRequest
-    |> responseMatches "ErrorCode" "1000"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexExistsTest1() = 
-    example "get-index-exists-1" "Checking if an index exists (true case)"
-    |> ofResource "Exists"
-    |> withDescription ""
-    |> request "GET" "/contact/exists"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexExistsTest2() = 
-    example "get-index-exists-2" "Checking if an index exists (false case)"
-    |> ofResource "Exists"
-    |> withDescription ""
-    |> request "GET" "/indexDoesNotExist/exists"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.BadRequest
-    |> responseMatches "ErrorCode" "1000"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexStatusTest1() = 
-    example "get-index-status-1" "Getting status of an index"
-    |> ofResource "Status"
-    |> withDescription ""
-    |> request "GET" "/test1/status"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseMatches "Status" "Offline"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexStatusTest2() = 
-    testList "IndexStatusTest 2" [
-        yield example "post-index-status-1" "Setting status of an index to on-line"
-        |> ofResource "Status"
-        |> withDescription ""
-        |> request "POST" "/test1/status/online"
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
         |> document
-        |> runAssertions
-
-        yield example "post-index-status-1" "Index should be online"
-        |> ofResource "Status"
+        |> ignore
+        example "delete-index-1" "Deleting an existing index"
+        |> ofResource "Index"
         |> withDescription ""
-        |> request "GET" "/test1/status"
+        |> request "DELETE" "/test3"
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
-        |> responseMatches "Status" "Online"
-        |> runAssertions
-        ]
-
-
-
-[<Tests>]
-let IndexStatusTest3() = 
-    testList "IndexStatusTest3" [
-        yield example "post-index-status-2" "Setting status of an index to off-line"
-        |> ofResource "Status"
-        |> withDescription ""
-        |> request "POST" "/test1/status/offline"
+        |> document
+    
+    [<Fact>]
+    let IndexCreationTest5() = 
+        example "post-index-5" "Create index by setting all properties"
+        |> ofResource "Index"
+        |> withDescription """
+    There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
+    """
+        |> request "POST" "/contact123"
+        |> withBody (JsonConvert.SerializeObject(Helpers.MockIndexSettings(), jsonSettings))
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
         |> document
-        |> runAssertions
-
-        yield example "post-index-status-2" "Index should be offline"
+    
+    [<Fact>]
+    let IndexUpdateTest2() = 
+        example "put-index-2" "Index update request with wrong index name returns error"
+        |> ofResource "Index"
+        |> withDescription ""
+        |> request "PUT" "/indexdoesnotexist"
+        |> withBody """
+    {
+        "Fields" : {
+            "firstname" : { FieldType : "Text" },
+            "lastname" : { FieldType : "Text" },
+            "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
+            "desc" : { FieldType : "Stored" },
+        },
+        "Scripts" : {
+            fullnamescript : {
+                ScriptType : "ComputedField",
+                Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
+            }
+        }
+    }
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.BadRequest
+        |> responseMatches "ErrorCode" "1000"
+        |> document
+    
+    [<Fact>]
+    let IndexDeleteTest2() = 
+        example "delete-index-2" "Deleting an non-existing index will return an error"
+        |> ofResource "Index"
+        |> withDescription ""
+        |> request "DELETE" "/indexDoesNotExist"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.BadRequest
+        |> responseMatches "ErrorCode" "1000"
+        |> document
+    
+    [<Fact>]
+    let IndexGetTest1() = 
+        example "get-index-1" "Getting an index detail by name"
+        |> ofResource "Index"
+        |> withDescription ""
+        |> request "GET" "/contact"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches "IndexName" "contact"
+        |> document
+    
+    [<Fact>]
+    let IndexGetTest2() = 
+        example "get-index-2" "Getting an index detail by name (non existing index)"
+        |> ofResource "Index"
+        |> withDescription ""
+        |> request "GET" "/indexDoesNotExist"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.BadRequest
+        |> responseMatches "ErrorCode" "1000"
+        |> document
+    
+    [<Fact>]
+    let IndexExistsTest1() = 
+        example "get-index-exists-1" "Checking if an index exists (true case)"
+        |> ofResource "Exists"
+        |> withDescription ""
+        |> request "GET" "/contact/exists"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+    
+    [<Fact>]
+    let IndexExistsTest2() = 
+        example "get-index-exists-2" "Checking if an index exists (false case)"
+        |> ofResource "Exists"
+        |> withDescription ""
+        |> request "GET" "/indexDoesNotExist/exists"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.BadRequest
+        |> responseMatches "ErrorCode" "1000"
+        |> document
+    
+    [<Fact>]
+    let IndexStatusTest() = 
+        example "" ""
+        |> request "POST" "/indexstatustest"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> ignore
+        example "get-index-status-2" "Getting status of an index (offline)"
         |> ofResource "Status"
         |> withDescription ""
-        |> request "GET" "/test1/status"
+        |> request "GET" "/indexstatustest/status"
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseMatches "Status" "Offline"
-        |> runAssertions
-    ]
-
-[<Tests>]
-let IndexDocumentsTest1() = 
-    example "post-index-document-id-1" "Add a document to an index"
-    |> ofResource "Documents"
-    |> withDescription ""
-    |> request "POST" "/contact/documents/51"
-    |> withBody """
-    {
-        "firstname" : "Seemant",
-        "lastname" : "Rajvanshi"
-    }
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexDocumentsTest2() = 
-    Thread.Sleep(5000)
-    example "get-index-document-id-1" "Get a document by an id from an index"
-    |> ofResource "Documents"
-    |> withDescription ""
-    |> request "GET" "/contact/documents/51"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseMatches Constants.IdField "51"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexDocumentsTest3() = 
-    example "put-index-document-id-1" "Update a document by id to an index"
-    |> ofResource "Documents"
-    |> withDescription ""
-    |> request "PUT" "/contact/documents/51"
-    |> withBody """
-    {
-        "firstname" : "Seemant",
-        "lastname" : "Rajvanshi"
-    }
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexDocumentsTest4() = 
-    example "delete-index-document-id-1" "Delete a document by id from an index"
-    |> ofResource "Documents"
-    |> withDescription ""
-    |> request "DELETE" "/contact/documents/51"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseBodyIsNull
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let IndexDocumentsBulkLoadingTest() =
-    // Bulk generate and add data for search testing
-    for id, records in Helpers.GenerateTestDataLines(Helpers.MockTestData) do 
-        example "will not document" "Bulk index"
-        |> ofResource "Documents"
-        |> request "POST" ("/contact/documents/" + id)
-        |> withBody (JsonConvert.SerializeObject(records, jsonSettings))
-        |> execute
+        |> document
         |> ignore
-    testCase "" <| fun _ -> Assert.AreEqual(1, 1)
+        example "post-index-status-1" "Setting status of an index to on-line"
+        |> ofResource "Status"
+        |> withDescription ""
+        |> request "POST" "/indexstatustest/status/online"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+        |> ignore
+        example "get-index-status-1" "Getting status of an index"
+        |> ofResource "Status"
+        |> withDescription ""
+        |> request "GET" "/indexstatustest/status"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches "Status" "Online"
+        |> document
+        |> ignore
+        example "post-index-status-2" "Setting status of an index to off-line"
+        |> ofResource "Status"
+        |> withDescription ""
+        |> request "POST" "/indexstatustest/status/offline"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+    
+    [<Fact>]
+    let IndexDocumentsTest() = 
+        example "" ""
+        |> request "POST" "/documenttestindex"
+        |> withBody """
+        {
+            "Fields" : {
+                "firstname" : { FieldType : "Text" },
+                "lastname" : { FieldType : "Text" }
+            }
+        }
+        """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> ignore
+        example "post-index-document-id-1" "Add a document to an index"
+        |> ofResource "Documents"
+        |> withDescription ""
+        |> request "POST" "/documenttestindex/documents/51"
+        |> withBody """
+        {
+            "firstname" : "Seemant",
+            "lastname" : "Rajvanshi"
+        }
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+        |> ignore
+        Thread.Sleep(5000)
+        example "get-index-document-id-1" "Get a document by an id from an index"
+        |> ofResource "Documents"
+        |> withDescription ""
+        |> request "GET" "/documenttestindex/documents/51"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches Constants.IdField "51"
+        |> document
+        |> ignore
+        example "put-index-document-id-1" "Update a document by id to an index"
+        |> ofResource "Documents"
+        |> withDescription ""
+        |> request "PUT" "/documenttestindex/documents/51"
+        |> withBody """
+        {
+            "firstname" : "Seemant",
+            "lastname" : "Rajvanshi"
+        }
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+        |> ignore
+        example "delete-index-document-id-1" "Delete a document by id from an index"
+        |> ofResource "Documents"
+        |> withDescription ""
+        |> request "DELETE" "/documenttestindex/documents/51"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> document
+    
+    [<Fact>]
+    let IndexDocumentsTest5() = 
+        example "get-index-document-1" "Get top 10 documents from an index"
+        |> ofResource "Documents"
+        |> withDescription ""
+        |> request "GET" "/contact/documents"
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        //|> responseContainsHeader "RecordsReturned" "10"
+        //|> responseContainsHeader "TotalAvailable" "50"
+        |> document
+    
+    [<Fact>]
+    let SearchTermQueryTest1() = 
+        example "post-index-search-termquery-1" "Term search using ``=`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to match all documents where firstname = 'Kathy' and lastname = 'Banks'
 
-[<Tests>]
-let IndexDocumentsTest5() = 
-    Thread.Sleep(5000)
-    example "get-index-document-1" "Get top 10 documents from an index"
-    |> ofResource "Documents"
-    |> withDescription ""
-    |> request "GET" "/contact/documents"
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    //|> responseContainsHeader "RecordsReturned" "10"
-    //|> responseContainsHeader "TotalAvailable" "50"
-    |> document
-    |> runAssertions
+        firstname = 'Kathy' and lastname = 'Banks'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname = 'Kathy' and lastname = 'Banks'"
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches "RecordsReturned" "1"
+        |> responseMatches "TotalAvailable" "1"
+        |> document
+    
+    [<Fact>]
+    let SearchTermQueryTest2() = 
+        example "post-index-search-termquery-2" "Term search using ``eq`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to match all documents where firstname eq 'Kathy' and lastname eq 'Banks'
 
-[<Tests>]
-let SearchTermQueryTest1() = 
-    example "post-index-search-termquery-1" "Term search using ``=`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to match all documents where firstname = 'Kathy' and lastname = 'Banks'
+        firstname eq 'Kathy' and lastname eq 'Banks'
+    """
+        |> request "POST" "/contact/search?c=*"
+        |> withBody """
+    {
+      "QueryString": "firstname eq 'Kathy' and lastname eq 'Banks'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "1"
+        |> document
+    
+    [<Fact>]
+    let SearchFuzzyQueryTest1() = 
+        example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is 'Kathy'
 
-    firstname = 'Kathy' and lastname = 'Banks'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname = 'Kathy' and lastname = 'Banks'"
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseMatches "RecordsReturned" "1"
-    |> responseMatches "TotalAvailable" "1"
-    |> document
-    |> runAssertions
+        firstname fuzzy 'Kathy'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname fuzzy 'Kathy'"
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches "RecordsReturned" "3"
+        |> responseMatches "TotalAvailable" "3"
+        |> document
+    
+    [<Fact>]
+    let SearchFuzzyQueryTest2() = 
+        example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is 'Kathy'
 
-[<Tests>]
-let SearchTermQueryTest2() = 
-    example "post-index-search-termquery-2" "Term search using ``eq`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to match all documents where firstname eq 'Kathy' and lastname eq 'Banks'
+        firstname ~= 'Kathy'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname ~= 'Kathy'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "3"
+        |> responseContainsHeader "TotalAvailable" "3"
+        |> document
+    
+    [<Fact>]
+    let SearchFuzzyQueryTest3() = 
+        example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is 'Kathy' and slop is 2
 
-    firstname eq 'Kathy' and lastname eq 'Banks'
-"""
-    |> request "POST" "/contact/search?c=*"
-    |> withBody """
-{
-  "QueryString": "firstname eq 'Kathy' and lastname eq 'Banks'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "1"
-    |> document
-    |> runAssertions
+        firstname ~= 'Kathy'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname ~= 'Kathy' {slop : '2'}",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "3"
+        |> responseContainsHeader "TotalAvailable" "3"
+        |> document
+    
+    [<Fact>]
+    let SearchPhraseQueryTest1() = 
+        example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where description is 'Nunc purus'
 
-[<Tests>]
-let SearchFuzzyQueryTest1() = 
-    example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is 'Kathy'
+        description match 'Nunc purus'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "description match 'Nunc purus'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "4"
+        |> responseContainsHeader "TotalAvailable" "4"
+        |> document
+    
+    [<Fact>]
+    let SearchWildCardQueryTest1() = 
+        example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is like 'Ca*'
 
-    firstname fuzzy 'Kathy'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname fuzzy 'Kathy'"
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseMatches "RecordsReturned" "3"
-    |> responseMatches "TotalAvailable" "3"
-    |> document
-    |> runAssertions
+        firstname like 'Ca*'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname like 'ca*'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "3"
+        |> responseContainsHeader "TotalAvailable" "3"
+        |> document
+    
+    [<Fact>]
+    let SearchWildCardQueryTest2() = 
+        example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is like 'Ca*'
 
-[<Tests>]
-let SearchFuzzyQueryTest2() = 
-    example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is 'Kathy'
+        firstname %= 'Ca*'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname %= 'Ca*'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "3"
+        |> responseContainsHeader "TotalAvailable" "3"
+        |> document
+    
+    [<Fact>]
+    let SearchWildCardQueryTest3() = 
+        example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is like 'Cat?y'. This can
+    be used to match one character.
 
-    firstname ~= 'Kathy'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname ~= 'Kathy'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "3"
-    |> responseContainsHeader "TotalAvailable" "3"
-    |> document
-    |> runAssertions
+        firstname %= 'Cat?y'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname %= 'Cat?y'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "1"
+        |> document
+    
+    [<Fact>]
+    let SearchRegexQueryTest1() = 
+        example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to fuzzy match all documents where firstname is like '[ck]athy'. This can
+    be used to match one character.
 
-[<Tests>]
-let SearchFuzzyQueryTest3() = 
-    example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is 'Kathy' and slop is 2
+        firstname regex '[ck]Athy'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname regex '[ck]Athy'",
+      "ReturnFlatResult": true
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "3"
+        |> responseContainsHeader "TotalAvailable" "3"
+        |> document
+    
+    [<Fact>]
+    let SearchMatchallQueryTest1() = 
+        example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to to match all documents in the index.
 
-    firstname ~= 'Kathy'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname ~= 'Kathy' {slop : '2'}",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "3"
-    |> responseContainsHeader "TotalAvailable" "3"
-    |> document
-    |> runAssertions
+        firstname matchall '*'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "firstname matchall '*'",
+      "ReturnFlatResult": true,
+      Count: 1
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "50"
+        |> document
+    
+    [<Fact>]
+    let SearchNumericRangeQueryTest1() = 
+        example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to to match all documents with cvv2 greater than 100 in the index.
 
-[<Tests>]
-let SearchPhraseQueryTest1() = 
-    example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where description is 'Nunc purus'
+        cvv2 > '100'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "cvv2 > '100'",
+      "ReturnFlatResult": true,
+      Count: 1
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "48"
+        |> document
+    
+    [<Fact>]
+    let SearchNumericRangeQueryTest2() = 
+        example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to to match all documents with cvv2 greater than or equal to 200 in the index.
 
-    description match 'Nunc purus'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "description match 'Nunc purus'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "4"
-    |> responseContainsHeader "TotalAvailable" "4"
-    |> document
-    |> runAssertions
+        cvv2 >= '200'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "cvv2 >= '200'",
+      "ReturnFlatResult": true,
+      Count: 1
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "41"
+        |> document
+    
+    [<Fact>]
+    let SearchNumericRangeQueryTest3() = 
+        example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to to match all documents with cvv2 less than 150 in the index.
 
-[<Tests>]
-let SearchWildCardQueryTest1() = 
-    example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is like 'Ca*'
+        cvv2 < '150'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "cvv2 < '150'",
+      "ReturnFlatResult": true,
+      Count: 1
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "7"
+        |> document
+    
+    [<Fact>]
+    let SearchNumericRangeQueryTest4() = 
+        example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to to match all documents with cvv2 less than or equal to 500 in the index.
 
-    firstname like 'Ca*'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname like 'ca*'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "3"
-    |> responseContainsHeader "TotalAvailable" "3"
-    |> document
-    |> runAssertions
+        cvv2 <= '500'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname"
+        |> withBody """
+    {
+      "QueryString": "cvv2 <= '500'",
+      "ReturnFlatResult": true,
+      Count: 1
+    }    
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseContainsHeader "RecordsReturned" "1"
+        |> responseContainsHeader "TotalAvailable" "26"
+        |> document
+    
+    [<Fact>]
+    let SearchHighlightFeatureTest1() = 
+        let query = new SearchQuery("contact", " description = 'Nullam'")
+        let highlight = new List<string>()
+        highlight.Add("description")
+        query.Highlights <- new HighlightOption(highlight)
+        example "post-index-search-highlightfeature-1" "Text highlighting basic example"
+        |> ofResource "Search"
+        |> withDescription """
+    The below is the query to highlight 'Nullam' is description field.
 
-[<Tests>]
-let SearchWildCardQueryTest2() = 
-    example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is like 'Ca*'
-
-    firstname %= 'Ca*'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname %= 'Ca*'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "3"
-    |> responseContainsHeader "TotalAvailable" "3"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchWildCardQueryTest3() = 
-    example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is like 'Cat?y'. This can
-be used to match one character.
-
-    firstname %= 'Cat?y'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname %= 'Cat?y'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "1"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchRegexQueryTest1() = 
-    example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to fuzzy match all documents where firstname is like '[ck]athy'. This can
-be used to match one character.
-
-    firstname regex '[ck]Athy'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname regex '[ck]Athy'",
-  "ReturnFlatResult": true
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "3"
-    |> responseContainsHeader "TotalAvailable" "3"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchMatchallQueryTest1() = 
-    example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to to match all documents in the index.
-
-    firstname matchall '*'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "firstname matchall '*'",
-  "ReturnFlatResult": true,
-  Count: 1
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "50"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchNumericRangeQueryTest1() = 
-    example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to to match all documents with cvv2 greater than 100 in the index.
-
-    cvv2 > '100'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "cvv2 > '100'",
-  "ReturnFlatResult": true,
-  Count: 1
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "48"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchNumericRangeQueryTest2() = 
-    example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to to match all documents with cvv2 greater than or equal to 200 in the index.
-
-    cvv2 >= '200'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "cvv2 >= '200'",
-  "ReturnFlatResult": true,
-  Count: 1
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "41"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchNumericRangeQueryTest3() = 
-    example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to to match all documents with cvv2 less than 150 in the index.
-
-    cvv2 < '150'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "cvv2 < '150'",
-  "ReturnFlatResult": true,
-  Count: 1
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "7"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchNumericRangeQueryTest4() = 
-    example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to to match all documents with cvv2 less than or equal to 500 in the index.
-
-    cvv2 <= '500'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname"
-    |> withBody """
-{
-  "QueryString": "cvv2 <= '500'",
-  "ReturnFlatResult": true,
-  Count: 1
-}    
-"""
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> responseContainsHeader "RecordsReturned" "1"
-    |> responseContainsHeader "TotalAvailable" "26"
-    |> document
-    |> runAssertions
-
-[<Tests>]
-let SearchHighlightFeatureTest1() = 
-    let query = new SearchQuery("contact", " description = 'Nullam'")
-    let highlight = new List<string>()
-    highlight.Add("description")
-    query.Highlights <- new HighlightOption(highlight)
-    example "post-index-search-highlightfeature-1" "Text highlighting basic example"
-    |> ofResource "Search"
-    |> withDescription """
-The below is the query to highlight 'Nullam' is description field.
-
-    description = 'Nullam'
-"""
-    |> request "POST" "/contact/search?c=firstname,lastname,description"
-    |> withBody """
-{
-  "Count": 2,  
-  "Highlights": {
-    "FragmentsToReturn": 2,
-    "HighlightedFields": [
-      "description"
-    ],
-    "PostTag": "</B>",
-    "PreTag": "</B>"
-  },
-  "QueryString": " description = 'Nullam'",
-  }   
-"""    
-    |> execute
-    |> responseStatusEquals HttpStatusCode.OK
-    |> document
-    |> runAssertions
-
-[<Fact>] 
-let ``Rest webservice tests`` () =
-    Assert.AreEqual(0, run (IndexCreationTest1()), "Index Creation Test 1 Failed")
-    Assert.AreEqual(0, run (IndexCreationTest2()), "Index Creation Test 2 Failed")
-    Assert.AreEqual(0, run (IndexCreationTest3()), "Index Creation Test 3 Failed")
-    Assert.AreEqual(0, run (IndexCreationTest4()), "Index Creation Test 4 Failed")
-    Assert.AreEqual(0, run (IndexCreationTest5()), "Index Creation Test 4 Failed")
-    Assert.AreEqual(0, run (IndexUpdateTest1()), "Index update Test 1 Failed")
-    Assert.AreEqual(0, run (IndexUpdateTest2()), "Index update Test 2 Failed")
-    Assert.AreEqual(0, run (IndexGetTest1()), "Index Get Test 1 Failed")
-    Assert.AreEqual(0, run (IndexGetTest2()), "Index Get Test 2 Failed")
-    Assert.AreEqual(0, run (IndexDeleteTest1()), "Index delete Test 1 Failed")
-    Assert.AreEqual(0, run (IndexDeleteTest2()), "Index delete Test 1 Failed")
-    Assert.AreEqual(0, run (IndexExistsTest1()), "Index exists Test 1 Failed")
-    Assert.AreEqual(0, run (IndexExistsTest2()), "Index exists Test 2 Failed")
-    Assert.AreEqual(0, run (IndexStatusTest1()), "Index status Test 1 Failed")
-    Assert.AreEqual(0, run (IndexStatusTest2()), "Index status Test 2 Failed")
-    Assert.AreEqual(0, run (IndexStatusTest3()), "Index status Test 3 Failed")
+        description = 'Nullam'
+    """
+        |> request "POST" "/contact/search?c=firstname,lastname,description"
+        |> withBody """
+    {
+      "Count": 2,  
+      "Highlights": {
+        "FragmentsToReturn": 2,
+        "HighlightedFields": [
+          "description"
+        ],
+        "PostTag": "</B>",
+        "PreTag": "</B>"
+      },
+      "QueryString": " description = 'Nullam'",
+      }   
+    """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> document
