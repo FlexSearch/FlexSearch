@@ -323,7 +323,6 @@
     <Compile Include="SearchTests.fs" />
     <Compile Include="SearchQueryTests.fs" />
     <Compile Include="SocketServerTests.fs" />
-    <Compile Include="HttpDocumentation.fs" />
     <Compile Include="HttpTests.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />

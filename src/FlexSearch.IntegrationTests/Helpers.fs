@@ -200,5 +200,5 @@ type Conf =
       ApiFile : string }
 
 let DocumentationConf = 
-    { DocumentationFolder = @"E:\Python27\Scripts\pelican\Scripts\OneDrive\Sites\documentation\content\posts"
+    { DocumentationFolder = @"E:\Python27\Scripts\pelican\Scripts\OneDrive\flexsearch\api"
       ApiFile = @"F:\Github\FlexSearch\idl\Api.thrift" }
