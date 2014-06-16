@@ -120,8 +120,7 @@ module IntegrationTestHelpers =
     /// Helper method to generate test index with supplied data
     /// </summary>
     /// <param name="testData"></param>
-    let GenerateIndexWithTestData(testData: string) =
-        let index = GetBasicIndexSettingsForContact()
+    let GenerateIndexWithTestData(testData: string, index: Index) =
         AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>() ,Container.Resolve<IIndexService>())
         index
     
@@ -130,9 +129,9 @@ module IntegrationTestHelpers =
     /// </summary>
     type IndexFixture() =
         member val Index = Unchecked.defaultof<_> with get, set
-        member this.Setup(testData: string) =
+        member this.Setup(testData: string, index: Index) =
             if this.Index = Unchecked.defaultof<_> then
-                this.Index <- GenerateIndexWithTestData(testData)
+                this.Index <- GenerateIndexWithTestData(testData, index)
         
         interface System.IDisposable with 
             member this.Dispose() = 
@@ -148,7 +147,8 @@ module IntegrationTestHelpers =
     /// Base for creating all Xunit based indexing integration tests
     /// </summary>
     [<AbstractClass>]
-    type IndexTestBase(testData : string) =
+    type IndexTestBase(testData : string, ?index0: Index) =
+        let index = defaultArg index0  (GetBasicIndexSettingsForContact())
         member val Index = Unchecked.defaultof<_> with get, set
         member val IndexName = Unchecked.defaultof<_> with get, set
 
@@ -157,7 +157,7 @@ module IntegrationTestHelpers =
 
         interface IUseFixture<IndexFixture> with
             member this.SetFixture(data) =
-                data.Setup(testData)
+                data.Setup(testData, index)
                 this.Index <- data.Index
                 this.IndexName <- data.Index.IndexName
 
