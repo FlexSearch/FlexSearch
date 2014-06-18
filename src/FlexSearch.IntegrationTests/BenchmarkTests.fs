@@ -4,8 +4,6 @@ open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
-open FsUnit
-open Fuchu
 open System
 open System.Collections.Generic
 open System.Diagnostics

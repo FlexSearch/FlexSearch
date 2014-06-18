@@ -306,7 +306,6 @@
     <Compile Include="Utilities\MefFactory.fs" />
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\Validator.fs" />
-    <Compile Include="ServiceLocator.fs" />
     <Compile Include="FlexField.fs" />
     <Compile Include="Document.fs" />
     <Compile Include="Index.fs" />

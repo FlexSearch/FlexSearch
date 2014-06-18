@@ -1,7 +1,6 @@
 ﻿namespace FlexSearch.IntegrationTests
 
-module ``Webservice Tests`` =
-
+module ``Webservice Tests`` = 
     open FlexSearch.Api
     open FlexSearch.Api.Message
     open FlexSearch.Core
@@ -19,12 +18,12 @@ module ``Webservice Tests`` =
     open Autofac
     open Xunit
     open Xunit.Extensions
-
+    
     // ----------------------------------------------------------------------------
     // Global configuration
     // ----------------------------------------------------------------------------
     let url = "http://localhost:9800"
-
+    
     /// <summary>
     /// Represent a sample request
     /// </summary>
@@ -42,7 +41,7 @@ module ``Webservice Tests`` =
           Requestbody : string option
           Output : ResizeArray<string>
           OutputResponse : ResizeArray<string> }
-
+    
     let example (id : string) (name : string) = 
         let result = 
             { Resource = ""
@@ -63,9 +62,9 @@ module ``Webservice Tests`` =
             ("''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''")
         result.Output.Add("")
         result
-
+    
     let ofResource (name : string) (result : Example) = { result with Resource = name }
-
+    
     let withDescription (desc : string) (result : Example) = 
         result.Output.Add(desc)
         result.Output.Add("")
@@ -73,42 +72,43 @@ module ``Webservice Tests`` =
         result.Output.Add("\t:language: javascript")
         result.Output.Add("")
         { result with Description = desc }
-
+    
     let request (meth : string) (uri : string) (result : Example) = 
         { result with Method = meth
                       Uri = uri }
-
+    
     let withBody (body : string) (result : Example) = { result with Requestbody = Some(body) }
-
+    
     // ----------------------------------------------------------------------------
     // Test assertions
     // ----------------------------------------------------------------------------
     let responseStatusEquals (status : HttpStatusCode) (result : Example) = 
         Assert.Equal<HttpStatusCode>(status, result.Response.StatusCode) // "Status code does not match"
         result
-
+    
     let responseContainsHeader (header : string) (value : string) (result : Example) = 
         Assert.Equal<string>(value, result.Response.Headers.Get(header)) // "Header value does not match"
         result
-
+    
     let responseMatches (select : string) (expected : string) (result : Example) = 
         let value = JObject.Parse(result.ResponseBody)
         Assert.Equal<string>(expected, value.SelectToken(select).ToString()) // "Response does not match"
         result
-
+    
     let responseShouldContain (value : string) (result : Example) = 
         Assert.True(result.ResponseBody.Contains(value), "Response does contain the required value")
         result
-
-    let responseContainsProperty (group : string) (key : string) (property : string) (expected : string) (result : Example) = 
+    
+    let responseContainsProperty (group : string) (key : string) (property : string) (expected : string) 
+        (result : Example) = 
         let value = JObject.Parse(result.ResponseBody)
         Assert.Equal<string>(expected, value.SelectToken(group).[key].[property].ToString()) //"Response does contain the required property"
         result
-
+    
     let responseBodyIsNull (result : Example) = 
         Assert.True(String.IsNullOrWhiteSpace(result.ResponseBody), "Response should not contain body")
         result
-
+    
     // ----------------------------------------------------------------------------
     // Test logic
     // ----------------------------------------------------------------------------
@@ -130,7 +130,7 @@ module ``Webservice Tests`` =
         let printHeaders (headerCollection : WebHeaderCollection) = 
             for i = 0 to headerCollection.Count - 1 do
                 result.OutputResponse.Add(sprintf "%s:%s" headerCollection.Keys.[i] (headerCollection.GetValues(i).[0]))
-    
+        
         let print (resp : HttpWebResponse) = 
             printHeaders (req.Headers)
             if result.Requestbody.IsSome then 
@@ -148,8 +148,9 @@ module ``Webservice Tests`` =
                 let parsedJson = JsonConvert.DeserializeObject(responseBody)
                 if parsedJson <> Unchecked.defaultof<_> then 
                     result.OutputResponse.Add("")
-                    result.OutputResponse.Add(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
-    
+                    result.OutputResponse.Add
+                        (sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
+        
         try 
             result.Response <- req.GetResponse() :?> HttpWebResponse
             print result.Response
@@ -159,7 +160,7 @@ module ``Webservice Tests`` =
         for line in result.OutputResponse do
             printfn "%s" line
         result
-
+    
     // ----------------------------------------------------------------------------
     // Output logic
     // ----------------------------------------------------------------------------
@@ -171,7 +172,7 @@ module ``Webservice Tests`` =
             File.WriteAllLines(path, result.Output)
             File.WriteAllLines(examplePath, result.OutputResponse)
         result
-
+    
     // ----------------------------------------------------------------------------
     // Test server initialization
     // ----------------------------------------------------------------------------
@@ -188,12 +189,13 @@ module ``Webservice Tests`` =
                 let index = Helpers.MockIndexSettings()
                 index.IndexName <- "contact"
                 AddTestDataToIndex
-                    (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), container.Resolve<IIndexService>())
+                    (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), 
+                     container.Resolve<IIndexService>())
                 let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
                 let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
                 httpServer.Start()
                 serverRunning <- true
-
+    
     /// <summary>
     /// Base for creating all Xunit based indexing integration tests
     /// </summary>
@@ -201,31 +203,33 @@ module ``Webservice Tests`` =
     type IntegrationTestBase() = 
         interface IUseFixture<IntegrationIndexFixture> with
             member this.SetFixture(data) = data.Setup()
-
+    
     type ``REST Service Tests``() = 
         inherit IntegrationTestBase()
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Index creation test 1``() = 
+            let indexName = Guid.NewGuid().ToString("N")
             example "post-index-1" "Create index without any field"
             |> ofResource "Index"
             |> withDescription """
 The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
         """
-            |> request "POST" "/test1"
+            |> request "POST" ("/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Index creation test 2``() = 
+            let indexName = Guid.NewGuid().ToString("N")
             example "post-index-1" "Create index without any field"
             |> ofResource "Index"
             |> withDescription """
 The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
         """
-            |> request "POST" "/test101"
+            |> request "POST" ("/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
@@ -235,12 +239,12 @@ The newly created index will be offline as the Online parameter is set to false 
             |> withDescription """
 The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
         """
-            |> request "POST" "/test101"
+            |> request "POST" ("/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1002"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Index creation test 3``() = 
             example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
@@ -249,7 +253,7 @@ The newly created index will be offline as the Online parameter is set to false 
 All field names should be lower case and should not contain any spaces. This is to avoid case based mismatching on field names. Fields have many 
 other configurable properties but Field Type is the only mandatory parameter. Refer to Index Field for more information about field properties.
         """
-            |> request "POST" "/test2"
+            |> request "POST" ("/" + Guid.NewGuid().ToString("N"))
             |> withBody """
             {
                 "Fields" : {
@@ -262,9 +266,10 @@ other configurable properties but Field Type is the only mandatory parameter. Re
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Create update and delete an index``() = 
+            let indexName = Guid.NewGuid().ToString("N")
             example "post-index-4" "Create index with computed field"
             |> ofResource "Index"
             |> withDescription """
@@ -276,7 +281,7 @@ dynamically compiled to .net dlls so performance wise they are similar to native
 in C#. But it would be difficult to write complex scripts in single line to pass to the Script source, that 
 is why Flex supports Multi-line and File based scripts. Refer to Script for more information about scripts.
         """
-            |> request "POST" "/test3"
+            |> request "POST" ("/" + indexName)
             |> withBody """
             {
                 "Fields" : {
@@ -302,7 +307,7 @@ is why Flex supports Multi-line and File based scripts. Refer to Script for more
             |> withDescription """
 There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
         """
-            |> request "PUT" "/test3"
+            |> request "PUT" ("/" + indexName)
             |> withBody """
         {
             "Fields" : {
@@ -327,11 +332,11 @@ There are a number of parameters which can be set for a given index. For more in
             example "delete-index-1" "Deleting an existing index"
             |> ofResource "Index"
             |> withDescription ""
-            |> request "DELETE" "/test3"
+            |> request "DELETE" ("/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexCreationTest5() = 
             example "post-index-5" "Create index by setting all properties"
@@ -339,13 +344,13 @@ There are a number of parameters which can be set for a given index. For more in
             |> withDescription """
 There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
         """
-            |> request "POST" "/contact123"
+            |> request "POST" ("/" + Guid.NewGuid().ToString("N"))
             |> withBody (JsonConvert.SerializeObject(Helpers.MockIndexSettings(), jsonSettings))
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexUpdateTest2() = 
             example "put-index-2" "Index update request with wrong index name returns error"
@@ -372,7 +377,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexDeleteTest2() = 
             example "delete-index-2" "Deleting an non-existing index will return an error"
@@ -383,7 +388,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexGetTest1() = 
             example "get-index-1" "Getting an index detail by name"
@@ -394,7 +399,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches "IndexName" "contact"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexGetTest2() = 
             example "get-index-2" "Getting an index detail by name (non existing index)"
@@ -405,7 +410,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexExistsTest1() = 
             example "get-index-exists-1" "Checking if an index exists (true case)"
@@ -416,7 +421,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexExistsTest2() = 
             example "get-index-exists-2" "Checking if an index exists (false case)"
@@ -427,7 +432,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexStatusTest() = 
             example "" ""
@@ -471,11 +476,12 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexDocumentsTest() = 
+            let indexName = Guid.NewGuid().ToString("N")
             example "" ""
-            |> request "POST" "/documenttestindex"
+            |> request "POST" ("/" + indexName)
             |> withBody """
             {
                 "Online": true,
@@ -489,11 +495,10 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> ignore
-
             example "post-index-document-id-1" "Add a document to an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "POST" "/documenttestindex/documents/51"
+            |> request "POST" ("/" + indexName + "/documents/51")
             |> withBody """
             {
                 "firstname" : "Seemant",
@@ -505,13 +510,11 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseBodyIsNull
             |> document
             |> ignore
-
             Thread.Sleep(5000)
-
             example "get-index-document-id-1" "Get a document by an id from an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "GET" "/documenttestindex/documents/51"
+            |> request "GET" ("/" + indexName + "/documents/51")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches Constants.IdField "51"
@@ -520,7 +523,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "put-index-document-id-1" "Update a document by id to an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "PUT" "/documenttestindex/documents/51"
+            |> request "PUT" ("/" + indexName + "/documents/51")
             |> withBody """
             {
                 "firstname" : "Seemant",
@@ -535,12 +538,12 @@ There are a number of parameters which can be set for a given index. For more in
             example "delete-index-document-id-1" "Delete a document by id from an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "DELETE" "/documenttestindex/documents/51"
+            |> request "DELETE" ("/" + indexName + "/documents/51")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexDocumentsTest5() = 
             example "get-index-document-1" "Get top 10 documents from an index"
@@ -552,7 +555,7 @@ There are a number of parameters which can be set for a given index. For more in
             //|> responseContainsHeader "RecordsReturned" "10"
             //|> responseContainsHeader "TotalAvailable" "50"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchTermQueryTest1() = 
             example "post-index-search-termquery-1" "Term search using ``=`` operator"
@@ -576,7 +579,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
             |> responseMatches "RecordsReturned" "1"
             |> responseMatches "TotalAvailable" "1"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchTermQueryTest2() = 
             example "post-index-search-termquery-2" "Term search using ``eq`` operator"
@@ -601,7 +604,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "1"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchFuzzyQueryTest1() = 
             example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
@@ -625,7 +628,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
             |> responseMatches "RecordsReturned" "3"
             |> responseMatches "TotalAvailable" "3"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchFuzzyQueryTest2() = 
             example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
@@ -650,7 +653,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
             |> responseContainsHeader "RecordsReturned" "3"
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchFuzzyQueryTest3() = 
             example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
@@ -674,7 +677,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
             |> responseContainsHeader "RecordsReturned" "3"
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchPhraseQueryTest1() = 
             example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
@@ -698,7 +701,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
             |> responseContainsHeader "RecordsReturned" "4"
             |> responseContainsHeader "TotalAvailable" "4"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchWildCardQueryTest1() = 
             example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
@@ -722,7 +725,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
             |> responseContainsHeader "RecordsReturned" "3"
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchWildCardQueryTest2() = 
             example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
@@ -746,7 +749,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
             |> responseContainsHeader "RecordsReturned" "3"
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchWildCardQueryTest3() = 
             example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
@@ -771,7 +774,7 @@ be used to match one character.
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "1"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchRegexQueryTest1() = 
             example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
@@ -796,7 +799,7 @@ be used to match one character.
             |> responseContainsHeader "RecordsReturned" "3"
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchMatchallQueryTest1() = 
             example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
@@ -821,7 +824,7 @@ The below is the query to to match all documents in the index.
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "50"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest1() = 
             example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
@@ -846,7 +849,7 @@ The below is the query to to match all documents with cvv2 greater than 100 in t
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "48"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest2() = 
             example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
@@ -871,7 +874,7 @@ The below is the query to to match all documents with cvv2 greater than or equal
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "41"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest3() = 
             example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
@@ -896,7 +899,7 @@ The below is the query to to match all documents with cvv2 less than 150 in the 
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "7"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest4() = 
             example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
@@ -921,7 +924,7 @@ The below is the query to to match all documents with cvv2 less than or equal to
             |> responseContainsHeader "RecordsReturned" "1"
             |> responseContainsHeader "TotalAvailable" "26"
             |> document
-    
+        
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchHighlightFeatureTest1() = 
             let query = new SearchQuery("contact", " description = 'Nullam'")
