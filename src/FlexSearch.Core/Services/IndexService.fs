@@ -47,6 +47,7 @@ module IndexService =
     /// Service wrapper around all index related services
     /// </summary>
     /// <param name="state"></param>
+    [<Sealed>]
     type Service(nodeState : INodeState, settingsBuilder : ISettingsBuilder) = 
         
         /// <summary>
@@ -74,8 +75,8 @@ module IndexService =
                 | IndexState.Online -> 
                     let! flexIndex = nodeState.IndicesState.GetRegisteration(index.IndexName)
                     let! settings = settingsBuilder.BuildSetting(index)
-                    Index.closeIndex (nodeState.IndicesState, flexIndex)
-                    do! Index.addIndex (nodeState.IndicesState, settings)
+                    Index.CloseIndex (nodeState.IndicesState, flexIndex)
+                    do! Index.AddIndex (nodeState.IndicesState, settings)
                     nodeState.PersistanceStore.Put index.IndexName index |> ignore
                     Logger.AddIndex(index.IndexName, index)
                     return! Choice1Of2()
@@ -99,7 +100,7 @@ module IndexService =
                 match status with
                 | IndexState.Online -> 
                     let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
-                    closeIndex (nodeState.IndicesState, flexIndex)
+                    CloseIndex (nodeState.IndicesState, flexIndex)
                     nodeState.PersistanceStore.Delete<Index> indexName |> ignore
                     nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
                     nodeState.IndicesState.IndexStatus.TryRemove(indexName) |> ignore
@@ -134,7 +135,7 @@ module IndexService =
                     let! settings = settingsBuilder.BuildSetting(index)
                     nodeState.PersistanceStore.Put index.IndexName index |> ignore
                     Logger.AddIndex(index.IndexName, index)
-                    if index.Online then do! addIndex (nodeState.IndicesState, settings)
+                    if index.Online then do! AddIndex (nodeState.IndicesState, settings)
                     else do! nodeState.IndicesState.AddStatus(index.IndexName, IndexState.Offline)
             }
         
@@ -177,7 +178,7 @@ module IndexService =
                 | IndexState.Offline | IndexState.Closing -> 
                     let! index = nodeState.PersistanceStore.Get<Index>(indexName)
                     let! settings = settingsBuilder.BuildSetting(index)
-                    do! addIndex (nodeState.IndicesState, settings)
+                    do! Index.AddIndex (nodeState.IndicesState, settings)
                     index.Online <- true
                     nodeState.PersistanceStore.Put indexName index |> ignore
                     Logger.OpenIndex(indexName)
@@ -198,7 +199,7 @@ module IndexService =
                     return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
                 | _ -> 
                     let! index = nodeState.IndicesState.GetRegisteration(indexName)
-                    closeIndex (nodeState.IndicesState, index)
+                    CloseIndex (nodeState.IndicesState, index)
                     let! index' = nodeState.PersistanceStore.Get<Index>(indexName)
                     index'.Online <- false
                     nodeState.PersistanceStore.Put indexName index' |> ignore
@@ -211,7 +212,7 @@ module IndexService =
         /// </summary>
         /// <param name="indexName"></param>
         /// <param name="nodeState"></param>
-        let Commit indexName = maybe { let! (flexIndex, documentTemplate) = indexExists 
+        let Commit indexName = maybe { let! (flexIndex, documentTemplate) = Index.IndexExists 
                                                                                 (nodeState.IndicesState, indexName)
                                        flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit()) }
         
@@ -225,7 +226,7 @@ module IndexService =
                     try 
                         match settingsBuilder.BuildSetting(x) with
                         | Choice1Of2(flexIndexSetting) -> 
-                            Index.addIndex (nodeState.IndicesState, flexIndexSetting) |> ignore
+                            Index.AddIndex (nodeState.IndicesState, flexIndexSetting) |> ignore
                         | Choice2Of2(e) -> ()
                     //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
                     with ex -> ()

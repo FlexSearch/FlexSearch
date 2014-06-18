@@ -47,6 +47,7 @@ module DocumentService =
     /// Service wrapper around all document related services
     /// </summary>
     /// <param name="state"></param>
+    [<Sealed>]
     type Service(nodeState : INodeState, searchService : ISearchService) = 
         
         /// <summary>
@@ -94,9 +95,9 @@ module DocumentService =
         /// <param name="fields"></param>
         let AddorUpdateDocument indexName documentId fields = 
             maybe { 
-                let! (flexIndex, documentTemplate) = Index.indexExists (nodeState.IndicesState, indexName)
+                let! (flexIndex, documentTemplate) = Index.IndexExists (nodeState.IndicesState, indexName)
                 let (targetIndex, documentTemplate) = 
-                    Index.updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
+                    Index.UpdateDocument (flexIndex, documentTemplate, documentId, 1, fields)
                 flexIndex.Shards.[targetIndex]
                     .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, documentId), 
                                                         documentTemplate.Document) |> ignore
@@ -110,9 +111,9 @@ module DocumentService =
         /// <param name="fields"></param>
         let AddDocument indexName documentId fields = 
             maybe { 
-                let! (flexIndex, documentTemplate) = Index.indexExists (nodeState.IndicesState, indexName)
+                let! (flexIndex, documentTemplate) = Index.IndexExists (nodeState.IndicesState, indexName)
                 let (targetIndex, documentTemplate) = 
-                    Index.updateDocument (flexIndex, documentTemplate, documentId, 1, fields)
+                    Index.UpdateDocument (flexIndex, documentTemplate, documentId, 1, fields)
                 flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
             }
         
@@ -123,7 +124,7 @@ module DocumentService =
         /// <param name="documentId"></param>
         let DeleteDocument indexName documentId = 
             maybe { 
-                let! (flexIndex, documentTemplate) = Index.indexExists (nodeState.IndicesState, indexName)
+                let! (flexIndex, documentTemplate) = Index.IndexExists (nodeState.IndicesState, indexName)
                 let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length
                 flexIndex.Shards.[targetIndex]
                     .TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) |> ignore
@@ -134,7 +135,7 @@ module DocumentService =
         /// </summary>
         /// <param name="indexName"></param>
         let DeleteAllDocuments indexName = 
-            maybe { let! (flexIndex, documentTemplate) = indexExists (nodeState.IndicesState, indexName)
+            maybe { let! (flexIndex, documentTemplate) = IndexExists (nodeState.IndicesState, indexName)
                     flexIndex.Shards |> Array.iter (fun shard -> shard.TrackingIndexWriter.deleteAll() |> ignore) }
         
         interface IDocumentService with

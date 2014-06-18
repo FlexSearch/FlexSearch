@@ -31,7 +31,8 @@ module State =
         abstract member ServerSettings: ServerSettings
         abstract member CahceStore: IVersioningCacheStore
         abstract member IndicesState: IndicesState
-
+    
+    [<Sealed>]
     type NodeState(persistanceStore, serversettings, cacheStore, indicesState) = 
         interface INodeState with
             member this.PersistanceStore = persistanceStore

@@ -28,6 +28,7 @@ module Cache =
     /// Initially Lucene's LiveFieldValues seemed like a good alternative but it
     /// complicates the design and requires thread management
     // ----------------------------------------------------------------------------
+    [<Sealed>]
     type VersioningCacheStore() = 
         let cache = new ConcurrentDictionary<string * string, int * DateTime>()
         

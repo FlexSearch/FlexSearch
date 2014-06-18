@@ -35,6 +35,7 @@ open System.Threading.Tasks.Dataflow
 /// Generic Importer module
 /// </summary>
 [<Name("importer")>]
+[<Sealed>]
 type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state : INodeState) = 
     inherit HttpModuleBase()
     let importHandlers = importHandlerFactory.GetAllModules()
@@ -83,6 +84,7 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
 [<Name("sql")>]
+[<Sealed>]
 type SqlImporter(queueService : IQueueService, state : INodeState) = 
     
     let sqlSettings = 

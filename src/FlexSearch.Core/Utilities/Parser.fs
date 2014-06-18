@@ -109,7 +109,8 @@ module Parsers =
     /// Default Parser for query parsing. 
     /// Note: The reason to create a parser class is to hide FParsec OperatorPrecedenceParser
     /// as it is not thread safe. This class will be created using object pool
-    /// </summary>    
+    /// </summary> 
+    [<Sealed>]   
     type FlexParser() = 
         inherit PooledObject()
         let opp = new OperatorPrecedenceParser<Predicate, unit, unit>()
@@ -140,6 +141,6 @@ module Parsers =
     /// Generates an object pool for the parser
     /// </summary>
     /// <param name="poolSize"></param>
-    let getParserPool (poolSize : int) = 
+    let GetParserPool (poolSize : int) = 
         let factory() = new FlexParser()
         new ObjectPool<FlexParser>(factory, poolSize)

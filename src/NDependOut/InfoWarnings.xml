@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <InfoWarnings>
-  <Info>Begin full analysis with NDepend v5.2.1.8320</Info>
+  <Info>Begin full analysis with NDepend v5.3.0.8360</Info>
   <Info>No Baseline for Comparison loaded.</Info>
   <Info>Concurrent mode</Info>
   <Warning>Versioning issue: Assembly {FlexSearch.Core v0.21.1.0} references both versions {4.3.1.0} and {4.0.0.0} of the assembly {FSharp.Core}. NDepend will only consider the highest version.</Warning>
@@ -41,12 +41,12 @@
    System.Reactive.Core.dll   v2.2.0.0
    System.Data.SQLite.dll   v1.0.92.0
    protobuf-net.dll   v2.0.0.668
-   Gibraltar.Agent.dll   v3.5.4.0</Info>
-  <Warning>Assembly {Autofac.Extras.Attributed} is referenced by {FlexSearch.Core} but is not found.</Warning>
+   Gibraltar.Agent.dll   v3.5.4.0
+   Autofac.Extras.Attributed.dll   v3.2.0.0</Info>
   <Info>0 code rule has been extracted from code.</Info>
   <Info>No dependency cycle detected in assemblies referencement graph.</Info>
-  <Info>06/16/2014 20:29:56 Analyse dependencies of your application.</Info>
-  <Info>06/16/2014 20:29:56 Execute queries and rules</Info>
+  <Info>06/18/2014 21:54:02 Analyse dependencies of your application.</Info>
+  <Info>06/18/2014 21:54:03 Execute queries and rules</Info>
   <Warning>6 critical rules are violated.
   - Methods too complex - critical
   - Methods with too many parameters - critical
@@ -54,6 +54,6 @@
   - Potentially dead Methods
   - Constructors of abstract classes should be declared as protected or private
   - Avoid having different types with same name</Warning>
-  <Info>06/16/2014 20:29:57 NDepend analysis done. Duration: 00:02</Info>
-  <Info>06/16/2014 20:29:57 Building the report (standard).</Info>
+  <Info>06/18/2014 21:54:04 NDepend analysis done. Duration: 00:02</Info>
+  <Info>06/18/2014 21:54:04 Building the report (standard).</Info>
 </InfoWarnings>

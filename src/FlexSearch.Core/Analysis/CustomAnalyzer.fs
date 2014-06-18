@@ -33,6 +33,7 @@ open System.Linq
 // ----------------------------------------------------------------------------
 // Custom analyzer which can take any combination of filters
 // ----------------------------------------------------------------------------
+[<Sealed>]
 type CustomAnalyzer(tokenizerFactory: IFlexTokenizerFactory, filterFactories: IFlexFilterFactory[]) =
     inherit Analyzer()
     do

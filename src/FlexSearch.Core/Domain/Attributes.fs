@@ -10,8 +10,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open System.ComponentModel.Composition
 open System
+open System.ComponentModel.Composition
 
 // ----------------------------------------------------------------------------
 // Contains custom attributes required
@@ -22,6 +22,7 @@ module Attributes =
     /// Represents the lookup name for the plug-in
     /// </summary>
     [<MetadataAttribute>]
+    [<Sealed>]
     type NameAttribute(name : string) = 
         inherit Attribute()
         member this.Name = name
@@ -30,6 +31,7 @@ module Attributes =
     /// Represents the display name for the plug-in
     /// </summary>
     [<MetadataAttribute>]
+    [<Sealed>]
     type DisplayAttribute(displayName : string) = 
         inherit Attribute()
         member this.DisplayName = displayName
@@ -38,6 +40,7 @@ module Attributes =
     /// Represents the description for the plug-in
     /// </summary>
     [<MetadataAttribute>]
+    [<Sealed>]
     type DescriptionAttribute(description : string) = 
         inherit Attribute()
         member this.Description = description

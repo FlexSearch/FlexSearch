@@ -9,78 +9,71 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
 
 open FlexSearch.Core
-
+open System.Collections.Generic
+open System.ComponentModel.Composition
+open System.Linq
 open java.io
 open java.util
-
 open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.charfilter
+open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.analysis.phonetic
 open org.apache.lucene.analysis.standard
 open org.apache.lucene.analysis.util
-
-open System.Collections.Generic
-open System.ComponentModel.Composition
-open System.Linq
 
 // ----------------------------------------------------------------------------
 // Contains all predefined analyzer. The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
-module Analyzers =
-            
-    // ----------------------------------------------------------------------------
-    // Html analyzer which uses lucene character filter. Character Filters are not
-    // supported by flex through configuration.
-    // ----------------------------------------------------------------------------                
+module Analyzers = 
+    /// <summary>
+    /// HTML analyzer which uses lucene character filter. Character Filters are not
+    /// supported by flex through configuration.
+    /// </summary>
     [<Name("HtmlAnalyzer")>]
-    type HtmlAnalyzer() =
+    [<Sealed>]
+    type HtmlAnalyzer() = 
         inherit Analyzer()
-        override this.createComponents(fieldName: string, reader: Reader) =
+        override this.createComponents (fieldName : string, reader : Reader) = 
             let charFilter = new HTMLStripCharFilter(reader)
             let source = new StandardTokenizer(Constants.LuceneVersion, charFilter)
             let result = new StandardFilter(Constants.LuceneVersion, source)
             new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
-
-
-    // ----------------------------------------------------------------------------
-    // A phonetic analyzer using double metaphone filter
-    // ----------------------------------------------------------------------------
+    
+    /// <summary>
+    /// A phonetic analyzer using double metaphone filter
+    /// </summary>
     [<Name("DoubleMetaPhonePhoneticAnalyzer")>]
-    type DoubleMetaPhonePhoneticAnalyzer() =
+    [<Sealed>]
+    type DoubleMetaPhonePhoneticAnalyzer() = 
         inherit Analyzer()
-        override this.createComponents(fieldName: string, reader: Reader) =
+        override this.createComponents (fieldName : string, reader : Reader) = 
             let source = new StandardTokenizer(Constants.LuceneVersion, reader)
             let mutable result = new StandardFilter(Constants.LuceneVersion, source) :> TokenStream
             result <- new LowerCaseFilter(Constants.LuceneVersion, source)
             result <- new DoubleMetaphoneFilter(result, 4, false)
             new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
-
-
-    // ----------------------------------------------------------------------------
-    // Wrapper around standard analyzer
-    // ----------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Wrapper around standard analyzer
+    /// </summary>
     [<Name("StandardAnalyzer")>]
+    [<Sealed>]
     type FlexStandardAnalyzer() = 
         inherit Analyzer()
-        override this.createComponents(fieldName: string, reader: Reader) =
+        override this.createComponents (fieldName : string, reader : Reader) = 
             let source = new StandardTokenizer(Constants.LuceneVersion, reader)
             let mutable result = new StandardFilter(Constants.LuceneVersion, source) :> TokenStream
             result <- new LowerCaseFilter(Constants.LuceneVersion, source)
             new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
-
-    // ----------------------------------------------------------------------------
-    // Wrapper around keyword analyzer
-    // ----------------------------------------------------------------------------
+    
+    /// <summary>
+    /// Wrapper around keyword analyzer
+    /// </summary>
     [<Name("KeywordAnalyzer")>]
-    let FlexKeywordAnalyzer: Analyzer = new KeywordAnalyzer() :> Analyzer
-
+    let FlexKeywordAnalyzer : Analyzer = new KeywordAnalyzer() :> Analyzer

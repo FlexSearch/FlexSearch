@@ -18,6 +18,7 @@ open System.Threading
 
 [<AutoOpen>]
 module MonadHelpers = 
+    [<Sealed>]
     type ValidationBuilder() = 
         
         member this.Bind(v, f) = 
@@ -46,10 +47,7 @@ module MonadHelpers =
         
         member this.Using(disposable : #System.IDisposable, body) = 
             let body' = fun () -> body disposable
-            this.TryFinally(body', 
-                            fun () -> 
-                                match disposable with
-                                | disp -> disp.Dispose())
+            this.TryFinally(body', fun () -> disposable.Dispose())
     
     let maybe = new ValidationBuilder()
     
@@ -109,7 +107,6 @@ module JavaHelpers =
     let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
     let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
     let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
-
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns

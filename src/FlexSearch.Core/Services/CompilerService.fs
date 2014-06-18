@@ -44,7 +44,7 @@ public string Execute(System.Collections.Generic.IReadOnlyDictionary<string,stri
     /// </summary>
     /// <param name="source"></param>
     /// <param name="template"></param>
-    let GenerateStringReturnScript(source : string) = 
+    let internal GenerateStringReturnScript(source : string) = 
         let sourceCode = StringReturnScriptTemplate.Replace("[SourceCode]", source)
         try 
             let compiledScript = 

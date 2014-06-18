@@ -28,6 +28,7 @@ open System.Net
 open System.Net.Http
 
 [<Name("index")>]
+[<Sealed>]
 type IndexModule(indexService : IIndexService) = 
     inherit HttpModuleBase()
     override this.Get(indexName, owin) = owin |> responseProcessor (indexService.GetIndex(indexName)) OK BAD_REQUEST
@@ -57,6 +58,7 @@ type IndexModule(indexService : IIndexService) =
         | Choice2Of2(error) -> owin |> BAD_REQUEST error
 
 [<Name("documents")>]
+[<Sealed>]
 type DocumentModule(state : INodeState, documentService : IDocumentService) = 
     inherit HttpModuleBase()
     
@@ -131,6 +133,7 @@ type DocumentModule(state : INodeState, documentService : IDocumentService) =
         owin |> responseProcessor processRequest OK BAD_REQUEST
 
 [<Name("search")>]
+[<Sealed>]
 type SearchModule(searchService : ISearchService) = 
     inherit HttpModuleBase()
     
@@ -166,6 +169,7 @@ type SearchModule(searchService : ISearchService) =
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
 [<Name("exists")>]
+[<Sealed>]
 type ExistsModule(indexService : IIndexService) = 
     inherit HttpModuleBase()
     
@@ -178,6 +182,7 @@ type ExistsModule(indexService : IIndexService) =
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
 [<Name("status")>]
+[<Sealed>]
 type StatusModule(indexService : IIndexService) = 
     inherit HttpModuleBase()
     
@@ -200,6 +205,7 @@ type StatusModule(indexService : IIndexService) =
         owin |> responseProcessor processRequest OK BAD_REQUEST
 
 [<Name("analysis")>]
+[<Sealed>]
 type AnalysisModule() = 
     inherit HttpModuleBase()
     let processRequest (indexName, owin) = maybe { return! Choice1Of2() }
@@ -207,6 +213,7 @@ type AnalysisModule() =
     override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
 [<Name("/")>]
+[<Sealed>]
 type RootModule() = 
     inherit HttpModuleBase()
     override this.Get(indexName, owin) = 
@@ -217,6 +224,7 @@ type RootModule() =
                  ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()))
 
 [<Name("jobs")>]
+[<Sealed>]
 type JobModule(state : INodeState) = 
     inherit HttpModuleBase()
     

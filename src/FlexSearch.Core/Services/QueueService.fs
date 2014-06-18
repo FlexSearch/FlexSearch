@@ -47,6 +47,7 @@ module QueueService =
     /// Service wrapper around all document queuing services
     /// </summary>
     /// <param name="state"></param>
+    [<Sealed>]
     type Service(state : INodeState, documentService : IDocumentService) = 
         
         let executionBlockOptions() = 

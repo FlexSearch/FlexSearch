@@ -89,7 +89,7 @@ module Main =
         builder.RegisterInstance(new PersistanceStore("", true)).As<IPersistanceStore>().SingleInstance() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
         builder.RegisterInstance(indicesState).SingleInstance() |> ignore
-        builder.RegisterInstance(Parsers.getParserPool(50)).SingleInstance() |> ignore
+        builder.RegisterInstance(Parsers.GetParserPool(50)).SingleInstance() |> ignore
 
         // Register services
         builder |> FactoryService.RegisterSingleInstance<IndexService.Service, IIndexService>
@@ -105,6 +105,7 @@ module Main =
     /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
+    [<Sealed>]
     type NodeService(serverSettings : ServerSettings, testServer : bool) = 
         let container = GetContainer(serverSettings, testServer)
         let mutable httpServer = Unchecked.defaultof<IServer>

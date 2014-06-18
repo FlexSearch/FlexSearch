@@ -200,6 +200,7 @@ type FlexIndex =
 /// Case insensitive keyword analyzer 
 /// </summary>
 [<Name("CaseInsensitiveKeywordAnalyzer")>]
+[<Sealed>]
 type CaseInsensitiveKeywordAnalyzer() = 
     inherit Analyzer()
     override this.createComponents (fieldName : string, reader : Reader) = 

@@ -45,6 +45,7 @@ module Pool =
         member this.Release() = cleanup (false)
     
     /// A generic object pool which can be used for connection pooling etc.
+    [<Sealed>]
     type ObjectPool<'T when 'T :> PooledObject>(factory : unit -> 'T, poolSize : int, ?onAcquire : 'T -> bool, ?onRelease : 'T -> bool) as self = 
         let pool = new ConcurrentQueue<'T>()
         let mutable disposed = false

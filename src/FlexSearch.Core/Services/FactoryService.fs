@@ -46,13 +46,14 @@ module FactoryService =
     let RegisterAbstractClassAssemblies<'T>(builder : ContainerBuilder) = 
         builder.RegisterAssemblyTypes(AppDomain.CurrentDomain.GetAssemblies()).Where(fun t -> t.BaseType = typeof<'T>).As<'T>
             () |> ignore
-        
-    let RegisterSingleInstance<'T, 'U> (builder: ContainerBuilder) =
-        builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore 
-   
+    
+    let RegisterSingleInstance<'T, 'U>(builder : ContainerBuilder) = 
+        builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore
+    
     /// <summary>
     /// Factory implementation
     /// </summary>
+    [<Sealed>]
     type FlexFactory<'T>(container : ILifetimeScope) = 
         
         /// Returns a module by name.
@@ -97,15 +98,16 @@ module FactoryService =
             member this.GetAllModules() = 
                 let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
                 let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                factory |> Seq.iter (fun x -> 
-                    if x.Metadata.ContainsKey("Name") then
-                        modules.Add(x.Metadata.["Name"].ToString(), x.Value.Value)
-                    )
+                factory 
+                |> Seq.iter 
+                       (fun x -> 
+                       if x.Metadata.ContainsKey("Name") then modules.Add(x.Metadata.["Name"].ToString(), x.Value.Value))
                 modules
     
     /// <summary>
     /// Concrete implementation of IFactoryCollection
     /// </summary>
+    [<Sealed>]
     type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory, httpModuleFactory, importHandlerFactory, resourceLoader) = 
         interface IFactoryCollection with
             member this.FilterFactory = filterFactory
@@ -115,6 +117,6 @@ module FactoryService =
             member this.HttpModuleFactory = httpModuleFactory
             member this.ImportHandlerFactory = importHandlerFactory
             member this.ResourceLoader = resourceLoader
-
-    let RegisterSingleFactoryInstance<'T> (builder: ContainerBuilder) =
-        builder.RegisterType<FlexFactory<'T>>().As<IFlexFactory<'T>>().SingleInstance() |> ignore 
+    
+    let RegisterSingleFactoryInstance<'T>(builder : ContainerBuilder) = 
+        builder.RegisterType<FlexFactory<'T>>().As<IFlexFactory<'T>>().SingleInstance() |> ignore

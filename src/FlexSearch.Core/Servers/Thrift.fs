@@ -32,6 +32,7 @@ module Thrift =
     /// <summary>
     /// Thrift server
     /// </summary>
+    [<Sealed>]
     type Server(port : int, processor : TProcessor, minThread, maxThread) = 
         let mutable server : TThreadPoolServer option = None
         

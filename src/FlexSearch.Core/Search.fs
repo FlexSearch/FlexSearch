@@ -355,6 +355,7 @@ module SearchDsl =
     /// Term Query
     // ---------------------------------------------------------------------------- 
     [<Name("term_match")>]
+    [<Sealed>]
     type FlexTermQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "eq"; "=" |]
@@ -393,6 +394,7 @@ module SearchDsl =
     /// Fuzzy Query
     // ---------------------------------------------------------------------------- 
     [<Name("fuzzy_match")>]
+    [<Sealed>]
     type FlexFuzzyQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "fuzzy"; "~=" |]
@@ -418,6 +420,7 @@ module SearchDsl =
     /// Match all Query
     // ---------------------------------------------------------------------------- 
     [<Name("match_all")>]
+    [<Sealed>]
     type FlexMatchAllQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "matchall" |]
@@ -427,6 +430,7 @@ module SearchDsl =
     /// Phrase Query
     // ---------------------------------------------------------------------------- 
     [<Name("phrase_match")>]
+    [<Sealed>]
     type FlexPhraseQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "match" |]
@@ -443,6 +447,7 @@ module SearchDsl =
     /// Wildcard Query
     // ---------------------------------------------------------------------------- 
     [<Name("like")>]
+    [<Sealed>]
     type FlexWildcardQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "like"; "%=" |]
@@ -464,6 +469,7 @@ module SearchDsl =
     /// Regex Query
     // ---------------------------------------------------------------------------- 
     [<Name("regex")>]
+    [<Sealed>]
     type RegexQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "regex" |]
@@ -485,6 +491,7 @@ module SearchDsl =
     // Range Queries
     // ---------------------------------------------------------------------------- 
     [<Name("greater")>]
+    [<Sealed>]
     type FlexGreaterQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| ">" |]
@@ -538,6 +545,7 @@ module SearchDsl =
                              (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
     [<Name("greater_than_equal")>]
+    [<Sealed>]
     type FlexGreaterThanEqualQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| ">=" |]
@@ -591,6 +599,7 @@ module SearchDsl =
                              (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
     [<Name("less_than")>]
+    [<Sealed>]
     type FlexLessThanQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "<" |]
@@ -644,6 +653,7 @@ module SearchDsl =
                              (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
     
     [<Name("less_than_equal")>]
+    [<Sealed>]
     type FlexLessThanEqualQuery() = 
         interface IFlexQuery with
             member this.QueryName() = [| "<=" |]

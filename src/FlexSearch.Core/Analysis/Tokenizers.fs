@@ -39,6 +39,7 @@ module Tokenizers =
     // Keyword Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("KeywordTokenizer")>]
+    [<Sealed>]
     type KeywordTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -50,6 +51,7 @@ module Tokenizers =
     // Standard Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("StandardTokenizer")>]
+    [<Sealed>]
     type StandardTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -61,6 +63,7 @@ module Tokenizers =
     // Classic Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("ClassicTokenizer")>]
+    [<Sealed>]
     type ClassicTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -72,6 +75,7 @@ module Tokenizers =
     // Lowercase Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("LowercaseTokenizer")>]
+    [<Sealed>]
     type LowercaseTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -83,6 +87,7 @@ module Tokenizers =
     // Letter Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("LetterTokenizer")>]
+    [<Sealed>]
     type LetterTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -94,6 +99,7 @@ module Tokenizers =
     // Whitespace Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("WhitespaceTokenizer")>]
+    [<Sealed>]
     type WhitespaceTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()
@@ -105,6 +111,7 @@ module Tokenizers =
     // UAX29URLEmail Tokenizer
     // ---------------------------------------------------------------------------- 
     [<Name("UAX29URLEmailTokenizer")>]
+    [<Sealed>]
     type UAX29URLEmailTokenizerFactory() =
         interface IFlexTokenizerFactory with
             member this.Initialize(parameters, resourceLoader) = ()

@@ -42,11 +42,13 @@ open org.apache.lucene.store
 /// Most of the services basically act as a wrapper around the functions 
 /// here. Care should be taken to not introduce any mutable state in the
 /// module but to only pass mutable state as an instance of NodeState
+[<Sealed>]
 module SearchService = 
     // ----------------------------------------------------------------------------
     // Search service class which will be dynamically injected using IOC. This will
     // provide the interface for all kind of search functionality in flex.
-    // ----------------------------------------------------------------------------    
+    // ----------------------------------------------------------------------------
+    [<Sealed>]    
     type Service(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
         // Generate query types from query factory. This is necessary as a single query can support multiple
         // query names
@@ -57,7 +59,7 @@ module SearchService =
                     result.Add(queryName, pair.Value)
             result
             
-        let search (flexIndex : FlexIndex, search : SearchQuery) = 
+        let Search (flexIndex : FlexIndex, search : SearchQuery) = 
             maybe { 
                 if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
                     // Search profile based
@@ -82,5 +84,5 @@ module SearchService =
         interface ISearchService with
             member this.Search(query) = maybe { let! flexIndex = nodeState.IndicesState.GetRegisteration
                                                                      (query.IndexName)
-                                                return! search (flexIndex, query) }
-            member this.Search(flexIndex, query) = search (flexIndex, query)
+                                                return! Search (flexIndex, query) }
+            member this.Search(flexIndex, query) = Search (flexIndex, query)

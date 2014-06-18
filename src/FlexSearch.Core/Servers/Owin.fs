@@ -36,6 +36,7 @@ module Owin =
     /// Thrift server
     /// </summary>
     [<Name("Http")>]
+    [<Sealed>]
     type Server(indexService : IIndexService, httpFactory : IFlexFactory<HttpModuleBase>, ?port0 : int) = 
         let port = defaultArg port0 9800
         let httpModule = httpFactory.GetAllModules()
