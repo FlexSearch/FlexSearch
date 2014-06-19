@@ -92,10 +92,10 @@ module Main =
         builder.RegisterInstance(Parsers.GetParserPool(50)).SingleInstance() |> ignore
 
         // Register services
-        builder |> FactoryService.RegisterSingleInstance<IndexService.Service, IIndexService>
-        builder |> FactoryService.RegisterSingleInstance<DocumentService.Service, IDocumentService>
-        builder |> FactoryService.RegisterSingleInstance<QueueService.Service, IQueueService>
-        builder |> FactoryService.RegisterSingleInstance<SearchService.Service, ISearchService>
+        builder |> FactoryService.RegisterSingleInstance<IndexService, IIndexService>
+        builder |> FactoryService.RegisterSingleInstance<DocumentService, IDocumentService>
+        builder |> FactoryService.RegisterSingleInstance<QueueService, IQueueService>
+        builder |> FactoryService.RegisterSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
 
         // Register server
