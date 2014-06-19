@@ -435,8 +435,9 @@ There are a number of parameters which can be set for a given index. For more in
         
         [<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexStatusTest() = 
+            let indexName = Guid.NewGuid().ToString("N")
             example "" ""
-            |> request "POST" "/indexstatustest"
+            |> request "POST" ("/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
@@ -444,7 +445,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "get-index-status-2" "Getting status of an index (offline)"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "GET" "/indexstatustest/status"
+            |> request "GET" ("/" + indexName + "/status")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches "Status" "Offline"
@@ -453,7 +454,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "post-index-status-1" "Setting status of an index to on-line"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "POST" "/indexstatustest/status/online"
+            |> request "POST" ("/" + indexName + "/status/online")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
@@ -462,7 +463,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "get-index-status-1" "Getting status of an index"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "GET" "/indexstatustest/status"
+            |> request "GET" ("/" + indexName + "/status")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches "Status" "Online"
@@ -471,7 +472,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "post-index-status-2" "Setting status of an index to off-line"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "POST" "/indexstatustest/status/offline"
+            |> request "POST" ("/" + indexName + "/status/offline")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
