@@ -8,7 +8,7 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core
+namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
 open FlexSearch.Api.Message
@@ -20,9 +20,6 @@ open System.Collections.Generic
 open System.Data
 open System.IO
 open System.Linq
-open System.Threading
-open System.Threading.Tasks
-open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
 open org.apache.lucene.analysis
@@ -122,7 +119,7 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     let DeleteDocument indexName documentId = 
         maybe { 
             let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, indexName)
-            let targetIndex = Document.mapToShard documentId flexIndex.Shards.Length
+            let targetIndex = Document.MapToShard documentId flexIndex.Shards.Length
             flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) 
             |> ignore
         }

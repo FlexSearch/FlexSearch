@@ -16,6 +16,7 @@ module Main =
     open FlexSearch.Api
     open FlexSearch.Api.Message
     open FlexSearch.Core
+    open FlexSearch.Core.Services
     open FlexSearch.Utility
     open Microsoft.Owin
     open Newtonsoft.Json
@@ -118,7 +119,7 @@ module Main =
             try 
                 let indexService = container.Resolve<IIndexService>()
                 let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
-                httpServer <- new Owin.Server(indexService, httpFactory)
+                httpServer <- new OwinServer(indexService, httpFactory)
                 httpServer.Start()
             with e -> 
                 printfn "%A" e

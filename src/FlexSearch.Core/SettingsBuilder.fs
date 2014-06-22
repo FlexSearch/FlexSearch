@@ -14,6 +14,7 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
+open FlexSearch.Core.Services
 open FlexSearch.Utility
 open System
 open System.Collections.Generic
@@ -116,7 +117,7 @@ module Builder =
                 }
             
             let result = new Dictionary<string, FlexField>(StringComparer.OrdinalIgnoreCase)
-            let! fields = mapExitOnFailure (Seq.toList (fieldsDict)) getField
+            let! fields = MapExitOnFailure (Seq.toList (fieldsDict)) getField
             fields |> Seq.iter (fun x -> result.Add(x.FieldName, x))
             [| (// The below 3 fields are only added for searching here
                 Constants.IdField, FlexExactText(keyWordAnalyzer))
@@ -158,14 +159,14 @@ module Builder =
                                                 (analyzer.Value.Tokenizer.TokenizerName)
                     tokenizerFactory.Initialize(analyzer.Value.Tokenizer.Parameters, factoryCollection.ResourceLoader) 
                     |> ignore
-                    let! filters = mapExitOnFailure (Seq.toList (analyzer.Value.Filters)) getFilter
+                    let! filters = MapExitOnFailure (Seq.toList (analyzer.Value.Filters)) getFilter
                     return (analyzer.Key, 
                             
                             new CustomAnalyzer(tokenizerFactory, filters.ToArray()) :> org.apache.lucene.analysis.Analyzer)
                 }
             
             let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
-            let! analyzers = mapExitOnFailure (Seq.toList (analyzersDict)) getAnalyzer
+            let! analyzers = MapExitOnFailure (Seq.toList (analyzersDict)) getAnalyzer
             analyzers |> Seq.iter (fun x -> 
                              let (key, value) = x
                              result.Add(key, value))
@@ -196,7 +197,7 @@ module Builder =
                 new Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>(StringComparer.OrdinalIgnoreCase)
             let customScoringScripts = 
                 new Dictionary<string, IReadOnlyDictionary<string, string> * double -> double>(StringComparer.OrdinalIgnoreCase)
-            let! scripts = mapExitOnFailure (Seq.toList (scripts)) getScript
+            let! scripts = MapExitOnFailure (Seq.toList (scripts)) getScript
             scripts |> Seq.iter (fun x -> 
                            let (key, scriptType, value) = x
                            match scriptType with
@@ -217,7 +218,7 @@ module Builder =
                         return (profile.Key, (predicate, profile.Value)) }
             let parser = new Parsers.FlexParser()
             let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
-            let! searchProfiles = mapExitOnFailure (Seq.toList (profiles)) (getProfile parser)
+            let! searchProfiles = MapExitOnFailure (Seq.toList (profiles)) (getProfile parser)
             searchProfiles |> Seq.iter (fun x -> 
                                   let (key, value) = x
                                   result.Add(key, value))

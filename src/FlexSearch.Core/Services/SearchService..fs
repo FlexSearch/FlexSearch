@@ -8,7 +8,7 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core
+namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
 open FlexSearch.Api.Message

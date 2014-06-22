@@ -77,7 +77,7 @@ module Store =
             
             db <- Some(dbConnection)
         
-        member private this.get<'T when 'T : equality> (key) = 
+        member private this.Get<'T when 'T : equality> (key) = 
             let instanceType = typeof<'T>.FullName
             if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
             else 
@@ -91,7 +91,7 @@ module Store =
                 else Choice2Of2(MessageConstants.KEY_NOT_FOUND)
         
         interface IPersistanceStore with
-            member this.Get<'T when 'T : equality>(key : string) = this.get<'T> (key)
+            member this.Get<'T when 'T : equality>(key : string) = this.Get<'T> (key)
             
             member this.GetAll<'T>() = 
                 let sql = sprintf "SELECT * FROM keyvalue WHERE type= '%s'" typeof<'T>.FullName

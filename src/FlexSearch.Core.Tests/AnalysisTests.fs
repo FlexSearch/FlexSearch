@@ -152,6 +152,6 @@ module ``Analysis tests`` =
         let exp = FilterTestCases.[caseNumber]
         let filters = [| exp.Filter |]
         filters.[0].Initialize(exp.Parameters, resourceLoaderMock)
-        let analyzer = new CustomAnalyzer(new Tokenizers.StandardTokenizerFactory(), filters)
+        let analyzer = new CustomAnalyzer(new StandardTokenizerFactory(), filters)
         let output = SearchDsl.ParseTextUsingAnalyzer(analyzer, "test", exp.Input)
         Assert.Equal<List<string>>(exp.Output.ToList(), output)

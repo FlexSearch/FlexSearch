@@ -25,56 +25,56 @@ open System.Linq
 // ----------------------------------------------------------------------------
 module Validator = 
     // Validation helper wrapper function
-    let validate propName (v : 'a) = (propName, v)
+    let Validate propName (v : 'a) = (propName, v)
     
     // ----------------------------------------------------------------------------
     // General validation helpers
     // ----------------------------------------------------------------------------
-    let private notNullAndEmpty (propName : string, value : string) = 
+    let private NotNullAndEmpty (propName : string, value : string) = 
         if System.String.IsNullOrWhiteSpace(value) <> true then Choice1Of2()
         else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.PROPERTY_CANNOT_BE_EMPTY, propName))
     
-    let private regexMatch (pattern : string) (propName : string, value : string) = 
+    let private RegexMatch (pattern : string) (propName : string, value : string) = 
         let m = System.Text.RegularExpressions.Regex.Match(value, pattern)
         if m.Success then Choice1Of2()
         else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.REGEX_NOT_MATCHED, propName, pattern))
     
-    let private notIn (values : string []) (propName : string, value : string) = 
+    let private NotIn (values : string []) (propName : string, value : string) = 
         if values.Contains(value) <> true then Choice1Of2()
         else 
             Choice2Of2
                 (OperationMessage.WithPropertyName(MessageConstants.VALUE_NOT_IN, propName, (String.Join(",", values))))
     
-    let private onlyIn (values : string []) (propName : string, value : string) = 
+    let private OnlyIn (values : string []) (propName : string, value : string) = 
         if values.Contains(value) = true then Choice1Of2()
         else 
             Choice2Of2
                 (OperationMessage.WithPropertyName(MessageConstants.VALUE_ONLY_IN, propName, (String.Join(",", values))))
     
-    let private greaterThanOrEqualTo (range : int) (propName : string, value : int) = 
+    let private GreaterThanOrEqualTo (range : int) (propName : string, value : int) = 
         if value >= range then Choice1Of2()
         else 
             Choice2Of2
                 (OperationMessage.WithPropertyName(MessageConstants.GREATER_THAN_EQUAL_TO, propName, range.ToString()))
     
-    let private greaterThan (range : int) (propName : string, value : int) = 
+    let private GreaterThan (range : int) (propName : string, value : int) = 
         if value > range then Choice1Of2(propName, value)
         else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.GREATER_THAN, propName, range.ToString()))
     
-    let private lessThanOrEqualTo (range : int) (propName : string, value : int) = 
+    let private LessThanOrEqualTo (range : int) (propName : string, value : int) = 
         if value <= range then Choice1Of2()
         else 
             Choice2Of2
                 (OperationMessage.WithPropertyName(MessageConstants.LESS_THAN_EQUAL_TO, propName, range.ToString()))
     
-    let private lessThan (range : int) (propName : string, value : int) = 
+    let private LessThan (range : int) (propName : string, value : int) = 
         if value < range then Choice1Of2()
         else Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.LESS_THAN, propName, range.ToString()))
     
     // ----------------------------------------------------------------------------
     // FlexSearch related validation helpers
     // ----------------------------------------------------------------------------
-    let private mustGenerateFilterInstance (factoryCollection : IFactoryCollection) 
+    let private MustGenerateFilterInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : TokenFilter) = 
         match factoryCollection.FilterFactory.GetModuleByName(value.FilterName) with
         | Choice1Of2(instance) -> 
@@ -87,7 +87,7 @@ module Validator =
                          (MessageConstants.FILTER_CANNOT_BE_INITIALIZED, propName, e.Message))
         | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.FILTER_NOT_FOUND, propName))
     
-    let private mustGenerateTokenizerInstance (factoryCollection : IFactoryCollection) 
+    let private MustGenerateTokenizerInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : Tokenizer) = 
         match factoryCollection.TokenizerFactory.GetModuleByName(value.TokenizerName) with
         | Choice1Of2(instance) -> 
@@ -110,10 +110,10 @@ module Validator =
         /// <param name="propertyName"></param>
         member this.ValidatePropertyValue(propertyName : string) = 
             maybe { 
-                do! (propertyName, this) |> notNullAndEmpty
-                do! (propertyName, this) |> regexMatch "^[a-z0-9_]*$"
+                do! (propertyName, this) |> NotNullAndEmpty
+                do! (propertyName, this) |> RegexMatch "^[a-z0-9_]*$"
                 do! (propertyName, this) 
-                    |> notIn [| Constants.IdField; Constants.LastModifiedField; Constants.TypeField |]
+                    |> NotIn [| Constants.IdField; Constants.LastModifiedField; Constants.TypeField |]
             }
     
     type Api.TokenFilter with
@@ -124,7 +124,7 @@ module Validator =
         member this.Validate(factoryCollection : IFactoryCollection) = 
             maybe { 
                 do! this.FilterName.ValidatePropertyValue("FilterName")
-                do! ("FilterName", this) |> mustGenerateFilterInstance factoryCollection
+                do! ("FilterName", this) |> MustGenerateFilterInstance factoryCollection
             }
     
     type Api.Tokenizer with
@@ -135,7 +135,7 @@ module Validator =
         member this.Validate(factoryCollection : IFactoryCollection) = 
             maybe { 
                 do! this.TokenizerName.ValidatePropertyValue("FilterName")
-                do! ("FilterName", this) |> mustGenerateTokenizerInstance factoryCollection
+                do! ("FilterName", this) |> MustGenerateTokenizerInstance factoryCollection
             }
     
     type Api.AnalyzerProperties with
@@ -163,9 +163,9 @@ module Validator =
         /// </summary>
         member this.Validate() = 
             maybe { 
-                do! ("CommitTimeSec", this.CommitTimeSec) |> greaterThanOrEqualTo 60
-                do! ("RefreshTimeMilliSec", this.RefreshTimeMilliSec) |> greaterThanOrEqualTo 25
-                do! ("RamBufferSizeMb", this.RamBufferSizeMb) |> greaterThanOrEqualTo 100
+                do! ("CommitTimeSec", this.CommitTimeSec) |> GreaterThanOrEqualTo 60
+                do! ("RefreshTimeMilliSec", this.RefreshTimeMilliSec) |> GreaterThanOrEqualTo 25
+                do! ("RamBufferSizeMb", this.RamBufferSizeMb) |> GreaterThanOrEqualTo 100
             }
     
     type Api.ScriptProperties with
@@ -174,7 +174,7 @@ module Validator =
         /// </summary>
         /// <param name="factoryCollection"></param>
         member this.Validate(factoryCollection : IFactoryCollection) = 
-            maybe { do! validate "ScriptSource" this.Source |> notNullAndEmpty }
+            maybe { do! Validate "ScriptSource" this.Source |> NotNullAndEmpty }
     
     type Api.FieldProperties with
         /// <summary>
@@ -219,7 +219,7 @@ module Validator =
         /// <param name="parser"></param>
         member this.Validate(index: Index, parser: FlexParser) = 
             maybe {
-                do! ("QueryString", this.QueryString) |> notNullAndEmpty
+                do! ("QueryString", this.QueryString) |> NotNullAndEmpty
                 let! query = parser.Parse(this.QueryString)
                 return! Choice1Of2()
             }
@@ -233,17 +233,17 @@ module Validator =
             maybe { 
                 do! this.IndexName.ValidatePropertyValue("IndexName")
                 do! this.IndexConfiguration.Validate()
-                do! iterExitOnFailure (Seq.toList (this.Analyzers)) (fun x -> 
+                do! IterExitOnFailure (Seq.toList (this.Analyzers)) (fun x -> 
                         maybe { 
                             do! x.Key.ValidatePropertyValue("AnalyzerName")
                             do! x.Value.Validate(x.Key, factoryCollection)
                         })
-                do! iterExitOnFailure (Seq.toList (this.Scripts)) (fun x -> 
+                do! IterExitOnFailure (Seq.toList (this.Scripts)) (fun x -> 
                         maybe { 
                             do! x.Key.ValidatePropertyValue("ScriptName")
                             do! x.Value.Validate(factoryCollection)
                         })
-                do! iterExitOnFailure (Seq.toList (this.Fields)) (fun x -> 
+                do! IterExitOnFailure (Seq.toList (this.Fields)) (fun x -> 
                         maybe { 
                             do! x.Key.ValidatePropertyValue("FieldName")
                             do! x.Value.Validate(factoryCollection, this.Analyzers, this.Scripts, x.Key)

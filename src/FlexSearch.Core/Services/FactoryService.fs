@@ -8,7 +8,7 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core
+namespace FlexSearch.Core.Services
 
 open Autofac
 open Autofac.Features.Metadata

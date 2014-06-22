@@ -46,7 +46,7 @@ module Document =
     /// </summary>
     /// <param name="id">Id of the document</param>
     /// <param name="shardCount">Total available shards</param>
-    let mapToShard (id : string) shardCount = 
+    let MapToShard (id : string) shardCount = 
         if (shardCount = 1) then 0
         else 
             let mutable total = 0
@@ -63,7 +63,7 @@ module IO =
     // ----------------------------------------------------------------------------     
     // Creates lucene index writer configuration from flex index setting 
     // ---------------------------------------------------------------------------- 
-    let private getIndexWriterConfig (flexIndexSetting : FlexIndexSetting) = 
+    let private GetIndexWriterConfig (flexIndexSetting : FlexIndexSetting) = 
         try 
             let iwc = new IndexWriterConfig(Constants.LuceneVersion, flexIndexSetting.IndexAnalyzer)
             iwc.setOpenMode (org.apache.lucene.index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
@@ -77,7 +77,7 @@ module IO =
     // ----------------------------------------------------------------------------                  
     // Create a lucene file-system lock over a directory    
     // ---------------------------------------------------------------------------- 
-    let private getIndexDirectory (directoryPath : string) (directoryType : DirectoryType) = 
+    let private GetIndexDirectory (directoryPath : string) (directoryType : DirectoryType) = 
         // Note: Might move to SingleInstanceLockFactory to provide other services to open
         // the index in read-only mode
         let lockFactory = new NativeFSLockFactory()
@@ -103,8 +103,8 @@ module IO =
     // ----------------------------------------------------------------------------                    
     let GetIndexWriter(indexSetting : FlexIndexSetting, directoryPath : string) = 
         maybe { 
-            let! iwc = getIndexWriterConfig indexSetting
-            let! indexDirectory = getIndexDirectory directoryPath indexSetting.IndexConfiguration.DirectoryType
+            let! iwc = GetIndexWriterConfig indexSetting
+            let! indexDirectory = GetIndexDirectory directoryPath indexSetting.IndexConfiguration.DirectoryType
             let indexWriter = new IndexWriter(indexDirectory, iwc)
             let trackingIndexWriter = new TrackingIndexWriter(indexWriter)
             return! Choice1Of2(indexWriter, trackingIndexWriter)

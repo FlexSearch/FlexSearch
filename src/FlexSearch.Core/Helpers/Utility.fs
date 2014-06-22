@@ -57,7 +57,7 @@ module MonadHelpers =
     /// </summary>
     /// <param name="list"></param>
     /// <param name="f"></param>
-    let inline iterExitOnFailure (list : 'T list) f = 
+    let inline IterExitOnFailure (list : 'T list) f = 
         let rec loop (list : 'T list) f = 
             match list with
             | head :: tail -> 
@@ -74,7 +74,7 @@ module MonadHelpers =
     /// </summary>
     /// <param name="input"></param>
     /// <param name="f"></param>
-    let inline mapExitOnFailure (input : 'T list) (f : 'T -> Choice<'U, OperationMessage>) = 
+    let inline MapExitOnFailure (input : 'T list) (f : 'T -> Choice<'U, OperationMessage>) = 
         let res = new ResizeArray<'U>()
         
         let rec loop (input : 'T list) f = 
@@ -90,7 +90,7 @@ module MonadHelpers =
         | Choice1Of2(_) -> Choice1Of2(res)
         | Choice2Of2(e) -> Choice2Of2(e)
     
-    let inline getValue (dictionary : Dictionary<string, 'T>) key (error : OperationMessage) = 
+    let inline GetValue (dictionary : Dictionary<string, 'T>) key (error : OperationMessage) = 
         match dictionary.TryGetValue(key) with
         | (true, x) -> Choice1Of2(x)
         | _ -> Choice2Of2(OperationMessage.WithPropertyName(error, key))
@@ -210,4 +210,5 @@ module Helpers =
         | true -> dict.[key] <- value
         | _ -> dict.Add(key, value)
     
+    [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore

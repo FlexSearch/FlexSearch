@@ -139,6 +139,6 @@ module Socket =
                         resultExpected := false
                         if success then true
                         else false)
-                if result then Some(HttpHelpers.protoDeserialize<'T> (Array.sub res 0 length))
+                if result then Some(HttpHelpers.ProtoDeserialize<'T> (Array.sub res 0 length))
                 else None
             else None

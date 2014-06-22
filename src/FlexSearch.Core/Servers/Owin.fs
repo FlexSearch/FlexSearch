@@ -28,89 +28,86 @@ open System.Linq
 open System.Net
 open System.Threading
 open System.Threading.Tasks
-open org.apache.lucene.analysis
 
-[<AutoOpen>]
-module Owin = 
+/// <summary>
+/// Thrift server
+/// </summary>
+[<Name("Http")>]
+[<Sealed>]
+type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<HttpModuleBase>, ?port0 : int) = 
+    let port = defaultArg port0 9800
+    let httpModule = httpFactory.GetAllModules()
+        
     /// <summary>
-    /// Thrift server
+    /// Default OWIN method to process request
     /// </summary>
-    [<Name("Http")>]
-    [<Sealed>]
-    type Server(indexService : IIndexService, httpFactory : IFlexFactory<HttpModuleBase>, ?port0 : int) = 
-        let port = defaultArg port0 9800
-        let httpModule = httpFactory.GetAllModules()
-        
-        /// <summary>
-        /// Default OWIN method to process request
-        /// </summary>
-        /// <param name="owin">OWIN Context</param>
-        let exec (owin : IOwinContext) = 
-            async { 
-                let getModule moduleName indexName (owin : IOwinContext) = 
-                    match httpModule.TryGetValue(moduleName) with
-                    | (true, x) -> 
-                        match owin.Request.Method.ToUpperInvariant() with
-                        | "GET" -> x.Get(indexName, owin)
-                        | "POST" -> x.Post(indexName, owin)
-                        | "PUT" -> x.Put(indexName, owin)
-                        | "DELETE" -> x.Delete(indexName, owin)
-                        | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+    /// <param name="owin">OWIN Context</param>
+    let exec (owin : IOwinContext) = 
+        async { 
+            let getModule moduleName indexName (owin : IOwinContext) = 
+                match httpModule.TryGetValue(moduleName) with
+                | (true, x) -> 
+                    match owin.Request.Method.ToUpperInvariant() with
+                    | "GET" -> x.Get(indexName, owin)
+                    | "POST" -> x.Post(indexName, owin)
+                    | "PUT" -> x.Put(indexName, owin)
+                    | "DELETE" -> x.Delete(indexName, owin)
                     | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
                 
-                let getIndexName (owin : IOwinContext) = 
-                    if owin.Request.Uri.Segments.[1].EndsWith("/") then 
-                        owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
-                    else owin.Request.Uri.Segments.[1]
+            let getIndexName (owin : IOwinContext) = 
+                if owin.Request.Uri.Segments.[1].EndsWith("/") then 
+                    owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
+                else owin.Request.Uri.Segments.[1]
                 
-                try 
-                    match owin.Request.Uri.Segments.Length with
-                    // Server root
-                    | 1 -> getModule "/" "/" owin
-                    // Root index request
-                    | 2 -> 
-                        let indexName = getIndexName owin
-                        match indexService.IndexExists(indexName) with
-                        | true -> getModule "index" indexName owin
-                        | false -> 
-                            // This can be an index creation request
-                            if owin.Request.Method = "POST" then getModule "index" indexName owin
-                            else owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
-                    // Index module request
-                    | x when x > 2 && x < 5 -> 
-                        let indexName = getIndexName owin
-                        match indexService.IndexExists(indexName) with
-                        | true -> 
-                            let moduleName = 
-                                if owin.Request.Uri.Segments.[2].EndsWith("/") then 
-                                    owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
-                                else owin.Request.Uri.Segments.[2]
-                            getModule moduleName indexName owin
-                        | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
-                    | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
-                with ex -> ()
-            }
+            try 
+                match owin.Request.Uri.Segments.Length with
+                // Server root
+                | 1 -> getModule "/" "/" owin
+                // Root index request
+                | 2 -> 
+                    let indexName = getIndexName owin
+                    match indexService.IndexExists(indexName) with
+                    | true -> getModule "index" indexName owin
+                    | false -> 
+                        // This can be an index creation request
+                        if owin.Request.Method = "POST" then getModule "index" indexName owin
+                        else owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
+                // Index module request
+                | x when x > 2 && x < 5 -> 
+                    let indexName = getIndexName owin
+                    match indexService.IndexExists(indexName) with
+                    | true -> 
+                        let moduleName = 
+                            if owin.Request.Uri.Segments.[2].EndsWith("/") then 
+                                owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
+                            else owin.Request.Uri.Segments.[2]
+                        getModule moduleName indexName owin
+                    | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
+                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+            with ex -> ()
+        }
         
-        /// <summary>
-        /// Default OWIN handler to transform C# function to F#
-        /// </summary>
-        let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
+    /// <summary>
+    /// Default OWIN handler to transform C# function to F#
+    /// </summary>
+    let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
         
-        let mutable server = Unchecked.defaultof<IDisposable>
-        let mutable thread = Unchecked.defaultof<_>
-        let configuration (app : IAppBuilder) = app.Run(handler)
+    let mutable server = Unchecked.defaultof<IDisposable>
+    let mutable thread = Unchecked.defaultof<_>
+    let configuration (app : IAppBuilder) = app.Run(handler)
         
-        let startServer() = 
-            let startOptions = new StartOptions(sprintf "http://*:%i" port)
-            server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, configuration)
-            Console.ReadKey() |> ignore
+    let startServer() = 
+        let startOptions = new StartOptions(sprintf "http://*:%i" port)
+        server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, configuration)
+        Console.ReadKey() |> ignore
         
-        interface IServer with
+    interface IServer with
             
-            member this.Start() = 
-                try 
-                    thread <- Task.Factory.StartNew(startServer)
-                with e -> ()
-                ()
+        member this.Start() = 
+            try 
+                thread <- Task.Factory.StartNew(startServer)
+            with e -> ()
+            ()
             
-            member this.Stop() = server.Dispose()
+        member this.Stop() = server.Dispose()

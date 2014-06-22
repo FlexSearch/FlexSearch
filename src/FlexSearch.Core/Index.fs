@@ -38,16 +38,22 @@ open org.apache.lucene.store
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Index = 
-    // Index auto commit changes job
-    let private commitJob (flexIndex : FlexIndex) = 
+    /// <summary>
+    /// Index auto commit changes job 
+    /// </summary>
+    /// <param name="flexIndex"></param>
+    let private CommitJob(flexIndex : FlexIndex) = 
         // Looping over array by index number is usually the fastest
         // iteration method
         for i in 0..flexIndex.Shards.Length - 1 do
             // Lucene 4.4.0 feature to check for uncommitted changes
             if flexIndex.Shards.[i].IndexWriter.hasUncommittedChanges() then flexIndex.Shards.[i].IndexWriter.commit()
     
-    // Index auto commit changes job
-    let private refreshIndexJob (flexIndex) = 
+    /// <summary>
+    /// Index auto commit changes job
+    /// </summary>
+    /// <param name="flexIndex"></param>
+    let private RefreshIndexJob(flexIndex) = 
         // Looping over array by index number is usually the fastest
         // iteration method
         for i in 0..flexIndex.Shards.Length - 1 do
@@ -117,18 +123,20 @@ module Index =
                   Token = new System.Threading.CancellationTokenSource() }
             // Add the scheduler for the index
             // Commit Scheduler
-            Async.Start(ScheduleIndexJob (flexIndexSetting.IndexConfiguration.CommitTimeSec * 1000) commitJob flexIndex)
+            Async.Start(ScheduleIndexJob (flexIndexSetting.IndexConfiguration.CommitTimeSec * 1000) CommitJob flexIndex)
             // NRT Scheduler
             Async.Start
-                (ScheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliSec refreshIndexJob flexIndex)
+                (ScheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliSec RefreshIndexJob flexIndex)
             // Add the index to the registration
             state.IndexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore
             state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
         }
     
-    // ----------------------------------------------------------------------------
-    // Close an open index
-    // ----------------------------------------------------------------------------
+    /// <summary>
+    /// Close an open index
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="flexIndex"></param>
     let internal CloseIndex(state : IndicesState, flexIndex : FlexIndex) = 
         try 
             state.IndexRegisteration.TryRemove(flexIndex.IndexSetting.IndexName) |> ignore
@@ -144,9 +152,11 @@ module Index =
         with e -> () //logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
         state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Offline
     
-    // ----------------------------------------------------------------------------
-    // Utility method to return index registration information
-    // ----------------------------------------------------------------------------
+    /// <summary>
+    /// Utility method to return index registration information
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="indexName"></param>
     let internal GetIndexRegisteration(state : IndicesState, indexName) = 
         match state.IndexStatus.TryGetValue(indexName) with
         | (true, status) -> 
@@ -160,12 +170,14 @@ module Index =
             | _ -> Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
         | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
     
-    // ----------------------------------------------------------------------------               
-    // Function to check if the requested index is available. If yes then tries to 
-    // retrieve the document template associated with the index from thread local store.
-    // If there is no template document for the requested index then goes ahead
-    // and creates one. 
-    // ----------------------------------------------------------------------------   
+    /// <summary>
+    /// Function to check if the requested index is available. If yes then tries to 
+    /// retrieve the document template associated with the index from thread local store.
+    /// If there is no template document for the requested index then goes ahead
+    /// and creates one. 
+    /// </summary>
+    /// <param name="state"></param>
+    /// <param name="indexName"></param>
     let internal IndexExists(state : IndicesState, indexName) = 
         match state.IndexRegisteration.TryGetValue(indexName) with
         | (true, flexIndex) -> 
@@ -200,9 +212,14 @@ module Index =
                 Choice1Of2(flexIndex, documentTemplate)
         | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
     
-    // ----------------------------------------------------------------------------     
-    // Updates the current thread local index document with the incoming data
-    // ----------------------------------------------------------------------------     
+    /// <summary>
+    /// Updates the current thread local index document with the incoming data
+    /// </summary>
+    /// <param name="flexIndex"></param>
+    /// <param name="documentTemplate"></param>
+    /// <param name="documentId"></param>
+    /// <param name="version"></param>
+    /// <param name="fields"></param>
     let internal UpdateDocument(flexIndex : FlexIndex, documentTemplate : ThreadLocalDocument, documentId : string, 
                                 version : int, fields : Dictionary<string, string>) = 
         documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(documentId)
@@ -228,5 +245,5 @@ module Index =
                     | _ -> FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
         let targetIndex = 
             if (flexIndex.Shards.Length = 1) then 0
-            else Document.mapToShard documentId flexIndex.Shards.Length
+            else Document.MapToShard documentId flexIndex.Shards.Length
         (targetIndex, documentTemplate)

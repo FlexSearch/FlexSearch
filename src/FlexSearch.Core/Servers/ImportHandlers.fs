@@ -14,7 +14,6 @@ open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
-open FlexSearch.Core.State
 open FlexSearch.Utility
 open Microsoft.Owin
 open Newtonsoft.Json
@@ -53,8 +52,8 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
     
     let processRequest (indexName, owin : IOwinContext) = 
         maybe { 
-            let! importRequest = getRequestBody<ImportRequest> (owin.Request)
-            match checkIdPresent (owin) with
+            let! importRequest = GetRequestBody<ImportRequest> (owin.Request)
+            match CheckIdPresent (owin) with
             | Some(id) -> 
                 match importHandlers.TryGetValue(id) with
                 | (true, x) -> 
@@ -81,7 +80,7 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
             | None -> return! Choice2Of2(MessageConstants.IMPORTER_NOT_FOUND)
         }
     
-    override this.Post(indexName, owin) = owin |> responseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
+    override this.Post(indexName, owin) = owin |> ResponseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
 [<Name("sql")>]
 [<Sealed>]

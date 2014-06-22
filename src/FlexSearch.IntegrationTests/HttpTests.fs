@@ -192,7 +192,7 @@ module ``Webservice Tests`` =
                     (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), 
                      container.Resolve<IIndexService>())
                 let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
-                let httpServer = new Owin.Server(indexService, httpFactory) :> IServer
+                let httpServer = new OwinServer(indexService, httpFactory) :> IServer
                 httpServer.Start()
                 serverRunning <- true
     

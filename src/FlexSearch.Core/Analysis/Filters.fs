@@ -36,81 +36,79 @@ open org.apache.lucene.util
 // Contains all predefined filters. The order of this file does not matter as
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------                        
-[<AutoOpen>]
-module Filters = 
-    /// <summary>
-    /// AsciiFolding Filter
-    /// </summary>
-    [<Name("AsciiFoldingFilter")>]
-    [<Sealed>]
-    type AsciiFoldingFilterFactory() = 
-        interface IFlexFilterFactory with
-            member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = ()
-            member this.Create(ts : TokenStream) = new ASCIIFoldingFilter(ts) :> TokenStream
-    
-    /// <summary>
-    /// Standard Filter
-    /// </summary>
-    [<Name("StandardFilter")>]
-    [<Sealed>]
-    type StandardFilterFactory() = 
-        interface IFlexFilterFactory with
-            member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = ()
-            member this.Create(ts : TokenStream) = new StandardFilter(Constants.LuceneVersion, ts) :> TokenStream
-    
-    /// <summary>
-    /// BeiderMorse Filter
-    /// </summary>
-    [<Name("BeiderMorseFilter")>]
-    [<Sealed>]
-    type BeiderMorseFilterFactory() = 
-        let mutable phoneticEngine = null
-        interface IFlexFilterFactory with
+/// <summary>
+/// AsciiFolding Filter
+/// </summary>
+[<Name("AsciiFoldingFilter")>]
+[<Sealed>]
+type AsciiFoldingFilterFactory() = 
+    interface IFlexFilterFactory with
+        member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = ()
+        member this.Create(ts : TokenStream) = new ASCIIFoldingFilter(ts) :> TokenStream
+
+/// <summary>
+/// Standard Filter
+/// </summary>
+[<Name("StandardFilter")>]
+[<Sealed>]
+type StandardFilterFactory() = 
+    interface IFlexFilterFactory with
+        member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = ()
+        member this.Create(ts : TokenStream) = new StandardFilter(Constants.LuceneVersion, ts) :> TokenStream
+
+/// <summary>
+/// BeiderMorse Filter
+/// </summary>
+[<Name("BeiderMorseFilter")>]
+[<Sealed>]
+type BeiderMorseFilterFactory() = 
+    let mutable phoneticEngine = null
+    interface IFlexFilterFactory with
+        
+        member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = 
+            let nametype = 
+                match parameters.TryGetValue("nametype") with
+                | (true, a) -> 
+                    match a with
+                    | InvariantEqual "GENERIC" -> NameType.GENERIC
+                    | InvariantEqual "ASHKENAZI" -> NameType.ASHKENAZI
+                    | InvariantEqual "SEPHARDIC" -> NameType.SEPHARDIC
+                    | _ -> failwithf "message=Specified nametype is invalid."
+                | _ -> NameType.GENERIC
             
-            member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = 
-                let nametype = 
-                    match parameters.TryGetValue("nametype") with
-                    | (true, a) -> 
-                        match a with
-                        | InvariantEqual "GENERIC" -> NameType.GENERIC
-                        | InvariantEqual "ASHKENAZI" -> NameType.ASHKENAZI
-                        | InvariantEqual "SEPHARDIC" -> NameType.SEPHARDIC
-                        | _ -> failwithf "message=Specified nametype is invalid."
-                    | _ -> NameType.GENERIC
-                
-                let ruletype = 
-                    match parameters.TryGetValue("ruletype") with
-                    | (true, a) -> 
-                        match a with
-                        | InvariantEqual "APPROX" -> RuleType.APPROX
-                        | InvariantEqual "EXACT" -> RuleType.EXACT
-                        | _ -> failwithf "message=Specified ruletype is invalid."
-                    | _ -> RuleType.EXACT
-                
-                phoneticEngine <- new PhoneticEngine(nametype, ruletype, true)
+            let ruletype = 
+                match parameters.TryGetValue("ruletype") with
+                | (true, a) -> 
+                    match a with
+                    | InvariantEqual "APPROX" -> RuleType.APPROX
+                    | InvariantEqual "EXACT" -> RuleType.EXACT
+                    | _ -> failwithf "message=Specified ruletype is invalid."
+                | _ -> RuleType.EXACT
             
-            member this.Create(ts : TokenStream) = new BeiderMorseFilter(ts, phoneticEngine) :> TokenStream
-    
-    /// <summary>
-    /// Capitalization Filter
-    /// </summary>
-    [<Name("CapitalizationFilter")>]
-    [<Sealed>]
-    type CapitalizationFilterFactory() = 
-        interface IFlexFilterFactory with
-            member this.Initialize(parameters, resourceLoader) = ()
-            member this.Create(ts : TokenStream) = new CapitalizationFilter(ts) :> TokenStream
-    
-    /// <summary>
-    /// Caverphone2 Filter
-    /// </summary>
-    [<Name("Caverphone2Filter")>]
-    [<Sealed>]
-    type Caverphone2FilterFactory() = 
-        let caverphone = new Caverphone2()
-        interface IFlexFilterFactory with
-            member this.Initialize(parameters, resourceLoader) = ()
-            member this.Create(ts : TokenStream) = new PhoneticFilter(ts, caverphone, false) :> TokenStream
+            phoneticEngine <- new PhoneticEngine(nametype, ruletype, true)
+        
+        member this.Create(ts : TokenStream) = new BeiderMorseFilter(ts, phoneticEngine) :> TokenStream
+
+/// <summary>
+/// Capitalization Filter
+/// </summary>
+[<Name("CapitalizationFilter")>]
+[<Sealed>]
+type CapitalizationFilterFactory() = 
+    interface IFlexFilterFactory with
+        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Create(ts : TokenStream) = new CapitalizationFilter(ts) :> TokenStream
+
+/// <summary>
+/// Caverphone2 Filter
+/// </summary>
+[<Name("Caverphone2Filter")>]
+[<Sealed>]
+type Caverphone2FilterFactory() = 
+    let caverphone = new Caverphone2()
+    interface IFlexFilterFactory with
+        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Create(ts : TokenStream) = new PhoneticFilter(ts, caverphone, false) :> TokenStream
 
 /// <summary>
 /// MetaphoneFilter Filter

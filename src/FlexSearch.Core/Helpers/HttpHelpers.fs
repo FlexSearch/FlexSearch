@@ -34,26 +34,26 @@ module HttpHelpers =
     jsonSettings.Converters.Add(new StringEnumConverter())
     
     /// Helper method to serialize cluster messages
-    let protoSerialize (message : 'a) = 
+    let ProtoSerialize (message : 'a) = 
         use stream = new MemoryStream()
         Serializer.Serialize(stream, message)
         stream.ToArray()
     
     /// Helper method to deserialize cluster messages
-    let protoDeserialize<'T> (message : byte []) = 
+    let ProtoDeserialize<'T> (message : byte []) = 
         use stream = new MemoryStream(message)
         Serializer.Deserialize<'T>(stream)
     
     /// Get request format from the request object
     /// Defaults to json
-    let private getRequestFormat (request : IOwinRequest)  =
+    let private GetRequestFormat (request : IOwinRequest)  =
         if String.IsNullOrWhiteSpace(request.ContentType) then 
             "application/json"
         else request.ContentType
 
     /// Get response format from the owin context
     /// Defaults to json
-    let private getResponseFormat (owin : IOwinContext) = 
+    let private GetResponseFormat (owin : IOwinContext) = 
         if owin.Request.Accept = null then 
             "application/json"
         else if owin.Request.Accept = "*/*" then
@@ -63,7 +63,7 @@ module HttpHelpers =
         else owin.Request.Accept
 
     /// Write http response
-    let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
+    let WriteResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
         let matchType format res = 
             match format with
             | "text/json" | "application/json" | "json" -> 
@@ -77,19 +77,19 @@ module HttpHelpers =
                     Some(Encoding.UTF8.GetBytes(result))
             | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 owin.Response.ContentType <- "application/x-protobuf"
-                Some(protoSerialize (res))
+                Some(ProtoSerialize (res))
             | _ -> None
         owin.Response.StatusCode <- int statusCode
         if response <> Unchecked.defaultof<_> then 
-            let format = getResponseFormat owin
+            let format = GetResponseFormat owin
             let result = matchType format response   
             match result with
             | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
             | Some(x) -> await (owin.Response.WriteAsync(x))
     
     /// Write http response
-    let getRequestBody<'T when 'T : null> (request : IOwinRequest) = 
-        let contentType = getRequestFormat request
+    let GetRequestBody<'T when 'T : null> (request : IOwinRequest) = 
+        let contentType = GetRequestFormat request
         if request.Body.CanRead then 
             match contentType with
             | "text/json" | "application/json" | "application/json; charset=utf-8" | "application/json;charset=utf-8" | "json" -> 
@@ -116,15 +116,15 @@ module HttpHelpers =
             | _ -> Choice2Of2(MessageConstants.HTTP_UNSUPPORTED_CONTENT_TYPE)
         else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
     
-    let OK (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.OK value owin
-    let BAD_REQUEST (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.BadRequest value owin
+    let OK (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.OK value owin
+    let BAD_REQUEST (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.BadRequest value owin
     
-    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
+    let GetValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
         | value -> value
     
-    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
+    let GetIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
         | value -> 
@@ -132,7 +132,7 @@ module HttpHelpers =
             | true, v' -> v'
             | _ -> defaultValue
     
-    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
+    let GetBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
         | value -> 
@@ -140,11 +140,11 @@ module HttpHelpers =
             | true, v' -> v'
             | _ -> defaultValue
     
-    let inline checkIdPresent (owin : IOwinContext) = 
+    let inline CheckIdPresent (owin : IOwinContext) = 
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
         else None
     
-    let responseProcessor (f : Choice<'T, 'U>) success failure (owin : IOwinContext) = 
+    let ResponseProcessor (f : Choice<'T, 'U>) success failure (owin : IOwinContext) = 
         match f with
         | Choice1Of2(r) -> success r owin
         | Choice2Of2(r) -> failure r owin

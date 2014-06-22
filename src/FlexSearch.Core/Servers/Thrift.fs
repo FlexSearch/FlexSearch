@@ -13,7 +13,6 @@ namespace FlexSearch.Core.Server
 open FlexSearch
 open FlexSearch.Api
 open FlexSearch.Core
-open FlexSearch.Core.State
 open Newtonsoft.Json
 open System
 open System.Collections.Concurrent

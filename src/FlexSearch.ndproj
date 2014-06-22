@@ -146,12 +146,13 @@ select new { m, m.NbParameters }
 warnif count > 0 from m in JustMyCode.Methods where                                 // Code Metrics' definitions
   (m.NbLinesOfCode > 30 ||           // http://www.ndepend.com/Metrics.aspx#NbLinesOfCode
   // We've commented # IL Instructions, because with LINQ syntax, a few lines of code can compile to hundreds of IL instructions.
-  // m.NbILInstructions > 200 ||       // http://www.ndepend.com/Metrics.aspx#NbILInstructions
+  //m.NbILInstructions > 200 ||       // http://www.ndepend.com/Metrics.aspx#NbILInstructions
   m.CyclomaticComplexity > 20 ||    // http://www.ndepend.com/Metrics.aspx#CC
   m.ILCyclomaticComplexity > 50 ||  // http://www.ndepend.com/Metrics.aspx#ILCC
   m.ILNestingDepth > 5 ||           // http://www.ndepend.com/Metrics.aspx#ILNestingDepth
   m.NbParameters > 5 ||             // http://www.ndepend.com/Metrics.aspx#NbParameters
-  m.NbVariables > 8 ||              // http://www.ndepend.com/Metrics.aspx#NbVariables
+// F# generated a number of intermediate variables  
+//m.NbVariables > 8 ||              // http://www.ndepend.com/Metrics.aspx#NbVariables
   m.NbOverloads > 6                 // http://www.ndepend.com/Metrics.aspx#NbOverloads
   )
 select new { m, m.FullName, m.NbLinesOfCode, m.NbILInstructions, m.CyclomaticComplexity, 
@@ -218,7 +219,7 @@ select new { m, m.NbParameters }
 // and the method System.Diagnostics.Process.Start(ProcessStartInfo))
 // See the definition of the NbParameters metric here 
 // http://www.ndepend.com/Metrics.aspx#NbParameters]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods with too many local variables</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Methods with too many local variables</Name>
 warnif count > 0 from m in JustMyCode.Methods where 
   m.NbVariables > 15
   && !m.Name.Contains("@")  
@@ -517,6 +518,229 @@ select new { t,
              oldCount = oldNbInstanceFields.Count() ,
              newCount = newNbInstanceFields.Count() ,
              newInstanceFields }]]></Query>
+      <Group Name="Design" Active="True" ShownInReport="False">
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid custom delegates</Name>
+
+// Prefer using one of the standard generic delegate type in
+// Predicate<T> Func<T0,T1,..,TResult> Action<T0,T1,..> 
+// instead of creating your own delegate type.
+// Not only the code using these custom delegates will become clearer,
+// but you'll be relieved from the maintenance of these delegate types.
+//
+// Notice that delegate that are consumed by DllImport extern methods
+// must not be converted, else this could provoke marshalling issues.
+
+warnif count > 0 
+from t in Application.Types where t.IsDelegate
+
+let invokeMethod = (from m in t.Methods where m.SimpleName == "Invoke" select m).Single()
+let signature1 = invokeMethod.Name.Substring(invokeMethod.SimpleName.Length, invokeMethod.Name.Length - invokeMethod.SimpleName.Length)
+
+// 'ref' and 'out' parameters canot be supported
+where !signature1.Contains("&")
+
+let signature2 = signature1.Replace("(","<").Replace(")",">")
+let signature3 = signature2 == "<>" ? "" : signature2
+let resultTypeName = invokeMethod.ReturnType == null ? "????" :
+                     invokeMethod.ReturnType.FullName == "System.Void" ? "" :
+                     invokeMethod.ReturnType.Name
+let replaceWith = resultTypeName == "Boolean" ?
+      "Predicate" + signature3 : resultTypeName == "" ?
+      "Action" + signature3  :
+      "Func" + signature3.Replace(">", "," + resultTypeName + ">")
+             
+
+select new { t, replaceWith }]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types with disposable instance fields must be disposable</Name>
+warnif count > 0
+
+let iDisposable = ThirdParty.Types.WithFullName("System.IDisposable").FirstOrDefault() 
+where iDisposable != null // iDisposable can be null if the code base doesn't use at all System.IDisposable
+
+from t in Application.Types where 
+   !t.Implement(iDisposable) && 
+   !t.IsGeneratedByCompiler 
+
+let instanceFieldsDisposable = 
+    t.InstanceFields.Where(f => f.FieldType != null &&
+                                f.FieldType.Implement(iDisposable))
+
+where instanceFieldsDisposable.Count() > 0
+select new { t, instanceFieldsDisposable }]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Disposable types with unmanaged resources should declare finalizer</Name>
+// warnif count > 0
+let iDisposable = ThirdParty.Types.WithFullName("System.IDisposable").SingleOrDefault()
+where iDisposable != null // iDisposable can be null if the code base doesn't use at all System.IDisposable
+
+let disposableTypes = Application.Types.ThatImplement(iDisposable)
+let unmanagedResourcesFields = disposableTypes.ChildFields().Where(f => 
+   !f.IsStatic && 
+    f.FieldType != null && 
+    f.FieldType.FullName.EqualsAny("System.IntPtr","System.UIntPtr","System.Runtime.InteropServices.HandleRef")).ToHashSet()
+let disposableTypesWithUnmanagedResource = unmanagedResourcesFields.ParentTypes()
+
+from t in disposableTypesWithUnmanagedResource
+where !t.HasFinalizer
+let unmanagedResourcesTypeFields = unmanagedResourcesFields.Intersect(t.InstanceFields)
+select new { t, unmanagedResourcesTypeFields }]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Classes that are candidate to be turned into structures</Name>
+//
+// CAUTION: Before applying this rule, make sure to understand 
+//          the implication of transforming a class into a structure.
+//          http://msdn.microsoft.com/en-us/library/aa664471(v=vs.71).aspx
+//
+// Int32, Double or Boolean are structures and not classes.
+// Structure are particularly suited to implement lightweight values.
+// Hence a class is candidate to be turned into a structure
+// when its instances are lightweight values.
+//
+warnif count > 0 from t in JustMyCode.Types where 
+  t.IsClass &&
+ !t.IsGeneratedByCompiler &&
+ !t.IsStatic &&
+  t.SizeOfInst > 0 &&
+  t.SizeOfInst <= 16 &&   // Structure instance must not be too big, 
+                          // else it degrades performance.
+
+  t.NbChildren == 0 &&    // Must not have children
+
+  // Must not implement interfaces to avoid boxing mismatch 
+  // when structures implements interfaces.
+  t.InterfacesImplemented.Count() == 0 &&
+
+  // Must have no base class
+  t.DepthOfDeriveFrom("System.Object".AllowNoMatch()) == 1
+
+select new { t, t.SizeOfInst, t.InstanceFields } // Must derive directly from System.Object
+
+  // && t.IsSealed    <-- You might want to add this condition 
+  //                      to restraint the set.
+  // && t.IsImmutable <-- Structures should be immutable type.
+  // && t.!IsPublic   <-- You might want to add this condition if 
+  //                      you are developping a framework with classes 
+  //                      that are intended to be sub-classed by 
+  //                      your clients.
+  ]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid namespaces with few types</Name>
+warnif count > 0 from n in JustMyCode.Namespaces 
+let types = n.ChildTypes.Where(t => !t.IsGeneratedByCompiler)
+where 
+  types.Count() < 5 
+  orderby types.Count() ascending
+select new { n, types } 
+
+// Make sure that there is a logical organization 
+// to each of your namespaces, and that there is a 
+// valid reason for putting types in a sparsely 
+// populated namespace. Namespaces should contain 
+// types that are used together in most scenarios. 
+// When their applications are mutually exclusive, 
+// types should be located in separate namespaces]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Nested types should not be visible</Name>
+warnif count > 0 from t in JustMyCode.Types where 
+  t.IsNested && 
+ !t.IsGeneratedByCompiler &&
+ !t.IsPrivate 
+select new { t, t.NbLinesOfCode, t.Visibility } 
+
+
+// A nested type is a type declared within the 
+// scope of another type. Nested types are useful 
+// for encapsulating private implementation details 
+// of the containing type. Used for this purpose, 
+// nested types should not be externally visible. 
+// Do not use externally visible nested types for 
+// logical grouping or to avoid name collisions; 
+// instead, use namespaces.]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Declare types in namespaces</Name>
+warnif count > 0 from n in Application.Namespaces where 
+  n.Name == ""
+select new { n, n.ChildTypes, n.NbLinesOfCode } 
+
+// Types are declared within namespaces to 
+// prevent name collisions, and as a way of 
+// organizing related types in an object hierarchy. 
+// Types outside any named namespace are in a 
+// global namespace that cannot be referenced 
+// in code. If an anonymous namespace can be found, 
+// it means that it contains types outside of namespaces.]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Empty static constructor can be discarded</Name>
+warnif count > 0 from m in Application.Methods where 
+  m.IsClassConstructor && 
+  m.NbLinesOfCode == 0
+select m
+    ]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instances size shouldn't be too big</Name>
+warnif count > 0 from t in JustMyCode.Types where 
+  t.SizeOfInst > 64 
+  orderby t.SizeOfInst descending
+select new { t, t.SizeOfInst, t.InstanceFields }
+
+// Types where SizeOfInst > 64 might degrade performance 
+// (depending on the number of instances created at runtime) 
+// and might be hard to maintain. However it is not a rule 
+// since sometime there is no alternative (the size of 
+// instances of the System.Net.NetworkInformation.SystemIcmpV6Statistics 
+// standard class is 2064 bytes).
+// Notice that a class with a large SizeOfInst value
+// doesn't necessarily have a lot of instance fields.
+// It might derive from a class with a large SizeOfInst value.
+// See the definition of the SizeOfInst metric here 
+// http://www.ndepend.com/Metrics.aspx#SizeOfInst]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Boxing/unboxing should be avoided</Name>
+warnif percentage > 5 from m in Application.Methods where 
+  m.IsUsingBoxing || 
+  m.IsUsingUnboxing
+select new { m, m.NbLinesOfCode, m.IsUsingBoxing, m.IsUsingUnboxing } 
+
+// Thanks to generics, boxing and unboxing should be rare.]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Attribute classes should be sealed</Name>
+warnif count > 0 from t in Application.Types where 
+  t.IsAttributeClass && 
+ !t.IsSealed && 
+ !t.IsAbstract && 
+  t.IsPublic
+select new { t, t.NbLinesOfCode } 
+
+// The .NET Framework class library provides methods 
+// for retrieving custom attributes. By default, 
+// these methods search the attribute inheritance 
+// hierarchy; for example System.Attribute.GetCustomAttribute 
+// searches for the specified attribute type, or any 
+// attribute type that extends the specified attribute 
+// type. Sealing the attribute eliminates the search 
+// through the inheritance hierarchy, and can improve 
+// performance.]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't use obsolete types, methods or fields</Name>   
+warnif count > 0
+let obsoleteTypes = Types.Where(t => t.IsObsolete)
+let obsoleteMethods = Methods.Where(m => m.IsObsolete).ToHashSet()
+let obsoleteFields = Fields.Where(f => f.IsObsolete)
+
+from m in JustMyCode.Methods.UsingAny(obsoleteTypes).Union(
+          JustMyCode.Methods.UsingAny(obsoleteMethods)).Union(
+          JustMyCode.Methods.UsingAny(obsoleteFields))
+let obsoleteTypesUsed = obsoleteTypes.UsedBy(m)
+
+// Optimization: MethodsCalled + Intersect() is faster than using obsoleteMethods.UsedBy()
+let obsoleteMethodsUsed = m.MethodsCalled.Intersect(obsoleteMethods)
+let obsoleteFieldsUsed = obsoleteFields.UsedBy(m)
+select new { m, obsoleteTypesUsed, obsoleteMethodsUsed, obsoleteFieldsUsed }]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't forget to implement methods that throw NotImplementedException</Name>
+warnif count > 0
+from m in Application.Methods
+where m.CreateA("System.NotImplementedException".AllowNoMatch())
+select m]]></Query>
+        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Equals() should be overridden by types implementing the '==' operator</Name>
+warnif count > 0
+from m in Application.Methods where
+  m.IsOperator &&
+  m.SimpleName == "op_Equality"
+let equalsMethod = m.ParentType.InstanceMethods.Where(m0 => m0.Name == "Equals(Object)").SingleOrDefault()
+where equalsMethod == null
+select m
+]]></Query>
+      </Group>
     </Group>
     <Group Name="Object Oriented Design" Active="True" ShownInReport="True">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Base class should not use derivatives</Name>
@@ -894,229 +1118,6 @@ select new { t.ClassConstructor,
              methodsCalled,
              fieldsUsed 
 }]]></Query>
-    </Group>
-    <Group Name="Design" Active="True" ShownInReport="False">
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid custom delegates</Name>
-
-// Prefer using one of the standard generic delegate type in
-// Predicate<T> Func<T0,T1,..,TResult> Action<T0,T1,..> 
-// instead of creating your own delegate type.
-// Not only the code using these custom delegates will become clearer,
-// but you'll be relieved from the maintenance of these delegate types.
-//
-// Notice that delegate that are consumed by DllImport extern methods
-// must not be converted, else this could provoke marshalling issues.
-
-warnif count > 0 
-from t in Application.Types where t.IsDelegate
-
-let invokeMethod = (from m in t.Methods where m.SimpleName == "Invoke" select m).Single()
-let signature1 = invokeMethod.Name.Substring(invokeMethod.SimpleName.Length, invokeMethod.Name.Length - invokeMethod.SimpleName.Length)
-
-// 'ref' and 'out' parameters canot be supported
-where !signature1.Contains("&")
-
-let signature2 = signature1.Replace("(","<").Replace(")",">")
-let signature3 = signature2 == "<>" ? "" : signature2
-let resultTypeName = invokeMethod.ReturnType == null ? "????" :
-                     invokeMethod.ReturnType.FullName == "System.Void" ? "" :
-                     invokeMethod.ReturnType.Name
-let replaceWith = resultTypeName == "Boolean" ?
-      "Predicate" + signature3 : resultTypeName == "" ?
-      "Action" + signature3  :
-      "Func" + signature3.Replace(">", "," + resultTypeName + ">")
-             
-
-select new { t, replaceWith }]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types with disposable instance fields must be disposable</Name>
-warnif count > 0
-
-let iDisposable = ThirdParty.Types.WithFullName("System.IDisposable").FirstOrDefault() 
-where iDisposable != null // iDisposable can be null if the code base doesn't use at all System.IDisposable
-
-from t in Application.Types where 
-   !t.Implement(iDisposable) && 
-   !t.IsGeneratedByCompiler 
-
-let instanceFieldsDisposable = 
-    t.InstanceFields.Where(f => f.FieldType != null &&
-                                f.FieldType.Implement(iDisposable))
-
-where instanceFieldsDisposable.Count() > 0
-select new { t, instanceFieldsDisposable }]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Disposable types with unmanaged resources should declare finalizer</Name>
-// warnif count > 0
-let iDisposable = ThirdParty.Types.WithFullName("System.IDisposable").SingleOrDefault()
-where iDisposable != null // iDisposable can be null if the code base doesn't use at all System.IDisposable
-
-let disposableTypes = Application.Types.ThatImplement(iDisposable)
-let unmanagedResourcesFields = disposableTypes.ChildFields().Where(f => 
-   !f.IsStatic && 
-    f.FieldType != null && 
-    f.FieldType.FullName.EqualsAny("System.IntPtr","System.UIntPtr","System.Runtime.InteropServices.HandleRef")).ToHashSet()
-let disposableTypesWithUnmanagedResource = unmanagedResourcesFields.ParentTypes()
-
-from t in disposableTypesWithUnmanagedResource
-where !t.HasFinalizer
-let unmanagedResourcesTypeFields = unmanagedResourcesFields.Intersect(t.InstanceFields)
-select new { t, unmanagedResourcesTypeFields }]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Classes that are candidate to be turned into structures</Name>
-//
-// CAUTION: Before applying this rule, make sure to understand 
-//          the implication of transforming a class into a structure.
-//          http://msdn.microsoft.com/en-us/library/aa664471(v=vs.71).aspx
-//
-// Int32, Double or Boolean are structures and not classes.
-// Structure are particularly suited to implement lightweight values.
-// Hence a class is candidate to be turned into a structure
-// when its instances are lightweight values.
-//
-warnif count > 0 from t in JustMyCode.Types where 
-  t.IsClass &&
- !t.IsGeneratedByCompiler &&
- !t.IsStatic &&
-  t.SizeOfInst > 0 &&
-  t.SizeOfInst <= 16 &&   // Structure instance must not be too big, 
-                          // else it degrades performance.
-
-  t.NbChildren == 0 &&    // Must not have children
-
-  // Must not implement interfaces to avoid boxing mismatch 
-  // when structures implements interfaces.
-  t.InterfacesImplemented.Count() == 0 &&
-
-  // Must have no base class
-  t.DepthOfDeriveFrom("System.Object".AllowNoMatch()) == 1
-
-select new { t, t.SizeOfInst, t.InstanceFields } // Must derive directly from System.Object
-
-  // && t.IsSealed    <-- You might want to add this condition 
-  //                      to restraint the set.
-  // && t.IsImmutable <-- Structures should be immutable type.
-  // && t.!IsPublic   <-- You might want to add this condition if 
-  //                      you are developping a framework with classes 
-  //                      that are intended to be sub-classed by 
-  //                      your clients.
-  ]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid namespaces with few types</Name>
-warnif count > 0 from n in JustMyCode.Namespaces 
-let types = n.ChildTypes.Where(t => !t.IsGeneratedByCompiler)
-where 
-  types.Count() < 5 
-  orderby types.Count() ascending
-select new { n, types } 
-
-// Make sure that there is a logical organization 
-// to each of your namespaces, and that there is a 
-// valid reason for putting types in a sparsely 
-// populated namespace. Namespaces should contain 
-// types that are used together in most scenarios. 
-// When their applications are mutually exclusive, 
-// types should be located in separate namespaces]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Nested types should not be visible</Name>
-warnif count > 0 from t in JustMyCode.Types where 
-  t.IsNested && 
- !t.IsGeneratedByCompiler &&
- !t.IsPrivate 
-select new { t, t.NbLinesOfCode, t.Visibility } 
-
-
-// A nested type is a type declared within the 
-// scope of another type. Nested types are useful 
-// for encapsulating private implementation details 
-// of the containing type. Used for this purpose, 
-// nested types should not be externally visible. 
-// Do not use externally visible nested types for 
-// logical grouping or to avoid name collisions; 
-// instead, use namespaces.]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Declare types in namespaces</Name>
-warnif count > 0 from n in Application.Namespaces where 
-  n.Name == ""
-select new { n, n.ChildTypes, n.NbLinesOfCode } 
-
-// Types are declared within namespaces to 
-// prevent name collisions, and as a way of 
-// organizing related types in an object hierarchy. 
-// Types outside any named namespace are in a 
-// global namespace that cannot be referenced 
-// in code. If an anonymous namespace can be found, 
-// it means that it contains types outside of namespaces.]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Empty static constructor can be discarded</Name>
-warnif count > 0 from m in Application.Methods where 
-  m.IsClassConstructor && 
-  m.NbLinesOfCode == 0
-select m
-    ]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Instances size shouldn't be too big</Name>
-warnif count > 0 from t in JustMyCode.Types where 
-  t.SizeOfInst > 64 
-  orderby t.SizeOfInst descending
-select new { t, t.SizeOfInst, t.InstanceFields }
-
-// Types where SizeOfInst > 64 might degrade performance 
-// (depending on the number of instances created at runtime) 
-// and might be hard to maintain. However it is not a rule 
-// since sometime there is no alternative (the size of 
-// instances of the System.Net.NetworkInformation.SystemIcmpV6Statistics 
-// standard class is 2064 bytes).
-// Notice that a class with a large SizeOfInst value
-// doesn't necessarily have a lot of instance fields.
-// It might derive from a class with a large SizeOfInst value.
-// See the definition of the SizeOfInst metric here 
-// http://www.ndepend.com/Metrics.aspx#SizeOfInst]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Boxing/unboxing should be avoided</Name>
-warnif percentage > 5 from m in Application.Methods where 
-  m.IsUsingBoxing || 
-  m.IsUsingUnboxing
-select new { m, m.NbLinesOfCode, m.IsUsingBoxing, m.IsUsingUnboxing } 
-
-// Thanks to generics, boxing and unboxing should be rare.]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Attribute classes should be sealed</Name>
-warnif count > 0 from t in Application.Types where 
-  t.IsAttributeClass && 
- !t.IsSealed && 
- !t.IsAbstract && 
-  t.IsPublic
-select new { t, t.NbLinesOfCode } 
-
-// The .NET Framework class library provides methods 
-// for retrieving custom attributes. By default, 
-// these methods search the attribute inheritance 
-// hierarchy; for example System.Attribute.GetCustomAttribute 
-// searches for the specified attribute type, or any 
-// attribute type that extends the specified attribute 
-// type. Sealing the attribute eliminates the search 
-// through the inheritance hierarchy, and can improve 
-// performance.]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't use obsolete types, methods or fields</Name>   
-warnif count > 0
-let obsoleteTypes = Types.Where(t => t.IsObsolete)
-let obsoleteMethods = Methods.Where(m => m.IsObsolete).ToHashSet()
-let obsoleteFields = Fields.Where(f => f.IsObsolete)
-
-from m in JustMyCode.Methods.UsingAny(obsoleteTypes).Union(
-          JustMyCode.Methods.UsingAny(obsoleteMethods)).Union(
-          JustMyCode.Methods.UsingAny(obsoleteFields))
-let obsoleteTypesUsed = obsoleteTypes.UsedBy(m)
-
-// Optimization: MethodsCalled + Intersect() is faster than using obsoleteMethods.UsedBy()
-let obsoleteMethodsUsed = m.MethodsCalled.Intersect(obsoleteMethods)
-let obsoleteFieldsUsed = obsoleteFields.UsedBy(m)
-select new { m, obsoleteTypesUsed, obsoleteMethodsUsed, obsoleteFieldsUsed }]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Don't forget to implement methods that throw NotImplementedException</Name>
-warnif count > 0
-from m in Application.Methods
-where m.CreateA("System.NotImplementedException".AllowNoMatch())
-select m]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Equals() should be overridden by types implementing the '==' operator</Name>
-warnif count > 0
-from m in Application.Methods where
-  m.IsOperator &&
-  m.SimpleName == "op_Equality"
-let equalsMethod = m.ParentType.InstanceMethods.Where(m0 => m0.Name == "Equals(Object)").SingleOrDefault()
-where equalsMethod == null
-select m
-]]></Query>
     </Group>
     <Group Name="Architecture and Layering" Active="True" ShownInReport="False">
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Avoid namespaces mutually dependent</Name>
@@ -1955,7 +1956,7 @@ select new {
 }]]></Query>
     </Group>
     <Group Name="Dead Code" Active="True" ShownInReport="True">
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Potentially dead Types</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Potentially dead Types</Name>
 warnif count > 0
 // Filter procedure for types that should'nt be considered as dead
 let canTypeBeConsideredAsDeadProc = new Func<IType, bool>(
@@ -1986,7 +1987,7 @@ types => from t in codeBase.Application.Types.UsedByAny(types).Except(types)
 
 from t in deadTypesMetric.DefinitionDomain
 select new { t, t.TypesUsingMe, depth = deadTypesMetric[t] }]]></Query>
-      <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Potentially dead Methods</Name>
+      <Query Active="False" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="True"><![CDATA[// <Name>Potentially dead Methods</Name>
 warnif count > 0
 // Filter procedure for methods that should'nt be considered as dead
 let canMethodBeConsideredAsDeadProc = new Func<IMethod, bool>(
@@ -2516,7 +2517,7 @@ select new { f, FieldVisibility = f.Visibility }
 //     of a private array. Because your code does not rely on 
 //     the clone, there is no danger if the elements are modified. 
 ]]></Query>
-      <Query Active="True" DisplayList="False" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types immutable should be tagged with ImmutableAttribute</Name>
+      <Query Active="False" DisplayList="False" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Types immutable should be tagged with ImmutableAttribute</Name>
 from t in Application.Types where 
   !t.HasAttribute ("NDepend.Attributes.ImmutableAttribute".AllowNoMatch()) && 
   t.IsImmutable
@@ -2558,7 +2559,7 @@ select new { m, m.NbLinesOfCode, fieldsAssigned }
 // introduced with .NET v4.0.
 
 ]]></Query>
-      <Query Active="True" DisplayList="False" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Pure methods should be tagged with PureAttribute</Name>
+      <Query Active="False" DisplayList="False" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Pure methods should be tagged with PureAttribute</Name>
 from m in Application.Methods where 
   !m.HasAttribute ("NDepend.Attributes.PureAttribute".AllowNoMatch()) && 
   !m.HasAttribute ("System.Diagnostics.Contract.PureAttribute".AllowNoMatch()) &&
@@ -2711,6 +2712,8 @@ select new { t, t.SimpleName }
       ]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Avoid methods with name too long</Name>
 warnif count > 0 from m in Application.Methods where 
+// F# Compiler is generating wierd names for interface methods
+ !m.SimpleName.Contains("-") &&
  !m.IsExplicitInterfaceImpl &&
  !m.IsGeneratedByCompiler &&
  ((!m.IsSpecialName && m.SimpleName.Length > 35) ||
@@ -3368,6 +3371,11 @@ from m in Application.Methods where
  (m.ReadsMutableObjectState || m.ReadsMutableTypeState) && 
  !m.IsUsing ("System.Threading.Monitor".AllowNoMatch()) && 
  !m.FullName.Contains("@") &&
+ !m.Name.Contains("get_") &&
+ !m.Name.Contains("GetHashCode") &&
+ !m.Name.Contains("Compare") &&
+ !m.Name.Contains("Equal") &&
+ !m.Name.Contains(".ctor") &&
  !m.IsUsing ("System.Threading.ReaderWriterLock".AllowNoMatch())
 select new { m, m.FullName ,mutableFieldsUsed = m.FieldsUsed.Where(f => !f.IsImmutable) }
 
@@ -3871,16 +3879,29 @@ where (m.SourceFileDeclAvailable &&
       m.HasAttribute ("System.Diagnostics.DebuggerNonUserCodeAttribute".AllowNoMatch()) ||
 
       // F# compiler generated attribute
-      m.HasAttribute("System.Runtime.CompilerServices.CompilerGeneratedAttribute".AllowNoMatch()) 
+      m.HasAttribute("System.Runtime.CompilerServices.CompilerGeneratedAttribute".AllowNoMatch()) ||
+      m.FullName.Contains("@") ||
+      m.Name.Contains("CompareTo") ||
+      m.Name.Contains("Equals") ||
+      m.Name.Contains("GetHashCode")
 select new { m, m.NbLinesOfCode }]]></Query>
       <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Discard generated Fields from JustMyCode</Name>
 // --- Make sure to make this query richer to discard generated fields from NDepend rules results ---
 notmycode
 from f in Application.Fields where 
   f.HasAttribute ("System.CodeDom.Compiler.GeneratedCodeAttribute".AllowNoMatch()) ||
-
+  f.Name.Contains(".ctor") ||
+  f.Name.StartsWith("get_") ||
   // Eliminate "components" generated in Windows Form Conrol context
-  f.Name == "components" && f.ParentType.DeriveFrom("System.Windows.Forms.Control".AllowNoMatch())
+  f.Name == "components" && f.ParentType.DeriveFrom("System.Windows.Forms.Control".AllowNoMatch()) ||
+      // F# compiler generated attribute
+  f.HasAttribute("System.Runtime.CompilerServices.CompilerGeneratedAttribute".AllowNoMatch()) ||
+  f.FullName.Contains("@") ||
+  f.Name.Contains("CompareTo") ||
+  f.Name.Contains("Equals") ||
+  f.Name.Contains("GetHashCode") ||
+   f.Name.Contains(".ctor") ||
+  f.Name.Contains("-") 
 select f]]></Query>
     </Group>
     <Group Name="Statistics" Active="False" ShownInReport="False">
