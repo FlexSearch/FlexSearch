@@ -106,7 +106,7 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<HttpMod
             
         member this.Start() = 
             try 
-                thread <- Task.Factory.StartNew(startServer)
+                thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
             with e -> ()
             ()
             
