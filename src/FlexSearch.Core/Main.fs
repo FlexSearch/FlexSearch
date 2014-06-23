@@ -124,4 +124,12 @@ module Main =
             with e -> 
                 printfn "%A" e
 
-        member this.Stop() = httpServer.Stop()
+        member this.Stop() = 
+            httpServer.Stop()
+            let indexService = container.Resolve<IIndexService>()
+            let state = container.Resolve<IndicesState>()
+            
+            // Close all open indices
+            for registeration in state.IndexRegisteration  do
+                indexService.CloseIndex(registeration.Key) |> ignore
+
