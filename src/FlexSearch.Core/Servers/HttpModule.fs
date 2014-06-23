@@ -33,7 +33,7 @@ type IndexModule(indexService : IIndexService) =
     override this.Get(indexName, owin) = owin |> ResponseProcessor (indexService.GetIndex(indexName)) OK BAD_REQUEST
     
     override this.Post(indexName, owin) = 
-        match GetRequestBody<Index> (owin.Request) with
+        match GetRequestBody<Index>(owin.Request) with
         | Choice1Of2(index) -> 
             // Index name passed in URL takes precedence
             index.IndexName <- indexName
@@ -49,7 +49,7 @@ type IndexModule(indexService : IIndexService) =
     override this.Delete(indexName, owin) = 
         owin |> ResponseProcessor (indexService.DeleteIndex(indexName)) OK BAD_REQUEST
     override this.Put(indexName, owin) = 
-        match GetRequestBody<Index> (owin.Request) with
+        match GetRequestBody<Index>(owin.Request) with
         | Choice1Of2(index) -> 
             // Index name passed in URL takes precedence
             index.IndexName <- indexName
@@ -64,7 +64,7 @@ type DocumentModule(state : INodeState, documentService : IDocumentService) =
     override this.Get(indexName, owin) = 
         let processRequest = 
             maybe { 
-                match CheckIdPresent (owin) with
+                match CheckIdPresent(owin) with
                 | Some(id) -> // documents/{id}
                               
                     match documentService.GetDocument(indexName, id) with
@@ -82,11 +82,11 @@ type DocumentModule(state : INodeState, documentService : IDocumentService) =
     override this.Post(indexName, owin) = 
         let processRequest = 
             maybe { 
-                match CheckIdPresent (owin) with
+                match CheckIdPresent(owin) with
                 | Some(id) -> 
                     // documents/{id}
                     // Add the document by id
-                    let! fields = GetRequestBody<Dictionary<string, string>> (owin.Request)
+                    let! fields = GetRequestBody<Dictionary<string, string>>(owin.Request)
                     match fields.TryGetValue(Constants.IdField) with
                     | true, _ -> 
                         // Override dictionary id with the URL id
@@ -102,7 +102,7 @@ type DocumentModule(state : INodeState, documentService : IDocumentService) =
     override this.Delete(indexName, owin) = 
         let processRequest = 
             maybe { 
-                match CheckIdPresent (owin) with
+                match CheckIdPresent(owin) with
                 | Some(id) -> // documents/{id}
                               
                     return! documentService.DeleteDocument(indexName, id)
@@ -115,10 +115,10 @@ type DocumentModule(state : INodeState, documentService : IDocumentService) =
     override this.Put(indexName, owin) = 
         let processRequest = 
             maybe { 
-                match CheckIdPresent (owin) with
+                match CheckIdPresent(owin) with
                 | Some(id) -> // documents/{id}
                               
-                    let! fields = GetRequestBody<Dictionary<string, string>> (owin.Request)
+                    let! fields = GetRequestBody<Dictionary<string, string>>(owin.Request)
                     match fields.TryGetValue(Constants.IdField) with
                     | true, _ -> 
                         // Override dictionary id with the URL id
@@ -139,7 +139,7 @@ type SearchModule(searchService : ISearchService) =
     let processRequest (indexName, owin : IOwinContext) = 
         maybe { 
             let query = 
-                match GetRequestBody<SearchQuery> (owin.Request) with
+                match GetRequestBody<SearchQuery>(owin.Request) with
                 | Choice1Of2(q) -> q
                 | Choice2Of2(_) -> 
                     // It is possible that the query is supplied through query-string
@@ -194,7 +194,7 @@ type StatusModule(indexService : IIndexService) =
     
     override this.Post(indexName, owin) = 
         let processRequest = 
-            match CheckIdPresent (owin) with
+            match CheckIdPresent(owin) with
             | Some(id) -> 
                 match id with
                 | InvariantEqual "online" -> indexService.OpenIndex(indexName)
@@ -211,16 +211,25 @@ type AnalysisModule() =
     override this.Get(indexName, owin) = owin |> ResponseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
     override this.Post(indexName, owin) = owin |> ResponseProcessor (processRequest (indexName, owin)) OK BAD_REQUEST
 
+open System.IO
+
 [<Name("/")>]
 [<Sealed>]
 type RootModule() = 
     inherit HttpModuleBase()
+    
+    let htmlPage = 
+        let filePath = System.IO.Path.Combine(Constants.ConfFolder, "WelcomePage.html")
+        if File.Exists(filePath) then
+            let pageText = System.IO.File.ReadAllText(filePath)
+            pageText.Replace("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+        else
+            sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+    
     override this.Get(indexName, owin) = 
         owin.Response.ContentType <- "text/html"
         owin.Response.StatusCode <- 200
-        await 
-            (owin.Response.WriteAsync
-                 ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()))
+        await (owin.Response.WriteAsync htmlPage)
 
 [<Name("jobs")>]
 [<Sealed>]
@@ -229,7 +238,7 @@ type JobModule(state : INodeState) =
     
     let processRequest (indexName, owin) = 
         maybe { 
-            match CheckIdPresent (owin) with
+            match CheckIdPresent(owin) with
             | Some(id) -> return! state.PersistanceStore.Get<Job>(id)
             | None -> return! Choice2Of2(MessageConstants.JOBID_IS_NOT_FOUND)
         }
