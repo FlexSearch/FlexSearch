@@ -84,7 +84,7 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
 
 [<Name("sql")>]
 [<Sealed>]
-type SqlImporter(queueService : IQueueService, state : INodeState) = 
+type SqlImporter(queueService : IQueueService, state : INodeState, logger: ILogService) = 
     
     let sqlSettings = 
         let path = Path.Combine(Constants.ConfFolder, "Sql.json")
@@ -151,12 +151,12 @@ type SqlImporter(queueService : IQueueService, state : INodeState) =
                                 new Job(request.JobId, JobStatus.CompletedWithErrors, Message = "No rows returned.", 
                                         ProcessedItems = rows)
                             state.PersistanceStore.Put request.JobId job |> ignore
-                        Logger.TraceErrorMessage(sprintf "SQL connector error. No rows returned. Query:{%s}" query)
+                        logger.TraceErrorMessage(sprintf "SQL connector error. No rows returned. Query:{%s}" query)
                 with e -> 
                     if String.IsNullOrWhiteSpace(request.JobId) <> true then 
                         let job = new Job(request.JobId, JobStatus.CompletedWithErrors, Message = e.Message)
                         state.PersistanceStore.Put request.JobId job |> ignore
-                    Logger.TraceError("SQL connector error", e)
+                    logger.TraceError("SQL connector error", e)
                 Choice1Of2()
             | Choice2Of2(e) -> Choice2Of2(e)
         | Choice2Of2(e) -> Choice2Of2(e)
@@ -168,6 +168,6 @@ type SqlImporter(queueService : IQueueService, state : INodeState) =
         member this.ProcessBulkRequest(indexName, request) = 
             match executeSql (indexName, request) with
             | Choice1Of2() -> ()
-            | Choice2Of2(e) -> Logger.TraceOperationMessageError("SQL connector error", e)
+            | Choice2Of2(e) -> logger.TraceOperationMessageError("SQL connector error", e)
         
         member this.ProcessIncrementalRequest(indexName, request) = executeSql (indexName, request)

@@ -45,7 +45,7 @@ open org.apache.lucene.store
 /// </summary>
 /// <param name="state"></param>
 [<Sealed>]
-type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) = 
+type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, logger: ILogService) = 
     
     /// <summary>
     /// Get an existing index details
@@ -75,13 +75,13 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) =
                 Index.CloseIndex(nodeState.IndicesState, flexIndex)
                 do! Index.AddIndex(nodeState.IndicesState, settings)
                 nodeState.PersistanceStore.Put index.IndexName index |> ignore
-                Logger.AddIndex(index.IndexName, index)
+                logger.AddIndex(index.IndexName, index)
                 return! Choice1Of2()
             | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
             | IndexState.Offline | IndexState.Closing -> 
                 let settings = settingsBuilder.BuildSetting(index)
                 nodeState.PersistanceStore.Put index.IndexName index |> ignore
-                Logger.AddIndex(index.IndexName, index)
+                logger.AddIndex(index.IndexName, index)
                 return! Choice1Of2()
             | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
         }
@@ -104,7 +104,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) =
                 // It is possible that directory might not exist if the index has never been opened
                 if Directory.Exists(Constants.DataFolder + "\\" + indexName) then 
                     Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
-                Logger.DeleteIndex(indexName)
+                logger.DeleteIndex(indexName)
                 return! Choice1Of2()
             | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
             | IndexState.Offline | IndexState.Closing -> 
@@ -114,7 +114,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) =
                 // It is possible that directory might not exist if the index has never been opened
                 if Directory.Exists(Constants.DataFolder + "\\" + indexName) then 
                     Directory.Delete(Constants.DataFolder + "\\" + indexName, true)
-                Logger.DeleteIndex(indexName)
+                logger.DeleteIndex(indexName)
                 return! Choice1Of2()
             | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
         }
@@ -131,7 +131,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) =
             | _ -> 
                 let! settings = settingsBuilder.BuildSetting(index)
                 nodeState.PersistanceStore.Put index.IndexName index |> ignore
-                Logger.AddIndex(index.IndexName, index)
+                logger.AddIndex(index.IndexName, index)
                 if index.Online then do! AddIndex(nodeState.IndicesState, settings)
                 else do! nodeState.IndicesState.AddStatus(index.IndexName, IndexState.Offline)
         }
@@ -178,7 +178,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) =
                 do! Index.AddIndex(nodeState.IndicesState, settings)
                 index.Online <- true
                 nodeState.PersistanceStore.Put indexName index |> ignore
-                Logger.OpenIndex(indexName)
+                logger.OpenIndex(indexName)
                 return! Choice1Of2()
             | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
         }
@@ -199,7 +199,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder) =
                 let! index' = nodeState.PersistanceStore.Get<Index>(indexName)
                 index'.Online <- false
                 nodeState.PersistanceStore.Put indexName index' |> ignore
-                Logger.CloseIndex(indexName)
+                logger.CloseIndex(indexName)
                 return! Choice1Of2()
         }
     

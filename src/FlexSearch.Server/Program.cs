@@ -12,10 +12,22 @@
         #region Methods
         private static void Main(string[] args)
         {
-            Logger.StartSession();
+            var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder, "Config.json"));
+            foreach (var file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly))
+            {
+                try
+                {
+                    System.Reflection.Assembly.LoadFile(file);
+                }
+                catch (FileLoadException e) { }
+            }
+
+            ILogService logger = Core.Main.GetLoggerService(settings);
+            logger.StartSession();
+
             try
             {
-                var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder, "Config.json"));
+
                 HostFactory.Run(
                     x =>
                     {
@@ -35,9 +47,10 @@
             }
             catch (Exception e)
             {
-                Logger.TraceCritical(e);
+                logger.TraceCritical(e);
             }
-            Logger.EndSession();
+
+            logger.EndSession();
         }
         #endregion
     }

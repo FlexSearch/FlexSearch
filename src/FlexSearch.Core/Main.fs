@@ -44,6 +44,26 @@ module Main =
         parsedResult.PluginFolder <- Helpers.GenerateAbsolutePath(parsedResult.PluginFolder)
         parsedResult
     
+    let GetLoggerService(serverSettings : ServerSettings) =
+        let builder = new ContainerBuilder()
+        
+        // Register the service to consume with meta-data.
+        // Since we're using attributed meta-data, we also
+        // need to register the AttributedMetadataModule
+        // so the meta-data attributes get read.
+        builder.RegisterModule<AttributedMetadataModule>() |> ignore
+
+        // Interface scanning
+        builder |> FactoryService.RegisterInterfaceAssemblies<ILogService>
+
+        builder |> FactoryService.RegisterSingleFactoryInstance<ILogService>
+        let container = builder.Build()
+        let logFactory = container.Resolve<IFlexFactory<ILogService>>()
+        match logFactory.GetModuleByName(serverSettings.Logger) with
+        | Choice1Of2(logger) -> logger
+        | _ -> failwithf ""
+
+
     /// <summary>
     /// Get a container with all dependencies setup
     /// </summary>
@@ -67,7 +87,7 @@ module Main =
         builder |> FactoryService.RegisterAbstractClassAssemblies<HttpModuleBase>
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
-        builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>
+        builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>     
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexFilterFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexQuery>
@@ -79,7 +99,7 @@ module Main =
         
         builder |> FactoryService.RegisterSingleInstance<VersioningCacheStore, IVersioningCacheStore>
         builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
-
+        
         let indicesState = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
               IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
@@ -98,11 +118,20 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<QueueService, IQueueService>
         builder |> FactoryService.RegisterSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
+        builder.RegisterInstance((GetLoggerService(serverSettings))).SingleInstance().As<ILogService>() |> ignore
 
         // Register server
         //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
         builder.Build()
     
+    /// <summary>
+    /// Load third party plug ins
+    /// </summary>
+    let LoadPlugins() =
+        // Load plug-in DLLs
+        for file in Directory.EnumerateFiles(Constants.PluginFolder, "dll") do
+            System.Reflection.Assembly.LoadFile(file) |> ignore
+
     /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
@@ -114,7 +143,7 @@ module Main =
             // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
             // To verify that this works, run `netsh http show servicestate`.
             if testServer <> true then MaximizeThreads() |> ignore
-        
+
         member this.Start() = 
             try 
                 let indexService = container.Resolve<IIndexService>()
@@ -132,4 +161,5 @@ module Main =
             // Close all open indices
             for registeration in state.IndexRegisteration  do
                 indexService.CloseIndex(registeration.Key) |> ignore
+
 
