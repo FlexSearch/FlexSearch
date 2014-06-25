@@ -697,6 +697,7 @@ loads.
 		5:	optional string ConfFolder = "./conf"
 		6:	optional string NodeName = "FlexNode"
 		7:	optional NodeRole NodeRole = 1
+		8:	optional string Logger = "Gibraltar"
 	}
 //>
 

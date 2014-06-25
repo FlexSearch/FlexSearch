@@ -32,6 +32,7 @@ namespace FlexSearch.Api
     private string _ConfFolder;
     private string _NodeName;
     private NodeRole _NodeRole;
+    private string _Logger;
 
     [DataMember(Order = 1)]
     public int HttpPort
@@ -135,6 +136,20 @@ namespace FlexSearch.Api
       }
     }
 
+    [DataMember(Order = 8)]
+    public string Logger
+    {
+      get
+      {
+        return _Logger;
+      }
+      set
+      {
+        __isset.Logger = true;
+        this._Logger = value;
+      }
+    }
+
 
     public Isset __isset;
     #if !SILVERLIGHT
@@ -149,6 +164,7 @@ namespace FlexSearch.Api
       public bool ConfFolder;
       public bool NodeName;
       public bool NodeRole;
+      public bool Logger;
     }
 
     public ServerSettings() {
@@ -166,6 +182,8 @@ namespace FlexSearch.Api
       this.__isset.NodeName = true;
       this._NodeRole = NodeRole.Master;
       this.__isset.NodeRole = true;
+      this._Logger = "Gibraltar";
+      this.__isset.Logger = true;
     }
 
     public void Read (TProtocol iprot)
@@ -225,6 +243,13 @@ namespace FlexSearch.Api
           case 7:
             if (field.Type == TType.I32) {
               NodeRole = (NodeRole)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 8:
+            if (field.Type == TType.String) {
+              Logger = iprot.ReadString();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -298,6 +323,14 @@ namespace FlexSearch.Api
         oprot.WriteI32((int)NodeRole);
         oprot.WriteFieldEnd();
       }
+      if (Logger != null && __isset.Logger) {
+        field.Name = "Logger";
+        field.Type = TType.String;
+        field.ID = 8;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteString(Logger);
+        oprot.WriteFieldEnd();
+      }
       oprot.WriteFieldStop();
       oprot.WriteStructEnd();
     }
@@ -312,7 +345,8 @@ namespace FlexSearch.Api
         && ((__isset.PluginFolder == other.__isset.PluginFolder) && ((!__isset.PluginFolder) || (System.Object.Equals(PluginFolder, other.PluginFolder))))
         && ((__isset.ConfFolder == other.__isset.ConfFolder) && ((!__isset.ConfFolder) || (System.Object.Equals(ConfFolder, other.ConfFolder))))
         && ((__isset.NodeName == other.__isset.NodeName) && ((!__isset.NodeName) || (System.Object.Equals(NodeName, other.NodeName))))
-        && ((__isset.NodeRole == other.__isset.NodeRole) && ((!__isset.NodeRole) || (System.Object.Equals(NodeRole, other.NodeRole))));
+        && ((__isset.NodeRole == other.__isset.NodeRole) && ((!__isset.NodeRole) || (System.Object.Equals(NodeRole, other.NodeRole))))
+        && ((__isset.Logger == other.__isset.Logger) && ((!__isset.Logger) || (System.Object.Equals(Logger, other.Logger))));
     }
 
     public override int GetHashCode() {
@@ -325,6 +359,7 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.ConfFolder ? 0 : (ConfFolder.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.NodeName ? 0 : (NodeName.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.NodeRole ? 0 : (NodeRole.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.Logger ? 0 : (Logger.GetHashCode()));
       }
       return hashcode;
     }
@@ -345,6 +380,8 @@ namespace FlexSearch.Api
       sb.Append(NodeName);
       sb.Append(",NodeRole: ");
       sb.Append(NodeRole);
+      sb.Append(",Logger: ");
+      sb.Append(Logger);
       sb.Append(")");
       return sb.ToString();
     }
