@@ -16,6 +16,7 @@ open Xunit.Extensions
 open Xunit.Sdk
 open Autofac 
 open System.Threading
+open Microsoft.Owin.Testing
 
 [<AutoOpen>]
 module UnitTestAttributes = 
@@ -167,10 +168,20 @@ module IntegrationTestHelpers =
     type IntegrationCustomization() = 
         interface ICustomization with
             member this.Customize(fixture: IFixture) =
+                let GetTestServer(indexService: IIndexService, httpFactory: IFlexFactory<IHttpHandler>) =
+                    let testServer = TestServer.Create(fun app -> 
+                            let owinServer = new OwinServer(indexService, httpFactory)
+                            owinServer.Configuration(app)
+                        )
+                    testServer
+
                 fixture.Inject<IIndexService>(Container.Resolve<IIndexService>()) |> ignore
                 fixture.Inject<ISearchService>(Container.Resolve<ISearchService>()) |> ignore
                 fixture.Inject<IDocumentService>(Container.Resolve<IDocumentService>()) |> ignore
+                fixture.Inject<IFlexFactory<IHttpHandler>>(Container.Resolve<IFlexFactory<IHttpHandler>>()) |> ignore
                 fixture.Register<Index>(fun _ -> GetBasicIndexSettingsForContact()) |> ignore
+                fixture.Inject<TestServer>(GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())) |> ignore
+
 
     /// <summary>
     /// Unit test domain customization
