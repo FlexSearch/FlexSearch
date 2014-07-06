@@ -197,6 +197,8 @@ The below table list the various field types supported by FlexSearch.
 | Stored       | Non-indexed field. Only used for retrieving stored text. Searching is not possible over these fields.                                                                                                                                              |
 +--------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+*/
+/*
 The below table lists the various parameters which can be configured for each field type.
 
 .. rst-class:: ui celled table
@@ -807,6 +809,31 @@ be easily bound to a grid.
 		3:	optional i32 TotalAvailable
 	}
 //>
+
+/*
+<Filter List
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: c
+
+*/
+	struct FilterList {
+		1:	required list<string> Words = {}
+	}
+//>
+
+/*
+<Map List
+^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: c
+
+*/
+	struct MapList {
+		1:	required map<string, list<string>> Words = {}
+	}
+//>
+
 
 struct IndexStatusResponse {
 	1:	required IndexState Status
