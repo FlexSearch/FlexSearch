@@ -29,8 +29,8 @@ module Store =
     
     /// A reusable key value persistence store build on top of sql-lite
     [<Sealed>]
-    type PersistanceStore(?path0 : string, ?isMemory0 : bool) = 
-        let path = defaultArg path0 (Path.Combine(Constants.ConfFolder, "Conf.db"))
+    type PersistanceStore(?isMemory0 : bool) = 
+        let path = Path.Combine(Constants.ConfFolder, "Conf.db")
         let isMemory = defaultArg isMemory0 false
 
         let sqlCreateTable = """
@@ -49,12 +49,10 @@ module Store =
             """
         let mutable db = None
         
-        do 
-            let sqlLiteDbPath = path
-            
+        do            
             let connectionString = 
                 if isMemory then "Data Source=:memory:;Version=3;New=True;UseUTF16Encoding=True;"
-                else sprintf "Data Source=%s;Version=3;UseUTF16Encoding=True;" sqlLiteDbPath
+                else sprintf "Data Source=%s;Version=3;UseUTF16Encoding=True;" path
             
             let dbConnection = 
                 if isMemory then 
@@ -63,12 +61,12 @@ module Store =
                     let command = new SQLiteCommand(sqlCreateTable, dbConnection)
                     command.ExecuteNonQuery() |> ignore
                     dbConnection
-                elif File.Exists(sqlLiteDbPath) then 
+                elif File.Exists(path) then 
                     let dbConnection = new SQLiteConnection(connectionString)
                     dbConnection.Open()
                     dbConnection
                 else 
-                    SQLiteConnection.CreateFile(sqlLiteDbPath)
+                    SQLiteConnection.CreateFile(path)
                     let dbConnection = new SQLiteConnection(connectionString)
                     dbConnection.Open()
                     let command = new SQLiteCommand(sqlCreateTable, dbConnection)
