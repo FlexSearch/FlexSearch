@@ -13,7 +13,7 @@ module ``Persistance Store Tests`` =
         member val Property1 = "TestObject" with get, set
         member val Property2 = 0 with get, set
     
-    let GetMemoryStore() = new Store.PersistanceStore("", true) :> IPersistanceStore
+    let GetMemoryStore() = new Store.PersistanceStore(true) :> IPersistanceStore
     
     [<Theory>][<AutoMockData>]
     let ``Adding a new TestClass should pass`` (sut : TestClass) = ExpectSuccess(GetMemoryStore().Put "test" sut)
