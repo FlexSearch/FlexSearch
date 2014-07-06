@@ -148,3 +148,14 @@ module HttpHelpers =
         match f with
         | Choice1Of2(r) -> success r owin
         | Choice2Of2(r) -> failure r owin
+    
+    let inline RemoveTrailingSlash (input: string) =
+        if input.EndsWith("/") then
+            input.Substring(0, (input.Length - 1))
+        else input
+
+    let inline GetIndexName (owin : IOwinContext) =
+        RemoveTrailingSlash owin.Request.Uri.Segments.[2]
+
+    let inline SubId (owin : IOwinContext) =
+        RemoveTrailingSlash owin.Request.Uri.Segments.[4]

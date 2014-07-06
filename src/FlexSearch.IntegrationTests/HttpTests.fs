@@ -18,7 +18,7 @@ module ``Webservice Tests`` =
     open Autofac
     open Xunit
     open Xunit.Extensions
-    
+    open Microsoft.Owin.Testing
     // ----------------------------------------------------------------------------
     // Global configuration
     // ----------------------------------------------------------------------------
@@ -191,7 +191,7 @@ module ``Webservice Tests`` =
                 AddTestDataToIndex
                     (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), 
                      container.Resolve<IIndexService>())
-                let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
+                let httpFactory = container.Resolve<IFlexFactory<IHttpHandler>>()
                 let httpServer = new OwinServer(indexService, httpFactory) :> IServer
                 httpServer.Start()
                 serverRunning <- true
@@ -207,7 +207,7 @@ module ``Webservice Tests`` =
     type ``REST Service Tests``() = 
         inherit IntegrationTestBase()
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        //[<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Index creation test 1``() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "post-index-1" "Create index without any field"
@@ -215,13 +215,13 @@ module ``Webservice Tests`` =
             |> withDescription """
 The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
         """
-            |> request "POST" ("/" + indexName)
+            |> request "POST" ("/indices/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Index creation test 2``() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "post-index-1" "Create index without any field"
@@ -229,7 +229,7 @@ The newly created index will be offline as the Online parameter is set to false 
             |> withDescription """
 The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
         """
-            |> request "POST" ("/" + indexName)
+            |> request "POST" ("/indices/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
@@ -239,13 +239,13 @@ The newly created index will be offline as the Online parameter is set to false 
             |> withDescription """
 The newly created index will be offline as the Online parameter is set to false as default. An index has to be opened after creation to enable indexing.
         """
-            |> request "POST" ("/" + indexName)
+            |> request "POST" ("/indices/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1002"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Index creation test 3``() = 
             example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
             |> ofResource "Index"
@@ -253,7 +253,7 @@ The newly created index will be offline as the Online parameter is set to false 
 All field names should be lower case and should not contain any spaces. This is to avoid case based mismatching on field names. Fields have many 
 other configurable properties but Field Type is the only mandatory parameter. Refer to Index Field for more information about field properties.
         """
-            |> request "POST" ("/" + Guid.NewGuid().ToString("N"))
+            |> request "POST" ("/indices/" + Guid.NewGuid().ToString("N"))
             |> withBody """
             {
                 "Fields" : {
@@ -267,7 +267,7 @@ other configurable properties but Field Type is the only mandatory parameter. Re
             |> responseBodyIsNull
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let ``Create update and delete an index``() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "post-index-4" "Create index with computed field"
@@ -281,7 +281,7 @@ dynamically compiled to .net dlls so performance wise they are similar to native
 in C#. But it would be difficult to write complex scripts in single line to pass to the Script source, that 
 is why Flex supports Multi-line and File based scripts. Refer to Script for more information about scripts.
         """
-            |> request "POST" ("/" + indexName)
+            |> request "POST" ("/indices/" + indexName)
             |> withBody """
             {
                 "Fields" : {
@@ -307,7 +307,7 @@ is why Flex supports Multi-line and File based scripts. Refer to Script for more
             |> withDescription """
 There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
         """
-            |> request "PUT" ("/" + indexName)
+            |> request "PUT" ("/indices/" + indexName)
             |> withBody """
         {
             "Fields" : {
@@ -332,31 +332,31 @@ There are a number of parameters which can be set for a given index. For more in
             example "delete-index-1" "Deleting an existing index"
             |> ofResource "Index"
             |> withDescription ""
-            |> request "DELETE" ("/" + indexName)
+            |> request "DELETE" ("/indices/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexCreationTest5() = 
             example "post-index-5" "Create index by setting all properties"
             |> ofResource "Index"
             |> withDescription """
 There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
         """
-            |> request "POST" ("/" + Guid.NewGuid().ToString("N"))
+            |> request "POST" ("/indices/" + Guid.NewGuid().ToString("N"))
             |> withBody (JsonConvert.SerializeObject(Helpers.MockIndexSettings(), jsonSettings))
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexUpdateTest2() = 
             example "put-index-2" "Index update request with wrong index name returns error"
             |> ofResource "Index"
             |> withDescription ""
-            |> request "PUT" "/indexdoesnotexist"
+            |> request "PUT" "/indices/indexdoesnotexist"
             |> withBody """
         {
             "Fields" : {
@@ -378,66 +378,66 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseMatches "ErrorCode" "1000"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexDeleteTest2() = 
             example "delete-index-2" "Deleting an non-existing index will return an error"
             |> ofResource "Index"
             |> withDescription ""
-            |> request "DELETE" "/indexDoesNotExist"
+            |> request "DELETE" "/indices/indexDoesNotExist"
             |> execute
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexGetTest1() = 
             example "get-index-1" "Getting an index detail by name"
             |> ofResource "Index"
             |> withDescription ""
-            |> request "GET" "/contact"
+            |> request "GET" "/indices/contact"
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches "IndexName" "contact"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexGetTest2() = 
             example "get-index-2" "Getting an index detail by name (non existing index)"
             |> ofResource "Index"
             |> withDescription ""
-            |> request "GET" "/indexDoesNotExist"
+            |> request "GET" "/indices/indexDoesNotExist"
             |> execute
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexExistsTest1() = 
             example "get-index-exists-1" "Checking if an index exists (true case)"
             |> ofResource "Exists"
             |> withDescription ""
-            |> request "GET" "/contact/exists"
+            |> request "GET" "/indices/contact/exists"
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexExistsTest2() = 
             example "get-index-exists-2" "Checking if an index exists (false case)"
             |> ofResource "Exists"
             |> withDescription ""
-            |> request "GET" "/indexDoesNotExist/exists"
+            |> request "GET" "/indices/indexDoesNotExist/exists"
             |> execute
             |> responseStatusEquals HttpStatusCode.BadRequest
             |> responseMatches "ErrorCode" "1000"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexStatusTest() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "" ""
-            |> request "POST" ("/" + indexName)
+            |> request "POST" ("/indices/" + indexName)
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
@@ -445,7 +445,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "get-index-status-2" "Getting status of an index (offline)"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "GET" ("/" + indexName + "/status")
+            |> request "GET" ("/indices/" + indexName + "/status")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches "Status" "Offline"
@@ -454,7 +454,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "post-index-status-1" "Setting status of an index to on-line"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "POST" ("/" + indexName + "/status/online")
+            |> request "POST" ("/indices/" + indexName + "/status/online")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
@@ -463,7 +463,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "get-index-status-1" "Getting status of an index"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "GET" ("/" + indexName + "/status")
+            |> request "GET" ("/indices/" + indexName + "/status")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches "Status" "Online"
@@ -472,17 +472,17 @@ There are a number of parameters which can be set for a given index. For more in
             example "post-index-status-2" "Setting status of an index to off-line"
             |> ofResource "Status"
             |> withDescription ""
-            |> request "POST" ("/" + indexName + "/status/offline")
+            |> request "POST" ("/indices/" + indexName + "/status/offline")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexDocumentsTest() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "" ""
-            |> request "POST" ("/" + indexName)
+            |> request "POST" ("/indices/" + indexName)
             |> withBody """
             {
                 "Online": true,
@@ -499,7 +499,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "post-index-document-id-1" "Add a document to an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "POST" ("/" + indexName + "/documents/51")
+            |> request "POST" ("/indices/" + indexName + "/documents/51")
             |> withBody """
             {
                 "firstname" : "Seemant",
@@ -515,7 +515,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "get-index-document-id-1" "Get a document by an id from an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "GET" ("/" + indexName + "/documents/51")
+            |> request "GET" ("/indices/" + indexName + "/documents/51")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseMatches Constants.IdField "51"
@@ -524,7 +524,7 @@ There are a number of parameters which can be set for a given index. For more in
             example "put-index-document-id-1" "Update a document by id to an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "PUT" ("/" + indexName + "/documents/51")
+            |> request "PUT" ("/indices/" + indexName + "/documents/51")
             |> withBody """
             {
                 "firstname" : "Seemant",
@@ -539,25 +539,25 @@ There are a number of parameters which can be set for a given index. For more in
             example "delete-index-document-id-1" "Delete a document by id from an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "DELETE" ("/" + indexName + "/documents/51")
+            |> request "DELETE" ("/indices/" + indexName + "/documents/51")
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let IndexDocumentsTest5() = 
             example "get-index-document-1" "Get top 10 documents from an index"
             |> ofResource "Documents"
             |> withDescription ""
-            |> request "GET" "/contact/documents"
+            |> request "GET" "/indices/contact/documents"
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             //|> responseContainsHeader "RecordsReturned" "10"
             //|> responseContainsHeader "TotalAvailable" "50"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchTermQueryTest1() = 
             example "post-index-search-termquery-1" "Term search using ``=`` operator"
             |> ofResource "Search"
@@ -569,7 +569,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
     firstname = 'Kathy' and lastname = 'Banks'
 
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname = 'Kathy' and lastname = 'Banks'"
@@ -581,7 +581,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
             |> responseMatches "TotalAvailable" "1"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchTermQueryTest2() = 
             example "post-index-search-termquery-2" "Term search using ``eq`` operator"
             |> ofResource "Search"
@@ -593,7 +593,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
     firstname eq 'Kathy' and lastname eq 'Banks'
 
         """
-            |> request "POST" "/contact/search?c=*"
+            |> request "POST" "/indices/contact/search?c=*"
             |> withBody """
         {
           "QueryString": "firstname eq 'Kathy' and lastname eq 'Banks'",
@@ -606,7 +606,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
             |> responseContainsHeader "TotalAvailable" "1"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchFuzzyQueryTest1() = 
             example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
             |> ofResource "Search"
@@ -618,7 +618,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
     firstname fuzzy 'Kathy'
 
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname fuzzy 'Kathy'"
@@ -630,7 +630,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
             |> responseMatches "TotalAvailable" "3"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchFuzzyQueryTest2() = 
             example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
             |> ofResource "Search"
@@ -642,7 +642,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
     firstname ~= 'Kathy'
 
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname ~= 'Kathy'",
@@ -655,7 +655,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchFuzzyQueryTest3() = 
             example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
             |> ofResource "Search"
@@ -666,7 +666,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
     
     firstname ~= 'Kathy'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname ~= 'Kathy' {slop : '2'}",
@@ -679,7 +679,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchPhraseQueryTest1() = 
             example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
             |> ofResource "Search"
@@ -690,7 +690,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
 
     description match 'Nunc purus'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "description match 'Nunc purus'",
@@ -703,7 +703,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
             |> responseContainsHeader "TotalAvailable" "4"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchWildCardQueryTest1() = 
             example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
             |> ofResource "Search"
@@ -714,7 +714,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
 
     firstname like 'Ca*'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname like 'ca*'",
@@ -727,7 +727,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchWildCardQueryTest2() = 
             example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
             |> ofResource "Search"
@@ -738,7 +738,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
 
     firstname %= 'Ca*'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname %= 'Ca*'",
@@ -751,7 +751,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchWildCardQueryTest3() = 
             example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
             |> ofResource "Search"
@@ -763,7 +763,7 @@ be used to match one character.
     
     firstname %= 'Cat?y'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname %= 'Cat?y'",
@@ -776,7 +776,7 @@ be used to match one character.
             |> responseContainsHeader "TotalAvailable" "1"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchRegexQueryTest1() = 
             example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
             |> ofResource "Search"
@@ -788,7 +788,7 @@ be used to match one character.
     
     firstname regex '[ck]Athy'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname regex '[ck]Athy'",
@@ -801,7 +801,7 @@ be used to match one character.
             |> responseContainsHeader "TotalAvailable" "3"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchMatchallQueryTest1() = 
             example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
             |> ofResource "Search"
@@ -812,7 +812,7 @@ The below is the query to to match all documents in the index.
     
     firstname matchall '*'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "firstname matchall '*'",
@@ -826,7 +826,7 @@ The below is the query to to match all documents in the index.
             |> responseContainsHeader "TotalAvailable" "50"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest1() = 
             example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
             |> ofResource "Search"
@@ -837,7 +837,7 @@ The below is the query to to match all documents with cvv2 greater than 100 in t
 
     cvv2 > '100'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "cvv2 > '100'",
@@ -851,7 +851,7 @@ The below is the query to to match all documents with cvv2 greater than 100 in t
             |> responseContainsHeader "TotalAvailable" "48"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest2() = 
             example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
             |> ofResource "Search"
@@ -862,7 +862,7 @@ The below is the query to to match all documents with cvv2 greater than or equal
     
     cvv2 >= '200'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "cvv2 >= '200'",
@@ -876,7 +876,7 @@ The below is the query to to match all documents with cvv2 greater than or equal
             |> responseContainsHeader "TotalAvailable" "41"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest3() = 
             example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
             |> ofResource "Search"
@@ -887,7 +887,7 @@ The below is the query to to match all documents with cvv2 less than 150 in the 
     
     cvv2 < '150'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "cvv2 < '150'",
@@ -901,7 +901,7 @@ The below is the query to to match all documents with cvv2 less than 150 in the 
             |> responseContainsHeader "TotalAvailable" "7"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        //[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchNumericRangeQueryTest4() = 
             example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
             |> ofResource "Search"
@@ -912,7 +912,7 @@ The below is the query to to match all documents with cvv2 less than or equal to
     
     cvv2 <= '500'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname"
             |> withBody """
         {
           "QueryString": "cvv2 <= '500'",
@@ -926,7 +926,7 @@ The below is the query to to match all documents with cvv2 less than or equal to
             |> responseContainsHeader "TotalAvailable" "26"
             |> document
         
-        [<Fact>][<TraitAttribute("Category", "Rest")>]
+        //[<Fact>][<TraitAttribute("Category", "Rest")>]
         let SearchHighlightFeatureTest1() = 
             let query = new SearchQuery("contact", " description = 'Nullam'")
             let highlight = new List<string>()
@@ -940,7 +940,7 @@ The below is the query to highlight 'Nullam' is description field.
 ::
     description = 'Nullam'
         """
-            |> request "POST" "/contact/search?c=firstname,lastname,description"
+            |> request "POST" "/indices/contact/search?c=firstname,lastname,description"
             |> withBody """
         {
           "Count": 2,  

@@ -40,6 +40,9 @@ type NodeState(persistanceStore, serversettings, cacheStore, indicesState) =
 // ----------------------------------------------------------------------------     
 /// HTTP module to handle to incoming requests
 // ----------------------------------------------------------------------------   
+type IHttpHandler =
+    abstract Process : context: IOwinContext -> unit
+  
 [<AbstractClass>]
 type HttpModuleBase() = 
     //abstract Routes : unit -> ServiceRoute []
@@ -74,5 +77,5 @@ type IFactoryCollection =
     abstract AnalyzerFactory : IFlexFactory<Analyzer>
     abstract SearchQueryFactory : IFlexFactory<IFlexQuery>
     abstract ImportHandlerFactory : IFlexFactory<IImportHandler>
-    abstract HttpModuleFactory : IFlexFactory<HttpModuleBase>
+    abstract HttpModuleFactory : IFlexFactory<IHttpHandler>
     abstract ResourceLoader : IResourceLoader

@@ -34,80 +34,73 @@ open System.Threading.Tasks
 /// </summary>
 [<Name("Http")>]
 [<Sealed>]
-type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<HttpModuleBase>, ?port0 : int) = 
+type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHandler>, ?port0 : int) = 
     let port = defaultArg port0 9800
     let httpModule = httpFactory.GetAllModules()
-        
+    
     /// <summary>
     /// Default OWIN method to process request
     /// </summary>
     /// <param name="owin">OWIN Context</param>
     let exec (owin : IOwinContext) = 
         async { 
-            let getModule moduleName indexName (owin : IOwinContext) = 
-                match httpModule.TryGetValue(moduleName) with
-                | (true, x) -> 
-                    match owin.Request.Method.ToUpperInvariant() with
-                    | "GET" -> x.Get(indexName, owin)
-                    | "POST" -> x.Post(indexName, owin)
-                    | "PUT" -> x.Put(indexName, owin)
-                    | "DELETE" -> x.Delete(indexName, owin)
-                    | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+            let getModule lookupValue (owin : IOwinContext) = 
+                match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
+                | (true, x) -> x.Process owin
                 | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
-                
-            let getIndexName (owin : IOwinContext) = 
-                if owin.Request.Uri.Segments.[1].EndsWith("/") then 
-                    owin.Request.Uri.Segments.[1].Substring(0, owin.Request.Uri.Segments.[1].Length - 1)
-                else owin.Request.Uri.Segments.[1]
-                
             try 
                 match owin.Request.Uri.Segments.Length with
                 // Server root
-                | 1 -> getModule "/" "/" owin
-                // Root index request
-                | 2 -> 
-                    let indexName = getIndexName owin
-                    match indexService.IndexExists(indexName) with
-                    | true -> getModule "index" indexName owin
-                    | false -> 
-                        // This can be an index creation request
-                        if owin.Request.Method = "POST" then getModule "index" indexName owin
-                        else owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
-                // Index module request
-                | x when x > 2 && x < 5 -> 
-                    let indexName = getIndexName owin
-                    match indexService.IndexExists(indexName) with
-                    | true -> 
-                        let moduleName = 
-                            if owin.Request.Uri.Segments.[2].EndsWith("/") then 
-                                owin.Request.Uri.Segments.[2].Substring(0, owin.Request.Uri.Segments.[2].Length - 1)
-                            else owin.Request.Uri.Segments.[2]
-                        getModule moduleName indexName owin
-                    | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
+                | 1 -> getModule "/" owin
+                // Root resource request
+                | 2 -> getModule ("/" + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[1]) owin
+                | x when x > 2 && x <= 5 -> 
+                    // Check if the uri is indices and perform an index exists check
+                    if (String.Equals(owin.Request.Uri.Segments.[1], "indices") 
+                        || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) && owin.Request.Method <> "POST" then 
+                        match indexService.IndexExists(RemoveTrailingSlash owin.Request.Uri.Segments.[2]) with
+                        | true -> ()
+                        | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
+                    else 
+                        match x with
+                        | 3 -> getModule ("/" + owin.Request.Uri.Segments.[1] + ":id") owin
+                        | 4 -> 
+                            getModule 
+                                ("/" + owin.Request.Uri.Segments.[1] + ":id/" 
+                                 + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[3]) owin
+                        | 5 -> 
+                            getModule 
+                                ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
+                                owin
+                        | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
                 | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
             with ex -> ()
         }
-        
+    
     /// <summary>
     /// Default OWIN handler to transform C# function to F#
     /// </summary>
     let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
-        
+    
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-    let configuration (app : IAppBuilder) = app.Run(handler)
         
-    let startServer() = 
-        let startOptions = new StartOptions(sprintf "http://*:%i" port)
-        server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, configuration)
-        Console.ReadKey() |> ignore
-        
-    interface IServer with
+    member this.Configuration (app : IAppBuilder) = app.Run(handler)
             
+    interface IServer with
+        
         member this.Start() = 
+            let startServer() = 
+                try 
+                    //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
+                    let startOptions = new StartOptions(sprintf "http://+:%i/" port)
+                    server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
+                    Console.ReadKey() |> ignore
+                with e -> printfn "%A" e
+
             try 
                 thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
             with e -> ()
             ()
-            
+        
         member this.Stop() = server.Dispose()

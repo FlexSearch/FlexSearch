@@ -61,7 +61,9 @@ module Main =
         let logFactory = container.Resolve<IFlexFactory<ILogService>>()
         match logFactory.GetModuleByName(serverSettings.Logger) with
         | Choice1Of2(logger) -> logger
-        | _ -> failwithf ""
+        | _ -> 
+            // Return the default log service
+            new ConsoleLogService() :> ILogService
 
 
     /// <summary>
@@ -79,19 +81,20 @@ module Main =
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
 
         // Interface scanning
+        builder |> FactoryService.RegisterInterfaceAssemblies<IHttpHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IImportHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexFilterFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexQuery>
+
         // Abstract class scanning
-        builder |> FactoryService.RegisterAbstractClassAssemblies<HttpModuleBase>
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
-        builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>     
+        builder |> FactoryService.RegisterSingleFactoryInstance<IHttpHandler>     
+        builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexFilterFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexQuery>
-        builder |> FactoryService.RegisterSingleFactoryInstance<HttpModuleBase>
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
         
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
@@ -107,7 +110,7 @@ module Main =
                   new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
                   new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
 
-        builder.RegisterInstance(new PersistanceStore("", true)).As<IPersistanceStore>().SingleInstance() |> ignore
+        builder.RegisterInstance(new PersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
         builder.RegisterInstance(indicesState).SingleInstance() |> ignore
         builder.RegisterInstance(Parsers.GetParserPool(50)).SingleInstance() |> ignore
@@ -147,7 +150,7 @@ module Main =
         member this.Start() = 
             try 
                 let indexService = container.Resolve<IIndexService>()
-                let httpFactory = container.Resolve<IFlexFactory<HttpModuleBase>>()
+                let httpFactory = container.Resolve<IFlexFactory<IHttpHandler>>()
                 httpServer <- new OwinServer(indexService, httpFactory)
                 httpServer.Start()
             with e -> 

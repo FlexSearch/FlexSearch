@@ -12,6 +12,7 @@
         #region Methods
         private static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder, "Config.json"));
             foreach (var file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly))
             {
@@ -51,6 +52,11 @@
             }
 
             logger.EndSession();
+        }
+
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine(e);
         }
         #endregion
     }

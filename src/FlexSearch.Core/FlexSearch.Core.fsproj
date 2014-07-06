@@ -301,17 +301,17 @@
     <Compile Include="Utilities\MefFactory.fs" />
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\Validator.fs" />
-    <Compile Include="FlexField.fs" />
-    <Compile Include="Document.fs" />
-    <Compile Include="Index.fs" />
-    <Compile Include="Search.fs" />
+    <Compile Include="Utilities\ConsoleLogger.fs" />
+    <Compile Include="Services\FlexField.fs" />
+    <Compile Include="Services\Document.fs" />
+    <Compile Include="Services\Index.fs" />
+    <Compile Include="Services\Search.fs" />
     <Compile Include="Services\IndexService.fs" />
     <Compile Include="Services\DocumentService.fs" />
     <Compile Include="Services\QueueService.fs" />
     <Compile Include="Services\SearchService..fs" />
     <Compile Include="Services\CompilerService.fs" />
     <Compile Include="Services\FactoryService.fs" />
-    <Compile Include="Servers\HttpModule.fs" />
     <Compile Include="Servers\ImportHandlers.fs" />
     <Compile Include="Servers\Thrift.fs" />
     <Compile Include="Servers\SocketServer.fs" />
@@ -321,6 +321,10 @@
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
     <None Include="App.config" />
+    <Compile Include="HttpHandlers\IndexCoreHandlers.fs" />
+    <Compile Include="HttpHandlers\DocumentHandlers.fs" />
+    <Compile Include="HttpHandlers\SearchHandlers.fs" />
+    <Compile Include="HttpHandlers\JobHandlers.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
