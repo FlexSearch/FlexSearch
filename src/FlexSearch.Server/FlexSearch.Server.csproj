@@ -56,6 +56,9 @@
     <Prefer32Bit>true</Prefer32Bit>
     <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="FlexLucene, Version=4.7.2.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
@@ -240,6 +243,7 @@
     <Content Include="Licenses\TPL DATAFLOW FOR MICROSOFT .NET FRAMEWORK 4.5 MSLT %28RTM%29.rtf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="app.manifest" />
     <None Include="Install-Service.bat">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
