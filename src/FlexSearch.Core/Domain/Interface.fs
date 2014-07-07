@@ -20,7 +20,6 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
-open System.Reactive.Subjects
 open System.Reflection
 open System.Threading
 open System.Threading.Tasks.Dataflow

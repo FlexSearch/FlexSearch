@@ -13,7 +13,6 @@ namespace FlexSearch.Core
 open System
 open System.Collections.Concurrent
 open System.Linq
-open System.Reactive.Linq
 
 // ----------------------------------------------------------------------------
 /// Various cache implementation used by Flex
@@ -38,10 +37,6 @@ module Cache =
                 let (_, _) = cache.TryRemove(value.Key)
                 ()
         
-        do 
-            let observer = Observable.Interval(TimeSpan.FromMinutes(2.0)).Subscribe(fun x -> removeInvalidItems())
-            ()
-        
         interface IVersioningCacheStore with
             
             member this.GetVersion index id = 
@@ -49,9 +44,6 @@ module Cache =
                 | (true, x) -> Some(x)
                 | _ -> None
             
-            member this.AddVersion index id version = cache.TryAdd((index, id), (version, DateTime.Now))
-            member this.UpdateVersion index id oldversion oldDateTime newVersion = 
-                cache.TryUpdate((index, id), (newVersion, DateTime.Now), (oldversion, oldDateTime))
-            member this.DeleteVersion index id = 
-                let (res, _) = cache.TryRemove((index, id))
-                res
+            member this.AddVersion index id version = true
+            member this.UpdateVersion index id oldversion oldDateTime newVersion = true
+            member this.DeleteVersion index id = true
