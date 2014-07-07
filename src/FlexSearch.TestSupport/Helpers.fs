@@ -64,3 +64,11 @@ module Helpers =
         match choice with
         | Choice1Of2(success) -> Assert.True(1 = 2, "Expecting error but received success")
         | Choice2Of2(error) -> Assert.Equal(operationMessage.ErrorCode, error.ErrorCode)
+
+    type Conf = 
+        { DocumentationFolder : string
+          ApiFile : string }
+
+    let DocumentationConf = 
+        { DocumentationFolder = @"E:\Python27\Scripts\pelican\Scripts\OneDrive\flexsearch\api"
+          ApiFile = @"F:\Github\FlexSearch\idl\Api.thrift" }

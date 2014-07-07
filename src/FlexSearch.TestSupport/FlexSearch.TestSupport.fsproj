@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="Helpers.fs" />
     <Compile Include="Attributes.fs" />
+    <Compile Include="RestHelpers.fs" />
     <None Include="packages.config" />
     <None Include="app.config" />
   </ItemGroup>
@@ -192,6 +193,10 @@
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="NSubstitute">

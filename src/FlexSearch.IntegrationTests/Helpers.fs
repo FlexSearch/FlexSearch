@@ -95,11 +95,3 @@ let MockIndexSettings() =
     searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
     index.SearchProfiles.Add("test1", searchProfileQuery)
     index
-
-type Conf = 
-    { DocumentationFolder : string
-      ApiFile : string }
-
-let DocumentationConf = 
-    { DocumentationFolder = @"E:\Python27\Scripts\pelican\Scripts\OneDrive\flexsearch\api"
-      ApiFile = @"F:\Github\FlexSearch\idl\Api.thrift" }

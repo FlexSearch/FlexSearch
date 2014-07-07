@@ -308,10 +308,10 @@
     <Compile Include="SearchQueryTests.fs" />
     <Compile Include="SocketServerTests.fs" />
     <Compile Include="HttpTests.fs" />
+    <Compile Include="RestWebServiceTests.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
-    <Compile Include="RestWebServiceTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">

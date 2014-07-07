@@ -84,7 +84,7 @@ module IntegrationTestHelpers =
         index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
         index.Scripts.Add
             ("fullname", 
-             new ScriptProperties("""return fields["givenname"] + " " + fields["surname"];""", ScriptType.ComputedField))
+             new ScriptProperties("""return fields.givenname + " " + fields.surname;""", ScriptType.ComputedField))
         let searchProfileQuery = 
             new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''")
         searchProfileQuery.MissingValueConfiguration.Add("givenname", MissingValueOption.ThrowError)
