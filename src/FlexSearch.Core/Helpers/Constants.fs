@@ -55,7 +55,10 @@ module Constants =
     
     [<Literal>]
     let DocumentField = "_document"
-    
+
+    [<Literal>]
+    let DotNetFrameWork = "4.5.1"
+        
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let private dataFolder = Path.Combine(rootFolder, "Data")

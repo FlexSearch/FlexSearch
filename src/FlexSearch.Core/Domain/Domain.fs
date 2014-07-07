@@ -140,7 +140,7 @@ type FlexField =
     { FieldName : string
       StoreInformation : FieldStoreInformation
       FieldType : FlexFieldType
-      Source : (System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>) option
+      Source : (System.Func<System.Dynamic.DynamicObject, string>) option
       /// This is applicable to all fields apart from stored only so making
       /// it an optional field. 
       FieldInformation : FieldInformation option
@@ -155,9 +155,9 @@ type FlexField =
 // Search profile related types
 // ----------------------------------------------------------------------------
 type ScriptsManager = 
-    { ComputedFieldScripts : Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
-      ProfileSelectorScripts : Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
-      CustomScoringScripts : Dictionary<string, IReadOnlyDictionary<string, string> * double -> double> }
+    { ComputedFieldScripts : Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>
+      ProfileSelectorScripts : Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>
+      CustomScoringScripts : Dictionary<string, System.Dynamic.DynamicObject * double -> double> }
 
 /// <summary>
 /// General index settings

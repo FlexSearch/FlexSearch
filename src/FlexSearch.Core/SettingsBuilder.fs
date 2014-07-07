@@ -192,11 +192,11 @@ module Builder =
                 }
             
             let profileSelectorScripts = 
-                new Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>(StringComparer.OrdinalIgnoreCase)
+                new Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>(StringComparer.OrdinalIgnoreCase)
             let computedFieldScripts = 
-                new Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>(StringComparer.OrdinalIgnoreCase)
+                new Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>(StringComparer.OrdinalIgnoreCase)
             let customScoringScripts = 
-                new Dictionary<string, IReadOnlyDictionary<string, string> * double -> double>(StringComparer.OrdinalIgnoreCase)
+                new Dictionary<string, System.Dynamic.DynamicObject * double -> double>(StringComparer.OrdinalIgnoreCase)
             let! scripts = MapExitOnFailure (Seq.toList (scripts)) getScript
             scripts |> Seq.iter (fun x -> 
                            let (key, scriptType, value) = x

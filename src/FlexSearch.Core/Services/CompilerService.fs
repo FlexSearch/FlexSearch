@@ -12,13 +12,11 @@ namespace FlexSearch.Core.Services
 
 open CSScriptLibrary
 open FlexSearch.Api
+open FlexSearch.Core
 open FlexSearch.Api.Message
 open FlexSearch.Utility
 open System
 open System.Collections.Generic
-open System.ComponentModel.Composition
-open System.ComponentModel.Composition.Hosting
-open System.Reflection
 
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
@@ -31,13 +29,14 @@ module CompilerService =
     /// Template method code for computed field script
     /// </summary>
     let private StringReturnScriptTemplate = """
-public string Execute(System.Collections.Generic.IReadOnlyDictionary<string,string> fields) { [SourceCode] }
+public string Execute(dynamic fields) { [SourceCode] }
 """
     
     // The below settings are to prevent locking in case of multi-threaded scenario
     CSScript.GlobalSettings.InMemoryAsssembly <- true
     CSScript.GlobalSettings.OptimisticConcurrencyModel <- true
     CSScript.CacheEnabled <- false
+    CSScript.GlobalSettings.TargetFramework <- Constants.DotNetFrameWork
 
     /// <summary>
     /// Generates a Function which returns a string value
@@ -48,7 +47,7 @@ public string Execute(System.Collections.Generic.IReadOnlyDictionary<string,stri
         let sourceCode = StringReturnScriptTemplate.Replace("[SourceCode]", source)
         try 
             let compiledScript = 
-                CSScript.LoadDelegate<System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
-                    (sourceCode)
+                CSScript.LoadDelegate<System.Func<System.Dynamic.DynamicObject, string>>
+                    (sourceCode, null, false, [|"Microsoft.CSharp"|])
             Choice1Of2(compiledScript)
         with e -> Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.SCRIPT_CANT_BE_COMPILED, e.Message))

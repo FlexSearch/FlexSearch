@@ -224,6 +224,10 @@ module Index =
                                 version : int, fields : Dictionary<string, string>) = 
         documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(documentId)
         documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(GetCurrentTimeAsLong())
+
+        // Create a dynamic dictionary which will be used during scripting
+        let dynamicFields = new DynamicDictionary(fields)
+
         for field in flexIndex.IndexSetting.Fields do
             // Ignore these 3 fields here.
             if (field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
@@ -235,7 +239,7 @@ module Index =
                     try 
                         // Wrong values for the data type will still be handled as update lucene field will
                         // check the data type
-                        let value = s.Invoke(fields)
+                        let value = s.Invoke(dynamicFields)
                         FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value
                     with e -> FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
                 | None -> 

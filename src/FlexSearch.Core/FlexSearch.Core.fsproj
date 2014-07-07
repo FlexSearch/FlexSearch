@@ -173,6 +173,7 @@
       <HintPath>..\packages\Gibraltar.Loupe.Viewer.3.5.6.1696\lib\net40\LoupeViewer.exe</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Owin">
       <HintPath>..\packages\Microsoft.Owin.2.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
       <Private>True</Private>
@@ -302,6 +303,7 @@
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\Validator.fs" />
     <Compile Include="Utilities\ConsoleLogger.fs" />
+    <Compile Include="Utilities\DynamicDictionary.fs" />
     <Compile Include="Services\FlexField.fs" />
     <Compile Include="Services\Document.fs" />
     <Compile Include="Services\Index.fs" />
