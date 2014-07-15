@@ -32,6 +32,7 @@ namespace FlexSearch.Api
     private string _SearchAnalyzer;
     private FieldType _FieldType;
     private FieldPostingsFormat _PostingsFormat;
+    private FieldSimilarity _Similarity;
     private FieldIndexOptions _IndexOptions;
     private FieldTermVector _TermVector;
     private bool _OmitNorms;
@@ -145,9 +146,27 @@ namespace FlexSearch.Api
 
     /// <summary>
     /// 
-    /// <seealso cref="FieldIndexOptions"/>
+    /// <seealso cref="FieldSimilarity"/>
     /// </summary>
     [DataMember(Order = 8)]
+    public FieldSimilarity Similarity
+    {
+      get
+      {
+        return _Similarity;
+      }
+      set
+      {
+        __isset.Similarity = true;
+        this._Similarity = value;
+      }
+    }
+
+    /// <summary>
+    /// 
+    /// <seealso cref="FieldIndexOptions"/>
+    /// </summary>
+    [DataMember(Order = 9)]
     public FieldIndexOptions IndexOptions
     {
       get
@@ -165,7 +184,7 @@ namespace FlexSearch.Api
     /// 
     /// <seealso cref="FieldTermVector"/>
     /// </summary>
-    [DataMember(Order = 9)]
+    [DataMember(Order = 10)]
     public FieldTermVector TermVector
     {
       get
@@ -179,7 +198,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember(Order = 10)]
+    [DataMember(Order = 11)]
     public bool OmitNorms
     {
       get
@@ -193,7 +212,7 @@ namespace FlexSearch.Api
       }
     }
 
-    [DataMember(Order = 11)]
+    [DataMember(Order = 12)]
     public string ScriptName
     {
       get
@@ -221,6 +240,7 @@ namespace FlexSearch.Api
       public bool SearchAnalyzer;
       public bool FieldType;
       public bool PostingsFormat;
+      public bool Similarity;
       public bool IndexOptions;
       public bool TermVector;
       public bool OmitNorms;
@@ -240,8 +260,10 @@ namespace FlexSearch.Api
       this.__isset.SearchAnalyzer = true;
       this._FieldType = FieldType.Text;
       this.__isset.FieldType = true;
-      this._PostingsFormat = FieldPostingsFormat.Lucene41PostingsFormat;
+      this._PostingsFormat = FieldPostingsFormat.Lucene_4_1;
       this.__isset.PostingsFormat = true;
+      this._Similarity = FieldSimilarity.TFIDF;
+      this.__isset.Similarity = true;
       this._IndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions;
       this.__isset.IndexOptions = true;
       this._TermVector = FieldTermVector.StoreTermVectorsWithPositions;
@@ -315,26 +337,33 @@ namespace FlexSearch.Api
             break;
           case 8:
             if (field.Type == TType.I32) {
-              IndexOptions = (FieldIndexOptions)iprot.ReadI32();
+              Similarity = (FieldSimilarity)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
           case 9:
             if (field.Type == TType.I32) {
-              TermVector = (FieldTermVector)iprot.ReadI32();
+              IndexOptions = (FieldIndexOptions)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
           case 10:
+            if (field.Type == TType.I32) {
+              TermVector = (FieldTermVector)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 11:
             if (field.Type == TType.Bool) {
               OmitNorms = iprot.ReadBool();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
-          case 11:
+          case 12:
             if (field.Type == TType.String) {
               ScriptName = iprot.ReadString();
             } else { 
@@ -410,10 +439,18 @@ namespace FlexSearch.Api
         oprot.WriteI32((int)PostingsFormat);
         oprot.WriteFieldEnd();
       }
+      if (__isset.Similarity) {
+        field.Name = "Similarity";
+        field.Type = TType.I32;
+        field.ID = 8;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32((int)Similarity);
+        oprot.WriteFieldEnd();
+      }
       if (__isset.IndexOptions) {
         field.Name = "IndexOptions";
         field.Type = TType.I32;
-        field.ID = 8;
+        field.ID = 9;
         oprot.WriteFieldBegin(field);
         oprot.WriteI32((int)IndexOptions);
         oprot.WriteFieldEnd();
@@ -421,7 +458,7 @@ namespace FlexSearch.Api
       if (__isset.TermVector) {
         field.Name = "TermVector";
         field.Type = TType.I32;
-        field.ID = 9;
+        field.ID = 10;
         oprot.WriteFieldBegin(field);
         oprot.WriteI32((int)TermVector);
         oprot.WriteFieldEnd();
@@ -429,7 +466,7 @@ namespace FlexSearch.Api
       if (__isset.OmitNorms) {
         field.Name = "OmitNorms";
         field.Type = TType.Bool;
-        field.ID = 10;
+        field.ID = 11;
         oprot.WriteFieldBegin(field);
         oprot.WriteBool(OmitNorms);
         oprot.WriteFieldEnd();
@@ -437,7 +474,7 @@ namespace FlexSearch.Api
       if (ScriptName != null && __isset.ScriptName) {
         field.Name = "ScriptName";
         field.Type = TType.String;
-        field.ID = 11;
+        field.ID = 12;
         oprot.WriteFieldBegin(field);
         oprot.WriteString(ScriptName);
         oprot.WriteFieldEnd();
@@ -457,6 +494,7 @@ namespace FlexSearch.Api
         && ((__isset.SearchAnalyzer == other.__isset.SearchAnalyzer) && ((!__isset.SearchAnalyzer) || (System.Object.Equals(SearchAnalyzer, other.SearchAnalyzer))))
         && ((__isset.FieldType == other.__isset.FieldType) && ((!__isset.FieldType) || (System.Object.Equals(FieldType, other.FieldType))))
         && ((__isset.PostingsFormat == other.__isset.PostingsFormat) && ((!__isset.PostingsFormat) || (System.Object.Equals(PostingsFormat, other.PostingsFormat))))
+        && ((__isset.Similarity == other.__isset.Similarity) && ((!__isset.Similarity) || (System.Object.Equals(Similarity, other.Similarity))))
         && ((__isset.IndexOptions == other.__isset.IndexOptions) && ((!__isset.IndexOptions) || (System.Object.Equals(IndexOptions, other.IndexOptions))))
         && ((__isset.TermVector == other.__isset.TermVector) && ((!__isset.TermVector) || (System.Object.Equals(TermVector, other.TermVector))))
         && ((__isset.OmitNorms == other.__isset.OmitNorms) && ((!__isset.OmitNorms) || (System.Object.Equals(OmitNorms, other.OmitNorms))))
@@ -473,6 +511,7 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.SearchAnalyzer ? 0 : (SearchAnalyzer.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.FieldType ? 0 : (FieldType.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.PostingsFormat ? 0 : (PostingsFormat.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.Similarity ? 0 : (Similarity.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.IndexOptions ? 0 : (IndexOptions.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.TermVector ? 0 : (TermVector.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.OmitNorms ? 0 : (OmitNorms.GetHashCode()));
@@ -497,6 +536,8 @@ namespace FlexSearch.Api
       sb.Append(FieldType);
       sb.Append(",PostingsFormat: ");
       sb.Append(PostingsFormat);
+      sb.Append(",Similarity: ");
+      sb.Append(Similarity);
       sb.Append(",IndexOptions: ");
       sb.Append(IndexOptions);
       sb.Append(",TermVector: ");

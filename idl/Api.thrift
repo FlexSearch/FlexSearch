@@ -42,7 +42,7 @@ namespace java org.FlexSearch.Api
 
 	enum FieldSimilarity {
 		BM25 = 1
-		TDF = 2
+		TFIDF = 2
 	}
 
 /*
@@ -68,7 +68,7 @@ Pulsing Codec: in-lines low frequency terms' postings into terms dictionary.
 		Memory = 2
 		Bloom = 3 
 		Pulsing = 4 
-		Lucene41PostingsFormat = 5
+		Lucene_4_1 = 5
 	}
 //>
 
@@ -265,9 +265,14 @@ Version of the Lucene index used behind the scene.
 
 */
 	enum IndexVersion {
-		Lucene47 = 1
+		Lucene_4_9 = 1
 	}
 //>
+
+
+enum Codec {
+		Lucene_4_9 = 1
+	}
 
 /*
 <Script Type
@@ -358,7 +363,11 @@ Refer to IndexVersion.
 		3:	optional i32 DefaultWriteLockTimeout =  1000
 		4:	optional i32 RamBufferSizeMb = 100
 		5:	optional i32 RefreshTimeMilliSec = 25
-		6:	optional IndexVersion IndexVersion = IndexVersion.Lucene47
+		6:	optional IndexVersion IndexVersion = IndexVersion.Lucene_4_9
+		7:	optional FieldPostingsFormat IdFieldPostingsFormat = FieldPostingsFormat.Bloom
+		8:	optional FieldPostingsFormat DefaultIndexPostingsFormat = FieldPostingsFormat.Lucene_4_1
+		9:	optional Codec DefaultCodec = Codec.Lucene_4_9
+		10:	optional bool EnableVersioning = false
 	}
 //>
 
@@ -404,10 +413,11 @@ Refer to IndexVersion.
 		5:	optional string SearchAnalyzer = "standardanalyzer"
 		6:	optional FieldType FieldType = 4
 		7:	optional FieldPostingsFormat PostingsFormat = 5
-		8:	optional FieldIndexOptions IndexOptions = 3
-		9:	optional FieldTermVector TermVector = 3
-		10:	optional bool OmitNorms = true
-		11:	optional string ScriptName = ""
+		8:	optional FieldSimilarity Similarity = 2
+		9:	optional FieldIndexOptions IndexOptions = 3
+		10:	optional FieldTermVector TermVector = 3
+		11:	optional bool OmitNorms = true
+		12:	optional string ScriptName = ""
 	}
 //>
 

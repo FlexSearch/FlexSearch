@@ -7,7 +7,7 @@
 
 namespace FlexSearch.Api
 {
-  public enum IndexVersion
+  public enum Codec
   {
     Lucene_4_9 = 1,
   }

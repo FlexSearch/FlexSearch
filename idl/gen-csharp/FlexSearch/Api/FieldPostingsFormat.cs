@@ -13,6 +13,6 @@ namespace FlexSearch.Api
     Memory = 2,
     Bloom = 3,
     Pulsing = 4,
-    Lucene41PostingsFormat = 5,
+    Lucene_4_1 = 5,
   }
 }

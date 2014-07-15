@@ -31,6 +31,10 @@ namespace FlexSearch.Api
     private int _RamBufferSizeMb;
     private int _RefreshTimeMilliSec;
     private IndexVersion _IndexVersion;
+    private FieldPostingsFormat _IdFieldPostingsFormat;
+    private FieldPostingsFormat _DefaultIndexPostingsFormat;
+    private Codec _DefaultCodec;
+    private bool _EnableVersioning;
 
     [DataMember(Order = 1)]
     public int CommitTimeSec
@@ -124,6 +128,74 @@ namespace FlexSearch.Api
       }
     }
 
+    /// <summary>
+    /// 
+    /// <seealso cref="FieldPostingsFormat"/>
+    /// </summary>
+    [DataMember(Order = 7)]
+    public FieldPostingsFormat IdFieldPostingsFormat
+    {
+      get
+      {
+        return _IdFieldPostingsFormat;
+      }
+      set
+      {
+        __isset.IdFieldPostingsFormat = true;
+        this._IdFieldPostingsFormat = value;
+      }
+    }
+
+    /// <summary>
+    /// 
+    /// <seealso cref="FieldPostingsFormat"/>
+    /// </summary>
+    [DataMember(Order = 8)]
+    public FieldPostingsFormat DefaultIndexPostingsFormat
+    {
+      get
+      {
+        return _DefaultIndexPostingsFormat;
+      }
+      set
+      {
+        __isset.DefaultIndexPostingsFormat = true;
+        this._DefaultIndexPostingsFormat = value;
+      }
+    }
+
+    /// <summary>
+    /// 
+    /// <seealso cref="Codec"/>
+    /// </summary>
+    [DataMember(Order = 9)]
+    public Codec DefaultCodec
+    {
+      get
+      {
+        return _DefaultCodec;
+      }
+      set
+      {
+        __isset.DefaultCodec = true;
+        this._DefaultCodec = value;
+      }
+    }
+
+    [DataMember(Order = 10)]
+    public bool EnableVersioning
+    {
+      get
+      {
+        return _EnableVersioning;
+      }
+      set
+      {
+        __isset.EnableVersioning = true;
+        this._EnableVersioning = value;
+      }
+    }
+
 
     public Isset __isset;
     #if !SILVERLIGHT
@@ -137,6 +209,10 @@ namespace FlexSearch.Api
       public bool RamBufferSizeMb;
       public bool RefreshTimeMilliSec;
       public bool IndexVersion;
+      public bool IdFieldPostingsFormat;
+      public bool DefaultIndexPostingsFormat;
+      public bool DefaultCodec;
+      public bool EnableVersioning;
     }
 
     public IndexConfiguration() {
@@ -150,8 +226,16 @@ namespace FlexSearch.Api
       this.__isset.RamBufferSizeMb = true;
       this._RefreshTimeMilliSec = 25;
       this.__isset.RefreshTimeMilliSec = true;
-      this._IndexVersion = IndexVersion.Lucene47;
+      this._IndexVersion = IndexVersion.Lucene_4_9;
       this.__isset.IndexVersion = true;
+      this._IdFieldPostingsFormat = FieldPostingsFormat.Bloom;
+      this.__isset.IdFieldPostingsFormat = true;
+      this._DefaultIndexPostingsFormat = FieldPostingsFormat.Lucene_4_1;
+      this.__isset.DefaultIndexPostingsFormat = true;
+      this._DefaultCodec = Codec.Lucene_4_9;
+      this.__isset.DefaultCodec = true;
+      this._EnableVersioning = false;
+      this.__isset.EnableVersioning = true;
     }
 
     public void Read (TProtocol iprot)
@@ -204,6 +288,34 @@ namespace FlexSearch.Api
           case 6:
             if (field.Type == TType.I32) {
               IndexVersion = (IndexVersion)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 7:
+            if (field.Type == TType.I32) {
+              IdFieldPostingsFormat = (FieldPostingsFormat)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 8:
+            if (field.Type == TType.I32) {
+              DefaultIndexPostingsFormat = (FieldPostingsFormat)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 9:
+            if (field.Type == TType.I32) {
+              DefaultCodec = (Codec)iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 10:
+            if (field.Type == TType.Bool) {
+              EnableVersioning = iprot.ReadBool();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -269,6 +381,38 @@ namespace FlexSearch.Api
         oprot.WriteI32((int)IndexVersion);
         oprot.WriteFieldEnd();
       }
+      if (__isset.IdFieldPostingsFormat) {
+        field.Name = "IdFieldPostingsFormat";
+        field.Type = TType.I32;
+        field.ID = 7;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32((int)IdFieldPostingsFormat);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.DefaultIndexPostingsFormat) {
+        field.Name = "DefaultIndexPostingsFormat";
+        field.Type = TType.I32;
+        field.ID = 8;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32((int)DefaultIndexPostingsFormat);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.DefaultCodec) {
+        field.Name = "DefaultCodec";
+        field.Type = TType.I32;
+        field.ID = 9;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32((int)DefaultCodec);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.EnableVersioning) {
+        field.Name = "EnableVersioning";
+        field.Type = TType.Bool;
+        field.ID = 10;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteBool(EnableVersioning);
+        oprot.WriteFieldEnd();
+      }
       oprot.WriteFieldStop();
       oprot.WriteStructEnd();
     }
@@ -282,7 +426,11 @@ namespace FlexSearch.Api
         && ((__isset.DefaultWriteLockTimeout == other.__isset.DefaultWriteLockTimeout) && ((!__isset.DefaultWriteLockTimeout) || (System.Object.Equals(DefaultWriteLockTimeout, other.DefaultWriteLockTimeout))))
         && ((__isset.RamBufferSizeMb == other.__isset.RamBufferSizeMb) && ((!__isset.RamBufferSizeMb) || (System.Object.Equals(RamBufferSizeMb, other.RamBufferSizeMb))))
         && ((__isset.RefreshTimeMilliSec == other.__isset.RefreshTimeMilliSec) && ((!__isset.RefreshTimeMilliSec) || (System.Object.Equals(RefreshTimeMilliSec, other.RefreshTimeMilliSec))))
-        && ((__isset.IndexVersion == other.__isset.IndexVersion) && ((!__isset.IndexVersion) || (System.Object.Equals(IndexVersion, other.IndexVersion))));
+        && ((__isset.IndexVersion == other.__isset.IndexVersion) && ((!__isset.IndexVersion) || (System.Object.Equals(IndexVersion, other.IndexVersion))))
+        && ((__isset.IdFieldPostingsFormat == other.__isset.IdFieldPostingsFormat) && ((!__isset.IdFieldPostingsFormat) || (System.Object.Equals(IdFieldPostingsFormat, other.IdFieldPostingsFormat))))
+        && ((__isset.DefaultIndexPostingsFormat == other.__isset.DefaultIndexPostingsFormat) && ((!__isset.DefaultIndexPostingsFormat) || (System.Object.Equals(DefaultIndexPostingsFormat, other.DefaultIndexPostingsFormat))))
+        && ((__isset.DefaultCodec == other.__isset.DefaultCodec) && ((!__isset.DefaultCodec) || (System.Object.Equals(DefaultCodec, other.DefaultCodec))))
+        && ((__isset.EnableVersioning == other.__isset.EnableVersioning) && ((!__isset.EnableVersioning) || (System.Object.Equals(EnableVersioning, other.EnableVersioning))));
     }
 
     public override int GetHashCode() {
@@ -294,6 +442,10 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.RamBufferSizeMb ? 0 : (RamBufferSizeMb.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.RefreshTimeMilliSec ? 0 : (RefreshTimeMilliSec.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.IndexVersion ? 0 : (IndexVersion.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.IdFieldPostingsFormat ? 0 : (IdFieldPostingsFormat.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.DefaultIndexPostingsFormat ? 0 : (DefaultIndexPostingsFormat.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.DefaultCodec ? 0 : (DefaultCodec.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.EnableVersioning ? 0 : (EnableVersioning.GetHashCode()));
       }
       return hashcode;
     }
@@ -312,6 +464,14 @@ namespace FlexSearch.Api
       sb.Append(RefreshTimeMilliSec);
       sb.Append(",IndexVersion: ");
       sb.Append(IndexVersion);
+      sb.Append(",IdFieldPostingsFormat: ");
+      sb.Append(IdFieldPostingsFormat);
+      sb.Append(",DefaultIndexPostingsFormat: ");
+      sb.Append(DefaultIndexPostingsFormat);
+      sb.Append(",DefaultCodec: ");
+      sb.Append(DefaultCodec);
+      sb.Append(",EnableVersioning: ");
+      sb.Append(EnableVersioning);
       sb.Append(")");
       return sb.ToString();
     }

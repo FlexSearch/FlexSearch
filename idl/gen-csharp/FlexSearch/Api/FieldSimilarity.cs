@@ -10,6 +10,6 @@ namespace FlexSearch.Api
   public enum FieldSimilarity
   {
     BM25 = 1,
-    TDF = 2,
+    TFIDF = 2,
   }
 }
