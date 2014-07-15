@@ -68,13 +68,15 @@
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="ValidatorTests.fs" />
+    <Compile Include="Builders\AnalysisExtensionsTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="PoolTests.fs" />
     <Compile Include="PersistanceStoreTests.fs" />
     <Compile Include="AnalysisTests.fs" />
     <None Include="app.config" />
     <None Include="packages.config" />
+    <None Include="Eloquera.config" />
+    <Compile Include="Builders\ValidatorTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj">
@@ -91,6 +93,18 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Castle.Core" />
+    <Reference Include="Eloquera.Client">
+      <HintPath>..\packages\EloqueraDB.6.3.3\lib\net40\Eloquera.Client.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Eloquera.Common">
+      <HintPath>..\packages\EloqueraDB.6.3.3\lib\net40\Eloquera.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Eloquera.Server">
+      <HintPath>..\packages\EloqueraDB.6.3.3\lib\net40\Eloquera.Server.exe</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.4.9.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>

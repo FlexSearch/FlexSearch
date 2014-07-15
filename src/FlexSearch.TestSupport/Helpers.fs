@@ -62,8 +62,12 @@ module Helpers =
     /// <param name="operationMessage"></param>
     let ExpectErrorCode (operationMessage : OperationMessage) (choice : Choice<'T, OperationMessage>) = 
         match choice with
-        | Choice1Of2(success) -> Assert.True(1 = 2, "Expecting error but received success")
-        | Choice2Of2(error) -> Assert.Equal(operationMessage.ErrorCode, error.ErrorCode)
+        | Choice1Of2(success) -> 
+            printfn "%A" success
+            Assert.True(1 = 2, "Expecting error but received success")
+        | Choice2Of2(error) ->
+            printfn "%A" error
+            Assert.Equal(operationMessage.ErrorCode, error.ErrorCode)
 
     type Conf = 
         { DocumentationFolder : string

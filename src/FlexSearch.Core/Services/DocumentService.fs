@@ -119,7 +119,7 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     let DeleteDocument indexName documentId = 
         maybe { 
             let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, indexName)
-            let targetIndex = Document.MapToShard documentId flexIndex.Shards.Length
+            let targetIndex = MapToShard documentId flexIndex.Shards.Length
             flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) 
             |> ignore
         }

@@ -17,87 +17,8 @@ open System.IO
 open System.Threading
 
 [<AutoOpen>]
-module MonadHelpers = 
-    [<Sealed>]
-    type ValidationBuilder() = 
-        
-        member this.Bind(v, f) = 
-            match v with
-            | Choice1Of2(x) -> f x
-            | Choice2Of2(s) -> Choice2Of2(s)
-        
-        member this.ReturnFrom v = v
-        member this.Return v = Choice1Of2(v)
-        member this.Zero() = Choice1Of2()
-        
-        member this.Combine(a, b) = 
-            match a, b with
-            | Choice1Of2 a', Choice1Of2 b' -> Choice1Of2 b'
-            | Choice2Of2 a', Choice1Of2 b' -> Choice2Of2 a'
-            | Choice1Of2 a', Choice2Of2 b' -> Choice2Of2 b'
-            | Choice2Of2 a', Choice2Of2 b' -> Choice2Of2 a'
-        
-        member this.Delay(f) = f()
-        
-        member this.TryFinally(body, compensation) = 
-            try 
-                this.ReturnFrom(body())
-            finally
-                compensation()
-        
-        member this.Using(disposable : #System.IDisposable, body) = 
-            let body' = fun () -> body disposable
-            this.TryFinally(body', fun () -> disposable.Dispose())
-    
-    let maybe = new ValidationBuilder()
-    
-    /// <summary>
-    /// Applies the given function to each element of the collection and returns on encountering
-    /// error.
-    /// </summary>
-    /// <param name="list"></param>
-    /// <param name="f"></param>
-    let inline IterExitOnFailure (list : 'T list) f = 
-        let rec loop (list : 'T list) f = 
-            match list with
-            | head :: tail -> 
-                match f (head) with
-                | Choice1Of2(_) -> loop tail f
-                | Choice2Of2(e) -> Choice2Of2(e)
-            | [] -> Choice1Of2()
-        loop list f
-    
-    /// <summary>
-    /// Creates a new collection whose elements are the results of applying the given function 
-    /// to each of the elements of the collection. The method will return on encountering the first
-    /// error. This is to be used with the maybe monad.
-    /// </summary>
-    /// <param name="input"></param>
-    /// <param name="f"></param>
-    let inline MapExitOnFailure (input : 'T list) (f : 'T -> Choice<'U, OperationMessage>) = 
-        let res = new ResizeArray<'U>()
-        
-        let rec loop (input : 'T list) f = 
-            match input with
-            | head :: tail -> 
-                match f (head) with
-                | Choice1Of2(result) -> 
-                    res.Add(result)
-                    loop tail f
-                | Choice2Of2(e) -> Choice2Of2(e)
-            | [] -> Choice1Of2()
-        match loop input f with
-        | Choice1Of2(_) -> Choice1Of2(res)
-        | Choice2Of2(e) -> Choice2Of2(e)
-    
-    let inline GetValue (dictionary : Dictionary<string, 'T>) key (error : OperationMessage) = 
-        match dictionary.TryGetValue(key) with
-        | (true, x) -> Choice1Of2(x)
-        | _ -> Choice2Of2(OperationMessage.WithPropertyName(error, key))
-
-[<AutoOpen>]
 module JavaHelpers = 
-    // These are needed to satisfy certain lucene query requirements
+    // These are needed to satisfy certain Lucene query requirements
     let inline GetJavaDouble(value : Double) = java.lang.Double(value)
     let inline GetJavaInt(value : int) = java.lang.Integer(value)
     let inline GetJavaLong(value : int64) = java.lang.Long(value)
@@ -209,6 +130,11 @@ module Helpers =
         match dict.ContainsKey(key) with
         | true -> dict.[key] <- value
         | _ -> dict.Add(key, value)
+    
+    let inline GetValue (dictionary : Dictionary<string, 'T>) key (error : OperationMessage) = 
+        match dictionary.TryGetValue(key) with
+        | (true, x) -> Choice1Of2(x)
+        | _ -> Choice2Of2(OperationMessage.WithPropertyName(error, key))
     
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore

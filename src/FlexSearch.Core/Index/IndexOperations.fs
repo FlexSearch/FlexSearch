@@ -92,7 +92,7 @@ module Index =
                     let shards = 
                         Array.init flexIndexSetting.ShardConfiguration.ShardCount (fun a -> 
                             let writers = 
-                                IO.GetIndexWriter
+                                IndexingHelpers.GetIndexWriter
                                     (flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
                             match writers with
                             | Choice2Of2(e) -> failwith e.UserMessage
@@ -249,5 +249,5 @@ module Index =
                     | _ -> FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
         let targetIndex = 
             if (flexIndex.Shards.Length = 1) then 0
-            else Document.MapToShard documentId flexIndex.Shards.Length
+            else IndexingHelpers.MapToShard documentId flexIndex.Shards.Length
         (targetIndex, documentTemplate)

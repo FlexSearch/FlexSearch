@@ -34,38 +34,68 @@ open org.apache.lucene.document
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
+open org.apache.lucene.codecs.bloom
+open org.apache.lucene.index
+open org.apache.lucene.sandbox
+open org.apache.lucene.codecs.idversion
+open org.apache.lucene.document
+open org.apache.lucene.analysis
+open org.apache.lucene.codecs.perfield
+open org.apache.lucene.codecs
+open System.Collections.Generic
+open org.apache.lucene.search.similarities
 
-// ----------------------------------------------------------------------------
-// Contains document building and indexing related operations
-// ----------------------------------------------------------------------------
+/// <summary>
+/// Default postings format for FlexSearch
+/// </summary>
+[<Sealed>]
+type FlexPerFieldPostingFormats(mappings : IReadOnlyDictionary<string, PostingsFormat>, defaultFormat : PostingsFormat) = 
+    inherit PerFieldPostingsFormat()
+    override this.getPostingsFormatForField (fieldName) = 
+        match mappings.TryGetValue(fieldName) with
+        | true, format -> format
+        | _ -> defaultFormat
+
+/// <summary>
+/// Default postings format for FlexSearch
+/// </summary>
+[<Sealed>]
+type FlexPerFieldSimilarityProvider(mappings : IReadOnlyDictionary<string, Similarity>, defaultFormat : Similarity) = 
+    inherit PerFieldSimilarityWrapper()
+    override this.get (fieldName) = 
+        match mappings.TryGetValue(fieldName) with
+        | true, format -> format
+        | _ -> defaultFormat
+
+/// <summary>
+/// Default codec for FlexSearch
+/// </summary>
+[<Sealed>]
+type FlexCodec(postingsFormat : FlexPerFieldPostingFormats, delegatingCodec : Codec) = 
+    inherit FilterCodec("FlexCodec", delegatingCodec)
+    override this.postingsFormat() = postingsFormat :> PostingsFormat
+
 [<AutoOpen>]
-[<RequireQualifiedAccess>]
-module Document = 
+module IndexingHelpers = 
     /// <summary>
-    ///  Method to map a string based id to a lucene shard 
+    /// FieldType to be used for ID fields
     /// </summary>
-    /// <param name="id">Id of the document</param>
-    /// <param name="shardCount">Total available shards</param>
-    let MapToShard (id : string) shardCount = 
-        if (shardCount = 1) then 0
-        else 
-            let mutable total = 0
-            for i in id do
-                total <- total + System.Convert.ToInt32(i)
-            total % shardCount
+    let IdFieldType = 
+        lazy (let fieldType = new FieldType()
+              fieldType.setIndexed (true)
+              fieldType.setOmitNorms (true)
+              fieldType.setIndexOptions (FieldInfo.IndexOptions.DOCS_ONLY)
+              fieldType.setTokenized (false)
+              fieldType.freeze()
+              fieldType)
     
-// ----------------------------------------------------------------------------
-// Contains lucene writer IO and infrastructure related operations
-// ----------------------------------------------------------------------------
-[<AutoOpen>]
-[<RequireQualifiedAccess>]
-module IO = 
-    // ----------------------------------------------------------------------------     
-    // Creates lucene index writer configuration from flex index setting 
-    // ---------------------------------------------------------------------------- 
-    let private GetIndexWriterConfig (flexIndexSetting : FlexIndexSetting) = 
+    /// Creates Lucene index writer configuration from flex index setting 
+    let private GetIndexWriterConfig(flexIndexSetting : FlexIndexSetting) = 
         try 
-            let iwc = new IndexWriterConfig(Constants.LuceneVersion, flexIndexSetting.IndexAnalyzer)
+            let version = 
+                org.apache.lucene.util.Version.parseLeniently 
+                    (flexIndexSetting.IndexConfiguration.IndexVersion.ToString())
+            let iwc = new IndexWriterConfig(version, flexIndexSetting.IndexAnalyzer)
             iwc.setOpenMode (org.apache.lucene.index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
             iwc.setRAMBufferSizeMB (System.Double.Parse(flexIndexSetting.IndexConfiguration.RamBufferSizeMb.ToString())) 
             |> ignore
@@ -74,9 +104,7 @@ module IO =
             let error = OperationMessage.WithDeveloperMessage(MessageConstants.ERROR_OPENING_INDEXWRITER, e.Message)
             Choice2Of2(error)
     
-    // ----------------------------------------------------------------------------                  
-    // Create a lucene file-system lock over a directory    
-    // ---------------------------------------------------------------------------- 
+    /// Create a Lucene file-system lock over a directory    
     let private GetIndexDirectory (directoryPath : string) (directoryType : DirectoryType) = 
         // Note: Might move to SingleInstanceLockFactory to provide other services to open
         // the index in read-only mode
@@ -98,9 +126,11 @@ module IO =
             let error = OperationMessage.WithDeveloperMessage(MessageConstants.ERROR_OPENING_INDEXWRITER, e.Message)
             Choice2Of2(error)
     
-    // ---------------------------------------------------------------------------- 
-    // Creates lucene index writer from flex index setting  
-    // ----------------------------------------------------------------------------                    
+    /// <summary>
+    /// Creates index writer from flex index setting  
+    /// </summary>
+    /// <param name="indexSetting"></param>
+    /// <param name="directoryPath"></param>
     let GetIndexWriter(indexSetting : FlexIndexSetting, directoryPath : string) = 
         maybe { 
             let! iwc = GetIndexWriterConfig indexSetting
@@ -109,3 +139,15 @@ module IO =
             let trackingIndexWriter = new TrackingIndexWriter(indexWriter)
             return! Choice1Of2(indexWriter, trackingIndexWriter)
         }
+    
+    /// <summary>
+    ///  Method to map a string based id to a Lucene shard 
+    /// Uses MurmurHash2 algorithm
+    /// </summary>
+    /// <param name="id">Id of the document</param>
+    /// <param name="shardCount">Total available shards</param>
+    let MapToShard (id : string) shardCount = 
+        if (shardCount = 1) then 0
+        else 
+            let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
+            MurmurHash2.hash32 (byteArray, 0, byteArray.Length) % shardCount

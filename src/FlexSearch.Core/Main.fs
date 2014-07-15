@@ -110,7 +110,7 @@ module Main =
                   new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
                   new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
 
-        builder.RegisterInstance(new PersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() |> ignore
+        builder.RegisterInstance(new SqlLitePersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
         builder.RegisterInstance(indicesState).SingleInstance() |> ignore
         builder.RegisterInstance(Parsers.GetParserPool(50)).SingleInstance() |> ignore

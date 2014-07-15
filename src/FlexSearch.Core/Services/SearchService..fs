@@ -50,7 +50,7 @@ type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuer
                     let (p', sq) = p
                     search.MissingValueConfiguration <- sq.MissingValueConfiguration
                     let! values = Parsers.ParseQueryString(search.QueryString)
-                    let! query = SearchDsl.GenerateQuery flexIndex p' search (Some(values)) queryTypes
+                    let! query = SearchDsl.GenerateQuery flexIndex.IndexSetting.FieldsLookup p' search (Some(values)) queryTypes
                     return! SearchDsl.SearchQuery(flexIndex, query, search)
                 | _ -> return! Choice2Of2(MessageConstants.SEARCH_PROFILE_NOT_FOUND)
             else 
@@ -59,7 +59,7 @@ type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuer
                 parser.Release()
                 match predicate with
                 | NotPredicate(_) -> return! Choice2Of2(MessageConstants.NEGATIVE_QUERY_NOT_SUPPORTED)
-                | _ -> let! query = GenerateQuery flexIndex predicate search None queryTypes
+                | _ -> let! query = GenerateQuery flexIndex.IndexSetting.FieldsLookup predicate search None queryTypes
                        return! SearchDsl.SearchQuery(flexIndex, query, search)
         }
     

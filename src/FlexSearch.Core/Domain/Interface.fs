@@ -147,13 +147,13 @@ type ISearchService =
 
 /// <summary>
 /// Version cache store used across the system. This helps in resolving 
-/// conflicts arising out of concurrent threads trying to update a lucene document.
+/// conflicts arising out of concurrent threads trying to update a Lucene document.
 /// </summary>
 type IVersioningCacheStore = 
-    abstract GetVersion : string -> string -> Option<int * DateTime>
-    abstract AddVersion : string -> string -> int -> bool
-    abstract UpdateVersion : string -> string -> int -> DateTime -> int -> bool
-    abstract DeleteVersion : string -> string -> bool
+    abstract GetVersion : id:string -> Option<int>
+    abstract AddVersion : id:string * version:int -> bool
+    abstract UpdateVersion : string * int * int -> bool
+    abstract DeleteVersion : string -> bool
 
 /// <summary>
 /// Index related operations
@@ -208,7 +208,6 @@ type ILogService =
     abstract TraceError : error:string * ex:Exception -> unit
     abstract TraceErrorMessage : error:string -> unit
     abstract TraceOperationMessageError : error:string * ex:OperationMessage -> unit
-
 /// <summary>
 /// Search related operations
 /// </summary>

@@ -34,8 +34,8 @@ public string Execute(dynamic fields) { [SourceCode] }
     
     // The below settings are to prevent locking in case of multi-threaded scenario
     CSScript.GlobalSettings.InMemoryAsssembly <- true
-    CSScript.GlobalSettings.OptimisticConcurrencyModel <- true
-    CSScript.CacheEnabled <- false
+    CSScript.GlobalSettings.OptimisticConcurrencyModel <- false
+    CSScript.CacheEnabled <- true
     CSScript.GlobalSettings.TargetFramework <- Constants.DotNetFrameWork
 
     /// <summary>

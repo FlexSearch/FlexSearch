@@ -21,29 +21,23 @@ open System.Linq
 module Cache = 
     // ----------------------------------------------------------------------------
     /// Version cache store used across the system. This helps in resolving 
-    /// conflicts arising out of concrrent threads trying to update a lucene document.
+    /// conflicts arising out of concurrent threads trying to update a Lucene document.
     /// Every document update should go through version cache to ensure the update
-    /// integrity and optimistic locking. 
+    /// integrity and optimistic locking.
+    /// In order to reduce contention there will be one CacheStore per shard. 
     /// Initially Lucene's LiveFieldValues seemed like a good alternative but it
     /// complicates the design and requires thread management
     // ----------------------------------------------------------------------------
     [<Sealed>]
     type VersioningCacheStore() = 
-        let cache = new ConcurrentDictionary<string * string, int * DateTime>()
-        
-        let removeInvalidItems() = 
-            let dateTime = DateTime.Now.AddMinutes(-2.0)
-            for value in cache.OrderByDescending(fun x -> snd (x.Value)).SkipWhile(fun x -> snd (x.Value) > dateTime) do
-                let (_, _) = cache.TryRemove(value.Key)
-                ()
-        
+        let cache = new ConcurrentDictionary<string, int>()
         interface IVersioningCacheStore with
             
-            member this.GetVersion index id = 
-                match cache.TryGetValue((index, id)) with
+            member this.GetVersion id = 
+                match cache.TryGetValue(id) with
                 | (true, x) -> Some(x)
                 | _ -> None
             
-            member this.AddVersion index id version = true
-            member this.UpdateVersion index id oldversion oldDateTime newVersion = true
-            member this.DeleteVersion index id = true
+            member this.AddVersion(id, version) = true
+            member this.UpdateVersion(id, oldversion, newVersion) = true
+            member this.DeleteVersion id = true
