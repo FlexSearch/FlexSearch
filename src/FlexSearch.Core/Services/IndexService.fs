@@ -13,28 +13,8 @@ namespace FlexSearch.Core.Services
 open FlexSearch.Api
 open FlexSearch.Api.Message
 open FlexSearch.Core
-open FlexSearch.Utility
-open System
-open System.Collections.Concurrent
-open System.Collections.Generic
-open System.Data
 open System.IO
 open System.Linq
-open System.Threading
-open System.Threading.Tasks
-open System.Threading.Tasks.Dataflow
-open java.io
-open java.util
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
-open org.apache.lucene.analysis.miscellaneous
-open org.apache.lucene.analysis.util
-open org.apache.lucene.codecs
-open org.apache.lucene.codecs.lucene42
-open org.apache.lucene.document
-open org.apache.lucene.index
-open org.apache.lucene.search
-open org.apache.lucene.store
 
 /// <summary>
 /// Service wrapper around all index related services
@@ -45,7 +25,7 @@ open org.apache.lucene.store
 /// </summary>
 /// <param name="state"></param>
 [<Sealed>]
-type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, logger: ILogService) = 
+type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, logger : ILogService) = 
     
     /// <summary>
     /// Get an existing index details
@@ -74,13 +54,13 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 let! settings = settingsBuilder.BuildSetting(index)
                 Index.CloseIndex(nodeState.IndicesState, flexIndex)
                 do! Index.AddIndex(nodeState.IndicesState, settings)
-                nodeState.PersistanceStore.Put index.IndexName index |> ignore
+                nodeState.PersistanceStore.Put(index.IndexName, index) |> ignore
                 logger.AddIndex(index.IndexName, index)
                 return! Choice1Of2()
             | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
             | IndexState.Offline | IndexState.Closing -> 
                 let settings = settingsBuilder.BuildSetting(index)
-                nodeState.PersistanceStore.Put index.IndexName index |> ignore
+                nodeState.PersistanceStore.Put(index.IndexName, index) |> ignore
                 logger.AddIndex(index.IndexName, index)
                 return! Choice1Of2()
             | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
@@ -130,7 +110,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
             | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
             | _ -> 
                 let! settings = settingsBuilder.BuildSetting(index)
-                nodeState.PersistanceStore.Put index.IndexName index |> ignore
+                nodeState.PersistanceStore.Put(index.IndexName, index) |> ignore
                 logger.AddIndex(index.IndexName, index)
                 if index.Online then do! AddIndex(nodeState.IndicesState, settings)
                 else do! nodeState.IndicesState.AddStatus(index.IndexName, IndexState.Offline)
@@ -177,7 +157,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 let! settings = settingsBuilder.BuildSetting(index)
                 do! Index.AddIndex(nodeState.IndicesState, settings)
                 index.Online <- true
-                nodeState.PersistanceStore.Put indexName index |> ignore
+                nodeState.PersistanceStore.Put(indexName, index) |> ignore
                 logger.OpenIndex(indexName)
                 return! Choice1Of2()
             | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
@@ -198,8 +178,25 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 CloseIndex(nodeState.IndicesState, index)
                 let! index' = nodeState.PersistanceStore.Get<Index>(indexName)
                 index'.Online <- false
-                nodeState.PersistanceStore.Put indexName index' |> ignore
+                nodeState.PersistanceStore.Put(indexName, index') |> ignore
                 logger.CloseIndex(indexName)
+                return! Choice1Of2()
+        }
+    
+    /// <summary>
+    /// Refresh an index reader
+    /// Note: There should never be any need to use this directly.
+    /// </summary>
+    /// <param name="indexName"></param>
+    /// <param name="nodeState"></param>
+    let Refresh indexName = 
+        maybe { 
+            let! status = nodeState.IndicesState.GetStatus(indexName)
+            match status with
+            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | _ -> 
+                let! index = nodeState.IndicesState.GetRegisteration(indexName)
+                RefreshIndexJob(index)
                 return! Choice1Of2()
         }
     
@@ -208,9 +205,16 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
     /// </summary>
     /// <param name="indexName"></param>
     /// <param name="nodeState"></param>
-    let Commit indexName = maybe { let! (flexIndex, documentTemplate) = Index.IndexExists
-                                                                            (nodeState.IndicesState, indexName)
-                                   flexIndex.Shards |> Array.iter (fun shard -> shard.IndexWriter.commit()) }
+    let Commit indexName = 
+        maybe { 
+            let! status = nodeState.IndicesState.GetStatus(indexName)
+            match status with
+            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | _ -> 
+                let! index = nodeState.IndicesState.GetRegisteration(indexName)
+                CommitJob(index)
+                return! Choice1Of2()
+        }
     
     /// <summary>
     /// Load all indices for the node
@@ -242,3 +246,4 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         member this.OpenIndex indexName = OpenIndex indexName
         member this.CloseIndex indexName = CloseIndex indexName
         member this.Commit indexName = Commit indexName
+        member this.Refresh indexName = Refresh indexName
