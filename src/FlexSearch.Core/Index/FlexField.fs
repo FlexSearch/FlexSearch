@@ -12,26 +12,11 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Core
-open FlexSearch.Utility
 open System
-open System.Collections.Generic
-open System.ComponentModel.Composition
-open System.IO
-open System.Reflection
-open System.Text.RegularExpressions
-open System.Threading
-open java.io
-open java.util
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.miscellaneous
-open org.apache.lucene.analysis.util
-open org.apache.lucene.codecs
-open org.apache.lucene.codecs.lucene42
 open org.apache.lucene.document
 open org.apache.lucene.index
 open org.apache.lucene.search
-open org.apache.lucene.store
 
 // ----------------------------------------------------------------------------
 // Contains all functions related to flex field 
@@ -93,7 +78,7 @@ module FlexField =
         | FlexHighlight(_) -> "null"
     
     /// <summary>
-    /// Creates lucene's field types. This is only used for FlexCustom data type to
+    /// Creates Lucene's field types. This is only used for FlexCustom data type to
     /// support flexible field type
     /// </summary>
     /// <param name="fieldTermVector"></param>
@@ -197,7 +182,7 @@ module FlexField =
             | _ -> lucenceField.setDoubleValue (0.0)
     
     /// <summary>
-    /// Creates a default lucene index field for the passed flex field.
+    /// Creates a default Lucene index field for the passed flex field.
     /// </summary>
     /// <param name="flexField"></param>
     let inline CreateDefaultLuceneField flexField = 
