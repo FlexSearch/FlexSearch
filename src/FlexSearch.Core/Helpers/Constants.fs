@@ -8,38 +8,17 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-// ----------------------------------------------------------------------------
-open FlexSearch.Utility
 open System
-open System.Collections.Generic
-open System.ComponentModel.Composition
 open System.IO
-open System.Reflection
-open System.Threading
-open java.io
-open java.util
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
-open org.apache.lucene.analysis.miscellaneous
-open org.apache.lucene.analysis.util
-open org.apache.lucene.codecs
-open org.apache.lucene.codecs.lucene42
-open org.apache.lucene.document
-open org.apache.lucene.index
-open org.apache.lucene.search
-open org.apache.lucene.store
 
-// ----------------------------------------------------------------------------
-// Contains all the flex constants and cache store definitions 
-// ----------------------------------------------------------------------------
+/// Contains all the flex constants and cache store definitions 
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Constants = 
-    // Lucene version to be used across the application
-    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_47
+    /// Lucene version to be used across the application
+    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_4_9
     
     [<Literal>]
     let IdField = "_id"
@@ -55,27 +34,27 @@ module Constants =
     
     [<Literal>]
     let DocumentField = "_document"
-
+    
     [<Literal>]
     let DotNetFrameWork = "4.5.1"
-        
+    
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let private dataFolder = Path.Combine(rootFolder, "Data")
     let private confFolder = Path.Combine(rootFolder, "Conf")
     let private pluginFolder = Path.Combine(rootFolder, "Plugins")
     
-    // Flex data folder
+    /// Flex data folder
     let DataFolder = 
         Directory.CreateDirectory(dataFolder) |> ignore
         dataFolder
     
-    // Flex index folder
+    /// Flex index folder
     let ConfFolder = 
         Directory.CreateDirectory(confFolder) |> ignore
         confFolder
     
-    // Flex plugins folder
+    /// Flex plug-in folder
     let PluginFolder = 
         Directory.CreateDirectory(pluginFolder) |> ignore
         pluginFolder
