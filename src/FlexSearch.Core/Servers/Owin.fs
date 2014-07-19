@@ -48,6 +48,19 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                 match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
                 | (true, x) -> x.Process owin
                 | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+            
+            let matchSubModules (x : int, owin : IOwinContext) = 
+                match x with
+                | 3 -> getModule ("/" + owin.Request.Uri.Segments.[1] + ":id") owin
+                | 4 -> 
+                    getModule 
+                        ("/" + owin.Request.Uri.Segments.[1] + ":id/" 
+                         + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[3]) owin
+                | 5 -> 
+                    getModule ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
+                        owin
+                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+            
             try 
                 match owin.Request.Uri.Segments.Length with
                 // Server root
@@ -55,24 +68,13 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                 // Root resource request
                 | 2 -> getModule ("/" + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[1]) owin
                 | x when x > 2 && x <= 5 -> 
-                    // Check if the uri is indices and perform an index exists check
+                    // Check if the Uri is indices and perform an index exists check
                     if (String.Equals(owin.Request.Uri.Segments.[1], "indices") 
                         || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) && owin.Request.Method <> "POST" then 
                         match indexService.IndexExists(RemoveTrailingSlash owin.Request.Uri.Segments.[2]) with
-                        | true -> ()
+                        | true -> matchSubModules (x, owin)
                         | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
-                    else 
-                        match x with
-                        | 3 -> getModule ("/" + owin.Request.Uri.Segments.[1] + ":id") owin
-                        | 4 -> 
-                            getModule 
-                                ("/" + owin.Request.Uri.Segments.[1] + ":id/" 
-                                 + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[3]) owin
-                        | 5 -> 
-                            getModule 
-                                ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
-                                owin
-                        | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                    else matchSubModules (x, owin)
                 | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
             with ex -> ()
         }
@@ -84,9 +86,7 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
     
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-        
-    member this.Configuration (app : IAppBuilder) = app.Run(handler)
-            
+    member this.Configuration(app : IAppBuilder) = app.Run(handler)
     interface IServer with
         
         member this.Start() = 
@@ -97,7 +97,6 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                     server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
                     Console.ReadKey() |> ignore
                 with e -> printfn "%A" e
-
             try 
                 thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
             with e -> ()
