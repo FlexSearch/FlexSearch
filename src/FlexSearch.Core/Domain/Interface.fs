@@ -46,9 +46,9 @@ type IServer =
 /// </summary>
 type IPersistanceStore = 
     abstract GetAll<'T> : unit -> IEnumerable<'T>
-    abstract Get<'T when 'T : equality> : string -> Choice<'T, OperationMessage>
-    abstract Put<'T> : string -> 'T -> Choice<unit, OperationMessage>
-    abstract Delete<'T> : string -> Choice<unit, OperationMessage>
+    abstract Get<'T when 'T : equality> : key:string -> Choice<'T, OperationMessage>
+    abstract Put<'T> : key:string * value:'T -> Choice<unit, OperationMessage>
+    abstract Delete<'T> : key:string -> Choice<unit, OperationMessage>
 
 /// <summary>
 /// General Interface to offload all resource loading responsibilities. This will
@@ -60,24 +60,17 @@ type IResourceLoader =
     /// <summary>
     /// Reads the resource from the location and returns all the content as a string
     /// </summary>
-    abstract LoadResourceAsString : string -> string
+    abstract LoadResourceAsString : fileName:string -> string
     
     /// <summary>
-    /// Reads the resource and returns it as a List<string>. Also ignores
-    /// any blank lines or lines starting with #. Mostly used by filters
+    /// Reads the resource and returns it as a List<string>.
     /// </summary>
-    abstract LoadResourceAsList : string -> List<string>
+    abstract LoadFilterList : resourceName:string -> Choice<FilterList, OperationMessage>
     
     /// <summary>
-    /// Reads the resource and returns it as a List<string[]>. This is used to load 
-    /// settings files in the below format
-    /// test:test1,test2
-    /// Here all the colon & comma separated stuff will be returned as the member of the array.
-    /// This is used by certain filters to load map kind of data where first field maps to
-    /// a number of secondary fields. Also ignores
-    /// any blank lines or lines starting with #. Mostly used by filters
+    /// Reads the resource and returns it as a map<string,List<string>>.
     /// </summary>
-    abstract LoadResourceAsMap : string -> List<string []>
+    abstract LoadMapList : resourceName:string -> Choice<MapList, OperationMessage>
 
 /// <summary>
 /// General factory Interface for all MEF based factories
@@ -92,14 +85,14 @@ type IFlexFactory<'T> =
 /// Interface to be implemented by all tokenizer
 /// </summary>
 type IFlexTokenizerFactory = 
-    abstract Initialize : IDictionary<string, string> * IResourceLoader -> unit
+    abstract Initialize : IDictionary<string, string> -> Choice<unit, OperationMessage>
     abstract Create : Reader -> Tokenizer
 
 /// <summary>
 /// Interface to be implemented by all filters
 /// </summary>    
 type IFlexFilterFactory = 
-    abstract Initialize : IDictionary<string, string> * IResourceLoader -> unit
+    abstract Initialize : IDictionary<string, string> -> Choice<unit, OperationMessage>
     abstract Create : TokenStream -> TokenStream
 
 /// <summary>
@@ -169,6 +162,7 @@ type IIndexService =
     abstract OpenIndex : string -> Choice<unit, OperationMessage>
     abstract CloseIndex : string -> Choice<unit, OperationMessage>
     abstract Commit : string -> Choice<unit, OperationMessage>
+    abstract Refresh : string -> Choice<unit, OperationMessage>
 
 /// <summary>
 /// Document related operations

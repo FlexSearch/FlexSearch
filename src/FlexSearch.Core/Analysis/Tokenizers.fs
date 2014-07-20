@@ -33,7 +33,7 @@ open org.apache.lucene.analysis.util
 [<Sealed>]
 type KeywordTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new KeywordTokenizer(reader) :> Tokenizer
 
 /// <summary>
@@ -43,7 +43,7 @@ type KeywordTokenizerFactory() =
 [<Sealed>]
 type StandardTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new StandardTokenizer(Constants.LuceneVersion, reader) :> Tokenizer
 
 /// <summary>
@@ -53,7 +53,7 @@ type StandardTokenizerFactory() =
 [<Sealed>]
 type ClassicTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new ClassicTokenizer(Constants.LuceneVersion, reader) :> Tokenizer
 
 /// <summary>
@@ -63,7 +63,7 @@ type ClassicTokenizerFactory() =
 [<Sealed>]
 type LowercaseTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new LowerCaseTokenizer(Constants.LuceneVersion, reader) :> Tokenizer
 
 /// <summary>
@@ -73,7 +73,7 @@ type LowercaseTokenizerFactory() =
 [<Sealed>]
 type LetterTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new LetterTokenizer(Constants.LuceneVersion, reader) :> Tokenizer
 
 /// <summary>
@@ -83,7 +83,7 @@ type LetterTokenizerFactory() =
 [<Sealed>]
 type WhitespaceTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new WhitespaceTokenizer(Constants.LuceneVersion, reader) :> Tokenizer
 
 /// <summary>
@@ -93,5 +93,5 @@ type WhitespaceTokenizerFactory() =
 [<Sealed>]
 type UAX29URLEmailTokenizerFactory() = 
     interface IFlexTokenizerFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(reader : Reader) = new UAX29URLEmailTokenizer(Constants.LuceneVersion, reader) :> Tokenizer

@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// Flexsearch predefined filters (Filters.fs)
+// FlexSearch predefined filters (Filters.fs)
 // (c) Seemant Rajvanshi, 2013
 //
 // This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
@@ -12,6 +12,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
+open FlexSearch.Api.Message
 open FlexSearch.Utility
 open System.Collections.Generic
 open System.ComponentModel.Composition
@@ -43,7 +44,7 @@ open org.apache.lucene.util
 [<Sealed>]
 type AsciiFoldingFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = ()
+        member this.Initialize(parameters : IDictionary<string, string>) = Choice1Of2()
         member this.Create(ts : TokenStream) = new ASCIIFoldingFilter(ts) :> TokenStream
 
 /// <summary>
@@ -53,7 +54,7 @@ type AsciiFoldingFilterFactory() =
 [<Sealed>]
 type StandardFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = ()
+        member this.Initialize(parameters : IDictionary<string, string>) = Choice1Of2()
         member this.Create(ts : TokenStream) = new StandardFilter(Constants.LuceneVersion, ts) :> TokenStream
 
 /// <summary>
@@ -65,27 +66,31 @@ type BeiderMorseFilterFactory() =
     let mutable phoneticEngine = null
     interface IFlexFilterFactory with
         
-        member this.Initialize(parameters : IDictionary<string, string>, resourceLoader : IResourceLoader) = 
-            let nametype = 
-                match parameters.TryGetValue("nametype") with
-                | (true, a) -> 
-                    match a with
-                    | InvariantEqual "GENERIC" -> NameType.GENERIC
-                    | InvariantEqual "ASHKENAZI" -> NameType.ASHKENAZI
-                    | InvariantEqual "SEPHARDIC" -> NameType.SEPHARDIC
-                    | _ -> failwithf "message=Specified nametype is invalid."
-                | _ -> NameType.GENERIC
-            
-            let ruletype = 
-                match parameters.TryGetValue("ruletype") with
-                | (true, a) -> 
-                    match a with
-                    | InvariantEqual "APPROX" -> RuleType.APPROX
-                    | InvariantEqual "EXACT" -> RuleType.EXACT
-                    | _ -> failwithf "message=Specified ruletype is invalid."
-                | _ -> RuleType.EXACT
-            
-            phoneticEngine <- new PhoneticEngine(nametype, ruletype, true)
+        member this.Initialize(parameters : IDictionary<string, string>) = 
+            maybe { 
+                let! nametype = match parameters.TryGetValue("nametype") with
+                                | (true, a) -> 
+                                    match a with
+                                    | InvariantEqual "GENERIC" -> Choice1Of2(NameType.GENERIC)
+                                    | InvariantEqual "ASHKENAZI" -> Choice1Of2(NameType.ASHKENAZI)
+                                    | InvariantEqual "SEPHARDIC" -> Choice1Of2(NameType.SEPHARDIC)
+                                    | _ -> 
+                                        Choice2Of2(MessageConstants.FILTER_CANNOT_BE_INITIALIZED
+                                                   |> Append("Filter Type", "BeiderMorseFilter")
+                                                   |> Append("Message", "Specified 'nameType' property is invalid."))
+                                | _ -> Choice1Of2(NameType.GENERIC)
+                let! ruletype = match parameters.TryGetValue("ruletype") with
+                                | (true, a) -> 
+                                    match a with
+                                    | InvariantEqual "APPROX" -> Choice1Of2(RuleType.APPROX)
+                                    | InvariantEqual "EXACT" -> Choice1Of2(RuleType.EXACT)
+                                    | _ -> 
+                                        Choice2Of2(MessageConstants.FILTER_CANNOT_BE_INITIALIZED
+                                                   |> Append("Filter Type", "BeiderMorseFilter")
+                                                   |> Append("Message", "Specified 'ruleType' property is invalid."))
+                                | _ -> Choice1Of2(RuleType.EXACT)
+                return! Choice1Of2(phoneticEngine <- new PhoneticEngine(nametype, ruletype, true))
+            }
         
         member this.Create(ts : TokenStream) = new BeiderMorseFilter(ts, phoneticEngine) :> TokenStream
 
@@ -96,7 +101,7 @@ type BeiderMorseFilterFactory() =
 [<Sealed>]
 type CapitalizationFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new CapitalizationFilter(ts) :> TokenStream
 
 /// <summary>
@@ -107,7 +112,7 @@ type CapitalizationFilterFactory() =
 type Caverphone2FilterFactory() = 
     let caverphone = new Caverphone2()
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new PhoneticFilter(ts, caverphone, false) :> TokenStream
 
 /// <summary>
@@ -118,7 +123,7 @@ type Caverphone2FilterFactory() =
 type MetaphoneFilterFactory() = 
     let metaphone = new Metaphone()
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new PhoneticFilter(ts, metaphone, false) :> TokenStream
 
 /// <summary>
@@ -128,7 +133,7 @@ type MetaphoneFilterFactory() =
 [<Sealed>]
 type DoubleMetaphoneFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new DoubleMetaphoneFilter(ts, 4, false) :> TokenStream
 
 /// <summary>
@@ -139,7 +144,7 @@ type DoubleMetaphoneFilterFactory() =
 type RefinedSoundexFilterFactory() = 
     let refinedSoundex = new RefinedSoundex()
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new PhoneticFilter(ts, refinedSoundex, false) :> TokenStream
 
 /// <summary>
@@ -150,23 +155,8 @@ type RefinedSoundexFilterFactory() =
 type SoundexFilterFactory() = 
     let soundex = new Soundex()
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new PhoneticFilter(ts, soundex, false) :> TokenStream
-
-/// <summary>
-/// KeepWordsFilter Filter
-/// </summary>
-[<Name("KeepWordsFilter")>]
-[<Sealed>]
-type KeepWordsFilterFactory() = 
-    let keepWords : CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true)
-    interface IFlexFilterFactory with
-        
-        member this.Initialize(parameters, resourceLoader) = 
-            let fileName = Helpers.KeyExists("filename", parameters)
-            resourceLoader.LoadResourceAsList(fileName) |> Seq.iter (fun x -> keepWords.Add(x))
-        
-        member this.Create(ts : TokenStream) = new KeepWordFilter(Constants.LuceneVersion, ts, keepWords) :> TokenStream
 
 /// <summary>
 /// Length Filter
@@ -178,9 +168,14 @@ type LengthFilterFactory() =
     let mutable max = 0
     interface IFlexFilterFactory with
         
-        member this.Initialize(parameters, resourceLoader) = 
-            min <- Helpers.ParseValueAsInteger("min", parameters)
-            max <- Helpers.ParseValueAsInteger("max", parameters)
+        member this.Initialize(parameters) = 
+            maybe { 
+                let! minValue = ParseValueAsInteger("min", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                let! maxValue = ParseValueAsInteger("max", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                min <- minValue
+                max <- maxValue
+                return! Choice1Of2()
+            }
         
         member this.Create(ts : TokenStream) = new LengthFilter(Constants.LuceneVersion, ts, min, max) :> TokenStream
 
@@ -191,7 +186,7 @@ type LengthFilterFactory() =
 [<Sealed>]
 type LowerCaseFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new LowerCaseFilter(Constants.LuceneVersion, ts) :> TokenStream
 
 /// <summary>
@@ -204,9 +199,16 @@ type PatternReplaceFilterFactory() =
     let mutable replaceText : string = ""
     interface IFlexFilterFactory with
         
-        member this.Initialize(parameters, resourceLoader) = 
-            pattern <- Pattern.compile (Helpers.KeyExists("pattern", parameters))
-            replaceText <- Helpers.KeyExists("replacementtext", parameters)
+        member this.Initialize(parameters) = 
+            maybe { 
+                let! patternValue = KeyExists("pattern", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                let! replaceTextValue = KeyExists
+                                            ("replacementtext", parameters, 
+                                             MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                replaceText <- replaceTextValue
+                pattern <- Pattern.compile (patternValue)
+                return! Choice1Of2()
+            }
         
         member this.Create(ts : TokenStream) = new PatternReplaceFilter(ts, pattern, replaceText, true) :> TokenStream
 
@@ -217,7 +219,7 @@ type PatternReplaceFilterFactory() =
 [<Sealed>]
 type RemoveDuplicatesTokenFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new RemoveDuplicatesTokenFilter(ts) :> TokenStream
 
 /// <summary>
@@ -227,22 +229,37 @@ type RemoveDuplicatesTokenFilterFactory() =
 [<Sealed>]
 type ReverseStringFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new ReverseStringFilter(Constants.LuceneVersion, ts) :> TokenStream
+
+/// <summary>
+/// KeepWordsFilter Filter
+/// </summary>
+[<Name("KeepWordsFilter")>]
+[<Sealed>]
+type KeepWordsFilterFactory(resourceLoader : IResourceLoader) = 
+    let keepWords : CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true)
+    interface IFlexFilterFactory with
+        member this.Initialize(parameters) = maybe { let! fileName = KeyExists
+                                                                         ("resourceName", parameters, 
+                                                                          MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                                                     let! filterList = resourceLoader.LoadFilterList(fileName)
+                                                     filterList.Words |> Seq.iter (fun x -> keepWords.Add(x)) }
+        member this.Create(ts : TokenStream) = new KeepWordFilter(Constants.LuceneVersion, ts, keepWords) :> TokenStream
 
 /// <summary>
 /// Stop Filter
 /// </summary>
 [<Name("StopFilter")>]
 [<Sealed>]
-type StopFilterFactory() = 
+type StopFilterFactory(resourceLoader : IResourceLoader) = 
     let stopWords : CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true)
     interface IFlexFilterFactory with
-        
-        member this.Initialize(parameters, resourceLoader) = 
-            let fileName = Helpers.KeyExists("filename", parameters)
-            resourceLoader.LoadResourceAsList(fileName) |> Seq.iter (fun x -> stopWords.Add(x))
-        
+        member this.Initialize(parameters) = maybe { let! fileName = KeyExists
+                                                                         ("resourceName", parameters, 
+                                                                          MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                                                     let! filterList = resourceLoader.LoadFilterList(fileName)
+                                                     filterList.Words |> Seq.iter (fun x -> stopWords.Add(x)) }
         member this.Create(ts : TokenStream) = new StopFilter(Constants.LuceneVersion, ts, stopWords) :> TokenStream
 
 /// <summary>
@@ -250,18 +267,20 @@ type StopFilterFactory() =
 /// </summary>
 [<Name("SynonymFilter")>]
 [<Sealed>]
-type SynonymFilter() = 
+type SynonymFilter(resourceLoader : IResourceLoader) = 
     let mutable map : SynonymMap = null
     interface IFlexFilterFactory with
         
-        member this.Initialize(parameters, resourceLoader) = 
-            let fileName = Helpers.KeyExists("filename", parameters)
-            let builder = new SynonymMap.Builder(false)
-            resourceLoader.LoadResourceAsMap(fileName) 
-            |> Seq.iter (fun x -> 
-                   for value in x.Skip(1) do
-                       builder.add (new CharsRef(x.[0]), new CharsRef(value), true))
-            map <- builder.build()
+        member this.Initialize(parameters) = 
+            maybe { 
+                let! fileName = KeyExists("resourceName", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                let! mapList = resourceLoader.LoadMapList(fileName)
+                let builder = new SynonymMap.Builder(false)
+                mapList.Words |> Seq.iter (fun x -> 
+                                     for value in x.Value do
+                                         builder.add (new CharsRef(x.Key), new CharsRef(value), true))
+                map <- builder.build()
+            }
         
         member this.Create(ts : TokenStream) = 
             new org.apache.lucene.analysis.synonym.SynonymFilter(ts, map, true) :> TokenStream
@@ -273,5 +292,5 @@ type SynonymFilter() =
 [<Sealed>]
 type TrimFilterFactory() = 
     interface IFlexFilterFactory with
-        member this.Initialize(parameters, resourceLoader) = ()
+        member this.Initialize(parameters) = Choice1Of2()
         member this.Create(ts : TokenStream) = new TrimFilter(Constants.LuceneVersion, ts) :> TokenStream
