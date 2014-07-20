@@ -108,6 +108,7 @@ _TeamCity*
 *.dotCover
 
 # NCrunch
+src/_NCrunch_FlexSearch
 *.ncrunch*
 .*crunch*.local.xml
 
