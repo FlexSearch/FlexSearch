@@ -64,7 +64,7 @@ type ImporterModule(importHandlerFactory : IFlexFactory<IImportHandler>, state :
                         if x.SupportsBulkIndexing() then 
                             let jobId = Guid.NewGuid()
                             let job = new Job(jobId.ToString(), JobStatus.Initializing, Message = bulkIndexMessage)
-                            state.PersistanceStore.Put (jobId.ToString()) job |> ignore
+                            state.PersistanceStore.Put (jobId.ToString(), job) |> ignore
                             importRequest.JobId <- jobId.ToString()
                             await (requestQueue.SendAsync((indexName, jobId, owin.Request.Query)))
                             return! Choice1Of2(new ImportResponse(JobId = jobId.ToString(), Message = bulkIndexMessage))
@@ -144,18 +144,18 @@ type SqlImporter(queueService : IQueueService, state : INodeState, logger: ILogS
                             if String.IsNullOrWhiteSpace(request.JobId) <> true && rows % 5000 = 0 then 
                                 let job = 
                                     new Job(request.JobId, JobStatus.InProgress, Message = "", ProcessedItems = rows)
-                                state.PersistanceStore.Put request.JobId job |> ignore
+                                state.PersistanceStore.Put(request.JobId, job) |> ignore
                     else 
                         if String.IsNullOrWhiteSpace(request.JobId) <> true then 
                             let job = 
                                 new Job(request.JobId, JobStatus.CompletedWithErrors, Message = "No rows returned.", 
                                         ProcessedItems = rows)
-                            state.PersistanceStore.Put request.JobId job |> ignore
+                            state.PersistanceStore.Put(request.JobId, job) |> ignore
                         logger.TraceErrorMessage(sprintf "SQL connector error. No rows returned. Query:{%s}" query)
                 with e -> 
                     if String.IsNullOrWhiteSpace(request.JobId) <> true then 
                         let job = new Job(request.JobId, JobStatus.CompletedWithErrors, Message = e.Message)
-                        state.PersistanceStore.Put request.JobId job |> ignore
+                        state.PersistanceStore.Put(request.JobId, job) |> ignore
                     logger.TraceError("SQL connector error", e)
                 Choice1Of2()
             | Choice2Of2(e) -> Choice2Of2(e)

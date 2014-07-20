@@ -71,7 +71,7 @@ module ``Analysis tests`` =
         let filterParameters = new Dictionary<string, string>()
         filterParameters.Add("pattern", "1")
         filterParameters.Add("replacementtext", "")   
-        filter.Initialize(filterParameters, resourceLoader)
+        filter.Initialize(filterParameters) |> ignore
         let filters = new List<IFlexFilterFactory>()
         filters.Add(filter)
         let exp = tokenizerTestCases.[caseNumber]
@@ -89,16 +89,18 @@ module ``Analysis tests`` =
     let resourceLoaderMock = 
         { new IResourceLoader with
               member this.LoadResourceAsString str = "hello"
-              member this.LoadResourceAsList str = ([| "hello"; "world" |].ToList())
-              member this.LoadResourceAsMap str = 
-                  let result = new List<string []>()
-                  result.Add([| "easy"; "simple"; "clear" |])
-                  result }
+              member this.LoadFilterList str = Choice1Of2(new FilterList([| "hello"; "world" |].ToList()))
+
+              member this.LoadMapList str = 
+                let mapList = new MapList()
+                mapList.Words.Add("easy", [| "simple"; "clear" |].ToList())
+                Choice1Of2(mapList)
+        }
 
     let FilterTestCases = 
         [| { Name = "Keepword filter"
-             Filter = new KeepWordsFilterFactory()
-             Parameters = dict [ ("filename", "wordlist.txt") ]
+             Filter = new KeepWordsFilterFactory(resourceLoaderMock)
+             Parameters = dict [ ("resourceName", "wordlist") ]
              Input = "hello world test"
              Output = [ "hello"; "world" ] }
            { Name = "Standard filter"
@@ -129,13 +131,13 @@ module ``Analysis tests`` =
              Input = "hello how are you"
              Output = [ "olleh"; "woh"; "era"; "uoy" ] }
            { Name = "StopWord filter"
-             Filter = new StopFilterFactory()
-             Parameters = dict [ ("filename", "wordlist.txt") ]
+             Filter = new StopFilterFactory(resourceLoaderMock)
+             Parameters = dict [ ("resourceName", "wordlist") ]
              Input = "hello world test"
              Output = [ "test" ] }
            { Name = "Synonym filter"
-             Filter = new SynonymFilter()
-             Parameters = dict [ ("filename", "synonymlist.txt") ]
+             Filter = new SynonymFilter(resourceLoaderMock)
+             Parameters = dict [ ("resourceName", "synonymlist") ]
              Input = "easy"
              Output = [ "easy"; "simple"; "clear" ] } |]     
 
@@ -151,7 +153,7 @@ module ``Analysis tests`` =
     let ``Filter analysis test`` (caseNumber : int) =
         let exp = FilterTestCases.[caseNumber]
         let filters = [| exp.Filter |]
-        filters.[0].Initialize(exp.Parameters, resourceLoaderMock)
+        filters.[0].Initialize(exp.Parameters) |> ignore
         let analyzer = new CustomAnalyzer(new StandardTokenizerFactory(), filters)
         let output = SearchDsl.ParseTextUsingAnalyzer(analyzer, "test", exp.Input)
         Assert.Equal<List<string>>(exp.Output.ToList(), output)

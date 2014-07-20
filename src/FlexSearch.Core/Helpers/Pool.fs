@@ -53,7 +53,7 @@ module Pool =
         
         let createNewItem() = 
             // Since this method will be passed to the poolable object we have to pass the reference 
-            // to the underlyinh queue for the items to be returned back cleanly
+            // to the underlying queue for the items to be returned back cleanly
             let returnToPool (item : PooledObject) = pool.Enqueue(item :?> 'T)
             let instance = factory()
             instance.ReturnToPool <- returnToPool

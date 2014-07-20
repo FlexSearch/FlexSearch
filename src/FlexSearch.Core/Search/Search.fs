@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// Flexsearch predefined tokenizers (Tokenizers.fs)
+// FlexSearch predefined tokenizers (Tokenizers.fs)
 // (c) Seemant Rajvanshi, 2013
 //
 // This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
@@ -47,7 +47,7 @@ module SearchDsl =
         lazy java.lang.Class.forName ("org.apache.lucene.analysis.tokenattributes.CharTermAttribute")
     
     /// Utility function to get tokens from the search string based upon the passed analyzer
-    /// This will enable us to avoid using the lucene query parser
+    /// This will enable us to avoid using the Lucene query parser
     /// We cannot use simple white space based token generation as it really depends 
     /// upon the analyzer used
     let inline ParseTextUsingAnalyzer(analyzer : Analyzer, fieldName, queryText) = 
@@ -65,13 +65,11 @@ module SearchDsl =
         finally
             source.close()
         tokens
-        
-    let private IsStoredField (flexField : FlexField) = 
+    
+    let private IsStoredField(flexField : FlexField) = 
         match flexField.FieldType with
         | FlexFieldType.FlexStored -> 
-            Choice2Of2
-                (OperationMessage.WithPropertyName
-                     (MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED, flexField.FieldName))
+            Choice2Of2(MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED |> Append("Field Name", flexField.FieldName))
         | _ -> Choice1Of2()
     
     let inline GetIntValueFromMap (parameters : Map<string, string> option) key defaultValue = 
@@ -106,8 +104,9 @@ module SearchDsl =
             | _ -> defaultValue
         | _ -> defaultValue
     
-    let GenerateQuery (fields : Dictionary<string, FlexField>) (predicate : Predicate) (searchQuery : SearchQuery) 
-        (isProfileBased : Map<string, string> option) (queryTypes : Dictionary<string, IFlexQuery>) = 
+    let GenerateQuery(fields : Dictionary<string, FlexField>, predicate : Predicate, searchQuery : SearchQuery, 
+                      isProfileBased : Map<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
+        assert (queryTypes.Count > 0)
         let rec generateQuery (pred : Predicate) = 
             maybe { 
                 let generateMatchAllQuery = ref false
@@ -118,9 +117,9 @@ module SearchDsl =
                     query.add (new BooleanClause(notQuery, BooleanClause.Occur.MUST_NOT))
                     return (query :> Query)
                 | Condition(f, o, v, p) -> 
-                    let! field = GetValue fields f MessageConstants.INVALID_FIELD_NAME
+                    let! field = KeyExists(f, fields, MessageConstants.INVALID_FIELD_NAME)
                     do! IsStoredField field
-                    let! query = GetValue queryTypes o MessageConstants.INVALID_QUERY_TYPE
+                    let! query = KeyExists(o, queryTypes, MessageConstants.INVALID_QUERY_TYPE)
                     let! value = maybe { 
                                      match isProfileBased with
                                      | Some(source) -> 
@@ -133,15 +132,15 @@ module SearchDsl =
                                                  | MissingValueOption.Default -> return! v.GetValueAsArray()
                                                  | MissingValueOption.ThrowError -> 
                                                      return! Choice2Of2
-                                                                 (OperationMessage.WithPropertyName
-                                                                      (MessageConstants.MISSING_FIELD_VALUE_1, f))
+                                                                 (MessageConstants.MISSING_FIELD_VALUE_1 
+                                                                  |> Append("Field Name", f))
                                                  | MissingValueOption.Ignore -> 
                                                      generateMatchAllQuery := true
                                                      return [| "" |]
                                                  | _ -> 
                                                      return! Choice2Of2
-                                                                 (OperationMessage.WithPropertyName
-                                                                      (MessageConstants.UNKNOWN_MISSING_VALUE_OPTION, f))
+                                                                 (MessageConstants.UNKNOWN_MISSING_VALUE_OPTION 
+                                                                  |> Append("Field Name", f))
                                              | _ -> 
                                                  // Check if a non blank value is provided as a part of the query
                                                  return! v.GetValueAsArray()
@@ -183,7 +182,7 @@ module SearchDsl =
             let searcher = (flexIndex.Shards.[i].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
             indexSearchers.Add(searcher)
         // Each thread only works on a separate part of the array and as no parts are shared across
-        // multiple threads the belows variables are thread safe. The cost of using blockingcollection vs 
+        // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
         // array per search is high
         let topDocsCollection : TopDocs array = Array.zeroCreate indexSearchers.Count
         
@@ -272,4 +271,3 @@ module SearchDsl =
         for i in 0..indexSearchers.Count - 1 do
             (flexIndex.Shards.[i].NRTManager :> ReferenceManager).release(indexSearchers.[i])
         Choice1Of2 searchResults
-    

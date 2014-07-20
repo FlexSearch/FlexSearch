@@ -58,7 +58,12 @@ module RestHelpers =
         | "POST" -> 
             let content = new StringContent(requestBuilder.RequestBody, Encoding.UTF8, "application/json")
             requestBuilder.Response <- requestBuilder.Server.HttpClient.PostAsync(requestBuilder.Uri, content).Result
-        | _ -> failwithf "Not supported"
+        | "PUT" -> 
+            let content = new StringContent(requestBuilder.RequestBody, Encoding.UTF8, "application/json")
+            requestBuilder.Response <- requestBuilder.Server.HttpClient.PutAsync(requestBuilder.Uri, content).Result
+        | "DELETE" ->
+            requestBuilder.Response <- requestBuilder.Server.HttpClient.DeleteAsync(requestBuilder.Uri).Result
+        |_ -> failwithf "Not supported"
         requestBuilder
     
     let document (filename: string) (requestBuilder : RequestBuilder) = 

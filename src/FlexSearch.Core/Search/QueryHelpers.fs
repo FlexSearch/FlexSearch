@@ -46,9 +46,9 @@ module QueryHelpers =
     // Get a search query parser associated with the field 
     let inline GetSearchAnalyzer(flexField : FlexField) = 
         match flexField.FieldType with
-        | FlexCustom(a, b) -> Some(a.SearchAnalyzer)
-        | FlexHighlight(a) -> Some(a.SearchAnalyzer)
-        | FlexText(a) -> Some(a.SearchAnalyzer)
+        | FlexCustom(a, b, c) -> Some(a)
+        | FlexHighlight(a, _) -> Some(a)
+        | FlexText(a, _) -> Some(a)
         | FlexExactText(a) -> Some(a)
         | FlexBool(a) -> Some(a)
         | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> None
@@ -83,7 +83,7 @@ module QueryHelpers =
                          (flexIndexField.FieldName, GetJavaLong(val1), GetJavaLong(val1), true, true) :> Query)
             | _ -> 
                 Choice2Of2
-                    (OperationMessage.WithPropertyName(MessageConstants.DATA_CANNOT_BE_PARSED, flexIndexField.FieldName))
+                    (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
         | FlexInt -> 
             match Int32.TryParse(value) with
             | (true, val1) -> 
@@ -92,7 +92,7 @@ module QueryHelpers =
                          (flexIndexField.FieldName, GetJavaInt(val1), GetJavaInt(val1), true, true) :> Query)
             | _ -> 
                 Choice2Of2
-                    (OperationMessage.WithPropertyName(MessageConstants.DATA_CANNOT_BE_PARSED, flexIndexField.FieldName))
+                    (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
         | FlexDouble -> 
             match Double.TryParse(value) with
             | (true, val1) -> 
@@ -101,8 +101,7 @@ module QueryHelpers =
                          (flexIndexField.FieldName, GetJavaDouble(val1), GetJavaDouble(val1), true, true) :> Query)
             | _ -> 
                 Choice2Of2
-                    (OperationMessage.WithPropertyName(MessageConstants.DATA_CANNOT_BE_PARSED, flexIndexField.FieldName))
+                    (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
         | _ -> 
             Choice2Of2
-                (OperationMessage.WithPropertyName
-                     (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED, flexIndexField.FieldName))
+                (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED |> Append("Field Name", flexIndexField.FieldName))

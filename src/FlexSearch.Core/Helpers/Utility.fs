@@ -11,6 +11,7 @@
 namespace FlexSearch.Utility
 
 open FlexSearch.Api.Message
+open FlexSearch.Core
 open System
 open System.Collections.Generic
 open System.IO
@@ -105,36 +106,6 @@ module Helpers =
                 else path
             if Directory.Exists(dataPath) || File.Exists(dataPath) then dataPath
             else failwithf "message=The specified path does not exist.; path=%s" dataPath
-    
-    /// Wrapper around dict lookup. Useful for validation in tokenizers and filters
-    let inline KeyExists(key, dict : IDictionary<string, string>) = 
-        match dict.TryGetValue(key) with
-        | (true, value) -> value
-        | _ -> failwithf "'%s' is required." key
-    
-    /// Helper method to check if the passed key exists in the dictionary and if it does then the
-    /// specified value is in the enum list
-    let inline ValidateIsInList(key, param : IDictionary<string, string>, enumValues : HashSet<string>) = 
-        let value = KeyExists(key, param)
-        match enumValues.Contains(value) with
-        | true -> value
-        | _ -> failwithf "'%s' is not a valid value for '%s'." value key
-    
-    let inline ParseValueAsInteger(key, param : IDictionary<string, string>) = 
-        let value = KeyExists(key, param)
-        match Int32.TryParse(value) with
-        | (true, value) -> value
-        | _ -> failwithf "%s should be of integer type." key
-    
-    let inline AddorUpdate(dict : Dictionary<string, string>, key, value) = 
-        match dict.ContainsKey(key) with
-        | true -> dict.[key] <- value
-        | _ -> dict.Add(key, value)
-    
-    let inline GetValue (dictionary : Dictionary<string, 'T>) key (error : OperationMessage) = 
-        match dictionary.TryGetValue(key) with
-        | (true, x) -> Choice1Of2(x)
-        | _ -> Choice2Of2(OperationMessage.WithPropertyName(error, key))
     
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore

@@ -34,34 +34,31 @@ module HttpHelpers =
     jsonSettings.Converters.Add(new StringEnumConverter())
     
     /// Helper method to serialize cluster messages
-    let ProtoSerialize (message : 'a) = 
+    let ProtoSerialize(message : 'a) = 
         use stream = new MemoryStream()
         Serializer.Serialize(stream, message)
         stream.ToArray()
     
     /// Helper method to deserialize cluster messages
-    let ProtoDeserialize<'T> (message : byte []) = 
+    let ProtoDeserialize<'T>(message : byte []) = 
         use stream = new MemoryStream(message)
         Serializer.Deserialize<'T>(stream)
     
     /// Get request format from the request object
     /// Defaults to json
-    let private GetRequestFormat (request : IOwinRequest)  =
-        if String.IsNullOrWhiteSpace(request.ContentType) then 
-            "application/json"
+    let private GetRequestFormat(request : IOwinRequest) = 
+        if String.IsNullOrWhiteSpace(request.ContentType) then "application/json"
         else request.ContentType
-
+    
     /// Get response format from the owin context
     /// Defaults to json
-    let private GetResponseFormat (owin : IOwinContext) = 
-        if owin.Request.Accept = null then 
-            "application/json"
-        else if owin.Request.Accept = "*/*" then
-            "application/json"
+    let private GetResponseFormat(owin : IOwinContext) = 
+        if owin.Request.Accept = null then "application/json"
+        else if owin.Request.Accept = "*/*" then "application/json"
         else if owin.Request.Accept.Contains(",") then 
             owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
         else owin.Request.Accept
-
+    
     /// Write http response
     let WriteResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
         let matchType format res = 
@@ -77,18 +74,18 @@ module HttpHelpers =
                     Some(Encoding.UTF8.GetBytes(result))
             | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 owin.Response.ContentType <- "application/x-protobuf"
-                Some(ProtoSerialize (res))
+                Some(ProtoSerialize(res))
             | _ -> None
         owin.Response.StatusCode <- int statusCode
         if response <> Unchecked.defaultof<_> then 
             let format = GetResponseFormat owin
-            let result = matchType format response   
+            let result = matchType format response
             match result with
             | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
             | Some(x) -> await (owin.Response.WriteAsync(x))
     
     /// Write http response
-    let GetRequestBody<'T when 'T : null> (request : IOwinRequest) = 
+    let GetRequestBody<'T when 'T : null>(request : IOwinRequest) = 
         let contentType = GetRequestFormat request
         if request.Body.CanRead then 
             match contentType with
@@ -101,18 +98,14 @@ module HttpHelpers =
                         match JsonConvert.DeserializeObject<'T>(body) with
                         | null -> 
                             Choice2Of2
-                                (OperationMessage.WithDeveloperMessage
-                                     (MessageConstants.HTTP_UNABLE_TO_PARSE, "No body is defined."))
+                                (MessageConstants.HTTP_UNABLE_TO_PARSE |> Append("Message", "No body is defined."))
                         | result -> Choice1Of2(result)
-                    with ex -> 
-                        Choice2Of2
-                            (OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
+                    with ex -> Choice2Of2(MessageConstants.HTTP_UNABLE_TO_PARSE |> Append("Message", ex.Message))
                 else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
             | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 try 
                     Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
-                with ex -> 
-                    Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.HTTP_UNABLE_TO_PARSE, ex.Message))
+                with ex -> Choice2Of2(MessageConstants.HTTP_UNABLE_TO_PARSE |> Append("Message", ex.Message))
             | _ -> Choice2Of2(MessageConstants.HTTP_UNSUPPORTED_CONTENT_TYPE)
         else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
     
@@ -140,7 +133,7 @@ module HttpHelpers =
             | true, v' -> v'
             | _ -> defaultValue
     
-    let inline CheckIdPresent (owin : IOwinContext) = 
+    let inline CheckIdPresent(owin : IOwinContext) = 
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
         else None
     
@@ -149,13 +142,9 @@ module HttpHelpers =
         | Choice1Of2(r) -> success r owin
         | Choice2Of2(r) -> failure r owin
     
-    let inline RemoveTrailingSlash (input: string) =
-        if input.EndsWith("/") then
-            input.Substring(0, (input.Length - 1))
+    let inline RemoveTrailingSlash(input : string) = 
+        if input.EndsWith("/") then input.Substring(0, (input.Length - 1))
         else input
-
-    let inline GetIndexName (owin : IOwinContext) =
-        RemoveTrailingSlash owin.Request.Uri.Segments.[2]
-
-    let inline SubId (owin : IOwinContext) =
-        RemoveTrailingSlash owin.Request.Uri.Segments.[4]
+    
+    let inline GetIndexName(owin : IOwinContext) = RemoveTrailingSlash owin.Request.Uri.Segments.[2]
+    let inline SubId(owin : IOwinContext) = RemoveTrailingSlash owin.Request.Uri.Segments.[4]

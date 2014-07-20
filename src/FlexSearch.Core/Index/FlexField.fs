@@ -49,7 +49,7 @@ module FlexField =
     /// <param name="flexField"></param>
     let inline SortField(flexField : FlexField) = 
         match flexField.FieldType with
-        | FlexCustom(_, _) -> failwithf "Sorting is not possible on string or text data type."
+        | FlexCustom(_, _, _) -> failwithf "Sorting is not possible on string or text data type."
         | FlexStored(_) -> failwithf "Sorting is not possible on string or text data type."
         | FlexText(_) -> failwithf "Sorting is not possible on string or text data type."
         | FlexBool(_) -> SortField.Type.STRING
@@ -66,7 +66,7 @@ module FlexField =
     /// <param name="flexField"></param>
     let inline DefaultValue flexField = 
         match flexField.FieldType with
-        | FlexCustom(_, _) -> "null"
+        | FlexCustom(_, _, _) -> "null"
         | FlexStored(_) -> "null"
         | FlexText(_) -> "null"
         | FlexBool(_) -> "false"
@@ -127,7 +127,7 @@ module FlexField =
     /// <param name="value"></param>
     let inline CreateLuceneField flexField (value : string) = 
         match flexField.FieldType with
-        | FlexCustom(_, b) -> 
+        | FlexCustom(_, _, b) -> 
             new Field(flexField.FieldName, value, 
                       GetFieldTemplate(b.FieldTermVector, flexField.StoreInformation.IsStored, b.Tokenize, b.Index))
         | FlexStored -> new StoredField(flexField.FieldName, value) :> Field
@@ -158,7 +158,7 @@ module FlexField =
     /// <param name="value"></param>
     let inline UpdateLuceneField flexField (lucenceField : Field) (value : string) = 
         match flexField.FieldType with
-        | FlexCustom(_, _) -> lucenceField.setStringValue (value)
+        | FlexCustom(_, _, _) -> lucenceField.setStringValue (value)
         | FlexStored -> lucenceField.setStringValue (value)
         | FlexText(_) -> lucenceField.setStringValue (value)
         | FlexHighlight(_) -> lucenceField.setStringValue (value)
@@ -187,7 +187,7 @@ module FlexField =
     /// <param name="flexField"></param>
     let inline CreateDefaultLuceneField flexField = 
         match flexField.FieldType with
-        | FlexCustom(_, b) -> 
+        | FlexCustom(_, _, b) -> 
             new Field(flexField.FieldName, "null", 
                       GetFieldTemplate(b.FieldTermVector, flexField.StoreInformation.IsStored, b.Tokenize, b.Index))
         | FlexStored -> new StoredField(flexField.FieldName, "null") :> Field
@@ -209,7 +209,7 @@ module FlexField =
     /// <param name="luceneField"></param>
     let inline UpdateLuceneFieldToDefault flexField (luceneField : Field) = 
         match flexField.FieldType with
-        | FlexCustom(_, _) -> luceneField.setStringValue ("null")
+        | FlexCustom(_, _, _) -> luceneField.setStringValue ("null")
         | FlexStored -> luceneField.setStringValue ("null")
         | FlexText(_) -> luceneField.setStringValue ("null")
         | FlexBool(_) -> luceneField.setStringValue ("false")
@@ -234,17 +234,17 @@ module FlexField =
         fields |> Array.iter (fun x -> 
                       if isIndexAnalyzer then 
                           match x.FieldType with
-                          | FlexCustom(a, b) -> analyzerMap.put (x.FieldName, a.IndexAnalyzer) |> ignore
-                          | FlexHighlight(a) -> analyzerMap.put (x.FieldName, a.IndexAnalyzer) |> ignore
-                          | FlexText(a) -> analyzerMap.put (x.FieldName, a.IndexAnalyzer) |> ignore
+                          | FlexCustom(a, b, c) -> analyzerMap.put (x.FieldName, b) |> ignore
+                          | FlexHighlight(a, b) -> analyzerMap.put (x.FieldName, b) |> ignore
+                          | FlexText(a, b) -> analyzerMap.put (x.FieldName, b) |> ignore
                           | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> ()
                       else 
                           match x.FieldType with
-                          | FlexCustom(a, b) -> analyzerMap.put (x.FieldName, a.SearchAnalyzer) |> ignore
-                          | FlexHighlight(a) -> analyzerMap.put (x.FieldName, a.SearchAnalyzer) |> ignore
-                          | FlexText(a) -> analyzerMap.put (x.FieldName, a.SearchAnalyzer) |> ignore
+                          | FlexCustom(a, b, c) -> analyzerMap.put (x.FieldName, a) |> ignore
+                          | FlexHighlight(a, _) -> analyzerMap.put (x.FieldName, a) |> ignore
+                          | FlexText(a, _) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> ())

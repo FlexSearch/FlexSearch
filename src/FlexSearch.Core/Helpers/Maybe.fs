@@ -8,7 +8,7 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Utility
+namespace FlexSearch.Core
 
 [<Sealed>]
 type ValidationBuilder() = 

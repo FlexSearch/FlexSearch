@@ -113,7 +113,8 @@ module IntegrationTestHelpers =
                 indexDocument.Fields.Add(headers.[i].Trim(), items.[i].Trim())
             documentService.AddDocument(index.IndexName, indexDocument.Id, indexDocument.Fields) |> ExpectSuccess
         indexService.Commit(index.IndexName) |> ExpectSuccess
-        Thread.Sleep(200)
+        indexService.Refresh(index.IndexName) |> ExpectSuccess
+        //Thread.Sleep(200)
 //        let documents = GetSuccessChoice(documentService.GetDocuments(index.IndexName))
 //        Assert.Equal<int>(lines.Count() - 1, (documents.Count))
 

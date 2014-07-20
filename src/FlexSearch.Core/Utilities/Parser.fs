@@ -81,7 +81,7 @@ module Parsers =
         match run queryStringParser input with
         | Success(result, _, _) -> Choice1Of2(result)
         | Failure(errorMsg, _, _) -> 
-            Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
+            Choice2Of2(MessageConstants.QUERYSTRING_PARSING_ERROR |> Append("Message", errorMsg))
     
     /// <summary>
     /// Boost parser implemented using optional argument for optimization
@@ -110,7 +110,7 @@ module Parsers =
     /// Note: The reason to create a parser class is to hide FParsec OperatorPrecedenceParser
     /// as it is not thread safe. This class will be created using object pool
     /// </summary> 
-    [<Sealed>]   
+    [<Sealed>]
     type FlexParser() = 
         inherit PooledObject()
         let opp = new OperatorPrecedenceParser<Predicate, unit, unit>()
@@ -135,12 +135,12 @@ module Parsers =
             match run Parser input with
             | Success(result, _, _) -> Choice1Of2(result)
             | Failure(errorMsg, _, _) -> 
-                Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
+                Choice2Of2(MessageConstants.QUERYSTRING_PARSING_ERROR |> Append("Message", errorMsg))
     
     /// <summary>
     /// Generates an object pool for the parser
     /// </summary>
     /// <param name="poolSize"></param>
-    let GetParserPool (poolSize : int) = 
+    let GetParserPool(poolSize : int) = 
         let factory() = new FlexParser()
         new ObjectPool<FlexParser>(factory, poolSize)

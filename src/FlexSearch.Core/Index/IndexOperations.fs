@@ -42,7 +42,7 @@ module Index =
     /// Index auto commit changes job 
     /// </summary>
     /// <param name="flexIndex"></param>
-    let private CommitJob(flexIndex : FlexIndex) = 
+    let internal CommitJob(flexIndex : FlexIndex) = 
         // Looping over array by index number is usually the fastest
         // iteration method
         for i in 0..flexIndex.Shards.Length - 1 do
@@ -53,7 +53,7 @@ module Index =
     /// Index auto commit changes job
     /// </summary>
     /// <param name="flexIndex"></param>
-    let private RefreshIndexJob(flexIndex) = 
+    let internal RefreshIndexJob(flexIndex) = 
         // Looping over array by index number is usually the fastest
         // iteration method
         for i in 0..flexIndex.Shards.Length - 1 do
@@ -111,9 +111,7 @@ module Index =
                                       TrackingIndexWriter = trackingIndexWriter }
                                 shard)
                     Choice1Of2(shards)
-                with e -> 
-                    Choice2Of2
-                        (OperationMessage.WithDeveloperMessage(MessageConstants.ERROR_OPENING_INDEXWRITER, e.Message))
+                with e -> Choice2Of2(MessageConstants.ERROR_OPENING_INDEXWRITER |> Append("Message", e.Message))
             // Add index status
             state.IndexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
             let! shards = generateShards flexIndexSetting
@@ -224,10 +222,8 @@ module Index =
                                 version : int, fields : Dictionary<string, string>) = 
         documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(documentId)
         documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(GetCurrentTimeAsLong())
-
         // Create a dynamic dictionary which will be used during scripting
         let dynamicFields = new DynamicDictionary(fields)
-
         for field in flexIndex.IndexSetting.Fields do
             // Ignore these 3 fields here.
             if (field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
@@ -237,7 +233,7 @@ module Index =
                 match field.Source with
                 | Some(s) -> 
                     try 
-                        // Wrong values for the data type will still be handled as update lucene field will
+                        // Wrong values for the data type will still be handled as update Lucene field will
                         // check the data type
                         let value = s.Invoke(dynamicFields)
                         FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value

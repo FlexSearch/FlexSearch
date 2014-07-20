@@ -105,7 +105,7 @@ type SqlLitePersistanceStore(?isMemory0 : bool) =
                 command.ExecuteNonQuery() |> ignore
                 Choice1Of2()
         
-        member this.Put<'T> (key) (instance : 'T) = 
+        member this.Put<'T> (key, instance : 'T) = 
             let instanceType = typeof<'T>.FullName
             if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
             else 
