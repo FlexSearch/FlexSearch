@@ -9,11 +9,15 @@ open System.Text.RegularExpressions
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
 
+type System.String with
+    member this.CamelCaseToSeparate() =
+        System.Text.RegularExpressions.Regex.Replace(this, "([A-Z])", " $1")
+
 let GlossaryPath = "F:\SkyDrive\FlexSearch Documentation\source\docs\glossary"
 let GlossaryFilePath = "F:\SkyDrive\FlexSearch Documentation\source\docs\glossary\Glossary.txt"
 let ThriftFilePath = "F:\SkyDrive\FlexSearch Documentation\source\docs\glossary\Glossary.txt"
 let jsonSettings = new JsonSerializerSettings()
-    
+
 jsonSettings.Converters.Add(new StringEnumConverter())
 
 let ParseGlossaryFile() = 
@@ -74,8 +78,7 @@ let GetAllTypes() =
                         typeMember.MemberType <- SimpleType(prop.PropertyType.Name)
                     else typeMember.MemberType <- ComplexType(prop.PropertyType.Name)
                     printfn "%s - %s" prop.Name (prop.PropertyType.Name)
-                if prop.PropertyType.IsEnum then
-                    typeMember.ISEnum <- true
+                if prop.PropertyType.IsEnum then typeMember.ISEnum <- true
                 members.Add(typeMember)
             for con in typ.GetConstructors() do
                 if con.GetParameters().Count() <> 0 then 
@@ -90,31 +93,38 @@ let GenerateGlossary() =
     let definition = ParseGlossaryFile()
     let (enums, types) = GetAllTypes()
     
-    let getDefinition (key) = 
-        match definition.TryGetValue(key) with
+    let getDefinition (typeName, key) = 
+        match definition.TryGetValue((sprintf "%s.%s" typeName key)) with
         | true, text -> text
         | _ -> 
-            printfn "Missing glossary for: %s" key
-            "FIX:Missing definition in glossary file"
+            match definition.TryGetValue(key) with
+            | true, text -> text
+            | _ -> 
+                printfn "Missing glossary for: %s" key
+                "FIX:Missing definition in glossary file"
     
-    let rec generateTypeTable (t : List<TypeMember>, output : List<string>) = 
+    let rec generateTypeTable (typeName : string, t : List<TypeMember>, output : List<string>) = 
         for m in t do
             let mutable propertyName = ""
             if m.IsRequired then 
                 propertyName <- """[image:/images/icons/star32.png[Required, 16,16, title="Required"]] """
-            else
-                propertyName <- """[image:/images/icons/undefined.png[Optional, 16,16, title="Optional"]] """
-
+            else propertyName <- """[image:/images/icons/undefined.png[Optional, 16,16, title="Optional"]] """
             propertyName <- propertyName + m.MemberName
             match m.MemberType with
             | SimpleType(a) -> 
-                output.Add(sprintf "| %s : `%s`" propertyName a)
-                output.Add(sprintf "| %s" (getDefinition (m.MemberName)))
+                if m.ISEnum then
+                    output.Add(sprintf "| %s : link:/docs/glossary/%s[`%s`]" propertyName a a)
+                    output.Add(sprintf "| %s" (getDefinition (typeName, m.MemberName)))
+                else
+                    output.Add(sprintf "| %s : `%s`" propertyName a)
+                    output.Add(sprintf "| %s" (getDefinition (typeName, m.MemberName)))
             | ComplexType(a) -> output.Add(sprintf "2+| %s : link:/docs/glossary/%s[`%s`]" propertyName a a)
-            | ListType(a) ->
-                if a = "String" then
+            | ListType(a) -> 
+                if a = "String" then 
                     output.Add
-                        (sprintf """2+| [image:/images/icons/linedpaperplus32.png[List, 16,16, title="List"]] %s : List<`%s`>""" propertyName a)
+                        (sprintf 
+                             """2+| [image:/images/icons/linedpaperplus32.png[List, 16,16, title="List"]] %s : List<`%s`>""" 
+                             propertyName a)
                 else 
                     output.Add
                         (sprintf 
@@ -127,15 +137,36 @@ let GenerateGlossary() =
                          propertyName b b)
             output.Add("")
     
+    for e in enums do
+        let output = new List<string>()
+        output.Add(sprintf "[[%s]]" (e.Key.ToLowerInvariant()))
+        output.Add(sprintf "=== %s" (e.Key.CamelCaseToSeparate()))
+        output.Add("")
+        output.Add(getDefinition (e.Key, e.Key))
+        output.Add("")
+        // Add table 
+        output.Add("""[cols="1,1", options="header", role="ui celled table segment"]""")
+        output.Add(".Properties")
+        output.Add("|===")
+        output.Add("|Enumeration Value | Description")
+        output.Add("")
+        for v in e.Value do
+            output.Add(sprintf "| %s" v)
+            output.Add(sprintf "| %s" (getDefinition(e.Key, v)))
+            output.Add("")
+        output.Add("|===")
+        output.Add("")
+        File.WriteAllLines(Path.Combine(GlossaryPath, sprintf "%s.html.adoc" e.Key), output)
+
     for t in types do
-    //for t in types.Where(fun x -> x.Key = "Index") do
+        //for t in types.Where(fun x -> x.Key = "Index") do
         let output = new List<string>()
         // [[index]]
         // ==== Index
         output.Add(sprintf "[[%s]]" (t.Key.ToLowerInvariant()))
-        output.Add(sprintf "=== %s" (t.Key))
+        output.Add(sprintf "=== %s" (t.Key.CamelCaseToSeparate()))
         output.Add("")
-        output.Add(getDefinition (t.Key))
+        output.Add(getDefinition (t.Key, t.Key))
         output.Add("")
         // Add table 
         output.Add("""[cols="1,1", options="header", role="ui celled table segment"]""")
@@ -143,11 +174,10 @@ let GenerateGlossary() =
         output.Add("|===")
         output.Add("|Property Name | Description")
         output.Add("")
-        generateTypeTable (t.Value, output)
+        generateTypeTable (t.Key, t.Value, output)
         output.Add("|===")
-
         let value = (typeof<FlexSearch.Api.AnalyzerProperties>.Assembly).GetTypes().First(fun x -> x.Name = t.Key)
-        try
+        try 
             let instance = Activator.CreateInstance(value)
             let json = JsonConvert.SerializeObject(instance, Formatting.Indented, jsonSettings)
             output.Add("""[source,javascript]
@@ -158,7 +188,7 @@ let GenerateGlossary() =
             output.Add("")
             File.WriteAllLines(Path.Combine(GlossaryPath, sprintf "%s.html.adoc" t.Key), output)
         with e -> ()
-            
+
 [<EntryPoint>]
 let main argv = 
     GenerateGlossary()
