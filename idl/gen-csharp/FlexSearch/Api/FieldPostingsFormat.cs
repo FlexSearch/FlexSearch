@@ -11,8 +11,8 @@ namespace FlexSearch.Api
   {
     Direct = 1,
     Memory = 2,
-    Bloom = 3,
-    Pulsing = 4,
+    Bloom_4_1 = 3,
+    Pulsing_4_1 = 4,
     Lucene_4_1 = 5,
   }
 }

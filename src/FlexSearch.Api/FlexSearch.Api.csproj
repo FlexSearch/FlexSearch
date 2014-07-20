@@ -70,7 +70,6 @@
     <Compile Include="..\..\idl\gen-csharp\FlexSearch\Api\**\*.cs">
       <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
     </Compile>
-    <Compile Include="Message\Utilities.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

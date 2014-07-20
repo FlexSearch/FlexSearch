@@ -184,7 +184,7 @@ namespace FlexSearch.Api
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
-          case 7:
+          case 5:
             if (field.Type == TType.String) {
               Index = iprot.ReadString();
               isset_Index = true;
@@ -192,7 +192,7 @@ namespace FlexSearch.Api
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
-          case 8:
+          case 6:
             if (field.Type == TType.Double) {
               Score = iprot.ReadDouble();
             } else { 
@@ -263,14 +263,14 @@ namespace FlexSearch.Api
       }
       field.Name = "Index";
       field.Type = TType.String;
-      field.ID = 7;
+      field.ID = 5;
       oprot.WriteFieldBegin(field);
       oprot.WriteString(Index);
       oprot.WriteFieldEnd();
       if (__isset.Score) {
         field.Name = "Score";
         field.Type = TType.Double;
-        field.ID = 8;
+        field.ID = 6;
         oprot.WriteFieldBegin(field);
         oprot.WriteDouble(Score);
         oprot.WriteFieldEnd();

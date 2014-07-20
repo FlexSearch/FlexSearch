@@ -35,6 +35,7 @@ namespace FlexSearch.Api
     private FieldPostingsFormat _DefaultIndexPostingsFormat;
     private Codec _DefaultCodec;
     private bool _EnableVersioning;
+    private FieldSimilarity _DefaultFieldSimilarity;
 
     [DataMember(Order = 1)]
     public int CommitTimeSec
@@ -196,6 +197,24 @@ namespace FlexSearch.Api
       }
     }
 
+    /// <summary>
+    /// 
+    /// <seealso cref="FieldSimilarity"/>
+    /// </summary>
+    [DataMember(Order = 11)]
+    public FieldSimilarity DefaultFieldSimilarity
+    {
+      get
+      {
+        return _DefaultFieldSimilarity;
+      }
+      set
+      {
+        __isset.DefaultFieldSimilarity = true;
+        this._DefaultFieldSimilarity = value;
+      }
+    }
+
 
     public Isset __isset;
     #if !SILVERLIGHT
@@ -213,6 +232,7 @@ namespace FlexSearch.Api
       public bool DefaultIndexPostingsFormat;
       public bool DefaultCodec;
       public bool EnableVersioning;
+      public bool DefaultFieldSimilarity;
     }
 
     public IndexConfiguration() {
@@ -228,7 +248,7 @@ namespace FlexSearch.Api
       this.__isset.RefreshTimeMilliSec = true;
       this._IndexVersion = IndexVersion.Lucene_4_9;
       this.__isset.IndexVersion = true;
-      this._IdFieldPostingsFormat = FieldPostingsFormat.Bloom;
+      this._IdFieldPostingsFormat = FieldPostingsFormat.Bloom_4_1;
       this.__isset.IdFieldPostingsFormat = true;
       this._DefaultIndexPostingsFormat = FieldPostingsFormat.Lucene_4_1;
       this.__isset.DefaultIndexPostingsFormat = true;
@@ -236,6 +256,8 @@ namespace FlexSearch.Api
       this.__isset.DefaultCodec = true;
       this._EnableVersioning = false;
       this.__isset.EnableVersioning = true;
+      this._DefaultFieldSimilarity = FieldSimilarity.TFIDF;
+      this.__isset.DefaultFieldSimilarity = true;
     }
 
     public void Read (TProtocol iprot)
@@ -316,6 +338,13 @@ namespace FlexSearch.Api
           case 10:
             if (field.Type == TType.Bool) {
               EnableVersioning = iprot.ReadBool();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 11:
+            if (field.Type == TType.I32) {
+              DefaultFieldSimilarity = (FieldSimilarity)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -413,6 +442,14 @@ namespace FlexSearch.Api
         oprot.WriteBool(EnableVersioning);
         oprot.WriteFieldEnd();
       }
+      if (__isset.DefaultFieldSimilarity) {
+        field.Name = "DefaultFieldSimilarity";
+        field.Type = TType.I32;
+        field.ID = 11;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32((int)DefaultFieldSimilarity);
+        oprot.WriteFieldEnd();
+      }
       oprot.WriteFieldStop();
       oprot.WriteStructEnd();
     }
@@ -430,7 +467,8 @@ namespace FlexSearch.Api
         && ((__isset.IdFieldPostingsFormat == other.__isset.IdFieldPostingsFormat) && ((!__isset.IdFieldPostingsFormat) || (System.Object.Equals(IdFieldPostingsFormat, other.IdFieldPostingsFormat))))
         && ((__isset.DefaultIndexPostingsFormat == other.__isset.DefaultIndexPostingsFormat) && ((!__isset.DefaultIndexPostingsFormat) || (System.Object.Equals(DefaultIndexPostingsFormat, other.DefaultIndexPostingsFormat))))
         && ((__isset.DefaultCodec == other.__isset.DefaultCodec) && ((!__isset.DefaultCodec) || (System.Object.Equals(DefaultCodec, other.DefaultCodec))))
-        && ((__isset.EnableVersioning == other.__isset.EnableVersioning) && ((!__isset.EnableVersioning) || (System.Object.Equals(EnableVersioning, other.EnableVersioning))));
+        && ((__isset.EnableVersioning == other.__isset.EnableVersioning) && ((!__isset.EnableVersioning) || (System.Object.Equals(EnableVersioning, other.EnableVersioning))))
+        && ((__isset.DefaultFieldSimilarity == other.__isset.DefaultFieldSimilarity) && ((!__isset.DefaultFieldSimilarity) || (System.Object.Equals(DefaultFieldSimilarity, other.DefaultFieldSimilarity))));
     }
 
     public override int GetHashCode() {
@@ -446,6 +484,7 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.DefaultIndexPostingsFormat ? 0 : (DefaultIndexPostingsFormat.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.DefaultCodec ? 0 : (DefaultCodec.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.EnableVersioning ? 0 : (EnableVersioning.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.DefaultFieldSimilarity ? 0 : (DefaultFieldSimilarity.GetHashCode()));
       }
       return hashcode;
     }
@@ -472,6 +511,8 @@ namespace FlexSearch.Api
       sb.Append(DefaultCodec);
       sb.Append(",EnableVersioning: ");
       sb.Append(EnableVersioning);
+      sb.Append(",DefaultFieldSimilarity: ");
+      sb.Append(DefaultFieldSimilarity);
       sb.Append(")");
       return sb.ToString();
     }

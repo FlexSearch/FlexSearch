@@ -86,8 +86,8 @@ const OperationMessage INDEX_IS_OPENING =
 	
 const OperationMessage INDEX_REGISTERATION_MISSING = 
 	{
-		"DeveloperMessage" : "Registeration information associated with the index is missing.", 
-		"UserMessage" : "Registeration information associated with the index is missing.",
+		"DeveloperMessage" : "Registration information associated with the index is missing.", 
+		"UserMessage" : "Registration information associated with the index is missing.",
 		"ErrorCode": 1006
 	}
 	
@@ -221,8 +221,8 @@ const OperationMessage TOKENIZER_NOT_FOUND =
 
 const OperationMessage ATLEAST_ONE_FILTER_REQUIRED = 
 	{
-		"DeveloperMessage" : "Atleast one filter should be specified for a custom analyzer.", 
-		"UserMessage" : "Atleast one filter should be specified for a custom analyzer.", 
+		"DeveloperMessage" : "At least one filter should be specified for a custom analyzer.", 
+		"UserMessage" : "At least one filter should be specified for a custom analyzer.", 
 		"ErrorCode": 2011
 	}
 	
@@ -277,8 +277,8 @@ const OperationMessage SCRIPT_CANT_BE_COMPILED =
 // ----------------------------------------------------------------------------	
 const OperationMessage MODULE_NOT_FOUND = 
 	{
-		"DeveloperMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
-		"UserMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
+		"DeveloperMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependencies are accessible by the server.", 
+		"UserMessage" : "Module:{propertyName} can not be found. Please make sure all the compiled dependencies are accessible by the server.", 
 		"ErrorCode": 4000
 	}
 	
@@ -288,8 +288,8 @@ const OperationMessage MODULE_NOT_FOUND =
 // ----------------------------------------------------------------------------	
 const OperationMessage INVALID_QUERY_TYPE = 
 	{
-		"DeveloperMessage" : "QueryType:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
-		"UserMessage" : "QueryType:{propertyName} can not be found. Please make sure all the compiled dependecies are accessible by the server.", 
+		"DeveloperMessage" : "QueryType:{propertyName} can not be found. Please make sure all the compiled dependencies are accessible by the server.", 
+		"UserMessage" : "QueryType:{propertyName} can not be found. Please make sure all the compiled dependencies are accessible by the server.", 
 		"ErrorCode": 5000
 	}
 	
@@ -302,8 +302,8 @@ const OperationMessage INVALID_FIELD_NAME =
 	
 const OperationMessage MISSING_FIELD_VALUE = 
 	{
-		"DeveloperMessage" : "Search value canot be empty.", 
-		"UserMessage" : "Search value canot be empty. No value provided for the field.", 
+		"DeveloperMessage" : "Search value cannot be empty.", 
+		"UserMessage" : "Search value cannot be empty. No value provided for the field.", 
 		"ErrorCode": 5002
 	}
 	
@@ -406,8 +406,8 @@ const OperationMessage HTTP_URI_ID_NOT_SUPPLIED =
 // ----------------------------------------------------------------------------	
 const OperationMessage KEY_NOT_FOUND = 
 	{
-		"DeveloperMessage" : "The requested key is not present in the persistences store.", 
-		"UserMessage" : "The requested key is not present in the persistences store.", 
+		"DeveloperMessage" : "The requested key is not present in the persistence store.", 
+		"UserMessage" : "The requested key is not present in the persistence store.", 
 		"ErrorCode": 7001
 	}	
 
