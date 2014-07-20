@@ -76,7 +76,7 @@ type FieldStoreInformation =
       /// Short circuit field to help in bypassing enumeration over field type if a field is 
       /// stored only 
       IsStoredOnly : bool
-      /// Helper field to get lucene compatible store option. This is used like a
+      /// Helper field to get Lucene compatible store option. This is used like a
       /// cached value so that we don't generate it more than once.
       Store : Field.Store }
     static member Create(isStoredOnly : bool, isStored : bool) = 
@@ -95,13 +95,6 @@ type FieldStoreInformation =
               IsStoredOnly = false }
 
 /// <summary>
-/// Represents the various analyzers associated with a field
-/// </summary>
-type FieldAnalyzers = 
-    { SearchAnalyzer : Analyzer
-      IndexAnalyzer : Analyzer }
-
-/// <summary>
 /// Other field related information    
 /// </summary>
 type FieldInformation = 
@@ -114,20 +107,22 @@ type FieldInformation =
 type FieldIndexingInformation = 
     { Index : bool
       Tokenize : bool
-      /// This maps to lucene's term vectors and is only used for flex custom
+      /// This maps to Lucene's term vectors and is only used for flex custom
       /// data type
-      FieldTermVector : FieldTermVector }
+      FieldTermVector : FieldTermVector
+      /// This maps to Lucene's field index options
+      FieldIndexOptions : FieldIndexOptions }
 
 /// <summary>
 /// Represents the various data types supported by Flex
 /// </summary>
 type FlexFieldType = 
     | FlexStored
-    | FlexCustom of FieldAnalyzers * FieldIndexingInformation
-    | FlexHighlight of FieldAnalyzers
-    | FlexText of FieldAnalyzers
-    | FlexExactText of Analyzer
-    | FlexBool of Analyzer
+    | FlexCustom of searchAnalyzer : Analyzer * indexAnalyzer : Analyzer * indexingInformation : FieldIndexingInformation
+    | FlexHighlight of searchAnalyzer : Analyzer * indexAnalyzer : Analyzer
+    | FlexText of searchAnalyzer : Analyzer * indexAnalyzer : Analyzer
+    | FlexExactText of analyzer : Analyzer
+    | FlexBool of analyzer : Analyzer
     | FlexDate
     | FlexDateTime
     | FlexInt
@@ -139,15 +134,17 @@ type FlexFieldType =
 type FlexField = 
     { FieldName : string
       StoreInformation : FieldStoreInformation
+      PostingsFormat : FieldPostingsFormat
+      Similarity : FieldSimilarity
       FieldType : FlexFieldType
-      Source : (System.Func<System.Dynamic.DynamicObject, string>) option
+      Source : System.Func<System.Dynamic.DynamicObject, string> option
       /// This is applicable to all fields apart from stored only so making
       /// it an optional field. 
       FieldInformation : FieldInformation option
       /// Helper property to determine if the field needs any analyzer.
       /// This will save matching effort over field type
       RequiresAnalyzer : bool
-      /// Default lucene field for the flex field. This is used when the 
+      /// Default Lucene field for the flex field. This is used when the 
       /// the data submitted for indexing is invalid.
       DefaultField : Field }
 
@@ -189,7 +186,7 @@ type FlexShard =
 
 /// <summary>
 /// Represents an index in Flex terms which may consist of a number of
-/// valid lucene indices.
+/// valid Lucene indices.
 /// </summary>
 type FlexIndex = 
     { IndexSetting : FlexIndexSetting
@@ -209,7 +206,7 @@ type CaseInsensitiveKeywordAnalyzer() =
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
 
 /// <summary>
-/// Represents a dummy lucene document. There will be one per index stored in a dictionary
+/// Represents a dummy Lucene document. There will be one per index stored in a dictionary
 /// </summary>
 type ThreadLocalDocument = 
     { Document : Document
@@ -232,9 +229,9 @@ type IndicesState =
       /// in a multi-threaded scenario using TPL data flow as we don't know which 
       /// thread it is using to execute each task. The easiest way
       /// is to use ThreadLocal value to create a local copy of the index document.
-      /// The implication of creating one lucene document class per document to 
+      /// The implication of creating one Lucene document class per document to 
       /// be indexed is the penalty it has in terms of garbage collection. Also,
-      /// lucene's document and index classes can't be shared across threads.
+      /// Lucene's document and index classes can't be shared across threads.
       ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> }
     
     member this.GetStatus(indexName) = 
