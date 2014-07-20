@@ -20,7 +20,6 @@ module AnalysisExtensions =
     open Validator
     open FlexSearch.Api.Message
     open org.apache.lucene.analysis
-    open FlexSearch.Core.Services
     open FlexSearch.Api.Message
     
     // ----------------------------------------------------------------------------
@@ -29,28 +28,14 @@ module AnalysisExtensions =
     let private MustGenerateFilterInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : FlexSearch.Api.TokenFilter) = 
         match factoryCollection.FilterFactory.GetModuleByName(value.FilterName) with
-        | Choice1Of2(instance) -> 
-            try 
-                instance.Initialize(value.Parameters, factoryCollection.ResourceLoader)
-                Choice1Of2()
-            with e -> 
-                Choice2Of2
-                    (OperationMessage.WithPropertyName
-                         (MessageConstants.FILTER_CANNOT_BE_INITIALIZED, propName, e.Message))
-        | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.FILTER_NOT_FOUND, propName))
+        | Choice1Of2(instance) -> instance.Initialize(value.Parameters)
+        | _ -> Choice2Of2(MessageConstants.FILTER_NOT_FOUND |> Append("Filter Name", propName))
     
     let private MustGenerateTokenizerInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : FlexSearch.Api.Tokenizer) = 
         match factoryCollection.TokenizerFactory.GetModuleByName(value.TokenizerName) with
-        | Choice1Of2(instance) -> 
-            try 
-                instance.Initialize(value.Parameters, factoryCollection.ResourceLoader)
-                Choice1Of2()
-            with e -> 
-                Choice2Of2
-                    (OperationMessage.WithPropertyName
-                         (MessageConstants.TOKENIZER_CANNOT_BE_INITIALIZED, propName, e.Message))
-        | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.TOKENIZER_NOT_FOUND, propName))
+        | Choice1Of2(instance) -> instance.Initialize(value.Parameters)
+        | _ -> Choice2Of2(MessageConstants.TOKENIZER_NOT_FOUND |> Append("Tokenizer Name", propName))
     
     type FlexSearch.Api.TokenFilter with
         
@@ -72,7 +57,7 @@ module AnalysisExtensions =
             maybe { 
                 do! this.Validate(factoryCollection)
                 let! filterFactory = factoryCollection.FilterFactory.GetModuleByName(this.FilterName)
-                filterFactory.Initialize(this.Parameters, factoryCollection.ResourceLoader)
+                do! filterFactory.Initialize(this.Parameters)
                 return filterFactory
             }
         
@@ -105,7 +90,7 @@ module AnalysisExtensions =
             maybe { 
                 do! this.Validate(factoryCollection)
                 let! tokenizerFactory = factoryCollection.TokenizerFactory.GetModuleByName(this.TokenizerName)
-                tokenizerFactory.Initialize(this.Parameters, factoryCollection.ResourceLoader)
+                do! tokenizerFactory.Initialize(this.Parameters)
                 return tokenizerFactory
             }
     
@@ -120,8 +105,7 @@ module AnalysisExtensions =
                 do! this.Tokenizer.Validate(factoryCollection)
                 if this.Filters.Count = 0 then 
                     return! Choice2Of2
-                                (OperationMessage.WithPropertyName
-                                     (MessageConstants.ATLEAST_ONE_FILTER_REQUIRED, analyzerName))
+                                (MessageConstants.ATLEAST_ONE_FILTER_REQUIRED |> Append("Analyzer Name", analyzerName))
                 for filter in this.Filters do
                     do! filter.Validate(factoryCollection)
             }

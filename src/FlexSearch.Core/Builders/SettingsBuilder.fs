@@ -12,26 +12,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
-open FlexSearch.Core.Services
-open FlexSearch.Utility
-open System
-open System.Collections.Generic
-open System.Diagnostics
-open System.IO
-open System.Xml
-open System.Xml.Linq
-open Validator
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.miscellaneous
-open org.apache.lucene.codecs
-open org.apache.lucene.codecs.lucene42
-open org.apache.lucene.document
-open org.apache.lucene.index
-open org.apache.lucene.search
-open org.apache.lucene.store
-
 
 /// <summary>
 /// Top level settings builder
@@ -42,22 +23,31 @@ type SettingsBuilder(factoryCollection : IFactoryCollection) =
         member this.BuildSetting(index) = 
             maybe { 
                 do! index.Validate(factoryCollection)
-                let! analyzers = AnalyzerProperties.Build(this.Analyzers, factoryCollection)
-                let! scriptManager = ScriptProperties.Build(this.Scripts, factoryCollection)
-                let! fields = FieldProperties.Build(this.Fields, analyzers, this.Scripts, factoryCollection)
+                let! analyzers = AnalyzerProperties.Build(index.Analyzers, factoryCollection)
+                let! scriptManager = ScriptProperties.Build(index.Scripts, factoryCollection)
+                let! fields = FieldProperties.Build(index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                 fields.Values.CopyTo(fieldsArray, 0)
-                let baseField = if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then index.IndexName  else Constants.DataFolder + "\\" + index.IndexName
+                let baseFolder = 
+                    if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then index.IndexName
+                    else Constants.DataFolder + "\\" + index.IndexName
+                
+                let indexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
+                let searchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
+                let! searchProfiles = FlexSearch.Api.SearchQuery.Build
+                                          (index.SearchProfiles, fields, 
+                                           FlexSearch.Api.SearchQuery.QueryTypes(factoryCollection), 
+                                           new Parsers.FlexParser())
                 let flexIndexSetting = 
                     { IndexName = index.IndexName
-                        IndexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
-                        SearchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
-                        Fields = fieldsArray
-                        SearchProfiles = searchProfiles
-                        ScriptsManager = scriptsManager
-                        FieldsLookup = fields
-                        IndexConfiguration = index.IndexConfiguration
-                        ShardConfiguration = index.ShardConfiguration
-                        BaseFolder =  baseField}
+                      IndexAnalyzer = indexAnalyzer
+                      SearchAnalyzer = searchAnalyzer
+                      Fields = fieldsArray
+                      SearchProfiles = searchProfiles
+                      ScriptsManager = scriptManager
+                      FieldsLookup = fields
+                      IndexConfiguration = index.IndexConfiguration
+                      ShardConfiguration = index.ShardConfiguration
+                      BaseFolder = baseFolder }
                 return flexIndexSetting
             }

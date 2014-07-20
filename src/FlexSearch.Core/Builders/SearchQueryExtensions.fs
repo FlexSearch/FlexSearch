@@ -12,12 +12,9 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Core
-open FlexSearch.Utility
 open System.Collections.Generic
 open System
 open Validator
-open FlexSearch.Api.Message
-open FlexSearch.Core.Services
 
 [<AutoOpen>]
 module SearchQueryExtensions = 
@@ -32,10 +29,12 @@ module SearchQueryExtensions =
         member this.Validate(fields : Dictionary<string, FlexField>, queryTypes : Dictionary<string, IFlexQuery>, 
                              parser : FlexParser) = 
             maybe { 
+                assert (queryTypes.Count > 0)
                 do! ("QueryString", this.QueryString) |> NotNullAndEmpty
+                assert (String.IsNullOrWhiteSpace(this.QueryString) <> true)
                 let! queryPredicate = parser.Parse(this.QueryString)
                 // Check if query fields are valid
-                let! query = SearchDsl.GenerateQuery fields queryPredicate this None queryTypes
+                //let! query = SearchDsl.GenerateQuery(fields, queryPredicate, this, None, queryTypes)
                 return! Choice1Of2()
             }
         
@@ -56,3 +55,10 @@ module SearchQueryExtensions =
                     result.Add(profile.Key, (profileObject, profile.Value))
                 return result
             }
+        
+        static member QueryTypes(factoryCollection : IFactoryCollection) = 
+            let queryTypes = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
+            for query in factoryCollection.SearchQueryFactory.GetAllModules() do
+                for queryName in query.Value.QueryName() do
+                    queryTypes.Add(queryName, query.Value)
+            queryTypes

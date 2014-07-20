@@ -14,12 +14,38 @@ namespace FlexSearch.Core
 module ScriptPropertiesExtensions = 
     open FlexSearch.Api
     open FlexSearch.Core
-    open FlexSearch.Utility
     open System.Collections.Generic
     open System
     open Validator
     open FlexSearch.Api.Message
-    open FlexSearch.Core.Services
+    open CSScriptLibrary
+    
+    /// <summary>
+    /// Template method code for computed field script
+    /// </summary>
+    let private StringReturnScriptTemplate = """
+public string Execute(dynamic fields) { [SourceCode] }
+"""
+    
+    // The below settings are to prevent locking in case of multi-threaded scenario
+    CSScript.GlobalSettings.InMemoryAsssembly <- true
+    CSScript.GlobalSettings.OptimisticConcurrencyModel <- false
+    CSScript.CacheEnabled <- true
+    CSScript.GlobalSettings.TargetFramework <- Constants.DotNetFrameWork
+    
+    /// <summary>
+    /// Generates a Function which returns a string value
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="template"></param>
+    let internal GenerateStringReturnScript(source : string) = 
+        let sourceCode = StringReturnScriptTemplate.Replace("[SourceCode]", source)
+        try 
+            let compiledScript = 
+                CSScript.LoadDelegate<System.Func<System.Dynamic.DynamicObject, string>>
+                    (sourceCode, null, false, [| "Microsoft.CSharp" |])
+            Choice1Of2(compiledScript)
+        with e -> Choice2Of2(MessageConstants.SCRIPT_CANT_BE_COMPILED |> Append("Message", e.Message))
     
     type ScriptProperties with
         
@@ -35,16 +61,16 @@ module ScriptPropertiesExtensions =
                 let getScript (script : KeyValuePair<string, ScriptProperties>) = 
                     maybe { 
                         match script.Value.ScriptType with
-                        | ScriptType.SearchProfileSelector -> let! compiledScript = CompilerService.GenerateStringReturnScript
+                        | ScriptType.SearchProfileSelector -> let! compiledScript = GenerateStringReturnScript
                                                                                         (script.Value.Source)
                                                               return compiledScript
-                        | ScriptType.ComputedField -> let! compiledScript = CompilerService.GenerateStringReturnScript
+                        | ScriptType.ComputedField -> let! compiledScript = GenerateStringReturnScript
                                                                                 (script.Value.Source)
                                                       return compiledScript
                         | _ -> 
                             return! Choice2Of2
-                                        (OperationMessage.WithPropertyName
-                                             (MessageConstants.UNKNOWN_SCRIPT_TYPE, script.Value.ScriptType.ToString()))
+                                        (MessageConstants.UNKNOWN_SCRIPT_TYPE 
+                                         |> Append("Script Type", script.Value.ScriptType.ToString()))
                     }
                 
                 let profileSelectorScripts = 

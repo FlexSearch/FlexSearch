@@ -12,12 +12,7 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Core
-open FlexSearch.Utility
-open System.Collections.Generic
-open System
 open Validator
-open FlexSearch.Api.Message
-open FlexSearch.Core.Services
 
 [<AutoOpen>]
 module IndexExtensions = 
@@ -43,11 +38,6 @@ module IndexExtensions =
                 do! this.IndexConfiguration.Validate()
                 let! analyzers = AnalyzerProperties.Build(this.Analyzers, factoryCollection)
                 let! scriptManager = ScriptProperties.Build(this.Scripts, factoryCollection)
-                let! fields = FieldProperties.Build(this.Fields, analyzers, this.Scripts, factoryCollection)
-//                do! IterExitOnFailure (Seq.toList (this.Scripts)) (fun x -> 
-//                        maybe { 
-//                            do! x.Key.ValidatePropertyValue("ScriptName")
-//                            do! x.Value.Validate(factoryCollection)
-//                        })
+                let! fields = FieldProperties.Build(this.Fields, this.IndexConfiguration, analyzers, this.Scripts, factoryCollection)
                 return! Choice1Of2()
             }
