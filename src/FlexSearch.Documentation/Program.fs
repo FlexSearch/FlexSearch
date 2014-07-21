@@ -9,6 +9,7 @@ open System.Text.RegularExpressions
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
 
+let missingDefinitions = new List<string>()
 type System.String with
     member this.CamelCaseToSeparate() =
         System.Text.RegularExpressions.Regex.Replace(this, "([A-Z])", " $1")
@@ -28,8 +29,10 @@ let ParseGlossaryFile() =
         for part in parts do
             let keyEnds = part.IndexOf("\r\n")
             let key = part.Substring(0, keyEnds).Trim()
+            let keys = key.Split([| '|' |], StringSplitOptions.RemoveEmptyEntries)
             let value = part.Substring(keyEnds + 1)
-            dictionary.Add(key, value)
+            for k in keys do
+                dictionary.Add(k.Trim(), value)
     printfn "%A" dictionary
     dictionary
 
@@ -101,6 +104,7 @@ let GenerateGlossary() =
             | true, text -> text
             | _ -> 
                 printfn "Missing glossary for: %s" key
+                missingDefinitions.Add(sprintf "%s.%s" typeName key)
                 "FIX:Missing definition in glossary file"
     
     let rec generateTypeTable (typeName : string, t : List<TypeMember>, output : List<string>) = 
@@ -192,5 +196,9 @@ let GenerateGlossary() =
 [<EntryPoint>]
 let main argv = 
     GenerateGlossary()
+    printfn "Missing Definition"
+    for def in missingDefinitions do
+        printfn "%s" def
+    printfn "Missing def count:%i" (missingDefinitions.Count)
     Console.ReadKey() |> ignore
     0 // return an integer exit code
