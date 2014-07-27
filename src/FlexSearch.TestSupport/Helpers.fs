@@ -74,5 +74,5 @@ module Helpers =
           ApiFile : string }
 
     let DocumentationConf = 
-        { DocumentationFolder = @"E:\Python27\Scripts\pelican\Scripts\OneDrive\flexsearch\api"
+        { DocumentationFolder = @"F:\SkyDrive\FlexSearch Documentation\source\docs\examples"
           ApiFile = @"F:\Github\FlexSearch\idl\Api.thrift" }

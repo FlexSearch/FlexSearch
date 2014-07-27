@@ -22,6 +22,9 @@ module ``Rest webservices tests - Indices`` =
     open Microsoft.Owin.Testing
     open FlexSearch.TestSupport.RestHelpers
     
+    type Dummy() =
+        do ()
+
     [<Theory; AutoMockIntegrationData>]
     let ``Accessing server root should return 200`` (server : TestServer) = 
         server
@@ -29,14 +32,13 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
     
-    [<Theory; AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData; Example("post-indices-id-1")>]
     let ``Creating an index without any parameters should return 200`` (server : TestServer, indexName : Guid) = 
         server
         |> request "POST" ("/indices/" + indexName.ToString("N"))
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Duplicate index cannot be created`` (server : TestServer, indexName : Guid) = 
@@ -50,7 +52,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1002"
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Create index with two field 'firstname' & 'lastname'`` (server : TestServer, indexName : Guid) = 
@@ -67,7 +68,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Create an index with dynamic fields`` (server : TestServer, indexName : Guid) = 
@@ -91,7 +91,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Create, update and delete an index`` (server : TestServer, indexName : Guid) = 
@@ -139,7 +138,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Getting an index detail by name`` (server : TestServer, indexName : Guid) = 
@@ -162,8 +160,7 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseMatches "IndexName" (indexName.ToString("N"))
-        |> ignore
-    
+
     [<Theory; AutoMockIntegrationData>]
     let ``Getting an non existing index will return error`` (server : TestServer, indexName : Guid) = 
         server
@@ -171,7 +168,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Trying to update an non existing index will return error`` (server : TestServer, indexName : Guid) = 
@@ -180,7 +176,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Trying to delete an non existing index will return error`` (server : TestServer, indexName : Guid) = 
@@ -189,7 +184,6 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
-        |> ignore
 
     [<Theory; AutoMockIntegrationData>]
     let IndexStatusTest(server : TestServer, indexName : Guid) = 

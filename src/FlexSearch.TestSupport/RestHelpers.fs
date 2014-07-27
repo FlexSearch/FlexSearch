@@ -67,15 +67,20 @@ module RestHelpers =
         requestBuilder
     
     let document (filename: string) (requestBuilder : RequestBuilder) = 
-        let path = Path.Combine(DocumentationConf.DocumentationFolder, filename + ".txt")
+        let path = Path.Combine(DocumentationConf.DocumentationFolder, filename + ".adoc")
         let output = ResizeArray<string>()
+        output.Add("""
+[source,javascript]
+----------------------------------------------------------------------------------
+        """)
         // print request information
         output.Add(requestBuilder.RequestType + " " + requestBuilder.Uri)
         output.Add("")
-        output.Add(requestBuilder.RequestBody)
+        if String.IsNullOrWhiteSpace(requestBuilder.RequestBody) = false then 
+            output.Add(requestBuilder.RequestBody)
+            output.Add("")
         output.Add("")
-        output.Add("")
-        output.Add(requestBuilder.Response.StatusCode.ToString())
+        output.Add(sprintf "HTTP 1.1 %i %s" (int32(requestBuilder.Response.StatusCode)) (requestBuilder.Response.StatusCode.ToString()))
         for header in requestBuilder.Response.Headers do
             output.Add(header.Key + " : " + header.Value.First()) 
         
@@ -85,8 +90,9 @@ module RestHelpers =
             if parsedJson <> Unchecked.defaultof<_> then 
                 output.Add("")
                 output.Add(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
-            if Directory.Exists(DocumentationConf.DocumentationFolder) then 
-                File.WriteAllLines(path, output)
+        output.Add("----------------------------------------------------------------------------------")
+        if Directory.Exists(DocumentationConf.DocumentationFolder) then 
+            File.WriteAllLines(path, output)
 
     // ----------------------------------------------------------------------------
     // Test assertions

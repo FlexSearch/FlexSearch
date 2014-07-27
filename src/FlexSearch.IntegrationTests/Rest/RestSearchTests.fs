@@ -31,7 +31,6 @@ module ``Rest webservices tests - Search`` =
         |> responseStatusEquals HttpStatusCode.OK
         |> responseMatches "RecordsReturned" (recordsReturned.ToString())
         |> responseMatches "TotalAvailable" (available.ToString())
-        |> ignore
     
     [<Theory; AutoMockIntegrationData>]
     let ``Term Query Test 1`` (server : TestServer) = server |> Query "firstname = 'Kathy' and lastname = 'Banks'" 1 1

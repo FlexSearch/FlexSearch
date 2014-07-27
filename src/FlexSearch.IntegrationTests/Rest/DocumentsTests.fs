@@ -63,4 +63,3 @@ module ``Rest webservices tests - Documents`` =
         |> request "DELETE" ("/indices/" + indexName.ToString("N") + "/documents/51")
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
-        |> ignore
