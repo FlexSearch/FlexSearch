@@ -36,8 +36,21 @@ open System.Threading.Tasks
 [<Sealed>]
 type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHandler>, ?port0 : int) = 
     let port = defaultArg port0 9800
-    let httpModule = httpFactory.GetAllModules()
-    
+    let httpModule = 
+        let modules = httpFactory.GetAllModules()
+        let result = new Dictionary<string, IHttpHandler>(StringComparer.OrdinalIgnoreCase)
+        for m in modules do
+            // check if the key supports more than one http verb
+            if m.Key.Contains("|") then
+                let verb = m.Key.Substring(0, m.Key.IndexOf("-"))
+                let verbs = verb.Split([|'|'|], StringSplitOptions.RemoveEmptyEntries)
+                let value = m.Key.Substring(m.Key.IndexOf("-") + 1)
+                for v in verbs do
+                    result.Add(v + "-" + value, m.Value)
+            else
+                result.Add(m.Key, m.Value)
+        result
+
     /// <summary>
     /// Default OWIN method to process request
     /// </summary>
