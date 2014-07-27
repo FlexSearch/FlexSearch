@@ -27,61 +27,72 @@ open System.Linq
 open System.Net
 open System.Net.Http
 
-[<Name("GET-/indices/:id/documents")>]
+[<Name("GET-/")>]
 [<Sealed>]
-type GetDocumentsHandler(documentService : IDocumentService) = 
+type GetRootHandler() = 
+    
+    let htmlPage = 
+        let filePath = System.IO.Path.Combine(Constants.ConfFolder, "WelcomePage.html")
+        if File.Exists(filePath) then 
+            let pageText = System.IO.File.ReadAllText(filePath)
+            pageText.Replace
+                ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+        else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+    
     interface IHttpHandler with
         member this.Process(owin) = 
-            // Return top 10 documents
-            owin |> ResponseProcessor (documentService.GetDocuments(GetIndexName(owin))) OK BAD_REQUEST
+            owin.Response.ContentType <- "text/html"
+            owin.Response.StatusCode <- 200
+            await (owin.Response.WriteAsync htmlPage)
 
-[<Name("GET-/indices/:id/documents/:id")>]
+[<Name("GET-/indices")>]
 [<Sealed>]
-type GetDocumentByIdHandler(documentService : IDocumentService) = 
+type GetAllIndexHandler(indexService : IIndexService) = 
     interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (documentService.GetDocument(GetIndexName(owin), SubId(owin))) OK BAD_REQUEST
+        member this.Process(owin) = owin |> ResponseProcessor (indexService.GetAllIndex()) OK BAD_REQUEST
 
-[<Name("POST-/indices/:id/documents/:id")>]
+[<Name("GET-/indices/:id")>]
 [<Sealed>]
-type PostDocumentByIdHandler(documentService : IDocumentService) = 
+type GetIndexByIdHandler(indexService : IIndexService) = 
     interface IHttpHandler with
-        member this.Process(owin) = 
-            let processRequest = 
-                maybe { 
-                    let! fields = GetRequestBody<Dictionary<string, string>>(owin.Request)
-                    match fields.TryGetValue(Constants.IdField) with
-                    | true, _ -> 
-                        // Override dictionary id with the URL id
-                        fields.[Constants.IdField] <- SubId(owin)
-                    | _ -> fields.Add(Constants.IdField, SubId(owin))
-                    return! documentService.AddDocument(GetIndexName(owin), SubId(owin), fields)
-                }
-            owin |> ResponseProcessor processRequest OK BAD_REQUEST
+        member this.Process(owin) = owin |> ResponseProcessor (indexService.GetIndex(GetIndexName(owin))) OK BAD_REQUEST
 
-[<Name("DELETE-/indices/:id/documents/:id")>]
+[<Name("POST-/indices/:id")>]
 [<Sealed>]
-type DeleteDocumentByIdHandler(documentService : IDocumentService) = 
+type PostIndexByIdHandler(indexService : IIndexService) = 
     interface IHttpHandler with
         member this.Process(owin) = 
-            owin |> ResponseProcessor (documentService.DeleteDocument(GetIndexName(owin), SubId(owin))) OK BAD_REQUEST
+            match GetRequestBody<Index>(owin.Request) with
+            | Choice1Of2(index) -> 
+                // Index name passed in URL takes precedence
+                index.IndexName <- GetIndexName(owin)
+                owin |> ResponseProcessor (indexService.AddIndex(index)) OK BAD_REQUEST
+            | Choice2Of2(error) -> 
+                if error.ErrorCode = 6002 then 
+                    // In case the error is no body defined then still try to create the index based on index name
+                    let index = new Index()
+                    index.IndexName <- GetIndexName(owin)
+                    owin |> ResponseProcessor (indexService.AddIndex(index)) OK BAD_REQUEST
+                else owin |> BAD_REQUEST error
 
-[<Name("PUT-/indices/:id/documents/:id")>]
+[<Name("DELETE-/indices/:id")>]
 [<Sealed>]
-type PutDocumentByIdHandler(documentService : IDocumentService) = 
+type DeleteIndexByIdHandler(indexService : IIndexService) = 
     interface IHttpHandler with
         member this.Process(owin) = 
-            let processRequest = 
-                maybe { 
-                    let! fields = GetRequestBody<Dictionary<string, string>>(owin.Request)
-                    match fields.TryGetValue(Constants.IdField) with
-                    | true, _ -> 
-                        // Override dictionary id with the URL id
-                        fields.[Constants.IdField] <- SubId(owin)
-                    | _ -> fields.Add(Constants.IdField, SubId(owin))
-                    return! documentService.AddOrUpdateDocument(GetIndexName(owin), SubId(owin), fields)
-                }
-            owin |> ResponseProcessor processRequest OK BAD_REQUEST
+            owin |> ResponseProcessor (indexService.DeleteIndex(GetIndexName(owin))) OK BAD_REQUEST
+
+[<Name("PUT-/indices/:id")>]
+[<Sealed>]
+type PutIndexByIdHandler(indexService : IIndexService) = 
+    interface IHttpHandler with
+        member this.Process(owin) = 
+            match GetRequestBody<Index>(owin.Request) with
+            | Choice1Of2(index) -> 
+                // Index name passed in URL takes precedence
+                index.IndexName <- GetIndexName(owin)
+                owin |> ResponseProcessor (indexService.UpdateIndex(index)) OK BAD_REQUEST
+            | Choice2Of2(error) -> owin |> BAD_REQUEST error
 
 [<Name("GET-/indices/:id/status")>]
 [<Sealed>]
@@ -94,7 +105,7 @@ type GetStatusHandler(indexService : IIndexService) =
                 | Choice2Of2(e) -> Choice2Of2(e)
             owin |> ResponseProcessor processRequest OK BAD_REQUEST
 
-[<Name("POST-/indices/:id/status/:id")>]
+[<Name("PUT-/indices/:id/status/:id")>]
 [<Sealed>]
 type PostStatusHandler(indexService : IIndexService) = 
     interface IHttpHandler with
