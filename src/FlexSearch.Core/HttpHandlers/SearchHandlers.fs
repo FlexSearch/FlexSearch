@@ -27,7 +27,7 @@ open System.Linq
 open System.Net
 open System.Net.Http
 
-[<Name("GET-/indices/:id/search")>]
+[<Name("GET|POST-/indices/:id/search")>]
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 
     interface IHttpHandler with
