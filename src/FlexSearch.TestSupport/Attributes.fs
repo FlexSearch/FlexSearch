@@ -21,6 +21,15 @@ open Microsoft.Owin.Testing
 [<AutoOpen>]
 module UnitTestAttributes = 
     /// <summary>
+    /// Represents the lookup name for the plug-in
+    /// </summary>
+    [<Sealed>]
+    [<System.AttributeUsage(System.AttributeTargets.Method)>]
+    type ExampleAttribute(fileName : string) = 
+        inherit Attribute()
+        member this.FileName = fileName
+
+    /// <summary>
     /// Unit test domain customization
     /// </summary>
     type DomainCustomization() = 
@@ -154,7 +163,7 @@ module IntegrationTestHelpers =
         AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>() ,Container.Resolve<IIndexService>())
         index
     
-    // Add mock contact inex to our test server 
+    // Add mock contact index to our test server 
     GenerateIndexWithTestData(TestData.MockTestData, MockIndexSettings()) |> ignore
 
     /// <summary>
