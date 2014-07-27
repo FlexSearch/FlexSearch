@@ -23,3 +23,44 @@ module ``Rest webservices tests - Documents`` =
     open FlexSearch.TestSupport.RestHelpers
 
 
+    [<Theory; AutoMockIntegrationData>]
+    let ``Document test 1`` (server : TestServer, indexName: Guid) = 
+        server
+        |> request "POST" ("/indices/" + indexName.ToString("N"))
+        |> withBody """
+        {
+            "Online": true,
+            "Fields" : {
+                "firstname" : { FieldType : "Text" },
+                "lastname" : { FieldType : "Text" }
+            }
+        }
+"""
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> ignore
+
+        server
+        |> request "POST" ("/indices/" + indexName.ToString("N") + "/documents/51")
+        |> withBody """
+            {
+                "firstname" : "Seemant",
+                "lastname" : "Rajvanshi"
+            }
+        """
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> ignore
+        Thread.Sleep(5000)
+        server
+        |> request "GET" ("/indices/" + indexName.ToString("N") + "/documents/51")
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches Constants.IdField "51"
+        |> ignore
+        server
+        |> request "DELETE" ("/indices/" + indexName.ToString("N") + "/documents/51")
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> ignore

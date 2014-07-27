@@ -92,7 +92,7 @@ module RestHelpers =
     // Test assertions
     // ----------------------------------------------------------------------------
     let responseStatusEquals (status : HttpStatusCode) (result : RequestBuilder) = 
-        Assert.True(status.Equals(result.Response.StatusCode), "Status code does not match")
+        Assert.True(status.Equals(result.Response.StatusCode), ("Status code does not match: " + result.Response.StatusCode.ToString()))
         result
     
     let responseContainsHeader (header : string) (value : string) (result : RequestBuilder) = 

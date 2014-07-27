@@ -130,19 +130,19 @@ module ``Rest webservices tests - Indices`` =
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
         |> ignore
-
+    
     [<Theory; AutoMockIntegrationData>]
     let ``Create index by setting all properties`` (server : TestServer, indexName : Guid) = 
         server
         |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody  (JsonConvert.SerializeObject(Helpers.MockIndexSettings(), jsonSettings))
+        |> withBody (JsonConvert.SerializeObject(IntegrationTestHelpers.MockIndexSettings(), jsonSettings))
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
         |> ignore
-
+    
     [<Theory; AutoMockIntegrationData>]
-    let ``Getting an index detail by name`` (server : TestServer, indexName: Guid) = 
+    let ``Getting an index detail by name`` (server : TestServer, indexName : Guid) = 
         server
         |> request "POST" ("/indices/" + indexName.ToString("N"))
         |> withBody """
@@ -163,31 +163,62 @@ module ``Rest webservices tests - Indices`` =
         |> responseStatusEquals HttpStatusCode.OK
         |> responseMatches "IndexName" (indexName.ToString("N"))
         |> ignore
-
-
+    
     [<Theory; AutoMockIntegrationData>]
-    let ``Getting an non existing index will return error`` (server : TestServer, indexName: Guid) = 
+    let ``Getting an non existing index will return error`` (server : TestServer, indexName : Guid) = 
         server
         |> request "GET" ("/indices/" + indexName.ToString("N"))
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
         |> ignore
-
+    
     [<Theory; AutoMockIntegrationData>]
-    let ``Trying to update an non existing index will return error`` (server : TestServer, indexName: Guid) = 
+    let ``Trying to update an non existing index will return error`` (server : TestServer, indexName : Guid) = 
         server
         |> request "PUT" ("/indices/" + indexName.ToString("N"))
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
         |> ignore
-
+    
     [<Theory; AutoMockIntegrationData>]
-    let ``Trying to delete an non existing index will return error`` (server : TestServer, indexName: Guid) = 
+    let ``Trying to delete an non existing index will return error`` (server : TestServer, indexName : Guid) = 
         server
         |> request "DELETE" ("/indices/" + indexName.ToString("N"))
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
         |> ignore
+
+    [<Theory; AutoMockIntegrationData>]
+    let IndexStatusTest(server : TestServer, indexName : Guid) = 
+        server
+        |> request "POST" ("/indices/" + indexName.ToString("N"))
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> ignore
+        server
+        |> request "GET" ("/indices/" + indexName.ToString("N") + "/status")
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches "Status" "Offline"
+        |> ignore
+        server
+        |> request "PUT" ("/indices/" + indexName.ToString("N") + "/status/online")
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull
+        |> ignore
+        server
+        |> request "GET" ("/indices/" + indexName.ToString("N") + "/status")
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseMatches "Status" "Online"
+        |> ignore
+        server
+        |> request "PUT" ("/indices/" + indexName.ToString("N") + "/status/offline")
+        |> execute
+        |> responseStatusEquals HttpStatusCode.OK
+        |> responseBodyIsNull

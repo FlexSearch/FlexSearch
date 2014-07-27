@@ -1,15 +1,4 @@
-﻿module Helpers
-
-open FlexSearch.Api
-open FlexSearch.Api.Message
-open FlexSearch.Core
-open System
-open System.Collections.Generic
-open System.Linq
-open System.Threading
-open System.Collections.Concurrent
-open System.IO
-open Autofac
+﻿module TestData
 
 /// <summary>
 /// Mock test data to be used for documentation and testing
@@ -68,30 +57,4 @@ id,firstname,lastname,email,country,ipaddress,phone,cvv2,description
 50,George,Stone,gstone@gabtune.mil,Venezuela,172.238.29.138,4-(440)853-7427,698,Ut tellus. Nulla ut erat id mauris vulputate elementum. Nullam varius. Nulla facilisi. Cras non velit nec nisi vulputate nonummy. Maecenas tincidunt lacus at velit. Vivamus vel nulla eget eros elementum pellentesque.
 """
 
-/// <summary>
-/// Baisc index configuration
-/// </summary>
-let MockIndexSettings() = 
-    let index = new Index()
-    index.IndexName <- Guid.NewGuid().ToString("N")
-    index.Online <- true
-    index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
-    index.Fields.Add("firstname", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("lastname", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("email", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("country", new FieldProperties(FieldType = FieldType.Text))
-    index.Fields.Add("ipaddress", new FieldProperties(FieldType = FieldType.ExactText))
-    index.Fields.Add("cvv2", new FieldProperties(FieldType = FieldType.Int))
-    index.Fields.Add("description", new FieldProperties(FieldType = FieldType.Highlight))
-    // Computed fields
-    index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
-    index.Scripts.Add
-        ("fullname", 
-         new ScriptProperties("""return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
-    let searchProfileQuery = 
-        new SearchQuery(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''")
-    searchProfileQuery.MissingValueConfiguration.Add("firstname", MissingValueOption.ThrowError)
-    searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
-    searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
-    index.SearchProfiles.Add("test1", searchProfileQuery)
-    index
+

@@ -45,6 +45,34 @@ module IntegrationTestHelpers =
     let serverSettings = new ServerSettings()
     let Container = Main.GetContainer(serverSettings, true)
 
+    /// <summary>
+    /// Baisc index configuration
+    /// </summary>
+    let MockIndexSettings() = 
+        let index = new Index()
+        index.IndexName <- "contact"
+        index.Online <- true
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
+        index.Fields.Add("firstname", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("lastname", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("email", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("country", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("ipaddress", new FieldProperties(FieldType = FieldType.ExactText))
+        index.Fields.Add("cvv2", new FieldProperties(FieldType = FieldType.Int))
+        index.Fields.Add("description", new FieldProperties(FieldType = FieldType.Highlight))
+        // Computed fields
+        index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
+        index.Scripts.Add
+            ("fullname", 
+             new ScriptProperties("""return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
+        let searchProfileQuery = 
+            new SearchQuery(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''")
+        searchProfileQuery.MissingValueConfiguration.Add("firstname", MissingValueOption.ThrowError)
+        searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
+        searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
+        index.SearchProfiles.Add("test1", searchProfileQuery)
+        index
+
     let GetBasicIndexSettingsForContact() = 
         let index = new Index()
         index.IndexName <- Guid.NewGuid().ToString("N")
@@ -126,6 +154,9 @@ module IntegrationTestHelpers =
         AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>() ,Container.Resolve<IIndexService>())
         index
     
+    // Add mock contact inex to our test server 
+    GenerateIndexWithTestData(TestData.MockTestData, MockIndexSettings()) |> ignore
+
     /// <summary>
     /// Test setup fixture to use with Xunit IUseFixture
     /// </summary>

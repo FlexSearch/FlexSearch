@@ -132,6 +132,7 @@ module Parsers =
             notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, fun x -> NotPredicate(x))))
         
         member this.Parse(input : string) = 
+            assert(input <> null)
             match run Parser input with
             | Success(result, _, _) -> Choice1Of2(result)
             | Failure(errorMsg, _, _) -> 

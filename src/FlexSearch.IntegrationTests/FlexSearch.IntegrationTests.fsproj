@@ -293,9 +293,9 @@
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Rest\Helpers.fs" />
     <Compile Include="Rest\IndicesTests.fs" />
     <Compile Include="Rest\DocumentsTests.fs" />
+    <Compile Include="Rest\RestSearchTests.fs" />
     <Compile Include="BenchmarkTests.fs" />
     <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
