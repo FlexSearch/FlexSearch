@@ -1,6 +1,6 @@
 ﻿namespace FlexSearch.Documention
 
-module GenerateExamples =
+module GenerateExamples = 
     open FlexSearch.IntegrationTests.``Rest webservices tests - Documents``
     open FlexSearch.IntegrationTests.``Rest webservices tests - Indices``
     open FlexSearch.IntegrationTests.``Rest webservices tests - Search``
@@ -15,48 +15,84 @@ module GenerateExamples =
     open Newtonsoft.Json.Converters
     open System.Reflection
     open System.Linq
-
+    open System.Text
+    
+    let template = """
+++++
+<span class="label">Example</span>
+<table id="fetch-an-index-detail" class="tableblock tableblock-example">
+	<tr>
+		<td>
+			<p class="rest-example-title">{title}</p>
+		</td>
+		<td>
+			<a class="right button small" onClick="$('#{guid}').toggle();">Show/Hide response</a>
+		</td>
+	</tr>
+	<tr id="{guid}" style="display:none;">
+		<td colspan="2">	
+			<pre class="rest-output"><code>
+{code}
+            </code></pre>
+	    </td>
+    </tr>	
+</table>
+++++
+"""
     let Container = IntegrationTestHelpers.Container
     let exampleFolder = "F:\SkyDrive\FlexSearch Documentation\source\docs\examples"
-    let testServer = TestServer.Create(fun app -> 
-            let owinServer = new OwinServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())
-            owinServer.Configuration(app)
-        )
-
-    let document (filename: string) (requestBuilder : RequestBuilder) = 
-            let path = Path.Combine(DocumentationConf.DocumentationFolder, filename + ".adoc")
-            let output = ResizeArray<string>()
-            output.Add("""
-    [source,javascript]
-    ----------------------------------------------------------------------------------
-            """)
-            // print request information
-            output.Add(requestBuilder.RequestType + " " + requestBuilder.Uri)
-            output.Add("")
-            if String.IsNullOrWhiteSpace(requestBuilder.RequestBody) = false then 
-                output.Add(requestBuilder.RequestBody)
-                output.Add("")
-            output.Add("")
-            output.Add(sprintf "HTTP 1.1 %i %s" (int32(requestBuilder.Response.StatusCode)) (requestBuilder.Response.StatusCode.ToString()))
-            for header in requestBuilder.Response.Headers do
-                output.Add(header.Key + " : " + header.Value.First()) 
-        
-            let body = requestBuilder.Response.Content.ReadAsStringAsync().Result
-            if String.IsNullOrWhiteSpace(body) <> true then
-                let parsedJson = JsonConvert.DeserializeObject(body)
-                if parsedJson <> Unchecked.defaultof<_> then 
-                    output.Add("")
-                    output.Add(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
-            output.Add("----------------------------------------------------------------------------------")
-            if Directory.Exists(DocumentationConf.DocumentationFolder) then 
-                File.WriteAllLines(path, output)
-
+    
+    let testServer = 
+        TestServer.Create(fun app -> 
+            let owinServer = 
+                new OwinServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())
+            owinServer.Configuration(app))
+    
+    let document (filename : string) (title : string) (requestBuilder : RequestBuilder) = 
+        let path = Path.Combine(DocumentationConf.DocumentationFolder, filename + ".adoc")
+        let output = new StringBuilder()
+        // print request information
+        output.AppendLine(requestBuilder.RequestType + " " + requestBuilder.Uri).AppendLine("") |> ignore
+        if String.IsNullOrWhiteSpace(requestBuilder.RequestBody) = false then 
+            output.AppendLine(requestBuilder.RequestBody).AppendLine("") |> ignore
+        output.AppendLine("----------------------------------") |> ignore
+        output.AppendLine
+            (sprintf "HTTP 1.1 %i %s" (int32 (requestBuilder.Response.StatusCode)) 
+                 (requestBuilder.Response.StatusCode.ToString())) |> ignore
+        for header in requestBuilder.Response.Headers do
+            output.AppendLine(header.Key + " : " + header.Value.First()) |> ignore
+        let body = requestBuilder.Response.Content.ReadAsStringAsync().Result
+        if String.IsNullOrWhiteSpace(body) <> true then 
+            let parsedJson = JsonConvert.DeserializeObject(body)
+            if parsedJson <> Unchecked.defaultof<_> then 
+                output.AppendLine("")
+                      .AppendLine(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented))) |> ignore
+        if Directory.Exists(DocumentationConf.DocumentationFolder) then 
+            let outputFile = 
+                template.Replace("{guid}", (Guid.NewGuid().ToString("N"))).Replace("{code}", output.ToString())
+                        .Replace("{title}", title)
+            File.WriteAllText(path, outputFile)
+    
     let GenerateIndicesExamples() = 
         let assembly = typeof<FlexSearch.IntegrationTests.``Rest webservices tests - Indices``.Dummy>.Assembly
         for typ in assembly.GetTypes().Where(fun x -> x.IsPublic && x.IsClass) do
             let methods = typ.GetMethods()
-            for m in methods.Where(fun x -> x.IsDefined(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>)) do
+            for m in methods.Where
+                         (fun x -> x.IsDefined(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>)) do
                 printfn "Method Name: %s" m.Name
-        
-
-
+                try 
+                    if (m.GetParameters().Count() = 2) then 
+                        let param1 = testServer
+                        let param2 = Guid.NewGuid()
+                        
+                        let parameters = 
+                            [| param1 :> obj
+                               param2 :> obj |]
+                        
+                        let result = m.Invoke(null, parameters) :?> RequestBuilder
+                        let attributeValue = 
+                            m.GetCustomAttributes(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>, 
+                                                  false).First() :?> FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute
+                        document attributeValue.FileName attributeValue.Title result
+                        ()
+                with e -> printfn "%s" e.Message
