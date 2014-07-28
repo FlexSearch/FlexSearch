@@ -65,34 +65,6 @@ module RestHelpers =
             requestBuilder.Response <- requestBuilder.Server.HttpClient.DeleteAsync(requestBuilder.Uri).Result
         |_ -> failwithf "Not supported"
         requestBuilder
-    
-    let document (filename: string) (requestBuilder : RequestBuilder) = 
-        let path = Path.Combine(DocumentationConf.DocumentationFolder, filename + ".adoc")
-        let output = ResizeArray<string>()
-        output.Add("""
-[source,javascript]
-----------------------------------------------------------------------------------
-        """)
-        // print request information
-        output.Add(requestBuilder.RequestType + " " + requestBuilder.Uri)
-        output.Add("")
-        if String.IsNullOrWhiteSpace(requestBuilder.RequestBody) = false then 
-            output.Add(requestBuilder.RequestBody)
-            output.Add("")
-        output.Add("")
-        output.Add(sprintf "HTTP 1.1 %i %s" (int32(requestBuilder.Response.StatusCode)) (requestBuilder.Response.StatusCode.ToString()))
-        for header in requestBuilder.Response.Headers do
-            output.Add(header.Key + " : " + header.Value.First()) 
-        
-        let body = requestBuilder.Response.Content.ReadAsStringAsync().Result
-        if String.IsNullOrWhiteSpace(body) <> true then
-            let parsedJson = JsonConvert.DeserializeObject(body)
-            if parsedJson <> Unchecked.defaultof<_> then 
-                output.Add("")
-                output.Add(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
-        output.Add("----------------------------------------------------------------------------------")
-        if Directory.Exists(DocumentationConf.DocumentationFolder) then 
-            File.WriteAllLines(path, output)
 
     // ----------------------------------------------------------------------------
     // Test assertions

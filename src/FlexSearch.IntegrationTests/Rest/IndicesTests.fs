@@ -22,9 +22,9 @@ module ``Rest webservices tests - Indices`` =
     open Microsoft.Owin.Testing
     open FlexSearch.TestSupport.RestHelpers
     
-    type Dummy() =
+    type Dummy() = 
         do ()
-
+    
     [<Theory; AutoMockIntegrationData>]
     let ``Accessing server root should return 200`` (server : TestServer) = 
         server
@@ -32,7 +32,7 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
     
-    [<Theory; AutoMockIntegrationData; Example("post-indices-id-1")>]
+    [<Theory; AutoMockIntegrationData; Example("post-indices-id-1", "Creating an index without any data")>]
     let ``Creating an index without any parameters should return 200`` (server : TestServer, indexName : Guid) = 
         server
         |> request "POST" ("/indices/" + indexName.ToString("N"))
@@ -40,7 +40,7 @@ module ``Rest webservices tests - Indices`` =
         |> responseStatusEquals HttpStatusCode.OK
         |> responseBodyIsNull
     
-    [<Theory; AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData; Example("post-indices-id-2", "Duplicate index cannot be created")>]
     let ``Duplicate index cannot be created`` (server : TestServer, indexName : Guid) = 
         server
         |> request "POST" ("/indices/" + indexName.ToString("N"))
@@ -160,7 +160,7 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
         |> responseMatches "IndexName" (indexName.ToString("N"))
-
+    
     [<Theory; AutoMockIntegrationData>]
     let ``Getting an non existing index will return error`` (server : TestServer, indexName : Guid) = 
         server
@@ -184,7 +184,7 @@ module ``Rest webservices tests - Indices`` =
         |> execute
         |> responseStatusEquals HttpStatusCode.BadRequest
         |> responseMatches "ErrorCode" "1000"
-
+    
     [<Theory; AutoMockIntegrationData>]
     let IndexStatusTest(server : TestServer, indexName : Guid) = 
         server

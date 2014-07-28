@@ -14,7 +14,7 @@ open System
 open System.Linq
 open Xunit.Extensions
 open Xunit.Sdk
-open Autofac 
+open Autofac
 open System.Threading
 open Microsoft.Owin.Testing
 
@@ -25,10 +25,11 @@ module UnitTestAttributes =
     /// </summary>
     [<Sealed>]
     [<System.AttributeUsage(System.AttributeTargets.Method)>]
-    type ExampleAttribute(fileName : string) = 
+    type ExampleAttribute(fileName : string, title : string) = 
         inherit Attribute()
         member this.FileName = fileName
-
+        member this.Title = title
+    
     /// <summary>
     /// Unit test domain customization
     /// </summary>
@@ -53,7 +54,7 @@ module UnitTestAttributes =
 module IntegrationTestHelpers = 
     let serverSettings = new ServerSettings()
     let Container = Main.GetContainer(serverSettings, true)
-
+    
     /// <summary>
     /// Baisc index configuration
     /// </summary>
@@ -73,6 +74,7 @@ module IntegrationTestHelpers =
         index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
         index.Scripts.Add
             ("fullname", 
+             
              new ScriptProperties("""return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
         let searchProfileQuery = 
             new SearchQuery(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''")
@@ -81,7 +83,7 @@ module IntegrationTestHelpers =
         searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
         index.SearchProfiles.Add("test1", searchProfileQuery)
         index
-
+    
     let GetBasicIndexSettingsForContact() = 
         let index = new Index()
         index.IndexName <- Guid.NewGuid().ToString("N")
@@ -129,14 +131,15 @@ module IntegrationTestHelpers =
         searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
         index.SearchProfiles.Add("test1", searchProfileQuery)
         index
-
+    
     /// <summary>
     /// Utility method to add data to an index
     /// </summary>
     /// <param name="indexService"></param>
     /// <param name="index"></param>
     /// <param name="testData"></param>
-    let AddTestDataToIndex(index : Index, testData : string, documentService: IDocumentService, indexService: IIndexService) = 
+    let AddTestDataToIndex(index : Index, testData : string, documentService : IDocumentService, 
+                           indexService : IIndexService) = 
         indexService.AddIndex(index) |> ExpectSuccess
         let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
         if lines.Count() < 2 then failwithf "No data to index"
@@ -151,85 +154,82 @@ module IntegrationTestHelpers =
             documentService.AddDocument(index.IndexName, indexDocument.Id, indexDocument.Fields) |> ExpectSuccess
         indexService.Commit(index.IndexName) |> ExpectSuccess
         indexService.Refresh(index.IndexName) |> ExpectSuccess
-        //Thread.Sleep(200)
-//        let documents = GetSuccessChoice(documentService.GetDocuments(index.IndexName))
-//        Assert.Equal<int>(lines.Count() - 1, (documents.Count))
-
+    
+    //Thread.Sleep(200)
+    //        let documents = GetSuccessChoice(documentService.GetDocuments(index.IndexName))
+    //        Assert.Equal<int>(lines.Count() - 1, (documents.Count))
     /// <summary>
     /// Helper method to generate test index with supplied data
     /// </summary>
     /// <param name="testData"></param>
-    let GenerateIndexWithTestData(testData: string, index: Index) =
-        AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>() ,Container.Resolve<IIndexService>())
+    let GenerateIndexWithTestData(testData : string, index : Index) = 
+        AddTestDataToIndex(index, testData, Container.Resolve<IDocumentService>(), Container.Resolve<IIndexService>())
         index
     
     // Add mock contact index to our test server 
     GenerateIndexWithTestData(TestData.MockTestData, MockIndexSettings()) |> ignore
-
+    
     /// <summary>
     /// Test setup fixture to use with Xunit IUseFixture
     /// </summary>
-    type IndexFixture() =
+    type IndexFixture() = 
         member val Index = Unchecked.defaultof<_> with get, set
-        member this.Setup(testData: string, index: Index) =
-            if this.Index = Unchecked.defaultof<_> then
-                this.Index <- GenerateIndexWithTestData(testData, index)
         
-        interface System.IDisposable with 
-            member this.Dispose() = 
-                ExpectSuccess (Container.Resolve<IIndexService>().DeleteIndex(this.Index.IndexName))
-
-    let private VerifySearchCount (expected: int) (queryString : string) (indexName : string) =
-            let query = new SearchQuery(indexName, queryString)
-            let searchService = Container.Resolve<ISearchService>()
-            let result = GetSuccessChoice(searchService.Search(query))
-            Assert.Equal<int>(expected, result.RecordsReturned)
-
+        member this.Setup(testData : string, index : Index) = 
+            if this.Index = Unchecked.defaultof<_> then this.Index <- GenerateIndexWithTestData(testData, index)
+        
+        interface System.IDisposable with
+            member this.Dispose() = ExpectSuccess(Container.Resolve<IIndexService>().DeleteIndex(this.Index.IndexName))
+    
+    let private VerifySearchCount (expected : int) (queryString : string) (indexName : string) = 
+        let query = new SearchQuery(indexName, queryString)
+        let searchService = Container.Resolve<ISearchService>()
+        let result = GetSuccessChoice(searchService.Search(query))
+        Assert.Equal<int>(expected, result.RecordsReturned)
+    
     /// <summary>
     /// Base for creating all Xunit based indexing integration tests
     /// </summary>
     [<AbstractClass>]
-    type IndexTestBase(testData : string, ?index0: Index) =
-        let index = defaultArg index0  (GetBasicIndexSettingsForContact())
+    type IndexTestBase(testData : string, ?index0 : Index) = 
+        let index = defaultArg index0 (GetBasicIndexSettingsForContact())
         member val Index = Unchecked.defaultof<_> with get, set
         member val IndexName = Unchecked.defaultof<_> with get, set
-
-        member this.VerifySearchCount (expected: int) (queryString : string) =
+        member this.VerifySearchCount (expected : int) (queryString : string) = 
             VerifySearchCount expected queryString this.IndexName
-
         interface IUseFixture<IndexFixture> with
-            member this.SetFixture(data) =
+            member this.SetFixture(data) = 
                 data.Setup(testData, index)
                 this.Index <- data.Index
                 this.IndexName <- data.Index.IndexName
-
+    
     /// <summary>
     /// Unit test domain customization
     /// </summary>
     type IntegrationCustomization() = 
         interface ICustomization with
-            member this.Customize(fixture: IFixture) =
-                let GetTestServer(indexService: IIndexService, httpFactory: IFlexFactory<IHttpHandler>) =
-                    let testServer = TestServer.Create(fun app -> 
+            member this.Customize(fixture : IFixture) = 
+                let GetTestServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHandler>) = 
+                    let testServer = 
+                        TestServer.Create(fun app -> 
                             let owinServer = new OwinServer(indexService, httpFactory)
-                            owinServer.Configuration(app)
-                        )
+                            owinServer.Configuration(app))
                     testServer
-
                 fixture.Inject<IIndexService>(Container.Resolve<IIndexService>()) |> ignore
                 fixture.Inject<ISearchService>(Container.Resolve<ISearchService>()) |> ignore
                 fixture.Inject<IDocumentService>(Container.Resolve<IDocumentService>()) |> ignore
                 fixture.Inject<IFlexFactory<IHttpHandler>>(Container.Resolve<IFlexFactory<IHttpHandler>>()) |> ignore
                 fixture.Register<Index>(fun _ -> GetBasicIndexSettingsForContact()) |> ignore
-                fixture.Inject<TestServer>(GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())) |> ignore
-
-
+                fixture.Inject<TestServer>
+                    (GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())) 
+                |> ignore
+    
     /// <summary>
     /// Unit test domain customization
     /// </summary>
     type IntegrationDomainCustomization() = 
         inherit CompositeCustomization(new IntegrationCustomization(), new SupportMutableValueTypesCustomization())
-
+    
     /// <summary>
     /// Auto fixture based Xunit attribute
     /// </summary>
@@ -243,5 +243,3 @@ module IntegrationTestHelpers =
     type InlineAutoMockIntegrationDataAttribute([<ParamArray>] values : Object []) = 
         inherit CompositeDataAttribute([| new InlineDataAttribute(values) :> DataAttribute
                                           new AutoMockIntegrationDataAttribute() :> DataAttribute |])
-    
-        
