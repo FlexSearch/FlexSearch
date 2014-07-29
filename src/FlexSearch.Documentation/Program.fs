@@ -11,5 +11,5 @@ let GenerateGlossary() =
 let main argv = 
     //GenerateGlossary()
     GenerateExamples.GenerateIndicesExamples()
-    Console.ReadKey() |> ignore
+    //Console.ReadKey() |> ignore
     0 // return an integer exit code

@@ -18,7 +18,7 @@ module GenerateExamples =
     open System.Text
     
     let template = """
-++++
++++
 <span class="label">Example</span>
 <table id="fetch-an-index-detail" class="tableblock tableblock-example">
 	<tr>
@@ -28,6 +28,7 @@ module GenerateExamples =
 		<td>
 			<a class="right button small" onClick="$('#{guid}').toggle();">Show/Hide response</a>
 		</td>
+
 	</tr>
 	<tr id="{guid}" style="display:none;">
 		<td colspan="2">	
@@ -37,7 +38,7 @@ module GenerateExamples =
 	    </td>
     </tr>	
 </table>
-++++
++++
 """
     let Container = IntegrationTestHelpers.Container
     let exampleFolder = "F:\SkyDrive\FlexSearch Documentation\source\docs\examples"
@@ -54,7 +55,11 @@ module GenerateExamples =
         // print request information
         output.AppendLine(requestBuilder.RequestType + " " + requestBuilder.Uri).AppendLine("") |> ignore
         if String.IsNullOrWhiteSpace(requestBuilder.RequestBody) = false then 
-            output.AppendLine(requestBuilder.RequestBody).AppendLine("") |> ignore
+            let parsedJson = JsonConvert.DeserializeObject(requestBuilder.RequestBody)
+            if parsedJson <> Unchecked.defaultof<_> then 
+                output.AppendLine("")
+                      .AppendLine(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented))).AppendLine("") |> ignore
+
         output.AppendLine("----------------------------------") |> ignore
         output.AppendLine
             (sprintf "HTTP 1.1 %i %s" (int32 (requestBuilder.Response.StatusCode)) 
@@ -93,6 +98,11 @@ module GenerateExamples =
                         let attributeValue = 
                             m.GetCustomAttributes(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>, 
                                                   false).First() :?> FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute
-                        document attributeValue.FileName attributeValue.Title result
+                        let title = 
+                            if String.IsNullOrWhiteSpace(attributeValue.Title) then
+                                m.Name
+                            else
+                                attributeValue.Title
+                        document attributeValue.FileName title result
                         ()
                 with e -> printfn "%s" e.Message
