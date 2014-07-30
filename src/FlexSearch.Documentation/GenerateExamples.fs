@@ -58,8 +58,8 @@ module GenerateExamples =
             let parsedJson = JsonConvert.DeserializeObject(requestBuilder.RequestBody)
             if parsedJson <> Unchecked.defaultof<_> then 
                 output.AppendLine("")
-                      .AppendLine(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented))).AppendLine("") |> ignore
-
+                      .AppendLine(sprintf "%s" (JsonConvert.SerializeObject(parsedJson, Formatting.Indented)))
+                      .AppendLine("") |> ignore
         output.AppendLine("----------------------------------") |> ignore
         output.AppendLine
             (sprintf "HTTP 1.1 %i %s" (int32 (requestBuilder.Response.StatusCode)) 
@@ -86,23 +86,24 @@ module GenerateExamples =
                          (fun x -> x.IsDefined(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>)) do
                 printfn "Method Name: %s" m.Name
                 try 
-                    if (m.GetParameters().Count() = 2) then 
-                        let param1 = testServer
-                        let param2 = Guid.NewGuid()
-                        
-                        let parameters = 
+                    let paramCount = m.GetParameters().Count()
+                    let param1 = testServer
+                    let param2 = Guid.NewGuid()
+                    
+                    let parameters = 
+                        if paramCount = 2 then 
                             [| param1 :> obj
                                param2 :> obj |]
-                        
-                        let result = m.Invoke(null, parameters) :?> RequestBuilder
-                        let attributeValue = 
-                            m.GetCustomAttributes(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>, 
-                                                  false).First() :?> FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute
-                        let title = 
-                            if String.IsNullOrWhiteSpace(attributeValue.Title) then
-                                m.Name
-                            else
-                                attributeValue.Title
-                        document attributeValue.FileName title result
-                        ()
+                        else [| param1 :> obj |]
+                    
+                    let result = m.Invoke(null, parameters) :?> RequestBuilder
+                    let attributeValue = 
+                        m.GetCustomAttributes(typeof<FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute>, false)
+                         .First() :?> FlexSearch.TestSupport.UnitTestAttributes.ExampleAttribute
+                    
+                    let title = 
+                        if String.IsNullOrWhiteSpace(attributeValue.Title) then m.Name
+                        else attributeValue.Title
+                    document attributeValue.FileName title result
+                    ()
                 with e -> printfn "%s" e.Message
