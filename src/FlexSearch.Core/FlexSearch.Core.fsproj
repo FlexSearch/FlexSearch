@@ -311,6 +311,7 @@
     <Compile Include="HttpHandlers\DocumentHandlers.fs" />
     <Compile Include="HttpHandlers\SearchHandlers.fs" />
     <Compile Include="HttpHandlers\JobHandlers.fs" />
+    <Compile Include="HttpHandlers\ListHandlers.fs" />
     <Compile Include="Servers\ImportHandlers.fs" />
     <Compile Include="Servers\Thrift.fs" />
     <Compile Include="Servers\SocketServer.fs" />
