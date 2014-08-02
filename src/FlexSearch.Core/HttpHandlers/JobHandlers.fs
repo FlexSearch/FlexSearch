@@ -33,3 +33,9 @@ type GetJobByIdHandler(state : INodeState) =
     interface IHttpHandler with
         member this.Process(owin) = 
             owin |> ResponseProcessor (state.PersistanceStore.Get<Job>(SubId(owin))) OK BAD_REQUEST
+
+[<Name("DELETE-/jobs")>]
+[<Sealed>]
+type DeleteJobsdHandler(state : INodeState) = 
+    interface IHttpHandler with
+        member this.Process(owin) = owin |> ResponseProcessor (state.PersistanceStore.DeleteAll<Job>()) OK BAD_REQUEST
