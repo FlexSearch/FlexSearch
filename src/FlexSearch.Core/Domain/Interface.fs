@@ -45,10 +45,11 @@ type IServer =
 /// Do not use this as a cache store
 /// </summary>
 type IPersistanceStore = 
-    abstract GetAll<'T> : unit -> IEnumerable<'T>
     abstract Get<'T when 'T : equality> : key:string -> Choice<'T, OperationMessage>
+    abstract GetAll<'T> : unit -> IEnumerable<'T>
     abstract Put<'T> : key:string * value:'T -> Choice<unit, OperationMessage>
     abstract Delete<'T> : key:string -> Choice<unit, OperationMessage>
+    abstract DeleteAll<'T> : unit -> Choice<unit, OperationMessage>
 
 /// <summary>
 /// General Interface to offload all resource loading responsibilities. This will

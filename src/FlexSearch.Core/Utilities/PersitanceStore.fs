@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// Flexsearch settings (Settings.fs)
+// FlexSearch settings (Settings.fs)
 // (c) Seemant Rajvanshi, 2013
 //
 // This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
@@ -105,7 +105,14 @@ type SqlLitePersistanceStore(?isMemory0 : bool) =
                 command.ExecuteNonQuery() |> ignore
                 Choice1Of2()
         
-        member this.Put<'T> (key, instance : 'T) = 
+        member this.DeleteAll<'T>() = 
+            let instanceType = typeof<'T>.FullName
+            let sql = sprintf "DELETE FROM keyvalue WHERE type='%s'" instanceType
+            let command = new SQLiteCommand(sql, db.Value)
+            command.ExecuteNonQuery() |> ignore
+            Choice1Of2()
+        
+        member this.Put<'T>(key, instance : 'T) = 
             let instanceType = typeof<'T>.FullName
             if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
             else 
