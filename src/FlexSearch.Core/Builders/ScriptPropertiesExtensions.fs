@@ -18,20 +18,17 @@ module ScriptPropertiesExtensions =
     open System
     open Validator
     open FlexSearch.Api.Message
-    open CSScriptLibrary
+    open Microsoft.CSharp
+    open System.CodeDom.Compiler
     
     /// <summary>
     /// Template method code for computed field script
     /// </summary>
     let private StringReturnScriptTemplate = """
-public string Execute(dynamic fields) { [SourceCode] }
+class Foo {
+    static public string Execute(dynamic fields) { [SourceCode] }
+}
 """
-    
-    // The below settings are to prevent locking in case of multi-threaded scenario
-    CSScript.GlobalSettings.InMemoryAsssembly <- true
-    CSScript.GlobalSettings.OptimisticConcurrencyModel <- false
-    CSScript.CacheEnabled <- true
-    CSScript.GlobalSettings.TargetFramework <- Constants.DotNetFrameWork
     
     /// <summary>
     /// Generates a Function which returns a string value
@@ -41,9 +38,19 @@ public string Execute(dynamic fields) { [SourceCode] }
     let internal GenerateStringReturnScript(source : string) = 
         let sourceCode = StringReturnScriptTemplate.Replace("[SourceCode]", source)
         try 
+            let ccp = new CSharpCodeProvider()
+            let cp = new CompilerParameters()
+            cp.ReferencedAssemblies.Add("Microsoft.CSharp.dll") |> ignore
+            cp.ReferencedAssemblies.Add("System.dll") |> ignore
+            cp.ReferencedAssemblies.Add("System.Core.dll") |> ignore
+            cp.GenerateExecutable <- false
+            cp.IncludeDebugInformation <- false
+            cp.GenerateInMemory <- true
+            let cr = ccp.CompileAssemblyFromSource(cp, sourceCode)
+            let foo = cr.CompiledAssembly.GetType("Foo")
+            let meth = foo.GetMethod("Execute")
             let compiledScript = 
-                CSScript.LoadDelegate<System.Func<System.Dynamic.DynamicObject, string>>
-                    (sourceCode, null, false, [| "Microsoft.CSharp" |])
+                Delegate.CreateDelegate(typeof<System.Func<System.Dynamic.DynamicObject, string>>, meth) :?> System.Func<System.Dynamic.DynamicObject, string>
             Choice1Of2(compiledScript)
         with e -> Choice2Of2(MessageConstants.SCRIPT_CANT_BE_COMPILED |> Append("Message", e.Message))
     
