@@ -74,7 +74,7 @@ module RestHelpers =
         result
     
     let responseContainsHeader (header : string) (value : string) (result : RequestBuilder) = 
-        Assert.Equal<string>(value, result.Response.Headers.First(fun x -> x.Key = header).Value.First()) // "Header value does not match"
+        Assert.Equal<string>(value, result.Response.Headers.GetValues(header).First()) // "Header value does not match"
         result
         
     let responseMatches (select : string) (expected : string) (result : RequestBuilder) = 
