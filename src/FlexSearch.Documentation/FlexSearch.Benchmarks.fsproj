@@ -8,11 +8,11 @@
     <ProjectGuid>fc60337c-7e0a-4327-813d-0952ff7544b4</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>FlexSearch.Documentation</RootNamespace>
-    <AssemblyName>FlexSearch.Documentation</AssemblyName>
+    <AssemblyName>Benchmarks</AssemblyName>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
-    <Name>FlexSearch.Documentation</Name>
+    <Name>FlexSearch.Benchmarks</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
@@ -35,9 +35,10 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Release\FlexSearch.Documentation.XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
+    <DocumentationFile>
+    </DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Autofac">
@@ -176,10 +177,25 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Ploeh.AutoFixture">
+      <HintPath>..\packages\AutoFixture.3.18.7\lib\net40\Ploeh.AutoFixture.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Threading.Tasks.Dataflow">
+      <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.14\lib\portable-net45+win8\System.Threading.Tasks.Dataflow.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Thrift">
+      <HintPath>..\..\lib\Thrift.dll</HintPath>
+    </Reference>
+    <Reference Include="UnionArgParser">
+      <HintPath>..\packages\UnionArgParser.0.7.0\lib\net40\UnionArgParser.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="xunit">
       <HintPath>..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
       <Private>True</Private>
@@ -188,6 +204,7 @@
   <ItemGroup>
     <Compile Include="ReferenceDocumentation.fs" />
     <Compile Include="GenerateExamples.fs" />
+    <Compile Include="WikipediaPerformanceTests.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
