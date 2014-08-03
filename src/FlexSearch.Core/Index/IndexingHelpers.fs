@@ -44,6 +44,8 @@ open org.apache.lucene.codecs.perfield
 open org.apache.lucene.codecs
 open System.Collections.Generic
 open org.apache.lucene.search.similarities
+open FlexSearch.Java
+open java.lang
 
 /// <summary>
 /// Default postings format for FlexSearch
@@ -70,13 +72,14 @@ type FlexPerFieldSimilarityProvider(mappings : IReadOnlyDictionary<string, Simil
 /// <summary>
 /// Default codec for FlexSearch
 /// </summary>
-[<Sealed>]
-type FlexCodec(postingsFormat : FlexPerFieldPostingFormats, delegatingCodec : Codec) = 
-    inherit FilterCodec("FlexCodec", delegatingCodec)
-    override this.postingsFormat() = postingsFormat :> PostingsFormat
-
+//[<Sealed>]
+//type FlexCodec(postingsFormat : FlexPerFieldPostingFormats, delegatingCodec : Codec) = 
+//    inherit FilterCodec("FlexCodec", delegatingCodec)
+//    override this.postingsFormat() = postingsFormat :> PostingsFormat
+            
 [<AutoOpen>]
 module IndexingHelpers = 
+
     type FlexSearch.Api.FieldPostingsFormat with
         member this.GetPostingsFormat() =
             match this with
@@ -129,8 +132,12 @@ module IndexingHelpers =
             iwc.setRAMBufferSizeMB (System.Double.Parse(flexIndexSetting.IndexConfiguration.RamBufferSizeMb.ToString())) 
             |> ignore
 
+            let asm = typeof<FlexSearch.Java.FlexCodec49>.Assembly
+            Codec.reloadCodecs(ikvm.runtime.AssemblyClassLoader(asm))
+            let codes = Codec.availableCodecs()
+
             let postingsFormat = GetPostingsFormat(flexIndexSetting)
-            iwc.setCodec(new FlexCodec(postingsFormat, flexIndexSetting.IndexConfiguration.DefaultCodec.GetCodec())) |> ignore
+            iwc.setCodec(new FlexCodec49(postingsFormat, flexIndexSetting.IndexConfiguration.DefaultCodec.GetCodec())) |> ignore
             let similarityProvider = GetSimilarityProvider(flexIndexSetting)
             iwc.setSimilarity(similarityProvider) |> ignore
             Choice1Of2(iwc)
