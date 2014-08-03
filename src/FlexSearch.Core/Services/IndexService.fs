@@ -15,6 +15,8 @@ open FlexSearch.Api.Message
 open FlexSearch.Core
 open System.IO
 open System.Linq
+open org.apache.lucene.search
+open System.Collections.Generic
 
 /// <summary>
 /// Service wrapper around all index related services
@@ -201,6 +203,23 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         }
     
     /// <summary>
+    /// Get all the serachers associated with the index
+    /// </summary>
+    let GetIndexSearchers indexName =
+        maybe { 
+            let! status = nodeState.IndicesState.GetStatus(indexName)
+            match status with
+            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | _ -> 
+                let! index = nodeState.IndicesState.GetRegisteration(indexName)
+                let indexSearchers = new List<IndexSearcher>()
+                for i in 0..index.Shards.Length - 1 do
+                    let searcher = (index.Shards.[i].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
+                    indexSearchers.Add(searcher)
+                return! Choice1Of2(indexSearchers)
+        }
+    
+    /// <summary>
     /// Commit changes to the disk
     /// </summary>
     /// <param name="indexName"></param>
@@ -247,3 +266,4 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         member this.CloseIndex indexName = CloseIndex indexName
         member this.Commit indexName = Commit indexName
         member this.Refresh indexName = Refresh indexName
+        member this.GetIndexSearchers indexName = GetIndexSearchers indexName

@@ -164,6 +164,7 @@ type IIndexService =
     abstract CloseIndex : string -> Choice<unit, OperationMessage>
     abstract Commit : string -> Choice<unit, OperationMessage>
     abstract Refresh : string -> Choice<unit, OperationMessage>
+    abstract GetIndexSearchers : string -> Choice<List<IndexSearcher>, OperationMessage>
 
 /// <summary>
 /// Document related operations
