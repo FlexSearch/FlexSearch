@@ -220,3 +220,4 @@ pip-log.txt
 .mr.developer.cfg
 #/idl/gen-csharp
 build-debug
+/src/FlexSearch.Java/target/
