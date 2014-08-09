@@ -37,6 +37,7 @@ namespace FlexSearch.Api
     private FieldTermVector _TermVector;
     private bool _OmitNorms;
     private string _ScriptName;
+    private DocValuesFormat _DocValuesFormat;
 
     [DataMember(Order = 1)]
     public bool Analyze
@@ -226,6 +227,24 @@ namespace FlexSearch.Api
       }
     }
 
+    /// <summary>
+    /// 
+    /// <seealso cref="DocValuesFormat"/>
+    /// </summary>
+    [DataMember(Order = 13)]
+    public DocValuesFormat DocValuesFormat
+    {
+      get
+      {
+        return _DocValuesFormat;
+      }
+      set
+      {
+        __isset.DocValuesFormat = true;
+        this._DocValuesFormat = value;
+      }
+    }
+
 
     public Isset __isset;
     #if !SILVERLIGHT
@@ -245,6 +264,7 @@ namespace FlexSearch.Api
       public bool TermVector;
       public bool OmitNorms;
       public bool ScriptName;
+      public bool DocValuesFormat;
     }
 
     public FieldProperties() {
@@ -272,6 +292,8 @@ namespace FlexSearch.Api
       this.__isset.OmitNorms = true;
       this._ScriptName = "";
       this.__isset.ScriptName = true;
+      this._DocValuesFormat = DocValuesFormat.Lucene_4_9;
+      this.__isset.DocValuesFormat = true;
     }
 
     public void Read (TProtocol iprot)
@@ -366,6 +388,13 @@ namespace FlexSearch.Api
           case 12:
             if (field.Type == TType.String) {
               ScriptName = iprot.ReadString();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 13:
+            if (field.Type == TType.I32) {
+              DocValuesFormat = (DocValuesFormat)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -479,6 +508,14 @@ namespace FlexSearch.Api
         oprot.WriteString(ScriptName);
         oprot.WriteFieldEnd();
       }
+      if (__isset.DocValuesFormat) {
+        field.Name = "DocValuesFormat";
+        field.Type = TType.I32;
+        field.ID = 13;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32((int)DocValuesFormat);
+        oprot.WriteFieldEnd();
+      }
       oprot.WriteFieldStop();
       oprot.WriteStructEnd();
     }
@@ -498,7 +535,8 @@ namespace FlexSearch.Api
         && ((__isset.IndexOptions == other.__isset.IndexOptions) && ((!__isset.IndexOptions) || (System.Object.Equals(IndexOptions, other.IndexOptions))))
         && ((__isset.TermVector == other.__isset.TermVector) && ((!__isset.TermVector) || (System.Object.Equals(TermVector, other.TermVector))))
         && ((__isset.OmitNorms == other.__isset.OmitNorms) && ((!__isset.OmitNorms) || (System.Object.Equals(OmitNorms, other.OmitNorms))))
-        && ((__isset.ScriptName == other.__isset.ScriptName) && ((!__isset.ScriptName) || (System.Object.Equals(ScriptName, other.ScriptName))));
+        && ((__isset.ScriptName == other.__isset.ScriptName) && ((!__isset.ScriptName) || (System.Object.Equals(ScriptName, other.ScriptName))))
+        && ((__isset.DocValuesFormat == other.__isset.DocValuesFormat) && ((!__isset.DocValuesFormat) || (System.Object.Equals(DocValuesFormat, other.DocValuesFormat))));
     }
 
     public override int GetHashCode() {
@@ -516,6 +554,7 @@ namespace FlexSearch.Api
         hashcode = (hashcode * 397) ^ (!__isset.TermVector ? 0 : (TermVector.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.OmitNorms ? 0 : (OmitNorms.GetHashCode()));
         hashcode = (hashcode * 397) ^ (!__isset.ScriptName ? 0 : (ScriptName.GetHashCode()));
+        hashcode = (hashcode * 397) ^ (!__isset.DocValuesFormat ? 0 : (DocValuesFormat.GetHashCode()));
       }
       return hashcode;
     }
@@ -546,6 +585,8 @@ namespace FlexSearch.Api
       sb.Append(OmitNorms);
       sb.Append(",ScriptName: ");
       sb.Append(ScriptName);
+      sb.Append(",DocValuesFormat: ");
+      sb.Append(DocValuesFormat);
       sb.Append(")");
       return sb.ToString();
     }

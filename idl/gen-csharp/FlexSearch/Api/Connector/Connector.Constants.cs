@@ -26,8 +26,8 @@ namespace FlexSearch.Api.Connector
       CONNECTION_NAME_NOT_FOUND.ErrorCode = 20000;
       CONNECTION_NAME_NOT_FOUND.UserMessage = "The requested connection name does not exist.";
       QUERY_NAME_NOT_FOUND.DeveloperMessage = "The requested query name does not exist.";
-      QUERY_NAME_NOT_FOUND.ErrorCode = 20001;
       QUERY_NAME_NOT_FOUND.UserMessage = "The requested query name does not exist.";
+      QUERY_NAME_NOT_FOUND.ErrorCode = 20001;
     }
   }
 }

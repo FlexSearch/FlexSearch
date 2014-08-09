@@ -50,6 +50,12 @@ enum FieldPostingsFormat {
 	Lucene_4_1 = 5
 }
 
+enum DocValuesFormat {
+	Direct = 1
+	Memory = 2
+	Lucene_4_9 = 3
+}
+
 enum DirectoryType {
 	FileSystem = 1
 	MemoryMapped = 2
@@ -139,6 +145,8 @@ struct IndexConfiguration {
 	9:	optional Codec DefaultCodec = Codec.Lucene_4_9
 	10:	optional bool EnableVersioning = false
 	11: optional FieldSimilarity DefaultFieldSimilarity = FieldSimilarity.TFIDF
+	12: optional DocValuesFormat IdFieldDocValuesFormat = DocValuesFormat.Lucene_4_9
+	13: optional DocValuesFormat DefaultDocValuesFormat = DocValuesFormat.Lucene_4_9
 }
 
 struct FieldProperties {
@@ -154,6 +162,7 @@ struct FieldProperties {
 	10:	optional FieldTermVector TermVector = 3
 	11:	optional bool OmitNorms = true
 	12:	optional string ScriptName = ""
+	13: optional DocValuesFormat DocValuesFormat = DocValuesFormat.Lucene_4_9
 }
 
 struct Job {
