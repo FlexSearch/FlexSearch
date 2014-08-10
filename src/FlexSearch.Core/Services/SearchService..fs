@@ -30,7 +30,7 @@ open System.Linq
 /// module but to only pass mutable state as an instance of NodeState
 /// </summary>
 [<Sealed>]
-type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, parser : FlexParser) = 
+type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, parser : IFlexParser) = 
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
     let queryTypes = 

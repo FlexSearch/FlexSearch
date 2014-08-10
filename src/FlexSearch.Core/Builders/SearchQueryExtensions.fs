@@ -27,7 +27,7 @@ module SearchQueryExtensions =
         /// <param name="index"></param>
         /// <param name="parser"></param>
         member this.Validate(fields : Dictionary<string, FlexField>, queryTypes : Dictionary<string, IFlexQuery>, 
-                             parser : FlexParser) = 
+                             parser : IFlexParser) = 
             maybe { 
                 assert (queryTypes.Count > 0)
                 do! ("QueryString", this.QueryString) |> NotNullAndEmpty
@@ -39,7 +39,7 @@ module SearchQueryExtensions =
             }
         
         member this.Build(fields : Dictionary<string, FlexField>, queryTypes : Dictionary<string, IFlexQuery>, 
-                          parser : FlexParser) = 
+                          parser : IFlexParser) = 
             maybe { 
                 do! this.Validate(fields, queryTypes, parser)
                 let! predicate = parser.Parse(this.QueryString)

@@ -14,7 +14,7 @@ open System.Threading
 open Xunit.Extensions
 
 module ``Parser Tests`` = 
-    let parser = new FlexParser()
+    let parser = new FlexParser() :> IFlexParser
     
     let test p str = 
         match FParsec.CharParsers.run p str with

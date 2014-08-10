@@ -131,17 +131,10 @@ module Parsers =
             |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 2, Assoc.Left, fun x y -> AndPredidate(x, y))))
             notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, fun x -> NotPredicate(x))))
         
-        member this.Parse(input : string) = 
-            assert(input <> null)
-            match run Parser input with
-            | Success(result, _, _) -> Choice1Of2(result)
-            | Failure(errorMsg, _, _) -> 
-                Choice2Of2(MessageConstants.QUERYSTRING_PARSING_ERROR |> Append("Message", errorMsg))
-    
-    /// <summary>
-    /// Generates an object pool for the parser
-    /// </summary>
-    /// <param name="poolSize"></param>
-    let GetParserPool(poolSize : int) = 
-        let factory() = new FlexParser()
-        new ObjectPool<FlexParser>(factory, poolSize)
+        interface IFlexParser with
+            member this.Parse(input : string) = 
+                assert (input <> null)
+                match run Parser input with
+                | Success(result, _, _) -> Choice1Of2(result)
+                | Failure(errorMsg, _, _) -> 
+                    Choice2Of2(MessageConstants.QUERYSTRING_PARSING_ERROR |> Append("Message", errorMsg))
