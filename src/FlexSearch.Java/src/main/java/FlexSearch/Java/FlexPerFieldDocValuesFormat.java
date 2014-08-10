@@ -23,7 +23,7 @@ public class FlexPerFieldDocValuesFormat extends PerFieldDocValuesFormat {
 
     public FlexPerFieldDocValuesFormat() {
         // Lucene49DocValuesFormat
-        map.put("lucene49", new Lucene49DocValuesFormat());
+        map.put("lucene_4_9", new Lucene49DocValuesFormat());
         // DirectDocValuesFormat
         map.put("direct", new DirectDocValuesFormat());
         // MemoryDocValuesFormat

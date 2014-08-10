@@ -29,11 +29,14 @@ class FlexPerFieldPostingsFormat extends PerFieldPostingsFormat {
         // Direct postings
         map.put("direct", new DirectPostingsFormat());
         // Bloom_4_1 postings
-        map.put("bloom41", new BloomFilteringPostingsFormat(new Lucene41PostingsFormat()));
+        map.put("bloom_4_1", new BloomFilteringPostingsFormat(new Lucene41PostingsFormat()));
         // Lucene_4_1 postings
-        map.put("lucene41", new Lucene41PostingsFormat());
+        map.put("lucene_4_1", new Lucene41PostingsFormat());
         // Pulsing_4_1 postings
-        map.put("pulsing41", new Pulsing41PostingsFormat());
+        map.put("pulsing_4_1", new Pulsing41PostingsFormat());
+        // Lucene_4_1 postings
+        map.put("lucene_4_1", new Lucene41PostingsFormat());
+        
     }
 
     @Override
