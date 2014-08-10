@@ -30,8 +30,7 @@ open System.Linq
 /// module but to only pass mutable state as an instance of NodeState
 /// </summary>
 [<Sealed>]
-type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, queryParsersPool : ObjectPool<FlexParser>) = 
-    
+type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, parser : FlexParser) = 
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
     let queryTypes = 
@@ -55,9 +54,7 @@ type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuer
                     return! SearchDsl.SearchQuery(flexIndex, query, search)
                 | _ -> return! Choice2Of2(MessageConstants.SEARCH_PROFILE_NOT_FOUND)
             else 
-                use parser = queryParsersPool.Acquire()
                 let! predicate = parser.Parse(search.QueryString)
-                parser.Release()
                 match predicate with
                 | NotPredicate(_) -> return! Choice2Of2(MessageConstants.NEGATIVE_QUERY_NOT_SUPPORTED)
                 | _ -> let! query = GenerateQuery
