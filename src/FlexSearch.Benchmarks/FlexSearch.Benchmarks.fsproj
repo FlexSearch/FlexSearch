@@ -41,6 +41,10 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Agdur">
+      <HintPath>..\packages\Agdur.1.0\lib\net40\Agdur.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Autofac">
       <HintPath>..\packages\Autofac.3.4.1\lib\net40\Autofac.dll</HintPath>
       <Private>True</Private>

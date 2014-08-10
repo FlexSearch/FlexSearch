@@ -29,8 +29,8 @@ open org.apache.lucene.search.highlight
 let GetWikiIndex() = 
     let index = new Index()
     index.IndexName <- "wikipedia"
-    index.Fields.Add("datetime", new FieldProperties(FieldType = FieldType.DateTime))
-    index.Fields.Add("title", new FieldProperties(FieldType = FieldType.Text))
+    index.Fields.Add("datetime", new FieldProperties(FieldType = FieldType.DateTime, Store = false))
+    index.Fields.Add("title", new FieldProperties(FieldType = FieldType.Text, Store = false))
     index.Fields.Add("body", new FieldProperties(FieldType = FieldType.Text, Store = false))
     index.IndexConfiguration.CommitTimeSec <- 500
     index.IndexConfiguration.RefreshTimeMilliSec <- 500000
@@ -82,29 +82,42 @@ let CreateWikipediaDumpForWikiExtractor (path : string) (outputFile : string) (f
 /// </summary>
 /// <param name="path"></param>
 /// <param name="outputFolder"></param>
-let RandomQueryGenerator (filePath : string) (outputFolder : string) (queriesToGenerate : int) (indexService : IIndexService) = 
+let RandomQueryGenerator (filePath : string) (outputFolder : string) (queriesToGenerate : int) 
+    (indexService : IIndexService) = 
     indexService.AddIndex(GetWikiIndex()) |> ignore
     Thread.Sleep(1000)
     let searchers = 
         match indexService.GetIndexSearchers("wikipedia") with
         | Choice1Of2(s) -> s
         | _ -> failwithf "Unable to get the searchers"
-    let highFreqTerms = org.apache.lucene.misc.HighFreqTerms.getHighFreqTerms(searchers.[0].getIndexReader(), 100, "body", new org.apache.lucene.misc.HighFreqTerms.DocFreqComparator())
-
+    
+    let highFreq = new ResizeArray<string>()
+    let highFreqTerms = 
+        org.apache.lucene.misc.HighFreqTerms.getHighFreqTerms 
+            (searchers.[0].getIndexReader(), 10000, "body[lucene_4_9]<lucene_4_1>", 
+             new org.apache.lucene.misc.HighFreqTerms.DocFreqComparator())
     for freqTerm in highFreqTerms do
-        let term = freqTerm.termtext.utf8ToString()
-        ()
-
-    let termQueryFile = new StreamWriter(Path.Combine(outputFolder, "TermQueries.txt"))
-    let booleanQueryFile = new StreamWriter(Path.Combine(outputFolder, "BooleanQueries.txt"))
-    let phraseQueryFile = new StreamWriter(Path.Combine(outputFolder, "PhraseQueries.txt"))
-    use reader = new StreamReader(filePath)
-    let mutable text = reader.ReadLine()
-    while text <> null do
-        let title = text.Substring(1, text.IndexOf('>') - 1)
-        let body = text.Substring(text.IndexOf('[') + 1, text.Length - text.IndexOf('[') - 2)
-        termQueryFile.WriteLine(title)
-    printfn "Dump file creation complete"
+        let term = freqTerm.termtext.utf8ToString().Replace("u'", "").Replace("'", "")
+        highFreq.Add(term)
+    use termQueryFile = new StreamWriter(Path.Combine(outputFolder, "TermQueries.txt"))
+    use bqAndHighHighFile = new StreamWriter(Path.Combine(outputFolder, "BooleanQueriesAndHighHigh.txt"))
+    use bqAndHighMedFile = new StreamWriter(Path.Combine(outputFolder, "BooleanQueriesAndHighMed.txt"))
+    use bqOrHighHighFile = new StreamWriter(Path.Combine(outputFolder, "BooleanQueriesOrHighHigh.txt"))
+    use bqOrHighMedFile = new StreamWriter(Path.Combine(outputFolder, "BooleanQueriesOrHighMed.txt"))
+    use fuzzy1File = new StreamWriter(Path.Combine(outputFolder, "Fuzzy1Queries.txt"))
+    use fuzzy2File = new StreamWriter(Path.Combine(outputFolder, "Fuzzy2Queries.txt"))
+    use wildcardFile = new StreamWriter(Path.Combine(outputFolder, "WildCardQueries.txt"))
+    use phraseQueryFile = new StreamWriter(Path.Combine(outputFolder, "PhraseQueries.txt"))
+    for n in 0..5000 - 1 do
+        termQueryFile.WriteLine(sprintf "body = '%s'" highFreq.[n])
+        fuzzy1File.WriteLine(sprintf "body ~= '%s' {slop : '1'}" highFreq.[n])
+        fuzzy2File.WriteLine(sprintf "body ~= '%s' {slop : '2'}" highFreq.[n])
+        if highFreq.[n].Length > 2 then
+            wildcardFile.WriteLine(sprintf "body like '%s*'" (highFreq.[n].Substring(0, 2)))
+        bqAndHighHighFile.WriteLine(sprintf "body = '%s' AND body = '%s'" highFreq.[n] highFreq.[n + 1])
+        bqAndHighMedFile.WriteLine(sprintf "body = '%s' AND body = '%s'" highFreq.[n] highFreq.[7000 - n])
+        bqOrHighHighFile.WriteLine(sprintf "body = '%s' OR body = '%s'" highFreq.[n] highFreq.[n + 1])
+        bqOrHighMedFile.WriteLine(sprintf "body = '%s' OR body = '%s'" highFreq.[n] highFreq.[7000 - n])
 
 // Test System 1
 // Intel i7-3820 Non-SSD 32 GB Ram
@@ -149,6 +162,14 @@ let IndexingWikiExtractorDumpBenchMarkTests (inputFile : string) (indexService :
     printfn "Total Data Size (MB): %f" (float (fileInfo.Length) / (1024.0 * 1024.0))
     printfn "Indexing Speed (GB/Hr): %f" indexingSpeed
 
-let ExecuteQuery (inputFile : string) (indexService : IIndexService) (searchService : ISearchService) = 
-    let queries = File.ReadAllLines(inputFile)
-    Parallel.ForEach(queries, (fun n -> searchService.Search(new SearchQuery("wikipedia", n)) |> ignore))
+let ExecuteQuery (queries : string []) (searchService : ISearchService) = 
+    Parallel.ForEach(queries, 
+                     (fun n -> 
+                     try 
+                         match searchService.Search(new SearchQuery("wikipedia", n)) with
+                         | Choice1Of2(a) -> assert (a.TotalAvailable > 100)
+                         | Choice2Of2(e) -> printfn "Error: %s Query:%s" e.UserMessage n
+                     with e -> printfn "%A" e
+                     ()))
+    |> ignore
+    ()

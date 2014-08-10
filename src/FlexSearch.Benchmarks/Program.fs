@@ -3,6 +3,7 @@ open FlexSearch.Documention
 open FlexSearch.Core
 open Autofac
 open Nessos.UnionArgParser
+open Agdur
 
 let GenerateGlossary() = 
     ReferenceDocumentation.GenerateGlossary()
@@ -16,7 +17,6 @@ type Arguments =
     | WikipediaTest4KB of fileName : string
     | GenerateWikipedia1KBDump of path : string * outPutFileName : string
     | GenerateWikipedia4KBDump of path : string * outPutFileName : string
-
     interface IArgParserTemplate with
         member s.Usage = 
             match s with
@@ -29,29 +29,38 @@ type Arguments =
 
 [<EntryPoint>]
 let main argv = 
-    WikipediaPerformanceTests.RandomQueryGenerator "" "" 100 (GenerateExamples.Container.Resolve<IIndexService>()) 
+    let searchService = GenerateExamples.Container.Resolve<ISearchService>()
+    let indexService = GenerateExamples.Container.Resolve<IIndexService>()
+//    WikipediaPerformanceTests.RandomQueryGenerator "" "F:\wikipedia" 100 (GenerateExamples.Container.Resolve<IIndexService>()) 
+
+    GenerateExamples.Container.Resolve<IIndexService>().AddIndex(WikipediaPerformanceTests.GetWikiIndex()) |> ignore
+    System.Threading.Thread.Sleep(1000)
+    let queries = System.IO.File.ReadAllLines("F:\wikipedia\TermQueries.txt")
+    Benchmark.This(fun _ -> WikipediaPerformanceTests.ExecuteQuery queries searchService).Times(10).Average()
+             .InMilliseconds().Max().InMilliseconds().Min().InMilliseconds().ToConsole().AsFormattedString()
+
     //WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor "F:\wikipedia\extracted" "F:\wikipedia\wikidump1KB.txt" 1
     //WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor "F:\wikipedia\extracted" "F:\wikipedia\wikidump4KB.txt" 4 
     //WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests "F:\wikipedia\wikidump4KB.txt" (GenerateExamples.Container.Resolve<IIndexService>()) (GenerateExamples.Container.Resolve<IQueueService>())
     //GenerateGlossary()
     //GenerateExamples.GenerateIndicesExamples()
     let parser = UnionArgParser<Arguments>()
-    if argv.Length = 0 then
-        printfn "%s" (parser.Usage("FlexSearch Benchmark Usage:"))
-    else
+    if argv.Length = 0 then printfn "%s" (parser.Usage("FlexSearch Benchmark Usage:"))
+    else 
         let results = parser.Parse(argv)
         let all = results.GetAllResults()
         match all.Head with
         | WikipediaTest1KB(file) -> 
             WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file 
-                (GenerateExamples.Container.Resolve<IIndexService>()) (GenerateExamples.Container.Resolve<IQueueService>())
+                (GenerateExamples.Container.Resolve<IIndexService>()) 
+                (GenerateExamples.Container.Resolve<IQueueService>())
         | WikipediaTest4KB(file) -> 
             WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file 
-                (GenerateExamples.Container.Resolve<IIndexService>()) (GenerateExamples.Container.Resolve<IQueueService>())
+                (GenerateExamples.Container.Resolve<IIndexService>()) 
+                (GenerateExamples.Container.Resolve<IQueueService>())
         | GenerateWikipedia1KBDump(path, output) -> 
             WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor path output 1
         | GenerateWikipedia4KBDump(path, output) -> 
             WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor path output 4
-    
     Console.ReadKey() |> ignore
     0 // return an integer exit code
