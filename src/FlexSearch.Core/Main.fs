@@ -31,7 +31,7 @@ module Main =
     open System.Threading.Tasks
     open org.apache.lucene.analysis
     open Autofac.Extras.Attributed
-
+    
     /// <summary>
     /// Generate server settings from the JSON text file
     /// </summary>
@@ -44,18 +44,15 @@ module Main =
         parsedResult.PluginFolder <- Helpers.GenerateAbsolutePath(parsedResult.PluginFolder)
         parsedResult
     
-    let GetLoggerService(serverSettings : ServerSettings) =
+    let GetLoggerService(serverSettings : ServerSettings) = 
         let builder = new ContainerBuilder()
-        
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
         // so the meta-data attributes get read.
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
-
         // Interface scanning
         builder |> FactoryService.RegisterInterfaceAssemblies<ILogService>
-
         builder |> FactoryService.RegisterSingleFactoryInstance<ILogService>
         let container = builder.Build()
         let logFactory = container.Resolve<IFlexFactory<ILogService>>()
@@ -64,8 +61,7 @@ module Main =
         | _ -> 
             // Return the default log service
             new ConsoleLogService() :> ILogService
-
-
+    
     /// <summary>
     /// Get a container with all dependencies setup
     /// </summary>
@@ -73,56 +69,48 @@ module Main =
     /// <param name="testServer"></param>
     let GetContainer(serverSettings : ServerSettings, testServer : bool) = 
         let builder = new ContainerBuilder()
-
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
         // so the meta-data attributes get read.
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
-
         // Interface scanning
         builder |> FactoryService.RegisterInterfaceAssemblies<IHttpHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IImportHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexFilterFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexQuery>
-
         // Abstract class scanning
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
-        builder |> FactoryService.RegisterSingleFactoryInstance<IHttpHandler>     
+        builder |> FactoryService.RegisterSingleFactoryInstance<IHttpHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexFilterFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexQuery>
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
-        
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
-        
         builder |> FactoryService.RegisterSingleInstance<VersioningCacheStore, IVersioningCacheStore>
         builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
-        
         let indicesState = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
               IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
               ThreadLocalStore = 
                   new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
                   new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
-
-        builder.RegisterInstance(new SqlLitePersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() |> ignore
+        builder.RegisterInstance(new SqlLitePersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() 
+        |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
         builder.RegisterInstance(indicesState).SingleInstance() |> ignore
-        builder.RegisterInstance(Parsers.GetParserPool(50)).SingleInstance() |> ignore
-
         // Register services
+        builder |> FactoryService.RegisterSingleInstance<FlexParser, IFlexParser>
         builder |> FactoryService.RegisterSingleInstance<IndexService, IIndexService>
         builder |> FactoryService.RegisterSingleInstance<DocumentService, IDocumentService>
         builder |> FactoryService.RegisterSingleInstance<QueueService, IQueueService>
         builder |> FactoryService.RegisterSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
         builder.RegisterInstance((GetLoggerService(serverSettings))).SingleInstance().As<ILogService>() |> ignore
-
         // Register server
         //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
         builder.Build()
@@ -130,11 +118,11 @@ module Main =
     /// <summary>
     /// Load third party plug ins
     /// </summary>
-    let LoadPlugins() =
+    let LoadPlugins() = 
         // Load plug-in DLLs
         for file in Directory.EnumerateFiles(Constants.PluginFolder, "dll") do
             System.Reflection.Assembly.LoadFile(file) |> ignore
-
+    
     /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
@@ -142,27 +130,24 @@ module Main =
     type NodeService(serverSettings : ServerSettings, testServer : bool) = 
         let container = GetContainer(serverSettings, testServer)
         let mutable httpServer = Unchecked.defaultof<IServer>
+        
         do 
             // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
             // To verify that this works, run `netsh http show servicestate`.
             if testServer <> true then MaximizeThreads() |> ignore
-
+        
         member this.Start() = 
             try 
                 let indexService = container.Resolve<IIndexService>()
                 let httpFactory = container.Resolve<IFlexFactory<IHttpHandler>>()
                 httpServer <- new OwinServer(indexService, httpFactory)
                 httpServer.Start()
-            with e -> 
-                printfn "%A" e
-
+            with e -> printfn "%A" e
+        
         member this.Stop() = 
             httpServer.Stop()
             let indexService = container.Resolve<IIndexService>()
             let state = container.Resolve<IndicesState>()
-            
             // Close all open indices
-            for registeration in state.IndexRegisteration  do
+            for registeration in state.IndexRegisteration do
                 indexService.CloseIndex(registeration.Key) |> ignore
-
-

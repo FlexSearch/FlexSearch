@@ -184,20 +184,20 @@ module Index =
             | _ -> 
                 let luceneDocument = new Document()
                 let fieldLookup = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase)
-                let idField = new StringField(Constants.IdField, "", Field.Store.YES)
+                let idField = 
+                    new StringField(flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, "", 
+                                    Field.Store.YES)
                 luceneDocument.add (idField)
                 fieldLookup.Add(Constants.IdField, idField)
-                let typeField = new StringField(Constants.TypeField, indexName, Field.Store.YES)
-                luceneDocument.add (typeField)
-                fieldLookup.Add(Constants.TypeField, typeField)
                 let lastModifiedField = 
-                    new LongField(Constants.LastModifiedField, GetCurrentTimeAsLong(), Field.Store.YES)
+                    new LongField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName, 
+                                  GetCurrentTimeAsLong(), Field.Store.YES)
                 luceneDocument.add (lastModifiedField)
-                fieldLookup.Add(Constants.LastModifiedField, lastModifiedField)
+                fieldLookup.Add
+                    (Constants.LastModifiedField, lastModifiedField)
                 for field in flexIndex.IndexSetting.Fields do
                     // Ignore these 4 fields here.
-                    if (field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
-                        || field.FieldName = Constants.LastModifiedField) then ()
+                    if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField) then ()
                     else 
                         let defaultField = FlexField.CreateDefaultLuceneField field
                         luceneDocument.add (defaultField)
@@ -226,8 +226,7 @@ module Index =
         let dynamicFields = new DynamicDictionary(fields)
         for field in flexIndex.IndexSetting.Fields do
             // Ignore these 3 fields here.
-            if (field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
-                || field.FieldName = Constants.LastModifiedField) then ()
+            if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField) then ()
             else 
                 // If it is computed field then generate and add it otherwise follow standard path
                 match field.Source with

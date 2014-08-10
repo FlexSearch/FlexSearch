@@ -134,10 +134,9 @@ module IndexingHelpers =
 
             let asm = typeof<FlexSearch.Java.FlexCodec49>.Assembly
             Codec.reloadCodecs(ikvm.runtime.AssemblyClassLoader(asm))
-            let codes = Codec.availableCodecs()
 
             let postingsFormat = GetPostingsFormat(flexIndexSetting)
-            iwc.setCodec(new FlexCodec49(postingsFormat, flexIndexSetting.IndexConfiguration.DefaultCodec.GetCodec())) |> ignore
+            iwc.setCodec(new FlexCodec49()) |> ignore
             let similarityProvider = GetSimilarityProvider(flexIndexSetting)
             iwc.setSimilarity(similarityProvider) |> ignore
             Choice1Of2(iwc)

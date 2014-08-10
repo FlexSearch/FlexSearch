@@ -55,7 +55,7 @@ type FlexTermQuery() =
                 // adjacent to each other. The adjacency case should be handled through phrase query
                 match terms.Count with
                 | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
-                | 1 -> Choice1Of2(new TermQuery(new Term(flexIndexField.FieldName, terms.[0])) :> Query)
+                | 1 -> Choice1Of2(new TermQuery(new Term(flexIndexField.SchemaName, terms.[0])) :> Query)
                 | _ -> 
                     // Generate boolean query
                     let boolClause = 
@@ -72,7 +72,7 @@ type FlexTermQuery() =
                     let boolQuery = new BooleanQuery()
                     for term in terms do
                         boolQuery.add 
-                            (new BooleanClause(new TermQuery(new Term(flexIndexField.FieldName, term)), boolClause))
+                            (new BooleanClause(new TermQuery(new Term(flexIndexField.SchemaName, term)), boolClause))
                     Choice1Of2(boolQuery :> Query)
 
 // ----------------------------------------------------------------------------
@@ -90,13 +90,13 @@ type FlexFuzzyQuery() =
             match terms.Count with
             | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
             | 1 -> 
-                Choice1Of2(new FuzzyQuery(new Term(flexIndexField.FieldName, terms.[0]), slop, prefixLength) :> Query)
+                Choice1Of2(new FuzzyQuery(new Term(flexIndexField.SchemaName, terms.[0]), slop, prefixLength) :> Query)
             | _ -> 
                 // Generate boolean query
                 let boolQuery = new BooleanQuery()
                 for term in terms do
                     boolQuery.add 
-                        (new BooleanClause(new FuzzyQuery(new Term(flexIndexField.FieldName, term), slop, prefixLength), 
+                        (new BooleanClause(new FuzzyQuery(new Term(flexIndexField.SchemaName, term), slop, prefixLength), 
                                            BooleanClause.Occur.MUST))
                 Choice1Of2(boolQuery :> Query)
 
@@ -122,7 +122,7 @@ type FlexPhraseQuery() =
             let terms = GetTerms(flexIndexField, values.[0])
             let query = new PhraseQuery()
             for term in terms do
-                query.add (new Term(flexIndexField.FieldName, term))
+                query.add (new Term(flexIndexField.SchemaName, term))
             let slop = GetIntValueFromMap parameters "slop" 0
             query.setSlop (slop)
             Choice1Of2(query :> Query)
@@ -142,13 +142,13 @@ type FlexWildcardQuery() =
             | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
             | 1 -> 
                 Choice1Of2
-                    (new WildcardQuery(new Term(flexIndexField.FieldName, values.[0].ToLowerInvariant())) :> Query)
+                    (new WildcardQuery(new Term(flexIndexField.SchemaName, values.[0].ToLowerInvariant())) :> Query)
             | _ -> 
                 // Generate boolean query
                 let boolQuery = new BooleanQuery()
                 for term in values do
                     boolQuery.add 
-                        (new WildcardQuery(new Term(flexIndexField.FieldName, term.ToLowerInvariant())), 
+                        (new WildcardQuery(new Term(flexIndexField.SchemaName, term.ToLowerInvariant())), 
                          BooleanClause.Occur.MUST)
                 Choice1Of2(boolQuery :> Query)
 
@@ -166,13 +166,13 @@ type RegexQuery() =
             match values.Count() with
             | 0 -> Choice1Of2(new MatchAllDocsQuery() :> Query)
             | 1 -> 
-                Choice1Of2(new RegexpQuery(new Term(flexIndexField.FieldName, values.[0].ToLowerInvariant())) :> Query)
+                Choice1Of2(new RegexpQuery(new Term(flexIndexField.SchemaName, values.[0].ToLowerInvariant())) :> Query)
             | _ -> 
                 // Generate boolean query
                 let boolQuery = new BooleanQuery()
                 for term in values do
                     boolQuery.add 
-                        (new RegexpQuery(new Term(flexIndexField.FieldName, term.ToLowerInvariant())), 
+                        (new RegexpQuery(new Term(flexIndexField.SchemaName, term.ToLowerInvariant())), 
                          BooleanClause.Occur.MUST)
                 Choice1Of2(boolQuery :> Query)
 
@@ -197,7 +197,7 @@ type FlexGreaterQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
-                                 (flexIndexField.FieldName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -206,7 +206,7 @@ type FlexGreaterQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
-                                 (flexIndexField.FieldName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -215,7 +215,7 @@ type FlexGreaterQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newDoubleRange 
-                                 (flexIndexField.FieldName, GetJavaDouble(val1), JavaDoubleMax, includeLower, 
+                                 (flexIndexField.SchemaName, GetJavaDouble(val1), JavaDoubleMax, includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
@@ -247,7 +247,7 @@ type FlexGreaterThanEqualQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
-                                 (flexIndexField.FieldName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -256,7 +256,7 @@ type FlexGreaterThanEqualQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
-                                 (flexIndexField.FieldName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -265,7 +265,7 @@ type FlexGreaterThanEqualQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newDoubleRange 
-                                 (flexIndexField.FieldName, GetJavaDouble(val1), JavaDoubleMax, includeLower, 
+                                 (flexIndexField.SchemaName, GetJavaDouble(val1), JavaDoubleMax, includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
@@ -293,7 +293,7 @@ type FlexLessThanQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
-                                 (flexIndexField.FieldName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -302,7 +302,7 @@ type FlexLessThanQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
-                                 (flexIndexField.FieldName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -311,7 +311,7 @@ type FlexLessThanQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newDoubleRange 
-                                 (flexIndexField.FieldName, JavaDoubleMin, GetJavaDouble(val1), includeLower, 
+                                 (flexIndexField.SchemaName, JavaDoubleMin, GetJavaDouble(val1), includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
@@ -339,7 +339,7 @@ type FlexLessThanEqualQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
-                                 (flexIndexField.FieldName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -348,7 +348,7 @@ type FlexLessThanEqualQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
-                                 (flexIndexField.FieldName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
+                                 (flexIndexField.SchemaName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2
                             (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -357,7 +357,7 @@ type FlexLessThanEqualQuery() =
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newDoubleRange 
-                                 (flexIndexField.FieldName, JavaDoubleMin, GetJavaDouble(val1), includeLower, 
+                                 (flexIndexField.SchemaName, JavaDoubleMin, GetJavaDouble(val1), includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
                         Choice2Of2

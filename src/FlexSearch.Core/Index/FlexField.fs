@@ -188,19 +188,19 @@ module FlexField =
     let inline CreateDefaultLuceneField flexField = 
         match flexField.FieldType with
         | FlexCustom(_, _, b) -> 
-            new Field(flexField.FieldName, "null", 
+            new Field(flexField.SchemaName, "null", 
                       GetFieldTemplate(b.FieldTermVector, flexField.StoreInformation.IsStored, b.Tokenize, b.Index))
-        | FlexStored -> new StoredField(flexField.FieldName, "null") :> Field
-        | FlexText(_) -> new TextField(flexField.FieldName, "null", flexField.StoreInformation.Store) :> Field
-        | FlexHighlight(_) -> new Field(flexField.FieldName, "null", FlexHighLightFieldType.Force())
-        | FlexExactText(_) -> new TextField(flexField.FieldName, "null", flexField.StoreInformation.Store) :> Field
-        | FlexBool(_) -> new TextField(flexField.FieldName, "false", flexField.StoreInformation.Store) :> Field
+        | FlexStored -> new StoredField(flexField.SchemaName, "null") :> Field
+        | FlexText(_) -> new TextField(flexField.SchemaName, "null", flexField.StoreInformation.Store) :> Field
+        | FlexHighlight(_) -> new Field(flexField.SchemaName, "null", FlexHighLightFieldType.Force())
+        | FlexExactText(_) -> new TextField(flexField.SchemaName, "null", flexField.StoreInformation.Store) :> Field
+        | FlexBool(_) -> new TextField(flexField.SchemaName, "false", flexField.StoreInformation.Store) :> Field
         | FlexDate -> 
-            new LongField(flexField.FieldName, DateDefaultValue.Force(), flexField.StoreInformation.Store) :> Field
+            new LongField(flexField.SchemaName, DateDefaultValue.Force(), flexField.StoreInformation.Store) :> Field
         | FlexDateTime -> 
-            new LongField(flexField.FieldName, DateTimeDefaultValue.Force(), flexField.StoreInformation.Store) :> Field
-        | FlexInt -> new IntField(flexField.FieldName, 0, flexField.StoreInformation.Store) :> Field
-        | FlexDouble -> new DoubleField(flexField.FieldName, 0.0, flexField.StoreInformation.Store) :> Field
+            new LongField(flexField.SchemaName, DateTimeDefaultValue.Force(), flexField.StoreInformation.Store) :> Field
+        | FlexInt -> new IntField(flexField.SchemaName, 0, flexField.StoreInformation.Store) :> Field
+        | FlexDouble -> new DoubleField(flexField.SchemaName, 0.0, flexField.StoreInformation.Store) :> Field
     
     /// <summary>
     /// Set the value of index field to the default value

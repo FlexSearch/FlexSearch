@@ -44,7 +44,7 @@ open org.apache.lucene.search.postingshighlight
 [<AutoOpen>]
 module SearchDsl = 
     let FlexCharTermAttribute = 
-        lazy java.lang.Class.forName ("org.apache.lucene.analysis.tokenattributes.CharTermAttribute")
+        lazy java.lang.Class.forName (typeof<org.apache.lucene.analysis.tokenattributes.CharTermAttribute>.AssemblyQualifiedName)
     
     /// Utility function to get tokens from the search string based upon the passed analyzer
     /// This will enable us to avoid using the Lucene query parser
@@ -54,7 +54,7 @@ module SearchDsl =
         let tokens = new List<string>()
         let source : TokenStream = analyzer.tokenStream (fieldName, new StringReader(queryText))
         // Get the CharTermAttribute from the TokenStream
-        let termAtt = source.addAttribute (FlexCharTermAttribute.Force())
+        let termAtt = source.addAttribute (FlexCharTermAttribute.Value)
         try 
             try 
                 source.reset()
@@ -191,7 +191,7 @@ module SearchDsl =
             | null -> Sort.RELEVANCE
             | _ -> 
                 match flexIndex.IndexSetting.FieldsLookup.TryGetValue(search.OrderBy) with
-                | (true, field) -> new Sort(new SortField(field.FieldName, FlexField.SortField(field)))
+                | (true, field) -> new Sort(new SortField(field.SchemaName, FlexField.SortField(field)))
                 | _ -> Sort.RELEVANCE
         
         let count = 
@@ -228,14 +228,20 @@ module SearchDsl =
                 let document = indexSearchers.[hit.shardIndex].doc(hit.doc)
                 let flexDocument = new Document()
                 if search.ReturnFlatResult <> true then 
-                    flexDocument.Id <- document.get (Constants.IdField)
-                    flexDocument.Index <- document.get (Constants.TypeField)
-                    flexDocument.LastModified <- int64 (document.get (Constants.LastModifiedField))
+                    flexDocument.Id <- document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
+                    flexDocument.Index <- flexIndex.IndexSetting.IndexName
+                    flexDocument.LastModified <- int64 
+                                                     (document.get 
+                                                          (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
                     if search.ReturnScore then flexDocument.Score <- float (hit.score)
                 else 
-                    flexDocument.Fields.Add(Constants.IdField, document.get (Constants.IdField))
-                    flexDocument.Fields.Add(Constants.TypeField, document.get (Constants.TypeField))
-                    flexDocument.Fields.Add(Constants.LastModifiedField, document.get (Constants.LastModifiedField))
+                    flexDocument.Fields.Add
+                        (Constants.IdField, 
+                         document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName))
+                    flexDocument.Fields.Add(Constants.TypeField, flexIndex.IndexSetting.IndexName)
+                    flexDocument.Fields.Add
+                        (Constants.LastModifiedField, 
+                         document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
                     if search.ReturnScore then flexDocument.Fields.Add("_score", hit.score.ToString())
                 match search.Columns with
                 // Return no other columns when nothing is passed
@@ -243,23 +249,25 @@ module SearchDsl =
                 // Return all columns when *
                 | x when search.Columns.First() = "*" -> 
                     for field in flexIndex.IndexSetting.Fields do
-                        if field.FieldName = Constants.IdField || field.FieldName = Constants.TypeField 
-                           || field.FieldName = Constants.LastModifiedField then ()
+                        if field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField then ()
                         else 
-                            let value = document.get (field.FieldName)
+                            let value = document.get (field.SchemaName)
                             if value <> null then flexDocument.Fields.Add(field.FieldName, value)
                 // Return only the requested columns
                 | _ -> 
                     for fieldName in search.Columns do
-                        let value = document.get (fieldName)
-                        if value <> null then flexDocument.Fields.Add(fieldName, value)
+                        match flexIndex.IndexSetting.FieldsLookup.TryGetValue(fieldName) with
+                        | (true, field) -> 
+                            let value = document.get (field.SchemaName)
+                            if value <> null then flexDocument.Fields.Add(field.FieldName, value)
+                        | _ -> ()
                 if highlighterOptions.IsSome then 
                     let (field, highlighter) = highlighterOptions.Value
-                    let text = document.get (field.FieldName)
+                    let text = document.get (field.SchemaName)
                     if text <> null then 
                         let tokenStream = 
                             TokenSources.getAnyTokenStream 
-                                (indexSearchers.[hit.shardIndex].getIndexReader(), hit.doc, field.FieldName, 
+                                (indexSearchers.[hit.shardIndex].getIndexReader(), hit.doc, field.SchemaName, 
                                  flexIndex.IndexSetting.SearchAnalyzer)
                         let frags = 
                             highlighter.getBestTextFragments 

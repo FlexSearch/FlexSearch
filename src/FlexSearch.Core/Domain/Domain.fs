@@ -133,9 +133,10 @@ type FlexFieldType =
 /// </summary>
 type FlexField = 
     { FieldName : string
+      SchemaName : string
       StoreInformation : FieldStoreInformation
       PostingsFormat : FieldPostingsFormat
-      DocValuesFormat : DocValuesFormat
+      DocValuesFormat : FieldDocValuesFormat
       Similarity : FieldSimilarity
       FieldType : FlexFieldType
       Source : System.Func<System.Dynamic.DynamicObject, string> option

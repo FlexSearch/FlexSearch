@@ -56,7 +56,7 @@ module QueryHelpers =
     // Find terms associated with the search string
     let inline GetTerms(flexField : FlexField, value) = 
         match GetSearchAnalyzer(flexField) with
-        | Some(a) -> ParseTextUsingAnalyzer(a, flexField.FieldName, value)
+        | Some(a) -> ParseTextUsingAnalyzer(a, flexField.SchemaName, value)
         | None -> new List<string>([ value ])
     
     let GetKeyValue(value : string) = 
@@ -80,7 +80,7 @@ module QueryHelpers =
             | (true, val1) -> 
                 Choice1Of2
                     (NumericRangeQuery.newLongRange 
-                         (flexIndexField.FieldName, GetJavaLong(val1), GetJavaLong(val1), true, true) :> Query)
+                         (flexIndexField.SchemaName, GetJavaLong(val1), GetJavaLong(val1), true, true) :> Query)
             | _ -> 
                 Choice2Of2
                     (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -89,7 +89,7 @@ module QueryHelpers =
             | (true, val1) -> 
                 Choice1Of2
                     (NumericRangeQuery.newIntRange 
-                         (flexIndexField.FieldName, GetJavaInt(val1), GetJavaInt(val1), true, true) :> Query)
+                         (flexIndexField.SchemaName, GetJavaInt(val1), GetJavaInt(val1), true, true) :> Query)
             | _ -> 
                 Choice2Of2
                     (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
@@ -98,7 +98,7 @@ module QueryHelpers =
             | (true, val1) -> 
                 Choice1Of2
                     (NumericRangeQuery.newDoubleRange 
-                         (flexIndexField.FieldName, GetJavaDouble(val1), GetJavaDouble(val1), true, true) :> Query)
+                         (flexIndexField.SchemaName, GetJavaDouble(val1), GetJavaDouble(val1), true, true) :> Query)
             | _ -> 
                 Choice2Of2
                     (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))

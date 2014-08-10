@@ -37,7 +37,7 @@ namespace FlexSearch.Api
     private FieldTermVector _TermVector;
     private bool _OmitNorms;
     private string _ScriptName;
-    private DocValuesFormat _DocValuesFormat;
+    private FieldDocValuesFormat _DocValuesFormat;
 
     [DataMember(Order = 1)]
     public bool Analyze
@@ -229,10 +229,10 @@ namespace FlexSearch.Api
 
     /// <summary>
     /// 
-    /// <seealso cref="DocValuesFormat"/>
+    /// <seealso cref="FieldDocValuesFormat"/>
     /// </summary>
     [DataMember(Order = 13)]
-    public DocValuesFormat DocValuesFormat
+    public FieldDocValuesFormat DocValuesFormat
     {
       get
       {
@@ -292,7 +292,7 @@ namespace FlexSearch.Api
       this.__isset.OmitNorms = true;
       this._ScriptName = "";
       this.__isset.ScriptName = true;
-      this._DocValuesFormat = DocValuesFormat.Lucene_4_9;
+      this._DocValuesFormat = FieldDocValuesFormat.Lucene_4_9;
       this.__isset.DocValuesFormat = true;
     }
 
@@ -394,7 +394,7 @@ namespace FlexSearch.Api
             break;
           case 13:
             if (field.Type == TType.I32) {
-              DocValuesFormat = (DocValuesFormat)iprot.ReadI32();
+              DocValuesFormat = (FieldDocValuesFormat)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }

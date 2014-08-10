@@ -25,7 +25,7 @@ module FieldPropertiesExtensions =
     /// <summary>
     /// FieldType to be used for ID fields
     /// </summary>
-    let GetIdField(configuration: IndexConfiguration) = 
+    let GetIdField(configuration : IndexConfiguration) = 
         let indexInformation = 
             { Index = true
               Tokenize = false
@@ -34,10 +34,15 @@ module FieldPropertiesExtensions =
         
         let idField = 
             { FieldName = Constants.IdField
+              SchemaName = 
+                  sprintf "%s[%s]<%s>" Constants.IdField 
+                      (configuration.IdFieldDocValuesFormat.ToString().ToLowerInvariant()) 
+                      (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexCustom(keyWordAnalyzer, keyWordAnalyzer, indexInformation)
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.IdFieldPostingsFormat
+              DocValuesFormat = configuration.IdFieldDocValuesFormat
               Similarity = FieldSimilarity.TFIDF
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = true
@@ -48,13 +53,18 @@ module FieldPropertiesExtensions =
     /// <summary>
     /// FieldType to be used for ID fields
     /// </summary>
-    let GetTimeStampField(configuration: IndexConfiguration) = 
+    let GetTimeStampField(configuration : IndexConfiguration) = 
         let idField = 
             { FieldName = Constants.LastModifiedField
+              SchemaName = 
+                  sprintf "%s[%s]<%s>" Constants.LastModifiedField 
+                      (configuration.IdFieldDocValuesFormat.ToString().ToLowerInvariant()) 
+                      (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexDateTime
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.DefaultIndexPostingsFormat
+              DocValuesFormat = configuration.DefaultDocValuesFormat
               Similarity = configuration.DefaultFieldSimilarity
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = false
@@ -160,11 +170,15 @@ module FieldPropertiesExtensions =
                     let! (fieldType, requiresAnalyzer) = getFieldType (field.Value)
                     let fieldDummy = 
                         { FieldName = field.Key
+                          SchemaName = 
+                              sprintf "%s[%s]<%s>" field.Key (field.Value.DocValuesFormat.ToString().ToLowerInvariant()) 
+                                  (field.Value.PostingsFormat.ToString().ToLowerInvariant())
                           FieldType = fieldType
                           FieldInformation = None
                           Source = source
                           PostingsFormat = field.Value.PostingsFormat
                           Similarity = field.Value.Similarity
+                          DocValuesFormat = field.Value.DocValuesFormat
                           StoreInformation = FieldStoreInformation.Create(false, field.Value.Store)
                           RequiresAnalyzer = requiresAnalyzer
                           DefaultField = null }
@@ -182,8 +196,9 @@ module FieldPropertiesExtensions =
         /// <param name="flexAnalyzers"></param>
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
-        static member Build(fields : Dictionary<string, FieldProperties>, indexConfiguration: IndexConfiguration, flexAnalyzers : Dictionary<string, Analyzer>, 
-                            scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
+        static member Build(fields : Dictionary<string, FieldProperties>, indexConfiguration : IndexConfiguration, 
+                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, ScriptProperties>, 
+                            factoryCollection : IFactoryCollection) = 
             maybe { 
                 let result = new Dictionary<string, FlexField>(StringComparer.OrdinalIgnoreCase)
                 // Add system fields

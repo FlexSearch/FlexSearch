@@ -36,8 +36,8 @@ namespace FlexSearch.Api
     private Codec _DefaultCodec;
     private bool _EnableVersioning;
     private FieldSimilarity _DefaultFieldSimilarity;
-    private DocValuesFormat _IdFieldDocValuesFormat;
-    private DocValuesFormat _DefaultDocValuesFormat;
+    private FieldDocValuesFormat _IdFieldDocValuesFormat;
+    private FieldDocValuesFormat _DefaultDocValuesFormat;
 
     [DataMember(Order = 1)]
     public int CommitTimeSec
@@ -219,10 +219,10 @@ namespace FlexSearch.Api
 
     /// <summary>
     /// 
-    /// <seealso cref="DocValuesFormat"/>
+    /// <seealso cref="FieldDocValuesFormat"/>
     /// </summary>
     [DataMember(Order = 12)]
-    public DocValuesFormat IdFieldDocValuesFormat
+    public FieldDocValuesFormat IdFieldDocValuesFormat
     {
       get
       {
@@ -237,10 +237,10 @@ namespace FlexSearch.Api
 
     /// <summary>
     /// 
-    /// <seealso cref="DocValuesFormat"/>
+    /// <seealso cref="FieldDocValuesFormat"/>
     /// </summary>
     [DataMember(Order = 13)]
-    public DocValuesFormat DefaultDocValuesFormat
+    public FieldDocValuesFormat DefaultDocValuesFormat
     {
       get
       {
@@ -298,9 +298,9 @@ namespace FlexSearch.Api
       this.__isset.EnableVersioning = true;
       this._DefaultFieldSimilarity = FieldSimilarity.TFIDF;
       this.__isset.DefaultFieldSimilarity = true;
-      this._IdFieldDocValuesFormat = DocValuesFormat.Lucene_4_9;
+      this._IdFieldDocValuesFormat = FieldDocValuesFormat.Lucene_4_9;
       this.__isset.IdFieldDocValuesFormat = true;
-      this._DefaultDocValuesFormat = DocValuesFormat.Lucene_4_9;
+      this._DefaultDocValuesFormat = FieldDocValuesFormat.Lucene_4_9;
       this.__isset.DefaultDocValuesFormat = true;
     }
 
@@ -395,14 +395,14 @@ namespace FlexSearch.Api
             break;
           case 12:
             if (field.Type == TType.I32) {
-              IdFieldDocValuesFormat = (DocValuesFormat)iprot.ReadI32();
+              IdFieldDocValuesFormat = (FieldDocValuesFormat)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
           case 13:
             if (field.Type == TType.I32) {
-              DefaultDocValuesFormat = (DocValuesFormat)iprot.ReadI32();
+              DefaultDocValuesFormat = (FieldDocValuesFormat)iprot.ReadI32();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }

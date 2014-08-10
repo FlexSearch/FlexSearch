@@ -50,7 +50,7 @@ enum FieldPostingsFormat {
 	Lucene_4_1 = 5
 }
 
-enum DocValuesFormat {
+enum FieldDocValuesFormat {
 	Direct = 1
 	Memory = 2
 	Lucene_4_9 = 3
@@ -145,8 +145,8 @@ struct IndexConfiguration {
 	9:	optional Codec DefaultCodec = Codec.Lucene_4_9
 	10:	optional bool EnableVersioning = false
 	11: optional FieldSimilarity DefaultFieldSimilarity = FieldSimilarity.TFIDF
-	12: optional DocValuesFormat IdFieldDocValuesFormat = DocValuesFormat.Lucene_4_9
-	13: optional DocValuesFormat DefaultDocValuesFormat = DocValuesFormat.Lucene_4_9
+	12: optional FieldDocValuesFormat IdFieldDocValuesFormat = FieldDocValuesFormat.Lucene_4_9
+	13: optional FieldDocValuesFormat DefaultDocValuesFormat = FieldDocValuesFormat.Lucene_4_9
 }
 
 struct FieldProperties {
@@ -156,13 +156,13 @@ struct FieldProperties {
 	4:	optional string IndexAnalyzer = "standardanalyzer"
 	5:	optional string SearchAnalyzer = "standardanalyzer"
 	6:	optional FieldType FieldType = 4
-	7:	optional FieldPostingsFormat PostingsFormat = 5
+	7:	optional FieldPostingsFormat PostingsFormat = FieldPostingsFormat.Lucene_4_1
 	8:	optional FieldSimilarity Similarity = 2
 	9:	optional FieldIndexOptions IndexOptions = 3
 	10:	optional FieldTermVector TermVector = 3
 	11:	optional bool OmitNorms = true
 	12:	optional string ScriptName = ""
-	13: optional DocValuesFormat DocValuesFormat = DocValuesFormat.Lucene_4_9
+	13: optional FieldDocValuesFormat DocValuesFormat = FieldDocValuesFormat.Lucene_4_9
 }
 
 struct Job {
