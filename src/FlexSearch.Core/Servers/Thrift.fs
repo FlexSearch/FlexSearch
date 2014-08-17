@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// (c) Seemant Rajvanshi, 2013
+// (c) Seemant Rajvanshi, 2014
 //
 // This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
 // copy of the license can be found in the License.txt file at the root of this distribution. 
@@ -10,24 +10,15 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core.Server
 
-open FlexSearch
-open FlexSearch.Api
 open FlexSearch.Core
-open Newtonsoft.Json
 open System
-open System.Collections.Concurrent
-open System.Net
-open System.Text
-open System.Threading
+open FlexSearch.Api
+open Thrift
+open Thrift.Protocol
+open Thrift.Server
+open Thrift.Transport
 
 module Thrift = 
-    open FlexSearch.Api
-    open System.Collections.Concurrent
-    open Thrift
-    open Thrift.Protocol
-    open Thrift.Server
-    open Thrift.Transport
-    
     /// <summary>
     /// Thrift server
     /// </summary>
@@ -46,3 +37,44 @@ module Thrift =
         interface IServer with
             member this.Start() = server.Value.Serve()
             member this.Stop() = server.Value.Stop()
+    
+    /// <summary>
+    /// FlexSearch service implementation for thrift support
+    /// </summary>
+    [<Sealed>]
+    type FlexSearchService(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService, jobService : IJobService) = 
+        
+        /// General exception wrapper around Choice as 
+        /// Thrift requires exceptions to be thrown in case of errors.
+        let ExceptionHelper(result : Choice<'a, Message.OperationMessage>) = 
+            match result with
+            | Choice1Of2(a) -> a
+            | Choice2Of2(error) -> raise (Message.InvalidOperation(Message = error))
+        
+        interface FlexSearch.Api.Service.FlexSearchService.Iface with
+            member this.AddDocument(indexName : string, documentId : string, 
+                                    document : Collections.Generic.Dictionary<string, string>) : unit = 
+                ExceptionHelper(documentService.AddDocument(indexName, documentId, document))
+            member this.AddIndex(index : Index) : unit = ExceptionHelper(indexService.AddIndex(index))
+            member this.AddOrUpdateDocument(indexName : string, documentId : string, 
+                                            document : Collections.Generic.Dictionary<string, string>) : unit = 
+                ExceptionHelper(documentService.AddOrUpdateDocument(indexName, documentId, document))
+            member this.CloseIndex(indexName : string) : unit = ExceptionHelper(indexService.CloseIndex(indexName))
+            member this.DeleteDocument(indexName : string, documentId : string) : unit = 
+                ExceptionHelper(documentService.DeleteDocument(indexName, documentId))
+            member this.DeleteIndex(indexName : string) : unit = ExceptionHelper(indexService.DeleteIndex(indexName))
+            member this.GetAllIndex() : Collections.Generic.List<Index> = ExceptionHelper(indexService.GetAllIndex())
+            member this.GetDocument(indexName : string, documentId : string) : Collections.Generic.Dictionary<string, string> = 
+                ExceptionHelper(documentService.GetDocument(indexName, documentId))
+            member this.GetDocuments(indexName : string) : Collections.Generic.List<Collections.Generic.Dictionary<string, string>> = 
+                ExceptionHelper(documentService.GetDocuments(indexName))
+            member this.GetIndex(indexName : string) : Index = ExceptionHelper(indexService.GetIndex(indexName))
+            member this.GetIndexStatus(indexName : string) : IndexState = 
+                ExceptionHelper(indexService.GetIndexStatus(indexName))
+            member this.GetJob(jobId : string) : Job = ExceptionHelper(jobService.GetJob(jobId))
+            member this.IndexExists(indexName : string) : bool = indexService.IndexExists(indexName)
+            member this.OpenIndex(indexName : string) : unit = ExceptionHelper(indexService.OpenIndex(indexName))
+            member this.Search(query : SearchQuery) : SearchResults = ExceptionHelper(searchService.Search(query))
+            member this.SearchWithFlatResults(query : SearchQuery) : Collections.Generic.List<Collections.Generic.Dictionary<string, string>> = 
+                failwith "Not implemented yet"
+            member this.UpdateIndex(index : Index) : unit = ExceptionHelper(indexService.UpdateIndex(index))
