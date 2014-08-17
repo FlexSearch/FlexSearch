@@ -58,8 +58,8 @@ module FieldPropertiesExtensions =
             { FieldName = Constants.LastModifiedField
               SchemaName = 
                   sprintf "%s[%s]<%s>" Constants.LastModifiedField 
-                      (configuration.IdFieldDocValuesFormat.ToString().ToLowerInvariant()) 
-                      (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
+                      (configuration.DefaultDocValuesFormat.ToString().ToLowerInvariant()) 
+                      (configuration.DefaultIndexPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexDateTime
               FieldInformation = None
               Source = None
