@@ -72,17 +72,17 @@ namespace FlexSearch.Api.Service
       #endif
       [OperationContract]
       [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
-      bool OpenIndex(string indexName);
+      void OpenIndex(string indexName);
       #if SILVERLIGHT
       IAsyncResult Begin_OpenIndex(AsyncCallback callback, object state, string indexName);
-      bool End_OpenIndex(IAsyncResult asyncResult);
+      void End_OpenIndex(IAsyncResult asyncResult);
       #endif
       [OperationContract]
       [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
-      bool CloseIndex(string indexName);
+      void CloseIndex(string indexName);
       #if SILVERLIGHT
       IAsyncResult Begin_CloseIndex(AsyncCallback callback, object state, string indexName);
-      bool End_CloseIndex(IAsyncResult asyncResult);
+      void End_CloseIndex(IAsyncResult asyncResult);
       #endif
       [OperationContract]
       [FaultContract(typeof(FlexSearch.Api.Message.InvalidOperationFault))]
@@ -650,23 +650,23 @@ namespace FlexSearch.Api.Service
         return send_OpenIndex(callback, state, indexName);
       }
 
-      public bool End_OpenIndex(IAsyncResult asyncResult)
+      public void End_OpenIndex(IAsyncResult asyncResult)
       {
         oprot_.Transport.EndFlush(asyncResult);
-        return recv_OpenIndex();
+        recv_OpenIndex();
       }
 
       #endif
 
-      public bool OpenIndex(string indexName)
+      public void OpenIndex(string indexName)
       {
         #if !SILVERLIGHT
         send_OpenIndex(indexName);
-        return recv_OpenIndex();
+        recv_OpenIndex();
 
         #else
         var asyncResult = Begin_OpenIndex(null, null, indexName);
-        return End_OpenIndex(asyncResult);
+        End_OpenIndex(asyncResult);
 
         #endif
       }
@@ -688,7 +688,7 @@ namespace FlexSearch.Api.Service
         #endif
       }
 
-      public bool recv_OpenIndex()
+      public void recv_OpenIndex()
       {
         TMessage msg = iprot_.ReadMessageBegin();
         if (msg.Type == TMessageType.Exception) {
@@ -699,13 +699,10 @@ namespace FlexSearch.Api.Service
         OpenIndex_result result = new OpenIndex_result();
         result.Read(iprot_);
         iprot_.ReadMessageEnd();
-        if (result.__isset.success) {
-          return result.Success;
-        }
         if (result.__isset.ex) {
           throw result.Ex;
         }
-        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "OpenIndex failed: unknown result");
+        return;
       }
 
       
@@ -715,23 +712,23 @@ namespace FlexSearch.Api.Service
         return send_CloseIndex(callback, state, indexName);
       }
 
-      public bool End_CloseIndex(IAsyncResult asyncResult)
+      public void End_CloseIndex(IAsyncResult asyncResult)
       {
         oprot_.Transport.EndFlush(asyncResult);
-        return recv_CloseIndex();
+        recv_CloseIndex();
       }
 
       #endif
 
-      public bool CloseIndex(string indexName)
+      public void CloseIndex(string indexName)
       {
         #if !SILVERLIGHT
         send_CloseIndex(indexName);
-        return recv_CloseIndex();
+        recv_CloseIndex();
 
         #else
         var asyncResult = Begin_CloseIndex(null, null, indexName);
-        return End_CloseIndex(asyncResult);
+        End_CloseIndex(asyncResult);
 
         #endif
       }
@@ -753,7 +750,7 @@ namespace FlexSearch.Api.Service
         #endif
       }
 
-      public bool recv_CloseIndex()
+      public void recv_CloseIndex()
       {
         TMessage msg = iprot_.ReadMessageBegin();
         if (msg.Type == TMessageType.Exception) {
@@ -764,13 +761,10 @@ namespace FlexSearch.Api.Service
         CloseIndex_result result = new CloseIndex_result();
         result.Read(iprot_);
         iprot_.ReadMessageEnd();
-        if (result.__isset.success) {
-          return result.Success;
-        }
         if (result.__isset.ex) {
           throw result.Ex;
         }
-        throw new TApplicationException(TApplicationException.ExceptionType.MissingResult, "CloseIndex failed: unknown result");
+        return;
       }
 
       
@@ -1470,7 +1464,7 @@ namespace FlexSearch.Api.Service
         iprot.ReadMessageEnd();
         OpenIndex_result result = new OpenIndex_result();
         try {
-          result.Success = iface_.OpenIndex(args.IndexName);
+          iface_.OpenIndex(args.IndexName);
         } catch (FlexSearch.Api.Message.InvalidOperation ex) {
           result.Ex = ex;
         }
@@ -1487,7 +1481,7 @@ namespace FlexSearch.Api.Service
         iprot.ReadMessageEnd();
         CloseIndex_result result = new CloseIndex_result();
         try {
-          result.Success = iface_.CloseIndex(args.IndexName);
+          iface_.CloseIndex(args.IndexName);
         } catch (FlexSearch.Api.Message.InvalidOperation ex) {
           result.Ex = ex;
         }
@@ -3366,24 +3360,9 @@ namespace FlexSearch.Api.Service
     [DataContract(Namespace="")]
     public partial class OpenIndex_result : TBase
     {
-      private bool _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
       [DataMember(Order = 19)]
-      public bool Success
-      {
-        get
-        {
-          return _success;
-        }
-        set
-        {
-          __isset.success = true;
-          this._success = value;
-        }
-      }
-
-      [DataMember(Order = 20)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -3404,7 +3383,6 @@ namespace FlexSearch.Api.Service
       #endif
       [DataContract]
       public struct Isset {
-        public bool success;
         public bool ex;
       }
 
@@ -3423,13 +3401,6 @@ namespace FlexSearch.Api.Service
           }
           switch (field.ID)
           {
-            case 0:
-              if (field.Type == TType.Bool) {
-                Success = iprot.ReadBool();
-              } else { 
-                TProtocolUtil.Skip(iprot, field.Type);
-              }
-              break;
             case 1:
               if (field.Type == TType.Struct) {
                 Ex = new FlexSearch.Api.Message.InvalidOperation();
@@ -3452,14 +3423,7 @@ namespace FlexSearch.Api.Service
         oprot.WriteStructBegin(struc);
         TField field = new TField();
 
-        if (this.__isset.success) {
-          field.Name = "Success";
-          field.Type = TType.Bool;
-          field.ID = 0;
-          oprot.WriteFieldBegin(field);
-          oprot.WriteBool(Success);
-          oprot.WriteFieldEnd();
-        } else if (this.__isset.ex) {
+        if (this.__isset.ex) {
           if (Ex != null) {
             field.Name = "Ex";
             field.Type = TType.Struct;
@@ -3477,14 +3441,12 @@ namespace FlexSearch.Api.Service
         var other = that as OpenIndex_result;
         if (other == null) return false;
         if (ReferenceEquals(this, other)) return true;
-        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
-          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+        return ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
       }
 
       public override int GetHashCode() {
         int hashcode = 0;
         unchecked {
-          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
           hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
         }
         return hashcode;
@@ -3492,9 +3454,7 @@ namespace FlexSearch.Api.Service
 
       public override string ToString() {
         StringBuilder sb = new StringBuilder("OpenIndex_result(");
-        sb.Append("Success: ");
-        sb.Append(Success);
-        sb.Append(",Ex: ");
+        sb.Append("Ex: ");
         sb.Append(Ex== null ? "<null>" : Ex.ToString());
         sb.Append(")");
         return sb.ToString();
@@ -3511,7 +3471,7 @@ namespace FlexSearch.Api.Service
     {
       private string _indexName;
 
-      [DataMember(Order = 21)]
+      [DataMember(Order = 20)]
       public string IndexName
       {
         get
@@ -3614,24 +3574,9 @@ namespace FlexSearch.Api.Service
     [DataContract(Namespace="")]
     public partial class CloseIndex_result : TBase
     {
-      private bool _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 22)]
-      public bool Success
-      {
-        get
-        {
-          return _success;
-        }
-        set
-        {
-          __isset.success = true;
-          this._success = value;
-        }
-      }
-
-      [DataMember(Order = 23)]
+      [DataMember(Order = 21)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -3652,7 +3597,6 @@ namespace FlexSearch.Api.Service
       #endif
       [DataContract]
       public struct Isset {
-        public bool success;
         public bool ex;
       }
 
@@ -3671,13 +3615,6 @@ namespace FlexSearch.Api.Service
           }
           switch (field.ID)
           {
-            case 0:
-              if (field.Type == TType.Bool) {
-                Success = iprot.ReadBool();
-              } else { 
-                TProtocolUtil.Skip(iprot, field.Type);
-              }
-              break;
             case 1:
               if (field.Type == TType.Struct) {
                 Ex = new FlexSearch.Api.Message.InvalidOperation();
@@ -3700,14 +3637,7 @@ namespace FlexSearch.Api.Service
         oprot.WriteStructBegin(struc);
         TField field = new TField();
 
-        if (this.__isset.success) {
-          field.Name = "Success";
-          field.Type = TType.Bool;
-          field.ID = 0;
-          oprot.WriteFieldBegin(field);
-          oprot.WriteBool(Success);
-          oprot.WriteFieldEnd();
-        } else if (this.__isset.ex) {
+        if (this.__isset.ex) {
           if (Ex != null) {
             field.Name = "Ex";
             field.Type = TType.Struct;
@@ -3725,14 +3655,12 @@ namespace FlexSearch.Api.Service
         var other = that as CloseIndex_result;
         if (other == null) return false;
         if (ReferenceEquals(this, other)) return true;
-        return ((__isset.success == other.__isset.success) && ((!__isset.success) || (System.Object.Equals(Success, other.Success))))
-          && ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
+        return ((__isset.ex == other.__isset.ex) && ((!__isset.ex) || (System.Object.Equals(Ex, other.Ex))));
       }
 
       public override int GetHashCode() {
         int hashcode = 0;
         unchecked {
-          hashcode = (hashcode * 397) ^ (!__isset.success ? 0 : (Success.GetHashCode()));
           hashcode = (hashcode * 397) ^ (!__isset.ex ? 0 : (Ex.GetHashCode()));
         }
         return hashcode;
@@ -3740,9 +3668,7 @@ namespace FlexSearch.Api.Service
 
       public override string ToString() {
         StringBuilder sb = new StringBuilder("CloseIndex_result(");
-        sb.Append("Success: ");
-        sb.Append(Success);
-        sb.Append(",Ex: ");
+        sb.Append("Ex: ");
         sb.Append(Ex== null ? "<null>" : Ex.ToString());
         sb.Append(")");
         return sb.ToString();
@@ -3759,7 +3685,7 @@ namespace FlexSearch.Api.Service
     {
       private string _jobId;
 
-      [DataMember(Order = 24)]
+      [DataMember(Order = 22)]
       public string JobId
       {
         get
@@ -3865,7 +3791,7 @@ namespace FlexSearch.Api.Service
       private FlexSearch.Api.Job _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 25)]
+      [DataMember(Order = 23)]
       public FlexSearch.Api.Job Success
       {
         get
@@ -3879,7 +3805,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 26)]
+      [DataMember(Order = 24)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -4010,7 +3936,7 @@ namespace FlexSearch.Api.Service
     {
       private FlexSearch.Api.SearchQuery _query;
 
-      [DataMember(Order = 27)]
+      [DataMember(Order = 25)]
       public FlexSearch.Api.SearchQuery Query
       {
         get
@@ -4117,7 +4043,7 @@ namespace FlexSearch.Api.Service
       private FlexSearch.Api.SearchResults _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 28)]
+      [DataMember(Order = 26)]
       public FlexSearch.Api.SearchResults Success
       {
         get
@@ -4131,7 +4057,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 29)]
+      [DataMember(Order = 27)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -4262,7 +4188,7 @@ namespace FlexSearch.Api.Service
     {
       private FlexSearch.Api.SearchQuery _query;
 
-      [DataMember(Order = 30)]
+      [DataMember(Order = 28)]
       public FlexSearch.Api.SearchQuery Query
       {
         get
@@ -4369,7 +4295,7 @@ namespace FlexSearch.Api.Service
       private List<Dictionary<string, string>> _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 31)]
+      [DataMember(Order = 29)]
       public List<Dictionary<string, string>> Success
       {
         get
@@ -4383,7 +4309,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 32)]
+      [DataMember(Order = 30)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -4551,7 +4477,7 @@ namespace FlexSearch.Api.Service
       private string _indexName;
       private string _documentId;
 
-      [DataMember(Order = 33)]
+      [DataMember(Order = 31)]
       public string IndexName
       {
         get
@@ -4565,7 +4491,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 34)]
+      [DataMember(Order = 32)]
       public string DocumentId
       {
         get
@@ -4691,7 +4617,7 @@ namespace FlexSearch.Api.Service
       private Dictionary<string, string> _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 35)]
+      [DataMember(Order = 33)]
       public Dictionary<string, string> Success
       {
         get
@@ -4705,7 +4631,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 36)]
+      [DataMember(Order = 34)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -4855,7 +4781,7 @@ namespace FlexSearch.Api.Service
     {
       private string _indexName;
 
-      [DataMember(Order = 37)]
+      [DataMember(Order = 35)]
       public string IndexName
       {
         get
@@ -4961,7 +4887,7 @@ namespace FlexSearch.Api.Service
       private List<Dictionary<string, string>> _success;
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 38)]
+      [DataMember(Order = 36)]
       public List<Dictionary<string, string>> Success
       {
         get
@@ -4975,7 +4901,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 39)]
+      [DataMember(Order = 37)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -5144,7 +5070,7 @@ namespace FlexSearch.Api.Service
       private string _documentId;
       private Dictionary<string, string> _document;
 
-      [DataMember(Order = 40)]
+      [DataMember(Order = 38)]
       public string IndexName
       {
         get
@@ -5158,7 +5084,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 41)]
+      [DataMember(Order = 39)]
       public string DocumentId
       {
         get
@@ -5172,7 +5098,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 42)]
+      [DataMember(Order = 40)]
       public Dictionary<string, string> Document
       {
         get
@@ -5337,7 +5263,7 @@ namespace FlexSearch.Api.Service
     {
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 43)]
+      [DataMember(Order = 41)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -5448,7 +5374,7 @@ namespace FlexSearch.Api.Service
       private string _documentId;
       private Dictionary<string, string> _document;
 
-      [DataMember(Order = 44)]
+      [DataMember(Order = 42)]
       public string IndexName
       {
         get
@@ -5462,7 +5388,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 45)]
+      [DataMember(Order = 43)]
       public string DocumentId
       {
         get
@@ -5476,7 +5402,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 46)]
+      [DataMember(Order = 44)]
       public Dictionary<string, string> Document
       {
         get
@@ -5641,7 +5567,7 @@ namespace FlexSearch.Api.Service
     {
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 47)]
+      [DataMember(Order = 45)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
@@ -5751,7 +5677,7 @@ namespace FlexSearch.Api.Service
       private string _indexName;
       private string _documentId;
 
-      [DataMember(Order = 48)]
+      [DataMember(Order = 46)]
       public string IndexName
       {
         get
@@ -5765,7 +5691,7 @@ namespace FlexSearch.Api.Service
         }
       }
 
-      [DataMember(Order = 49)]
+      [DataMember(Order = 47)]
       public string DocumentId
       {
         get
@@ -5890,7 +5816,7 @@ namespace FlexSearch.Api.Service
     {
       private FlexSearch.Api.Message.InvalidOperation _ex;
 
-      [DataMember(Order = 50)]
+      [DataMember(Order = 48)]
       public FlexSearch.Api.Message.InvalidOperation Ex
       {
         get
