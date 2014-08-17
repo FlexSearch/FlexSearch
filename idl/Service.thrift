@@ -42,8 +42,8 @@ service FlexSearchService {
 	list<Api.Index> GetAllIndex() throws (1:Message.InvalidOperation ex),
 	bool IndexExists(1:string indexName) throws (1:Message.InvalidOperation ex),
 	Api.IndexState GetIndexStatus(1:string indexName) throws (1:Message.InvalidOperation ex),
-	bool OpenIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
-	bool CloseIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
+	void OpenIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
+	void CloseIndex(1:string indexName) throws (1:Message.InvalidOperation ex),
 	
 	// Job status related operations
 	Api.Job GetJob(1:string jobId) throws (1:Message.InvalidOperation ex),
