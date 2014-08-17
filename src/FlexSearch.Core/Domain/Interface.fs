@@ -204,22 +204,10 @@ type ILogService =
     abstract TraceError : error:string * ex:Exception -> unit
     abstract TraceErrorMessage : error:string -> unit
     abstract TraceOperationMessageError : error:string * ex:OperationMessage -> unit
+
 /// <summary>
-/// Search related operations
+/// Generic job service interface
 /// </summary>
-//type ISearch = 
-//    abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
-//    abstract SearchWithFlatResults : SearchQuery -> Choice<List<Dictionary<string, string>>, OperationMessage>
-//
-///// <summary>
-///// Job related operations
-///// </summary>
-//type IJobOperation = 
-//    abstract GetJob : string -> Choice<Job, OperationMessage>
-//
-///// <summary>
-///// Node related operations
-///// </summary>
-//type INodeOperation = 
-//    abstract LoadAllIndex : unit -> unit
-//    abstract ShutDown : unit -> bool
+type IJobService =
+    abstract GetJob : string -> Choice<Job, OperationMessage>
+    abstract DeleteAllJobs : unit -> Choice<unit, OperationMessage>
