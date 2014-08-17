@@ -75,7 +75,13 @@ type QueueService(state : INodeState, documentService : IDocumentService) =
                                                                       executionBlockOptions())
     
     interface IQueueService with
+        
         member this.AddDocumentQueue(indexName, documentId, fields) = 
-            await (addQueue.SendAsync((indexName, documentId, fields)))
+            Async.AwaitTask(addQueue.SendAsync((indexName, documentId, fields)))
+            |> Async.RunSynchronously
+            |> ignore
+        
         member this.AddOrUpdateDocumentQueue(indexName, documentId, fields) = 
-            await (addOrUpdateQueue.SendAsync((indexName, documentId, fields)))
+            Async.AwaitTask(addOrUpdateQueue.SendAsync((indexName, documentId, fields)))
+            |> Async.RunSynchronously
+            |> ignore
