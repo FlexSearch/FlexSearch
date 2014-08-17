@@ -3,7 +3,8 @@ open FlexSearch.Documention
 open FlexSearch.Core
 open Autofac
 open Nessos.UnionArgParser
-open Agdur
+open PerfUtil
+open FlexSearch.Benchmarks
 
 let GenerateGlossary() = 
     ReferenceDocumentation.GenerateGlossary()
@@ -13,54 +14,47 @@ let GenerateGlossary() =
     printfn "Missing def count:%i" (ReferenceDocumentation.missingDefinitions.Count)
 
 type Arguments = 
-    | WikipediaTest1KB of fileName : string
-    | WikipediaTest4KB of fileName : string
+    | WikipediaIndexingTest1KB of fileName : string
+    | WikipediaIndexingTest4KB of fileName : string
+    | WikipediaQueryTests of folderPath : string
     | GenerateWikipedia1KBDump of path : string * outPutFileName : string
     | GenerateWikipedia4KBDump of path : string * outPutFileName : string
+    | GenerateWikipediaQueries of folderPath : string
     interface IArgParserTemplate with
         member s.Usage = 
             match s with
-            | WikipediaTest1KB _ -> "Wikipedia 1KB file test. (ex: --WikipediaTest1KB [fileName]"
-            | WikipediaTest4KB _ -> "Wikipedia 4KB file test. (ex: --WikipediaTest4KB [fileName]"
+            | WikipediaIndexingTest1KB _ -> "Wikipedia 1KB file test. (ex: --WikipediaIndexingTest1KB [fileName]"
+            | WikipediaIndexingTest4KB _ -> "Wikipedia 4KB file test. (ex: --WikipediaIndexingTest4KB [fileName]"
+            | WikipediaQueryTests _ -> "Wikipedia Query Tests over 4KB index. (ex: --WikipediaQueryTests [folderPath]"
             | GenerateWikipedia1KBDump _ -> 
                 "Wikipedia 1KB test file generation. (ex: --GenerateWikipedia1KBDump [folderPath] [outputFile]"
             | GenerateWikipedia4KBDump _ -> 
                 "Wikipedia 1KB test file generation. (ex: --GenerateWikipedia4KBDump [folderPath]  [outputFile]"
+            | GenerateWikipediaQueries _ -> 
+                "Wikipedia test queries generation. (ex: --GenerateWikipediaQueries [folderPath]"
 
 [<EntryPoint>]
 let main argv = 
-    let searchService = GenerateExamples.Container.Resolve<ISearchService>()
-    let indexService = GenerateExamples.Container.Resolve<IIndexService>()
-//    WikipediaPerformanceTests.RandomQueryGenerator "" "F:\wikipedia" 100 (GenerateExamples.Container.Resolve<IIndexService>()) 
-
-    GenerateExamples.Container.Resolve<IIndexService>().AddIndex(WikipediaPerformanceTests.GetWikiIndex()) |> ignore
-    System.Threading.Thread.Sleep(1000)
-    let queries = System.IO.File.ReadAllLines("F:\wikipedia\TermQueries.txt")
-    Benchmark.This(fun _ -> WikipediaPerformanceTests.ExecuteQuery queries searchService).Times(10).Average()
-             .InMilliseconds().Max().InMilliseconds().Min().InMilliseconds().ToConsole().AsFormattedString()
-
-    //WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor "F:\wikipedia\extracted" "F:\wikipedia\wikidump1KB.txt" 1
-    //WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor "F:\wikipedia\extracted" "F:\wikipedia\wikidump4KB.txt" 4 
-    //WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests "F:\wikipedia\wikidump4KB.txt" (GenerateExamples.Container.Resolve<IIndexService>()) (GenerateExamples.Container.Resolve<IQueueService>())
-    //GenerateGlossary()
-    //GenerateExamples.GenerateIndicesExamples()
+    //WikipediaPerformanceTests.WikipediaQueryTests("F:\wikipedia")
+    //WikipediaPerformanceTests.RandomQueryGenerator ("F:\wikipedia") 
+    //WikipediaPerformanceTests.WikipediaIndexingTest ("F:\wikipedia\wikidump4KB.txt") true
     let parser = UnionArgParser<Arguments>()
     if argv.Length = 0 then printfn "%s" (parser.Usage("FlexSearch Benchmark Usage:"))
     else 
         let results = parser.Parse(argv)
         let all = results.GetAllResults()
         match all.Head with
-        | WikipediaTest1KB(file) -> 
-            WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file 
-                (GenerateExamples.Container.Resolve<IIndexService>()) 
-                (GenerateExamples.Container.Resolve<IQueueService>())
-        | WikipediaTest4KB(file) -> 
-            WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file 
-                (GenerateExamples.Container.Resolve<IIndexService>()) 
-                (GenerateExamples.Container.Resolve<IQueueService>())
+        | WikipediaIndexingTest1KB(file) -> 
+            WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file Global.IndexService 
+                Global.QueueService
+        | WikipediaIndexingTest4KB(file) -> 
+            WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file Global.IndexService 
+                Global.QueueService
+        | WikipediaQueryTests(folder) -> ()
         | GenerateWikipedia1KBDump(path, output) -> 
             WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor path output 1
         | GenerateWikipedia4KBDump(path, output) -> 
             WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor path output 4
+        | GenerateWikipediaQueries(folder) -> WikipediaPerformanceTests.RandomQueryGenerator folder
     Console.ReadKey() |> ignore
     0 // return an integer exit code
