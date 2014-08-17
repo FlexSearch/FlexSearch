@@ -249,7 +249,7 @@
     <Reference Include="System.Runtime.Caching" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Threading.Tasks.Dataflow">
-      <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.14\lib\portable-net45+win8\System.Threading.Tasks.Dataflow.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.20\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Transactions" />
@@ -306,6 +306,7 @@
     <Compile Include="Services\QueueService.fs" />
     <Compile Include="Services\SearchService..fs" />
     <Compile Include="Services\FactoryService.fs" />
+    <Compile Include="Services\JobService.fs" />
     <Compile Include="HttpHandlers\IndexCoreHandlers.fs" />
     <Compile Include="HttpHandlers\DocumentHandlers.fs" />
     <Compile Include="HttpHandlers\SearchHandlers.fs" />
