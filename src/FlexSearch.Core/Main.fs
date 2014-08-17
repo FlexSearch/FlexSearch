@@ -109,6 +109,7 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<DocumentService, IDocumentService>
         builder |> FactoryService.RegisterSingleInstance<QueueService, IQueueService>
         builder |> FactoryService.RegisterSingleInstance<SearchService, ISearchService>
+        builder |> FactoryService.RegisterSingleInstance<JobService, IJobService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
         builder.RegisterInstance((GetLoggerService(serverSettings))).SingleInstance().As<ILogService>() |> ignore
         // Register server
