@@ -636,7 +636,7 @@ select new { n, types }
 // types that are used together in most scenarios. 
 // When their applications are mutually exclusive, 
 // types should be located in separate namespaces]]></Query>
-        <Query Active="True" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Nested types should not be visible</Name>
+        <Query Active="False" DisplayList="True" DisplayStat="True" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Nested types should not be visible</Name>
 warnif count > 0 from t in JustMyCode.Types where 
   t.IsNested && 
  !t.IsGeneratedByCompiler &&
@@ -3366,7 +3366,7 @@ select new { t, t.Visibility, t.IsStatic }
 ]]></Query>
       </Group>
       <Group Name="System.Threading" Active="True" ShownInReport="False">
-        <Query Active="True" DisplayList="False" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Method non-synchronized that read mutable states</Name>
+        <Query Active="False" DisplayList="False" DisplayStat="False" DisplaySelectionView="False" IsCriticalRule="False"><![CDATA[// <Name>Method non-synchronized that read mutable states</Name>
 from m in Application.Methods where 
  (m.ReadsMutableObjectState || m.ReadsMutableTypeState) && 
  !m.IsUsing ("System.Threading.Monitor".AllowNoMatch()) && 
