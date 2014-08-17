@@ -10,32 +10,17 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core.HttpHandlers
 
-open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
-open FlexSearch.Utility
-open Microsoft.Owin
-open Newtonsoft.Json
-open Owin
-open System
-open System.Collections.Generic
-open System.ComponentModel
-open System.ComponentModel.Composition
-open System.IO
-open System.Linq
-open System.Net
-open System.Net.Http
 
 [<Name("GET-/jobs/:id")>]
 [<Sealed>]
-type GetJobByIdHandler(state : INodeState) = 
+type GetJobByIdHandler(jobService : IJobService) = 
     interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (state.PersistanceStore.Get<Job>(SubId(owin))) OK BAD_REQUEST
+        member this.Process(owin) = owin |> ResponseProcessor (jobService.GetJob(SubId(owin))) OK BAD_REQUEST
 
 [<Name("DELETE-/jobs")>]
 [<Sealed>]
-type DeleteJobsdHandler(state : INodeState) = 
+type DeleteJobsdHandler(jobService : IJobService) = 
     interface IHttpHandler with
-        member this.Process(owin) = owin |> ResponseProcessor (state.PersistanceStore.DeleteAll<Job>()) OK BAD_REQUEST
+        member this.Process(owin) = owin |> ResponseProcessor (jobService.DeleteAllJobs()) OK BAD_REQUEST
