@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
@@ -53,10 +52,10 @@ type Value =
     member this.GetValueAsArray() = 
         match this with
         | SingleValue(v) -> 
-            if String.IsNullOrWhiteSpace(v) then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            if String.IsNullOrWhiteSpace(v) then Choice2Of2(MISSING_FIELD_VALUE |> GenerateOperationMessage)
             else Choice1Of2([| v |])
         | ValueList(v) -> 
-            if v.Length = 0 then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            if v.Length = 0 then Choice2Of2(MISSING_FIELD_VALUE |> GenerateOperationMessage)
             else Choice1Of2(v.ToArray())
 
 /// <summary>
@@ -239,14 +238,14 @@ type IndicesState =
     member this.GetStatus(indexName) = 
         match this.IndexStatus.TryGetValue(indexName) with
         | (true, state) -> Choice1Of2(state)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
     
     member this.GetRegisteration(indexName) = 
         match this.IndexRegisteration.TryGetValue(indexName) with
         | (true, state) -> Choice1Of2(state)
-        | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
+        | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
     
     member this.AddStatus(indexName, status) = 
         match this.IndexStatus.TryAdd(indexName, status) with
         | true -> Choice1Of2()
-        | false -> Choice2Of2(MessageConstants.ERROR_ADDING_INDEX_STATUS)
+        | false -> Choice2Of2(Errors.ERROR_ADDING_INDEX_STATUS |> GenerateOperationMessage)

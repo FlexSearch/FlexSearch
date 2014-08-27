@@ -11,7 +11,6 @@
 namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -20,7 +19,7 @@ open System.Collections.Generic
 open System.Data
 open System.IO
 open System.Linq
-
+open FlexSearch.Common
 /// <summary>
 /// Search service class which will be dynamically injected using IOC. This will
 /// provide the interface for all kind of search functionality in flex.
@@ -31,6 +30,7 @@ open System.Linq
 /// </summary>
 [<Sealed>]
 type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, parser : IFlexParser) = 
+    
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
     let queryTypes = 
@@ -52,11 +52,11 @@ type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuer
                     let! query = SearchDsl.GenerateQuery
                                      (flexIndex.IndexSetting.FieldsLookup, p', search, (Some(values)), queryTypes)
                     return! SearchDsl.SearchQuery(flexIndex, query, search)
-                | _ -> return! Choice2Of2(MessageConstants.SEARCH_PROFILE_NOT_FOUND)
+                | _ -> return! Choice2Of2(Errors.SEARCH_PROFILE_NOT_FOUND |> GenerateOperationMessage)
             else 
                 let! predicate = parser.Parse(search.QueryString)
                 match predicate with
-                | NotPredicate(_) -> return! Choice2Of2(MessageConstants.NEGATIVE_QUERY_NOT_SUPPORTED)
+                | NotPredicate(_) -> return! Choice2Of2(Errors.NEGATIVE_QUERY_NOT_SUPPORTED |> GenerateOperationMessage)
                 | _ -> let! query = GenerateQuery
                                         (flexIndex.IndexSetting.FieldsLookup, predicate, search, None, queryTypes)
                        return! SearchDsl.SearchQuery(flexIndex, query, search)

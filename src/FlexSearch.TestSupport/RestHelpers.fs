@@ -1,7 +1,6 @@
 ﻿namespace FlexSearch.TestSupport
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open Newtonsoft.Json

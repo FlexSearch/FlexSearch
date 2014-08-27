@@ -12,7 +12,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -199,8 +198,9 @@ type FlexGreaterQuery() =
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexInt -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -208,8 +208,9 @@ type FlexGreaterQuery() =
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexDouble -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -218,16 +219,17 @@ type FlexGreaterQuery() =
                                  (flexIndexField.SchemaName, GetJavaDouble(val1), JavaDoubleMax, includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | _ -> 
-                    Choice2Of2
-                        (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED 
-                         |> Append("Field Name", flexIndexField.FieldName))
+                    Choice2Of2(Errors.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED
+                               |> GenerateOperationMessage
+                               |> Append("Field Name", flexIndexField.FieldName))
             | false -> 
-                Choice2Of2
-                    (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED 
-                     |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))
 
 [<Name("greater_than_equal")>]
 [<Sealed>]
@@ -249,8 +251,9 @@ type FlexGreaterThanEqualQuery() =
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexInt -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -258,8 +261,9 @@ type FlexGreaterThanEqualQuery() =
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexDouble -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -268,12 +272,17 @@ type FlexGreaterThanEqualQuery() =
                                  (flexIndexField.SchemaName, GetJavaDouble(val1), JavaDoubleMax, includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | _ -> 
-                    Choice2Of2(MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                    Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                               |> GenerateOperationMessage
+                               |> Append("Field Name", flexIndexField.FieldName))
             | false -> 
-                Choice2Of2(MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))
 
 [<Name("less_than")>]
 [<Sealed>]
@@ -295,8 +304,9 @@ type FlexLessThanQuery() =
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexInt -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -304,8 +314,9 @@ type FlexLessThanQuery() =
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexDouble -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -314,12 +325,17 @@ type FlexLessThanQuery() =
                                  (flexIndexField.SchemaName, JavaDoubleMin, GetJavaDouble(val1), includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | _ -> 
-                    Choice2Of2(MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                    Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                               |> GenerateOperationMessage
+                               |> Append("Field Name", flexIndexField.FieldName))
             | false -> 
-                Choice2Of2(MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))
 
 [<Name("less_than_equal")>]
 [<Sealed>]
@@ -341,8 +357,9 @@ type FlexLessThanEqualQuery() =
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexInt -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -350,8 +367,9 @@ type FlexLessThanEqualQuery() =
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | FlexDouble -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
@@ -360,9 +378,14 @@ type FlexLessThanEqualQuery() =
                                  (flexIndexField.SchemaName, JavaDoubleMin, GetJavaDouble(val1), includeLower, 
                                   includeUpper) :> Query)
                     | _ -> 
-                        Choice2Of2
-                            (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                        Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                                   |> GenerateOperationMessage
+                                   |> Append("Field Name", flexIndexField.FieldName))
                 | _ -> 
-                    Choice2Of2(MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                    Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                               |> GenerateOperationMessage
+                               |> Append("Field Name", flexIndexField.FieldName))
             | false -> 
-                Choice2Of2(MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))

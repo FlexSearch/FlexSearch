@@ -12,7 +12,8 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
-open FlexSearch.Api.Message
+open FlexSearch.Common
+open FlexSearch.Api
 open FlexSearch.Utility
 open System.Collections.Generic
 open System.ComponentModel.Composition
@@ -32,6 +33,7 @@ open org.apache.lucene.analysis.standard
 open org.apache.lucene.analysis.synonym
 open org.apache.lucene.analysis.util
 open org.apache.lucene.util
+open FlexSearch.Api.Validation
 
 // ----------------------------------------------------------------------------
 // Contains all predefined filters. The order of this file does not matter as
@@ -75,7 +77,8 @@ type BeiderMorseFilterFactory() =
                                     | InvariantEqual "ASHKENAZI" -> Choice1Of2(NameType.ASHKENAZI)
                                     | InvariantEqual "SEPHARDIC" -> Choice1Of2(NameType.SEPHARDIC)
                                     | _ -> 
-                                        Choice2Of2(MessageConstants.FILTER_CANNOT_BE_INITIALIZED
+                                        Choice2Of2(Errors.FILTER_CANNOT_BE_INITIALIZED
+                                                   |> GenerateOperationMessage
                                                    |> Append("Filter Type", "BeiderMorseFilter")
                                                    |> Append("Message", "Specified 'nameType' property is invalid."))
                                 | _ -> Choice1Of2(NameType.GENERIC)
@@ -85,7 +88,8 @@ type BeiderMorseFilterFactory() =
                                     | InvariantEqual "APPROX" -> Choice1Of2(RuleType.APPROX)
                                     | InvariantEqual "EXACT" -> Choice1Of2(RuleType.EXACT)
                                     | _ -> 
-                                        Choice2Of2(MessageConstants.FILTER_CANNOT_BE_INITIALIZED
+                                        Choice2Of2(Errors.FILTER_CANNOT_BE_INITIALIZED
+                                                   |> GenerateOperationMessage
                                                    |> Append("Filter Type", "BeiderMorseFilter")
                                                    |> Append("Message", "Specified 'ruleType' property is invalid."))
                                 | _ -> Choice1Of2(RuleType.EXACT)
@@ -170,8 +174,10 @@ type LengthFilterFactory() =
         
         member this.Initialize(parameters) = 
             maybe { 
-                let! minValue = ParseValueAsInteger("min", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
-                let! maxValue = ParseValueAsInteger("max", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                let! minValue = ParseValueAsInteger
+                                    ("min", parameters, Errors.FILTER_CANNOT_BE_INITIALIZED |> GenerateOperationMessage)
+                let! maxValue = ParseValueAsInteger
+                                    ("max", parameters, Errors.FILTER_CANNOT_BE_INITIALIZED |> GenerateOperationMessage)
                 min <- minValue
                 max <- maxValue
                 return! Choice1Of2()
@@ -201,10 +207,12 @@ type PatternReplaceFilterFactory() =
         
         member this.Initialize(parameters) = 
             maybe { 
-                let! patternValue = KeyExists("pattern", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                let! patternValue = KeyExists
+                                        ("pattern", parameters, 
+                                         Errors.FILTER_CANNOT_BE_INITIALIZED |> GenerateOperationMessage)
                 let! replaceTextValue = KeyExists
                                             ("replacementtext", parameters, 
-                                             MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                                             Errors.FILTER_CANNOT_BE_INITIALIZED |> GenerateOperationMessage)
                 replaceText <- replaceTextValue
                 pattern <- Pattern.compile (patternValue)
                 return! Choice1Of2()
@@ -242,7 +250,9 @@ type KeepWordsFilterFactory(resourceLoader : IResourceLoader) =
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = maybe { let! fileName = KeyExists
                                                                          ("resourceName", parameters, 
-                                                                          MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                                                                          
+                                                                          Errors.FILTER_CANNOT_BE_INITIALIZED 
+                                                                          |> GenerateOperationMessage)
                                                      let! filterList = resourceLoader.LoadFilterList(fileName)
                                                      filterList.Words |> Seq.iter (fun x -> keepWords.Add(x)) }
         member this.Create(ts : TokenStream) = new KeepWordFilter(Constants.LuceneVersion, ts, keepWords) :> TokenStream
@@ -257,7 +267,9 @@ type StopFilterFactory(resourceLoader : IResourceLoader) =
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = maybe { let! fileName = KeyExists
                                                                          ("resourceName", parameters, 
-                                                                          MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                                                                          
+                                                                          Errors.FILTER_CANNOT_BE_INITIALIZED 
+                                                                          |> GenerateOperationMessage)
                                                      let! filterList = resourceLoader.LoadFilterList(fileName)
                                                      filterList.Words |> Seq.iter (fun x -> stopWords.Add(x)) }
         member this.Create(ts : TokenStream) = new StopFilter(Constants.LuceneVersion, ts, stopWords) :> TokenStream
@@ -273,7 +285,9 @@ type SynonymFilter(resourceLoader : IResourceLoader) =
         
         member this.Initialize(parameters) = 
             maybe { 
-                let! fileName = KeyExists("resourceName", parameters, MessageConstants.FILTER_CANNOT_BE_INITIALIZED)
+                let! fileName = KeyExists
+                                    ("resourceName", parameters, 
+                                     Errors.FILTER_CANNOT_BE_INITIALIZED |> GenerateOperationMessage)
                 let! mapList = resourceLoader.LoadMapList(fileName)
                 let builder = new SynonymMap.Builder(false)
                 mapList.Words |> Seq.iter (fun x -> 

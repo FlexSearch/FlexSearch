@@ -2,9 +2,7 @@
 
 open Xunit
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
-open FlexSearch.Core.Validator
 open NSubstitute
 open Ploeh.AutoFixture
 open Ploeh.AutoFixture.AutoNSubstitute

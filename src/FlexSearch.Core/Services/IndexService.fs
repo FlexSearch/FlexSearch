@@ -11,12 +11,12 @@
 namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open System.IO
 open System.Linq
 open org.apache.lucene.search
 open System.Collections.Generic
+open FlexSearch.Common
 
 /// <summary>
 /// Service wrapper around all index related services
@@ -39,8 +39,8 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         | (true, _) -> 
             match nodeState.PersistanceStore.Get<Index>(indexName) with
             | Choice1Of2(a) -> Choice1Of2(a)
-            | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+            | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
     
     /// <summary>
     /// Update an existing index
@@ -59,13 +59,13 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 nodeState.PersistanceStore.Put(index.IndexName, index) |> ignore
                 logger.AddIndex(index.IndexName, index)
                 return! Choice1Of2()
-            | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+            | IndexState.Opening -> return! Choice2Of2(Errors.INDEX_IS_OPENING |> GenerateOperationMessage)
             | IndexState.Offline | IndexState.Closing -> 
                 let settings = settingsBuilder.BuildSetting(index)
                 nodeState.PersistanceStore.Put(index.IndexName, index) |> ignore
                 logger.AddIndex(index.IndexName, index)
                 return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+            | _ -> return! Choice2Of2(Errors.INDEX_IS_IN_INVALID_STATE |> GenerateOperationMessage)
         }
     
     /// <summary>
@@ -88,7 +88,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                     Directory.Delete(flexIndex.IndexSetting.BaseFolder, true)
                 logger.DeleteIndex(indexName)
                 return! Choice1Of2()
-            | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+            | IndexState.Opening -> return! Choice2Of2(Errors.INDEX_IS_OPENING |> GenerateOperationMessage)
             | IndexState.Offline | IndexState.Closing -> 
                 nodeState.PersistanceStore.Delete<Index> indexName |> ignore
                 nodeState.IndicesState.IndexRegisteration.TryRemove(indexName) |> ignore
@@ -98,7 +98,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                     Directory.Delete(Constants.DataFolder + "\\" + indexName, true)
                 logger.DeleteIndex(indexName)
                 return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+            | _ -> return! Choice2Of2(Errors.INDEX_IS_IN_INVALID_STATE |> GenerateOperationMessage)
         }
     
     /// <summary>
@@ -109,7 +109,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
     let AddIndex(index : Index) = 
         maybe { 
             match nodeState.IndicesState.IndexStatus.TryGetValue(index.IndexName) with
-            | (true, _) -> return! Choice2Of2(MessageConstants.INDEX_ALREADY_EXISTS)
+            | (true, _) -> return! Choice2Of2(Errors.INDEX_ALREADY_EXISTS |> GenerateOperationMessage)
             | _ -> 
                 let! settings = settingsBuilder.BuildSetting(index)
                 nodeState.PersistanceStore.Put(index.IndexName, index) |> ignore
@@ -142,7 +142,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
     let GetIndexStatus indexName = 
         match nodeState.IndicesState.IndexStatus.TryGetValue(indexName) with
         | (true, status) -> Choice1Of2(status)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
     
     /// <summary>
     /// Open an existing index
@@ -153,7 +153,8 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         maybe { 
             let! status = nodeState.IndicesState.GetStatus(indexName)
             match status with
-            | IndexState.Online | IndexState.Opening -> return! Choice2Of2(MessageConstants.INDEX_IS_OPENING)
+            | IndexState.Online | IndexState.Opening -> 
+                return! Choice2Of2(Errors.INDEX_IS_OPENING |> GenerateOperationMessage)
             | IndexState.Offline | IndexState.Closing -> 
                 let! index = nodeState.PersistanceStore.Get<Index>(indexName)
                 let! settings = settingsBuilder.BuildSetting(index)
@@ -162,7 +163,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 nodeState.PersistanceStore.Put(indexName, index) |> ignore
                 logger.OpenIndex(indexName)
                 return! Choice1Of2()
-            | _ -> return! Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
+            | _ -> return! Choice2Of2(Errors.INDEX_IS_IN_INVALID_STATE |> GenerateOperationMessage)
         }
     
     /// <summary>
@@ -174,7 +175,8 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         maybe { 
             let! status = nodeState.IndicesState.GetStatus(indexName)
             match status with
-            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | IndexState.Closing | IndexState.Offline -> 
+                return! Choice2Of2(Errors.INDEX_IS_ALREADY_OFFLINE |> GenerateOperationMessage)
             | _ -> 
                 let! index = nodeState.IndicesState.GetRegisteration(indexName)
                 CloseIndex(nodeState.IndicesState, index)
@@ -195,7 +197,8 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         maybe { 
             let! status = nodeState.IndicesState.GetStatus(indexName)
             match status with
-            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | IndexState.Closing | IndexState.Offline -> 
+                return! Choice2Of2(Errors.INDEX_IS_ALREADY_OFFLINE |> GenerateOperationMessage)
             | _ -> 
                 let! index = nodeState.IndicesState.GetRegisteration(indexName)
                 RefreshIndexJob(index)
@@ -203,13 +206,14 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         }
     
     /// <summary>
-    /// Get all the serachers associated with the index
+    /// Get all the searchers associated with the index
     /// </summary>
-    let GetIndexSearchers indexName =
+    let GetIndexSearchers indexName = 
         maybe { 
             let! status = nodeState.IndicesState.GetStatus(indexName)
             match status with
-            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | IndexState.Closing | IndexState.Offline -> 
+                return! Choice2Of2(Errors.INDEX_IS_ALREADY_OFFLINE |> GenerateOperationMessage)
             | _ -> 
                 let! index = nodeState.IndicesState.GetRegisteration(indexName)
                 let indexSearchers = new List<IndexSearcher>()
@@ -228,7 +232,8 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
         maybe { 
             let! status = nodeState.IndicesState.GetStatus(indexName)
             match status with
-            | IndexState.Closing | IndexState.Offline -> return! Choice2Of2(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+            | IndexState.Closing | IndexState.Offline -> 
+                return! Choice2Of2(Errors.INDEX_IS_ALREADY_OFFLINE |> GenerateOperationMessage)
             | _ -> 
                 let! index = nodeState.IndicesState.GetRegisteration(indexName)
                 CommitJob(index)

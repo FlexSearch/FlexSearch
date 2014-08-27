@@ -11,7 +11,6 @@
 namespace FlexSearch.Core.HttpHandlers
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 open FlexSearch.Utility
@@ -114,7 +113,7 @@ type PostStatusHandler(indexService : IIndexService) =
                 match SubId(owin) with
                 | InvariantEqual "online" -> indexService.OpenIndex(GetIndexName(owin))
                 | InvariantEqual "offline" -> indexService.CloseIndex(GetIndexName(owin))
-                | _ -> Choice2Of2(MessageConstants.HTTP_NOT_SUPPORTED)
+                | _ -> Choice2Of2(Errors.HTTP_NOT_SUPPORTED  |> GenerateOperationMessage)
             owin |> ResponseProcessor processRequest OK BAD_REQUEST
 
 [<Name("GET-/indices/:id/exists")>]
@@ -125,5 +124,5 @@ type GetExistsHandler(indexService : IIndexService) =
             let processRequest = 
                 match indexService.IndexExists(GetIndexName(owin)) with
                 | true -> Choice1Of2()
-                | false -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+                | false -> Choice2Of2(Errors.INDEX_NOT_FOUND  |> GenerateOperationMessage)
             owin |> ResponseProcessor processRequest OK BAD_REQUEST

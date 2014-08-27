@@ -12,7 +12,6 @@ namespace FlexSearch.Core
 
 open Autofac
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open Microsoft.Owin
@@ -60,7 +59,7 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
             let getModule lookupValue (owin : IOwinContext) = 
                 match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
                 | (true, x) -> x.Process owin
-                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
             
             let matchSubModules (x : int, owin : IOwinContext) = 
                 match x with
@@ -72,7 +71,7 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                 | 5 -> 
                     getModule ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
                         owin
-                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
             
             try 
                 match owin.Request.Uri.Segments.Length with
@@ -86,9 +85,9 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                         || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) && owin.Request.Method <> "POST" then 
                         match indexService.IndexExists(RemoveTrailingSlash owin.Request.Uri.Segments.[2]) with
                         | true -> matchSubModules (x, owin)
-                        | false -> owin |> BAD_REQUEST MessageConstants.INDEX_NOT_FOUND
+                        | false -> owin |> BAD_REQUEST Errors.INDEX_NOT_FOUND
                     else matchSubModules (x, owin)
-                | _ -> owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
             with ex -> ()
         }
     

@@ -13,17 +13,19 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Core
-
+open org.apache.lucene.analysis
+open System.Collections.Generic
+open FlexSearch.Common
 /// <summary>
 /// Top level settings builder
 /// </summary>
 [<Sealed>]
 type SettingsBuilder(factoryCollection : IFactoryCollection) = 
     interface ISettingsBuilder with
-        member this.BuildSetting(index) = 
+        member this.BuildSetting(index: FlexSearch.Api.Index) = 
             maybe { 
-                do! index.Validate(factoryCollection)
-                let! analyzers = AnalyzerProperties.Build(index.Analyzers, factoryCollection)
+                //do! index.Validate(factoryCollection)
+                let analyzers = new Dictionary<string, Analyzer>() //AnalyzerProperties.Build(index.Analyzers, factoryCollection)
                 let! scriptManager = ScriptProperties.Build(index.Scripts, factoryCollection)
                 let! fields = FieldProperties.Build(index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count

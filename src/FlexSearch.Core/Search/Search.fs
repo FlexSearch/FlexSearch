@@ -12,7 +12,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
+open FlexSearch.Api.Validation
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -35,7 +35,7 @@ open org.apache.lucene.queryparser.flexible
 open org.apache.lucene.search
 open org.apache.lucene.search.highlight
 open org.apache.lucene.search.postingshighlight
-
+open FlexSearch.Common
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
 // The order of this file does not matter as
@@ -44,7 +44,8 @@ open org.apache.lucene.search.postingshighlight
 [<AutoOpen>]
 module SearchDsl = 
     let FlexCharTermAttribute = 
-        lazy java.lang.Class.forName (typeof<org.apache.lucene.analysis.tokenattributes.CharTermAttribute>.AssemblyQualifiedName)
+        lazy java.lang.Class.forName 
+                 (typeof<org.apache.lucene.analysis.tokenattributes.CharTermAttribute>.AssemblyQualifiedName)
     
     /// Utility function to get tokens from the search string based upon the passed analyzer
     /// This will enable us to avoid using the Lucene query parser
@@ -69,7 +70,9 @@ module SearchDsl =
     let private IsStoredField(flexField : FlexField) = 
         match flexField.FieldType with
         | FlexFieldType.FlexStored -> 
-            Choice2Of2(MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED |> Append("Field Name", flexField.FieldName))
+            Choice2Of2(Errors.STORED_FIELDS_CANNOT_BE_SEARCHED
+                       |> GenerateOperationMessage
+                       |> Append("Field Name", flexField.FieldName))
         | _ -> Choice1Of2()
     
     let inline GetIntValueFromMap (parameters : Map<string, string> option) key defaultValue = 
@@ -117,9 +120,9 @@ module SearchDsl =
                     query.add (new BooleanClause(notQuery, BooleanClause.Occur.MUST_NOT))
                     return (query :> Query)
                 | Condition(f, o, v, p) -> 
-                    let! field = KeyExists(f, fields, MessageConstants.INVALID_FIELD_NAME)
+                    let! field = KeyExists(f, fields, Errors.INVALID_FIELD_NAME |> GenerateOperationMessage)
                     do! IsStoredField field
-                    let! query = KeyExists(o, queryTypes, MessageConstants.INVALID_QUERY_TYPE)
+                    let! query = KeyExists(o, queryTypes, Errors.INVALID_QUERY_TYPE |> GenerateOperationMessage)
                     let! value = maybe { 
                                      match isProfileBased with
                                      | Some(source) -> 
@@ -131,16 +134,16 @@ module SearchDsl =
                                                  match configuration with
                                                  | MissingValueOption.Default -> return! v.GetValueAsArray()
                                                  | MissingValueOption.ThrowError -> 
-                                                     return! Choice2Of2
-                                                                 (MessageConstants.MISSING_FIELD_VALUE_1 
-                                                                  |> Append("Field Name", f))
+                                                     return! Choice2Of2(Errors.MISSING_FIELD_VALUE_1
+                                                                        |> GenerateOperationMessage
+                                                                        |> Append("Field Name", f))
                                                  | MissingValueOption.Ignore -> 
                                                      generateMatchAllQuery := true
                                                      return [| "" |]
                                                  | _ -> 
-                                                     return! Choice2Of2
-                                                                 (MessageConstants.UNKNOWN_MISSING_VALUE_OPTION 
-                                                                  |> Append("Field Name", f))
+                                                     return! Choice2Of2(Errors.UNKNOWN_MISSING_VALUE_OPTION
+                                                                        |> GenerateOperationMessage
+                                                                        |> Append("Field Name", f))
                                              | _ -> 
                                                  // Check if a non blank value is provided as a part of the query
                                                  return! v.GetValueAsArray()

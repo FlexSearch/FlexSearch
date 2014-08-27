@@ -14,8 +14,7 @@ open FlexSearch.Api
 open FlexSearch.Core
 open System.Collections.Generic
 open System
-open Validator
-
+open FlexSearch.Common
 [<AutoOpen>]
 module SearchQueryExtensions = 
     type SearchQuery with
@@ -30,7 +29,7 @@ module SearchQueryExtensions =
                              parser : IFlexParser) = 
             maybe { 
                 assert (queryTypes.Count > 0)
-                do! ("QueryString", this.QueryString) |> NotNullAndEmpty
+                //do! ("QueryString", this.QueryString) |> NotNullAndEmpty
                 assert (String.IsNullOrWhiteSpace(this.QueryString) <> true)
                 let! queryPredicate = parser.Parse(this.QueryString)
                 // Check if query fields are valid

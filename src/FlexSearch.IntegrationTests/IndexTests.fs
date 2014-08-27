@@ -2,7 +2,6 @@
 
 open Autofac
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.TestSupport
 open Ploeh.AutoFixture.Xunit
@@ -19,21 +18,21 @@ module ``Basic index operation tests`` =
     let ``It is not possible to close an closed index`` (indexService : IIndexService, index : Index) = 
         index.Online <- false
         indexService.AddIndex(index) |> ExpectSuccess
-        indexService.CloseIndex(index.IndexName) |> ExpectErrorCode(MessageConstants.INDEX_IS_ALREADY_OFFLINE)
+        indexService.CloseIndex(index.IndexName) |> ExpectErrorCode(INDEX_IS_ALREADY_OFFLINE |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory>][<AutoMockIntegrationData>]
     let ``Can not create the same index twice`` (indexService : IIndexService, index : Index) = 
         index.Online <- false
         indexService.AddIndex(index) |> ExpectSuccess
-        indexService.AddIndex(index) |> ExpectErrorCode(MessageConstants.INDEX_ALREADY_EXISTS)
+        indexService.AddIndex(index) |> ExpectErrorCode(INDEX_ALREADY_EXISTS |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory>][<AutoMockIntegrationData>]
     let ``It is not possible to open an opened index`` (indexService : IIndexService, index : Index) = 
         index.Online <- true
         indexService.AddIndex(index) |> ExpectSuccess
-        indexService.OpenIndex(index.IndexName) |> ExpectErrorCode(MessageConstants.INDEX_IS_OPENING)
+        indexService.OpenIndex(index.IndexName) |> ExpectErrorCode(INDEX_IS_OPENING |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory>][<AutoMockIntegrationData>]

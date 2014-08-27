@@ -1,7 +1,6 @@
 ﻿namespace FlexSearch.IntegrationTests
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.TestSupport
 open System.Collections.Generic

@@ -22,7 +22,7 @@ type GibraltarLogger() =
                 ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() 
                  + " ended.")
         member x.IndexValidationFailed(indexName : string, indexDetails : Index, 
-                                       validationObject : Message.OperationMessage) : unit = 
+                                       validationObject : OperationMessage) : unit = 
             Log.TraceError
                 ("Updating index {0}. IndexDetails:{1}. Message:{2}", indexName, indexDetails.ToString(), 
                  validationObject.ToString())
@@ -36,7 +36,7 @@ type GibraltarLogger() =
             Log.TraceCritical(ex, "Critical application failure happened. {0}", ex.Message)
         member x.TraceError(error : string, ex : System.Exception) : unit = Log.TraceError(error + " Exception:", ex)
         member x.TraceErrorMessage(error : string) : unit = Log.TraceError(error)
-        member x.TraceOperationMessageError(error : string, ex : Message.OperationMessage) : unit = 
+        member x.TraceOperationMessageError(error : string, ex : OperationMessage) : unit = 
             Log.TraceError(error + " Exception:", ex.ToString())
         member x.UpdateIndex(indexName : string, indexDetails : Index) : unit = 
             Log.TraceInformation("Updating index {0}. IndexDetails:{1}", indexName, indexDetails.ToString())

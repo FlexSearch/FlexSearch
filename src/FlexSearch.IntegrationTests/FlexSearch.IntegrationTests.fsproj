@@ -24,7 +24,7 @@
     <OutputPath>..\..\build-test\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>
     </DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
@@ -257,6 +257,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.SQLite">
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.92.0\lib\net451\System.Data.SQLite.dll</HintPath>
@@ -269,9 +270,6 @@
     <Reference Include="System.Threading.Tasks.Dataflow">
       <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.20\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
       <Private>True</Private>
-    </Reference>
-    <Reference Include="Thrift">
-      <HintPath>..\..\lib\Thrift.dll</HintPath>
     </Reference>
     <Reference Include="xunit">
       <HintPath>..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
@@ -303,9 +301,14 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
+    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
       <Name>FlexSearch.Api</Name>
-      <Project>{5ee56459-9341-4335-991e-041f0c769047}</Project>
+      <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">
+      <Name>FlexSearch.Common</Name>
+      <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">

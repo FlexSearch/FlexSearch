@@ -1,7 +1,6 @@
 ﻿namespace FlexSearch.Core.Tests
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.TestSupport
 open Xunit

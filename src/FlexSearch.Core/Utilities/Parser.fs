@@ -15,8 +15,8 @@ module Parsers =
     open FParsec
     open FParsec.CharParsers
     open FParsec.Primitives
-    open FlexSearch.Api.Message
-    open FlexSearch.Core.Pool
+    open FlexSearch.Api
+    open FlexSearch.Common
     open System
     open System.Collections.Generic
     open System.Linq
@@ -73,7 +73,7 @@ module Parsers =
     let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
     
     /// <summary>
-    /// Searchprofile query string parser 
+    /// Search profile query string parser 
     /// Format: fieldname:'value',fieldname:'value',fieldname:'value'
     /// </summary>
     /// <param name="input"></param>
@@ -81,7 +81,9 @@ module Parsers =
         match run queryStringParser input with
         | Success(result, _, _) -> Choice1Of2(result)
         | Failure(errorMsg, _, _) -> 
-            Choice2Of2(MessageConstants.QUERYSTRING_PARSING_ERROR |> Append("Message", errorMsg))
+            Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
+                       |> GenerateOperationMessage
+                       |> Append("Message", errorMsg))
     
     /// <summary>
     /// Boost parser implemented using optional argument for optimization
@@ -137,4 +139,6 @@ module Parsers =
                 match run Parser input with
                 | Success(result, _, _) -> Choice1Of2(result)
                 | Failure(errorMsg, _, _) -> 
-                    Choice2Of2(MessageConstants.QUERYSTRING_PARSING_ERROR |> Append("Message", errorMsg))
+                    Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
+                               |> GenerateOperationMessage
+                               |> Append("Message", errorMsg))

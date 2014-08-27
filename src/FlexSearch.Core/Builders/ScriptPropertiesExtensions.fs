@@ -16,8 +16,7 @@ module ScriptPropertiesExtensions =
     open FlexSearch.Core
     open System.Collections.Generic
     open System
-    open Validator
-    open FlexSearch.Api.Message
+    open FlexSearch.Common
     open Microsoft.CSharp
     open System.CodeDom.Compiler
     
@@ -52,7 +51,7 @@ class Foo {
             let compiledScript = 
                 Delegate.CreateDelegate(typeof<System.Func<System.Dynamic.DynamicObject, string>>, meth) :?> System.Func<System.Dynamic.DynamicObject, string>
             Choice1Of2(compiledScript)
-        with e -> Choice2Of2(MessageConstants.SCRIPT_CANT_BE_COMPILED |> Append("Message", e.Message))
+        with e -> Choice2Of2(Errors.SCRIPT_CANT_BE_COMPILED |> GenerateOperationMessage |> Append("Message", e.Message))
     
     type ScriptProperties with
         
@@ -60,8 +59,8 @@ class Foo {
         /// Validate Script properties
         /// </summary>
         /// <param name="factoryCollection"></param>
-        member this.Validate(factoryCollection : IFactoryCollection) = 
-            maybe { do! Validate "ScriptSource" this.Source |> NotNullAndEmpty }
+        member this.Validate(factoryCollection : IFactoryCollection) = ()
+            //maybe { do! Validate "ScriptSource" this.Source |> NotNullAndEmpty }
         
         static member Build(scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
             maybe { 
@@ -76,7 +75,7 @@ class Foo {
                                                       return compiledScript
                         | _ -> 
                             return! Choice2Of2
-                                        (MessageConstants.UNKNOWN_SCRIPT_TYPE 
+                                        (Errors.UNKNOWN_SCRIPT_TYPE  |> GenerateOperationMessage
                                          |> Append("Script Type", script.Value.ScriptType.ToString()))
                     }
                 

@@ -12,7 +12,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -73,7 +72,7 @@ type SqlLitePersistanceStore(?isMemory0 : bool) =
     
     member private this.Get<'T when 'T : equality>(key) = 
         let instanceType = typeof<'T>.FullName
-        if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
+        if key = "" then Choice2Of2(Errors.KEY_NOT_FOUND |> GenerateOperationMessage)
         else 
             let sql = sprintf "SELECT * FROM keyvalue WHERE type = '%s' AND key = '%s' LIMIT 1" instanceType key
             let command = new SQLiteCommand(sql, db.Value)
@@ -82,7 +81,7 @@ type SqlLitePersistanceStore(?isMemory0 : bool) =
             while reader.Read() do
                 result <- Newtonsoft.Json.JsonConvert.DeserializeObject<'T>(reader.GetString(2))
             if result <> Unchecked.defaultof<_> then Choice1Of2(result)
-            else Choice2Of2(MessageConstants.KEY_NOT_FOUND)
+            else Choice2Of2(Errors.KEY_NOT_FOUND |> GenerateOperationMessage)
     
     interface IPersistanceStore with
         member this.Get<'T when 'T : equality>(key : string) = this.Get<'T>(key)
@@ -98,7 +97,7 @@ type SqlLitePersistanceStore(?isMemory0 : bool) =
         
         member this.Delete<'T>(key) = 
             let instanceType = typeof<'T>.FullName
-            if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
+            if key = "" then Choice2Of2(Errors.KEY_NOT_FOUND |> GenerateOperationMessage)
             else 
                 let sql = sprintf "DELETE FROM keyvalue WHERE type='%s' AND key='%s'" instanceType key
                 let command = new SQLiteCommand(sql, db.Value)
@@ -114,7 +113,7 @@ type SqlLitePersistanceStore(?isMemory0 : bool) =
         
         member this.Put<'T>(key, instance : 'T) = 
             let instanceType = typeof<'T>.FullName
-            if key = "" then Choice2Of2(MessageConstants.KEY_NOT_FOUND)
+            if key = "" then Choice2Of2(Errors.KEY_NOT_FOUND |> GenerateOperationMessage)
             else 
                 let sql = sprintf "SELECT * FROM keyvalue WHERE type='%s' AND key='%s' LIMIT 1" instanceType key
                 let command = new SQLiteCommand(sql, db.Value)

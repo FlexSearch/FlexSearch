@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -46,7 +45,7 @@ open System.Collections.Generic
 open org.apache.lucene.search.similarities
 open FlexSearch.Java
 open java.lang
-
+open FlexSearch.Common
 /// <summary>
 /// Default postings format for FlexSearch
 /// </summary>
@@ -76,51 +75,52 @@ type FlexPerFieldSimilarityProvider(mappings : IReadOnlyDictionary<string, Simil
 //type FlexCodec(postingsFormat : FlexPerFieldPostingFormats, delegatingCodec : Codec) = 
 //    inherit FilterCodec("FlexCodec", delegatingCodec)
 //    override this.postingsFormat() = postingsFormat :> PostingsFormat
-            
 [<AutoOpen>]
 module IndexingHelpers = 
-
     type FlexSearch.Api.FieldPostingsFormat with
-        member this.GetPostingsFormat() =
+        member this.GetPostingsFormat() = 
             match this with
-            | FieldPostingsFormat.Bloom_4_1 -> new org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat(new org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat()) :> PostingsFormat
+            | FieldPostingsFormat.Bloom_4_1 -> 
+                new org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat(new org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat()) :> PostingsFormat
             | FieldPostingsFormat.Direct -> new org.apache.lucene.codecs.memory.DirectPostingsFormat() :> PostingsFormat
-            | FieldPostingsFormat.Lucene_4_1 -> new org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat() :> PostingsFormat
+            | FieldPostingsFormat.Lucene_4_1 -> 
+                new org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat() :> PostingsFormat
             | FieldPostingsFormat.Memory -> new org.apache.lucene.codecs.memory.MemoryPostingsFormat() :> PostingsFormat
-            | FieldPostingsFormat.Pulsing_4_1 -> new org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat() :> PostingsFormat
+            | FieldPostingsFormat.Pulsing_4_1 -> 
+                new org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat() :> PostingsFormat
             | _ -> failwithf "Unknown postings format"
-
+    
     type FlexSearch.Api.Codec with
-        member this.GetCodec() =
+        member this.GetCodec() = 
             match this with
             | Codec.Lucene_4_9 -> new lucene49.Lucene49Codec()
             | _ -> failwithf "Unknown codec"
-
+    
     type FlexSearch.Api.FieldSimilarity with
-        member this.GetSimilairity() =
+        member this.GetSimilairity() = 
             match this with
             | FieldSimilarity.TFIDF -> new DefaultSimilarity() :> Similarity
             | FieldSimilarity.BM25 -> new BM25Similarity() :> Similarity
             | _ -> failwithf "Unknown similarity"
-
-    let GetPostingsFormat(settings: FlexIndexSetting) =
+    
+    let GetPostingsFormat(settings : FlexIndexSetting) = 
         let defaultFormat = settings.IndexConfiguration.DefaultIndexPostingsFormat.GetPostingsFormat()
         let mappings = new Dictionary<string, PostingsFormat>(StringComparer.OrdinalIgnoreCase)
         for field in settings.FieldsLookup do
             // Only add if the format is not same as default postings format
-            if  field.Value.PostingsFormat <> settings.IndexConfiguration.DefaultIndexPostingsFormat then
+            if field.Value.PostingsFormat <> settings.IndexConfiguration.DefaultIndexPostingsFormat then 
                 mappings.Add(field.Key, field.Value.PostingsFormat.GetPostingsFormat())
         new FlexPerFieldPostingFormats(mappings, defaultFormat)
     
-    let GetSimilarityProvider(settings: FlexIndexSetting) =
+    let GetSimilarityProvider(settings : FlexIndexSetting) = 
         let defaultSimilarity = settings.IndexConfiguration.DefaultFieldSimilarity.GetSimilairity()
         let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
         for field in settings.FieldsLookup do
             // Only add if the format is not same as default postings format
-            if  field.Value.Similarity <> settings.IndexConfiguration.DefaultFieldSimilarity then
+            if field.Value.Similarity <> settings.IndexConfiguration.DefaultFieldSimilarity then 
                 mappings.Add(field.Key, field.Value.Similarity.GetSimilairity())
         new FlexPerFieldSimilarityProvider(mappings, defaultSimilarity)
-
+    
     /// Creates Lucene index writer configuration from flex index setting 
     let private GetIndexWriterConfig(flexIndexSetting : FlexIndexSetting) = 
         try 
@@ -131,17 +131,17 @@ module IndexingHelpers =
             iwc.setOpenMode (org.apache.lucene.index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
             iwc.setRAMBufferSizeMB (System.Double.Parse(flexIndexSetting.IndexConfiguration.RamBufferSizeMb.ToString())) 
             |> ignore
-
             let asm = typeof<FlexSearch.Java.FlexCodec49>.Assembly
-            Codec.reloadCodecs(ikvm.runtime.AssemblyClassLoader(asm))
-
+            Codec.reloadCodecs (ikvm.runtime.AssemblyClassLoader(asm))
             let postingsFormat = GetPostingsFormat(flexIndexSetting)
-            iwc.setCodec(new FlexCodec49()) |> ignore
+            iwc.setCodec (new FlexCodec49()) |> ignore
             let similarityProvider = GetSimilarityProvider(flexIndexSetting)
-            iwc.setSimilarity(similarityProvider) |> ignore
+            iwc.setSimilarity (similarityProvider) |> ignore
             Choice1Of2(iwc)
         with e -> 
-            Choice2Of2(MessageConstants.ERROR_OPENING_INDEXWRITER |> Append("Message", e.Message))
+            Choice2Of2(Errors.ERROR_OPENING_INDEXWRITER
+                       |> GenerateOperationMessage
+                       |> Append("Message", e.Message))
     
     /// Create a Lucene file-system lock over a directory    
     let private GetIndexDirectory (directoryPath : string) (directoryType : DirectoryType) = 
@@ -157,9 +157,13 @@ module IndexingHelpers =
                 Choice1Of2(MMapDirectory.``open`` (file, lockFactory) :> org.apache.lucene.store.Directory)
             | DirectoryType.Ram -> Choice1Of2(new RAMDirectory() :> org.apache.lucene.store.Directory)
             | _ -> 
-                Choice2Of2(MessageConstants.ERROR_OPENING_INDEXWRITER |> Append("Message", "Unknown directory type."))
+                Choice2Of2(Errors.ERROR_OPENING_INDEXWRITER
+                           |> GenerateOperationMessage
+                           |> Append("Message", "Unknown directory type."))
         with e -> 
-            Choice2Of2(MessageConstants.ERROR_OPENING_INDEXWRITER |> Append("Message", e.Message))
+            Choice2Of2(Errors.ERROR_OPENING_INDEXWRITER
+                       |> GenerateOperationMessage
+                       |> Append("Message", e.Message))
     
     /// <summary>
     /// Creates index writer from flex index setting  

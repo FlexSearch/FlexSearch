@@ -11,7 +11,6 @@
 namespace FlexSearch.Core.HttpHandlers
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 open FlexSearch.Utility
@@ -26,7 +25,7 @@ open System.IO
 open System.Linq
 open System.Net
 open System.Net.Http
-
+open FlexSearch.Common
 [<Name("GET|POST-/indices/:id/search")>]
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 

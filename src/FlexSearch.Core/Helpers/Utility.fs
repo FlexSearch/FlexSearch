@@ -10,7 +10,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Utility
 
-open FlexSearch.Api.Message
+open FlexSearch.Api
 open FlexSearch.Core
 open System
 open System.Collections.Generic

@@ -17,11 +17,8 @@ module AnalysisExtensions =
     open FlexSearch.Utility
     open System.Collections.Generic
     open System
-    open Validator
-    open FlexSearch.Api.Message
     open org.apache.lucene.analysis
-    open FlexSearch.Api.Message
-    
+
     // ----------------------------------------------------------------------------
     // FlexSearch related validation helpers
     // ----------------------------------------------------------------------------
@@ -29,113 +26,113 @@ module AnalysisExtensions =
         (propName : string, value : FlexSearch.Api.TokenFilter) = 
         match factoryCollection.FilterFactory.GetModuleByName(value.FilterName) with
         | Choice1Of2(instance) -> instance.Initialize(value.Parameters)
-        | _ -> Choice2Of2(MessageConstants.FILTER_NOT_FOUND |> Append("Filter Name", propName))
+        | _ -> Choice2Of2(Errors.FILTER_NOT_FOUND |> GenerateOperationMessage |> Append("Filter Name", propName))
     
     let private MustGenerateTokenizerInstance (factoryCollection : IFactoryCollection) 
         (propName : string, value : FlexSearch.Api.Tokenizer) = 
         match factoryCollection.TokenizerFactory.GetModuleByName(value.TokenizerName) with
         | Choice1Of2(instance) -> instance.Initialize(value.Parameters)
-        | _ -> Choice2Of2(MessageConstants.TOKENIZER_NOT_FOUND |> Append("Tokenizer Name", propName))
+        | _ -> Choice2Of2(Errors.TOKENIZER_NOT_FOUND  |> GenerateOperationMessage |> Append("Tokenizer Name", propName))
     
-    type FlexSearch.Api.TokenFilter with
-        
-        /// <summary>
-        /// Filter validator which checks both the input parameters and naming convention
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        member this.Validate(factoryCollection : IFactoryCollection) = 
-            maybe { 
-                do! this.FilterName.ValidatePropertyValue("FilterName")
-                do! ("FilterName", this) |> MustGenerateFilterInstance factoryCollection
-            }
-        
-        /// <summary>
-        /// Build a FilterFactory from TokenFilter
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        member this.Build(factoryCollection : IFactoryCollection) = 
-            maybe { 
-                do! this.Validate(factoryCollection)
-                let! filterFactory = factoryCollection.FilterFactory.GetModuleByName(this.FilterName)
-                do! filterFactory.Initialize(this.Parameters)
-                return filterFactory
-            }
-        
-        static member Build(filters : List<FlexSearch.Api.TokenFilter>, factoryCollection : IFactoryCollection) = 
-            maybe { 
-                let result = new List<IFlexFilterFactory>()
-                for filter in filters do
-                    let! filterFactory = filter.Build(factoryCollection)
-                    result.Add(filterFactory)
-                return result
-            }
-    
-    type FlexSearch.Api.Tokenizer with
-        
-        /// <summary>
-        /// Tokenizer validator which checks both the input parameters and naming convention
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        member this.Validate(factoryCollection : IFactoryCollection) = 
-            maybe { 
-                do! this.TokenizerName.ValidatePropertyValue("TokenizerName")
-                do! ("TokenizerName", this) |> MustGenerateTokenizerInstance factoryCollection
-            }
-        
-        /// <summary>
-        /// Build a TokenizerFactory from Tokenizer
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        member this.Build(factoryCollection : IFactoryCollection) = 
-            maybe { 
-                do! this.Validate(factoryCollection)
-                let! tokenizerFactory = factoryCollection.TokenizerFactory.GetModuleByName(this.TokenizerName)
-                do! tokenizerFactory.Initialize(this.Parameters)
-                return tokenizerFactory
-            }
-    
-    type FlexSearch.Api.AnalyzerProperties with
-        
-        /// <summary>
-        /// Tokenizer validator which checks both the input parameters and naming convention
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        member this.Validate(analyzerName : string, factoryCollection : IFactoryCollection) = 
-            maybe { 
-                do! this.Tokenizer.Validate(factoryCollection)
-                if this.Filters.Count = 0 then 
-                    return! Choice2Of2
-                                (MessageConstants.ATLEAST_ONE_FILTER_REQUIRED |> Append("Analyzer Name", analyzerName))
-                for filter in this.Filters do
-                    do! filter.Validate(factoryCollection)
-            }
-        
-        /// <summary>
-        /// Return an analyzer from analyzer properties
-        /// </summary>
-        /// <param name="analyzerName"></param>
-        /// <param name="factoryCollection"></param>
-        member this.Build(analyzerName : string, factoryCollection : IFactoryCollection) = 
-            maybe { 
-                do! this.Validate(analyzerName, factoryCollection)
-                let! tokenizerFactory = this.Tokenizer.Build(factoryCollection)
-                let! filters = FlexSearch.Api.TokenFilter.Build(this.Filters, factoryCollection)
-                return (new CustomAnalyzer(tokenizerFactory, filters.ToArray()) :> org.apache.lucene.analysis.Analyzer)
-            }
-        
-        /// <summary>
-        /// Build a dictionary of analyzers from analyzer properties
-        /// </summary>
-        /// <param name="analyzersDict"></param>
-        /// <param name="factoryCollection"></param>
-        static member Build(analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, 
-                            factoryCollection : IFactoryCollection) = 
-            maybe { 
-                let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
-                for analyzer in analyzersDict do
-                    do! analyzer.Key.ValidatePropertyValue("AnalyzerName")
-                    do! analyzer.Value.Validate(analyzer.Key, factoryCollection)
-                    let! analyzerObject = analyzer.Value.Build(analyzer.Key, factoryCollection)
-                    result.Add(analyzer.Key, analyzerObject)
-                return result
-            }
+//    type open FlexSearch.Api.TokenFilter with
+//        
+//        /// <summary>
+//        /// Filter validator which checks both the input parameters and naming convention
+//        /// </summary>
+//        /// <param name="factoryCollection"></param>
+//        member this.Validate(factoryCollection : IFactoryCollection) = ()
+////            maybe { 
+//////                do! this.FilterName.ValidatePropertyValue("FilterName")
+//////                do! ("FilterName", this) |> MustGenerateFilterInstance factoryCollection
+////            }
+//        
+//        /// <summary>
+//        /// Build a FilterFactory from TokenFilter
+//        /// </summary>
+//        /// <param name="factoryCollection"></param>
+//        member this.Build(factoryCollection : IFactoryCollection) = ()
+////            maybe { 
+////                do! this.Validate(factoryCollection)
+////                let! filterFactory = factoryCollection.FilterFactory.GetModuleByName(this.FilterName)
+////                do! filterFactory.Initialize(this.Parameters)
+////                return filterFactory
+////            }
+//        
+//        static member Build(filters : List<open FlexSearch.Api.TokenFilter>, factoryCollection : IFactoryCollection) = 
+////            maybe { 
+////                let result = new List<IFlexFilterFactory>()
+////                for filter in filters do
+////                    let! filterFactory = filter.Build(factoryCollection)
+////                    result.Add(filterFactory)
+////                return result
+////            }
+//    
+//    type open FlexSearch.Api.Tokenizer with
+//        
+//        /// <summary>
+//        /// Tokenizer validator which checks both the input parameters and naming convention
+//        /// </summary>
+//        /// <param name="factoryCollection"></param>
+//        member this.Validate(factoryCollection : IFactoryCollection) = 
+//            maybe { 
+//                do! this.TokenizerName.ValidatePropertyValue("TokenizerName")
+//                do! ("TokenizerName", this) |> MustGenerateTokenizerInstance factoryCollection
+//            }
+//        
+//        /// <summary>
+//        /// Build a TokenizerFactory from Tokenizer
+//        /// </summary>
+//        /// <param name="factoryCollection"></param>
+//        member this.Build(factoryCollection : IFactoryCollection) = 
+//            maybe { 
+//                do! this.Validate(factoryCollection)
+//                let! tokenizerFactory = factoryCollection.TokenizerFactory.GetModuleByName(this.TokenizerName)
+//                do! tokenizerFactory.Initialize(this.Parameters)
+//                return tokenizerFactory
+//            }
+//    
+//    type open FlexSearch.Api.AnalyzerProperties with
+//        
+//        /// <summary>
+//        /// Tokenizer validator which checks both the input parameters and naming convention
+//        /// </summary>
+//        /// <param name="factoryCollection"></param>
+//        member this.Validate(analyzerName : string, factoryCollection : IFactoryCollection) = 
+//            maybe { 
+//                //do! this.Tokenizer.Validate(factoryCollection)
+//                if this.Filters.Count = 0 then 
+//                    return! Choice2Of2
+//                                (Errors.ATLEAST_ONE_FILTER_REQUIRED |> Append("Analyzer Name", analyzerName))
+//                for filter in this.Filters do
+//                    do! filter.Validate(factoryCollection)
+//            }
+//        
+//        /// <summary>
+//        /// Return an analyzer from analyzer properties
+//        /// </summary>
+//        /// <param name="analyzerName"></param>
+//        /// <param name="factoryCollection"></param>
+//        member this.Build(analyzerName : string, factoryCollection : IFactoryCollection) = 
+//            maybe { 
+//                do! this.Validate(analyzerName, factoryCollection)
+//                let! tokenizerFactory = this.Tokenizer.Build(factoryCollection)
+//                let! filters = open FlexSearch.Api.TokenFilter.Build(this.Filters, factoryCollection)
+//                return (new CustomAnalyzer(tokenizerFactory, filters.ToArray()) :> org.apache.lucene.analysis.Analyzer)
+//            }
+//        
+//        /// <summary>
+//        /// Build a dictionary of analyzers from analyzer properties
+//        /// </summary>
+//        /// <param name="analyzersDict"></param>
+//        /// <param name="factoryCollection"></param>
+//        static member Build(analyzersDict : Dictionary<string, open FlexSearch.Api.AnalyzerProperties>, 
+//                            factoryCollection : IFactoryCollection) = 
+//            maybe { 
+//                let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
+//                for analyzer in analyzersDict do
+//                    do! analyzer.Key.ValidatePropertyValue("AnalyzerName")
+//                    do! analyzer.Value.Validate(analyzer.Key, factoryCollection)
+//                    let! analyzerObject = analyzer.Value.Build(analyzer.Key, factoryCollection)
+//                    result.Add(analyzer.Key, analyzerObject)
+//                return result
+//            }

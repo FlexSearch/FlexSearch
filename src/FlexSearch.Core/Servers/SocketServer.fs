@@ -25,7 +25,8 @@ module Socket =
     open System.Collections.Generic
     open System.Net
     open System.Threading
-    
+    open FlexSearch.Common
+
     [<Sealed>]
     /// Custom Flex based protocol implemetation on top of TCP
     /// It's a protocol like that:
@@ -96,7 +97,7 @@ module Socket =
     // ----------------------------------------------------------------------------
     [<Sealed>]
     type TcpClient(ipAddress : System.Net.IPAddress, port : int) = 
-        inherit Pool.PooledObject()
+        inherit PooledObject()
         let client = 
             new SuperSocket.ClientEngine.AsyncTcpSession(new Net.IPEndPoint(ipAddress, port)) :> SuperSocket.ClientEngine.IClientSession
         let monitor = new Object()

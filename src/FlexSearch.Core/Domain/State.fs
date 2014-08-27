@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 open Microsoft.Owin
@@ -47,13 +46,13 @@ type IHttpHandler =
 type HttpModuleBase() = 
     //abstract Routes : unit -> ServiceRoute []
     abstract Get : string * IOwinContext -> unit
-    override this.Get(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+    override this.Get(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
     abstract Put : string * IOwinContext -> unit
-    override this.Put(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+    override this.Put(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
     abstract Delete : string * IOwinContext -> unit
-    override this.Delete(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+    override this.Delete(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
     abstract Post : string * IOwinContext -> unit
-    override this.Post(indexName, owin) = owin |> BAD_REQUEST MessageConstants.HTTP_NOT_SUPPORTED
+    override this.Post(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
 
 /// <summary>
 /// Import handler interface to support

@@ -4,7 +4,6 @@ open FlexSearch.TestSupport
 open Autofac
 open FlexSearch.Core
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -25,8 +24,8 @@ module Global =
         index.IndexName <- WikiIndexName
         index.Fields.Add("title", new FieldProperties(FieldType = FieldType.Text, Store = false))
         index.Fields.Add("body", new FieldProperties(FieldType = FieldType.Text, Store = false))
-        index.IndexConfiguration.CommitTimeSec <- 500
-        index.IndexConfiguration.RefreshTimeMilliSec <- 500000
+        index.IndexConfiguration.CommitTimeSeconds <- 500
+        index.IndexConfiguration.RefreshTimeMilliseconds <- 500000
         index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
         index.Online <- true
         index

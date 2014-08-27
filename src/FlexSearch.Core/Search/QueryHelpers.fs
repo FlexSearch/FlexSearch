@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -82,8 +81,9 @@ module QueryHelpers =
                     (NumericRangeQuery.newLongRange 
                          (flexIndexField.SchemaName, GetJavaLong(val1), GetJavaLong(val1), true, true) :> Query)
             | _ -> 
-                Choice2Of2
-                    (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))
         | FlexInt -> 
             match Int32.TryParse(value) with
             | (true, val1) -> 
@@ -91,8 +91,9 @@ module QueryHelpers =
                     (NumericRangeQuery.newIntRange 
                          (flexIndexField.SchemaName, GetJavaInt(val1), GetJavaInt(val1), true, true) :> Query)
             | _ -> 
-                Choice2Of2
-                    (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))
         | FlexDouble -> 
             match Double.TryParse(value) with
             | (true, val1) -> 
@@ -100,8 +101,10 @@ module QueryHelpers =
                     (NumericRangeQuery.newDoubleRange 
                          (flexIndexField.SchemaName, GetJavaDouble(val1), GetJavaDouble(val1), true, true) :> Query)
             | _ -> 
-                Choice2Of2
-                    (MessageConstants.DATA_CANNOT_BE_PARSED |> Append("Field Name", flexIndexField.FieldName))
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Field Name", flexIndexField.FieldName))
         | _ -> 
-            Choice2Of2
-                (MessageConstants.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED |> Append("Field Name", flexIndexField.FieldName))
+            Choice2Of2(Errors.QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED
+                       |> GenerateOperationMessage
+                       |> Append("Field Name", flexIndexField.FieldName))

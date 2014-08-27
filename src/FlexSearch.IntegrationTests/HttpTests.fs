@@ -2,7 +2,6 @@
 
 module ``Webservice Tests`` = 
     open FlexSearch.Api
-    open FlexSearch.Api.Message
     open FlexSearch.Core
     open Newtonsoft.Json
     open Newtonsoft.Json.Linq

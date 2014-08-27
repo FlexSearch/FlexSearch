@@ -14,7 +14,6 @@ namespace FlexSearch.Core
 module HttpHelpers = 
     open FlexSearch
     open FlexSearch.Api
-    open FlexSearch.Api.Message
     open FlexSearch.Core
     open FlexSearch.Utility
     open Microsoft.Owin
@@ -84,8 +83,12 @@ module HttpHelpers =
             | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
             | Some(x) -> await (owin.Response.WriteAsync(x))
     
+    let inline IsNull (x) =
+        obj.ReferenceEquals (x, Unchecked.defaultof<_>)
+
+
     /// Write http response
-    let GetRequestBody<'T when 'T : null>(request : IOwinRequest) = 
+    let GetRequestBody<'T>(request : IOwinRequest) = 
         let contentType = GetRequestFormat request
         if request.Body.CanRead then 
             match contentType with
@@ -95,19 +98,19 @@ module HttpHelpers =
                     reader.ReadToEnd()
                 if String.IsNullOrWhiteSpace(body) <> true then 
                     try 
-                        match JsonConvert.DeserializeObject<'T>(body) with
-                        | null -> 
+                        let result = JsonConvert.DeserializeObject<'T>(body)
+                        if IsNull result then
                             Choice2Of2
-                                (MessageConstants.HTTP_UNABLE_TO_PARSE |> Append("Message", "No body is defined."))
-                        | result -> Choice1Of2(result)
-                    with ex -> Choice2Of2(MessageConstants.HTTP_UNABLE_TO_PARSE |> Append("Message", ex.Message))
-                else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
+                                (Errors.HTTP_UNABLE_TO_PARSE  |> GenerateOperationMessage |> Append("Message", "No body is defined."))
+                        else Choice1Of2(result)
+                    with ex -> Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE |> GenerateOperationMessage |> Append("Message", ex.Message))
+                else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
             | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 try 
                     Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
-                with ex -> Choice2Of2(MessageConstants.HTTP_UNABLE_TO_PARSE |> Append("Message", ex.Message))
-            | _ -> Choice2Of2(MessageConstants.HTTP_UNSUPPORTED_CONTENT_TYPE)
-        else Choice2Of2(MessageConstants.HTTP_NO_BODY_DEFINED)
+                with ex -> Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE |> GenerateOperationMessage |> Append("Message", ex.Message))
+            | _ -> Choice2Of2(Errors.HTTP_UNSUPPORTED_CONTENT_TYPE |> GenerateOperationMessage)
+        else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
     
     let OK (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.OK value owin
     let BAD_REQUEST (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.BadRequest value owin

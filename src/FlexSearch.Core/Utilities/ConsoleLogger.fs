@@ -12,7 +12,6 @@ namespace FlexSearch.Core
 
 open FlexSearch
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -37,7 +36,7 @@ type ConsoleLogService() =
                 ("FlexSearch " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() 
                  + " ended.")
         member x.IndexValidationFailed(indexName : string, indexDetails : Index, 
-                                       validationObject : Message.OperationMessage) : unit = 
+                                       validationObject : OperationMessage) : unit = 
             Console.WriteLine
                 ("Updating index {0}. IndexDetails:{1}. Message:{2}", indexName, indexDetails.ToString(), 
                  validationObject.ToString())
@@ -51,7 +50,7 @@ type ConsoleLogService() =
             Console.WriteLine("Critical application failure happened. {0}", ex.Message)
         member x.TraceError(error : string, ex : System.Exception) : unit = Console.WriteLine(error + " Exception:", ex)
         member x.TraceErrorMessage(error : string) : unit = Console.WriteLine(error)
-        member x.TraceOperationMessageError(error : string, ex : Message.OperationMessage) : unit = 
+        member x.TraceOperationMessageError(error : string, ex : OperationMessage) : unit = 
             Console.WriteLine(error + " Exception:", ex.ToString())
         member x.UpdateIndex(indexName : string, indexDetails : Index) : unit = 
             Console.WriteLine("Updating index {0}. IndexDetails:{1}", indexName, indexDetails.ToString())

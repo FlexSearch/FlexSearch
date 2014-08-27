@@ -12,7 +12,6 @@ namespace FlexSearch.Core
 
 open FlexSearch
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System

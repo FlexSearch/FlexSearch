@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -34,7 +33,7 @@ open org.apache.lucene.document
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
-
+open FlexSearch.Common
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Index = 
@@ -111,7 +110,10 @@ module Index =
                                       TrackingIndexWriter = trackingIndexWriter }
                                 shard)
                     Choice1Of2(shards)
-                with e -> Choice2Of2(MessageConstants.ERROR_OPENING_INDEXWRITER |> Append("Message", e.Message))
+                with e -> 
+                    Choice2Of2(Errors.ERROR_OPENING_INDEXWRITER
+                               |> GenerateOperationMessage
+                               |> Append("Message", e.Message))
             // Add index status
             state.IndexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
             let! shards = generateShards flexIndexSetting
@@ -121,10 +123,11 @@ module Index =
                   Token = new System.Threading.CancellationTokenSource() }
             // Add the scheduler for the index
             // Commit Scheduler
-            Async.Start(ScheduleIndexJob (flexIndexSetting.IndexConfiguration.CommitTimeSec * 1000) CommitJob flexIndex)
+            Async.Start
+                (ScheduleIndexJob (flexIndexSetting.IndexConfiguration.CommitTimeSeconds * 1000) CommitJob flexIndex)
             // NRT Scheduler
             Async.Start
-                (ScheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliSec RefreshIndexJob flexIndex)
+                (ScheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliseconds RefreshIndexJob flexIndex)
             // Add the index to the registration
             state.IndexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore
             state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
@@ -162,11 +165,11 @@ module Index =
             | IndexState.Online -> 
                 match state.IndexRegisteration.TryGetValue(indexName) with
                 | (true, flexIndex) -> Choice1Of2(flexIndex)
-                | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
-            | IndexState.Opening -> Choice2Of2(MessageConstants.INDEX_IS_OPENING)
-            | IndexState.Offline | IndexState.Closing -> Choice2Of2(MessageConstants.INDEX_IS_OFFLINE)
-            | _ -> Choice2Of2(MessageConstants.INDEX_IS_IN_INVALID_STATE)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+                | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
+            | IndexState.Opening -> Choice2Of2(Errors.INDEX_IS_OPENING |> GenerateOperationMessage)
+            | IndexState.Offline | IndexState.Closing -> Choice2Of2(Errors.INDEX_IS_OFFLINE |> GenerateOperationMessage)
+            | _ -> Choice2Of2(Errors.INDEX_IS_IN_INVALID_STATE |> GenerateOperationMessage)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
     
     /// <summary>
     /// Function to check if the requested index is available. If yes then tries to 
@@ -193,8 +196,7 @@ module Index =
                     new LongField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName, 
                                   GetCurrentTimeAsLong(), Field.Store.YES)
                 luceneDocument.add (lastModifiedField)
-                fieldLookup.Add
-                    (Constants.LastModifiedField, lastModifiedField)
+                fieldLookup.Add(Constants.LastModifiedField, lastModifiedField)
                 for field in flexIndex.IndexSetting.Fields do
                     // Ignore these 4 fields here.
                     if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField) then ()
@@ -208,7 +210,7 @@ module Index =
                       LastGeneration = 0 }
                 state.ThreadLocalStore.Value.TryAdd(indexName, documentTemplate) |> ignore
                 Choice1Of2(flexIndex, documentTemplate)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
     
     /// <summary>
     /// Updates the current thread local index document with the incoming data

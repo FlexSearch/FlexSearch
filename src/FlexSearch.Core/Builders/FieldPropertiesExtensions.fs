@@ -14,9 +14,8 @@ open FlexSearch.Api
 open FlexSearch.Core
 open System.Collections.Generic
 open System
-open Validator
-open FlexSearch.Api.Message
 open org.apache.lucene.analysis
+open FlexSearch.Common
 
 [<AutoOpen>]
 module FieldPropertiesExtensions = 
@@ -36,13 +35,13 @@ module FieldPropertiesExtensions =
             { FieldName = Constants.IdField
               SchemaName = 
                   sprintf "%s[%s]<%s>" Constants.IdField 
-                      (configuration.IdFieldDocValuesFormat.ToString().ToLowerInvariant()) 
+                      (configuration.IdFieldDocvaluesFormat.ToString().ToLowerInvariant()) 
                       (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexCustom(keyWordAnalyzer, keyWordAnalyzer, indexInformation)
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.IdFieldPostingsFormat
-              DocValuesFormat = configuration.IdFieldDocValuesFormat
+              DocValuesFormat = configuration.IdFieldDocvaluesFormat
               Similarity = FieldSimilarity.TFIDF
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = true
@@ -58,13 +57,13 @@ module FieldPropertiesExtensions =
             { FieldName = Constants.LastModifiedField
               SchemaName = 
                   sprintf "%s[%s]<%s>" Constants.LastModifiedField 
-                      (configuration.DefaultDocValuesFormat.ToString().ToLowerInvariant()) 
+                      (configuration.DefaultDocvaluesFormat.ToString().ToLowerInvariant()) 
                       (configuration.DefaultIndexPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexDateTime
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.DefaultIndexPostingsFormat
-              DocValuesFormat = configuration.DefaultDocValuesFormat
+              DocValuesFormat = configuration.DefaultDocvaluesFormat
               Similarity = configuration.DefaultFieldSimilarity
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = false
@@ -84,23 +83,23 @@ module FieldPropertiesExtensions =
                              scripts : Dictionary<string, ScriptProperties>, propName : string) = 
             maybe { 
                 if String.IsNullOrWhiteSpace(this.ScriptName) <> true then 
-                    do! this.ScriptName.ValidatePropertyValue("ScriptName")
+                    //do! this.ScriptName.ValidatePropertyValue("ScriptName")
                     if scripts.ContainsKey(this.ScriptName) <> true then 
-                        return! Choice2Of2(MessageConstants.SCRIPT_NOT_FOUND |> Append("Script Name", this.ScriptName))
+                        return! Choice2Of2(Errors.SCRIPT_NOT_FOUND  |> GenerateOperationMessage |> Append("Script Name", this.ScriptName))
                 match this.FieldType with
                 | FieldType.Custom | FieldType.Highlight | FieldType.Text -> 
                     if String.IsNullOrWhiteSpace(this.SearchAnalyzer) <> true then 
                         if analyzers.ContainsKey(this.SearchAnalyzer) <> true then 
                             if factoryCollection.AnalyzerFactory.ModuleExists(this.SearchAnalyzer) <> true then 
                                 return! Choice2Of2
-                                            (MessageConstants.ANALYZER_NOT_FOUND 
-                                             |> Append("Analyzer Name", this.SearchAnalyzer))
+                                            (Errors.ANALYZER_NOT_FOUND 
+                                              |> GenerateOperationMessage |> Append("Analyzer Name", this.SearchAnalyzer))
                     if String.IsNullOrWhiteSpace(this.IndexAnalyzer) <> true then 
                         if analyzers.ContainsKey(this.IndexAnalyzer) <> true then 
                             if factoryCollection.AnalyzerFactory.ModuleExists(this.IndexAnalyzer) <> true then 
                                 return! Choice2Of2
-                                            (MessageConstants.ANALYZER_NOT_FOUND 
-                                             |> Append("Analyzer Name", this.SearchAnalyzer))
+                                            (Errors.ANALYZER_NOT_FOUND 
+                                              |> GenerateOperationMessage |> Append("Analyzer Name", this.SearchAnalyzer))
                 | _ -> return! Choice1Of2()
             }
         
@@ -129,7 +128,7 @@ module FieldPropertiesExtensions =
                         match GenerateStringReturnScript(a.Source) with
                         | Choice1Of2(x) -> Choice1Of2(Some(x))
                         | Choice2Of2(e) -> Choice2Of2(e)
-                    | _ -> Choice2Of2(MessageConstants.SCRIPT_NOT_FOUND |> Append("Script Name", field.ScriptName))
+                    | _ -> Choice2Of2(Errors.SCRIPT_NOT_FOUND  |> GenerateOperationMessage |> Append("Script Name", field.ScriptName))
             
             let getFieldType (field : FieldProperties) = 
                 maybe { 
@@ -156,11 +155,11 @@ module FieldPropertiesExtensions =
                             return! Choice1Of2(FlexCustom(searchAnalyzer, indexAnalyzer, indexingInformation), true)
                         | _ -> 
                             return! Choice2Of2
-                                        (MessageConstants.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE 
-                                         |> Append("Field Type", field.FieldType.ToString()))
+                                        (Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE 
+                                          |> GenerateOperationMessage |> Append("Field Type", field.FieldType.ToString()))
                     | _ -> 
                         return! Choice2Of2
-                                    (MessageConstants.UNKNOWN_FIELD_TYPE 
+                                    (Errors.UNKNOWN_FIELD_TYPE  |> GenerateOperationMessage
                                      |> Append("Field Type", field.FieldType.ToString()))
                 }
             

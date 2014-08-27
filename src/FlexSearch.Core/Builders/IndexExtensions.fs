@@ -12,7 +12,7 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Core
-open Validator
+open FlexSearch.Common
 
 [<AutoOpen>]
 module IndexExtensions = 
@@ -20,12 +20,12 @@ module IndexExtensions =
         /// <summary>
         /// Validator to validate index configuration
         /// </summary>
-        member this.Validate() = 
-            maybe { 
-                do! ("CommitTimeSec", this.CommitTimeSec) |> GreaterThanOrEqualTo 60
-                do! ("RefreshTimeMilliSec", this.RefreshTimeMilliSec) |> GreaterThanOrEqualTo 25
-                do! ("RamBufferSizeMb", this.RamBufferSizeMb) |> GreaterThanOrEqualTo 100
-            }
+        member this.Validate() = ()
+//            maybe { 
+//                do! ("CommitTimeSec", this.CommitTimeSeconds) |> GreaterThanOrEqualTo 60
+//                do! ("RefreshTimeMilliSec", this.RefreshTimeMilliseconds) |> GreaterThanOrEqualTo 25
+//                do! ("RamBufferSizeMb", this.RamBufferSizeMb) |> GreaterThanOrEqualTo 100
+//            }
     
     type Index with
         /// <summary>
@@ -34,10 +34,10 @@ module IndexExtensions =
         /// <param name="factoryCollection"></param>
         member this.Validate(factoryCollection : IFactoryCollection) = 
             maybe { 
-                do! this.IndexName.ValidatePropertyValue("IndexName")
+                //do! this.IndexName.ValidatePropertyValue("IndexName")
                 do! this.IndexConfiguration.Validate()
-                let! analyzers = AnalyzerProperties.Build(this.Analyzers, factoryCollection)
-                let! scriptManager = ScriptProperties.Build(this.Scripts, factoryCollection)
-                let! fields = FieldProperties.Build(this.Fields, this.IndexConfiguration, analyzers, this.Scripts, factoryCollection)
+                //let! analyzers = AnalyzerProperties.Build(this.Analyzers, factoryCollection)
+                //let! scriptManager = ScriptProperties.Build(this.Scripts, factoryCollection)
+                //let! fields = FieldProperties.Build(this.Fields, this.IndexConfiguration, analyzers, this.Scripts, factoryCollection)
                 return! Choice1Of2()
             }

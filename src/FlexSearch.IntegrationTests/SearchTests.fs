@@ -1,7 +1,6 @@
 ﻿namespace FlexSearch.IntegrationTests.``Search Related``
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Core
 open FlexSearch.TestSupport
 open System.Collections.Generic
@@ -133,7 +132,7 @@ id,topic,surname,cvv2,company
                                              documentService : IDocumentService, searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "company = 'test1'")
-        searchService.Search(query) |> ExpectErrorCode MessageConstants.STORED_FIELDS_CANNOT_BE_SEARCHED
+        searchService.Search(query) |> ExpectErrorCode (STORED_FIELDS_CANNOT_BE_SEARCHED |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory>][<AutoMockIntegrationData>]
@@ -309,7 +308,7 @@ id,topic,surname,cvv2,givenname
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "{surname:'hewitt'}")
         query.SearchProfile <- "test1"
-        searchService.Search(query) |> ExpectErrorCode MessageConstants.MISSING_FIELD_VALUE_1
+        searchService.Search(query) |> ExpectErrorCode (MISSING_FIELD_VALUE_1 |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory>][<AutoMockIntegrationData>]
@@ -320,6 +319,6 @@ id,topic,surname,cvv2,givenname
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "{givenname:'jhon'}")
         query.SearchProfile <- "test1"
-        searchService.Search(query) |> ExpectErrorCode MessageConstants.MISSING_FIELD_VALUE
+        searchService.Search(query) |> ExpectErrorCode (MISSING_FIELD_VALUE |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
 

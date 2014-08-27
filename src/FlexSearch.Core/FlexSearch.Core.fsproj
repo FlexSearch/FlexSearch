@@ -24,7 +24,7 @@
     <OutputPath>..\..\build-debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>
     </DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
@@ -256,9 +256,6 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="Thrift">
-      <HintPath>..\..\lib\Thrift.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="x64\SQLite.Interop.dll">
@@ -267,12 +264,8 @@
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Helpers\Maybe.fs" />
     <Compile Include="Helpers\Constants.fs" />
-    <Compile Include="Helpers\Validator.fs" />
-    <Compile Include="Helpers\Interop.fs" />
     <Compile Include="Helpers\Utility.fs" />
-    <Compile Include="Helpers\Pool.fs" />
     <Compile Include="Helpers\HttpHelpers.fs" />
     <Compile Include="Domain\Attributes.fs" />
     <Compile Include="Domain\Domain.fs" />
@@ -313,7 +306,6 @@
     <Compile Include="HttpHandlers\JobHandlers.fs" />
     <Compile Include="HttpHandlers\ListHandlers.fs" />
     <Compile Include="Servers\ImportHandlers.fs" />
-    <Compile Include="Servers\Thrift.fs" />
     <Compile Include="Servers\SocketServer.fs" />
     <Compile Include="Servers\Owin.fs" />
     <Compile Include="Main.fs" />
@@ -322,9 +314,14 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
+    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
       <Name>FlexSearch.Api</Name>
-      <Project>{5ee56459-9341-4335-991e-041f0c769047}</Project>
+      <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">
+      <Name>FlexSearch.Common</Name>
+      <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

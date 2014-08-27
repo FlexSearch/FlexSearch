@@ -12,7 +12,7 @@ namespace FlexSearch.Core.Services
 
 open Autofac
 open Autofac.Features.Metadata
-open FlexSearch.Api.Message
+open FlexSearch.Api
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -62,7 +62,9 @@ module FactoryService =
         /// Choice3of3 -> error
         let getModuleByName (moduleName, metaOnly) = 
             if (System.String.IsNullOrWhiteSpace(moduleName)) then 
-                Choice3Of3(MessageConstants.MODULE_NOT_FOUND |> Append("Module Name", moduleName))
+                Choice3Of3(Errors.MODULE_NOT_FOUND
+                           |> GenerateOperationMessage
+                           |> Append("Module Name", moduleName))
             else 
                 // We cannot use a global instance of factory as it will cache the instances. We
                 // need a new instance of T per request 
@@ -73,7 +75,10 @@ module FactoryService =
                         a.Metadata.Keys.Contains("Name") 
                         && String.Equals(a.Metadata.["Name"].ToString(), moduleName, StringComparison.OrdinalIgnoreCase))
                 match injectMeta with
-                | null -> Choice3Of3(MessageConstants.MODULE_NOT_FOUND |> Append("Module Name", moduleName))
+                | null -> 
+                    Choice3Of3(Errors.MODULE_NOT_FOUND
+                               |> GenerateOperationMessage
+                               |> Append("Module Name", moduleName))
                 | _ -> 
                     if metaOnly then Choice2Of3(injectMeta.Metadata)
                     else Choice1Of3(injectMeta.Value.Value)
@@ -83,12 +88,18 @@ module FactoryService =
             member this.GetModuleByName(moduleName) = 
                 match getModuleByName (moduleName, false) with
                 | Choice1Of3(x) -> Choice1Of2(x)
-                | _ -> Choice2Of2(MessageConstants.MODULE_NOT_FOUND |> Append("Module Name", moduleName))
+                | _ -> 
+                    Choice2Of2(Errors.MODULE_NOT_FOUND
+                               |> GenerateOperationMessage
+                               |> Append("Module Name", moduleName))
             
             member this.GetMetaData(moduleName) = 
                 match getModuleByName (moduleName, true) with
                 | Choice2Of3(x) -> Choice1Of2(x)
-                | _ -> Choice2Of2(MessageConstants.MODULE_NOT_FOUND |> Append("Module Name", moduleName))
+                | _ -> 
+                    Choice2Of2(Errors.MODULE_NOT_FOUND
+                               |> GenerateOperationMessage
+                               |> Append("Module Name", moduleName))
             
             member this.ModuleExists(moduleName) = 
                 match getModuleByName (moduleName, true) with
