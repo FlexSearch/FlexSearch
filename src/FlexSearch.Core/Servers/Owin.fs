@@ -35,21 +35,21 @@ open System.Threading.Tasks
 [<Sealed>]
 type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHandler>, ?port0 : int) = 
     let port = defaultArg port0 9800
+    
     let httpModule = 
         let modules = httpFactory.GetAllModules()
         let result = new Dictionary<string, IHttpHandler>(StringComparer.OrdinalIgnoreCase)
         for m in modules do
             // check if the key supports more than one http verb
-            if m.Key.Contains("|") then
+            if m.Key.Contains("|") then 
                 let verb = m.Key.Substring(0, m.Key.IndexOf("-"))
-                let verbs = verb.Split([|'|'|], StringSplitOptions.RemoveEmptyEntries)
+                let verbs = verb.Split([| '|' |], StringSplitOptions.RemoveEmptyEntries)
                 let value = m.Key.Substring(m.Key.IndexOf("-") + 1)
                 for v in verbs do
                     result.Add(v + "-" + value, m.Value)
-            else
-                result.Add(m.Key, m.Value)
+            else result.Add(m.Key, m.Value)
         result
-
+    
     /// <summary>
     /// Default OWIN method to process request
     /// </summary>
@@ -59,7 +59,7 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
             let getModule lookupValue (owin : IOwinContext) = 
                 match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
                 | (true, x) -> x.Process owin
-                | _ -> owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)
             
             let matchSubModules (x : int, owin : IOwinContext) = 
                 match x with
@@ -71,7 +71,7 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                 | 5 -> 
                     getModule ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
                         owin
-                | _ -> owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)
             
             try 
                 match owin.Request.Uri.Segments.Length with
@@ -85,9 +85,9 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
                         || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) && owin.Request.Method <> "POST" then 
                         match indexService.IndexExists(RemoveTrailingSlash owin.Request.Uri.Segments.[2]) with
                         | true -> matchSubModules (x, owin)
-                        | false -> owin |> BAD_REQUEST Errors.INDEX_NOT_FOUND
+                        | false -> owin |> BAD_REQUEST(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
                     else matchSubModules (x, owin)
-                | _ -> owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
+                | _ -> owin |> BAD_REQUEST(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)
             with ex -> ()
         }
     
