@@ -33,6 +33,9 @@ module OperationMessageExtensions =
           UserMessage = input
           ErrorCode = OperationMessage.GetErrorCode(input) }
 
+    let AppendKv (key, value) (message : string) = 
+        sprintf "%s; %s = %s" message key value
+
 [<AutoOpen>]
 module Errors = 
     let INDEX_NOT_FOUND = "ErrorCode = '1000'; Message='Index not found.'"

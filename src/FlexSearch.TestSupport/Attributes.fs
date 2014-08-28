@@ -116,7 +116,7 @@ module IntegrationTestHelpers =
         index.Fields.Add("importdate", new FieldProperties(FieldType = FieldType.Date))
         index.Fields.Add("timestamp", new FieldProperties(FieldType = FieldType.DateTime))
         index.Fields.Add("topic", new FieldProperties(FieldType = FieldType.ExactText))
-        index.Fields.Add("abstract", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("abstract", new FieldProperties(FieldType = FieldType.Highlight))
         // Computed fields
         index.Fields.Add("fullname", new FieldProperties(FieldType = FieldType.Text, ScriptName = "fullname"))
         index.Scripts.Add

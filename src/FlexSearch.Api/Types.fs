@@ -143,13 +143,15 @@ type MissingValueOption =
     | Ignore = 3
 
 type HighlightOption(fields : List<string>) = 
+    inherit ValidatableObjectBase<HighlightOption>()
     member val FragmentsToReturn = 2 with get, set
-    member val HighlightedFields = new List<string>() with get, set
+    member val HighlightedFields = fields with get, set
     member val PostTag = "</B>" with get, set
     member val PreTag = "</B>" with get, set
     new() = HighlightOption(Unchecked.defaultof<List<string>>)
 
 type SearchQuery(index : string, query : string) = 
+    inherit ValidatableObjectBase<SearchQuery>()
     member val Columns = new List<string>() with get, set
     
     [<DefaultValue(10)>]
@@ -185,6 +187,7 @@ type SearchQuery(index : string, query : string) =
 //	Index & Document related
 // ----------------------------------------------------------------------------
 type Document() = 
+    inherit ValidatableObjectBase<ScriptProperties>()
     member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     member val Highlights = new List<string>() with get, set
     member val Score = 0.0 with get, set
@@ -223,6 +226,14 @@ type Index() =
             yield Helpers.ValidateCollection<FieldProperties>(this.Fields.Values)
             yield Helpers.ValidateCollection<ScriptProperties>(this.Scripts.Values)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles.Values)
+            for field in this.Fields do
+                // Check if the specified script exists
+                if String.IsNullOrWhiteSpace(field.Value.ScriptName) = false then 
+                    match this.Scripts.TryGetValue(field.Value.ScriptName) with
+                    | (true, _) -> ()
+                    | _ -> 
+                        yield new ValidationResult(Errors.SCRIPT_NOT_FOUND 
+                                                   |> AppendKv("ScriptName", field.Value.ScriptName))
         }
 
 type SearchResults() = 
@@ -231,6 +242,7 @@ type SearchResults() =
     member val TotalAvailable = 0 with get, set
 
 type FilterList(words : List<string>) = 
+    inherit ValidatableObjectBase<FilterList>()
     
     [<MinimumItems(1)>]
     member val Words = words with get, set
@@ -238,6 +250,7 @@ type FilterList(words : List<string>) =
     new() = FilterList(Unchecked.defaultof<List<string>>)
 
 type MapList(words : Dictionary<string, List<string>>) = 
+    inherit ValidatableObjectBase<MapList>()
     
     [<MinimumItems(1)>]
     member val Words = words with get, set
@@ -248,6 +261,7 @@ type IndexStatusResponse(state) =
     member val Status = state
 
 type ImportRequest() = 
+    inherit ValidatableObjectBase<ImportRequest>()
     member val Id = "" with get, set
     member val Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     member val ForceCreate = false with get, set

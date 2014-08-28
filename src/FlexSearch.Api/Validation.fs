@@ -32,7 +32,7 @@ type IValidator =
     /// A simple wrapper around F# choices which can be easily
     /// consumed in a maybe monad
     /// </summary>
-    abstract MaybeValidator : unit -> Choice<unit, ValidationResult>
+    abstract MaybeValidator : unit -> Choice<unit, OperationMessage>
 
 [<AbstractClass>]
 type ValidatableObjectBase<'T>() = 
@@ -52,8 +52,8 @@ type ValidatableObjectBase<'T>() =
     member this.Validate() = 
         let validationResults = new List<ValidationResult>()
         if Validator.TryValidateObject(this, new ValidationContext(this, null, null), validationResults, true) then 
-            Choice1Of2()
-        else Choice2Of2(validationResults.First())
+            ValidationResult.Success
+        else validationResults.First()
     
     abstract Validate : ValidationContext -> IEnumerable<ValidationResult>
     override this.Validate(validationContext) = Enumerable.Empty<ValidationResult>()
@@ -86,11 +86,13 @@ type ValidatableObjectBase<'T>() =
                     else "" : string
     
     interface IValidator with
-        member this.MaybeValidator() = this.Validate()
-        member this.Validate() = 
+        
+        member this.MaybeValidator() = 
             match this.Validate() with
-            | Choice1Of2() -> ValidationResult.Success
-            | Choice2Of2(e) -> e
+            | null -> Choice1Of2()
+            | (result) -> Choice2Of2(result.ErrorMessage |> GenerateOperationMessage)
+        
+        member this.Validate() = this.Validate()
 
 // ----------------------------------------------------------------------------
 //	System.DataAnnotation validation attributes implementations

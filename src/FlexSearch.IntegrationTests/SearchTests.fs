@@ -17,7 +17,7 @@ id,topic,surname,cvv2,company
 4,e,Garner,1,test4
 5,d,jhonson,1,test5"""
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching with no columns specified will return no additional columns`` (index : Index, 
                                                                                    indexService : IIndexService, 
                                                                                    documentService : IDocumentService, 
@@ -28,7 +28,7 @@ id,topic,surname,cvv2,company
         Assert.Equal<int>(0, result.Documents.[0].Fields.Count)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching with columns specified with '*' will return all column`` (index : Index, 
                                                                               indexService : IIndexService, 
                                                                               documentService : IDocumentService, 
@@ -40,7 +40,7 @@ id,topic,surname,cvv2,company
         Assert.Equal<int>(index.Fields.Count, result.Documents.[0].Fields.Count)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching with columns specified as 'topic' will return just one column`` (index : Index, 
                                                                                      indexService : IIndexService, 
                                                                                      documentService : IDocumentService, 
@@ -53,7 +53,7 @@ id,topic,surname,cvv2,company
         Assert.True(result.Documents.[0].Fields.ContainsKey("topic"))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching with columns specified as 'topic' & 'surname' will return just one column`` (index : Index, 
                                                                                                  indexService : IIndexService, 
                                                                                                  documentService : IDocumentService, 
@@ -68,7 +68,7 @@ id,topic,surname,cvv2,company
         Assert.True(result.Documents.[0].Fields.ContainsKey("surname"))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If Flat structure is requested then id column will be be populated in Fields`` (index : Index, 
                                                                                           indexService : IIndexService, 
                                                                                           documentService : IDocumentService, 
@@ -80,7 +80,7 @@ id,topic,surname,cvv2,company
         Assert.True(result.Documents.[0].Fields.ContainsKey(Constants.IdField))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If Flat structure is requested then lastmodified column will be be populated in Fields`` (index : Index, 
                                                                                                     indexService : IIndexService, 
                                                                                                     documentService : IDocumentService, 
@@ -92,7 +92,7 @@ id,topic,surname,cvv2,company
         Assert.True(result.Documents.[0].Fields.ContainsKey(Constants.LastModifiedField))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If Flat structure is requested then type column will be be populated in Fields`` (index : Index, 
                                                                                             indexService : IIndexService, 
                                                                                             documentService : IDocumentService, 
@@ -104,7 +104,7 @@ id,topic,surname,cvv2,company
         Assert.True(result.Documents.[0].Fields.ContainsKey(Constants.TypeField))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If Flat structure is requested then _score column will be be populated in Fields`` (index : Index, 
                                                                                               indexService : IIndexService, 
                                                                                               documentService : IDocumentService, 
@@ -116,7 +116,7 @@ id,topic,surname,cvv2,company
         Assert.True(result.Documents.[0].Fields.ContainsKey("_score"))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``No score will be returned if ReturnScore is set to false`` (index : Index, indexService : IIndexService, 
                                                                       documentService : IDocumentService, 
                                                                       searchService : ISearchService) = 
@@ -127,15 +127,15 @@ id,topic,surname,cvv2,company
         Assert.Equal<double>(0.0, result.Documents.[0].Score)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Stored field cannot be searched`` (index : Index, indexService : IIndexService, 
                                              documentService : IDocumentService, searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "company = 'test1'")
-        searchService.Search(query) |> ExpectErrorCode (STORED_FIELDS_CANNOT_BE_SEARCHED |> GenerateOperationMessage)
+        searchService.Search(query) |> ExpectErrorCode(STORED_FIELDS_CANNOT_BE_SEARCHED |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Stored fields can be retrieved`` (index : Index, indexService : IIndexService, 
                                             documentService : IDocumentService, searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
@@ -155,7 +155,7 @@ id,givenname,surname,cvv2
 5,aronn,jhonson,1
 6,aroonn,jhonson,1"""
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching for 'cvv2 = 1' with Count = 2 will return 2 records`` (index : Index, indexService : IIndexService, 
                                                                            documentService : IDocumentService, 
                                                                            searchService : ISearchService) = 
@@ -199,7 +199,7 @@ id,topic,surname,cvv2
 4,e,Garner,1
 5,d,jhonson,1"""
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching for 'cvv2 = 1' with orderby topic should return 5 records`` (index : Index, 
                                                                                  indexService : IIndexService, 
                                                                                  documentService : IDocumentService, 
@@ -224,11 +224,11 @@ id,topic,abstract
 2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artefacts such as machine code of computer programs.
 """
     
-    [<Theory>][<AutoMockIntegrationData>]
-    let ``Searching for 'cvv2 = 1' with orderby topic should return 5 records`` (index : Index, 
-                                                                                 indexService : IIndexService, 
-                                                                                 documentService : IDocumentService, 
-                                                                                 searchService : ISearchService) = 
+    [<Theory; AutoMockIntegrationData>]
+    let ``Searching for abstract match 'practical approach' with orderby topic should return 1 records`` (index : Index, 
+                                                                                                          indexService : IIndexService, 
+                                                                                                          documentService : IDocumentService, 
+                                                                                                          searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "abstract match 'practical approach'")
         query.Highlights <- new HighlightOption(new List<string>([ "abstract" ]))
@@ -265,7 +265,7 @@ id,topic,surname,cvv2,givenname
 8,d,jhonson,1,andrew"""
     
     // "givenname = '' AND surname = '' AND (cvv2 = '1' OR topic = '')"
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``Searching with searchprofile 'test1' will return 2 record`` (index : Index, indexService : IIndexService, 
                                                                        documentService : IDocumentService, 
                                                                        searchService : ISearchService) = 
@@ -276,7 +276,7 @@ id,topic,surname,cvv2,givenname
         Assert.Equal<int>(2, result.Documents.Count)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If no value for cvv2 is passed then the default configured value of 1 will be used`` (index : Index, 
                                                                                                 indexService : IIndexService, 
                                                                                                 documentService : IDocumentService, 
@@ -288,7 +288,7 @@ id,topic,surname,cvv2,givenname
         Assert.Equal<int>(2, result.Documents.Count)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If no value for cvv2 is passed and no value for topic is passed then topic will be ignored`` (index : Index, 
                                                                                                         indexService : IIndexService, 
                                                                                                         documentService : IDocumentService, 
@@ -300,7 +300,7 @@ id,topic,surname,cvv2,givenname
         Assert.Equal<int>(4, result.Documents.Count)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If no value for givenname is passed then the profile will throw error as that option is set`` (index : Index, 
                                                                                                          indexService : IIndexService, 
                                                                                                          documentService : IDocumentService, 
@@ -308,10 +308,10 @@ id,topic,surname,cvv2,givenname
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "{surname:'hewitt'}")
         query.SearchProfile <- "test1"
-        searchService.Search(query) |> ExpectErrorCode (MISSING_FIELD_VALUE_1 |> GenerateOperationMessage)
+        searchService.Search(query) |> ExpectErrorCode(MISSING_FIELD_VALUE_1 |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
-    [<Theory>][<AutoMockIntegrationData>]
+    [<Theory; AutoMockIntegrationData>]
     let ``If no value for surname is passed then the profile will throw error as the value is missing`` (index : Index, 
                                                                                                          indexService : IIndexService, 
                                                                                                          documentService : IDocumentService, 
@@ -319,6 +319,5 @@ id,topic,surname,cvv2,givenname
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "{givenname:'jhon'}")
         query.SearchProfile <- "test1"
-        searchService.Search(query) |> ExpectErrorCode (MISSING_FIELD_VALUE |> GenerateOperationMessage)
+        searchService.Search(query) |> ExpectErrorCode(MISSING_FIELD_VALUE |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
-
