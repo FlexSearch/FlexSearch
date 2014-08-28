@@ -51,17 +51,12 @@ class Foo {
             let compiledScript = 
                 Delegate.CreateDelegate(typeof<System.Func<System.Dynamic.DynamicObject, string>>, meth) :?> System.Func<System.Dynamic.DynamicObject, string>
             Choice1Of2(compiledScript)
-        with e -> Choice2Of2(Errors.SCRIPT_CANT_BE_COMPILED |> GenerateOperationMessage |> Append("Message", e.Message))
+        with e -> 
+            Choice2Of2(Errors.SCRIPT_CANT_BE_COMPILED
+                       |> GenerateOperationMessage
+                       |> Append("Message", e.Message))
     
     type ScriptProperties with
-        
-        /// <summary>
-        /// Validate Script properties
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        member this.Validate(factoryCollection : IFactoryCollection) = ()
-            //maybe { do! Validate "ScriptSource" this.Source |> NotNullAndEmpty }
-        
         static member Build(scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
             maybe { 
                 let getScript (script : KeyValuePair<string, ScriptProperties>) = 
@@ -74,9 +69,9 @@ class Foo {
                                                                                 (script.Value.Source)
                                                       return compiledScript
                         | _ -> 
-                            return! Choice2Of2
-                                        (Errors.UNKNOWN_SCRIPT_TYPE  |> GenerateOperationMessage
-                                         |> Append("Script Type", script.Value.ScriptType.ToString()))
+                            return! Choice2Of2(Errors.UNKNOWN_SCRIPT_TYPE
+                                               |> GenerateOperationMessage
+                                               |> Append("Script Type", script.Value.ScriptType.ToString()))
                     }
                 
                 let profileSelectorScripts = 

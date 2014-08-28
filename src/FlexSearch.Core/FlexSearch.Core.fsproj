@@ -292,7 +292,6 @@
     <Compile Include="Builders\FieldPropertiesExtensions.fs" />
     <Compile Include="Builders\AnalysisExtensions.fs" />
     <Compile Include="Builders\SearchQueryExtensions.fs" />
-    <Compile Include="Builders\IndexExtensions.fs" />
     <Compile Include="Builders\SettingsBuilder.fs" />
     <Compile Include="Services\IndexService.fs" />
     <Compile Include="Services\DocumentService.fs" />

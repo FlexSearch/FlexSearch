@@ -73,37 +73,6 @@ module FieldPropertiesExtensions =
     type FieldProperties with
         
         /// <summary>
-        /// Validates index field properties
-        /// </summary>
-        /// <param name="factoryCollection"></param>
-        /// <param name="analyzers"></param>
-        /// <param name="scripts"></param>
-        /// <param name="propName"></param>
-        member this.Validate(factoryCollection : IFactoryCollection, analyzers : Dictionary<string, AnalyzerProperties>, 
-                             scripts : Dictionary<string, ScriptProperties>, propName : string) = 
-            maybe { 
-                if String.IsNullOrWhiteSpace(this.ScriptName) <> true then 
-                    //do! this.ScriptName.ValidatePropertyValue("ScriptName")
-                    if scripts.ContainsKey(this.ScriptName) <> true then 
-                        return! Choice2Of2(Errors.SCRIPT_NOT_FOUND  |> GenerateOperationMessage |> Append("Script Name", this.ScriptName))
-                match this.FieldType with
-                | FieldType.Custom | FieldType.Highlight | FieldType.Text -> 
-                    if String.IsNullOrWhiteSpace(this.SearchAnalyzer) <> true then 
-                        if analyzers.ContainsKey(this.SearchAnalyzer) <> true then 
-                            if factoryCollection.AnalyzerFactory.ModuleExists(this.SearchAnalyzer) <> true then 
-                                return! Choice2Of2
-                                            (Errors.ANALYZER_NOT_FOUND 
-                                              |> GenerateOperationMessage |> Append("Analyzer Name", this.SearchAnalyzer))
-                    if String.IsNullOrWhiteSpace(this.IndexAnalyzer) <> true then 
-                        if analyzers.ContainsKey(this.IndexAnalyzer) <> true then 
-                            if factoryCollection.AnalyzerFactory.ModuleExists(this.IndexAnalyzer) <> true then 
-                                return! Choice2Of2
-                                            (Errors.ANALYZER_NOT_FOUND 
-                                              |> GenerateOperationMessage |> Append("Analyzer Name", this.SearchAnalyzer))
-                | _ -> return! Choice1Of2()
-            }
-        
-        /// <summary>
         /// Build method to generate FlexField from Index Properties
         /// </summary>
         /// <param name="flexAnalyzers"></param>
@@ -118,7 +87,13 @@ module FieldPropertiesExtensions =
                 // First try finding it in the same configuration file
                 match flexAnalyzers.TryGetValue(analyzerName) with
                 | (true, analyzer) -> Choice1Of2(analyzer)
-                | _ -> factoryCollection.AnalyzerFactory.GetModuleByName(analyzerName)
+                | _ -> 
+                    match factoryCollection.AnalyzerFactory.GetModuleByName(analyzerName) with
+                    | Choice1Of2(analyzer) -> Choice1Of2(analyzer)
+                    | Choice2Of2(error) -> 
+                        Choice2Of2(error
+                                   |> Append("Reason", Errors.ANALYZER_NOT_FOUND)
+                                   |> Append("AnalyzerName", analyzerName))
             
             let getSource (field : FieldProperties) = 
                 if (String.IsNullOrWhiteSpace(field.ScriptName)) then Choice1Of2(None)
@@ -128,7 +103,10 @@ module FieldPropertiesExtensions =
                         match GenerateStringReturnScript(a.Source) with
                         | Choice1Of2(x) -> Choice1Of2(Some(x))
                         | Choice2Of2(e) -> Choice2Of2(e)
-                    | _ -> Choice2Of2(Errors.SCRIPT_NOT_FOUND  |> GenerateOperationMessage |> Append("Script Name", field.ScriptName))
+                    | _ -> 
+                        Choice2Of2(Errors.SCRIPT_NOT_FOUND
+                                   |> GenerateOperationMessage
+                                   |> Append("ScriptName", field.ScriptName))
             
             let getFieldType (field : FieldProperties) = 
                 maybe { 
@@ -154,13 +132,13 @@ module FieldPropertiesExtensions =
                                   FieldIndexOptions = field.IndexOptions }
                             return! Choice1Of2(FlexCustom(searchAnalyzer, indexAnalyzer, indexingInformation), true)
                         | _ -> 
-                            return! Choice2Of2
-                                        (Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE 
-                                          |> GenerateOperationMessage |> Append("Field Type", field.FieldType.ToString()))
+                            return! Choice2Of2(Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE
+                                               |> GenerateOperationMessage
+                                               |> Append("FieldType", field.FieldType.ToString()))
                     | _ -> 
-                        return! Choice2Of2
-                                    (Errors.UNKNOWN_FIELD_TYPE  |> GenerateOperationMessage
-                                     |> Append("Field Type", field.FieldType.ToString()))
+                        return! Choice2Of2(Errors.UNKNOWN_FIELD_TYPE
+                                           |> GenerateOperationMessage
+                                           |> Append("FieldType", field.FieldType.ToString()))
                 }
             
             let getField (field : KeyValuePair<string, FieldProperties>) = 
