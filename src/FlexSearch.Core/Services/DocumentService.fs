@@ -66,13 +66,14 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// <summary>
     /// Get top 10 document from the index
     /// </summary>
-    let GetDocuments indexName = 
+    let GetDocuments indexName count = 
         maybe { 
             let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
             let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
             q.ReturnScore <- false
-            q.ReturnFlatResult <- true
+            q.ReturnFlatResult <- false
             q.Columns.Add("*")
+            q.Count <- count
             q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
             match searchService.Search(flexIndex, q) with
             | Choice1Of2(v') -> 
@@ -132,9 +133,9 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
         maybe { let! (flexIndex, documentTemplate) = IndexExists(nodeState.IndicesState, indexName)
                 flexIndex.Shards |> Array.iter (fun shard -> shard.TrackingIndexWriter.deleteAll() |> ignore) }
     
-    interface IDocumentService with
+    interface IDocumentService with       
         member this.GetDocument(indexName, documentId) = GetDocument indexName documentId
-        member this.GetDocuments indexName = GetDocuments indexName
+        member this.GetDocuments(indexName, count) = GetDocuments indexName count
         member this.AddOrUpdateDocument(indexName, documentId, fields) = AddorUpdateDocument indexName documentId fields
         member this.AddDocument(indexName, documentId, fields) = AddDocument indexName documentId fields
         member this.DeleteDocument(indexName, documentId) = DeleteDocument indexName documentId

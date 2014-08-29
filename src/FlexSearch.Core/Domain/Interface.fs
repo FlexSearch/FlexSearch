@@ -33,6 +33,7 @@ open org.apache.lucene.document
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
+open FlexSearch.Api.Messages
 
 type IServer = 
     abstract Start : unit -> unit
@@ -154,7 +155,7 @@ type IIndexService =
     abstract GetIndex : string -> Choice<Index, OperationMessage>
     abstract UpdateIndex : Index -> Choice<unit, OperationMessage>
     abstract DeleteIndex : string -> Choice<unit, OperationMessage>
-    abstract AddIndex : Index -> Choice<unit, OperationMessage>
+    abstract AddIndex : Index -> Choice<CreateResponse, OperationMessage>
     abstract GetAllIndex : unit -> Choice<List<Index>, OperationMessage>
     abstract IndexExists : string -> bool
     abstract GetIndexStatus : string -> Choice<IndexState, OperationMessage>
@@ -169,7 +170,7 @@ type IIndexService =
 /// </summary>
 type IDocumentService = 
     abstract GetDocument : indexName:string * id:string -> Choice<Dictionary<string, string>, OperationMessage>
-    abstract GetDocuments : indexName:string -> Choice<List<Dictionary<string, string>>, OperationMessage>
+    abstract GetDocuments : indexName:string * count : int -> Choice<List<Dictionary<string, string>>, OperationMessage>
     abstract AddOrUpdateDocument : indexName:string * id:string * fields:Dictionary<string, string>
      -> Choice<unit, OperationMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, OperationMessage>
