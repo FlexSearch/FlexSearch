@@ -2,6 +2,7 @@
 
 open Xunit
 open FlexSearch.Api
+open FlexSearch.Client
 open FlexSearch.Core
 open NSubstitute
 open Ploeh.AutoFixture
@@ -15,6 +16,7 @@ open Xunit.Sdk
 open Autofac
 open System.Threading
 open Microsoft.Owin.Testing
+open System.Net.Http
 
 [<AutoOpen>]
 module UnitTestAttributes = 
@@ -218,9 +220,13 @@ module IntegrationTestHelpers =
                 fixture.Inject<IDocumentService>(Container.Resolve<IDocumentService>()) |> ignore
                 fixture.Inject<IFlexFactory<IHttpHandler>>(Container.Resolve<IFlexFactory<IHttpHandler>>()) |> ignore
                 fixture.Register<Index>(fun _ -> GetBasicIndexSettingsForContact()) |> ignore
-                fixture.Inject<TestServer>
-                    (GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())) 
-                |> ignore
+                let testServer = GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())
+                let loggingHandler = new LoggingHandler(testServer.Handler)
+                let httpClient = new HttpClient(loggingHandler)
+                let flexClient = new FlexClient(httpClient)
+                fixture.Inject<TestServer>(testServer) |> ignore
+                fixture.Inject<LoggingHandler>(loggingHandler);
+                fixture.Inject<IFlexClient>(flexClient) |> ignore
     
     /// <summary>
     /// Unit test domain customization

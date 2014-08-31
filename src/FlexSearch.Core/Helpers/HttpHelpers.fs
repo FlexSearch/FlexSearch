@@ -27,6 +27,7 @@ module HttpHelpers =
     open System.Net
     open System.Text
     open System.Threading
+    open FlexSearch.Api.Messages
     
     let jsonSettings = new JsonSerializerSettings()
     
@@ -83,10 +84,8 @@ module HttpHelpers =
             | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
             | Some(x) -> await (owin.Response.WriteAsync(x))
     
-    let inline IsNull (x) =
-        obj.ReferenceEquals (x, Unchecked.defaultof<_>)
-
-
+    let inline IsNull(x) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
+    
     /// Write http response
     let GetRequestBody<'T>(request : IOwinRequest) = 
         let contentType = GetRequestFormat request
@@ -99,21 +98,32 @@ module HttpHelpers =
                 if String.IsNullOrWhiteSpace(body) <> true then 
                     try 
                         let result = JsonConvert.DeserializeObject<'T>(body)
-                        if IsNull result then
-                            Choice2Of2
-                                (Errors.HTTP_UNABLE_TO_PARSE  |> GenerateOperationMessage |> Append("Message", "No body is defined."))
+                        if IsNull result then 
+                            Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
+                                       |> GenerateOperationMessage
+                                       |> Append("Message", "No body is defined."))
                         else Choice1Of2(result)
-                    with ex -> Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE |> GenerateOperationMessage |> Append("Message", ex.Message))
+                    with ex -> 
+                        Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
+                                   |> GenerateOperationMessage
+                                   |> Append("Message", ex.Message))
                 else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
             | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
                 try 
                     Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
-                with ex -> Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE |> GenerateOperationMessage |> Append("Message", ex.Message))
+                with ex -> 
+                    Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
+                               |> GenerateOperationMessage
+                               |> Append("Message", ex.Message))
             | _ -> Choice2Of2(Errors.HTTP_UNSUPPORTED_CONTENT_TYPE |> GenerateOperationMessage)
         else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
     
+    let CREATED (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Created value owin
+    let ACCEPTED (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Accepted value owin
     let OK (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.OK value owin
     let BAD_REQUEST (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.BadRequest value owin
+    let NOT_FOUND (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.NotFound value owin
+    let CONFLICT (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Conflict value owin
     
     let GetValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
@@ -140,10 +150,18 @@ module HttpHelpers =
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
         else None
     
-    let ResponseProcessor (f : Choice<'T, 'U>) success failure (owin : IOwinContext) = 
+    let ResponseProcessor (f : Choice<'T, OperationMessage>) success failure (owin : IOwinContext) = 
+        // For parameter less constructor the performance of Activator is as good as direct initialization. Based on the 
+        // finding of http://geekswithblogs.net/mrsteve/archive/2012/02/11/c-sharp-performance-new-vs-expression-tree-func-vs-activator.createinstance.aspx
+        // In future we can cache it if performance is found to be an issue.
+        let instance = Activator.CreateInstance<Response<'T>>()
         match f with
-        | Choice1Of2(r) -> success r owin
-        | Choice2Of2(r) -> failure r owin
+        | Choice1Of2(r) -> 
+            instance.Data <- r
+            success instance owin
+        | Choice2Of2(r) -> 
+            instance.Error <- r
+            failure instance owin
     
     let inline RemoveTrailingSlash(input : string) = 
         if input.EndsWith("/") then input.Substring(0, (input.Length - 1))

@@ -11,6 +11,7 @@
 namespace FlexSearch.Core.HttpHandlers
 
 open FlexSearch.Api
+open FlexSearch.Api.Validation
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 open FlexSearch.Utility
@@ -31,8 +32,8 @@ open FlexSearch.Common
 type GetDocumentsHandler(documentService : IDocumentService) = 
     interface IHttpHandler with
         member this.Process(owin) = 
-            // Return top 10 documents
-            owin |> ResponseProcessor (documentService.GetDocuments(GetIndexName(owin))) OK BAD_REQUEST
+            let count = GetIntValueFromQueryString "count" 10 owin
+            owin |> ResponseProcessor (documentService.GetDocuments(GetIndexName(owin), count)) OK BAD_REQUEST
 
 [<Name("GET-/indices/:id/documents/:id")>]
 [<Sealed>]
@@ -41,22 +42,19 @@ type GetDocumentByIdHandler(documentService : IDocumentService) =
         member this.Process(owin) = 
             owin |> ResponseProcessor (documentService.GetDocument(GetIndexName(owin), SubId(owin))) OK BAD_REQUEST
 
-[<Name("POST-/indices/:id/documents/:id")>]
+[<Name("POST-/indices/:id/documents")>]
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
     interface IHttpHandler with
         member this.Process(owin) = 
             let processRequest = 
                 maybe { 
-                    let! fields = GetRequestBody<Dictionary<string, string>>(owin.Request)
-                    match fields.TryGetValue(Constants.IdField) with
-                    | true, _ -> 
-                        // Override dictionary id with the URL id
-                        fields.[Constants.IdField] <- SubId(owin)
-                    | _ -> fields.Add(Constants.IdField, SubId(owin))
-                    return! documentService.AddDocument(GetIndexName(owin), SubId(owin), fields)
+                    let! document = GetRequestBody<Document>(owin.Request)
+                    document.Index <- GetIndexName(owin)
+                    do! (document :> IValidator).MaybeValidator()
+                    return! documentService.AddDocument(document.Index, document.Id, document.Fields)
                 }
-            owin |> ResponseProcessor processRequest OK BAD_REQUEST
+            owin |> ResponseProcessor processRequest CREATED BAD_REQUEST
 
 [<Name("DELETE-/indices/:id/documents/:id")>]
 [<Sealed>]
@@ -72,12 +70,9 @@ type PutDocumentByIdHandler(documentService : IDocumentService) =
         member this.Process(owin) = 
             let processRequest = 
                 maybe { 
-                    let! fields = GetRequestBody<Dictionary<string, string>>(owin.Request)
-                    match fields.TryGetValue(Constants.IdField) with
-                    | true, _ -> 
-                        // Override dictionary id with the URL id
-                        fields.[Constants.IdField] <- SubId(owin)
-                    | _ -> fields.Add(Constants.IdField, SubId(owin))
-                    return! documentService.AddOrUpdateDocument(GetIndexName(owin), SubId(owin), fields)
+                    let! document = GetRequestBody<Document>(owin.Request)
+                    document.Index <- GetIndexName(owin)
+                    do! (document :> IValidator).MaybeValidator()
+                    return! documentService.AddOrUpdateDocument(document.Index, document.Id, document.Fields)
                 }
             owin |> ResponseProcessor processRequest OK BAD_REQUEST

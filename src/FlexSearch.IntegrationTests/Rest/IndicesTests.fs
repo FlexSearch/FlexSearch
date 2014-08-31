@@ -1,29 +1,28 @@
-﻿namespace FlexSearch.IntegrationTests
+﻿namespace FlexSearch.IntegrationTests.Rest
 
-module ``Rest webservices tests - Indices`` = 
-    open FlexSearch.Api
-    open FlexSearch.Core
-    open FlexSearch.Utility
-    open Newtonsoft.Json
-    open Newtonsoft.Json.Linq
-    open System
-    open System.Collections.Generic
-    open System.IO
-    open System.Linq
-    open System.Net
-    open System.Net.Http
-    open System.Text
-    open System.Threading
-    open FlexSearch.TestSupport
-    open Autofac
-    open Xunit
-    open Xunit.Extensions
-    open Microsoft.Owin.Testing
-    open FlexSearch.TestSupport.RestHelpers
-    
-    type Dummy() = 
-        do ()
-    
+open FlexSearch.Api
+open FlexSearch.Core
+open FlexSearch.Utility
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
+open System
+open System.Collections.Generic
+open System.IO
+open System.Linq
+open System.Net
+open System.Net.Http
+open System.Text
+open System.Threading
+open FlexSearch.TestSupport
+open Autofac
+open Xunit
+open Xunit.Extensions
+open Microsoft.Owin.Testing
+open FlexSearch.TestSupport.RestHelpers
+open FlexSearch.Client
+open FlexSearch.Api.Messages
+
+module ``Index Creation Tests`` = 
     [<Theory; AutoMockIntegrationData>]
     let ``Accessing server root should return 200`` (server : TestServer) = 
         server
@@ -34,46 +33,53 @@ module ``Rest webservices tests - Indices`` =
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-1", "Creating an index without any data")>]
     let ``Creating an index without any parameters should return 200`` (server : TestServer, indexName : Guid) = 
         server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
+        |> request "POST" ("/indices/")
+        |> withBody (sprintf """{"IndexName" : "%s"}""" (indexName.ToString("N")))
         |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
+        |> responseStatusEquals HttpStatusCode.Created
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-2", "Duplicate index cannot be created")>]
-    let ``Duplicate index cannot be created`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> ignore
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.BadRequest
-        |> responseMatches "ErrorCode" "1002"
+    let ``Duplicate index cannot be created`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        client.AddIndex(new Index(IndexName = indexName.ToString("N"))).Result |> ExpectSuccess
+        let actual = client.AddIndex(new Index(IndexName = indexName.ToString("N"))).Result
+        actual |> VerifyErrorCode Errors.INDEX_ALREADY_EXISTS
+        handler |> VerifyHttpCode HttpStatusCode.Conflict
+    
+    [<Theory; AutoMockIntegrationData>]
+    let ``Create response contains the id of the created index`` (client : IFlexClient, indexName : Guid, 
+                                                                  handler : LoggingHandler) = 
+        let actual = client.AddIndex(new Index(IndexName = indexName.ToString("N"))).Result
+        actual |> ExpectSuccess
+        handler |> VerifyHttpCode HttpStatusCode.Created
+        Assert.Equal<string>((indexName.ToString("N")), actual.Data.Id)
+    
+    [<Theory; AutoMockIntegrationData>]
+    let ``Index cannot be created without IndexName`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        let actual = client.AddIndex(new Index()).Result
+        handler |> VerifyHttpCode HttpStatusCode.BadRequest
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-3", "")>]
     let ``Create index with two field 'firstname' & 'lastname'`` (server : TestServer, indexName : Guid) = 
         server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody """
-            {
-                "Fields" : {
-                    "firstname" : { FieldType : "Text" },
-                    "lastname" : { FieldType : "Text" }
-                }
+        |> request "POST" ("/indices/")
+        |> withBody (sprintf """
+        {
+            "IndexName" : "%s",
+            "Fields" : {
+                "firstname" : { FieldType : "Text" },
+                "lastname" : { FieldType : "Text" }
             }
-        """
+        }""" (indexName.ToString("N")))
         |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
+        |> responseStatusEquals HttpStatusCode.Created
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-4", "")>]
     let ``Create an index with dynamic fields`` (server : TestServer, indexName : Guid) = 
         server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody """
+        |> request "POST" "/indices/"
+        |> withBody (sprintf """
         {
+                "IndexName" : "%s",
                 "Fields" : {
                     "firstname" : { FieldType : "Text" },
                     "lastname" : { FieldType : "Text" },
@@ -86,169 +92,96 @@ module ``Rest webservices tests - Indices`` =
                     }
                 }
         }        
-        """
+        """ (indexName.ToString("N")))
         |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
+        |> responseStatusEquals HttpStatusCode.Created
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-5", "")>]
-    let ``Create an index by setting all properties`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody (JsonConvert.SerializeObject(IntegrationTestHelpers.MockIndexSettings(), jsonSettings))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-    
+    let ``Create an index by setting all properties`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        let index = MockIndexSettings()
+        index.IndexName <- indexName.ToString("N")
+        let actual = client.AddIndex(index).Result
+        handler |> VerifyHttpCode HttpStatusCode.Created
+
+module ``Index Update Tests`` = 
     [<Theory; AutoMockIntegrationData; Example("put-indices-id-1", "")>]
-    let ``Update an index`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody """
-        {
-                "Fields" : {
-                    "firstname" : { FieldType : "Text" },
-                    "lastname" : { FieldType : "Text" }
-                },
-        }        
-        """
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-        |> ignore
-        server
-        |> request "PUT" ("/indices/" + indexName.ToString("N"))
-        |> withBody """
-        {
-                "Fields" : {
-                    "firstname" : { FieldType : "Text" },
-                    "lastname" : { FieldType : "Text" },
-                    "desc" : { FieldType : "Stored" }
-                },
-        }        
-        """
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
+    let ``Update an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        let index = new Index(IndexName = indexName.ToString("N"))
+        client.AddIndex(index).Result |> ExpectSuccess
+        index.Fields.Add("firstname", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("lastname", new FieldProperties(FieldType = FieldType.Text))
+        let actual = client.UpdateIndex(index).Result
+        handler |> VerifyHttpCode HttpStatusCode.OK
     
     [<Theory; AutoMockIntegrationData; Example("put-indices-id-2", "")>]
-    let ``Trying to update an non existing index will return error`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "PUT" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.BadRequest
-        |> responseMatches "ErrorCode" "1000"
-    
+    let ``Trying to update an non existing index will return error`` (client : IFlexClient, indexName : Guid, 
+                                                                      handler : LoggingHandler) = 
+        let actual = client.UpdateIndex(new Index(IndexName = indexName.ToString("N"))).Result
+        actual |> VerifyErrorCode Errors.INDEX_NOT_FOUND
+        handler |> VerifyHttpCode HttpStatusCode.NotFound
+
+module ``Delete Index`` = 
     [<Theory; AutoMockIntegrationData; Example("delete-indices-id-1", "")>]
-    let ``Delete an index by id`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-        |> ignore
-        server
-        |> request "DELETE" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
+    let ``Delete an index by id`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        client.AddIndex(new Index(IndexName = indexName.ToString("N"))).Result |> ExpectSuccess
+        let actual = client.DeleteIndex(indexName.ToString("N")).Result
+        actual |> ExpectSuccess
+        handler |> VerifyHttpCode HttpStatusCode.OK
     
     [<Theory; AutoMockIntegrationData; Example("delete-indices-id-2", "")>]
-    let ``Trying to delete an non existing index will return error`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "DELETE" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.BadRequest
-        |> responseMatches "ErrorCode" "1000"
-    
+    let ``Trying to delete an non existing index will return error`` (client : IFlexClient, indexName : Guid, 
+                                                                      handler : LoggingHandler) = 
+        let actual = client.DeleteIndex(indexName.ToString("N")).Result
+        actual |> VerifyErrorCode Errors.INDEX_NOT_FOUND
+        handler |> VerifyHttpCode HttpStatusCode.NotFound
+
+module ``Get Index Tests`` = 
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-1", "")>]
-    let ``Getting an index detail by name`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody """
-        {
-                "Fields" : {
-                    "firstname" : { FieldType : "Text" },
-                    "lastname" : { FieldType : "Text" }
-                },
-        }        
-        """
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-        |> ignore
-        server
-        |> request "GET" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseMatches "IndexName" (indexName.ToString("N"))
+    let ``Getting an index detail by name`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        let actual = client.GetIndex("contact").Result
+        actual |> ExpectSuccess
+        Assert.Equal<string>("contact", actual.Data.IndexName)
+        handler |> VerifyHttpCode HttpStatusCode.OK
     
-    [<Theory; AutoMockIntegrationData; Example("get-indices-id-2", "")>]
-    let ``Getting an non existing index will return error`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "GET" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.BadRequest
-        |> responseMatches "ErrorCode" "1000"
-    
+    [<Theory; AutoMockIntegrationData; Example("delete-indices-id-2", "")>]
+    let ``Getting an non existing index will return error`` (client : IFlexClient, indexName : Guid, 
+                                                             handler : LoggingHandler) = 
+        let actual = client.DeleteIndex(indexName.ToString("N")).Result
+        actual |> VerifyErrorCode Errors.INDEX_NOT_FOUND
+        handler |> VerifyHttpCode HttpStatusCode.NotFound
+
+module ``Index Other Services Tests`` = 
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-status-1", "Get status of an index (offine)")>]
-    let ``Newly created index is always offline`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-        |> ignore
-        server
-        |> request "GET" ("/indices/" + indexName.ToString("N") + "/status")
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseMatches "Status" "Offline"
+    let ``Newly created index is always offline`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        client.AddIndex(new Index(IndexName = indexName.ToString("N"))).Result |> ExpectSuccess
+        let actual = client.GetIndexStatus(indexName.ToString("N")).Result
+        actual |> ExpectSuccess
+        Assert.Equal<IndexState>(IndexState.Offline, actual.Data.Status)
     
     [<Theory; AutoMockIntegrationData; Example("put-indices-id-status-1", "")>]
-    let ``Set status of an index 'online'`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-        |> ignore
-        server
-        |> request "PUT" ("/indices/" + indexName.ToString("N") + "/status/online")
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
+    let ``Set status of an index 'online'`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        client.AddIndex(new Index(IndexName = indexName.ToString("N"))).Result |> ExpectSuccess
+        client.BringIndexOnline(indexName.ToString("N")).Result |> ExpectSuccess
+        let actual = client.GetIndexStatus(indexName.ToString("N")).Result
+        Assert.Equal<IndexState>(IndexState.Online, actual.Data.Status)
     
     [<Theory; AutoMockIntegrationData; Example("put-indices-id-status-1", "")>]
-    let ``Set status of an index 'offline'`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "POST" ("/indices/" + indexName.ToString("N"))
-        |> withBody """
-        {
-            "Online" : "true"
-        } 
-        """
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-        |> ignore
-        server
-        |> request "PUT" ("/indices/" + indexName.ToString("N") + "/status/offline")
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseBodyIsNull
-
+    let ``Set status of an index 'offline'`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        client.AddIndex(new Index(IndexName = indexName.ToString("N"), Online = true)).Result |> ExpectSuccess
+        let actual = client.GetIndexStatus(indexName.ToString("N")).Result
+        Assert.Equal<IndexState>(IndexState.Online, actual.Data.Status)
+        client.SetIndexOffline(indexName.ToString("N")).Result |> ExpectSuccess
+        let actual = client.GetIndexStatus(indexName.ToString("N")).Result
+        Assert.Equal<IndexState>(IndexState.Offline, actual.Data.Status)
+    
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-exists-1", "")>]
-    let ``Check if a given index exists`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "GET" ("/indices/contact/exists")
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-
+    let ``Check if a given index exists`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
+        let actual = client.IndexExists("contact").Result
+        actual |> ExpectSuccess
+        Assert.Equal<bool>(true, actual.Data.Exists)
+    
     [<Theory; AutoMockIntegrationData; Example("get-indices-1", "")>]
-    let ``Get all indices`` (server : TestServer, indexName : Guid) = 
-        server
-        |> request "GET" ("/indices")
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseShouldContain "contact"
+    let ``Get all indices`` (client : IFlexClient, handler : LoggingHandler) = 
+        let actual = client.GetAllIndex().Result
+        // Should have at least contact index
+        Assert.Equal<int>(1, actual.Data.Count)

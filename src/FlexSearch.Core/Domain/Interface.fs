@@ -169,13 +169,13 @@ type IIndexService =
 /// Document related operations
 /// </summary>
 type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<Dictionary<string, string>, OperationMessage>
-    abstract GetDocuments : indexName:string * count : int -> Choice<List<Dictionary<string, string>>, OperationMessage>
+    abstract GetDocument : indexName:string * id:string -> Choice<FlexSearch.Api.Document, OperationMessage>
+    abstract GetDocuments : indexName:string * count : int -> Choice<SearchResults, OperationMessage>
     abstract AddOrUpdateDocument : indexName:string * id:string * fields:Dictionary<string, string>
      -> Choice<unit, OperationMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, OperationMessage>
     abstract AddDocument : indexName:string * id:string * fields:Dictionary<string, string>
-     -> Choice<unit, OperationMessage>
+     -> Choice<CreateResponse, OperationMessage>
     abstract DeleteAllDocuments : indexName:string -> Choice<unit, OperationMessage>
 
 /// <summary>

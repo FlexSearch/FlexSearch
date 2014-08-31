@@ -13,6 +13,7 @@ namespace FlexSearch.Core.Services
 open FlexSearch.Api
 open FlexSearch.Common
 open FlexSearch.Core
+open FlexSearch.Api.Messages
 open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
@@ -58,8 +59,7 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
             q.Columns.Add("*")
             match searchService.Search(flexIndex, q) with
             | Choice1Of2(v') -> 
-                let result = v'.Documents.First().Fields
-                return! Choice1Of2(result)
+                return! Choice1Of2(v'.Documents.First())
             | Choice2Of2(e) -> return! Choice2Of2(e)
         }
     
@@ -75,11 +75,7 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
             q.Columns.Add("*")
             q.Count <- count
             q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
-            match searchService.Search(flexIndex, q) with
-            | Choice1Of2(v') -> 
-                let result = v'.Documents |> Seq.map (fun x -> x.Fields)
-                return! Choice1Of2(result.ToList())
-            | Choice2Of2(e) -> return! Choice2Of2(e)
+            return! searchService.Search(flexIndex, q)
         }
     
     /// <summary>
@@ -110,6 +106,7 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
             let (targetIndex, documentTemplate) = 
                 Index.UpdateDocument(flexIndex, documentTemplate, documentId, 1, fields)
             flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
+            return new CreateResponse(Id = documentId)
         }
     
     /// <summary>

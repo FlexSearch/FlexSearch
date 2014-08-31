@@ -103,9 +103,9 @@ module Index =
                                 let shard = 
                                     { ShardNumber = a
                                       NRTManager = nrtManager
-                                      ReopenThread = 
-                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
-                                                                             float (5))
+                                      ReopenThread = Unchecked.defaultof<ControlledRealTimeReopenThread>
+//                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
+//                                                                             float (5))
                                       IndexWriter = indexWriter
                                       TrackingIndexWriter = trackingIndexWriter }
                                 shard)

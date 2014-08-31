@@ -190,3 +190,10 @@ module IndexingHelpers =
         else 
             let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
             MurmurHash2.hash32 (byteArray, 0, byteArray.Length) % shardCount
+    
+//    let PKLookup (id : string, r: IndexReader) =
+//        let bytesRef = new org.apache.lucene.util.BytesRef(id)
+//        for i = 0 to r.leaves().size() do
+//            let fields = leaves.get(i).reader().fields()
+//            if fields <> null then
+//                

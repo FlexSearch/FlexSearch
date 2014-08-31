@@ -20,21 +20,36 @@ type OperationMessage =
 
 [<AutoOpen>]
 module OperationMessageExtensions = 
+    type String with
+        member this.GetErrorCode() = 
+            let first = this.IndexOf(''')
+            if first = -1 then -1
+            else 
+                let second = this.IndexOf(''', first + 1)
+                if second = -1 then -1
+                else 
+                    match Int32.TryParse(this.Substring(first + 1, second - (first + 1)).Trim()) with
+                    | true, res -> res
+                    | _ -> -1
+    
     /// <summary>
     /// Append the given key value pair to the developer message
     /// The developer message has a format of key1='value1',key2='value2'
     /// This is specifically done to enable easy error message parsing in the user interface
     /// </summary>
     let Append (key, value) (message : OperationMessage) = 
-        { message with UserMessage = sprintf "%s; %s = %s" key value message.UserMessage }
+        { message with UserMessage = sprintf "%s; %s = '%s'" message.UserMessage key value }
     
     let GenerateOperationMessage(input : string) = 
+        // Check if the error is using right format
+        let userMessage = 
+            if input.Contains("Message") <> true then sprintf "Message = '%s'" input
+            else input
         { DeveloperMessage = ""
-          UserMessage = input
+          UserMessage = userMessage
           ErrorCode = OperationMessage.GetErrorCode(input) }
-
-    let AppendKv (key, value) (message : string) = 
-        sprintf "%s; %s = %s" message key value
+    
+    let AppendKv (key, value) (message : string) = sprintf "%s; %s = %s" message key value
 
 [<AutoOpen>]
 module Errors = 

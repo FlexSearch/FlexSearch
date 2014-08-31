@@ -11,12 +11,14 @@
 namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
+open FlexSearch.Api.Messages
 open FlexSearch.Core
 open System.IO
 open System.Linq
 open org.apache.lucene.search
 open System.Collections.Generic
 open FlexSearch.Common
+open FlexSearch.Api.Validation
 
 /// <summary>
 /// Service wrapper around all index related services
@@ -108,6 +110,8 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
     /// <param name="nodeState"></param>
     let AddIndex(index : Index) = 
         maybe { 
+            do! (index :> IValidator).MaybeValidator()
+            assert(System.String.IsNullOrWhiteSpace(index.IndexName) <> true)
             match nodeState.IndicesState.IndexStatus.TryGetValue(index.IndexName) with
             | (true, _) -> return! Choice2Of2(Errors.INDEX_ALREADY_EXISTS |> GenerateOperationMessage)
             | _ -> 
@@ -116,6 +120,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 logger.AddIndex(index.IndexName, index)
                 if index.Online then do! AddIndex(nodeState.IndicesState, settings)
                 else do! nodeState.IndicesState.AddStatus(index.IndexName, IndexState.Offline)
+                return! Choice1Of2(new CreateResponse(Id = index.IndexName))
         }
     
     /// <summary>

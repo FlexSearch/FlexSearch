@@ -33,12 +33,12 @@ type IndexConfiguration() =
     
     member val IndexVersion = IndexVersion.Lucene_4_9 with get, set
     member val IdFieldPostingsFormat = FieldPostingsFormat.Bloom_4_1 with get, set
+    member val IdFieldDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
     member val DefaultIndexPostingsFormat = FieldPostingsFormat.Lucene_4_1 with get, set
+    member val DefaultDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
     member val DefaultCodec = Codec.Lucene_4_9 with get, set
     member val EnableVersioning = false with get, set
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
-    member val IdFieldDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
-    member val DefaultDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
 
 [<ToString>]
 type FieldProperties() = 
@@ -186,18 +186,19 @@ type SearchQuery(index : string, query : string) =
 // ----------------------------------------------------------------------------
 //	Index & Document related
 // ----------------------------------------------------------------------------
-type Document() = 
+type Document(indexName: string, id: string) = 
     inherit ValidatableObjectBase<ScriptProperties>()
     member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     member val Highlights = new List<string>() with get, set
     member val Score = 0.0 with get, set
     
     [<Required>]
-    member val Id = Unchecked.defaultof<string> with get, set
+    member val Id = id with get, set
     
     member val LastModified = Unchecked.defaultof<Int64> with get, set
     [<Required>]
-    member val Index = Unchecked.defaultof<string> with get, set
+    member val Index = indexName with get, set
+    new () = Document(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
 
 type Index() = 
     inherit ValidatableObjectBase<Index>()
@@ -256,9 +257,6 @@ type MapList(words : Dictionary<string, List<string>>) =
     member val Words = words with get, set
     
     new() = MapList(new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase))
-
-type IndexStatusResponse(state) = 
-    member val Status = state
 
 type ImportRequest() = 
     inherit ValidatableObjectBase<ImportRequest>()
