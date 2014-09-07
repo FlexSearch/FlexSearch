@@ -77,7 +77,7 @@ type PostIndexByIdHandler(indexService : IIndexService) =
                 | Choice1Of2(response) -> 
                     owin |> CREATED (new Response<CreateResponse>(Data = response))
                 | Choice2Of2(error) ->
-                    if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS.GetErrorCode() then
+                    if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS then
                         owin |> CONFLICT (new Response<CreateResponse>(Error = error))
                     else owin |> BAD_REQUEST (new Response<CreateResponse>(Error = error))
             | Choice2Of2(error) -> 

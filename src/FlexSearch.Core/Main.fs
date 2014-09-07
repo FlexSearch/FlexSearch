@@ -96,9 +96,7 @@ module Main =
         let indicesState = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
               IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
-              ThreadLocalStore = 
-                  new ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>>(fun () -> 
-                  new ConcurrentDictionary<string, ThreadLocalDocument>(StringComparer.OrdinalIgnoreCase)) }
+            }
         builder.RegisterInstance(new SqlLitePersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() 
         |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore

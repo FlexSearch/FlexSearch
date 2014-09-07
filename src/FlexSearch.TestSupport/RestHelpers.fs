@@ -106,6 +106,7 @@ module RestHelpers =
             Assert.True(1 = 2, "Expecting a success but received failure")
     
     let VerifyErrorCode (errorMessage : string) (message : Response<'T>) = 
-        Assert.Equal<int>(errorMessage.GetErrorCode(), message.Error.ErrorCode)
+        Assert.Equal<String>(errorMessage.GetErrorCode(), message.Error.ErrorCode)
+    
     let VerifyHttpCode (statusCode) (handler : LoggingHandler) = 
         Assert.Equal<HttpStatusCode>(statusCode, handler.StatusCode())

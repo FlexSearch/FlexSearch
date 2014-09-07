@@ -49,10 +49,10 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
         member this.Process(owin) = 
             let processRequest = 
                 maybe { 
-                    let! document = GetRequestBody<Document>(owin.Request)
-                    document.Index <- GetIndexName(owin)
+                    let! document = GetRequestBody<FlexDocument>(owin.Request)
+                    document.IndexName <- GetIndexName(owin)
                     do! (document :> IValidator).MaybeValidator()
-                    return! documentService.AddDocument(document.Index, document.Id, document.Fields)
+                    return! documentService.AddDocument(document)
                 }
             owin |> ResponseProcessor processRequest CREATED BAD_REQUEST
 
@@ -70,9 +70,9 @@ type PutDocumentByIdHandler(documentService : IDocumentService) =
         member this.Process(owin) = 
             let processRequest = 
                 maybe { 
-                    let! document = GetRequestBody<Document>(owin.Request)
-                    document.Index <- GetIndexName(owin)
+                    let! document = GetRequestBody<FlexDocument>(owin.Request)
+                    document.IndexName <- GetIndexName(owin)
                     do! (document :> IValidator).MaybeValidator()
-                    return! documentService.AddOrUpdateDocument(document.Index, document.Id, document.Fields)
+                    return! documentService.AddOrUpdateDocument(document)
                 }
             owin |> ResponseProcessor processRequest OK BAD_REQUEST

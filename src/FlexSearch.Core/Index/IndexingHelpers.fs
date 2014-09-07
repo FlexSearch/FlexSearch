@@ -46,6 +46,8 @@ open org.apache.lucene.search.similarities
 open FlexSearch.Java
 open java.lang
 open FlexSearch.Common
+open org.apache.lucene.codecs.idversion
+
 /// <summary>
 /// Default postings format for FlexSearch
 /// </summary>
@@ -191,9 +193,24 @@ module IndexingHelpers =
             let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
             MurmurHash2.hash32 (byteArray, 0, byteArray.Length) % shardCount
     
-//    let PKLookup (id : string, r: IndexReader) =
-//        let bytesRef = new org.apache.lucene.util.BytesRef(id)
-//        for i = 0 to r.leaves().size() do
-//            let fields = leaves.get(i).reader().fields()
-//            if fields <> null then
-//                
+    let PKLookup(id : string, r : IndexReader, index : FlexIndex) = 
+        let term = new Term(index.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, id)
+        
+        let rec loop counter = 
+            let readerContext = r.leaves().get(counter) :?> AtomicReaderContext
+            let reader = readerContext.reader()
+            let terms = reader.terms (index.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
+            assert (terms <> null)
+            let termsEnum = terms.iterator (null)
+            match termsEnum.seekExact (term.bytes()) with
+            | true -> 
+                let docsEnums = termsEnum.docs (null, null, 0)
+                let nDocs = 
+                    reader.getNumericDocValues 
+                        (index.IndexSetting.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName)
+                nDocs.get (docsEnums.nextDoc())
+            | false -> 
+                if counter - 1 > 0 then loop (counter - 1)
+                else 0L
+        if r.leaves().size() > 0 then loop (r.leaves().size() - 1)
+        else 0L

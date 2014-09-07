@@ -65,7 +65,7 @@ module Helpers =
             Assert.True(1 = 2, "Expecting error but received success")
         | Choice2Of2(error) ->
             printfn "%A" error
-            Assert.Equal(operationMessage.ErrorCode, error.ErrorCode)
+            Assert.Equal<String>(operationMessage.ErrorCode, error.ErrorCode)
 
     type Conf = 
         { DocumentationFolder : string

@@ -139,16 +139,6 @@ type ISearchService =
     abstract Search : FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
 
 /// <summary>
-/// Version cache store used across the system. This helps in resolving 
-/// conflicts arising out of concurrent threads trying to update a Lucene document.
-/// </summary>
-type IVersioningCacheStore = 
-    abstract GetVersion : id:string -> Option<int>
-    abstract AddVersion : id:string * version:int -> bool
-    abstract UpdateVersion : string * int * int -> bool
-    abstract DeleteVersion : string -> bool
-
-/// <summary>
 /// Index related operations
 /// </summary>
 type IIndexService = 
@@ -171,11 +161,9 @@ type IIndexService =
 type IDocumentService = 
     abstract GetDocument : indexName:string * id:string -> Choice<FlexSearch.Api.Document, OperationMessage>
     abstract GetDocuments : indexName:string * count : int -> Choice<SearchResults, OperationMessage>
-    abstract AddOrUpdateDocument : indexName:string * id:string * fields:Dictionary<string, string>
-     -> Choice<unit, OperationMessage>
+    abstract AddOrUpdateDocument : document: FlexDocument -> Choice<unit, OperationMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, OperationMessage>
-    abstract AddDocument : indexName:string * id:string * fields:Dictionary<string, string>
-     -> Choice<CreateResponse, OperationMessage>
+    abstract AddDocument :  document: FlexDocument -> Choice<CreateResponse, OperationMessage>
     abstract DeleteAllDocuments : indexName:string -> Choice<unit, OperationMessage>
 
 /// <summary>

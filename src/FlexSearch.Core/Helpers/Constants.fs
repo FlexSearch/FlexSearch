@@ -25,7 +25,10 @@ module Constants =
     
     [<Literal>]
     let LastModifiedField = "_lastmodified"
-    
+
+    [<Literal>]
+    let LastModifiedFieldDv = "_lastmodifieddv"
+        
     [<Literal>]
     let TypeField = "_type"
     

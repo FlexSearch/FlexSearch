@@ -34,6 +34,7 @@ open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
 open FlexSearch.Common
+
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Index = 
@@ -104,8 +105,8 @@ module Index =
                                     { ShardNumber = a
                                       NRTManager = nrtManager
                                       ReopenThread = Unchecked.defaultof<ControlledRealTimeReopenThread>
-//                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
-//                                                                             float (5))
+                                      //                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
+                                      //                                                                             float (5))
                                       IndexWriter = indexWriter
                                       TrackingIndexWriter = trackingIndexWriter }
                                 shard)
@@ -120,6 +121,8 @@ module Index =
             let flexIndex = 
                 { IndexSetting = flexIndexSetting
                   Shards = shards
+                  ThreadLocalStore = new ThreadLocal<ThreadLocalDocument>()
+                  VersioningCache = new VersioningCacheStore(shards)
                   Token = new System.Threading.CancellationTokenSource() }
             // Add the scheduler for the index
             // Commit Scheduler
@@ -182,8 +185,8 @@ module Index =
     let internal IndexExists(state : IndicesState, indexName) = 
         match state.IndexRegisteration.TryGetValue(indexName) with
         | (true, flexIndex) -> 
-            match state.ThreadLocalStore.Value.TryGetValue(indexName) with
-            | (true, a) -> Choice1Of2(flexIndex, a)
+            match flexIndex.ThreadLocalStore.IsValueCreated with
+            | true -> Choice1Of2(flexIndex, flexIndex.ThreadLocalStore.Value)
             | _ -> 
                 let luceneDocument = new Document()
                 let fieldLookup = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase)
@@ -197,9 +200,15 @@ module Index =
                                   GetCurrentTimeAsLong(), Field.Store.YES)
                 luceneDocument.add (lastModifiedField)
                 fieldLookup.Add(Constants.LastModifiedField, lastModifiedField)
+                let lastModifiedFieldDv = 
+                    new NumericDocValuesField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName, 
+                                              GetCurrentTimeAsLong())
+                luceneDocument.add (lastModifiedFieldDv)
+                fieldLookup.Add(Constants.LastModifiedFieldDv, lastModifiedFieldDv)
                 for field in flexIndex.IndexSetting.Fields do
                     // Ignore these 4 fields here.
-                    if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField) then ()
+                    if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField 
+                        || field.FieldName = Constants.LastModifiedFieldDv) then ()
                     else 
                         let defaultField = FlexField.CreateDefaultLuceneField field
                         luceneDocument.add (defaultField)
@@ -208,9 +217,56 @@ module Index =
                     { Document = luceneDocument
                       FieldsLookup = fieldLookup
                       LastGeneration = 0 }
-                state.ThreadLocalStore.Value.TryAdd(indexName, documentTemplate) |> ignore
+                flexIndex.ThreadLocalStore.Value <- documentTemplate
                 Choice1Of2(flexIndex, documentTemplate)
         | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+    
+    let inline private GetTargetShard(id : string, count : int) = 
+        if (count = 1) then 0
+        else IndexingHelpers.MapToShard id count
+    
+    let internal VersionCheck(flexIndex : FlexIndex, targetShard : int, document : FlexDocument, newVersion : int64) = 
+        let GetExistingVesion() = 
+            match flexIndex.VersioningCache.TryGetValue(document.Id) with
+            | true, existingVersion -> existingVersion
+            | _ -> 
+                // Version is not present in the cache
+                // Let's check if index has the document
+                let iSearcher = 
+                    (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
+                let existingVersion = IndexingHelpers.PKLookup(document.Id, iSearcher.getIndexReader(), flexIndex)
+                (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).release(iSearcher)
+                existingVersion
+        maybe { 
+            match document.TimeStamp with
+            | 0L -> 
+                // We don't care what the version is let's proceed with normal operation
+                // and bypass id check.
+                return! Choice1Of2(0L)
+            | -1L -> // Ensure that the document does not exists. Perform Id check
+                     
+                let existingVersion = GetExistingVesion()
+                if existingVersion <> 0L then 
+                    return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
+                else return! Choice1Of2(0L)
+            | 1L -> 
+                // Ensure that the document does exist
+                let existingVersion = GetExistingVesion()
+                if existingVersion <> 0L then return! Choice1Of2(existingVersion)
+                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
+            | x when x > 1L -> 
+                // Perform a version check and ensure that the provided version matches the version of 
+                // the document
+                let existingVersion = GetExistingVesion()
+                if existingVersion <> 0L then 
+                    if existingVersion <> document.TimeStamp || existingVersion < newVersion then 
+                        return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
+                    else return! Choice1Of2(existingVersion)
+                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
+            | _ -> 
+                System.Diagnostics.Debug.Fail("This condition should never get executed.")
+                return! Choice1Of2(0L)
+        }
     
     /// <summary>
     /// Updates the current thread local index document with the incoming data
@@ -220,31 +276,42 @@ module Index =
     /// <param name="documentId"></param>
     /// <param name="version"></param>
     /// <param name="fields"></param>
-    let internal UpdateDocument(flexIndex : FlexIndex, documentTemplate : ThreadLocalDocument, documentId : string, 
-                                version : int, fields : Dictionary<string, string>) = 
-        documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(documentId)
-        documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(GetCurrentTimeAsLong())
-        // Create a dynamic dictionary which will be used during scripting
-        let dynamicFields = new DynamicDictionary(fields)
-        for field in flexIndex.IndexSetting.Fields do
-            // Ignore these 3 fields here.
-            if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField) then ()
-            else 
-                // If it is computed field then generate and add it otherwise follow standard path
-                match field.Source with
-                | Some(s) -> 
-                    try 
-                        // Wrong values for the data type will still be handled as update Lucene field will
-                        // check the data type
-                        let value = s.Invoke(dynamicFields)
-                        FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value
-                    with e -> FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
-                | None -> 
-                    match fields.TryGetValue(field.FieldName) with
-                    | (true, value) -> 
-                        FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value
-                    | _ -> FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
-        let targetIndex = 
-            if (flexIndex.Shards.Length = 1) then 0
-            else IndexingHelpers.MapToShard documentId flexIndex.Shards.Length
-        (targetIndex, documentTemplate)
+    let internal UpdateDocument(flexIndex : FlexIndex, document : FlexDocument) = 
+        let UpdateFields(documentTemplate) = 
+            // Create a dynamic dictionary which will be used during scripting
+            let dynamicFields = new DynamicDictionary(document.Fields)
+            for field in flexIndex.IndexSetting.Fields do
+                // Ignore these 3 fields here.
+                if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField 
+                    || field.FieldName = Constants.LastModifiedFieldDv) then ()
+                else 
+                    // If it is computed field then generate and add it otherwise follow standard path
+                    match field.Source with
+                    | Some(s) -> 
+                        try 
+                            // Wrong values for the data type will still be handled as update Lucene field will
+                            // check the data type
+                            let value = s.Invoke(dynamicFields)
+                            FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value
+                        with e -> 
+                            FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
+                    | None -> 
+                        match document.Fields.TryGetValue(field.FieldName) with
+                        | (true, value) -> 
+                            FlexField.UpdateLuceneField field documentTemplate.FieldsLookup.[field.FieldName] value
+                        | _ -> 
+                            FlexField.UpdateLuceneFieldToDefault field documentTemplate.FieldsLookup.[field.FieldName]
+        maybe { 
+            let documentTemplate = flexIndex.ThreadLocalStore.Value
+            let targetShard = GetTargetShard(document.Id, flexIndex.Shards.Length)
+            let timeStamp = GetCurrentTimeAsLong()
+            let! existingVersion = VersionCheck(flexIndex, targetShard, document, timeStamp)
+            if flexIndex.VersioningCache.AddOrUpdate(document.Id, timeStamp, existingVersion) then             
+                documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(document.Id)
+                documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(timeStamp)
+                documentTemplate.FieldsLookup.[Constants.LastModifiedFieldDv].setLongValue(timeStamp)
+                UpdateFields(documentTemplate)            
+                return! Choice1Of2(targetShard, documentTemplate)
+            else
+                return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
+        }

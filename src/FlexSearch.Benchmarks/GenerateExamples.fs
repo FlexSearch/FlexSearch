@@ -1,9 +1,6 @@
 ﻿namespace FlexSearch.Documention
 
 module GenerateExamples = 
-    open FlexSearch.IntegrationTests.``Rest webservices tests - Documents``
-    open FlexSearch.IntegrationTests.``Rest webservices tests - Indices``
-    open FlexSearch.IntegrationTests.``Rest webservices tests - Search``
     open Microsoft.Owin.Testing
     open Microsoft.Owin
     open FlexSearch.Core
@@ -79,7 +76,7 @@ module GenerateExamples =
             File.WriteAllText(path, outputFile)
     
     let GenerateIndicesExamples() = 
-        let assembly = typeof<FlexSearch.IntegrationTests.``Rest webservices tests - Indices``.Dummy>.Assembly
+        let assembly = typeof<FlexSearch.IntegrationTests.Rest.Dummy>.Assembly
         for typ in assembly.GetTypes().Where(fun x -> x.IsPublic && x.IsClass) do
             let methods = typ.GetMethods()
             for m in methods.Where

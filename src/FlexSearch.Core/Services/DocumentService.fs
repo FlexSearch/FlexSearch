@@ -15,6 +15,7 @@ open FlexSearch.Common
 open FlexSearch.Core
 open FlexSearch.Api.Messages
 open FlexSearch.Utility
+open FlexSearch.Api.Validation
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -84,29 +85,29 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// <param name="indexName"></param>
     /// <param name="documentId"></param>
     /// <param name="fields"></param>
-    let AddorUpdateDocument indexName documentId fields = 
-        maybe { 
-            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, indexName)
-            let (targetIndex, documentTemplate) = 
-                Index.UpdateDocument(flexIndex, documentTemplate, documentId, 1, fields)
+    let AddorUpdateDocument (document: FlexDocument) =  
+        maybe {
+            do! (document :> IValidator).MaybeValidator() 
+            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, document.IndexName)
+            let! (targetIndex, documentTemplate) = Index.UpdateDocument(flexIndex, document)
             flexIndex.Shards.[targetIndex]
-                .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, documentId), documentTemplate.Document) 
+                .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, document.Id), documentTemplate.Document) 
             |> ignore
         }
     
     /// <summary>
     /// Add a new document to the index
     /// </summary>
-    /// <param name="indexName"></param>
-    /// <param name="documentId"></param>
-    /// <param name="fields"></param>
-    let AddDocument indexName documentId fields = 
-        maybe { 
-            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, indexName)
-            let (targetIndex, documentTemplate) = 
-                Index.UpdateDocument(flexIndex, documentTemplate, documentId, 1, fields)
+    let AddDocument (document: FlexDocument) = 
+        maybe {
+            do! (document :> IValidator).MaybeValidator()
+            if document.TimeStamp > 0L then
+                return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT_CREATE |> GenerateOperationMessage) 
+
+            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, document.IndexName)
+            let! (targetIndex, documentTemplate) = Index.UpdateDocument(flexIndex, document)
             flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
-            return new CreateResponse(Id = documentId)
+            return new CreateResponse(Id = document.Id)
         }
     
     /// <summary>
@@ -133,7 +134,7 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     interface IDocumentService with       
         member this.GetDocument(indexName, documentId) = GetDocument indexName documentId
         member this.GetDocuments(indexName, count) = GetDocuments indexName count
-        member this.AddOrUpdateDocument(indexName, documentId, fields) = AddorUpdateDocument indexName documentId fields
-        member this.AddDocument(indexName, documentId, fields) = AddDocument indexName documentId fields
+        member this.AddOrUpdateDocument(document) = AddorUpdateDocument document
+        member this.AddDocument(document) = AddDocument document
         member this.DeleteDocument(indexName, documentId) = DeleteDocument indexName documentId
         member this.DeleteAllDocuments indexName = DeleteAllDocuments indexName

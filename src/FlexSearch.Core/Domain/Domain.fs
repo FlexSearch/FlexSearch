@@ -34,6 +34,15 @@ open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
 
+/// <summary>
+/// Version cache store used across the system. This helps in resolving 
+/// conflicts arising out of concurrent threads trying to update a Lucene document.
+/// </summary>
+type IVersioningCacheStore = 
+    abstract AddOrUpdate : id:string * version:int64 * comparison:int64 -> bool
+    abstract Delete : id:string * version:Int64 -> bool * int64
+    abstract TryGetValue: id:string -> bool * int64
+
 // ----------------------------------------------------------------------------
 // Contains all the indexing related data type definitions 
 // ----------------------------------------------------------------------------
@@ -186,12 +195,22 @@ type FlexShard =
     { ShardNumber : int }
 
 /// <summary>
+/// Represents a dummy Lucene document. There will be one per index stored in a dictionary
+/// </summary>
+type ThreadLocalDocument = 
+    { Document : Document
+      FieldsLookup : Dictionary<string, Field>
+      LastGeneration : int }
+
+/// <summary>
 /// Represents an index in Flex terms which may consist of a number of
 /// valid Lucene indices.
 /// </summary>
 type FlexIndex = 
     { IndexSetting : FlexIndexSetting
       Shards : FlexShardWriter []
+      ThreadLocalStore : ThreadLocal<ThreadLocalDocument>
+      VersioningCache : IVersioningCacheStore
       Token : CancellationTokenSource }
 
 /// <summary>
@@ -207,14 +226,6 @@ type CaseInsensitiveKeywordAnalyzer() =
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
 
 /// <summary>
-/// Represents a dummy Lucene document. There will be one per index stored in a dictionary
-/// </summary>
-type ThreadLocalDocument = 
-    { Document : Document
-      FieldsLookup : Dictionary<string, Field>
-      LastGeneration : int }
-
-/// <summary>
 /// Stores all mutable index related state data. This will be passed around
 /// in a controlled manner and is thread-safe.
 /// </summary>
@@ -224,17 +235,17 @@ type IndicesState =
       /// mutable field on index setting 
       IndexStatus : ConcurrentDictionary<string, IndexState>
       /// Dictionary to hold all the information about currently active index and their status
-      IndexRegisteration : ConcurrentDictionary<string, FlexIndex>
-      /// For optimal indexing performance, re-use the Field and Document 
-      /// instance for more than one document. But that is not easily possible
-      /// in a multi-threaded scenario using TPL data flow as we don't know which 
-      /// thread it is using to execute each task. The easiest way
-      /// is to use ThreadLocal value to create a local copy of the index document.
-      /// The implication of creating one Lucene document class per document to 
-      /// be indexed is the penalty it has in terms of garbage collection. Also,
-      /// Lucene's document and index classes can't be shared across threads.
-      ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> }
+      IndexRegisteration : ConcurrentDictionary<string, FlexIndex> }
     
+    /// For optimal indexing performance, re-use the Field and Document 
+    /// instance for more than one document. But that is not easily possible
+    /// in a multi-threaded scenario using TPL data flow as we don't know which 
+    /// thread it is using to execute each task. The easiest way
+    /// is to use ThreadLocal value to create a local copy of the index document.
+    /// The implication of creating one Lucene document class per document to 
+    /// be indexed is the penalty it has in terms of garbage collection. Also,
+    /// Lucene's document and index classes can't be shared across threads.
+    //ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> 
     member this.GetStatus(indexName) = 
         match this.IndexStatus.TryGetValue(indexName) with
         | (true, state) -> Choice1Of2(state)

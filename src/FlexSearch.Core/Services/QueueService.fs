@@ -47,8 +47,8 @@ type QueueService(state : INodeState, documentService : IDocumentService) =
     /// <param name="documentId"></param>
     /// <param name="fields"></param>
     /// <param name="nodeState"></param>
-    let processAddQueueItems (indexName, documentId, fields) = 
-        documentService.AddDocument(indexName, documentId, fields) |> ignore
+    let processAddQueueItems (indexName, documentId, fields) = ()
+        //documentService.AddDocument(indexName, documentId, fields) |> ignore
     
     /// <summary>
     /// Add or update processing queue method
@@ -57,8 +57,8 @@ type QueueService(state : INodeState, documentService : IDocumentService) =
     /// <param name="documentId"></param>
     /// <param name="fields"></param>
     /// <param name="nodeState"></param>
-    let processAddOrUpdateQueueItems (indexName, documentId, fields) = 
-        documentService.AddOrUpdateDocument(indexName, documentId, fields) |> ignore
+    let processAddOrUpdateQueueItems (indexName, documentId, fields) = ()
+        //documentService.AddOrUpdateDocument(indexName, documentId, fields) |> ignore
     
     /// <summary>
     /// Queue for add operation 

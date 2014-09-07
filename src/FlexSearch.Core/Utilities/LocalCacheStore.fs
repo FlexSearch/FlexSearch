@@ -13,6 +13,7 @@ namespace FlexSearch.Core
 open System
 open System.Collections.Concurrent
 open System.Linq
+open CSharpTest.Net.Collections
 
 // ----------------------------------------------------------------------------
 /// Various cache implementation used by Flex
@@ -29,15 +30,18 @@ module Cache =
     /// complicates the design and requires thread management
     // ----------------------------------------------------------------------------
     [<Sealed>]
-    type VersioningCacheStore() = 
-        let cache = new ConcurrentDictionary<string, int>()
+    type VersioningCacheStore(shards : FlexShardWriter []) = 
+        let cache = new LurchTable<string, Int64>(LurchTableOrder.Insertion, 10000)
         interface IVersioningCacheStore with
             
-            member this.GetVersion id = 
+            member x.AddOrUpdate(id : string, version : int64, comparison : int64) = 
                 match cache.TryGetValue(id) with
-                | (true, x) -> Some(x)
-                | _ -> None
+                | true, oldValue -> 
+                    if comparison = 0L then 
+                        // It is an unconditional update
+                        cache.TryUpdate(id, version)
+                    else cache.TryUpdate(id, version, comparison)
+                | _ -> cache.TryAdd(id, version)
             
-            member this.AddVersion(id, version) = true
-            member this.UpdateVersion(id, oldversion, newVersion) = true
-            member this.DeleteVersion id = true
+            member x.TryGetValue(id : string) = cache.TryGetValue(id)
+            member x.Delete(id : string, version : Int64) = cache.TryRemove(id)

@@ -14,7 +14,8 @@ open org.apache.lucene.sandbox
 open org.apache.lucene.codecs.idversion
 open org.apache.lucene.document
 open org.apache.lucene.analysis
- 
+open org.apache.lucene.document
+
 [<AbstractClass; Sealed>] 
 type IdFieldHelpers() =
     static let idField = 
@@ -27,6 +28,5 @@ type IdFieldHelpers() =
         fieldType
 
     static member IdFieldType = idField
-    
-    
+      
 

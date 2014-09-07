@@ -21,6 +21,9 @@ open Microsoft.Owin.Testing
 open FlexSearch.TestSupport.RestHelpers
 open FlexSearch.Client
 
+type Dummy() =
+    member val DummyProperty = "" with get, set
+
 module ``Document Tests`` = 
     let TestIndex(indexName) = 
         let index = new Index(IndexName = indexName, Online = true)
@@ -69,7 +72,7 @@ module ``Document Tests`` =
     let ``Get a document from an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         let actual = client.GetDocument("contact", "1").Result
         actual |> ExpectSuccess
-        Assert.Equal<string>("1", actual.Data.Id)
+        Assert.Same("1", actual.Data.Id)
 
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-id-2", "")>]
     let ``Non existing document should return Not found`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 

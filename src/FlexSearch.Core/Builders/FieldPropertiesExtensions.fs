@@ -69,7 +69,27 @@ module FieldPropertiesExtensions =
               RequiresAnalyzer = false
               DefaultField = null }
         idField
-    
+
+    /// <summary>
+    /// FieldType to be used for ID fields
+    /// </summary>
+    let GetTimeStampDvField(configuration : IndexConfiguration) = 
+        let idField = 
+            { FieldName = Constants.LastModifiedFieldDv
+              SchemaName = 
+                  sprintf "%s[%s]<%s>" Constants.LastModifiedFieldDv
+                      (configuration.DefaultDocvaluesFormat.ToString().ToLowerInvariant()) 
+                      (configuration.DefaultIndexPostingsFormat.ToString().ToLowerInvariant())
+              FieldType = FlexDateTime
+              FieldInformation = None
+              Source = None
+              PostingsFormat = configuration.DefaultIndexPostingsFormat
+              DocValuesFormat = configuration.DefaultDocvaluesFormat
+              Similarity = configuration.DefaultFieldSimilarity
+              StoreInformation = FieldStoreInformation.Create(false, true)
+              RequiresAnalyzer = false
+              DefaultField = null }
+        idField    
     type FieldProperties with
         
         /// <summary>
@@ -181,6 +201,7 @@ module FieldPropertiesExtensions =
                 // Add system fields
                 result.Add(Constants.IdField, GetIdField(indexConfiguration))
                 result.Add(Constants.LastModifiedField, GetTimeStampField(indexConfiguration))
+                result.Add(Constants.LastModifiedFieldDv, GetTimeStampDvField(indexConfiguration))
                 for field in fields do
                     let! fieldObject = field.Value.Build(flexAnalyzers, scripts, factoryCollection, field.Key)
                     result.Add(field.Key, fieldObject)

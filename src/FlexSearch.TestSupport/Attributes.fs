@@ -146,12 +146,12 @@ module IntegrationTestHelpers =
         let headers = lines.[0].Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
         for line in lines.Skip(1) do
             let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
-            let indexDocument = new Document()
+            let indexDocument = new FlexDocument()
             indexDocument.Id <- items.[0].Trim()
-            indexDocument.Index <- index.IndexName
+            indexDocument.IndexName <- index.IndexName
             for i in 1..items.Length - 1 do
                 indexDocument.Fields.Add(headers.[i].Trim(), items.[i].Trim())
-            documentService.AddDocument(index.IndexName, indexDocument.Id, indexDocument.Fields) |> ExpectSuccess
+            documentService.AddDocument(indexDocument) |> ExpectSuccess
         indexService.Commit(index.IndexName) |> ExpectSuccess
         indexService.Refresh(index.IndexName) |> ExpectSuccess
     
