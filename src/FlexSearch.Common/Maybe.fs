@@ -44,6 +44,11 @@ type ValidationBuilder() =
         if pred() then bind (body()) (fun _ -> whileLoop pred body)
         else zero
     
+    let tryWith expr handler = 
+        try 
+            expr()
+        with ex -> handler ex
+    
     // The forLoop operator
     let forLoop (collection : seq<_>) func = 
         using (collection.GetEnumerator()) 
@@ -55,6 +60,7 @@ type ValidationBuilder() =
     member this.Combine(a, b) = combine a b
     member this.Delay(f) = delay f
     member this.TryFinally(body, compensation) = tryFinally body compensation
+    member this.TryWith(expr, handler) = tryWith expr handler
     member this.For(collection : seq<_>, func) = forLoop collection func
     member this.Using(disposable : #System.IDisposable, body) = using disposable body
 
