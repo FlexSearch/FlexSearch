@@ -1,11 +1,11 @@
 ﻿namespace FlexSearch.Api
 
-open System.ComponentModel.DataAnnotations
-open System.ComponentModel
-open System
-open System.Collections.Generic
 open FlexSearch.Api.Validation
 open NullGuard
+open System
+open System.Collections.Generic
+open System.ComponentModel
+open System.ComponentModel.DataAnnotations
 
 [<ToString>]
 type ShardConfiguration() = 
@@ -186,7 +186,7 @@ type SearchQuery(index : string, query : string) =
 // ----------------------------------------------------------------------------
 //	Index & Document related
 // ----------------------------------------------------------------------------
-type Document(indexName: string, id: string) = 
+type Document(indexName : string, id : string) = 
     inherit ValidatableObjectBase<ScriptProperties>()
     member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     member val Highlights = new List<string>() with get, set
@@ -196,9 +196,25 @@ type Document(indexName: string, id: string) =
     member val Id = id with get, set
     
     member val LastModified = Unchecked.defaultof<Int64> with get, set
+    
     [<Required>]
     member val Index = indexName with get, set
-    new () = Document(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
+    
+    new() = Document(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
+
+type FlexDocument(indexName : string, id : string) = 
+    inherit ValidatableObjectBase<ScriptProperties>()
+    member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
+    
+    [<Required>]
+    member val Id = id with get, set
+    
+    member val TimeStamp = Unchecked.defaultof<Int64> with get, set
+    
+    [<Required>]
+    member val IndexName = indexName with get, set
+    
+    new() = FlexDocument(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
 
 type Index() = 
     inherit ValidatableObjectBase<Index>()
