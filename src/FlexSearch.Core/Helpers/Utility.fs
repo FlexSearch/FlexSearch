@@ -80,7 +80,7 @@ module Helpers =
     open System.Security.Principal
     
     /// Returns current date time in Flex compatible format
-    let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmss"))
+    let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmssfff"))
     
     /// Utility method to load a file into text string
     let LoadFile(filePath : string) = 
