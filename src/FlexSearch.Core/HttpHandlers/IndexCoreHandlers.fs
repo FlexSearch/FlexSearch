@@ -11,6 +11,7 @@
 namespace FlexSearch.Core.HttpHandlers
 
 open FlexSearch.Api
+open FlexSearch.Api.Messages
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 open FlexSearch.Utility
@@ -25,8 +26,31 @@ open System.IO
 open System.Linq
 open System.Net
 open System.Net.Http
-open FlexSearch.Api.Messages
- 
+open System.Text
+open System.Web.Http
+
+[<Sealed>]
+type HomeController() = 
+    inherit ApiController()
+    
+    static let htmlPage = 
+        let filePath = System.IO.Path.Combine(Constants.ConfFolder, "WelcomePage.html")
+        if File.Exists(filePath) then 
+            let pageText = System.IO.File.ReadAllText(filePath)
+            pageText.Replace
+                ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+        else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+    
+    member this.Get() = 
+        let response = this.Request.CreateResponse(HttpStatusCode.OK)
+        response.Content <- new StringContent(htmlPage, Encoding.UTF8, "text/html")
+        response
+
+[<Sealed>]
+type PingController() = 
+    inherit ApiController()
+    member this.Get() = failwithf "Not implemented" //new Response<unit>()
+
 [<Name("GET-/ping")>]
 [<Sealed>]
 type GetPingHandler() = 
@@ -74,14 +98,12 @@ type PostIndexByIdHandler(indexService : IIndexService) =
             match GetRequestBody<Index>(owin.Request) with
             | Choice1Of2(index) -> 
                 match indexService.AddIndex(index) with
-                | Choice1Of2(response) -> 
-                    owin |> CREATED (new Response<CreateResponse>(Data = response))
-                | Choice2Of2(error) ->
-                    if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS then
-                        owin |> CONFLICT (new Response<CreateResponse>(Error = error))
-                    else owin |> BAD_REQUEST (new Response<CreateResponse>(Error = error))
-            | Choice2Of2(error) -> 
-                owin |> BAD_REQUEST (new Response<CreateResponse>(Error = error))
+                | Choice1Of2(response) -> owin |> CREATED(new Response<CreateResponse>(Data = response))
+                | Choice2Of2(error) -> 
+                    if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS then 
+                        owin |> CONFLICT(new Response<CreateResponse>(Error = error))
+                    else owin |> BAD_REQUEST(new Response<CreateResponse>(Error = error))
+            | Choice2Of2(error) -> owin |> BAD_REQUEST(new Response<CreateResponse>(Error = error))
 
 [<Name("DELETE-/indices/:id")>]
 [<Sealed>]
@@ -100,7 +122,7 @@ type PutIndexByIdHandler(indexService : IIndexService) =
                 // Index name passed in URL takes precedence
                 index.IndexName <- GetIndexName(owin)
                 owin |> ResponseProcessor (indexService.UpdateIndex(index)) OK BAD_REQUEST
-            | Choice2Of2(error) -> owin |> BAD_REQUEST (new Response<unit>(Error = error))
+            | Choice2Of2(error) -> owin |> BAD_REQUEST(new Response<unit>(Error = error))
 
 [<Name("GET-/indices/:id/status")>]
 [<Sealed>]
@@ -122,7 +144,7 @@ type PutStatusHandler(indexService : IIndexService) =
                 match SubId(owin) with
                 | InvariantEqual "online" -> indexService.OpenIndex(GetIndexName(owin))
                 | InvariantEqual "offline" -> indexService.CloseIndex(GetIndexName(owin))
-                | _ -> Choice2Of2(Errors.HTTP_NOT_SUPPORTED  |> GenerateOperationMessage)
+                | _ -> Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)
             owin |> ResponseProcessor processRequest OK BAD_REQUEST
 
 [<Name("GET-/indices/:id/exists")>]
@@ -133,5 +155,5 @@ type GetExistsHandler(indexService : IIndexService) =
             let processRequest = 
                 match indexService.IndexExists(GetIndexName(owin)) with
                 | true -> Choice1Of2(new IndexExistsResponse(Exists = true))
-                | false -> Choice2Of2(Errors.INDEX_NOT_FOUND  |> GenerateOperationMessage)
+                | false -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
             owin |> ResponseProcessor processRequest OK NOT_FOUND

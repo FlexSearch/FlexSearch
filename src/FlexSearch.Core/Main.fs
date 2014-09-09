@@ -13,6 +13,8 @@ namespace FlexSearch.Core
 [<AutoOpen>]
 module Main = 
     open Autofac
+    open Autofac.Extras.Attributed
+    open Autofac.Integration.WebApi
     open FlexSearch.Api
     open FlexSearch.Common
     open FlexSearch.Core
@@ -30,7 +32,6 @@ module Main =
     open System.Threading
     open System.Threading.Tasks
     open org.apache.lucene.analysis
-    open Autofac.Extras.Attributed
     
     /// <summary>
     /// Generate server settings from the JSON text file
@@ -69,6 +70,12 @@ module Main =
     /// <param name="testServer"></param>
     let GetContainer(serverSettings : ServerSettings, testServer : bool) = 
         let builder = new ContainerBuilder()
+        // Register Web API controllers
+        builder.RegisterApiControllers(System.Reflection.Assembly.GetExecutingAssembly()) |> ignore
+
+        // Register Global error handler
+        builder |> FactoryService.RegisterSingleInstance<GlobalExceptionHandler, System.Web.Http.ExceptionHandling.IExceptionHandler>
+
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
@@ -95,8 +102,7 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
         let indicesState = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
-              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase)
-            }
+              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase) }
         builder.RegisterInstance(new SqlLitePersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() 
         |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
@@ -139,7 +145,7 @@ module Main =
             try 
                 let indexService = container.Resolve<IIndexService>()
                 let httpFactory = container.Resolve<IFlexFactory<IHttpHandler>>()
-                httpServer <- new OwinServer(indexService, httpFactory)
+                httpServer <- new OwinWebApiServer(container)
                 httpServer.Start()
             with e -> printfn "%A" e
         
