@@ -11,10 +11,12 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
+open FlexSearch.Api.Messages
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 open Microsoft.Owin
 open Owin
+open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Net
@@ -39,9 +41,41 @@ type NodeState(persistanceStore, serversettings, cacheStore, indicesState) =
 // ----------------------------------------------------------------------------     
 /// HTTP module to handle to incoming requests
 // ----------------------------------------------------------------------------   
-type IHttpHandler =
-    abstract Process : context: IOwinContext -> unit
-  
+type IHttpHandler = 
+    abstract Process : context:IOwinContext -> unit
+
+[<AbstractClass>]
+type HttpHandlerBase<'T>(?failOnMissingBody0 : bool, ?fullControl0 : bool) = 
+    let failOnMissingBody = defaultArg failOnMissingBody0 true
+    let fullControl = defaultArg fullControl0 false
+    
+    let hasBody = 
+        if typeof<'T> = typeof<unit> then false
+        else true
+    
+    member this.TakeFullControl = fullControl
+    member this.FailOnMissingBody = failOnMissingBody
+    member this.HasBody = hasBody
+    member this.Deserialize(request : IOwinRequest) = GetRequestBody<'T>(request)
+    
+    member this.Serialize (response : Choice<_, OperationMessage>) (successStatus : HttpStatusCode) 
+           (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        // For parameter less constructor the performance of Activator is as good as direct initialization. Based on the 
+        // finding of http://geekswithblogs.net/mrsteve/archive/2012/02/11/c-sharp-performance-new-vs-expression-tree-func-vs-activator.createinstance.aspx
+        // In future we can cache it if performance is found to be an issue.
+        let instance = Activator.CreateInstance<Response<'T>>()
+        match response with
+        | Choice1Of2(r) -> 
+            instance.Data <- r
+            WriteResponse successStatus r owinContext
+        | Choice2Of2(r) -> 
+            instance.Error <- r
+            WriteResponse failureStatus r owinContext
+    
+    abstract Process : id:option<string> * subId:option<string> * body:Option<'T> * context:IOwinContext
+     -> Choice<_, OperationMessage> * HttpStatusCode * HttpStatusCode
+    abstract Process : context:IOwinContext -> unit
+
 [<AbstractClass>]
 type HttpModuleBase() = 
     //abstract Routes : unit -> ServiceRoute []
