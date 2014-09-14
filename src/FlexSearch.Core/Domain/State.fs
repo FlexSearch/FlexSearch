@@ -45,7 +45,7 @@ type IHttpHandler =
     abstract Process : context:IOwinContext -> unit
 
 [<AbstractClass>]
-type HttpHandlerBase<'T>(?failOnMissingBody0 : bool, ?fullControl0 : bool) = 
+type HttpHandlerBase<'T, 'U>(?failOnMissingBody0 : bool, ?fullControl0 : bool) = 
     let failOnMissingBody = defaultArg failOnMissingBody0 true
     let fullControl = defaultArg fullControl0 false
     
@@ -58,12 +58,12 @@ type HttpHandlerBase<'T>(?failOnMissingBody0 : bool, ?fullControl0 : bool) =
     member this.HasBody = hasBody
     member this.Deserialize(request : IOwinRequest) = GetRequestBody<'T>(request)
     
-    member this.Serialize (response : Choice<_, OperationMessage>) (successStatus : HttpStatusCode) 
+    member this.Serialize (response : Choice<'U, OperationMessage>) (successStatus : HttpStatusCode) 
            (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
         // For parameter less constructor the performance of Activator is as good as direct initialization. Based on the 
         // finding of http://geekswithblogs.net/mrsteve/archive/2012/02/11/c-sharp-performance-new-vs-expression-tree-func-vs-activator.createinstance.aspx
         // In future we can cache it if performance is found to be an issue.
-        let instance = Activator.CreateInstance<Response<'T>>()
+        let instance = Activator.CreateInstance<Response<'U>>()
         match response with
         | Choice1Of2(r) -> 
             instance.Data <- r
@@ -73,8 +73,10 @@ type HttpHandlerBase<'T>(?failOnMissingBody0 : bool, ?fullControl0 : bool) =
             WriteResponse failureStatus r owinContext
     
     abstract Process : id:option<string> * subId:option<string> * body:Option<'T> * context:IOwinContext
-     -> Choice<_, OperationMessage> * HttpStatusCode * HttpStatusCode
+     -> Choice<'U, OperationMessage> * HttpStatusCode * HttpStatusCode
+    override this.Process(id, subId, body, context) = (Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage), HttpStatusCode.OK, HttpStatusCode.BadRequest)
     abstract Process : context:IOwinContext -> unit
+    override this.Process(context) = context |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
 
 [<AbstractClass>]
 type HttpModuleBase() = 

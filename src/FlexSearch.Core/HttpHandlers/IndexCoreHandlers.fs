@@ -30,26 +30,11 @@ open System.Text
 open System.Web.Http
 
 [<Sealed>]
-type HomeController() = 
-    inherit ApiController()
-    
-    static let htmlPage = 
-        let filePath = System.IO.Path.Combine(Constants.ConfFolder, "WelcomePage.html")
-        if File.Exists(filePath) then 
-            let pageText = System.IO.File.ReadAllText(filePath)
-            pageText.Replace
-                ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
-        else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
-    
-    member this.Get() = 
-        let response = this.Request.CreateResponse(HttpStatusCode.OK)
-        response.Content <- new StringContent(htmlPage, Encoding.UTF8, "text/html")
-        response
-
-[<Sealed>]
-type PingController() = 
-    inherit ApiController()
-    member this.Get() = failwithf "Not implemented" //new Response<unit>()
+[<Name("GET-/ping")>]
+type PingHandler() =
+    inherit HttpHandlerBase<unit, unit>()
+        override this.Process (id, subId, body, context) =  
+            (Choice1Of2(), HttpStatusCode.OK, HttpStatusCode.BadRequest)
 
 [<Name("GET-/ping")>]
 [<Sealed>]
