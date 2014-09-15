@@ -70,11 +70,6 @@ module Main =
     /// <param name="testServer"></param>
     let GetContainer(serverSettings : ServerSettings, testServer : bool) = 
         let builder = new ContainerBuilder()
-        // Register Web API controllers
-        builder.RegisterApiControllers(System.Reflection.Assembly.GetExecutingAssembly()) |> ignore
-
-        // Register Global error handler
-        builder |> FactoryService.RegisterSingleInstance<GlobalExceptionHandler, System.Web.Http.ExceptionHandling.IExceptionHandler>
 
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
@@ -87,9 +82,12 @@ module Main =
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexFilterFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexQuery>
+        builder |> FactoryService.RegisterInterfaceAssemblies<IHttpResource>
         // Abstract class scanning
+        builder |> FactoryService.RegisterAbstractClassAssemblies<HttpHandlerBase<_,_>>
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
+        builder |> FactoryService.RegisterSingleFactoryInstance<IHttpResource>
         builder |> FactoryService.RegisterSingleFactoryInstance<IHttpHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexFilterFactory>
@@ -144,8 +142,8 @@ module Main =
         member this.Start() = 
             try 
                 let indexService = container.Resolve<IIndexService>()
-                let httpFactory = container.Resolve<IFlexFactory<IHttpHandler>>()
-                httpServer <- new OwinWebApiServer(container)
+                let httpFactory = container.Resolve<IFlexFactory<IHttpResource>>()
+                httpServer <- new OwinServer(indexService, httpFactory)
                 httpServer.Start()
             with e -> printfn "%A" e
         

@@ -26,11 +26,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.IntegrationTests
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Logging.Gibraltar", "FlexSearch.Logging.Gibraltar\FlexSearch.Logging.Gibraltar.fsproj", "{1942C634-5538-4D50-8FCE-CF5D24771BA1}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Benchmarks", "FlexSearch.Benchmarks\FlexSearch.Benchmarks.fsproj", "{FC60337C-7E0A-4327-813D-0952FF7544B4}"
-	ProjectSection(ProjectDependencies) = postProject
-		{38D53A73-63C2-4D03-B745-027B2FB63418} = {38D53A73-63C2-4D03-B745-027B2FB63418}
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weavers", "Weavers\Weavers.csproj", "{82E71AAE-1BBE-436C-847B-FA12CDAC66D1}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Common", "FlexSearch.Common\FlexSearch.Common.fsproj", "{BC622920-1E51-459A-8DFA-C89EF6FC33EE}"
@@ -120,16 +115,6 @@ Global
 		{1942C634-5538-4D50-8FCE-CF5D24771BA1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{1942C634-5538-4D50-8FCE-CF5D24771BA1}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{1942C634-5538-4D50-8FCE-CF5D24771BA1}.Release|x64.ActiveCfg = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|x64.ActiveCfg = Release|Any CPU
 		{82E71AAE-1BBE-436C-847B-FA12CDAC66D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{82E71AAE-1BBE-436C-847B-FA12CDAC66D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82E71AAE-1BBE-436C-847B-FA12CDAC66D1}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
