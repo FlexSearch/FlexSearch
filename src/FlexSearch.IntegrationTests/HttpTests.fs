@@ -190,7 +190,7 @@ module ``Webservice Tests`` =
                 //AddTestDataToIndex
                 //    (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), 
                 //     container.Resolve<IIndexService>())
-                let httpFactory = container.Resolve<IFlexFactory<IHttpHandler>>()
+                let httpFactory = container.Resolve<IFlexFactory<IHttpResource>>()
                 let httpServer = new OwinServer(indexService, httpFactory) :> IServer
                 httpServer.Start()
                 serverRunning <- true
@@ -344,7 +344,7 @@ There are a number of parameters which can be set for a given index. For more in
 There are a number of parameters which can be set for a given index. For more information about each parameter please refer to Glossary.
         """
             |> request "POST" ("/indices/" + Guid.NewGuid().ToString("N"))
-            |> withBody (JsonConvert.SerializeObject(IntegrationTestHelpers.MockIndexSettings(), jsonSettings))
+            |> withBody (JsonConvert.SerializeObject(IntegrationTestHelpers.MockIndexSettings()))
             |> execute
             |> responseStatusEquals HttpStatusCode.OK
             |> responseBodyIsNull

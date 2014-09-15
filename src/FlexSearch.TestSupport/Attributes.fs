@@ -209,7 +209,7 @@ module IntegrationTestHelpers =
     type IntegrationCustomization() = 
         interface ICustomization with
             member this.Customize(fixture : IFixture) = 
-                let GetTestServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHandler>) = 
+                let GetTestServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>) = 
                     let testServer = 
                         TestServer.Create(fun app -> 
                             let owinServer = new OwinServer(indexService, httpFactory)
@@ -218,9 +218,9 @@ module IntegrationTestHelpers =
                 fixture.Inject<IIndexService>(Container.Resolve<IIndexService>()) |> ignore
                 fixture.Inject<ISearchService>(Container.Resolve<ISearchService>()) |> ignore
                 fixture.Inject<IDocumentService>(Container.Resolve<IDocumentService>()) |> ignore
-                fixture.Inject<IFlexFactory<IHttpHandler>>(Container.Resolve<IFlexFactory<IHttpHandler>>()) |> ignore
+                fixture.Inject<IFlexFactory<IHttpResource>>(Container.Resolve<IFlexFactory<IHttpResource>>()) |> ignore
                 fixture.Register<Index>(fun _ -> GetBasicIndexSettingsForContact()) |> ignore
-                let testServer = GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())
+                let testServer = GetTestServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpResource>>())
                 let loggingHandler = new LoggingHandler(testServer.Handler)
                 let httpClient = new HttpClient(loggingHandler)
                 let flexClient = new FlexClient(httpClient)

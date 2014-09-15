@@ -1,8 +1,14 @@
 ﻿namespace FlexSearch.IntegrationTests.Rest
 
+open Autofac
 open FlexSearch.Api
+open FlexSearch.Api.Messages
+open FlexSearch.Client
 open FlexSearch.Core
+open FlexSearch.TestSupport
+open FlexSearch.TestSupport.RestHelpers
 open FlexSearch.Utility
+open Microsoft.Owin.Testing
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open System
@@ -13,14 +19,8 @@ open System.Net
 open System.Net.Http
 open System.Text
 open System.Threading
-open FlexSearch.TestSupport
-open Autofac
 open Xunit
 open Xunit.Extensions
-open Microsoft.Owin.Testing
-open FlexSearch.TestSupport.RestHelpers
-open FlexSearch.Client
-open FlexSearch.Api.Messages
 
 module ``Index Creation Tests`` = 
     [<Theory; AutoMockIntegrationData>]
@@ -55,7 +55,7 @@ module ``Index Creation Tests`` =
     
     [<Theory; AutoMockIntegrationData>]
     let ``Index cannot be created without IndexName`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
-        let actual = client.AddIndex(new Index()).Result
+        let actual = client.AddIndex(new Index(IndexName = "")).Result
         handler |> VerifyHttpCode HttpStatusCode.BadRequest
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-3", "")>]
@@ -184,4 +184,4 @@ module ``Index Other Services Tests`` =
     let ``Get all indices`` (client : IFlexClient, handler : LoggingHandler) = 
         let actual = client.GetAllIndex().Result
         // Should have at least contact index
-        Assert.Equal<int>(1, actual.Data.Count)
+        Assert.True(actual.Data.Count >= 1)
