@@ -64,7 +64,27 @@ module HttpHelpers =
             
             member x.SupportedHeaders() : string [] = 
                 [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
-    
+
+    [<Sealed>]
+    type NewtonsoftJsonFormatter() = 
+        let options = new Newtonsoft.Json.JsonSerializerSettings()
+        do
+            options.Converters.Add(new StringEnumConverter())
+        interface IFormatter with
+            
+            member x.DeSerialize<'T>(stream : Stream) = 
+                use reader = new StreamReader(stream)
+                JsonConvert.DeserializeObject<'T>(reader.ReadToEnd(), options)
+            
+            member x.Serialize(body : obj, stream : Stream) : unit = 
+                use writer = new StreamWriter(stream)
+                let body = JsonConvert.SerializeObject(body, options)
+                writer.Write(body)
+                writer.Flush()
+            
+            member x.SupportedHeaders() : string [] = 
+                [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
+                    
     [<Sealed>]
     type ProtoBufferFormatter() = 
         interface IFormatter with
@@ -74,7 +94,7 @@ module HttpHelpers =
     
     let private Formatters = new ConcurrentDictionary<string, IFormatter>(StringComparer.OrdinalIgnoreCase)
     let protoFormatter = new ProtoBufferFormatter() :> IFormatter
-    let jsonFormatter = new JilJsonFormatter() :> IFormatter
+    let jsonFormatter = new NewtonsoftJsonFormatter() :> IFormatter
     
     protoFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, protoFormatter) |> ignore)
     jsonFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, jsonFormatter) |> ignore)
@@ -97,8 +117,9 @@ module HttpHelpers =
     /// Write HTTP response
     let WriteResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
         owin.Response.StatusCode <- int statusCode
+        let format = GetResponseFormat owin
+        owin.Response.ContentType <- format
         if response <> Unchecked.defaultof<_> then 
-            let format = GetResponseFormat owin
             match Formatters.TryGetValue(format) with
             | true, formatter -> formatter.Serialize(response, owin.Response.Body)
             | _ -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
