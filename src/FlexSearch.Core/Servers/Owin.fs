@@ -34,12 +34,12 @@ open System.Threading.Tasks
 /// </summary>
 [<Name("Http")>]
 [<Sealed>]
-type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHandler>, ?port0 : int) = 
+type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>, ?port0 : int) = 
     let port = defaultArg port0 9800
     
     let httpModule = 
         let modules = httpFactory.GetAllModules()
-        let result = new Dictionary<string, IHttpHandler>(StringComparer.OrdinalIgnoreCase)
+        let result = new Dictionary<string, IHttpResource>(StringComparer.OrdinalIgnoreCase)
         for m in modules do
             // check if the key supports more than one http verb
             if m.Key.Contains("|") then 
@@ -57,23 +57,23 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
     /// <param name="owin">OWIN Context</param>
     let exec (owin : IOwinContext) = 
         async { 
-            let getModule lookupValue (owin : IOwinContext) = 
+            let getModule lookupValue (id : option<string>) (subId : option<string>) (owin : IOwinContext) = 
                 match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
-                | (true, x) -> x.Process owin
+                | (true, x) -> x.Execute(id, subId, owin)
                 | _ -> 
                     owin 
                     |> BAD_REQUEST(new Response<unit>(Error = (Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)))
             
-            let matchSubModules (x : int, owin : IOwinContext) = 
+            let matchSubModules (id : string, x : int, owin : IOwinContext) = 
                 match x with
-                | 3 -> getModule ("/" + owin.Request.Uri.Segments.[1] + ":id") owin
+                | 3 -> getModule ("/" + owin.Request.Uri.Segments.[1] + ":id") (Some(id)) None owin
                 | 4 -> 
                     getModule 
                         ("/" + owin.Request.Uri.Segments.[1] + ":id/" 
-                         + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[3]) owin
+                         + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[3]) (Some(id)) None owin
                 | 5 -> 
                     getModule ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
-                        owin
+                        (Some(id)) (Some(owin.Request.Uri.Segments.[4])) owin
                 | _ -> 
                     owin 
                     |> BAD_REQUEST(new Response<unit>(Error = (Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)))
@@ -81,20 +81,21 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpHa
             try 
                 match owin.Request.Uri.Segments.Length with
                 // Server root
-                | 1 -> getModule "/" owin
+                | 1 -> getModule "/" None None owin
                 // Root resource request
-                | 2 -> getModule ("/" + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[1]) owin
+                | 2 -> getModule ("/" + HttpHelpers.RemoveTrailingSlash owin.Request.Uri.Segments.[1]) None None owin
                 | x when x > 2 && x <= 5 -> 
+                    let id = RemoveTrailingSlash owin.Request.Uri.Segments.[2]
                     // Check if the Uri is indices and perform an index exists check
                     if (String.Equals(owin.Request.Uri.Segments.[1], "indices") 
                         || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) && owin.Request.Method <> "POST" then 
-                        match indexService.IndexExists(RemoveTrailingSlash owin.Request.Uri.Segments.[2]) with
-                        | true -> matchSubModules (x, owin)
+                        match indexService.IndexExists(id) with
+                        | true -> matchSubModules (id, x, owin)
                         | false -> 
                             owin 
                             |> NOT_FOUND
                                    (new Response<unit>(Error = (Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)))
-                    else matchSubModules (x, owin)
+                    else matchSubModules (id, x, owin)
                 | _ -> 
                     owin 
                     |> BAD_REQUEST(new Response<unit>(Error = (Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)))
