@@ -14,6 +14,7 @@ namespace FlexSearch.Core
 module HttpHelpers = 
     open FlexSearch
     open FlexSearch.Api
+    open FlexSearch.Api.Messages
     open FlexSearch.Core
     open FlexSearch.Utility
     open Microsoft.Owin
@@ -27,11 +28,6 @@ module HttpHelpers =
     open System.Net
     open System.Text
     open System.Threading
-    open FlexSearch.Api.Messages
-    
-    let jsonSettings = new JsonSerializerSettings()
-    
-    jsonSettings.Converters.Add(new StringEnumConverter())
     
     /// Helper method to serialize cluster messages
     let ProtoSerialize(message : 'a) = 
@@ -39,10 +35,49 @@ module HttpHelpers =
         Serializer.Serialize(stream, message)
         stream.ToArray()
     
-    /// Helper method to deserialize cluster messages
+    /// Helper method to De-serialize cluster messages
     let ProtoDeserialize<'T>(message : byte []) = 
         use stream = new MemoryStream(message)
         Serializer.Deserialize<'T>(stream)
+    
+    /// <summary>
+    /// Formatter interface for supporting multiple formats in the HTTP engine
+    /// </summary>
+    type IFormatter = 
+        abstract SupportedHeaders : unit -> string []
+        abstract Serialize : body:obj * stream:Stream -> unit
+        abstract DeSerialize<'T> : stream:Stream -> 'T
+    
+    [<Sealed>]
+    type JilJsonFormatter() = 
+        let options = new Jil.Options(false, false, true, Jil.DateTimeFormat.ISO8601, false)
+        interface IFormatter with
+            
+            member x.DeSerialize<'T>(stream : Stream) = 
+                use reader = new StreamReader(stream) :> TextReader
+                Jil.JSON.Deserialize<'T>(reader, options)
+            
+            member x.Serialize(body : obj, stream : Stream) : unit = 
+                use writer = new StreamWriter(stream)
+                Jil.JSON.Serialize(body, writer, options)
+                writer.Flush()
+            
+            member x.SupportedHeaders() : string [] = 
+                [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
+    
+    [<Sealed>]
+    type ProtoBufferFormatter() = 
+        interface IFormatter with
+            member x.DeSerialize<'T>(stream : Stream) = ProtoBuf.Serializer.Deserialize<'T>(stream)
+            member x.Serialize(body : obj, stream : Stream) : unit = ProtoBuf.Serializer.Serialize(stream, body)
+            member x.SupportedHeaders() : string [] = [| "application/x-protobuf"; "application/octet-stream" |]
+    
+    let private Formatters = new ConcurrentDictionary<string, IFormatter>(StringComparer.OrdinalIgnoreCase)
+    let protoFormatter = new ProtoBufferFormatter() :> IFormatter
+    let jsonFormatter = new JilJsonFormatter() :> IFormatter
+    
+    protoFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, protoFormatter) |> ignore)
+    jsonFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, jsonFormatter) |> ignore)
     
     /// Get request format from the request object
     /// Defaults to json
@@ -50,7 +85,7 @@ module HttpHelpers =
         if String.IsNullOrWhiteSpace(request.ContentType) then "application/json"
         else request.ContentType
     
-    /// Get response format from the owin context
+    /// Get response format from the OWIN context
     /// Defaults to json
     let private GetResponseFormat(owin : IOwinContext) = 
         if owin.Request.Accept = null then "application/json"
@@ -59,58 +94,30 @@ module HttpHelpers =
             owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
         else owin.Request.Accept
     
-    /// Write http response
+    /// Write HTTP response
     let WriteResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
-        let matchType format res = 
-            match format with
-            | "text/json" | "application/json" | "json" -> 
-                owin.Response.ContentType <- "text/json"
-                match owin.Request.Query.Get("callback") with
-                | null -> 
-                    let result = JsonConvert.SerializeObject(res, jsonSettings)
-                    Some(Encoding.UTF8.GetBytes(result))
-                | fname -> 
-                    let result = sprintf "%s(%s);" fname (JsonConvert.SerializeObject(res, jsonSettings))
-                    Some(Encoding.UTF8.GetBytes(result))
-            | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
-                owin.Response.ContentType <- "application/x-protobuf"
-                Some(ProtoSerialize(res))
-            | _ -> None
         owin.Response.StatusCode <- int statusCode
         if response <> Unchecked.defaultof<_> then 
             let format = GetResponseFormat owin
-            let result = matchType format response
-            match result with
-            | None -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
-            | Some(x) -> await (owin.Response.WriteAsync(x))
+            match Formatters.TryGetValue(format) with
+            | true, formatter -> formatter.Serialize(response, owin.Response.Body)
+            | _ -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
     
     let inline IsNull(x) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
     
-    /// Write http response
+    /// Write HTTP response
     let GetRequestBody<'T>(request : IOwinRequest) = 
         let contentType = GetRequestFormat request
         if request.Body.CanRead then 
-            match contentType with
-            | "text/json" | "application/json" | "application/json; charset=utf-8" | "application/json;charset=utf-8" | "json" -> 
-                let body = 
-                    use reader = new System.IO.StreamReader(request.Body)
-                    reader.ReadToEnd()
-                if String.IsNullOrWhiteSpace(body) <> true then 
-                    try 
-                        let result = JsonConvert.DeserializeObject<'T>(body)
-                        if IsNull result then 
-                            Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
-                                       |> GenerateOperationMessage
-                                       |> Append("Message", "No body is defined."))
-                        else Choice1Of2(result)
-                    with ex -> 
+            match Formatters.TryGetValue(contentType) with
+            | true, formatter -> 
+                try 
+                    let result = formatter.DeSerialize<'T>(request.Body)
+                    if IsNull result then 
                         Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
                                    |> GenerateOperationMessage
-                                   |> Append("Message", ex.Message))
-                else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
-            | "application/x-protobuf" | "application/octet-stream" | "proto" -> 
-                try 
-                    Choice1Of2(ProtoBuf.Serializer.Deserialize<'T>(request.Body))
+                                   |> Append("Message", "No body is defined."))
+                    else Choice1Of2(result)
                 with ex -> 
                     Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
                                |> GenerateOperationMessage
@@ -118,6 +125,12 @@ module HttpHelpers =
             | _ -> Choice2Of2(Errors.HTTP_UNSUPPORTED_CONTENT_TYPE |> GenerateOperationMessage)
         else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
     
+    let Created = HttpStatusCode.Created
+    let Accepted = HttpStatusCode.Accepted
+    let Ok = HttpStatusCode.OK
+    let NotFound = HttpStatusCode.NotFound
+    let BadRequest = HttpStatusCode.BadRequest
+    let Conflict = HttpStatusCode.Conflict
     let CREATED (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Created value owin
     let ACCEPTED (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Accepted value owin
     let OK (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.OK value owin
