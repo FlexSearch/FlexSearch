@@ -31,23 +31,14 @@ open System.Web.Http
 
 [<Sealed>]
 [<Name("GET-/ping")>]
-type PingHandler() =
+type PingHandler() = 
     inherit HttpHandlerBase<unit, unit>()
-        override this.Process (id, subId, body, context) =  
-            (Choice1Of2(), HttpStatusCode.OK, HttpStatusCode.BadRequest)
-
-[<Name("GET-/ping")>]
-[<Sealed>]
-type GetPingHandler() = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin.Response.ContentType <- "text/html"
-            owin.Response.StatusCode <- 200
-            owin |> ResponseProcessor (Choice1Of2(new Response<unit>())) OK BAD_REQUEST
+    override this.Process(id, subId, body, context) = (Choice1Of2(), Ok, BadRequest)
 
 [<Name("GET-/")>]
 [<Sealed>]
 type GetRootHandler() = 
+    inherit HttpHandlerBase<unit, unit>(fullControl0 = true)
     
     let htmlPage = 
         let filePath = System.IO.Path.Combine(Constants.ConfFolder, "WelcomePage.html")
@@ -57,88 +48,77 @@ type GetRootHandler() =
                 ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
         else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
     
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin.Response.ContentType <- "text/html"
-            owin.Response.StatusCode <- 200
-            await (owin.Response.WriteAsync htmlPage)
+    override this.Process(owin) = 
+        owin.Response.ContentType <- "text/html"
+        owin.Response.StatusCode <- 200
+        await (owin.Response.WriteAsync htmlPage)
 
 [<Name("GET-/indices")>]
 [<Sealed>]
 type GetAllIndexHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = owin |> ResponseProcessor (indexService.GetAllIndex()) OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, List<Index>>()
+    override this.Process(id, subId, body, context) = (indexService.GetAllIndex(), Ok, BadRequest)
 
 [<Name("GET-/indices/:id")>]
 [<Sealed>]
 type GetIndexByIdHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = owin |> ResponseProcessor (indexService.GetIndex(GetIndexName(owin))) OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, Index>()
+    override this.Process(id, subId, body, context) = (indexService.GetIndex(id.Value), Ok, BadRequest)
 
 [<Name("POST-/indices")>]
 [<Sealed>]
 type PostIndexByIdHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            match GetRequestBody<Index>(owin.Request) with
-            | Choice1Of2(index) -> 
-                match indexService.AddIndex(index) with
-                | Choice1Of2(response) -> owin |> CREATED(new Response<CreateResponse>(Data = response))
-                | Choice2Of2(error) -> 
-                    if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS then 
-                        owin |> CONFLICT(new Response<CreateResponse>(Error = error))
-                    else owin |> BAD_REQUEST(new Response<CreateResponse>(Error = error))
-            | Choice2Of2(error) -> owin |> BAD_REQUEST(new Response<CreateResponse>(Error = error))
+    inherit HttpHandlerBase<Index, CreateResponse>()
+    override this.Process(id, subId, body, context) = 
+        match indexService.AddIndex(body.Value) with
+        | Choice1Of2(response) -> (Choice1Of2(response), Created, BadRequest)
+        | Choice2Of2(error) -> 
+            if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS then (Choice2Of2(error), Created, Conflict)
+            else (Choice2Of2(error), Created, BadRequest)
 
 [<Name("DELETE-/indices/:id")>]
 [<Sealed>]
 type DeleteIndexByIdHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (indexService.DeleteIndex(GetIndexName(owin))) OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, unit>()
+    override this.Process(id, subId, body, context) = (indexService.DeleteIndex(id.Value), Ok, BadRequest)
 
 [<Name("PUT-/indices/:id")>]
 [<Sealed>]
 type PutIndexByIdHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            match GetRequestBody<Index>(owin.Request) with
-            | Choice1Of2(index) -> 
-                // Index name passed in URL takes precedence
-                index.IndexName <- GetIndexName(owin)
-                owin |> ResponseProcessor (indexService.UpdateIndex(index)) OK BAD_REQUEST
-            | Choice2Of2(error) -> owin |> BAD_REQUEST(new Response<unit>(Error = error))
+    inherit HttpHandlerBase<Index, unit>()
+    override this.Process(id, subId, body, context) = 
+        // Index name passed in URL takes precedence
+        body.Value.IndexName <- id.Value
+        (indexService.UpdateIndex(body.Value), Ok, BadRequest)
 
 [<Name("GET-/indices/:id/status")>]
 [<Sealed>]
 type GetStatusHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            let processRequest = 
-                match indexService.GetIndexStatus(GetIndexName(owin)) with
-                | Choice1Of2(status) -> Choice1Of2(new IndexStatusResponse(Status = status))
-                | Choice2Of2(e) -> Choice2Of2(e)
-            owin |> ResponseProcessor processRequest OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, IndexStatusResponse>()
+    override this.Process(id, subId, body, context) = 
+        let response = 
+            match indexService.GetIndexStatus(id.Value) with
+            | Choice1Of2(state) -> Choice1Of2(new IndexStatusResponse(Status = state))
+            | Choice2Of2(error) -> Choice2Of2(error)
+        (response, Ok, BadRequest)
 
 [<Name("PUT-/indices/:id/status/:id")>]
 [<Sealed>]
 type PutStatusHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            let processRequest = 
-                match SubId(owin) with
-                | InvariantEqual "online" -> indexService.OpenIndex(GetIndexName(owin))
-                | InvariantEqual "offline" -> indexService.CloseIndex(GetIndexName(owin))
-                | _ -> Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)
-            owin |> ResponseProcessor processRequest OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, unit>()
+    override this.Process(id, subId, body, context) = 
+        match subId.Value with
+        | InvariantEqual "online" -> (indexService.OpenIndex(id.Value), Ok, BadRequest)
+        | InvariantEqual "offline" -> (indexService.CloseIndex(id.Value), Ok, BadRequest)
+        | _ -> (Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage), Ok, BadRequest)
 
 [<Name("GET-/indices/:id/exists")>]
 [<Sealed>]
 type GetExistsHandler(indexService : IIndexService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            let processRequest = 
-                match indexService.IndexExists(GetIndexName(owin)) with
-                | true -> Choice1Of2(new IndexExistsResponse(Exists = true))
-                | false -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
-            owin |> ResponseProcessor processRequest OK NOT_FOUND
+    inherit HttpHandlerBase<unit, IndexExistsResponse>()
+    override this.Process(id, subId, body, context) = 
+        let indexExists = 
+            match indexService.IndexExists(id.Value) with
+            | true -> Choice1Of2(new IndexExistsResponse(Exists = true))
+            | false -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+        (indexExists, Ok, NotFound)
