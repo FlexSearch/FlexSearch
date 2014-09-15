@@ -44,6 +44,12 @@ type NodeState(persistanceStore, serversettings, cacheStore, indicesState) =
 type IHttpHandler = 
     abstract Process : context:IOwinContext -> unit
 
+type IHttpResource = 
+    abstract TakeFullControl : bool
+    abstract HasBody : bool
+    abstract FailOnMissingBody : bool
+    abstract Execute : id:option<string> * subid:option<string> * context:IOwinContext -> unit
+
 [<AbstractClass>]
 type HttpHandlerBase<'T, 'U>(?failOnMissingBody0 : bool, ?fullControl0 : bool) = 
     let failOnMissingBody = defaultArg failOnMissingBody0 true
@@ -53,9 +59,6 @@ type HttpHandlerBase<'T, 'U>(?failOnMissingBody0 : bool, ?fullControl0 : bool) =
         if typeof<'T> = typeof<unit> then false
         else true
     
-    member this.TakeFullControl = fullControl
-    member this.FailOnMissingBody = failOnMissingBody
-    member this.HasBody = hasBody
     member this.Deserialize(request : IOwinRequest) = GetRequestBody<'T>(request)
     
     member this.Serialize (response : Choice<'U, OperationMessage>) (successStatus : HttpStatusCode) 
@@ -67,28 +70,37 @@ type HttpHandlerBase<'T, 'U>(?failOnMissingBody0 : bool, ?fullControl0 : bool) =
         match response with
         | Choice1Of2(r) -> 
             instance.Data <- r
-            WriteResponse successStatus r owinContext
+            WriteResponse successStatus instance owinContext
         | Choice2Of2(r) -> 
             instance.Error <- r
-            WriteResponse failureStatus r owinContext
+            WriteResponse failureStatus instance owinContext
     
     abstract Process : id:option<string> * subId:option<string> * body:Option<'T> * context:IOwinContext
      -> Choice<'U, OperationMessage> * HttpStatusCode * HttpStatusCode
-    override this.Process(id, subId, body, context) = (Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage), HttpStatusCode.OK, HttpStatusCode.BadRequest)
+    override this.Process(id, subId, body, context) = 
+        (Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage), HttpStatusCode.OK, HttpStatusCode.BadRequest)
     abstract Process : context:IOwinContext -> unit
     override this.Process(context) = context |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
-
-[<AbstractClass>]
-type HttpModuleBase() = 
-    //abstract Routes : unit -> ServiceRoute []
-    abstract Get : string * IOwinContext -> unit
-    override this.Get(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
-    abstract Put : string * IOwinContext -> unit
-    override this.Put(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
-    abstract Delete : string * IOwinContext -> unit
-    override this.Delete(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
-    abstract Post : string * IOwinContext -> unit
-    override this.Post(indexName, owin) = owin |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
+    interface IHttpResource with
+        member this.TakeFullControl = fullControl
+        member this.FailOnMissingBody = failOnMissingBody
+        member this.HasBody = hasBody
+        member this.Execute(id, subId, context) = 
+            if fullControl then this.Process(context)
+            else if hasBody then 
+                match this.Deserialize(context.Request) with
+                | Choice1Of2(body) -> 
+                    let (response, successCode, failureCode) = this.Process(id, subId, (Some(body)), context)
+                    context |> this.Serialize (response) successCode failureCode
+                | Choice2Of2(e) -> 
+                    if failOnMissingBody then 
+                        context |> this.Serialize (Choice2Of2(e)) HttpStatusCode.OK HttpStatusCode.BadRequest
+                    else 
+                        let (response, successCode, failureCode) = this.Process(id, subId, None, context)
+                        context |> this.Serialize (response) successCode failureCode
+            else 
+                let (response, successCode, failureCode) = this.Process(id, subId, None, context)
+                context |> this.Serialize (response) successCode failureCode
 
 /// <summary>
 /// Import handler interface to support
