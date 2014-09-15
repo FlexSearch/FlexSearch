@@ -73,7 +73,7 @@ type PostIndexByIdHandler(indexService : IIndexService) =
         match indexService.AddIndex(body.Value) with
         | Choice1Of2(response) -> (Choice1Of2(response), Created, BadRequest)
         | Choice2Of2(error) -> 
-            if error.ErrorCode = Errors.INDEX_ALREADY_EXISTS then (Choice2Of2(error), Created, Conflict)
+            if Errors.INDEX_ALREADY_EXISTS.Contains(error.ErrorCode) then (Choice2Of2(error), Created, Conflict)
             else (Choice2Of2(error), Created, BadRequest)
 
 [<Name("DELETE-/indices/:id")>]
