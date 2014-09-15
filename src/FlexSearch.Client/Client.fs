@@ -51,6 +51,9 @@ type LoggingHandler(innerHandler : HttpMessageHandler) =
                 log.Append(request.Method.ToString() + " ") |> ignore
                 log.AppendLine(request.RequestUri.ToString()) |> ignore
                 // Add body here
+                if request.Content <> null then
+                    let! requestBody = Async.AwaitTask(request.Content.ReadAsStringAsync())
+                    log.AppendLine(requestBody) |> ignore
                 log.AppendLine("----------------------------------") |> ignore
                 log.AppendLine("Response") |> ignore
                 let! response = Async.AwaitTask(work)
