@@ -90,7 +90,7 @@ type ValidatableObjectBase<'T>() =
         member this.MaybeValidator() = 
             match this.Validate() with
             | null -> Choice1Of2()
-            | (result) -> Choice2Of2(result.ErrorMessage |> GenerateOperationMessage)
+            | (result) -> Choice2Of2("VALIDATION_FAILURE:" + result.ErrorMessage |> GenerateOperationMessage)
         
         member this.Validate() = this.Validate()
 
