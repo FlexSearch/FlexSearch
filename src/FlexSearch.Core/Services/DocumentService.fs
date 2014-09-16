@@ -56,11 +56,13 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
             let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
             let q = new SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField documentId))
             q.ReturnScore <- false
-            q.ReturnFlatResult <- true
+            q.ReturnFlatResult <- false
             q.Columns.Add("*")
             match searchService.Search(flexIndex, q) with
             | Choice1Of2(v') -> 
-                return! Choice1Of2(v'.Documents.First())
+                if v'.Documents.Count <> 0 then
+                    return! Choice1Of2(v'.Documents.First())
+                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
             | Choice2Of2(e) -> return! Choice2Of2(e)
         }
     
