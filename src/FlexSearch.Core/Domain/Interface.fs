@@ -159,7 +159,7 @@ type IIndexService =
 /// Document related operations
 /// </summary>
 type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<FlexSearch.Api.Document, OperationMessage>
+    abstract GetDocument : indexName:string * id:string -> Choice<FlexSearch.Api.ResultDocument, OperationMessage>
     abstract GetDocuments : indexName:string * count : int -> Choice<SearchResults, OperationMessage>
     abstract AddOrUpdateDocument : document: FlexDocument -> Choice<unit, OperationMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, OperationMessage>

@@ -46,7 +46,7 @@ module ``Versioning tests`` =
         let document = new FlexDocument(index.IndexName, "1")
         let response = documentService.AddDocument(document) |> GetSuccessChoice
         indexService.Refresh(index.IndexName) |> ExpectSuccess
-        let timeStamp = (documentService.GetDocument(index.IndexName, "1") |> GetSuccessChoice).LastModified
+        let timeStamp = (documentService.GetDocument(index.IndexName, "1") |> GetSuccessChoice).TimeStamp
         document.TimeStamp <- timeStamp
         documentService.AddOrUpdateDocument(document) |> ExpectSuccess
         document.TimeStamp <- 1000L
@@ -60,7 +60,7 @@ module ``Versioning tests`` =
         let document = new FlexDocument(index.IndexName, "1")
         let response = documentService.AddDocument(document) |> GetSuccessChoice
         indexService.Refresh(index.IndexName) |> ExpectSuccess
-        let timeStamp = (documentService.GetDocument(index.IndexName, "1") |> GetSuccessChoice).LastModified
+        let timeStamp = (documentService.GetDocument(index.IndexName, "1") |> GetSuccessChoice).TimeStamp
         document.TimeStamp <- 2L
         documentService.AddOrUpdateDocument(document) 
         |> ExpectErrorCode(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)

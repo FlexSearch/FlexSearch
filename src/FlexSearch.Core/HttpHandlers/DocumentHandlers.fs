@@ -11,68 +11,51 @@
 namespace FlexSearch.Core.HttpHandlers
 
 open FlexSearch.Api
+open FlexSearch.Api.Messages
 open FlexSearch.Api.Validation
+open FlexSearch.Common
 open FlexSearch.Core
-open FlexSearch.Core.HttpHelpers
-open FlexSearch.Utility
 open Microsoft.Owin
-open Newtonsoft.Json
 open Owin
 open System
 open System.Collections.Generic
-open System.ComponentModel
-open System.ComponentModel.Composition
-open System.IO
-open System.Linq
-open System.Net
-open System.Net.Http
-open FlexSearch.Common
+
 [<Name("GET-/indices/:id/documents")>]
 [<Sealed>]
 type GetDocumentsHandler(documentService : IDocumentService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            let count = GetIntValueFromQueryString "count" 10 owin
-            owin |> ResponseProcessor (documentService.GetDocuments(GetIndexName(owin), count)) OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, SearchResults>()
+    override this.Process(id, subId, body, context) = 
+        let count = GetIntValueFromQueryString "count" 10 context
+        (documentService.GetDocuments(id.Value, count), Ok, BadRequest)
 
 [<Name("GET-/indices/:id/documents/:id")>]
 [<Sealed>]
 type GetDocumentByIdHandler(documentService : IDocumentService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (documentService.GetDocument(GetIndexName(owin), SubId(owin))) OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, ResultDocument>()
+    override this.Process(id, subId, body, context) = 
+        (documentService.GetDocument(id.Value, subId.Value), Ok, NotFound)
 
 [<Name("POST-/indices/:id/documents")>]
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            let processRequest = 
-                maybe { 
-                    let! document = GetRequestBody<FlexDocument>(owin.Request)
-                    document.IndexName <- GetIndexName(owin)
-                    do! (document :> IValidator).MaybeValidator()
-                    return! documentService.AddDocument(document)
-                }
-            owin |> ResponseProcessor processRequest CREATED BAD_REQUEST
+    inherit HttpHandlerBase<FlexDocument, CreateResponse>()
+    override this.Process(id, subId, body, context) = 
+        match documentService.AddDocument(body.Value) with
+        | Choice1Of2(response) -> (Choice1Of2(response), Created, BadRequest)
+        | Choice2Of2(error) -> 
+            if Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS.Contains(error.ErrorCode) then 
+                (Choice2Of2(error), Created, Conflict)
+            else (Choice2Of2(error), Created, BadRequest)
 
 [<Name("DELETE-/indices/:id/documents/:id")>]
 [<Sealed>]
 type DeleteDocumentByIdHandler(documentService : IDocumentService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (documentService.DeleteDocument(GetIndexName(owin), SubId(owin))) OK BAD_REQUEST
+    inherit HttpHandlerBase<unit, unit>()
+    override this.Process(id, subId, body, context) = 
+        (documentService.DeleteDocument(id.Value, subId.Value), Ok, BadRequest)
 
 [<Name("PUT-/indices/:id/documents/:id")>]
 [<Sealed>]
 type PutDocumentByIdHandler(documentService : IDocumentService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            let processRequest = 
-                maybe { 
-                    let! document = GetRequestBody<FlexDocument>(owin.Request)
-                    document.IndexName <- GetIndexName(owin)
-                    do! (document :> IValidator).MaybeValidator()
-                    return! documentService.AddOrUpdateDocument(document)
-                }
-            owin |> ResponseProcessor processRequest OK BAD_REQUEST
+    inherit HttpHandlerBase<FlexDocument, unit>()
+    override this.Process(id, subId, body, context) = (documentService.AddOrUpdateDocument(body.Value), Ok, BadRequest)

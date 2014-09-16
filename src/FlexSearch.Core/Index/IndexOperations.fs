@@ -225,18 +225,19 @@ module Index =
         if (count = 1) then 0
         else IndexingHelpers.MapToShard id count
     
+    let private GetExistingVesion(flexIndex : FlexIndex, targetShard : int, document : FlexDocument) = 
+        match flexIndex.VersioningCache.TryGetValue(document.Id) with
+        | true, existingVersion -> existingVersion
+        | _ -> 
+            // Version is not present in the cache
+            // Let's check if index has the document
+            let iSearcher = 
+                (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
+            let existingVersion = IndexingHelpers.PKLookup(document.Id, iSearcher.getIndexReader(), flexIndex)
+            (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).release(iSearcher)
+            existingVersion
+
     let internal VersionCheck(flexIndex : FlexIndex, targetShard : int, document : FlexDocument, newVersion : int64) = 
-        let GetExistingVesion() = 
-            match flexIndex.VersioningCache.TryGetValue(document.Id) with
-            | true, existingVersion -> existingVersion
-            | _ -> 
-                // Version is not present in the cache
-                // Let's check if index has the document
-                let iSearcher = 
-                    (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
-                let existingVersion = IndexingHelpers.PKLookup(document.Id, iSearcher.getIndexReader(), flexIndex)
-                (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).release(iSearcher)
-                existingVersion
         maybe { 
             match document.TimeStamp with
             | 0L -> 
@@ -245,21 +246,21 @@ module Index =
                 return! Choice1Of2(0L)
             | -1L -> // Ensure that the document does not exists. Perform Id check
                      
-                let existingVersion = GetExistingVesion()
+                let existingVersion = GetExistingVesion(flexIndex, targetShard, document)
                 if existingVersion <> 0L then 
                     return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
                 else return! Choice1Of2(0L)
             | 1L -> 
                 // Ensure that the document does exist
-                let existingVersion = GetExistingVesion()
+                let existingVersion = GetExistingVesion(flexIndex, targetShard, document)
                 if existingVersion <> 0L then return! Choice1Of2(existingVersion)
                 else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
             | x when x > 1L -> 
                 // Perform a version check and ensure that the provided version matches the version of 
                 // the document
-                let existingVersion = GetExistingVesion()
+                let existingVersion = GetExistingVesion(flexIndex, targetShard, document)
                 if existingVersion <> 0L then 
-                    if existingVersion <> document.TimeStamp || existingVersion < newVersion then 
+                    if existingVersion <> document.TimeStamp || existingVersion > newVersion then 
                         return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
                     else return! Choice1Of2(existingVersion)
                 else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)

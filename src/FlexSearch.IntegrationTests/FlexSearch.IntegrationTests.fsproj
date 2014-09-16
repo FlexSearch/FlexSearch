@@ -287,10 +287,10 @@
     <None Include="x86\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Rest\IndicesTests.fs" />
-    <Compile Include="Rest\DocumentsTests.fs" />
-    <Compile Include="Rest\RestSearchTests.fs" />
     <Compile Include="Services\DocumentServiceTests.fs" />
+    <Compile Include="HttpHandlers\IndexCoreHandlersTests.fs" />
+    <Compile Include="HttpHandlers\DocumentHandlersTests.fs" />
+    <Compile Include="HttpHandlers\SearchHandlersTests.fs" />
     <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
     <Compile Include="SearchQueryTests.fs" />

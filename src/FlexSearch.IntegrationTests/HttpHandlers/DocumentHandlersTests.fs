@@ -42,7 +42,7 @@ module ``Document Tests`` =
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-documents-id-2", "")>]
     let ``Add a document to an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         client.AddIndex(TestIndex(indexName.ToString("N"))).Result |> ExpectSuccess
-        let document = new Document(indexName.ToString("N"), "1")
+        let document = new FlexDocument(indexName.ToString("N"), "1")
         document.Fields.Add("firstname", "Seemant")
         document.Fields.Add("lastname", "Rajvanshi")
         let actual = client.AddDocument(indexName.ToString("N"), document).Result
@@ -53,7 +53,7 @@ module ``Document Tests`` =
     [<Theory; AutoMockIntegrationData>]
     let ``Cannot add a document without an id`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         client.AddIndex(TestIndex(indexName.ToString("N"))).Result |> ExpectSuccess
-        let document = new Document(indexName.ToString("N"), " ")
+        let document = new FlexDocument(indexName.ToString("N"), " ")
         client.AddDocument(indexName.ToString("N"), document).Result |> ignore
         handler |> VerifyHttpCode HttpStatusCode.BadRequest
         printfn "%s" (handler.Log().ToString())
@@ -61,7 +61,7 @@ module ``Document Tests`` =
     [<Theory; AutoMockIntegrationData; Example("put-indices-id-documents-id-1", "")>]
     let ``Update a document to an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         ``Add a document to an index`` (client, indexName, handler)
-        let document = new Document(indexName.ToString("N"), "1")
+        let document = new FlexDocument(indexName.ToString("N"), "1")
         document.Fields.Add("firstname", "Seemant")
         document.Fields.Add("lastname", "Rajvanshi1")
         let actual = client.UpdateDocument(indexName.ToString("N"), document).Result
@@ -72,30 +72,10 @@ module ``Document Tests`` =
     let ``Get a document from an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         let actual = client.GetDocument("contact", "1").Result
         actual |> ExpectSuccess
-        Assert.Same("1", actual.Data.Id)
+        Assert.Equal<String>("1", actual.Data.Id)
 
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-id-2", "")>]
     let ``Non existing document should return Not found`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         let actual = client.GetDocument("contact", "55").Result
         handler |> VerifyHttpCode HttpStatusCode.NotFound
-        
 
-//    
-//    [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-id-1", "")>]
-//    let ``Get a document from an index`` (server : TestServer, indexName : Guid) = 
-//        ``Add a document to an index`` (server, indexName) |> ignore
-//        Thread.Sleep(5000)
-//        server
-//        |> request "GET" ("/indices/" + indexName.ToString("N") + "/documents/51")
-//        |> execute
-//        |> responseStatusEquals HttpStatusCode.OK
-//        |> responseMatches Constants.IdField "51"
-//    
-//    [<Theory; AutoMockIntegrationData; Example("delete-indices-id-documents-id-1", "")>]
-//    let ``Delete a document from an index`` (server : TestServer, indexName : Guid) = 
-//        ``Add a document to an index`` (server, indexName) |> ignore
-//        Thread.Sleep(5000)
-//        server
-//        |> request "DELETE" ("/indices/" + indexName.ToString("N") + "/documents/51")
-//        |> execute
-//        |> responseStatusEquals HttpStatusCode.OK

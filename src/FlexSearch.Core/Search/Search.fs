@@ -229,11 +229,11 @@ module SearchDsl =
             if search.Skip > 0 && skipped < search.Skip then skipped <- skipped + 1
             else 
                 let document = indexSearchers.[hit.shardIndex].doc(hit.doc)
-                let flexDocument = new Document()
+                let flexDocument = new ResultDocument()
                 if search.ReturnFlatResult <> true then 
                     flexDocument.Id <- document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
-                    flexDocument.Index <- flexIndex.IndexSetting.IndexName
-                    flexDocument.LastModified <- int64 
+                    flexDocument.IndexName <- flexIndex.IndexSetting.IndexName
+                    flexDocument.TimeStamp <- int64 
                                                      (document.get 
                                                           (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
                     if search.ReturnScore then flexDocument.Score <- float (hit.score)
