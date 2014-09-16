@@ -1,15 +1,15 @@
 ﻿namespace FlexSearch.Client
 
-open System.Threading.Tasks
 open FlexSearch.Api
 open FlexSearch.Api.Errors
-open System.Net.Http
-open System
-open System.Net
-open System.Net.Http.Formatting
 open FlexSearch.Api.Messages
-open System.Text
+open System
 open System.Collections.Generic
+open System.Net
+open System.Net.Http
+open System.Net.Http.Formatting
+open System.Text
+open System.Threading.Tasks
 
 type IIndexServiceClient = 
     abstract Connect : unit -> Task<Response<unit>>
@@ -25,14 +25,18 @@ type IIndexServiceClient =
 
 type IDocumentServiceClient = 
     abstract GetTopDocuments : indexName:string * count:int -> Task<Response<SearchResults>>
-    abstract AddDocument : indexName:string * document:Document -> Task<Response<CreateResponse>>
-    abstract UpdateDocument : indexName:string * document:Document -> Task<Response<unit>>
+    abstract AddDocument : indexName:string * document:FlexDocument -> Task<Response<CreateResponse>>
+    abstract UpdateDocument : indexName:string * document:FlexDocument -> Task<Response<unit>>
     abstract DeleteDocument : indexName:string * id:string -> Task<Response<unit>>
-    abstract GetDocument : indexName:string * id:string -> Task<Response<Document>>
+    abstract GetDocument : indexName:string * id:string -> Task<Response<ResultDocument>>
+
+type ISearchServiceClient = 
+    abstract Search : searchRequest:SearchQuery -> Task<Response<SearchResults>>
 
 type IFlexClient = 
     inherit IIndexServiceClient
     inherit IDocumentServiceClient
+    inherit ISearchServiceClient
 
 /// <summary>
 /// Simple request logging handler. This is not thread safe. Only use
@@ -51,9 +55,8 @@ type LoggingHandler(innerHandler : HttpMessageHandler) =
                 log.Append(request.Method.ToString() + " ") |> ignore
                 log.AppendLine(request.RequestUri.ToString()) |> ignore
                 // Add body here
-                if request.Content <> null then
-                    let! requestBody = Async.AwaitTask(request.Content.ReadAsStringAsync())
-                    log.AppendLine(requestBody) |> ignore
+                if request.Content <> null then let! requestBody = Async.AwaitTask(request.Content.ReadAsStringAsync())
+                                                log.AppendLine(requestBody) |> ignore
                 log.AppendLine("----------------------------------") |> ignore
                 log.AppendLine("Response") |> ignore
                 let! response = Async.AwaitTask(work)
@@ -112,6 +115,11 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
     member this.DeleteHelper<'U>(uri : string) = 
         async { return! this.RequestProcessor<'U>(fun () -> client.DeleteAsync(uri)) }
     interface IFlexClient with
+        // Search related
+        member this.Search(searchRequest : SearchQuery) : Task<Response<SearchResults>> = 
+            Async.StartAsTask
+                (this.PostHelper<SearchQuery, SearchResults>
+                     (sprintf "/indices/%s/search" searchRequest.IndexName, searchRequest))
         // Index related
         member this.Connect() : Task<Response<unit>> = Async.StartAsTask(this.GetHelper<unit>("/ping"))
         member this.AddIndex(index : Index) : Task<Response<CreateResponse>> = 
@@ -134,18 +142,18 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
             Async.StartAsTask(this.PutHelper<unit, unit>(sprintf "/indices/%s/status/offline" indexName, ()))
         
         // Document related
-        member this.AddDocument(indexName : string, document : Document) : Task<Response<CreateResponse>> = 
-            document.Index <- indexName
+        member this.AddDocument(indexName : string, document : FlexDocument) : Task<Response<CreateResponse>> = 
+            document.IndexName <- indexName
             Async.StartAsTask
-                (this.PostHelper<Document, CreateResponse>(sprintf "/indices/%s/documents" indexName, document))
+                (this.PostHelper<FlexDocument, CreateResponse>(sprintf "/indices/%s/documents" indexName, document))
         
         member this.DeleteDocument(indexName : string, id : string) : Task<Response<unit>> = 
             failwith "Not implemented yet"
-        member this.GetDocument(indexName : string, id : string) : Task<Response<Document>> = 
-            Async.StartAsTask(this.GetHelper<Document>(sprintf "/indices/%s/documents/%s" indexName id))
+        member this.GetDocument(indexName : string, id : string) : Task<Response<ResultDocument>> = 
+            Async.StartAsTask(this.GetHelper<ResultDocument>(sprintf "/indices/%s/documents/%s" indexName id))
         member this.GetTopDocuments(indexName : string, count : int) : Task<Response<SearchResults>> = 
             Async.StartAsTask(this.GetHelper<SearchResults>(sprintf "/indices/%s/documents?count=%i" indexName count))
-        member this.UpdateDocument(indexName : string, document : Document) : Task<Response<unit>> = 
-            document.Index <- indexName
+        member this.UpdateDocument(indexName : string, document : FlexDocument) : Task<Response<unit>> = 
+            document.IndexName <- indexName
             Async.StartAsTask
-                (this.PutHelper<Document, unit>(sprintf "/indices/%s/documents/%s" indexName document.Id, document))
+                (this.PutHelper<FlexDocument, unit>(sprintf "/indices/%s/documents/%s" indexName document.Id, document))
