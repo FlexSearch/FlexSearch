@@ -186,7 +186,7 @@ type SearchQuery(index : string, query : string) =
 // ----------------------------------------------------------------------------
 //	Index & Document related
 // ----------------------------------------------------------------------------
-type Document(indexName : string, id : string) = 
+type ResultDocument(indexName : string, id : string) = 
     inherit ValidatableObjectBase<ScriptProperties>()
     member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     member val Highlights = new List<string>() with get, set
@@ -195,12 +195,12 @@ type Document(indexName : string, id : string) =
     [<Required>]
     member val Id = id with get, set
     
-    member val LastModified = Unchecked.defaultof<Int64> with get, set
+    member val TimeStamp = Unchecked.defaultof<Int64> with get, set
     
     [<Required>]
-    member val Index = indexName with get, set
+    member val IndexName = indexName with get, set
     
-    new() = Document(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
+    new() = ResultDocument(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
 
 type FlexDocument(indexName : string, id : string) = 
     inherit ValidatableObjectBase<ScriptProperties>()
@@ -254,7 +254,7 @@ type Index() =
         }
 
 type SearchResults() = 
-    member val Documents = new List<Document>() with get, set
+    member val Documents = new List<ResultDocument>() with get, set
     member val RecordsReturned = 0 with get, set
     member val TotalAvailable = 0 with get, set
 
