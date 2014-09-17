@@ -120,8 +120,9 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     let DeleteDocument indexName documentId = 
         maybe { 
             let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, indexName)
-            let targetIndex = MapToShard documentId flexIndex.Shards.Length
-            flexIndex.Shards.[targetIndex].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) 
+            let targetShard = MapToShard documentId flexIndex.Shards.Length
+            flexIndex.VersioningManager.Delete(documentId, targetShard, 0L) |> ignore
+            flexIndex.Shards.[targetShard].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) 
             |> ignore
         }
     
