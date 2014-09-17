@@ -27,15 +27,13 @@ open org.apache.lucene.analysis
 type INodeState = 
     abstract PersistanceStore : IPersistanceStore
     abstract ServerSettings : ServerSettings
-    abstract CahceStore : IVersioningCacheStore
     abstract IndicesState : IndicesState
 
 [<Sealed>]
-type NodeState(persistanceStore, serversettings, cacheStore, indicesState) = 
+type NodeState(persistanceStore, serversettings, indicesState) = 
     interface INodeState with
         member this.PersistanceStore = persistanceStore
         member this.ServerSettings = serversettings
-        member this.CahceStore = cacheStore
         member this.IndicesState = indicesState
 
 // ----------------------------------------------------------------------------     

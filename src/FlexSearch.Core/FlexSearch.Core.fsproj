@@ -54,10 +54,6 @@
       <HintPath>..\packages\Autofac.WebApi2.3.4.0\lib\net45\Autofac.Integration.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="CSharpTest.Net.Library">
-      <HintPath>..\packages\CSharpTest.Net.Library.2.14.126.467\lib\net45\CSharpTest.Net.Library.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.4.9.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
@@ -304,15 +300,14 @@
     <Compile Include="Analysis\Filters.fs" />
     <Compile Include="Analysis\Tokenizers.fs" />
     <Compile Include="Utilities\PersitanceStore.fs" />
-    <Compile Include="Utilities\LocalCacheStore.fs" />
     <Compile Include="Utilities\ResourceLoader.fs" />
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\ConsoleLogger.fs" />
     <Compile Include="Utilities\DynamicDictionary.fs" />
     <Compile Include="Index\FlexField.fs" />
     <Compile Include="Index\IndexingHelpers.fs" />
-    <Compile Include="Index\IndexOperations.fs" />
     <Compile Include="Index\PerThreadVersionPKLookup.fs" />
+    <Compile Include="Index\IndexOperations.fs" />
     <Compile Include="Search\Search.fs" />
     <Compile Include="Search\QueryHelpers.fs" />
     <Compile Include="Search\Query.fs" />

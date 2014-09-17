@@ -10,6 +10,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api
+open FlexSearch.Common
 open System
 open System.Collections.Concurrent
 open org.apache.lucene.analysis
@@ -29,7 +31,7 @@ open org.apache.lucene.search
 /// complicates the design and requires thread management
 // ----------------------------------------------------------------------------
 [<Sealed>]
-type VersionCacheStore(shard : FlexShardWriter, flexIndex : FlexIndex, mgr : SearcherManager) as self = 
+type VersionCacheStore(shard : FlexShardWriter, indexSettings : FlexIndexSetting) as self = 
     
     /// Will be used to represent the deleted document version
     static let deletedValue = 0L
@@ -43,21 +45,20 @@ type VersionCacheStore(shard : FlexShardWriter, flexIndex : FlexIndex, mgr : Sea
     [<VolatileFieldAttribute>]
     let mutable old = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
     
-    let PKLookup(id : string, r : IndexReader, index : FlexIndex) = 
-        let term = new Term(index.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, id)
+    let PKLookup(id : string, r : IndexReader) = 
+        let term = new Term(indexSettings.FieldsLookup.[Constants.IdField].SchemaName, id)
         
         let rec loop counter = 
             let readerContext = r.leaves().get(counter) :?> AtomicReaderContext
             let reader = readerContext.reader()
-            let terms = reader.terms (index.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
+            let terms = reader.terms (indexSettings.FieldsLookup.[Constants.IdField].SchemaName)
             assert (terms <> null)
             let termsEnum = terms.iterator (null)
             match termsEnum.seekExact (term.bytes()) with
             | true -> 
                 let docsEnums = termsEnum.docs (null, null, 0)
                 let nDocs = 
-                    reader.getNumericDocValues 
-                        (index.IndexSetting.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName)
+                    reader.getNumericDocValues (indexSettings.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName)
                 nDocs.get (docsEnums.nextDoc())
             | false -> 
                 if counter - 1 > 0 then loop (counter - 1)
@@ -74,7 +75,7 @@ type VersionCacheStore(shard : FlexShardWriter, flexIndex : FlexIndex, mgr : Sea
             else current.TryUpdate(id, version, comparison)
         | _ -> current.TryAdd(id, version)
     
-    do mgr.addListener (self)
+    do shard.SearcherManager.addListener (self)
     
     interface ReferenceManager.RefreshListener with
         member this.afterRefresh (b : bool) : unit = 
@@ -96,18 +97,63 @@ type VersionCacheStore(shard : FlexShardWriter, flexIndex : FlexIndex, mgr : Sea
     interface IVersioningCacheStore with
         member this.AddOrUpdate(id : string, version : int64, comparison : int64) : bool = 
             AddOrUpdate(id, version, comparison)
-        member this.Delete(id : string, version : Int64) : bool * int64 = 
-            (AddOrUpdate(id, deletedValue, version), deletedValue)
-        member this.TryGetValue(id : string) : bool * int64 = 
+        member this.Delete(id : string, version : Int64) : bool = AddOrUpdate(id, deletedValue, version)
+        member this.GetValue(id : string) : int64 = 
             match current.TryGetValue(id) with
-            | true, value -> (true, value)
+            | true, value -> value
             | _ -> 
                 // Search old
                 match old.TryGetValue(id) with
-                | true, value -> (true, value)
+                | true, value -> value
                 | _ -> 
                     // Go to the searcher to get the latest value
-                    let s = mgr.acquire() :?> IndexSearcher
-                    let value = PKLookup(id, s.getIndexReader(), flexIndex)
-                    mgr.release (s)
-                    (true, value)
+                    let s = shard.SearcherManager.acquire() :?> IndexSearcher
+                    let value = PKLookup(id, s.getIndexReader())
+                    shard.SearcherManager.release (s)
+                    value
+
+[<Sealed>]
+type VersioningManger(indexSettings : FlexIndexSetting, shards : FlexShardWriter []) = 
+    let versionCaches = shards |> Array.map (fun s -> new VersionCacheStore(s, indexSettings) :> IVersioningCacheStore)
+    
+    let VersionCheck(document : FlexDocument, shardNumber : int, newVersion : int64) = 
+        maybe { 
+            match document.TimeStamp with
+            | 0L -> 
+                // We don't care what the version is let's proceed with normal operation
+                // and bypass id check.
+                return! Choice1Of2(0L)
+            | -1L -> // Ensure that the document does not exists. Perform Id check
+                     
+                let existingVersion = versionCaches.[shardNumber].GetValue(document.Id)
+                if existingVersion <> 0L then 
+                    return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
+                else return! Choice1Of2(0L)
+            | 1L -> 
+                // Ensure that the document does exist
+                let existingVersion = versionCaches.[shardNumber].GetValue(document.Id)
+                if existingVersion <> 0L then return! Choice1Of2(existingVersion)
+                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
+            | x when x > 1L -> 
+                // Perform a version check and ensure that the provided version matches the version of 
+                // the document
+                let existingVersion = versionCaches.[shardNumber].GetValue(document.Id)
+                if existingVersion <> 0L then 
+                    if existingVersion <> document.TimeStamp || existingVersion > newVersion then 
+                        return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
+                    else return! Choice1Of2(existingVersion)
+                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
+            | _ -> 
+                System.Diagnostics.Debug.Fail("This condition should never get executed.")
+                return! Choice1Of2(0L)
+        }
+    
+    interface IVersionManager with
+        member x.VersionCheck(document : FlexDocument, newVersion : int64) : Choice<int64, OperationMessage> = 
+            failwith "Not implemented yet"
+        member x.VersionCheck(document : FlexDocument, shardNumber : int, newVersion : int64) : Choice<int64, OperationMessage> = 
+            VersionCheck(document, shardNumber, newVersion)
+        member x.AddOrUpdate(id : string, shardNumber : int, version : int64, comparison : int64) = 
+            versionCaches.[shardNumber].AddOrUpdate(id, version, comparison)
+        member x.Delete(id : string, shardNumber : int, version : int64) = 
+            versionCaches.[shardNumber].Delete(id, version)

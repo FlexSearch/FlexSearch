@@ -57,7 +57,7 @@ module Index =
         // Looping over array by index number is usually the fastest
         // iteration method
         for i in 0..flexIndex.Shards.Length - 1 do
-            flexIndex.Shards.[i].NRTManager.maybeRefresh() |> ignore
+            flexIndex.Shards.[i].SearcherManager.maybeRefresh() |> ignore
     
     /// <summary>
     /// Creates a async timer which can be used to execute a function at specified
@@ -103,7 +103,7 @@ module Index =
                                 
                                 let shard = 
                                     { ShardNumber = a
-                                      NRTManager = nrtManager
+                                      SearcherManager = nrtManager
                                       ReopenThread = Unchecked.defaultof<ControlledRealTimeReopenThread>
                                       //                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
                                       //                                                                             float (5))
@@ -122,7 +122,7 @@ module Index =
                 { IndexSetting = flexIndexSetting
                   Shards = shards
                   ThreadLocalStore = new ThreadLocal<ThreadLocalDocument>()
-                  VersioningCache = new VersioningCacheStore(shards)
+                  VersioningManager = new VersioningManger(flexIndexSetting, shards) :> IVersionManager
                   Token = new System.Threading.CancellationTokenSource() }
             // Add the scheduler for the index
             // Commit Scheduler
@@ -149,7 +149,7 @@ module Index =
             flexIndex.Token.Cancel()
             for shard in flexIndex.Shards do
                 try 
-                    shard.NRTManager.close()
+                    shard.SearcherManager.close()
                     shard.IndexWriter.commit()
                     shard.IndexWriter.close()
                 with e -> ()
@@ -224,51 +224,7 @@ module Index =
     let inline private GetTargetShard(id : string, count : int) = 
         if (count = 1) then 0
         else IndexingHelpers.MapToShard id count
-    
-    let private GetExistingVesion(flexIndex : FlexIndex, targetShard : int, document : FlexDocument) = 
-        match flexIndex.VersioningCache.TryGetValue(document.Id) with
-        | true, existingVersion -> existingVersion
-        | _ -> 
-            // Version is not present in the cache
-            // Let's check if index has the document
-            let iSearcher = 
-                (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
-            let existingVersion = IndexingHelpers.PKLookup(document.Id, iSearcher.getIndexReader(), flexIndex)
-            (flexIndex.Shards.[targetShard].NRTManager :> ReferenceManager).release(iSearcher)
-            existingVersion
-
-    let internal VersionCheck(flexIndex : FlexIndex, targetShard : int, document : FlexDocument, newVersion : int64) = 
-        maybe { 
-            match document.TimeStamp with
-            | 0L -> 
-                // We don't care what the version is let's proceed with normal operation
-                // and bypass id check.
-                return! Choice1Of2(0L)
-            | -1L -> // Ensure that the document does not exists. Perform Id check
-                     
-                let existingVersion = GetExistingVesion(flexIndex, targetShard, document)
-                if existingVersion <> 0L then 
-                    return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
-                else return! Choice1Of2(0L)
-            | 1L -> 
-                // Ensure that the document does exist
-                let existingVersion = GetExistingVesion(flexIndex, targetShard, document)
-                if existingVersion <> 0L then return! Choice1Of2(existingVersion)
-                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
-            | x when x > 1L -> 
-                // Perform a version check and ensure that the provided version matches the version of 
-                // the document
-                let existingVersion = GetExistingVesion(flexIndex, targetShard, document)
-                if existingVersion <> 0L then 
-                    if existingVersion <> document.TimeStamp || existingVersion > newVersion then 
-                        return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
-                    else return! Choice1Of2(existingVersion)
-                else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
-            | _ -> 
-                System.Diagnostics.Debug.Fail("This condition should never get executed.")
-                return! Choice1Of2(0L)
-        }
-    
+        
     /// <summary>
     /// Updates the current thread local index document with the incoming data
     /// </summary>
@@ -306,8 +262,8 @@ module Index =
             let documentTemplate = flexIndex.ThreadLocalStore.Value
             let targetShard = GetTargetShard(document.Id, flexIndex.Shards.Length)
             let timeStamp = GetCurrentTimeAsLong()
-            let! existingVersion = VersionCheck(flexIndex, targetShard, document, timeStamp)
-            if flexIndex.VersioningCache.AddOrUpdate(document.Id, timeStamp, existingVersion) then             
+            let! existingVersion = flexIndex.VersioningManager.VersionCheck(document, targetShard, timeStamp)
+            if flexIndex.VersioningManager.AddOrUpdate(document.Id, targetShard, timeStamp, existingVersion) then             
                 documentTemplate.FieldsLookup.[Constants.IdField].setStringValue(document.Id)
                 documentTemplate.FieldsLookup.[Constants.LastModifiedField].setLongValue(timeStamp)
                 documentTemplate.FieldsLookup.[Constants.LastModifiedFieldDv].setLongValue(timeStamp)

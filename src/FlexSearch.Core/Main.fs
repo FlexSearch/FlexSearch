@@ -96,7 +96,6 @@ module Main =
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
-        builder |> FactoryService.RegisterSingleInstance<VersioningCacheStore, IVersioningCacheStore>
         builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
         let indicesState = 
             { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)

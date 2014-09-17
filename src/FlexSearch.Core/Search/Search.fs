@@ -182,7 +182,7 @@ module SearchDsl =
     let SearchQuery(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
         let indexSearchers = new List<IndexSearcher>()
         for i in 0..flexIndex.Shards.Length - 1 do
-            let searcher = (flexIndex.Shards.[i].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
+            let searcher = (flexIndex.Shards.[i].SearcherManager :> ReferenceManager).acquire() :?> IndexSearcher
             indexSearchers.Add(searcher)
         // Each thread only works on a separate part of the array and as no parts are shared across
         // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
@@ -280,5 +280,5 @@ module SearchDsl =
                                 flexDocument.Highlights.Add(frag.ToString())
                 searchResults.Documents.Add(flexDocument)
         for i in 0..indexSearchers.Count - 1 do
-            (flexIndex.Shards.[i].NRTManager :> ReferenceManager).release(indexSearchers.[i])
+            (flexIndex.Shards.[i].SearcherManager :> ReferenceManager).release(indexSearchers.[i])
         Choice1Of2 searchResults

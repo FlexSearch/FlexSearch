@@ -223,7 +223,7 @@ type IndexService(nodeState : INodeState, settingsBuilder : ISettingsBuilder, lo
                 let! index = nodeState.IndicesState.GetRegisteration(indexName)
                 let indexSearchers = new List<IndexSearcher>()
                 for i in 0..index.Shards.Length - 1 do
-                    let searcher = (index.Shards.[i].NRTManager :> ReferenceManager).acquire() :?> IndexSearcher
+                    let searcher = (index.Shards.[i].SearcherManager :> ReferenceManager).acquire() :?> IndexSearcher
                     indexSearchers.Add(searcher)
                 return! Choice1Of2(indexSearchers)
         }

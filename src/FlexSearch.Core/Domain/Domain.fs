@@ -40,9 +40,22 @@ open org.apache.lucene.store
 /// </summary>
 type IVersioningCacheStore = 
     abstract AddOrUpdate : id:string * version:int64 * comparison:int64 -> bool
-    abstract Delete : id:string * version:Int64 -> bool * int64
-    abstract TryGetValue: id:string -> bool * int64
+    abstract Delete : id:string * version:Int64 -> bool
+    abstract GetValue : id:string -> int64
 
+/// <summary>
+/// Version manager used to manage document version across all shards in an index.
+/// We will have one Version Manager per index.
+/// </summary>
+type IVersionManager = 
+    abstract VersionCheck : document : FlexDocument * newVersion:int64 -> Choice<int64, OperationMessage>
+    abstract VersionCheck : document : FlexDocument * shardNumber: int * newVersion:int64 -> Choice<int64, OperationMessage>
+    abstract AddOrUpdate : id:string * shardNumber: int * version:int64 * comparison:int64 -> bool
+    abstract Delete : id:string * shardNumber: int * version:Int64 -> bool
+
+type IShardMapper =
+    abstract MapToShard : id: string -> int
+    
 // ----------------------------------------------------------------------------
 // Contains all the indexing related data type definitions 
 // ----------------------------------------------------------------------------
@@ -186,7 +199,7 @@ type FlexIndexSetting =
 /// </summary>
 type FlexShardWriter = 
     { ShardNumber : int
-      NRTManager : SearcherManager
+      SearcherManager : SearcherManager
       ReopenThread : ControlledRealTimeReopenThread
       IndexWriter : IndexWriter
       TrackingIndexWriter : TrackingIndexWriter }
@@ -210,7 +223,7 @@ type FlexIndex =
     { IndexSetting : FlexIndexSetting
       Shards : FlexShardWriter []
       ThreadLocalStore : ThreadLocal<ThreadLocalDocument>
-      VersioningCache : IVersioningCacheStore
+      VersioningManager : IVersionManager
       Token : CancellationTokenSource }
 
 /// <summary>
