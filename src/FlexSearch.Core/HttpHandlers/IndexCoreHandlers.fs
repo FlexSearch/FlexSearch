@@ -27,7 +27,6 @@ open System.Linq
 open System.Net
 open System.Net.Http
 open System.Text
-open System.Web.Http
 
 [<Sealed>]
 [<Name("GET-/ping")>]

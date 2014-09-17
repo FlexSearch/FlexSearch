@@ -14,7 +14,6 @@ namespace FlexSearch.Core
 module Main = 
     open Autofac
     open Autofac.Extras.Attributed
-    open Autofac.Integration.WebApi
     open FlexSearch.Api
     open FlexSearch.Common
     open FlexSearch.Core
