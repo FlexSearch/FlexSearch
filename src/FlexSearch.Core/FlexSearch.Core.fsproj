@@ -273,7 +273,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Helpers\Constants.fs" />
-    <Compile Include="Helpers\Utility.fs" />
     <Compile Include="Helpers\HttpHelpers.fs" />
     <Compile Include="Domain\Attributes.fs" />
     <Compile Include="Domain\Domain.fs" />

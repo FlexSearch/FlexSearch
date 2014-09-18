@@ -45,6 +45,7 @@
     <Compile Include="Pool.fs" />
     <Compile Include="Maybe.fs" />
     <Compile Include="Interop.fs" />
+    <Compile Include="Utility.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
