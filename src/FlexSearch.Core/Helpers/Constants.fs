@@ -20,27 +20,6 @@ module Constants =
     /// Lucene version to be used across the application
     let LuceneVersion = org.apache.lucene.util.Version.LUCENE_4_9
     
-    [<Literal>]
-    let IdField = "_id"
-    
-    [<Literal>]
-    let LastModifiedField = "_lastmodified"
-
-    [<Literal>]
-    let LastModifiedFieldDv = "_lastmodifieddv"
-        
-    [<Literal>]
-    let TypeField = "_type"
-    
-    [<Literal>]
-    let VersionField = "_version"
-    
-    [<Literal>]
-    let DocumentField = "_document"
-    
-    [<Literal>]
-    let DotNetFrameWork = "4.5.1"
-    
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let private dataFolder = Path.Combine(rootFolder, "Data")
