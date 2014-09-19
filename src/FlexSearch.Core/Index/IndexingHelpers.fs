@@ -133,9 +133,6 @@ module IndexingHelpers =
             iwc.setOpenMode (org.apache.lucene.index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
             iwc.setRAMBufferSizeMB (System.Double.Parse(flexIndexSetting.IndexConfiguration.RamBufferSizeMb.ToString())) 
             |> ignore
-            let asm = typeof<FlexSearch.Java.FlexCodec49>.Assembly
-            Codec.reloadCodecs (ikvm.runtime.AssemblyClassLoader(asm))
-            let postingsFormat = GetPostingsFormat(flexIndexSetting)
             iwc.setCodec (new FlexCodec49()) |> ignore
             let similarityProvider = GetSimilarityProvider(flexIndexSetting)
             iwc.setSimilarity (similarityProvider) |> ignore

@@ -15,6 +15,7 @@
     <RestorePackages>true</RestorePackages>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>3720e7bf</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,6 +42,101 @@
     </DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
+    <OutputPath>..\..\build-debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile />
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
+    <OutputPath>C:\Seemant\Personal\flexsearch\build-release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile />
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <Choose>
+    <When Condition="'$(VisualStudioVersion)' == '11.0'">
+      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
+        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets')">
+        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+  <Import Project="$(FSharpTargetsPath)" />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <ItemGroup>
+    <None Include="x64\SQLite.Interop.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="x86\SQLite.Interop.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <Compile Include="Helpers\Constants.fs" />
+    <Compile Include="Helpers\HttpHelpers.fs" />
+    <Compile Include="Domain\Attributes.fs" />
+    <Compile Include="Domain\Domain.fs" />
+    <Compile Include="Domain\Interface.fs" />
+    <Compile Include="Domain\State.fs" />
+    <Compile Include="Analysis\CustomAnalyzer.fs" />
+    <Compile Include="Analysis\Analyzers.fs" />
+    <Compile Include="Analysis\Filters.fs" />
+    <Compile Include="Analysis\Tokenizers.fs" />
+    <Compile Include="Utilities\PersitanceStore.fs" />
+    <Compile Include="Utilities\ResourceLoader.fs" />
+    <Compile Include="Utilities\Parser.fs" />
+    <Compile Include="Utilities\ConsoleLogger.fs" />
+    <Compile Include="Utilities\DynamicDictionary.fs" />
+    <Compile Include="Index\FlexField.fs" />
+    <Compile Include="Index\IndexingHelpers.fs" />
+    <Compile Include="Index\PerThreadVersionPKLookup.fs" />
+    <Compile Include="Index\IndexOperations.fs" />
+    <Compile Include="Search\Search.fs" />
+    <Compile Include="Search\QueryHelpers.fs" />
+    <Compile Include="Search\Query.fs" />
+    <Compile Include="Builders\ScriptPropertiesExtensions.fs" />
+    <Compile Include="Builders\FieldPropertiesExtensions.fs" />
+    <Compile Include="Builders\AnalysisExtensions.fs" />
+    <Compile Include="Builders\SearchQueryExtensions.fs" />
+    <Compile Include="Builders\SettingsBuilder.fs" />
+    <Compile Include="Services\IndexService.fs" />
+    <Compile Include="Services\DocumentService.fs" />
+    <Compile Include="Services\QueueService.fs" />
+    <Compile Include="Services\SearchService..fs" />
+    <Compile Include="Services\FactoryService.fs" />
+    <Compile Include="Services\JobService.fs" />
+    <Compile Include="HttpHandlers\IndexCoreHandlers.fs" />
+    <Compile Include="HttpHandlers\DocumentHandlers.fs" />
+    <Compile Include="HttpHandlers\SearchHandlers.fs" />
+    <Compile Include="HttpHandlers\JobHandlers.fs" />
+    <Compile Include="HttpHandlers\ListHandlers.fs" />
+    <Compile Include="Servers\ImportHandlers.fs" />
+    <Compile Include="Servers\SocketServer.fs" />
+    <Compile Include="Servers\Owin.fs" />
+    <Compile Include="ModuleInitializer.fs" />
+    <Compile Include="Main.fs" />
+    <Compile Include="AssemblyInfo.fs" />
+    <None Include="packages.config" />
+    <None Include="App.config" />
+    <Content Include="FodyWeavers.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">
       <HintPath>..\packages\Autofac.3.5.0\lib\net40\Autofac.dll</HintPath>
@@ -264,61 +360,6 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="x64\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="x86\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Compile Include="Helpers\Constants.fs" />
-    <Compile Include="Helpers\HttpHelpers.fs" />
-    <Compile Include="Domain\Attributes.fs" />
-    <Compile Include="Domain\Domain.fs" />
-    <Compile Include="Domain\Interface.fs" />
-    <Compile Include="Domain\State.fs" />
-    <Compile Include="Analysis\CustomAnalyzer.fs" />
-    <Compile Include="Analysis\Analyzers.fs" />
-    <Compile Include="Analysis\Filters.fs" />
-    <Compile Include="Analysis\Tokenizers.fs" />
-    <Compile Include="Utilities\PersitanceStore.fs" />
-    <Compile Include="Utilities\ResourceLoader.fs" />
-    <Compile Include="Utilities\Parser.fs" />
-    <Compile Include="Utilities\ConsoleLogger.fs" />
-    <Compile Include="Utilities\DynamicDictionary.fs" />
-    <Compile Include="Index\FlexField.fs" />
-    <Compile Include="Index\IndexingHelpers.fs" />
-    <Compile Include="Index\PerThreadVersionPKLookup.fs" />
-    <Compile Include="Index\IndexOperations.fs" />
-    <Compile Include="Search\Search.fs" />
-    <Compile Include="Search\QueryHelpers.fs" />
-    <Compile Include="Search\Query.fs" />
-    <Compile Include="Builders\ScriptPropertiesExtensions.fs" />
-    <Compile Include="Builders\FieldPropertiesExtensions.fs" />
-    <Compile Include="Builders\AnalysisExtensions.fs" />
-    <Compile Include="Builders\SearchQueryExtensions.fs" />
-    <Compile Include="Builders\SettingsBuilder.fs" />
-    <Compile Include="Services\IndexService.fs" />
-    <Compile Include="Services\DocumentService.fs" />
-    <Compile Include="Services\QueueService.fs" />
-    <Compile Include="Services\SearchService..fs" />
-    <Compile Include="Services\FactoryService.fs" />
-    <Compile Include="Services\JobService.fs" />
-    <Compile Include="HttpHandlers\IndexCoreHandlers.fs" />
-    <Compile Include="HttpHandlers\DocumentHandlers.fs" />
-    <Compile Include="HttpHandlers\SearchHandlers.fs" />
-    <Compile Include="HttpHandlers\JobHandlers.fs" />
-    <Compile Include="HttpHandlers\ListHandlers.fs" />
-    <Compile Include="Servers\ImportHandlers.fs" />
-    <Compile Include="Servers\SocketServer.fs" />
-    <Compile Include="Servers\Owin.fs" />
-    <Compile Include="Main.fs" />
-    <Compile Include="AssemblyInfo.fs" />
-    <None Include="packages.config" />
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
       <Name>FlexSearch.Api</Name>
       <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
@@ -330,46 +371,13 @@
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
-  <PropertyGroup>
-    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <Tailcalls>false</Tailcalls>
-    <OutputPath>..\..\build-debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile />
-    <Prefer32Bit>false</Prefer32Bit>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <Tailcalls>true</Tailcalls>
-    <OutputPath>C:\Seemant\Personal\flexsearch\build-release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile />
-    <Prefer32Bit>false</Prefer32Bit>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <Choose>
-    <When Condition="'$(VisualStudioVersion)' == '11.0'">
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets')">
-        <FSharpTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\FSharp\Microsoft.FSharp.Targets</FSharpTargetsPath>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
-  <Import Project="$(FSharpTargetsPath)" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Import Project="..\packages\Fody.1.25.0\build\Fody.targets" Condition="Exists('..\packages\Fody.1.25.0\build\Fody.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Fody.1.25.0\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.25.0\build\Fody.targets'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
