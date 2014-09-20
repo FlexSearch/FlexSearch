@@ -77,6 +77,12 @@ type VersionCacheStore(shard : FlexShardWriter, indexSettings : FlexIndexSetting
     
     do shard.SearcherManager.addListener (self)
     
+    /// <summary>
+    /// Dispose method which will be called automatically through Fody inter-leaving 
+    /// </summary>
+    member this.DisposeManaged() = 
+        if shard.SearcherManager <> null then shard.SearcherManager.removeListener (self)
+    
     interface ReferenceManager.RefreshListener with
         member this.afterRefresh (b : bool) : unit = 
             // Now drop all the old values because they are now
@@ -111,6 +117,9 @@ type VersionCacheStore(shard : FlexShardWriter, indexSettings : FlexIndexSetting
                     let value = PKLookup(id, s.getIndexReader())
                     shard.SearcherManager.release (s)
                     value
+    
+    interface IDisposable with
+        member x.Dispose() : unit = ()
 
 [<Sealed>]
 type VersioningManger(indexSettings : FlexIndexSetting, shards : FlexShardWriter []) = 
@@ -148,6 +157,13 @@ type VersioningManger(indexSettings : FlexIndexSetting, shards : FlexShardWriter
                 return! Choice1Of2(0L)
         }
     
+    /// <summary>
+    /// Dispose method which will be called automatically through Fody inter-leaving 
+    /// </summary>   
+    member this.DisposeManaged() = 
+        // Explicitly dispose all caches
+        versionCaches |> Array.iter (fun s -> (s :?> IDisposable).Dispose())
+    
     interface IVersionManager with
         member x.VersionCheck(document : FlexDocument, newVersion : int64) : Choice<int64, OperationMessage> = 
             failwith "Not implemented yet"
@@ -157,3 +173,6 @@ type VersioningManger(indexSettings : FlexIndexSetting, shards : FlexShardWriter
             versionCaches.[shardNumber].AddOrUpdate(id, version, comparison)
         member x.Delete(id : string, shardNumber : int, version : int64) = 
             versionCaches.[shardNumber].Delete(id, version)
+    
+    interface IDisposable with
+        member x.Dispose() : unit = ()

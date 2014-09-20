@@ -288,11 +288,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Services\DocumentServiceTests.fs" />
+    <Compile Include="Services\IndexServiceTests.fs" />
+    <Compile Include="Services\SearchServiceTests.fs" />
     <Compile Include="HttpHandlers\IndexCoreHandlersTests.fs" />
     <Compile Include="HttpHandlers\DocumentHandlersTests.fs" />
     <Compile Include="HttpHandlers\SearchHandlersTests.fs" />
-    <Compile Include="IndexTests.fs" />
-    <Compile Include="SearchTests.fs" />
     <Compile Include="SearchQueryTests.fs" />
     <Compile Include="SocketServerTests.fs" />
     <Compile Include="HttpTests.fs" />

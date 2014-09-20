@@ -22,6 +22,17 @@ module ``Versioning tests`` =
         |> ExpectErrorCode(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
     
     [<Theory; AutoMockIntegrationData>]
+    let ``Cannot create a duplicate document with a timestamp of -1 even after cache is cleared`` (indexService : IIndexService, 
+                                                                                                    documentService : IDocumentService, index : Index) = 
+        indexService.AddIndex(index) |> ExpectSuccess
+        let document = new FlexDocument(index.IndexName, "1")
+        documentService.AddDocument(document) |> ExpectSuccess
+        indexService.Refresh(index.IndexName) |> ExpectSuccess
+        document.TimeStamp <- -1L
+        documentService.AddDocument(document) 
+        |> ExpectErrorCode(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
+
+    [<Theory; AutoMockIntegrationData>]
     let ``Cannot create a document with timestamp of 1`` (indexService : IIndexService, 
                                                           documentService : IDocumentService, index : Index) = 
         // TimeStamp of 1 implies that we want to ensure that the document exists which is against the logic of basic create operation
@@ -84,3 +95,4 @@ module ``Versioning tests`` =
         document.TimeStamp <- 1L
         documentService.AddOrUpdateDocument(document) 
         |> ExpectErrorCode(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
+

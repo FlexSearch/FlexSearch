@@ -84,3 +84,22 @@ id,topic,givenname,surname,cvv2
         let result = GetSuccessChoice(searchService.Search(query))
         Assert.Equal<string>("aron jhonson", result.Documents.[0].Fields.["fullname"])
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
+
+module ``Index reloading tests`` =
+    let testData = """
+id,topic,givenname,surname,cvv2
+1,a,aron,jhonson,1
+2,c,steve,hewitt,1
+3,b,george,Garner,1
+4,e,jhon,Garner,1
+5,d,simon,jhonson,1"""
+
+    [<Theory>][<AutoMockIntegrationData>]
+    let ``An index can be reloaded from the disk after closing`` (index : Index, indexService : IIndexService, 
+                                                                    documentService : IDocumentService) =
+        index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
+        AddTestDataToIndex(index, testData, documentService, indexService)
+        indexService.CloseIndex(index.IndexName) |> ExpectSuccess
+        indexService.OpenIndex(index.IndexName) |> ExpectSuccess
+        let result = GetSuccessChoice(documentService.GetDocuments(index.IndexName, 10))
+        Assert.Equal<int>(5, result.TotalAvailable)
