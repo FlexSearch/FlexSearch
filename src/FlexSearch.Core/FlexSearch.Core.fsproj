@@ -264,6 +264,10 @@
       <HintPath>..\packages\IKVM.7.4.5196.0\lib\IKVM.Runtime.JNI.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Janitor">
+      <HintPath>..\packages\Janitor.Fody.1.1.0.0\Lib\portable-net4+sl5+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\Janitor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Jil">
       <HintPath>..\packages\Jil.2.1.0\lib\net45\Jil.dll</HintPath>
       <Private>True</Private>
