@@ -91,9 +91,11 @@ module Index =
                 try 
                     let shards = 
                         Array.init flexIndexSetting.ShardConfiguration.ShardCount (fun a -> 
+                            let path = Path.Combine([|flexIndexSetting.BaseFolder; "shards"; a.ToString() ; "index"|])
+                            Directory.CreateDirectory(path) |> ignore
                             let writers = 
                                 IndexingHelpers.GetIndexWriter
-                                    (flexIndexSetting, flexIndexSetting.BaseFolder + "\\shards\\" + a.ToString())
+                                    (flexIndexSetting, path)
                             match writers with
                             | Choice2Of2(e) -> failwith e.UserMessage
                             | Choice1Of2(indexWriter, trackingIndexWriter) -> 
