@@ -11,7 +11,9 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
+open FlexSearch.Common
 open FlexSearch.Core
+open FlexSearch.Java
 open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
@@ -22,31 +24,92 @@ open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open java.io
+open java.lang
 open java.util
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.analysis.util
 open org.apache.lucene.codecs
-open org.apache.lucene.codecs.lucene42
-open org.apache.lucene.document
-open org.apache.lucene.index
-open org.apache.lucene.search
-open org.apache.lucene.store
 open org.apache.lucene.codecs.bloom
+open org.apache.lucene.codecs.idversion
+open org.apache.lucene.codecs.lucene42
+open org.apache.lucene.codecs.perfield
+open org.apache.lucene.document
 open org.apache.lucene.index
 open org.apache.lucene.sandbox
-open org.apache.lucene.codecs.idversion
-open org.apache.lucene.document
-open org.apache.lucene.analysis
-open org.apache.lucene.codecs.perfield
-open org.apache.lucene.codecs
-open System.Collections.Generic
+open org.apache.lucene.search
 open org.apache.lucene.search.similarities
-open FlexSearch.Java
-open java.lang
-open FlexSearch.Common
-open org.apache.lucene.codecs.idversion
+open org.apache.lucene.store
+
+type IndexRegisteration = 
+    { IndexState : IndexState
+      IndexInfo : Index
+      Index : option<FlexIndex> }
+
+[<Sealed>]
+type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter) = 
+    let stateDb = new ConcurrentDictionary<string, IndexRegisteration>(StringComparer.OrdinalIgnoreCase)
+    member this.GetAllIndiceInfo() = stateDb.Values |> Seq.map (fun x -> x.IndexInfo)
+    
+    member this.GetStatus(indexName) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, reg) -> Choice1Of2(reg.IndexState)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+    
+    member this.GetIndexInfo(indexName) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, reg) -> Choice1Of2(reg.IndexInfo)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+    
+    member this.GetIndex(indexName) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, reg) -> Choice1Of2(reg.Index)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+    
+    member this.GetRegisteration(indexName) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, state) -> Choice1Of2(state)
+        | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
+    
+    member this.UpdateStatus(indexName, state) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, reg) -> 
+            let newReg = { reg with IndexState = state }
+            match stateDb.TryUpdate(indexName, newReg, reg) with
+            | true -> Choice1Of2()
+            | false -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+    
+    member this.RemoveRegisteration(indexName) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, reg) -> 
+            stateDb.TryRemove(indexName) |> ignore
+            Choice1Of2()
+        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
+    
+    member this.UpdateRegisteration(indexName : string, state : IndexState, indexInfo : Index, index : FlexIndex option) = 
+        maybe { 
+            assert (indexName <> null)
+            // Only write to file for non ram type indices
+            if indexInfo.IndexConfiguration.DirectoryType <> DirectoryType.Ram then
+                do! writer.WriteToFile (Path.Combine(Constants.DataFolder, indexName, "conf.yml"), formatter.SerializeToString(indexInfo))
+            match stateDb.TryGetValue(indexName) with
+            | (true, reg) -> 
+                let registeration = 
+                    { IndexState = state
+                      IndexInfo = indexInfo
+                      Index = index }
+                stateDb.TryUpdate(indexName, registeration, reg) |> ignore
+                return ()
+            | _ -> 
+                let registeration = 
+                    { IndexState = state
+                      IndexInfo = indexInfo
+                      Index = index }
+                stateDb.TryAdd(indexName, registeration) |> ignore
+                return ()
+        }
 
 /// <summary>
 /// Default postings format for FlexSearch

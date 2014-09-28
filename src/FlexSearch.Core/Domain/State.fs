@@ -22,19 +22,19 @@ open System.Collections.Generic
 open System.Net
 open org.apache.lucene.analysis
 
-/// This will hold all the mutable data related to the node. Everything outside will be
-/// immutable. This will be passed around.
-type INodeState = 
-    abstract PersistanceStore : IPersistanceStore
-    abstract ServerSettings : ServerSettings
-    abstract IndicesState : IndicesState
-
-[<Sealed>]
-type NodeState(persistanceStore, serversettings, indicesState) = 
-    interface INodeState with
-        member this.PersistanceStore = persistanceStore
-        member this.ServerSettings = serversettings
-        member this.IndicesState = indicesState
+///// This will hold all the mutable data related to the node. Everything outside will be
+///// immutable. This will be passed around.
+//type INodeState = 
+//    abstract PersistanceStore : IPersistanceStore
+//    abstract ServerSettings : ServerSettings
+//    abstract IndicesState : IndicesState
+//
+//[<Sealed>]
+//type NodeState(persistanceStore, serversettings, indicesState) = 
+//    interface INodeState with
+//        member this.PersistanceStore = persistanceStore
+//        member this.ServerSettings = serversettings
+//        member this.IndicesState = indicesState
 
 // ----------------------------------------------------------------------------     
 /// HTTP module to handle to incoming requests

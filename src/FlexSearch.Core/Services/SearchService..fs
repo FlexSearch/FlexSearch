@@ -11,6 +11,7 @@
 namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
+open FlexSearch.Common
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -19,7 +20,7 @@ open System.Collections.Generic
 open System.Data
 open System.IO
 open System.Linq
-open FlexSearch.Common
+
 /// <summary>
 /// Search service class which will be dynamically injected using IOC. This will
 /// provide the interface for all kind of search functionality in flex.
@@ -29,7 +30,7 @@ open FlexSearch.Common
 /// module but to only pass mutable state as an instance of NodeState
 /// </summary>
 [<Sealed>]
-type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuery>, parser : IFlexParser) = 
+type SearchService(regManager : RegisterationManager, queryFactory : IFlexFactory<IFlexQuery>, parser : IFlexParser) = 
     
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
@@ -63,6 +64,6 @@ type SearchService(nodeState : INodeState, queryFactory : IFlexFactory<IFlexQuer
         }
     
     interface ISearchService with
-        member this.Search(query) = maybe { let! flexIndex = nodeState.IndicesState.GetRegisteration(query.IndexName)
-                                            return! Search(flexIndex, query) }
+        member this.Search(query) = maybe { let! flexIndex = regManager.GetIndex(query.IndexName)
+                                            return! Search(flexIndex.Value, query) }
         member this.Search(flexIndex, query) = Search(flexIndex, query)

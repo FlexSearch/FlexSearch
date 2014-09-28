@@ -32,7 +32,7 @@ open System.Threading.Tasks.Dataflow
 /// </summary>
 /// <param name="state"></param>
 [<Sealed>]
-type QueueService(state : INodeState, documentService : IDocumentService) = 
+type QueueService(documentService : IDocumentService) = 
     
     let executionBlockOptions() = 
         let executionBlockOption = new ExecutionDataflowBlockOptions()

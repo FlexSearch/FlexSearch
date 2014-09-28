@@ -18,12 +18,12 @@ open FlexSearch.Utility
 /// Concrete implementation of IResourceLoader
 /// </summary>
 [<Sealed>]
-type ResourceLoader(persistenceStore : IPersistanceStore) = 
+type ResourceLoader() = 
     interface IResourceLoader with
         
         member this.LoadResourceAsString(resourceName) = 
             let path = Helpers.GenerateAbsolutePath(".\\conf\\" + resourceName)
             Helpers.LoadFile(path)
-        
-        member this.LoadFilterList(resourceName) = persistenceStore.Get<FilterList>(resourceName)
-        member this.LoadMapList(resourceName) = persistenceStore.Get<MapList>(resourceName)
+        // TODO: FIX THIS
+        member this.LoadFilterList(resourceName) = Choice2Of2(Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE |> GenerateOperationMessage)//persistenceStore.Get<FilterList>(resourceName)
+        member this.LoadMapList(resourceName) = Choice2Of2(Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE |> GenerateOperationMessage)//persistenceStore.Get<MapList>(resourceName)

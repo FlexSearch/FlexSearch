@@ -14,51 +14,51 @@ open FlexSearch.Api
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 
-[<Name("GET-/filterlists/:id")>]
-[<Sealed>]
-type GetFilterListByIdHandler(state : INodeState) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (state.PersistanceStore.Get<FilterList>(SubId(owin))) OK BAD_REQUEST
-
-[<Name("PUT-/filterlists/:id")>]
-[<Sealed>]
-type PutFilterListByIdIdHandler(state : INodeState) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            match GetRequestBody<FilterList>(owin.Request) with
-            | Choice1Of2(filterList) -> 
-                owin 
-                |> ResponseProcessor (state.PersistanceStore.Put<FilterList>(SubId(owin), filterList)) OK BAD_REQUEST
-            | Choice2Of2(error) -> owin |> BAD_REQUEST error
-
-[<Name("DELETE-/filterlists/:id")>]
-[<Sealed>]
-type DeleteFilterListByIdHandler(state : INodeState) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (state.PersistanceStore.Delete<FilterList>(SubId(owin))) OK BAD_REQUEST
-
-[<Name("GET-/maplists/:id")>]
-[<Sealed>]
-type GetMapListByIdHandler(state : INodeState) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (state.PersistanceStore.Get<MapList>(SubId(owin))) OK BAD_REQUEST
-
-[<Name("PUT-/maplists/:id")>]
-[<Sealed>]
-type PutMapListByIdIdHandler(state : INodeState) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            match GetRequestBody<MapList>(owin.Request) with
-            | Choice1Of2(filterList) -> 
-                owin |> ResponseProcessor (state.PersistanceStore.Put<MapList>(SubId(owin), filterList)) OK BAD_REQUEST
-            | Choice2Of2(error) -> owin |> BAD_REQUEST error
-
-[<Name("DELETE-/maplists/:id")>]
-[<Sealed>]
-type DeleteMapListByIdHandler(state : INodeState) = 
-    interface IHttpHandler with
-        member this.Process(owin) = 
-            owin |> ResponseProcessor (state.PersistanceStore.Delete<MapList>(SubId(owin))) OK BAD_REQUEST
+//[<Name("GET-/filterlists/:id")>]
+//[<Sealed>]
+//type GetFilterListByIdHandler(state : INodeState) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = 
+//            owin |> ResponseProcessor (state.PersistanceStore.Get<FilterList>(SubId(owin))) OK BAD_REQUEST
+//
+//[<Name("PUT-/filterlists/:id")>]
+//[<Sealed>]
+//type PutFilterListByIdIdHandler(state : INodeState) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = 
+//            match GetRequestBody<FilterList>(owin.Request) with
+//            | Choice1Of2(filterList) -> 
+//                owin 
+//                |> ResponseProcessor (state.PersistanceStore.Put<FilterList>(SubId(owin), filterList)) OK BAD_REQUEST
+//            | Choice2Of2(error) -> owin |> BAD_REQUEST error
+//
+//[<Name("DELETE-/filterlists/:id")>]
+//[<Sealed>]
+//type DeleteFilterListByIdHandler(state : INodeState) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = 
+//            owin |> ResponseProcessor (state.PersistanceStore.Delete<FilterList>(SubId(owin))) OK BAD_REQUEST
+//
+//[<Name("GET-/maplists/:id")>]
+//[<Sealed>]
+//type GetMapListByIdHandler(state : INodeState) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = 
+//            owin |> ResponseProcessor (state.PersistanceStore.Get<MapList>(SubId(owin))) OK BAD_REQUEST
+//
+//[<Name("PUT-/maplists/:id")>]
+//[<Sealed>]
+//type PutMapListByIdIdHandler(state : INodeState) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = 
+//            match GetRequestBody<MapList>(owin.Request) with
+//            | Choice1Of2(filterList) -> 
+//                owin |> ResponseProcessor (state.PersistanceStore.Put<MapList>(SubId(owin), filterList)) OK BAD_REQUEST
+//            | Choice2Of2(error) -> owin |> BAD_REQUEST error
+//
+//[<Name("DELETE-/maplists/:id")>]
+//[<Sealed>]
+//type DeleteMapListByIdHandler(state : INodeState) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = 
+//            owin |> ResponseProcessor (state.PersistanceStore.Delete<MapList>(SubId(owin))) OK BAD_REQUEST

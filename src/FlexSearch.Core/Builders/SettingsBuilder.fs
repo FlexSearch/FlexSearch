@@ -33,9 +33,7 @@ type SettingsBuilder(factoryCollection : IFactoryCollection) =
                                   (index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                 fields.Values.CopyTo(fieldsArray, 0)
-                let baseFolder = 
-                    if index.IndexConfiguration.DirectoryType = DirectoryType.Ram then index.IndexName
-                    else Constants.DataFolder + "\\" + index.IndexName
+                let baseFolder = Constants.DataFolder + "\\" + index.IndexName
                 
                 let indexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
                 let searchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)

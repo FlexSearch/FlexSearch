@@ -11,11 +11,11 @@
 namespace FlexSearch.Core.Services
 
 open FlexSearch.Api
+open FlexSearch.Api.Messages
+open FlexSearch.Api.Validation
 open FlexSearch.Common
 open FlexSearch.Core
-open FlexSearch.Api.Messages
 open FlexSearch.Utility
-open FlexSearch.Api.Validation
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -44,7 +44,7 @@ open org.apache.lucene.store
 /// </summary>
 /// <param name="state"></param>
 [<Sealed>]
-type DocumentService(nodeState : INodeState, searchService : ISearchService) = 
+type DocumentService(regManager : RegisterationManager, searchService : ISearchService) = 
     
     /// <summary>
     /// Get a document by Id
@@ -53,15 +53,14 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// <param name="documentId"></param>
     let GetDocument indexName documentId = 
         maybe { 
-            let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
+            let! flexIndex = regManager.GetIndex(indexName)
             let q = new SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField documentId))
             q.ReturnScore <- false
             q.ReturnFlatResult <- false
             q.Columns.Add("*")
-            match searchService.Search(flexIndex, q) with
+            match searchService.Search(flexIndex.Value, q) with
             | Choice1Of2(v') -> 
-                if v'.Documents.Count <> 0 then
-                    return! Choice1Of2(v'.Documents.First())
+                if v'.Documents.Count <> 0 then return! Choice1Of2(v'.Documents.First())
                 else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
             | Choice2Of2(e) -> return! Choice2Of2(e)
         }
@@ -71,14 +70,14 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// </summary>
     let GetDocuments indexName count = 
         maybe { 
-            let! flexIndex = nodeState.IndicesState.GetRegisteration(indexName)
+            let! flexIndex = regManager.GetIndex(indexName)
             let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
             q.ReturnScore <- false
             q.ReturnFlatResult <- false
             q.Columns.Add("*")
             q.Count <- count
             q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
-            return! searchService.Search(flexIndex, q)
+            return! searchService.Search(flexIndex.Value, q)
         }
     
     /// <summary>
@@ -87,10 +86,11 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// <param name="indexName"></param>
     /// <param name="documentId"></param>
     /// <param name="fields"></param>
-    let AddorUpdateDocument (document: FlexDocument) =  
-        maybe {
-            do! (document :> IValidator).MaybeValidator() 
-            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, document.IndexName)
+    let AddorUpdateDocument(document : FlexDocument) = 
+        maybe { 
+            do! (document :> IValidator).MaybeValidator()
+            let! flexIndex = regManager.GetIndex(document.IndexName)
+            let! (flexIndex, documentTemplate) = Index.GetDocumentTemplate(flexIndex.Value)
             let! (targetIndex, documentTemplate) = Index.UpdateDocument(flexIndex, document)
             flexIndex.Shards.[targetIndex]
                 .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, document.Id), documentTemplate.Document) 
@@ -100,13 +100,13 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// <summary>
     /// Add a new document to the index
     /// </summary>
-    let AddDocument (document: FlexDocument) = 
-        maybe {
+    let AddDocument(document : FlexDocument) = 
+        maybe { 
             do! (document :> IValidator).MaybeValidator()
-            if document.TimeStamp > 0L then
-                return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT_CREATE |> GenerateOperationMessage) 
-
-            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, document.IndexName)
+            if document.TimeStamp > 0L then 
+                return! Choice2Of2(Errors.INDEXING_VERSION_CONFLICT_CREATE |> GenerateOperationMessage)
+            let! flexIndex = regManager.GetIndex(document.IndexName)
+            let! (flexIndex, documentTemplate) = Index.GetDocumentTemplate(flexIndex.Value)
             let! (targetIndex, documentTemplate) = Index.UpdateDocument(flexIndex, document)
             flexIndex.Shards.[targetIndex].TrackingIndexWriter.addDocument(documentTemplate.Document) |> ignore
             return new CreateResponse(Id = document.Id)
@@ -119,7 +119,8 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// <param name="documentId"></param>
     let DeleteDocument indexName documentId = 
         maybe { 
-            let! (flexIndex, documentTemplate) = Index.IndexExists(nodeState.IndicesState, indexName)
+            let! flexIndex = regManager.GetIndex(indexName)
+            let! (flexIndex, documentTemplate) = Index.GetDocumentTemplate(flexIndex.Value)
             let targetShard = MapToShard documentId flexIndex.Shards.Length
             flexIndex.VersioningManager.Delete(documentId, targetShard, 0L) |> ignore
             flexIndex.Shards.[targetShard].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) 
@@ -131,10 +132,11 @@ type DocumentService(nodeState : INodeState, searchService : ISearchService) =
     /// </summary>
     /// <param name="indexName"></param>
     let DeleteAllDocuments indexName = 
-        maybe { let! (flexIndex, documentTemplate) = IndexExists(nodeState.IndicesState, indexName)
+        maybe { let! flexIndex = regManager.GetIndex(indexName)
+                let! (flexIndex, documentTemplate) = Index.GetDocumentTemplate(flexIndex.Value)
                 flexIndex.Shards |> Array.iter (fun shard -> shard.TrackingIndexWriter.deleteAll() |> ignore) }
     
-    interface IDocumentService with       
+    interface IDocumentService with
         member this.GetDocument(indexName, documentId) = GetDocument indexName documentId
         member this.GetDocuments(indexName, count) = GetDocuments indexName count
         member this.AddOrUpdateDocument(document) = AddorUpdateDocument document

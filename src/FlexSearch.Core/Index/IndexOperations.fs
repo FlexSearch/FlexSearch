@@ -84,7 +84,7 @@ module Index =
     /// </summary>
     /// <param name="state">Index state</param>
     /// <param name="flexIndexSetting">Index setting</param>
-    let internal AddIndex(state : IndicesState, flexIndexSetting : FlexIndexSetting) = 
+    let internal AddIndex(flexIndexSetting : FlexIndexSetting) = 
         maybe { 
             /// Generate shards for the newly added index
             let generateShards flexIndexSetting = 
@@ -92,7 +92,9 @@ module Index =
                     let shards = 
                         Array.init flexIndexSetting.ShardConfiguration.ShardCount (fun a -> 
                             let path = Path.Combine([|flexIndexSetting.BaseFolder; "shards"; a.ToString() ; "index"|])
-                            Directory.CreateDirectory(path) |> ignore
+                            // Only create directory for non-ram index
+                            if flexIndexSetting.IndexConfiguration.DirectoryType <> DirectoryType.Ram then
+                                Directory.CreateDirectory(path) |> ignore
                             let writers = 
                                 IndexingHelpers.GetIndexWriter
                                     (flexIndexSetting, path)
@@ -117,8 +119,7 @@ module Index =
                     Choice2Of2(Errors.ERROR_OPENING_INDEXWRITER
                                |> GenerateOperationMessage
                                |> Append("Message", e.Message))
-            // Add index status
-            state.IndexStatus.TryAdd(flexIndexSetting.IndexName, IndexState.Opening) |> ignore
+
             let! shards = generateShards flexIndexSetting
             let flexIndex = 
                 { IndexSetting = flexIndexSetting
@@ -133,9 +134,7 @@ module Index =
             // NRT Scheduler
             Async.Start
                 (ScheduleIndexJob flexIndexSetting.IndexConfiguration.RefreshTimeMilliseconds RefreshIndexJob flexIndex)
-            // Add the index to the registration
-            state.IndexRegisteration.TryAdd(flexIndexSetting.IndexName, flexIndex) |> ignore
-            state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Online
+            return! Choice1Of2(flexIndex)
         }
     
     /// <summary>
@@ -143,11 +142,8 @@ module Index =
     /// </summary>
     /// <param name="state"></param>
     /// <param name="flexIndex"></param>
-    let internal CloseIndex(state : IndicesState, flexIndex : FlexIndex) = 
+    let internal CloseIndex(flexIndex : FlexIndex) = 
         try 
-            state.IndexRegisteration.TryRemove(flexIndex.IndexSetting.IndexName) |> ignore
-            // Update status from online to closing
-            state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Closing
             flexIndex.Token.Cancel()
             for shard in flexIndex.Shards do
                 try 
@@ -156,7 +152,6 @@ module Index =
                     shard.IndexWriter.close()
                 with e -> ()
         with e -> () //logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
-        state.IndexStatus.[flexIndex.IndexSetting.IndexName] <- IndexState.Offline
     
     /// <summary>
     /// Utility method to return index registration information
@@ -184,45 +179,42 @@ module Index =
     /// </summary>
     /// <param name="state"></param>
     /// <param name="indexName"></param>
-    let internal IndexExists(state : IndicesState, indexName) = 
-        match state.IndexRegisteration.TryGetValue(indexName) with
-        | (true, flexIndex) -> 
-            match flexIndex.ThreadLocalStore.IsValueCreated with
-            | true -> Choice1Of2(flexIndex, flexIndex.ThreadLocalStore.Value)
-            | _ -> 
-                let luceneDocument = new Document()
-                let fieldLookup = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase)
-                let idField = 
-                    new StringField(flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, "", 
-                                    Field.Store.YES)
-                luceneDocument.add (idField)
-                fieldLookup.Add(Constants.IdField, idField)
-                let lastModifiedField = 
-                    new LongField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName, 
-                                  GetCurrentTimeAsLong(), Field.Store.YES)
-                luceneDocument.add (lastModifiedField)
-                fieldLookup.Add(Constants.LastModifiedField, lastModifiedField)
-                let lastModifiedFieldDv = 
-                    new NumericDocValuesField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName, 
-                                              GetCurrentTimeAsLong())
-                luceneDocument.add (lastModifiedFieldDv)
-                fieldLookup.Add(Constants.LastModifiedFieldDv, lastModifiedFieldDv)
-                for field in flexIndex.IndexSetting.Fields do
-                    // Ignore these 4 fields here.
-                    if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField 
-                        || field.FieldName = Constants.LastModifiedFieldDv) then ()
-                    else 
-                        let defaultField = FlexField.CreateDefaultLuceneField field
-                        luceneDocument.add (defaultField)
-                        fieldLookup.Add(field.FieldName, defaultField)
-                let documentTemplate = 
-                    { Document = luceneDocument
-                      FieldsLookup = fieldLookup
-                      LastGeneration = 0 }
-                flexIndex.ThreadLocalStore.Value <- documentTemplate
-                Choice1Of2(flexIndex, documentTemplate)
-        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
-    
+    let internal GetDocumentTemplate(flexIndex : FlexIndex) = 
+        match flexIndex.ThreadLocalStore.IsValueCreated with
+        | true -> Choice1Of2(flexIndex, flexIndex.ThreadLocalStore.Value)
+        | _ -> 
+            let luceneDocument = new Document()
+            let fieldLookup = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase)
+            let idField = 
+                new StringField(flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, "", 
+                                Field.Store.YES)
+            luceneDocument.add (idField)
+            fieldLookup.Add(Constants.IdField, idField)
+            let lastModifiedField = 
+                new LongField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName, 
+                                GetCurrentTimeAsLong(), Field.Store.YES)
+            luceneDocument.add (lastModifiedField)
+            fieldLookup.Add(Constants.LastModifiedField, lastModifiedField)
+            let lastModifiedFieldDv = 
+                new NumericDocValuesField(flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName, 
+                                            GetCurrentTimeAsLong())
+            luceneDocument.add (lastModifiedFieldDv)
+            fieldLookup.Add(Constants.LastModifiedFieldDv, lastModifiedFieldDv)
+            for field in flexIndex.IndexSetting.Fields do
+                // Ignore these 4 fields here.
+                if (field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField 
+                    || field.FieldName = Constants.LastModifiedFieldDv) then ()
+                else 
+                    let defaultField = FlexField.CreateDefaultLuceneField field
+                    luceneDocument.add (defaultField)
+                    fieldLookup.Add(field.FieldName, defaultField)
+            let documentTemplate = 
+                { Document = luceneDocument
+                  FieldsLookup = fieldLookup
+                  LastGeneration = 0 }
+            flexIndex.ThreadLocalStore.Value <- documentTemplate
+            Choice1Of2(flexIndex, documentTemplate)
+
     let inline private GetTargetShard(id : string, count : int) = 
         if (count = 1) then 0
         else IndexingHelpers.MapToShard id count

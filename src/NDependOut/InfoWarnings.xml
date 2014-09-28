@@ -1,15 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <InfoWarnings>
-  <Info>Begin full analysis with NDepend v5.3.0.8360</Info>
+  <Info>Begin full analysis with NDepend v5.4.0.8391</Info>
   <Info>Input directory resolved to absolute directory path: from    {..\build-debug}    to    {F:\GitHub\FlexSearch\build-debug}</Info>
   <Info>Output directory resolved to absolute directory path: F:\GitHub\FlexSearch\src\NDependOut</Info>
   <Info>No Baseline for Comparison loaded.</Info>
+  <Warning>Can't load the assembly {CSScriptLibrary}:
+Can't find the .NET assembly {CSScriptLibrary} in specified folders. 
+Has it been compiled properly? 
+Is the NDepend project missing the containing folder of the .NET assembly?</Warning>
+  <Warning>Can't load the assembly {System.Reactive.Linq}:
+Can't find the .NET assembly {System.Reactive.Linq} in specified folders. 
+Has it been compiled properly? 
+Is the NDepend project missing the containing folder of the .NET assembly?</Warning>
+  <Warning>Can't load the assembly {System.Reactive.Core}:
+Can't find the .NET assembly {System.Reactive.Core} in specified folders. 
+Has it been compiled properly? 
+Is the NDepend project missing the containing folder of the .NET assembly?</Warning>
   <Info>Concurrent mode</Info>
   <Warning>Versioning issue: Assembly {FlexSearch.Core v0.21.1.0} references both versions {4.3.1.0} and {4.0.0.0} of the assembly {FSharp.Core}. NDepend will only consider the highest version.</Warning>
   <Warning>Assembly {IKVM.Runtime} doesn't contain any type.</Warning>
-  <Warning>Assembly {System.Runtime} doesn't contain any type.</Warning>
-  <Warning>Assembly {System.Threading.Tasks} doesn't contain any type.</Warning>
-  <Info>.NET Assemblies loaded from {C:\Windows\Microsoft.NET\Framework\v4.0.30319} 
+  <Warning>Assembly {Microsoft.Owin.Hosting} doesn't contain any type.</Warning>
+  <Warning>Assembly {Thrift} doesn't contain any type.</Warning>
+  <Warning>Assembly {Gibraltar.Agent} doesn't contain any type.</Warning>
+  <Info>.NET Assemblies loaded from {C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319} 
    mscorlib.dll   v4.0.0.0
    System.Core.dll   v4.0.0.0
    System.dll   v4.0.0.0
@@ -17,45 +30,47 @@
    System.Data.dll   v4.0.0.0
    System.Threading.Tasks.dll   v4.0.0.0
    System.ComponentModel.Composition.dll   v4.0.0.0</Info>
-  <Warning>No application or third party assembly found in directory {C:\Windows\Microsoft.NET\Framework\v4.0.30319\WPF}</Warning>
+  <Warning>No application or third party assembly found in directory {C:\WINDOWS\Microsoft.NET\Framework\v4.0.30319\WPF}</Warning>
   <Info>.NET Assemblies loaded from {F:\GitHub\FlexSearch\build-debug} 
    FlexSearch.Core.dll   v0.21.1.0
-   FlexLucene.dll   v4.7.2.0
+   FlexLucene.dll   v4.9.0.0
    FSharp.Core.dll   v4.3.1.0
    FlexSearch.Api.dll   v0.21.1.0
    Microsoft.Owin.dll   v2.1.0.0
    SuperSocket.Facility.dll   v1.7.0.1
    SuperSocket.SocketBase.dll   v1.7.0.1
    SuperSocket.ClientEngine.Core.dll   v0.3.0.0
-   Autofac.dll   v3.4.0.0
+   Autofac.dll   v3.5.0.0
    IKVM.OpenJDK.Core.dll   v7.4.5196.0
    FParsecCS.dll   v1.0.0.0
    IKVM.Runtime.dll   v7.4.5196.0
-   System.Threading.Tasks.Dataflow.dll   v4.5.14.0
+   System.Threading.Tasks.Dataflow.dll   v4.5.20.0
    Newtonsoft.Json.dll   v6.0.0.0
    Autofac.Extras.Attributed.dll   v3.2.0.0
    Owin.dll   v1.0.0.0
    Microsoft.Owin.Hosting.dll   v2.1.0.0
    SuperSocket.ClientEngine.Common.dll   v0.3.0.0
    Thrift.dll   v1.0.0.1
-   CSScriptLibrary.dll   v3.7.2.0
    FParsec.dll   v1.0.0.0
-   System.Reactive.Linq.dll   v2.2.0.0
-   System.Reactive.Core.dll   v2.2.0.0
    System.Data.SQLite.dll   v1.0.92.0
    protobuf-net.dll   v2.0.0.668
    Gibraltar.Agent.dll   v3.5.4.0</Info>
+  <Warning>Assembly {FlexSearch.Common} is referenced by {FlexSearch.Core} but is not found.</Warning>
+  <Warning>Assembly {FlexSearch.Java} is referenced by {FlexSearch.Core} but is not found.</Warning>
+  <Warning>Assembly {Jil} is referenced by {FlexSearch.Core} but is not found.</Warning>
+  <Warning>Assembly {System.Runtime.Serialization} is referenced by {FlexSearch.Core} but is not found.</Warning>
+  <Warning>Assembly {System.ComponentModel.DataAnnotations} is referenced by {FlexSearch.Core} but is not found.</Warning>
   <Info>0 code rule has been extracted from code.</Info>
   <Info>No dependency cycle detected in assemblies referencement graph.</Info>
-  <Info>06/22/2014 19:25:15 Analyse dependencies of your application.</Info>
-  <Info>06/22/2014 19:25:16 Log trend metrics values.</Info>
-  <Info>06/22/2014 19:25:17 Execute queries and rules</Info>
+  <Info>09/26/2014 17:48:42 Analyse dependencies of your application.</Info>
+  <Info>09/26/2014 17:48:43 Log trend metrics values.</Info>
+  <Info>09/26/2014 17:48:43 Execute queries and rules</Info>
   <Warning>5 critical rules are violated.
-  - Methods too complex - critical
   - Methods with too many parameters - critical
   - Avoid namespaces mutually dependent
   - Constructors of abstract classes should be declared as protected or private
+  - Interface name should begin with a 'I'
   - Avoid having different types with same name</Warning>
-  <Info>06/22/2014 19:25:18 NDepend analysis done. Duration: 00:02</Info>
-  <Info>06/22/2014 19:25:18 Building the report (standard).</Info>
+  <Info>09/26/2014 17:48:44 NDepend analysis done. Duration: 00:04</Info>
+  <Info>09/26/2014 17:48:44 Building the report (standard).</Info>
 </InfoWarnings>

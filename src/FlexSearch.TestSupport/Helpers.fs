@@ -41,7 +41,7 @@ module Helpers =
         match choice with
         | Choice1Of2(success) -> Assert.True(true)
         | Choice2Of2(error) -> 
-            Assert.True(false, "Expected the result to be success but received failure: " + error.DeveloperMessage)
+            Assert.True(false, sprintf "Expected the result to be success but received failure: %A" error)
 
     /// <summary>
     /// Returns success if Choice1 is present
@@ -51,7 +51,7 @@ module Helpers =
         match choice with
         | Choice1Of2(success) -> Assert.Equal<'T>(expected, success)
         | Choice2Of2(error) -> 
-            Assert.True(false, "Expected the result to be success but received failure: " + error.DeveloperMessage)
+            Assert.True(false, sprintf "Expected the result to be success but received failure: %A" error)
                 
     /// <summary>
     /// Expects the DU to contains Choice2 (Error)

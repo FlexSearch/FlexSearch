@@ -69,7 +69,6 @@ module Main =
     /// <param name="testServer"></param>
     let GetContainer(serverSettings : ServerSettings, testServer : bool) = 
         let builder = new ContainerBuilder()
-
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
@@ -83,7 +82,7 @@ module Main =
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexQuery>
         builder |> FactoryService.RegisterInterfaceAssemblies<IHttpResource>
         // Abstract class scanning
-        builder |> FactoryService.RegisterAbstractClassAssemblies<HttpHandlerBase<_,_>>
+        builder |> FactoryService.RegisterAbstractClassAssemblies<HttpHandlerBase<_, _>>
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
         builder |> FactoryService.RegisterSingleFactoryInstance<IHttpResource>
@@ -95,14 +94,9 @@ module Main =
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
-        builder |> FactoryService.RegisterSingleInstance<NodeState, INodeState>
-        let indicesState = 
-            { IndexStatus = new ConcurrentDictionary<string, IndexState>(StringComparer.OrdinalIgnoreCase)
-              IndexRegisteration = new ConcurrentDictionary<string, FlexIndex>(StringComparer.OrdinalIgnoreCase) }
-        builder.RegisterInstance(new SqlLitePersistanceStore(testServer)).As<IPersistanceStore>().SingleInstance() 
-        |> ignore
+        builder.RegisterInstance(new RegisterationManager(new ThreadSafeFileWiter(), new YamlFormatter() :> IFormatter)).As<RegisterationManager>()
+            .SingleInstance() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
-        builder.RegisterInstance(indicesState).SingleInstance() |> ignore
         // Register services
         builder |> FactoryService.RegisterSingleInstance<FlexParser, IFlexParser>
         builder |> FactoryService.RegisterSingleInstance<IndexService, IIndexService>
@@ -111,6 +105,7 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.RegisterSingleInstance<JobService, IJobService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
+        builder |> FactoryService.RegisterSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
         builder.RegisterInstance((GetLoggerService(serverSettings))).SingleInstance().As<ILogService>() |> ignore
         // Register server
         //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore

@@ -54,7 +54,7 @@ module UnitTestAttributes =
 module IntegrationTestHelpers = 
     let serverSettings = new ServerSettings()
     let Container = Main.GetContainer(serverSettings, true)
-    
+
     /// <summary>
     /// Baisc index configuration
     /// </summary>

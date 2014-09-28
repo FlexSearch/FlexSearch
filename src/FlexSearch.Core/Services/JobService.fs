@@ -24,5 +24,6 @@ open FlexSearch.Core
 [<Sealed>]
 type JobService(persistenceStore : IPersistanceStore) = 
     interface IJobService with
-        member this.GetJob(jobId : string) = persistenceStore.Get<Job>(jobId)
-        member this.DeleteAllJobs() = persistenceStore.DeleteAll<Job>()
+        // TODO: FIX THIS
+        member this.GetJob(jobId : string) = Choice2Of2(Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE |> GenerateOperationMessage)
+        member this.DeleteAllJobs() = Choice2Of2(Errors.ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE |> GenerateOperationMessage)

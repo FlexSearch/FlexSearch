@@ -62,16 +62,9 @@
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
   </Target>
   <ItemGroup>
-    <None Include="x64\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="x86\SQLite.Interop.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <Compile Include="Builders\AnalysisExtensionsTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="PoolTests.fs" />
-    <Compile Include="PersistanceStoreTests.fs" />
     <Compile Include="AnalysisTests.fs" />
     <None Include="app.config" />
     <None Include="packages.config" />
@@ -244,10 +237,6 @@
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Data.SQLite">
-      <HintPath>..\packages\System.Data.SQLite.Core.1.0.92.0\lib\net451\System.Data.SQLite.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Serialization" />
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
