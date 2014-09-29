@@ -238,7 +238,7 @@ type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regM
         for x in Directory.EnumerateDirectories(serverSettings.DataFolder) do
             let confPath = Path.Combine(x, "conf.yml")
             if File.Exists(confPath) then 
-                use stream = new FileStream(confPath, FileMode.Open)
+                use stream = new FileStream(confPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
                 let indexInfo = formatter.DeSerialize<Index>(stream)
                 if indexInfo.Online then 
                     try 
