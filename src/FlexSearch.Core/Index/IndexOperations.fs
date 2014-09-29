@@ -154,24 +154,6 @@ module Index =
         with e -> () //logger.Error("Error while closing index:" + flexIndex.IndexSetting.IndexName, e)
     
     /// <summary>
-    /// Utility method to return index registration information
-    /// </summary>
-    /// <param name="state"></param>
-    /// <param name="indexName"></param>
-    let internal GetIndexRegisteration(state : IndicesState, indexName) = 
-        match state.IndexStatus.TryGetValue(indexName) with
-        | (true, status) -> 
-            match status with
-            | IndexState.Online -> 
-                match state.IndexRegisteration.TryGetValue(indexName) with
-                | (true, flexIndex) -> Choice1Of2(flexIndex)
-                | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
-            | IndexState.Opening -> Choice2Of2(Errors.INDEX_IS_OPENING |> GenerateOperationMessage)
-            | IndexState.Offline | IndexState.Closing -> Choice2Of2(Errors.INDEX_IS_OFFLINE |> GenerateOperationMessage)
-            | _ -> Choice2Of2(Errors.INDEX_IS_IN_INVALID_STATE |> GenerateOperationMessage)
-        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
-    
-    /// <summary>
     /// Function to check if the requested index is available. If yes then tries to 
     /// retrieve the document template associated with the index from thread local store.
     /// If there is no template document for the requested index then goes ahead
