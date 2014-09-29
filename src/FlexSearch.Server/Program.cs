@@ -5,7 +5,6 @@
     using FlexSearch.Core;
     using Topshelf;
     using Owin;
-    using Gibraltar.Agent;
     using System.IO;
     internal class Program
     {
@@ -13,7 +12,7 @@
         private static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder, "Config.json"));
+            var settings = Core.Main.GetServerSettings(Path.Combine(Constants.ConfFolder, "Config.yml"));
             foreach (var file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly))
             {
                 try

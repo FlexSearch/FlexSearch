@@ -67,10 +67,6 @@
       <HintPath>..\packages\FlexLucene.4.9.0.0\lib\net40\FlexLucene.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core, Version=4.3.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Gibraltar.Agent, Version=3.5.4.0, Culture=neutral, PublicKeyToken=ca42a1ee8d2e42d3, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Gibraltar.Agent.3.5.6.1696\lib\4.0\Gibraltar.Agent.dll</HintPath>
-    </Reference>
     <Reference Include="IKVM.AWT.WinForms, Version=7.4.5196.0, Culture=neutral, PublicKeyToken=13235d27fcbfff58, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\IKVM.7.4.5196.0\lib\IKVM.AWT.WinForms.dll</HintPath>
@@ -171,10 +167,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\IKVM.7.4.5196.0\lib\IKVM.Runtime.JNI.dll</HintPath>
     </Reference>
-    <Reference Include="LoupeViewer, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Gibraltar.Loupe.Viewer.3.5.6.1696\lib\net40\LoupeViewer.exe</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Owin, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Microsoft.Owin.3.0.0\lib\net45\Microsoft.Owin.dll</HintPath>
@@ -255,7 +247,7 @@
     <Folder Include="Lib\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Conf\Config.json">
+    <None Include="Conf\Config.yml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="Conf\Readme.txt">

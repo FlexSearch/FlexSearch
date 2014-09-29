@@ -93,7 +93,6 @@
       <HintPath>..\packages\Autofac.Extras.Attributed.3.2.1\lib\net40\Autofac.Extras.Attributed.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Castle.Core" />
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.4.9.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>

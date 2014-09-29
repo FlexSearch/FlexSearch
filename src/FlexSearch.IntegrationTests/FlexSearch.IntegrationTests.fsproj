@@ -61,10 +61,6 @@
       <HintPath>..\packages\FParsec.1.0.1\lib\net40-client\FParsecCS.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Gibraltar.Agent">
-      <HintPath>..\packages\Gibraltar.Agent.3.5.6.1696\lib\4.0\Gibraltar.Agent.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="IKVM.AWT.WinForms">
       <HintPath>..\packages\IKVM.7.4.5196.0\lib\IKVM.AWT.WinForms.dll</HintPath>
       <Private>True</Private>
