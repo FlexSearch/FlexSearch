@@ -31,36 +31,8 @@ module Main =
     open System.Threading
     open System.Threading.Tasks
     open org.apache.lucene.analysis
-
-    /// <summary>
-    /// Generate server settings from the JSON text file
-    /// </summary>
-    /// <param name="path">File path to load settings from</param>
-    let GetServerSettings(path) = 
-        let fileStream = new FileStream(path, FileMode.Open)
-        let formatter = new YamlFormatter() :> IFormatter
-        let parsedResult = formatter.DeSerialize<ServerSettings>(fileStream)
-        parsedResult.ConfFolder <- Helpers.GenerateAbsolutePath(parsedResult.ConfFolder)
-        parsedResult.DataFolder <- Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
-        parsedResult.PluginFolder <- Helpers.GenerateAbsolutePath(parsedResult.PluginFolder)
-        parsedResult
-    
-    let GetLoggerService(serverSettings : ServerSettings) = 
-        let builder = new ContainerBuilder()
-        // Register the service to consume with meta-data.
-        // Since we're using attributed meta-data, we also
-        // need to register the AttributedMetadataModule
-        // so the meta-data attributes get read.
-        builder.RegisterModule<AttributedMetadataModule>() |> ignore
-        // Interface scanning
-        builder |> FactoryService.RegisterInterfaceAssemblies<ILogService>
-        builder |> FactoryService.RegisterSingleFactoryInstance<ILogService>
-        let container = builder.Build()
-        let logFactory = container.Resolve<IFlexFactory<ILogService>>()
-        match logFactory.GetModuleByName(serverSettings.Logger) with
-        | Choice1Of2(logger) -> logger
-        | _ -> 
-            // Return the default log service
+        
+    let GetLoggerService() = 
             new ConsoleLogService() :> ILogService
     
     /// <summary>
@@ -95,9 +67,9 @@ module Main =
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
-        builder.RegisterInstance(new RegisterationManager(new ThreadSafeFileWiter(), new YamlFormatter() :> IFormatter)).As<RegisterationManager>()
+        builder.RegisterInstance(new RegisterationManager(new ThreadSafeFileWiter(), new YamlFormatter() :> IFormatter, serverSettings)).As<RegisterationManager>()
             .SingleInstance() |> ignore
-        builder.RegisterInstance(serverSettings).SingleInstance() |> ignore
+        builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings>() |> ignore
         // Register services
         builder |> FactoryService.RegisterSingleInstance<FlexParser, IFlexParser>
         builder |> FactoryService.RegisterSingleInstance<IndexService, IIndexService>
@@ -107,7 +79,7 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<JobService, IJobService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
         builder |> FactoryService.RegisterSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
-        builder.RegisterInstance((GetLoggerService(serverSettings))).SingleInstance().As<ILogService>() |> ignore
+        builder.RegisterInstance(GetLoggerService()).SingleInstance().As<ILogService>() |> ignore
         // Register server
         //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
         builder.Build()
@@ -146,7 +118,7 @@ module Main =
             let indexService = container.Resolve<IIndexService>()
             // Close all open indices
             match indexService.GetAllIndex() with
-            | Choice1Of2(regs) ->
+            | Choice1Of2(regs) -> 
                 for registeration in regs do
                     indexService.CloseIndex(registeration.IndexName) |> ignore
             | _ -> ()
