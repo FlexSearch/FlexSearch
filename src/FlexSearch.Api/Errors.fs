@@ -138,3 +138,7 @@ module Errors =
     let IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING = 
         "IMPORTER_DOES_NOT_SUPPORT_INCREMENTAL_INDEXING:Importer does not support incremental indexing."
     let JOBID_IS_NOT_FOUND = "JOBID_IS_NOT_FOUND:Job id not found."
+    // ----------------------------------------------------------------------------
+    // Configuration related
+    // ---------------------------------------------------------------------------- 
+    let UNABLE_TO_PARSE_CONFIG = "UNABLE_TO_PARSE_CONFIG:Unable to parse the given configuration file."
