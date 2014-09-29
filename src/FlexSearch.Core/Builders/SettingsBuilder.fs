@@ -22,7 +22,7 @@ open FlexSearch.Common
 /// Top level settings builder
 /// </summary>
 [<Sealed>]
-type SettingsBuilder(factoryCollection : IFactoryCollection) = 
+type SettingsBuilder(factoryCollection : IFactoryCollection, serverSettings : ServerSettings) = 
     interface ISettingsBuilder with
         member this.BuildSetting(index : FlexSearch.Api.Index) = 
             maybe { 
@@ -33,7 +33,7 @@ type SettingsBuilder(factoryCollection : IFactoryCollection) =
                                   (index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                 fields.Values.CopyTo(fieldsArray, 0)
-                let baseFolder = Constants.DataFolder + "\\" + index.IndexName
+                let baseFolder = serverSettings.DataFolder + "\\" + index.IndexName
                 
                 let indexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
                 let searchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)

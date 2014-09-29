@@ -31,7 +31,7 @@ open org.apache.lucene.search
 /// module but to only pass mutable state as an instance of NodeState
 /// </summary>
 /// <param name="state"></param>
-type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regManager : RegisterationManager) = 
+type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regManager : RegisterationManager, serverSettings : ServerSettings) = 
     let formatter = new YamlFormatter() :> IFormatter
     
     /// <summary>
@@ -81,16 +81,16 @@ type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regM
                 CloseIndex(registeration.Index.Value)
                 do! regManager.RemoveRegisteration(indexName)
                 // It is possible that directory might not exist if the index has never been opened
-                if Directory.Exists(Path.Combine(Constants.DataFolder, indexName)) then 
-                    Directory.Delete(Path.Combine(Constants.DataFolder, indexName), true)
+                if Directory.Exists(Path.Combine(serverSettings.DataFolder, indexName)) then 
+                    Directory.Delete(Path.Combine(serverSettings.DataFolder, indexName), true)
                 logger.DeleteIndex(indexName)
                 return! Choice1Of2()
             | IndexState.Opening -> return! Choice2Of2(Errors.INDEX_IS_OPENING |> GenerateOperationMessage)
             | IndexState.Offline | IndexState.Closing -> 
                 do! regManager.RemoveRegisteration(indexName)
                 // It is possible that directory might not exist if the index has never been opened
-                if Directory.Exists(Path.Combine(Constants.DataFolder, indexName)) then 
-                    Directory.Delete(Path.Combine(Constants.DataFolder, indexName), true)
+                if Directory.Exists(Path.Combine(serverSettings.DataFolder, indexName)) then 
+                    Directory.Delete(Path.Combine(serverSettings.DataFolder, indexName), true)
                 logger.DeleteIndex(indexName)
                 return! Choice1Of2()
             | _ -> return! Choice2Of2(Errors.INDEX_IS_IN_INVALID_STATE |> GenerateOperationMessage)
@@ -235,7 +235,7 @@ type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regM
     /// </summary>
     /// <param name="nodeState"></param>
     let LoadAllIndex() = 
-        for x in Directory.EnumerateDirectories(DataFolder) do
+        for x in Directory.EnumerateDirectories(serverSettings.DataFolder) do
             let confPath = Path.Combine(x, "conf.yml")
             if File.Exists(confPath) then 
                 use stream = new FileStream(confPath, FileMode.Open)

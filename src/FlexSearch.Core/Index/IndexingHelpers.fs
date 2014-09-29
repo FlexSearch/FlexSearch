@@ -48,7 +48,7 @@ type IndexRegisteration =
       Index : option<FlexIndex> }
 
 [<Sealed>]
-type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter) = 
+type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter, serverSettings : ServerSettings) = 
     let stateDb = new ConcurrentDictionary<string, IndexRegisteration>(StringComparer.OrdinalIgnoreCase)
     member this.GetAllIndiceInfo() = stateDb.Values |> Seq.map (fun x -> x.IndexInfo)
     
@@ -93,7 +93,7 @@ type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter) =
             assert (indexName <> null)
             // Only write to file for non ram type indices
             if indexInfo.IndexConfiguration.DirectoryType <> DirectoryType.Ram then
-                do! writer.WriteToFile (Path.Combine(Constants.DataFolder, indexName, "conf.yml"), formatter.SerializeToString(indexInfo))
+                do! writer.WriteToFile (Path.Combine(serverSettings.DataFolder, indexName, "conf.yml"), formatter.SerializeToString(indexInfo))
             match stateDb.TryGetValue(indexName) with
             | (true, reg) -> 
                 let registeration = 

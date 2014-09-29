@@ -13,7 +13,7 @@ namespace FlexSearch.Core
 open System
 open System.IO
 
-/// Contains all the flex constants and cache store definitions 
+/// Contains all the flex constants which do not change per instance
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Constants = 
@@ -22,14 +22,8 @@ module Constants =
     
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-    let private dataFolder = Path.Combine(rootFolder, "Data")
     let private confFolder = Path.Combine(rootFolder, "Conf")
     let private pluginFolder = Path.Combine(rootFolder, "Plugins")
-    
-    /// Flex data folder
-    let DataFolder = 
-        Directory.CreateDirectory(dataFolder) |> ignore
-        dataFolder
     
     /// Flex index folder
     let ConfFolder = 
