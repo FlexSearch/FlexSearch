@@ -37,11 +37,13 @@ type IThreadSafeWriter =
 type ThreadSafeFileWiter() = 
     interface IThreadSafeWriter with
         member this.WriteToFile(filePath : string, content : string) = 
-            let mutex = new Mutex(false, filePath.Replace("\\", ""))
+            use mutex = new Mutex(false, filePath.Replace("\\", ""))
             Directory.CreateDirectory(Path.GetDirectoryName(filePath)) |> ignore
             try 
                 mutex.WaitOne() |> ignore
-                File.WriteAllText(filePath, content)
+                use file = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)
+                let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(content)
+                file.Write(byteContent, 0, byteContent.Length)
                 mutex.ReleaseMutex()
                 Choice1Of2()
             with e -> 
