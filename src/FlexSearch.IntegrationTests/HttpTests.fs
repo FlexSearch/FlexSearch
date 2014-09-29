@@ -182,7 +182,7 @@ module ``Webservice Tests`` =
         let mutable serverRunning = false
         member this.Setup() = 
             if serverRunning <> true then 
-                let serverSettings = new ServerSettings()
+                let serverSettings = ServerSettings.GetDefault()
                 let container = Main.GetContainer(serverSettings, true)
                 let indexService = container.Resolve<IIndexService>()
                 //let index = Helpers.MockIndexSettings()

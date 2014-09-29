@@ -52,7 +52,7 @@ module UnitTestAttributes =
 
 [<AutoOpen>]
 module IntegrationTestHelpers = 
-    let serverSettings = new ServerSettings()
+    let serverSettings = ServerSettings.GetDefault()
     let Container = Main.GetContainer(serverSettings, true)
 
     /// <summary>
