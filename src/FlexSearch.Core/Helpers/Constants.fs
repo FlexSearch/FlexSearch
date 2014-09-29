@@ -18,7 +18,7 @@ open System.IO
 [<RequireQualifiedAccess>]
 module Constants = 
     /// Lucene version to be used across the application
-    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_4_9
+    let LuceneVersion = org.apache.lucene.util.Version.LUCENE_4_10_1
     
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase

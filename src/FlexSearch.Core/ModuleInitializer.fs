@@ -17,7 +17,7 @@ module ModuleInitializer =
     /// Used by the ModuleInit. All code inside the Initialize method is ran as soon as the assembly is loaded.
     /// </summary>
     let Initialize() = 
-        let asm = typeof<FlexSearch.Java.FlexCodec49>.Assembly
+        let asm = typeof<FlexSearch.Java.FlexCodec410>.Assembly
         // Some codec are written in Java and needs to be reloaded 
         // for them to get picked up by the engine
         Codec.reloadCodecs (ikvm.runtime.AssemblyClassLoader(asm))

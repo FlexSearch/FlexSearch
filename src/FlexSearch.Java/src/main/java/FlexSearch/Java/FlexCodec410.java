@@ -11,15 +11,15 @@
 package FlexSearch.Java;
 
 import org.apache.lucene.codecs.*;
-import org.apache.lucene.codecs.lucene49.Lucene49Codec;
+import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 
-public final class FlexCodec49 extends FilterCodec {
+public final class FlexCodec410 extends FilterCodec {
 
     private final PostingsFormat postingsFormat = new FlexPerFieldPostingsFormat();
     private final DocValuesFormat docValuesFormat = new FlexPerFieldDocValuesFormat();
 
-    public FlexCodec49() {
-        super("FlexCodec49", new Lucene49Codec());
+    public FlexCodec410() {
+        super("FlexCodec410", new Lucene410Codec());
     }
 
     @Override

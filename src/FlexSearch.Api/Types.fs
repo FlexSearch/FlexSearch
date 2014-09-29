@@ -31,7 +31,7 @@ type IndexConfiguration() =
     [<DefaultValue(25); GreaterThanOrEqual(25)>]
     member val RefreshTimeMilliseconds = 25 with get, set
     
-    member val IndexVersion = IndexVersion.Lucene_4_9 with get, set
+    member val IndexVersion = IndexVersion.LUCENE_4_10 with get, set
     member val IdFieldPostingsFormat = FieldPostingsFormat.Bloom_4_1 with get, set
     member val IdFieldDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
     member val DefaultIndexPostingsFormat = FieldPostingsFormat.Lucene_4_1 with get, set

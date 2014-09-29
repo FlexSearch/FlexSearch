@@ -13,6 +13,7 @@ package FlexSearch.Java;
 import java.util.HashMap;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene49.Lucene49DocValuesFormat;
+import org.apache.lucene.codecs.lucene410.Lucene410DocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
@@ -22,6 +23,7 @@ public class FlexPerFieldDocValuesFormat extends PerFieldDocValuesFormat {
     private final HashMap<String, DocValuesFormat> map = new HashMap<String, DocValuesFormat>();
 
     public FlexPerFieldDocValuesFormat() {
+        map.put("lucene_4_10", new Lucene410DocValuesFormat());
         // Lucene49DocValuesFormat
         map.put("lucene_4_9", new Lucene49DocValuesFormat());
         // DirectDocValuesFormat

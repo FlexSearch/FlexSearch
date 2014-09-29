@@ -92,8 +92,10 @@ type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter, se
         maybe { 
             assert (indexName <> null)
             // Only write to file for non ram type indices
-            if indexInfo.IndexConfiguration.DirectoryType <> DirectoryType.Ram then
-                do! writer.WriteToFile (Path.Combine(serverSettings.DataFolder, indexName, "conf.yml"), formatter.SerializeToString(indexInfo))
+            if indexInfo.IndexConfiguration.DirectoryType <> DirectoryType.Ram then 
+                do! writer.WriteToFile
+                        (Path.Combine(serverSettings.DataFolder, indexName, "conf.yml"), 
+                         formatter.SerializeToString(indexInfo))
             match stateDb.TryGetValue(indexName) with
             | (true, reg) -> 
                 let registeration = 
@@ -115,17 +117,6 @@ type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter, se
 /// Default postings format for FlexSearch
 /// </summary>
 [<Sealed>]
-type FlexPerFieldPostingFormats(mappings : IReadOnlyDictionary<string, PostingsFormat>, defaultFormat : PostingsFormat) = 
-    inherit PerFieldPostingsFormat()
-    override this.getPostingsFormatForField (fieldName) = 
-        match mappings.TryGetValue(fieldName) with
-        | true, format -> format
-        | _ -> defaultFormat
-
-/// <summary>
-/// Default postings format for FlexSearch
-/// </summary>
-[<Sealed>]
 type FlexPerFieldSimilarityProvider(mappings : IReadOnlyDictionary<string, Similarity>, defaultFormat : Similarity) = 
     inherit PerFieldSimilarityWrapper()
     override this.get (fieldName) = 
@@ -133,13 +124,6 @@ type FlexPerFieldSimilarityProvider(mappings : IReadOnlyDictionary<string, Simil
         | true, format -> format
         | _ -> defaultFormat
 
-/// <summary>
-/// Default codec for FlexSearch
-/// </summary>
-//[<Sealed>]
-//type FlexCodec(postingsFormat : FlexPerFieldPostingFormats, delegatingCodec : Codec) = 
-//    inherit FilterCodec("FlexCodec", delegatingCodec)
-//    override this.postingsFormat() = postingsFormat :> PostingsFormat
 [<AutoOpen>]
 module IndexingHelpers = 
     type FlexSearch.Api.FieldPostingsFormat with
@@ -168,15 +152,6 @@ module IndexingHelpers =
             | FieldSimilarity.BM25 -> new BM25Similarity() :> Similarity
             | _ -> failwithf "Unknown similarity"
     
-    let GetPostingsFormat(settings : FlexIndexSetting) = 
-        let defaultFormat = settings.IndexConfiguration.DefaultIndexPostingsFormat.GetPostingsFormat()
-        let mappings = new Dictionary<string, PostingsFormat>(StringComparer.OrdinalIgnoreCase)
-        for field in settings.FieldsLookup do
-            // Only add if the format is not same as default postings format
-            if field.Value.PostingsFormat <> settings.IndexConfiguration.DefaultIndexPostingsFormat then 
-                mappings.Add(field.Key, field.Value.PostingsFormat.GetPostingsFormat())
-        new FlexPerFieldPostingFormats(mappings, defaultFormat)
-    
     let GetSimilarityProvider(settings : FlexIndexSetting) = 
         let defaultSimilarity = settings.IndexConfiguration.DefaultFieldSimilarity.GetSimilairity()
         let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
@@ -196,7 +171,7 @@ module IndexingHelpers =
             iwc.setOpenMode (org.apache.lucene.index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
             iwc.setRAMBufferSizeMB (System.Double.Parse(flexIndexSetting.IndexConfiguration.RamBufferSizeMb.ToString())) 
             |> ignore
-            iwc.setCodec (new FlexCodec49()) |> ignore
+            //iwc.setCodec (new FlexCodec410()) |> ignore
             let similarityProvider = GetSimilarityProvider(flexIndexSetting)
             iwc.setSimilarity (similarityProvider) |> ignore
             Choice1Of2(iwc)
@@ -252,25 +227,3 @@ module IndexingHelpers =
         else 
             let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
             MurmurHash2.hash32 (byteArray, 0, byteArray.Length) % shardCount
-    
-    let PKLookup(id : string, r : IndexReader, index : FlexIndex) = 
-        let term = new Term(index.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, id)
-        
-        let rec loop counter = 
-            let readerContext = r.leaves().get(counter) :?> AtomicReaderContext
-            let reader = readerContext.reader()
-            let terms = reader.terms (index.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
-            assert (terms <> null)
-            let termsEnum = terms.iterator (null)
-            match termsEnum.seekExact (term.bytes()) with
-            | true -> 
-                let docsEnums = termsEnum.docs (null, null, 0)
-                let nDocs = 
-                    reader.getNumericDocValues 
-                        (index.IndexSetting.FieldsLookup.[Constants.LastModifiedFieldDv].SchemaName)
-                nDocs.get (docsEnums.nextDoc())
-            | false -> 
-                if counter - 1 > 0 then loop (counter - 1)
-                else 0L
-        if r.leaves().size() > 0 then loop (r.leaves().size() - 1)
-        else 0L

@@ -36,7 +36,6 @@ class FlexPerFieldPostingsFormat extends PerFieldPostingsFormat {
         map.put("pulsing_4_1", new Pulsing41PostingsFormat());
         // Lucene_4_1 postings
         map.put("lucene_4_1", new Lucene41PostingsFormat());
-        
     }
 
     @Override

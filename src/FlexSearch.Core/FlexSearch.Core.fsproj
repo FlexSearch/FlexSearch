@@ -141,7 +141,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">
-      <HintPath>..\packages\FlexLucene.4.9.0.0\lib\net40\FlexLucene.dll</HintPath>
+      <HintPath>..\packages\FlexLucene.4.10.1.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexSearch.Java">

@@ -17,6 +17,7 @@ type FieldDocValuesFormat =
     | Direct = 1
     | Memory = 2
     | Lucene_4_9 = 3
+    | LUCENE_4_10 = 4
 
 type DirectoryType = 
     | FileSystem = 1
@@ -54,9 +55,11 @@ type ShardAllocationStrategy =
 
 type IndexVersion = 
     | Lucene_4_9 = 1
+    | LUCENE_4_10 = 2
 
 type Codec = 
     | Lucene_4_9 = 1
+    | LUCENE_4_10 = 2
 
 type ScriptType = 
     | SearchProfileSelector = 1
