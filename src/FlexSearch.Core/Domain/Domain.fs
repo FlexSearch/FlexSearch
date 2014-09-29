@@ -48,14 +48,15 @@ type IVersioningCacheStore =
 /// We will have one Version Manager per index.
 /// </summary>
 type IVersionManager = 
-    abstract VersionCheck : document : FlexDocument * newVersion:int64 -> Choice<int64, OperationMessage>
-    abstract VersionCheck : document : FlexDocument * shardNumber: int * newVersion:int64 -> Choice<int64, OperationMessage>
-    abstract AddOrUpdate : id:string * shardNumber: int * version:int64 * comparison:int64 -> bool
-    abstract Delete : id:string * shardNumber: int * version:Int64 -> bool
+    abstract VersionCheck : document:FlexDocument * newVersion:int64 -> Choice<int64, OperationMessage>
+    abstract VersionCheck : document:FlexDocument * shardNumber:int * newVersion:int64
+     -> Choice<int64, OperationMessage>
+    abstract AddOrUpdate : id:string * shardNumber:int * version:int64 * comparison:int64 -> bool
+    abstract Delete : id:string * shardNumber:int * version:Int64 -> bool
 
-type IShardMapper =
-    abstract MapToShard : id: string -> int
-    
+type IShardMapper = 
+    abstract MapToShard : id:string -> int
+
 // ----------------------------------------------------------------------------
 // Contains all the indexing related data type definitions 
 // ----------------------------------------------------------------------------
@@ -238,50 +239,45 @@ type CaseInsensitiveKeywordAnalyzer() =
         let result = new LowerCaseFilter(Constants.LuceneVersion, source)
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
 
-/// <summary>
-/// Stores all mutable index related state data. This will be passed around
-/// in a controlled manner and is thread-safe.
-/// </summary>
-type IndicesState = 
-    { /// Dictionary to hold the current status of the indices. This is a thread 
-      /// safe dictionary so it is easier to update it compared to a
-      /// mutable field on index setting 
-      IndexStatus : ConcurrentDictionary<string, IndexState>
-      /// Dictionary to hold all the information about currently active index and their status
-      IndexRegisteration : ConcurrentDictionary<string, FlexIndex> }
+// ----------------------------------------------------------------------------
+// Server Settings
+// ----------------------------------------------------------------------------
+[<CLIMutableAttribute>]
+type ServerSettings = 
+    { HttpPort : int
+      DataFolder : string
+      PluginFolder : string
+      ConfFolder : string
+      NodeName : string }
     
-    /// For optimal indexing performance, re-use the Field and Document 
-    /// instance for more than one document. But that is not easily possible
-    /// in a multi-threaded scenario using TPL data flow as we don't know which 
-    /// thread it is using to execute each task. The easiest way
-    /// is to use ThreadLocal value to create a local copy of the index document.
-    /// The implication of creating one Lucene document class per document to 
-    /// be indexed is the penalty it has in terms of garbage collection. Also,
-    /// Lucene's document and index classes can't be shared across threads.
-    //ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> 
-    member this.GetStatus(indexName) = 
-        match this.IndexStatus.TryGetValue(indexName) with
-        | (true, state) -> Choice1Of2(state)
-        | _ -> Choice2Of2(Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)
-    
-    member this.GetRegisteration(indexName) = 
-        match this.IndexRegisteration.TryGetValue(indexName) with
-        | (true, state) -> Choice1Of2(state)
-        | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
-    
-    member this.AddStatus(indexName, status) = 
-        match this.IndexStatus.TryAdd(indexName, status) with
-        | true -> Choice1Of2()
-        | false -> Choice2Of2(Errors.ERROR_ADDING_INDEX_STATUS |> GenerateOperationMessage)
-
     /// <summary>
-    /// Server settings
+    /// Get default server configuration
     /// </summary>
-    type ServerSettings() = 
-        member val HttpPort = 9800 with get, set
-        member val DataFolder = "./data" with get, set
-        member val PluginFolder = "./plugins" with get, set
-        member val ConfFolder = "./conf" with get, set
-        member val NodeName = "FlexNode" with get, set
-        member val NodeRole = 1 with get, set
-        member val Logger = "Gibraltar" with get, set
+    static member GetDefault() = 
+        let setting = 
+            { HttpPort = 9800
+              DataFolder = Helpers.GenerateAbsolutePath("./data")
+              PluginFolder = Constants.PluginFolder
+              ConfFolder = Constants.ConfFolder
+              NodeName = "FlexSearchNode" }
+        setting
+    
+    /// <summary>
+    /// Reads server configuration from the given file
+    /// </summary>
+    /// <param name="path"></param>
+    static member GetFromFile(path : string) = 
+        assert (String.IsNullOrWhiteSpace(path) <> true)
+        if File.Exists(path) then 
+            let fileStream = new FileStream(path, FileMode.Open)
+            let formatter = new YamlFormatter() :> IFormatter
+            let parsedResult = formatter.DeSerialize<ServerSettings>(fileStream)
+            
+            let setting = 
+                { HttpPort = parsedResult.HttpPort
+                  DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
+                  PluginFolder = Constants.PluginFolder
+                  ConfFolder = Constants.ConfFolder
+                  NodeName = parsedResult.NodeName }
+            Choice1Of2(setting)
+        else Choice2Of2(Errors.UNABLE_TO_PARSE_CONFIG |> GenerateOperationMessage)
