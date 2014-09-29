@@ -1,8 +1,0 @@
-﻿{
-  "HttpPort" : 9800,
-  "ThriftPort" : 9900,
-  "DataFolder" : "./data",
-  "PluginFolder" : "./data",
-  "ConfFolder" : "./data",
-  "NodeName" : "FlexNode"
-}

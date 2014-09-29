@@ -31,14 +31,15 @@ module Main =
     open System.Threading
     open System.Threading.Tasks
     open org.apache.lucene.analysis
-    
+
     /// <summary>
     /// Generate server settings from the JSON text file
     /// </summary>
     /// <param name="path">File path to load settings from</param>
     let GetServerSettings(path) = 
-        let fileText = Helpers.LoadFile(path)
-        let parsedResult = JsonConvert.DeserializeObject<ServerSettings>(fileText)
+        let fileStream = new FileStream(path, FileMode.Open)
+        let formatter = new YamlFormatter() :> IFormatter
+        let parsedResult = formatter.DeSerialize<ServerSettings>(fileStream)
         parsedResult.ConfFolder <- Helpers.GenerateAbsolutePath(parsedResult.ConfFolder)
         parsedResult.DataFolder <- Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
         parsedResult.PluginFolder <- Helpers.GenerateAbsolutePath(parsedResult.PluginFolder)
@@ -143,7 +144,9 @@ module Main =
         member this.Stop() = 
             httpServer.Stop()
             let indexService = container.Resolve<IIndexService>()
-            let state = container.Resolve<IndicesState>()
             // Close all open indices
-            for registeration in state.IndexRegisteration do
-                indexService.CloseIndex(registeration.Key) |> ignore
+            match indexService.GetAllIndex() with
+            | Choice1Of2(regs) ->
+                for registeration in regs do
+                    indexService.CloseIndex(registeration.IndexName) |> ignore
+            | _ -> ()

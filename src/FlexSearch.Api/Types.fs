@@ -284,16 +284,3 @@ type ImportRequest() =
 type ImportResponse() = 
     member val JobId = "" with get, set
     member val Message = "" with get, set
-
-// ----------------------------------------------------------------------------
-//	Server Settings
-// ----------------------------------------------------------------------------
-type ServerSettings() = 
-    member val HttpPort = 9800 with get, set
-    member val ThriftPort = 9900 with get, set
-    member val DataFolder = "./data" with get, set
-    member val PluginFolder = "./plugins" with get, set
-    member val ConfFolder = "./conf" with get, set
-    member val NodeName = "FlexNode" with get, set
-    member val NodeRole = 1 with get, set
-    member val Logger = "Gibraltar" with get, set

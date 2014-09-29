@@ -273,3 +273,15 @@ type IndicesState =
         match this.IndexStatus.TryAdd(indexName, status) with
         | true -> Choice1Of2()
         | false -> Choice2Of2(Errors.ERROR_ADDING_INDEX_STATUS |> GenerateOperationMessage)
+
+    /// <summary>
+    /// Server settings
+    /// </summary>
+    type ServerSettings() = 
+        member val HttpPort = 9800 with get, set
+        member val DataFolder = "./data" with get, set
+        member val PluginFolder = "./plugins" with get, set
+        member val ConfFolder = "./conf" with get, set
+        member val NodeName = "FlexNode" with get, set
+        member val NodeRole = 1 with get, set
+        member val Logger = "Gibraltar" with get, set
