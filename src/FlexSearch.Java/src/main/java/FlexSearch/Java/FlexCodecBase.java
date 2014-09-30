@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------------
-// (c) Seemant Rajvanshi, 2013
+// (c) Seemant Rajvanshi, 2014
 //
 // This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
 // copy of the license can be found in the License.txt file at the root of this distribution. 
@@ -13,9 +13,16 @@ package FlexSearch.Java;
 import org.apache.lucene.codecs.*;
 import org.apache.lucene.codecs.lucene410.Lucene410Codec;
 
-public final class FlexCodec410 extends FlexCodecBase {
+public abstract class FlexCodecBase extends FilterCodec {
 
-    public FlexCodec410() {
-        super("FlexCodec410", new Lucene410Codec());
+    private static final PostingsFormat postingsFormat = new FlexPerFieldPostingsFormat();
+
+    public FlexCodecBase(String codecName, Codec wrappingCodec) {
+        super(codecName, wrappingCodec);
+    }
+
+    @Override
+    public final PostingsFormat postingsFormat() {
+        return postingsFormat;
     }
 }

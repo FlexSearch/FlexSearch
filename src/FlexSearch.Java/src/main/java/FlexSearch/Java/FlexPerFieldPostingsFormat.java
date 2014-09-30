@@ -21,9 +21,9 @@ import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 
 class FlexPerFieldPostingsFormat extends PerFieldPostingsFormat {
 
-    private final HashMap<String, PostingsFormat> map = new HashMap<String, PostingsFormat>();
+    private final static HashMap<String, PostingsFormat> map = new HashMap<String, PostingsFormat>();
 
-    public FlexPerFieldPostingsFormat() {
+    static {
         // Memory postings
         map.put("memory", new MemoryPostingsFormat());
         // Direct postings
@@ -34,8 +34,10 @@ class FlexPerFieldPostingsFormat extends PerFieldPostingsFormat {
         map.put("lucene_4_1", new Lucene41PostingsFormat());
         // Pulsing_4_1 postings
         map.put("pulsing_4_1", new Pulsing41PostingsFormat());
-        // Lucene_4_1 postings
-        map.put("lucene_4_1", new Lucene41PostingsFormat());
+    }
+
+    public FlexPerFieldPostingsFormat() {
+        assert (map.size() != 0);
     }
 
     @Override
