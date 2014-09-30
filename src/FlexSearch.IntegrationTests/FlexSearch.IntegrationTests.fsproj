@@ -221,36 +221,6 @@
       <HintPath>..\packages\protobuf-net.2.0.0.668\lib\net40\protobuf-net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SuperSocket.ClientEngine.Common">
-      <HintPath>..\..\lib\SuperSocket.ClientEngine.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.ClientEngine.Core">
-      <HintPath>..\..\lib\SuperSocket.ClientEngine.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.ClientEngine.Protocol">
-      <HintPath>..\..\lib\SuperSocket.ClientEngine.Protocol.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.ClientEngine.Proxy">
-      <HintPath>..\..\lib\SuperSocket.ClientEngine.Proxy.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.Common">
-      <HintPath>..\..\lib\SuperSocket.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.Dlr">
-      <HintPath>..\..\lib\SuperSocket.Dlr.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.Facility">
-      <HintPath>..\..\lib\SuperSocket.Facility.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.SocketBase">
-      <HintPath>..\..\lib\SuperSocket.SocketBase.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.SocketEngine">
-      <HintPath>..\..\lib\SuperSocket.SocketEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperWebSocket">
-      <HintPath>..\..\lib\SuperWebSocket.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -280,7 +250,6 @@
     <Compile Include="HttpHandlers\DocumentHandlersTests.fs" />
     <Compile Include="HttpHandlers\SearchHandlersTests.fs" />
     <Compile Include="SearchQueryTests.fs" />
-    <Compile Include="SocketServerTests.fs" />
     <Compile Include="HttpTests.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />
