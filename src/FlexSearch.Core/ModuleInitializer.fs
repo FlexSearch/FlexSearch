@@ -10,7 +10,10 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open System.Linq
+open System.Reflection
 open org.apache.lucene.codecs
+open org.apache.lucene.util
 
 module ModuleInitializer = 
     /// <summary>
@@ -20,5 +23,8 @@ module ModuleInitializer =
         let asm = typeof<FlexSearch.Java.FlexCodec410>.Assembly
         // Some codec are written in Java and needs to be reloaded 
         // for them to get picked up by the engine
-        Codec.reloadCodecs (ikvm.runtime.AssemblyClassLoader(asm))
+        let classLoader = ikvm.runtime.AssemblyClassLoader(asm)
+        Codec.reloadCodecs (classLoader)
+        let availableCodec = Codec.availableCodecs()
+        assert (availableCodec.contains ("FlexCodec410") = true)
         ()

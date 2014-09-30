@@ -53,6 +53,8 @@ module Errors =
     let INDEX_REGISTERATION_MISSING = 
         "INDEX_REGISTERATION_MISSING:Registration information associated with the index is missing."
     let ERROR_OPENING_INDEXWRITER = "ERROR_OPENING_INDEXWRITER:Unable to open index writer."
+    let UNSUPPORTED_SIMILARITY = "UNSUPPORTED_SIMILARITY:The specified similarity is not supported."
+    let UNSUPPORTED_INDEX_VERSION = "UNSUPPORTED_INDEX_VERSION:The specified index version is not supported."
     let ERROR_ADDING_INDEX_STATUS = "ERROR_ADDING_INDEX_STATUS:Unable to set the index status."
     let INDEX_IS_ALREADY_ONLINE = "INDEX_IS_ALREADY_ONLIN:Index is already on-line or opening at the moment."
     let INDEX_IS_ALREADY_OFFLINE = "INDEX_IS_ALREADY_OFFLINE:Index is already off-line or closing at the moment."

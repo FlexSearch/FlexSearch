@@ -13,8 +13,8 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Common
 open FlexSearch.Core
-open FlexSearch.Java
 open FlexSearch.Utility
+open FlexSearch.Java
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -126,59 +126,74 @@ type FlexPerFieldSimilarityProvider(mappings : IReadOnlyDictionary<string, Simil
 
 [<AutoOpen>]
 module IndexingHelpers = 
-    type FlexSearch.Api.FieldPostingsFormat with
-        member this.GetPostingsFormat() = 
-            match this with
-            | FieldPostingsFormat.Bloom_4_1 -> 
-                new org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat(new org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat()) :> PostingsFormat
-            | FieldPostingsFormat.Direct -> new org.apache.lucene.codecs.memory.DirectPostingsFormat() :> PostingsFormat
-            | FieldPostingsFormat.Lucene_4_1 -> 
-                new org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat() :> PostingsFormat
-            | FieldPostingsFormat.Memory -> new org.apache.lucene.codecs.memory.MemoryPostingsFormat() :> PostingsFormat
-            | FieldPostingsFormat.Pulsing_4_1 -> 
-                new org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat() :> PostingsFormat
-            | _ -> failwithf "Unknown postings format"
-    
-    type FlexSearch.Api.Codec with
-        member this.GetCodec() = 
-            match this with
-            | Codec.Lucene_4_9 -> new lucene49.Lucene49Codec()
-            | _ -> failwithf "Unknown codec"
-    
     type FlexSearch.Api.FieldSimilarity with
         member this.GetSimilairity() = 
             match this with
-            | FieldSimilarity.TFIDF -> new DefaultSimilarity() :> Similarity
-            | FieldSimilarity.BM25 -> new BM25Similarity() :> Similarity
-            | _ -> failwithf "Unknown similarity"
+            | FieldSimilarity.TFIDF -> Choice1Of2(new DefaultSimilarity() :> Similarity)
+            | FieldSimilarity.BM25 -> Choice1Of2(new BM25Similarity() :> Similarity)
+            | _ -> 
+                Choice2Of2(Errors.UNSUPPORTED_SIMILARITY
+                           |> GenerateOperationMessage
+                           |> Append("Similarity", this.ToString()))
+    
+    type FlexSearch.Api.IndexVersion with
+        
+        member this.GetLuceneIndexVersion() = 
+            match this with
+            | IndexVersion.Lucene_4_9 -> Choice1Of2(org.apache.lucene.util.Version.LUCENE_4_9)
+            | IndexVersion.Lucene_4_10 -> Choice1Of2(org.apache.lucene.util.Version.LUCENE_4_10_0)
+            | IndexVersion.Lucene_4_10_1 -> Choice1Of2(org.apache.lucene.util.Version.LUCENE_4_10_1)
+            | _ -> 
+                Choice2Of2(Errors.UNSUPPORTED_INDEX_VERSION
+                           |> GenerateOperationMessage
+                           |> Append("Version", this.ToString()))
+        
+        member this.GetDefaultCodec() = 
+            match this with
+            | IndexVersion.Lucene_4_9 -> Choice1Of2(new FlexCodec410() :> Codec)
+            | IndexVersion.Lucene_4_10 -> Choice1Of2(new FlexCodec410() :> Codec)
+            | IndexVersion.Lucene_4_10_1 -> Choice1Of2(new FlexCodec410() :> Codec)
+            | _ -> 
+                Choice2Of2(Errors.UNSUPPORTED_INDEX_VERSION
+                           |> GenerateOperationMessage
+                           |> Append("Version", this.ToString()))
+        
+        member this.GetDefaultPostingsFormat() = 
+            match this with
+            | IndexVersion.Lucene_4_9 -> Choice1Of2(FieldPostingsFormat.Lucene_4_1)
+            | IndexVersion.Lucene_4_10 -> Choice1Of2(FieldPostingsFormat.Lucene_4_1)
+            | IndexVersion.Lucene_4_10_1 -> Choice1Of2(FieldPostingsFormat.Lucene_4_1)
+            | _ -> 
+                Choice2Of2(Errors.UNSUPPORTED_INDEX_VERSION
+                           |> GenerateOperationMessage
+                           |> Append("Version", this.ToString()))
     
     let GetSimilarityProvider(settings : FlexIndexSetting) = 
-        let defaultSimilarity = settings.IndexConfiguration.DefaultFieldSimilarity.GetSimilairity()
-        let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
-        for field in settings.FieldsLookup do
-            // Only add if the format is not same as default postings format
-            if field.Value.Similarity <> settings.IndexConfiguration.DefaultFieldSimilarity then 
-                mappings.Add(field.Key, field.Value.Similarity.GetSimilairity())
-        new FlexPerFieldSimilarityProvider(mappings, defaultSimilarity)
+        maybe { 
+            let! defaultSimilarity = settings.IndexConfiguration.DefaultFieldSimilarity.GetSimilairity()
+            let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
+            for field in settings.FieldsLookup do
+                // Only add if the format is not same as default postings format
+                if field.Value.Similarity <> settings.IndexConfiguration.DefaultFieldSimilarity then 
+                    let! similarity = field.Value.Similarity.GetSimilairity()
+                    mappings.Add(field.Key, similarity)
+            return! Choice1Of2(new FlexPerFieldSimilarityProvider(mappings, defaultSimilarity))
+        }
     
     /// Creates Lucene index writer configuration from flex index setting 
     let private GetIndexWriterConfig(flexIndexSetting : FlexIndexSetting) = 
-        try 
-            let version = 
-                org.apache.lucene.util.Version.parseLeniently 
-                    (flexIndexSetting.IndexConfiguration.IndexVersion.ToString())
-            let iwc = new IndexWriterConfig(version, flexIndexSetting.IndexAnalyzer)
+        maybe { 
+            let! indexVersion = flexIndexSetting.IndexConfiguration.IndexVersion.GetLuceneIndexVersion()
+            let! codec = flexIndexSetting.IndexConfiguration.IndexVersion.GetDefaultCodec()
+            let iwc = new IndexWriterConfig(indexVersion, flexIndexSetting.IndexAnalyzer)
             iwc.setOpenMode (org.apache.lucene.index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
             iwc.setRAMBufferSizeMB (System.Double.Parse(flexIndexSetting.IndexConfiguration.RamBufferSizeMb.ToString())) 
             |> ignore
-            //iwc.setCodec (new FlexCodec410()) |> ignore
-            let similarityProvider = GetSimilarityProvider(flexIndexSetting)
+            iwc.setCodec (codec) |> ignore
+            let! similarityProvider = GetSimilarityProvider(flexIndexSetting)
             iwc.setSimilarity (similarityProvider) |> ignore
-            Choice1Of2(iwc)
-        with e -> 
-            Choice2Of2(Errors.ERROR_OPENING_INDEXWRITER
-                       |> GenerateOperationMessage
-                       |> Append("Message", e.Message))
+            return! Choice1Of2(iwc)
+        }
     
     /// Create a Lucene file-system lock over a directory    
     let private GetIndexDirectory (directoryPath : string) (directoryType : DirectoryType) = 

@@ -31,12 +31,14 @@ type IndexConfiguration() =
     [<DefaultValue(25); GreaterThanOrEqual(25)>]
     member val RefreshTimeMilliseconds = 25 with get, set
     
-    member val IndexVersion = IndexVersion.LUCENE_4_10 with get, set
+    member val IndexVersion = IndexVersion.Lucene_4_10_1 with get, set
     member val IdFieldPostingsFormat = FieldPostingsFormat.Bloom_4_1 with get, set
-    member val IdFieldDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
-    member val DefaultIndexPostingsFormat = FieldPostingsFormat.Lucene_4_1 with get, set
-    member val DefaultDocvaluesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
-    member val DefaultCodec = Codec.Lucene_4_9 with get, set
+    
+    /// <summary>
+    /// This will be computed at run time based on the index version
+    /// </summary>
+    member val DefaultIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat> with get, set
+    
     member val EnableVersioning = false with get, set
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
 
@@ -66,7 +68,6 @@ type FieldProperties() =
     member val TermVector = FieldTermVector.DoNotStoreTermVector with get, set
     member val OmitNorms = true with get, set
     member val ScriptName = "" with get, set
-    member val DocValuesFormat = FieldDocValuesFormat.Lucene_4_9 with get, set
     override this.Validate(context) = 
         seq { 
             if (this.FieldType = FieldType.Text || this.FieldType = FieldType.Highlight 

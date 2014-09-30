@@ -34,14 +34,12 @@ module FieldPropertiesExtensions =
         let idField = 
             { FieldName = Constants.IdField
               SchemaName = 
-                  sprintf "%s[%s]<%s>" Constants.IdField 
-                      (configuration.IdFieldDocvaluesFormat.ToString().ToLowerInvariant()) 
+                  sprintf "%s<%s>" Constants.IdField 
                       (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexCustom(keyWordAnalyzer, keyWordAnalyzer, indexInformation)
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.IdFieldPostingsFormat
-              DocValuesFormat = configuration.IdFieldDocvaluesFormat
               Similarity = FieldSimilarity.TFIDF
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = true
@@ -56,14 +54,12 @@ module FieldPropertiesExtensions =
         let idField = 
             { FieldName = Constants.LastModifiedField
               SchemaName = 
-                  sprintf "%s[%s]<%s>" Constants.LastModifiedField 
-                      (configuration.DefaultDocvaluesFormat.ToString().ToLowerInvariant()) 
+                  sprintf "%s<%s>" Constants.LastModifiedField 
                       (configuration.DefaultIndexPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexDateTime
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.DefaultIndexPostingsFormat
-              DocValuesFormat = configuration.DefaultDocvaluesFormat
               Similarity = configuration.DefaultFieldSimilarity
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = false
@@ -77,14 +73,12 @@ module FieldPropertiesExtensions =
         let idField = 
             { FieldName = Constants.LastModifiedFieldDv
               SchemaName = 
-                  sprintf "%s[%s]<%s>" Constants.LastModifiedFieldDv
-                      (configuration.DefaultDocvaluesFormat.ToString().ToLowerInvariant()) 
+                  sprintf "%s<%s>" Constants.LastModifiedFieldDv
                       (configuration.DefaultIndexPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexDateTime
               FieldInformation = None
               Source = None
               PostingsFormat = configuration.DefaultIndexPostingsFormat
-              DocValuesFormat = configuration.DefaultDocvaluesFormat
               Similarity = configuration.DefaultFieldSimilarity
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = false
@@ -168,14 +162,12 @@ module FieldPropertiesExtensions =
                     let fieldDummy = 
                         { FieldName = field.Key
                           SchemaName = 
-                              sprintf "%s[%s]<%s>" field.Key (field.Value.DocValuesFormat.ToString().ToLowerInvariant()) 
-                                  (field.Value.PostingsFormat.ToString().ToLowerInvariant())
+                              sprintf "%s<%s>" field.Key (field.Value.PostingsFormat.ToString().ToLowerInvariant())
                           FieldType = fieldType
                           FieldInformation = None
                           Source = source
                           PostingsFormat = field.Value.PostingsFormat
                           Similarity = field.Value.Similarity
-                          DocValuesFormat = field.Value.DocValuesFormat
                           StoreInformation = FieldStoreInformation.Create(false, field.Value.Store)
                           RequiresAnalyzer = requiresAnalyzer
                           DefaultField = null }

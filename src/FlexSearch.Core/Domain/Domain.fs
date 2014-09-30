@@ -158,7 +158,7 @@ type FlexField =
       SchemaName : string
       StoreInformation : FieldStoreInformation
       PostingsFormat : FieldPostingsFormat
-      DocValuesFormat : FieldDocValuesFormat
+      // DocValuesFormat : FieldDocValuesFormat
       Similarity : FieldSimilarity
       FieldType : FlexFieldType
       Source : System.Func<System.Dynamic.DynamicObject, string> option

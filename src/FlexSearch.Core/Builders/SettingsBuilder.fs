@@ -11,12 +11,12 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open FlexSearch.Api.Validation
 open FlexSearch.Api
-open FlexSearch.Core
-open org.apache.lucene.analysis
-open System.Collections.Generic
+open FlexSearch.Api.Validation
 open FlexSearch.Common
+open FlexSearch.Core
+open System.Collections.Generic
+open org.apache.lucene.analysis
 
 /// <summary>
 /// Top level settings builder
@@ -27,6 +27,8 @@ type SettingsBuilder(factoryCollection : IFactoryCollection, serverSettings : Se
         member this.BuildSetting(index : FlexSearch.Api.Index) = 
             maybe { 
                 do! (index :> IValidator).MaybeValidator()
+                let! defaultPostingsFormat = index.IndexConfiguration.IndexVersion.GetDefaultPostingsFormat()
+                index.IndexConfiguration.DefaultIndexPostingsFormat <- defaultPostingsFormat
                 let! analyzers = AnalyzerProperties.Build(index.Analyzers, factoryCollection)
                 let! scriptManager = ScriptProperties.Build(index.Scripts, factoryCollection)
                 let! fields = FieldProperties.Build
@@ -34,7 +36,6 @@ type SettingsBuilder(factoryCollection : IFactoryCollection, serverSettings : Se
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                 fields.Values.CopyTo(fieldsArray, 0)
                 let baseFolder = serverSettings.DataFolder + "\\" + index.IndexName
-                
                 let indexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
                 let searchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
                 let! searchProfiles = FlexSearch.Api.SearchQuery.Build

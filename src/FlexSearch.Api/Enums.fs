@@ -1,7 +1,5 @@
 ﻿namespace FlexSearch.Api
 
-open System.Runtime.Serialization
-
 type FieldSimilarity = 
     | BM25 = 1
     | TFIDF = 2
@@ -12,12 +10,6 @@ type FieldPostingsFormat =
     | Bloom_4_1 = 3
     | Pulsing_4_1 = 4
     | Lucene_4_1 = 5
-
-type FieldDocValuesFormat = 
-    | Direct = 1
-    | Memory = 2
-    | Lucene_4_9 = 3
-    | LUCENE_4_10 = 4
 
 type DirectoryType = 
     | FileSystem = 1
@@ -53,14 +45,18 @@ type ShardAllocationStrategy =
     | Automatic = 1
     | Manual = 2
 
+/// <summary>
+/// Corresponds to Lucene Index version. There will
+/// always be a default codec associated with each index version.
+/// </summary>
 type IndexVersion = 
     | Lucene_4_9 = 1
-    | LUCENE_4_10 = 2
+    | Lucene_4_10 = 2
+    | Lucene_4_10_1 = 3
 
-type Codec = 
-    | Lucene_4_9 = 1
-    | LUCENE_4_10 = 2
-
+//type Codec = 
+//    | Flex_4_9 = 1
+//    | Flex_4_10 = 2
 type ScriptType = 
     | SearchProfileSelector = 1
     | CustomScoring = 2
