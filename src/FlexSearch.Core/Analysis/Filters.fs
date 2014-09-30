@@ -57,7 +57,7 @@ type AsciiFoldingFilterFactory() =
 type StandardFilterFactory() = 
     interface IFlexFilterFactory with
         member this.Initialize(parameters : IDictionary<string, string>) = Choice1Of2()
-        member this.Create(ts : TokenStream) = new StandardFilter(Constants.LuceneVersion, ts) :> TokenStream
+        member this.Create(ts : TokenStream) = new StandardFilter(ts) :> TokenStream
 
 /// <summary>
 /// BeiderMorse Filter
@@ -183,7 +183,7 @@ type LengthFilterFactory() =
                 return! Choice1Of2()
             }
         
-        member this.Create(ts : TokenStream) = new LengthFilter(Constants.LuceneVersion, ts, min, max) :> TokenStream
+        member this.Create(ts : TokenStream) = new LengthFilter(ts, min, max) :> TokenStream
 
 /// <summary>
 /// LowerCase Filter
@@ -193,7 +193,7 @@ type LengthFilterFactory() =
 type LowerCaseFilterFactory() = 
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = Choice1Of2()
-        member this.Create(ts : TokenStream) = new LowerCaseFilter(Constants.LuceneVersion, ts) :> TokenStream
+        member this.Create(ts : TokenStream) = new LowerCaseFilter(ts) :> TokenStream
 
 /// <summary>
 /// PatternReplace Filter
@@ -238,7 +238,7 @@ type RemoveDuplicatesTokenFilterFactory() =
 type ReverseStringFilterFactory() = 
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = Choice1Of2()
-        member this.Create(ts : TokenStream) = new ReverseStringFilter(Constants.LuceneVersion, ts) :> TokenStream
+        member this.Create(ts : TokenStream) = new ReverseStringFilter(ts) :> TokenStream
 
 /// <summary>
 /// KeepWordsFilter Filter
@@ -246,7 +246,7 @@ type ReverseStringFilterFactory() =
 [<Name("KeepWordsFilter")>]
 [<Sealed>]
 type KeepWordsFilterFactory(resourceLoader : IResourceLoader) = 
-    let keepWords : CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true)
+    let keepWords : CharArraySet = new CharArraySet(100, true)
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = maybe { let! fileName = KeyExists
                                                                          ("resourceName", parameters, 
@@ -255,7 +255,7 @@ type KeepWordsFilterFactory(resourceLoader : IResourceLoader) =
                                                                           |> GenerateOperationMessage)
                                                      let! filterList = resourceLoader.LoadFilterList(fileName)
                                                      filterList.Words |> Seq.iter (fun x -> keepWords.Add(x)) }
-        member this.Create(ts : TokenStream) = new KeepWordFilter(Constants.LuceneVersion, ts, keepWords) :> TokenStream
+        member this.Create(ts : TokenStream) = new KeepWordFilter(ts, keepWords) :> TokenStream
 
 /// <summary>
 /// Stop Filter
@@ -263,7 +263,7 @@ type KeepWordsFilterFactory(resourceLoader : IResourceLoader) =
 [<Name("StopFilter")>]
 [<Sealed>]
 type StopFilterFactory(resourceLoader : IResourceLoader) = 
-    let stopWords : CharArraySet = new CharArraySet(Constants.LuceneVersion, 100, true)
+    let stopWords : CharArraySet = new CharArraySet(100, true)
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = maybe { let! fileName = KeyExists
                                                                          ("resourceName", parameters, 
@@ -272,7 +272,7 @@ type StopFilterFactory(resourceLoader : IResourceLoader) =
                                                                           |> GenerateOperationMessage)
                                                      let! filterList = resourceLoader.LoadFilterList(fileName)
                                                      filterList.Words |> Seq.iter (fun x -> stopWords.Add(x)) }
-        member this.Create(ts : TokenStream) = new StopFilter(Constants.LuceneVersion, ts, stopWords) :> TokenStream
+        member this.Create(ts : TokenStream) = new StopFilter(ts, stopWords) :> TokenStream
 
 /// <summary>
 /// Stop Filter 
@@ -307,4 +307,4 @@ type SynonymFilter(resourceLoader : IResourceLoader) =
 type TrimFilterFactory() = 
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = Choice1Of2()
-        member this.Create(ts : TokenStream) = new TrimFilter(Constants.LuceneVersion, ts) :> TokenStream
+        member this.Create(ts : TokenStream) = new TrimFilter(ts) :> TokenStream

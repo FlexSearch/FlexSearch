@@ -236,7 +236,7 @@ type CaseInsensitiveKeywordAnalyzer() =
     inherit Analyzer()
     override this.createComponents (fieldName : string, reader : Reader) = 
         let source = new KeywordTokenizer(reader)
-        let result = new LowerCaseFilter(Constants.LuceneVersion, source)
+        let result = new LowerCaseFilter(source)
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
 
 // ----------------------------------------------------------------------------

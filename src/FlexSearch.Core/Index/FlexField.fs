@@ -248,5 +248,4 @@ module FlexField =
                           | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> ())
-        new PerFieldAnalyzerWrapper(new org.apache.lucene.analysis.standard.StandardAnalyzer(Constants.LuceneVersion), 
-                                    analyzerMap)
+        new PerFieldAnalyzerWrapper(new org.apache.lucene.analysis.standard.StandardAnalyzer(), analyzerMap)
