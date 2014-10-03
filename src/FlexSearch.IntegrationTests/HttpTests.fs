@@ -183,7 +183,8 @@ module ``Webservice Tests`` =
         member this.Setup() = 
             if serverRunning <> true then 
                 let serverSettings = ServerSettings.GetDefault()
-                let container = Main.GetContainer(serverSettings, true)
+                let logger = FlexSearch.Logging.LogService.GetLogger(true)
+                let container = Main.GetContainer(serverSettings, logger, true)
                 let indexService = container.Resolve<IIndexService>()
                 //let index = Helpers.MockIndexSettings()
                 //index.IndexName <- "contact"
@@ -191,7 +192,7 @@ module ``Webservice Tests`` =
                 //    (index, Helpers.MockTestData, container.Resolve<IDocumentService>(), 
                 //     container.Resolve<IIndexService>())
                 let httpFactory = container.Resolve<IFlexFactory<IHttpResource>>()
-                let httpServer = new OwinServer(indexService, httpFactory) :> IServer
+                let httpServer = new OwinServer(indexService, httpFactory, logger) :> IServer
                 httpServer.Start()
                 serverRunning <- true
     

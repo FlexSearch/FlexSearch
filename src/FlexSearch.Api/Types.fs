@@ -217,6 +217,7 @@ type FlexDocument(indexName : string, id : string) =
     
     new() = FlexDocument(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
 
+[<ToString>]
 type Index() = 
     inherit ValidatableObjectBase<Index>()
     

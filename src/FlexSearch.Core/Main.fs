@@ -31,16 +31,13 @@ module Main =
     open System.Threading
     open System.Threading.Tasks
     open org.apache.lucene.analysis
-        
-    let GetLoggerService() = 
-            new ConsoleLogService() :> ILogService
     
     /// <summary>
     /// Get a container with all dependencies setup
     /// </summary>
     /// <param name="serverSettings"></param>
     /// <param name="testServer"></param>
-    let GetContainer(serverSettings : ServerSettings, testServer : bool) = 
+    let GetContainer(serverSettings : ServerSettings, logService : ILogService, testServer : bool) = 
         let builder = new ContainerBuilder()
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
@@ -79,7 +76,7 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<JobService, IJobService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
         builder |> FactoryService.RegisterSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
-        builder.RegisterInstance(GetLoggerService()).SingleInstance().As<ILogService>() |> ignore
+        builder.RegisterInstance(logService).As<ILogService>() |> ignore
         // Register server
         //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
         builder.Build()
@@ -96,8 +93,8 @@ module Main =
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
     [<Sealed>]
-    type NodeService(serverSettings : ServerSettings, testServer : bool) = 
-        let container = GetContainer(serverSettings, testServer)
+    type NodeService(serverSettings : ServerSettings,logService : ILogService, testServer : bool) = 
+        let container = GetContainer(serverSettings, logService, testServer)
         let mutable httpServer = Unchecked.defaultof<IServer>
         
         do 
@@ -109,7 +106,8 @@ module Main =
             try 
                 let indexService = container.Resolve<IIndexService>()
                 let httpFactory = container.Resolve<IFlexFactory<IHttpResource>>()
-                httpServer <- new OwinServer(indexService, httpFactory)
+                let loggerService = container.Resolve<ILogService>()
+                httpServer <- new OwinServer(indexService, httpFactory, loggerService)
                 httpServer.Start()
             with e -> printfn "%A" e
         

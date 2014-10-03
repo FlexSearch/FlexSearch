@@ -53,7 +53,8 @@ module UnitTestAttributes =
 [<AutoOpen>]
 module IntegrationTestHelpers = 
     let serverSettings = ServerSettings.GetDefault()
-    let Container = Main.GetContainer(serverSettings, true)
+    let logger = FlexSearch.Logging.LogService.GetLogger(true)
+    let Container = Main.GetContainer(serverSettings, logger, true)
 
     /// <summary>
     /// Baisc index configuration
@@ -212,7 +213,7 @@ module IntegrationTestHelpers =
                 let GetTestServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>) = 
                     let testServer = 
                         TestServer.Create(fun app -> 
-                            let owinServer = new OwinServer(indexService, httpFactory)
+                            let owinServer = new OwinServer(indexService, httpFactory, FlexSearch.Logging.LogService.GetLogger(true))
                             owinServer.Configuration(app))
                     testServer
                 fixture.Inject<IIndexService>(Container.Resolve<IIndexService>()) |> ignore

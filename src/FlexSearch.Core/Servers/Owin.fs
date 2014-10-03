@@ -34,7 +34,7 @@ open System.Threading.Tasks
 /// </summary>
 [<Name("Http")>]
 [<Sealed>]
-type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>, ?port0 : int) = 
+type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>, logger : ILogService ,?port0 : int) = 
     let port = defaultArg port0 9800
     
     let httpModule = 
@@ -119,10 +119,11 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpRe
                     let startOptions = new StartOptions(sprintf "http://+:%i/" port)
                     server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
                     Console.ReadKey() |> ignore
-                with e -> printfn "%A" e
+                with e -> logger.TraceCritical(e)
             try 
                 thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
-            with e -> ()
+            with e -> 
+                logger.TraceCritical(e)
             ()
         
         member this.Stop() = server.Dispose()

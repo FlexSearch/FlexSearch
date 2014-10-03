@@ -189,8 +189,8 @@ type ILogService =
     abstract Shutdown : unit -> unit
     abstract TraceCritical : ex:Exception -> unit
     abstract TraceError : error:string * ex:Exception -> unit
-    abstract TraceErrorMessage : error:string -> unit
-    abstract TraceOperationMessageError : error:string * ex:OperationMessage -> unit
+    abstract TraceError : error:string -> unit
+    abstract TraceError : error:string * ex:OperationMessage -> unit
 
 /// <summary>
 /// Generic job service interface
