@@ -259,8 +259,6 @@
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />
     <None Include="packages.config" />
-    <None Include="_EventRegisterUsersGuide.docx" />
-    <None Include="_EventSourceUsersGuide.docx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
