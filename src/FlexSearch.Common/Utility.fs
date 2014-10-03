@@ -10,8 +10,14 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Utility
 
+open Microsoft.FSharp.Core.Printf
 open System
+open System.Collections.Generic
 open System.IO
+open System.Reflection
+open System.Security.AccessControl
+open System.Security.Principal
+open System.Text
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
@@ -57,11 +63,6 @@ module DataType =
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module Helpers = 
-    open System.Collections.Generic
-    open System.Reflection
-    open System.Security.AccessControl
-    open System.Security.Principal
-    
     /// Returns current date time in Flex compatible format
     let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmssfff"))
     
@@ -94,3 +95,38 @@ module Helpers =
     
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore
+    
+    /// <summary>
+    /// Simple exception formatter
+    /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/
+    /// </summary>
+    /// <param name="e"></param>
+    let ExceptionPrinter(e : Exception) = 
+        let sb = StringBuilder()
+        let delimeter = String.replicate 50 "*"
+        let nl = Environment.NewLine
+        
+        let rec printException (e : Exception) count = 
+            if (e :? TargetException && e.InnerException <> null) then printException (e.InnerException) count
+            else 
+                if (count = 1) then bprintf sb "%s%s%s" e.Message nl delimeter
+                else bprintf sb "%s%s%d)%s%s%s" nl nl count e.Message nl delimeter
+                bprintf sb "%sType: %s" nl (e.GetType().FullName)
+                // Loop through the public properties of the exception object
+                // and record their values.
+                e.GetType().GetProperties() |> Array.iter (fun p -> 
+                                                   // Do not log information for the InnerException or StackTrace.
+                                                   // This information is captured later in the process.
+                                                   if (p.Name <> "InnerException" && p.Name <> "StackTrace" 
+                                                       && p.Name <> "Message" && p.Name <> "Data") then 
+                                                       try 
+                                                           let value = p.GetValue(e, null)
+                                                           if (value <> null) then 
+                                                               bprintf sb "%s%s: %s" nl p.Name (value.ToString())
+                                                       with e2 -> bprintf sb "%s%s: %s" nl p.Name e2.Message)
+                if (e.StackTrace <> null) then 
+                    bprintf sb "%s%sStackTrace%s%s%s" nl nl nl delimeter nl
+                    bprintf sb "%s%s" nl e.StackTrace
+                if (e.InnerException <> null) then printException e.InnerException (count + 1)
+        printException e 1
+        sb.ToString()
