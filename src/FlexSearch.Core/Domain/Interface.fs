@@ -11,6 +11,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
+open FlexSearch.Api.Messages
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -33,7 +34,6 @@ open org.apache.lucene.document
 open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
-open FlexSearch.Api.Messages
 
 type IServer = 
     abstract Start : unit -> unit
@@ -49,6 +49,15 @@ type IPersistanceStore =
     abstract Put<'T> : key:string * value:'T -> Choice<unit, OperationMessage>
     abstract Delete<'T> : key:string -> Choice<unit, OperationMessage>
     abstract DeleteAll<'T> : unit -> Choice<unit, OperationMessage>
+
+/// <summary>
+/// Formatter interface for supporting multiple formats in the HTTP engine
+/// </summary>
+type IFormatter = 
+    abstract SupportedHeaders : unit -> string []
+    abstract Serialize : body:obj * stream:Stream -> unit
+    abstract SerializeToString : body:obj -> string
+    abstract DeSerialize<'T> : stream:Stream -> 'T
 
 /// <summary>
 /// General Interface to offload all resource loading responsibilities. This will
@@ -160,10 +169,10 @@ type IIndexService =
 /// </summary>
 type IDocumentService = 
     abstract GetDocument : indexName:string * id:string -> Choice<FlexSearch.Api.ResultDocument, OperationMessage>
-    abstract GetDocuments : indexName:string * count : int -> Choice<SearchResults, OperationMessage>
-    abstract AddOrUpdateDocument : document: FlexDocument -> Choice<unit, OperationMessage>
+    abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, OperationMessage>
+    abstract AddOrUpdateDocument : document:FlexDocument -> Choice<unit, OperationMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, OperationMessage>
-    abstract AddDocument :  document: FlexDocument -> Choice<CreateResponse, OperationMessage>
+    abstract AddDocument : document:FlexDocument -> Choice<CreateResponse, OperationMessage>
     abstract DeleteAllDocuments : indexName:string -> Choice<unit, OperationMessage>
 
 /// <summary>
@@ -195,6 +204,30 @@ type ILogService =
 /// <summary>
 /// Generic job service interface
 /// </summary>
-type IJobService =
+type IJobService = 
     abstract GetJob : string -> Choice<Job, OperationMessage>
     abstract DeleteAllJobs : unit -> Choice<unit, OperationMessage>
+
+/// <summary>
+/// Import handler interface to support bulk indexing
+/// </summary>
+type IImportHandler = 
+    abstract SupportsBulkIndexing : unit -> bool
+    abstract SupportsIncrementalIndexing : unit -> bool
+    abstract ProcessBulkRequest : string * ImportRequest -> unit
+    abstract ProcessIncrementalRequest : string * ImportRequest -> Choice<unit, OperationMessage>
+
+/// <summary>
+/// Interface which exposes all top level factories
+/// Could have exposed all these through a simple dictionary over IFlexFactory
+/// but then we would have to perform a look up to get each factory instance.
+/// This is fairly easy to manage as all the logic is in IFlexFactory.
+/// Also reduces passing of parameters.
+/// </summary>
+type IFactoryCollection = 
+    abstract FilterFactory : IFlexFactory<IFlexFilterFactory>
+    abstract TokenizerFactory : IFlexFactory<IFlexTokenizerFactory>
+    abstract AnalyzerFactory : IFlexFactory<Analyzer>
+    abstract SearchQueryFactory : IFlexFactory<IFlexQuery>
+    abstract ImportHandlerFactory : IFlexFactory<IImportHandler>
+    abstract ResourceLoader : IResourceLoader

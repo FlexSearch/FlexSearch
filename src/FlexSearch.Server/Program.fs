@@ -13,7 +13,7 @@ let main argv =
     |> ignore
     // Load server settings
     let settings = 
-        match ServerSettings.GetFromFile(Path.Combine(Constants.ConfFolder, "Config.yml")) with
+        match ServerSettings.GetFromFile(Path.Combine(Constants.ConfFolder, "Config.yml"), new YamlFormatter() :> IFormatter) with
         | Choice1Of2(s) -> s
         | Choice2Of2(e) -> 
             logger.TraceError("Error parsing 'Config.yml' file.", e)

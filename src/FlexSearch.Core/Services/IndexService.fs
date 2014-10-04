@@ -31,8 +31,7 @@ open org.apache.lucene.search
 /// module but to only pass mutable state as an instance of NodeState
 /// </summary>
 /// <param name="state"></param>
-type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regManager : RegisterationManager, serverSettings : ServerSettings) = 
-    let formatter = new YamlFormatter() :> IFormatter
+type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regManager : RegisterationManager, formatter : IFormatter, serverSettings : ServerSettings) = 
     
     /// <summary>
     /// Get an existing index details

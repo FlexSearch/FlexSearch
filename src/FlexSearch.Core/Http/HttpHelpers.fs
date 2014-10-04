@@ -10,112 +10,24 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch
+open FlexSearch.Api
+open FlexSearch.Api.Messages
+open FlexSearch.Utility
+open Microsoft.Owin
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
+open ProtoBuf
+open System
+open System.Collections.Concurrent
+open System.IO
+open System.Linq
+open System.Net
+open System.Text
+open System.Threading
+
 [<AutoOpen>]
 module HttpHelpers = 
-    open FlexSearch
-    open FlexSearch.Api
-    open FlexSearch.Api.Messages
-    open FlexSearch.Utility
-    open Microsoft.Owin
-    open Newtonsoft.Json
-    open Newtonsoft.Json.Converters
-    open ProtoBuf
-    open System
-    open System.Collections.Concurrent
-    open System.IO
-    open System.Linq
-    open System.Net
-    open System.Text
-    open System.Threading
-    
-    /// Helper method to serialize cluster messages
-    let ProtoSerialize(message : 'a) = 
-        use stream = new MemoryStream()
-        Serializer.Serialize(stream, message)
-        stream.ToArray()
-    
-    /// Helper method to De-serialize cluster messages
-    let ProtoDeserialize<'T>(message : byte []) = 
-        use stream = new MemoryStream(message)
-        Serializer.Deserialize<'T>(stream)
-    
-    /// <summary>
-    /// Formatter interface for supporting multiple formats in the HTTP engine
-    /// </summary>
-    type IFormatter = 
-        abstract SupportedHeaders : unit -> string []
-        abstract Serialize : body:obj * stream:Stream -> unit
-        abstract SerializeToString : body:obj -> string
-        abstract DeSerialize<'T> : stream:Stream -> 'T
-    
-    [<Sealed>]
-    type JilJsonFormatter() = 
-        let options = new Jil.Options(false, false, true, Jil.DateTimeFormat.ISO8601, false)
-        interface IFormatter with
-            member x.SerializeToString(body : obj) = failwith "Not implemented yet"
-            
-            member x.DeSerialize<'T>(stream : Stream) = 
-                use reader = new StreamReader(stream) :> TextReader
-                Jil.JSON.Deserialize<'T>(reader, options)
-            
-            member x.Serialize(body : obj, stream : Stream) : unit = 
-                use writer = new StreamWriter(stream)
-                Jil.JSON.Serialize(body, writer, options)
-                writer.Flush()
-            
-            member x.SupportedHeaders() : string [] = 
-                [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
-    
-    [<Sealed>]
-    type NewtonsoftJsonFormatter() = 
-        let options = new Newtonsoft.Json.JsonSerializerSettings()
-        do options.Converters.Add(new StringEnumConverter())
-        interface IFormatter with
-            member x.SerializeToString(body : obj) = failwith "Not implemented yet"
-            
-            member x.DeSerialize<'T>(stream : Stream) = 
-                use reader = new StreamReader(stream)
-                JsonConvert.DeserializeObject<'T>(reader.ReadToEnd(), options)
-            
-            member x.Serialize(body : obj, stream : Stream) : unit = 
-                use writer = new StreamWriter(stream)
-                let body = JsonConvert.SerializeObject(body, options)
-                writer.Write(body)
-                writer.Flush()
-            
-            member x.SupportedHeaders() : string [] = 
-                [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
-    
-    [<Sealed>]
-    type ProtoBufferFormatter() = 
-        interface IFormatter with
-            member x.SerializeToString(body : obj) = failwith "Not implemented yet"
-            member x.DeSerialize<'T>(stream : Stream) = ProtoBuf.Serializer.Deserialize<'T>(stream)
-            member x.Serialize(body : obj, stream : Stream) : unit = ProtoBuf.Serializer.Serialize(stream, body)
-            member x.SupportedHeaders() : string [] = [| "application/x-protobuf"; "application/octet-stream" |]
-    
-    [<Sealed>]
-    type YamlFormatter() = 
-        let options = YamlDotNet.Serialization.SerializationOptions.EmitDefaults
-        let serializer = new YamlDotNet.Serialization.Serializer(options)
-        let deserializer = new YamlDotNet.Serialization.Deserializer(ignoreUnmatched = true)
-        interface IFormatter with
-            
-            member x.SerializeToString(body : obj) = 
-                use textWriter = new StringWriter()
-                serializer.Serialize(textWriter, body)
-                textWriter.ToString()
-            
-            member x.DeSerialize<'T>(stream : Stream) = 
-                use textReader = new StreamReader(stream)
-                deserializer.Deserialize<'T>(textReader)
-            
-            member x.Serialize(body : obj, stream : Stream) : unit = 
-                use TextWriter = new StreamWriter(stream)
-                serializer.Serialize(TextWriter, body)
-            
-            member x.SupportedHeaders() : string [] = [| "application/yaml" |]
-    
     let private Formatters = new ConcurrentDictionary<string, IFormatter>(StringComparer.OrdinalIgnoreCase)
     let protoFormatter = new ProtoBufferFormatter() :> IFormatter
     let jsonFormatter = new NewtonsoftJsonFormatter() :> IFormatter
@@ -124,13 +36,13 @@ module HttpHelpers =
     jsonFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, jsonFormatter) |> ignore)
     
     /// Get request format from the request object
-    /// Defaults to json
+    /// Defaults to JSON
     let private GetRequestFormat(request : IOwinRequest) = 
         if String.IsNullOrWhiteSpace(request.ContentType) then "application/json"
         else request.ContentType
     
     /// Get response format from the OWIN context
-    /// Defaults to json
+    /// Defaults to JSON
     let private GetResponseFormat(owin : IOwinContext) = 
         if owin.Request.Accept = null then "application/json"
         else if owin.Request.Accept = "*/*" then "application/json"
@@ -227,3 +139,67 @@ module HttpHelpers =
     
     let inline GetIndexName(owin : IOwinContext) = RemoveTrailingSlash owin.Request.Uri.Segments.[2]
     let inline SubId(owin : IOwinContext) = RemoveTrailingSlash owin.Request.Uri.Segments.[4]
+
+/// <summary>
+/// HTTP resource to handle incoming requests
+/// </summary>
+type IHttpResource = 
+    abstract TakeFullControl : bool
+    abstract HasBody : bool
+    abstract FailOnMissingBody : bool
+    abstract Execute : id:option<string> * subid:option<string> * context:IOwinContext -> unit
+
+/// <summary>
+/// Handler base class which exposes common Http Handler functionality
+/// </summary>
+[<AbstractClass>]
+type HttpHandlerBase<'T, 'U>(?failOnMissingBody0 : bool, ?fullControl0 : bool) = 
+    let failOnMissingBody = defaultArg failOnMissingBody0 true
+    let fullControl = defaultArg fullControl0 false
+    
+    let hasBody = 
+        if typeof<'T> = typeof<unit> then false
+        else true
+    
+    member this.Deserialize(request : IOwinRequest) = GetRequestBody<'T>(request)
+    
+    member this.Serialize (response : Choice<'U, OperationMessage>) (successStatus : HttpStatusCode) 
+           (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        // For parameter less constructor the performance of Activator is as good as direct initialization. Based on the 
+        // finding of http://geekswithblogs.net/mrsteve/archive/2012/02/11/c-sharp-performance-new-vs-expression-tree-func-vs-activator.createinstance.aspx
+        // In future we can cache it if performance is found to be an issue.
+        let instance = Activator.CreateInstance<Response<'U>>()
+        match response with
+        | Choice1Of2(r) -> 
+            instance.Data <- r
+            WriteResponse successStatus instance owinContext
+        | Choice2Of2(r) -> 
+            instance.Error <- r
+            WriteResponse failureStatus instance owinContext
+    
+    abstract Process : id:option<string> * subId:option<string> * body:Option<'T> * context:IOwinContext
+     -> Choice<'U, OperationMessage> * HttpStatusCode * HttpStatusCode
+    override this.Process(id, subId, body, context) = 
+        (Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage), HttpStatusCode.OK, HttpStatusCode.BadRequest)
+    abstract Process : context:IOwinContext -> unit
+    override this.Process(context) = context |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
+    interface IHttpResource with
+        member this.TakeFullControl = fullControl
+        member this.FailOnMissingBody = failOnMissingBody
+        member this.HasBody = hasBody
+        member this.Execute(id, subId, context) = 
+            if fullControl then this.Process(context)
+            else if hasBody then 
+                match this.Deserialize(context.Request) with
+                | Choice1Of2(body) -> 
+                    let (response, successCode, failureCode) = this.Process(id, subId, (Some(body)), context)
+                    context |> this.Serialize (response) successCode failureCode
+                | Choice2Of2(e) -> 
+                    if failOnMissingBody then 
+                        context |> this.Serialize (Choice2Of2(e)) HttpStatusCode.OK HttpStatusCode.BadRequest
+                    else 
+                        let (response, successCode, failureCode) = this.Process(id, subId, None, context)
+                        context |> this.Serialize (response) successCode failureCode
+            else 
+                let (response, successCode, failureCode) = this.Process(id, subId, None, context)
+                context |> this.Serialize (response) successCode failureCode

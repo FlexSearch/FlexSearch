@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// (c) Seemant Rajvanshi, 2013
+// (c) Seemant Rajvanshi, 2012 - 2014
 //
 // This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
 // copy of the license can be found in the License.txt file at the root of this distribution. 
@@ -44,8 +44,9 @@ module Main =
         // need to register the AttributedMetadataModule
         // so the meta-data attributes get read.
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
+        builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings>() |> ignore
+        builder.RegisterInstance(logService).As<ILogService>() |> ignore
         // Interface scanning
-        builder |> FactoryService.RegisterInterfaceAssemblies<IHttpHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IImportHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexFilterFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexTokenizerFactory>
@@ -56,7 +57,6 @@ module Main =
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
         builder |> FactoryService.RegisterSingleFactoryInstance<IHttpResource>
-        builder |> FactoryService.RegisterSingleFactoryInstance<IHttpHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexFilterFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexTokenizerFactory>
@@ -64,9 +64,9 @@ module Main =
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
-        builder.RegisterInstance(new RegisterationManager(new ThreadSafeFileWiter(), new YamlFormatter() :> IFormatter, serverSettings)).As<RegisterationManager>()
-            .SingleInstance() |> ignore
-        builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings>() |> ignore
+        builder |> FactoryService.RegisterSingleInstance<YamlFormatter, IFormatter>
+        builder |> FactoryService.RegisterSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
+        builder |> FactoryService.RegisterSingleInstance<RegisterationManager, RegisterationManager>
         // Register services
         builder |> FactoryService.RegisterSingleInstance<FlexParser, IFlexParser>
         builder |> FactoryService.RegisterSingleInstance<IndexService, IIndexService>
@@ -76,24 +76,13 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<JobService, IJobService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
         builder |> FactoryService.RegisterSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
-        builder.RegisterInstance(logService).As<ILogService>() |> ignore
-        // Register server
-        //builder.RegisterType<Owin.Server>().As<IServer>().SingleInstance().Named("http") |> ignore
         builder.Build()
-    
-    /// <summary>
-    /// Load third party plug ins
-    /// </summary>
-    let LoadPlugins() = 
-        // Load plug-in DLLs
-        for file in Directory.EnumerateFiles(Constants.PluginFolder, "dll") do
-            System.Reflection.Assembly.LoadFile(file) |> ignore
-    
+        
     /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
     /// </summary>
     [<Sealed>]
-    type NodeService(serverSettings : ServerSettings,logService : ILogService, testServer : bool) = 
+    type NodeService(serverSettings : ServerSettings, logService : ILogService, testServer : bool) = 
         let container = GetContainer(serverSettings, logService, testServer)
         let mutable httpServer = Unchecked.defaultof<IServer>
         

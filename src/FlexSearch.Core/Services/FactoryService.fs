@@ -119,13 +119,12 @@ module FactoryService =
     /// Concrete implementation of IFactoryCollection
     /// </summary>
     [<Sealed>]
-    type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory, httpModuleFactory, importHandlerFactory, resourceLoader) = 
+    type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory, importHandlerFactory, resourceLoader) = 
         interface IFactoryCollection with
             member this.FilterFactory = filterFactory
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
             member this.SearchQueryFactory = searchQueryFactory
-            member this.HttpModuleFactory = httpModuleFactory
             member this.ImportHandlerFactory = importHandlerFactory
             member this.ResourceLoader = resourceLoader
     

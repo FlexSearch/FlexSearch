@@ -13,14 +13,14 @@ namespace FlexSearch.Core.HttpHandlers
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
 
-[<Name("GET-/jobs/:id")>]
-[<Sealed>]
-type GetJobByIdHandler(jobService : IJobService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = owin |> ResponseProcessor (jobService.GetJob(SubId(owin))) OK BAD_REQUEST
-
-[<Name("DELETE-/jobs")>]
-[<Sealed>]
-type DeleteJobsdHandler(jobService : IJobService) = 
-    interface IHttpHandler with
-        member this.Process(owin) = owin |> ResponseProcessor (jobService.DeleteAllJobs()) OK BAD_REQUEST
+//[<Name("GET-/jobs/:id")>]
+//[<Sealed>]
+//type GetJobByIdHandler(jobService : IJobService) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = owin |> ResponseProcessor (jobService.GetJob(SubId(owin))) OK BAD_REQUEST
+//
+//[<Name("DELETE-/jobs")>]
+//[<Sealed>]
+//type DeleteJobsdHandler(jobService : IJobService) = 
+//    interface IHttpHandler with
+//        member this.Process(owin) = owin |> ResponseProcessor (jobService.DeleteAllJobs()) OK BAD_REQUEST
