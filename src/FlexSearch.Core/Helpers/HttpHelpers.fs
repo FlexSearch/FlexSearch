@@ -15,7 +15,6 @@ module HttpHelpers =
     open FlexSearch
     open FlexSearch.Api
     open FlexSearch.Api.Messages
-    open FlexSearch.Core
     open FlexSearch.Utility
     open Microsoft.Owin
     open Newtonsoft.Json

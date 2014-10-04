@@ -83,8 +83,8 @@
   <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <ItemGroup>
-    <Compile Include="Helpers\Constants.fs" />
     <Compile Include="Helpers\HttpHelpers.fs" />
+    <Compile Include="Domain\Constants.fs" />
     <Compile Include="Domain\Attributes.fs" />
     <Compile Include="Domain\Domain.fs" />
     <Compile Include="Domain\Interface.fs" />
