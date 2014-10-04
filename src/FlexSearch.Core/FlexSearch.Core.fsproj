@@ -92,8 +92,7 @@
     <Compile Include="Analysis\Analyzers.fs" />
     <Compile Include="Analysis\Filters.fs" />
     <Compile Include="Analysis\Tokenizers.fs" />
-    <Compile Include="Utilities\PersitanceStore.fs" />
-    <Compile Include="Utilities\ResourceLoader.fs" />
+    <Compile Include="Utilities\ThreadSafeWriter.fs" />
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\DynamicDictionary.fs" />
     <Compile Include="Index\FlexField.fs" />
@@ -114,6 +113,7 @@
     <Compile Include="Services\SearchService..fs" />
     <Compile Include="Services\FactoryService.fs" />
     <Compile Include="Services\JobService.fs" />
+    <Compile Include="Services\ResourceService.fs" />
     <Compile Include="Http\Formatters.fs" />
     <Compile Include="Http\HttpHelpers.fs" />
     <Compile Include="Http\ImportHandlers.fs" />

@@ -70,6 +70,13 @@ module Errors =
     let INDEXING_VERSION_CONFLICT_CREATE = 
         "INDEXING_VERSION_CONFLICT_CREATE:Document version should not be greater than 0 for a create operation."
     // ----------------------------------------------------------------------------
+    // File operations
+    // ----------------------------------------------------------------------------
+    let FILE_NOT_FOUND = "FILE_NOT_FOUND:The requested file does not exist at the provided location."
+    let FILE_READ_ERROR = "FILE_READ_ERROR:An error occurred while reading the file."
+    let FILE_WRITE_ERROR = "FILE_WRITE_ERROR:An error occurred while writing the file."
+
+    // ----------------------------------------------------------------------------
     // Validation Exceptions
     // ----------------------------------------------------------------------------
     let PROPERTY_CANNOT_BE_EMPTY = "PROPERTY_CANNOT_BE_EMPTY:Field cannot be empty."

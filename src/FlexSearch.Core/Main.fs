@@ -63,7 +63,6 @@ module Main =
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexQuery>
         builder |> FactoryService.RegisterSingleFactoryInstance<Analyzer>
         builder |> FactoryService.RegisterSingleInstance<SettingsBuilder, ISettingsBuilder>
-        builder |> FactoryService.RegisterSingleInstance<ResourceLoader, IResourceLoader>
         builder |> FactoryService.RegisterSingleInstance<YamlFormatter, IFormatter>
         builder |> FactoryService.RegisterSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
         builder |> FactoryService.RegisterSingleInstance<RegisterationManager, RegisterationManager>

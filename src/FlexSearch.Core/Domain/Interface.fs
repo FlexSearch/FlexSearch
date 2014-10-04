@@ -60,28 +60,6 @@ type IFormatter =
     abstract DeSerialize<'T> : stream:Stream -> 'T
 
 /// <summary>
-/// General Interface to offload all resource loading responsibilities. This will
-/// be used to parse settings, load text files etc. This will enable easy mocking 
-/// and central management of all such activities
-/// </summary> 
-type IResourceLoader = 
-    
-    /// <summary>
-    /// Reads the resource from the location and returns all the content as a string
-    /// </summary>
-    abstract LoadResourceAsString : fileName:string -> string
-    
-    /// <summary>
-    /// Reads the resource and returns it as a List<string>.
-    /// </summary>
-    abstract LoadFilterList : resourceName:string -> Choice<FilterList, OperationMessage>
-    
-    /// <summary>
-    /// Reads the resource and returns it as a map<string,List<string>>.
-    /// </summary>
-    abstract LoadMapList : resourceName:string -> Choice<MapList, OperationMessage>
-
-/// <summary>
 /// General factory Interface for all MEF based factories
 /// </summary>
 type IFlexFactory<'T> = 
@@ -209,6 +187,15 @@ type IJobService =
     abstract DeleteAllJobs : unit -> Choice<unit, OperationMessage>
 
 /// <summary>
+/// General Interface to offload all resource loading responsibilities. This will
+/// be used to parse settings, load text files etc.
+/// </summary> 
+type IResourceService = 
+    abstract GetResource<'T> : resourceName:string -> Choice<'T, OperationMessage>
+    abstract UpdateResource<'T> : resourceName:string * resource : 'T  -> Choice<unit, OperationMessage>
+    abstract DeleteResource<'T> : resourceName:string -> Choice<unit, OperationMessage>
+
+/// <summary>
 /// Import handler interface to support bulk indexing
 /// </summary>
 type IImportHandler = 
@@ -230,4 +217,3 @@ type IFactoryCollection =
     abstract AnalyzerFactory : IFlexFactory<Analyzer>
     abstract SearchQueryFactory : IFlexFactory<IFlexQuery>
     abstract ImportHandlerFactory : IFlexFactory<IImportHandler>
-    abstract ResourceLoader : IResourceLoader

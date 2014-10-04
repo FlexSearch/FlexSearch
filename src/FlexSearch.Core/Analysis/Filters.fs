@@ -245,7 +245,7 @@ type ReverseStringFilterFactory() =
 /// </summary>
 [<Name("KeepWordsFilter")>]
 [<Sealed>]
-type KeepWordsFilterFactory(resourceLoader : IResourceLoader) = 
+type KeepWordsFilterFactory(resourceService : IResourceService) = 
     let keepWords : CharArraySet = new CharArraySet(100, true)
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = maybe { let! fileName = KeyExists
@@ -253,7 +253,7 @@ type KeepWordsFilterFactory(resourceLoader : IResourceLoader) =
                                                                           
                                                                           Errors.FILTER_CANNOT_BE_INITIALIZED 
                                                                           |> GenerateOperationMessage)
-                                                     let! filterList = resourceLoader.LoadFilterList(fileName)
+                                                     let! filterList = resourceService.GetResource<FilterList>(fileName)
                                                      filterList.Words |> Seq.iter (fun x -> keepWords.Add(x)) }
         member this.Create(ts : TokenStream) = new KeepWordFilter(ts, keepWords) :> TokenStream
 
@@ -262,7 +262,7 @@ type KeepWordsFilterFactory(resourceLoader : IResourceLoader) =
 /// </summary>
 [<Name("StopFilter")>]
 [<Sealed>]
-type StopFilterFactory(resourceLoader : IResourceLoader) = 
+type StopFilterFactory(resourceService : IResourceService) = 
     let stopWords : CharArraySet = new CharArraySet(100, true)
     interface IFlexFilterFactory with
         member this.Initialize(parameters) = maybe { let! fileName = KeyExists
@@ -270,7 +270,7 @@ type StopFilterFactory(resourceLoader : IResourceLoader) =
                                                                           
                                                                           Errors.FILTER_CANNOT_BE_INITIALIZED 
                                                                           |> GenerateOperationMessage)
-                                                     let! filterList = resourceLoader.LoadFilterList(fileName)
+                                                     let! filterList = resourceService.GetResource<FilterList>(fileName)
                                                      filterList.Words |> Seq.iter (fun x -> stopWords.Add(x)) }
         member this.Create(ts : TokenStream) = new StopFilter(ts, stopWords) :> TokenStream
 
@@ -279,7 +279,7 @@ type StopFilterFactory(resourceLoader : IResourceLoader) =
 /// </summary>
 [<Name("SynonymFilter")>]
 [<Sealed>]
-type SynonymFilter(resourceLoader : IResourceLoader) = 
+type SynonymFilter(resourceService : IResourceService) = 
     let mutable map : SynonymMap = null
     interface IFlexFilterFactory with
         
@@ -288,7 +288,7 @@ type SynonymFilter(resourceLoader : IResourceLoader) =
                 let! fileName = KeyExists
                                     ("resourceName", parameters, 
                                      Errors.FILTER_CANNOT_BE_INITIALIZED |> GenerateOperationMessage)
-                let! mapList = resourceLoader.LoadMapList(fileName)
+                let! mapList = resourceService.GetResource<MapList>(fileName)
                 let builder = new SynonymMap.Builder(false)
                 mapList.Words |> Seq.iter (fun x -> 
                                      for value in x.Value do
