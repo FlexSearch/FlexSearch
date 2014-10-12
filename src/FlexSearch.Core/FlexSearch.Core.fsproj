@@ -116,7 +116,6 @@
     <Compile Include="Services\ResourceService.fs" />
     <Compile Include="Http\Formatters.fs" />
     <Compile Include="Http\HttpHelpers.fs" />
-    <Compile Include="Http\ImportHandlers.fs" />
     <Compile Include="Http\Owin.fs" />
     <Compile Include="HttpHandlers\IndexCoreHandlers.fs" />
     <Compile Include="HttpHandlers\DocumentHandlers.fs" />

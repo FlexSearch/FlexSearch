@@ -184,7 +184,7 @@ namespace FlexSearch.Logging
         [Event(14, Message = "Application information message: {0}. \nMessage details: {1}",
             Level = EventLevel.Informational,
             Channel = EventChannel.Admin, Keywords = Keywords.General)]
-        private void TraceInfo(string infoMessage, string message)
+        private void TraceInfomation(string infoMessage, string message)
         {
             if (IsEnabled())
             {
@@ -271,6 +271,11 @@ namespace FlexSearch.Logging
         void ILogService.UpdateIndex(string indexName, Api.Index indexDetails)
         {
             UpdateIndex(indexName, JsonConvert.SerializeObject(indexDetails, JsonSerializerSettings));
+        }
+
+        void ILogService.TraceInformation(string informationMessage, string messageDetails) 
+        {
+            TraceInfomation(informationMessage, messageDetails);
         }
     }
 }

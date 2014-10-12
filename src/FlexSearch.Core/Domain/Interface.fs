@@ -178,6 +178,7 @@ type ILogService =
     abstract TraceError : error:string * ex:Exception -> unit
     abstract TraceError : error:string -> unit
     abstract TraceError : error:string * ex:OperationMessage -> unit
+    abstract TraceInformation : infoMessage: string * messageDetails: string -> unit
 
 /// <summary>
 /// Generic job service interface
@@ -185,7 +186,8 @@ type ILogService =
 type IJobService = 
     abstract GetJob : string -> Choice<Job, OperationMessage>
     abstract DeleteAllJobs : unit -> Choice<unit, OperationMessage>
-
+    abstract UpdateJob : Job -> Choice<unit, OperationMessage>
+     
 /// <summary>
 /// General Interface to offload all resource loading responsibilities. This will
 /// be used to parse settings, load text files etc.
