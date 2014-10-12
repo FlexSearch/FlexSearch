@@ -174,11 +174,12 @@ type ILogService =
     abstract StartSession : unit -> unit
     abstract EndSession : unit -> unit
     abstract Shutdown : unit -> unit
+    abstract TraceCritical : message:string * ex:Exception -> unit
     abstract TraceCritical : ex:Exception -> unit
     abstract TraceError : error:string * ex:Exception -> unit
     abstract TraceError : error:string -> unit
     abstract TraceError : error:string * ex:OperationMessage -> unit
-    abstract TraceInformation : infoMessage: string * messageDetails: string -> unit
+    abstract TraceInformation : infoMessage:string * messageDetails:string -> unit
 
 /// <summary>
 /// Generic job service interface
@@ -187,14 +188,14 @@ type IJobService =
     abstract GetJob : string -> Choice<Job, OperationMessage>
     abstract DeleteAllJobs : unit -> Choice<unit, OperationMessage>
     abstract UpdateJob : Job -> Choice<unit, OperationMessage>
-     
+
 /// <summary>
 /// General Interface to offload all resource loading responsibilities. This will
 /// be used to parse settings, load text files etc.
 /// </summary> 
 type IResourceService = 
     abstract GetResource<'T> : resourceName:string -> Choice<'T, OperationMessage>
-    abstract UpdateResource<'T> : resourceName:string * resource : 'T  -> Choice<unit, OperationMessage>
+    abstract UpdateResource<'T> : resourceName:string * resource:'T -> Choice<unit, OperationMessage>
     abstract DeleteResource<'T> : resourceName:string -> Choice<unit, OperationMessage>
 
 /// <summary>

@@ -253,6 +253,11 @@ namespace FlexSearch.Logging
             TraceCritical(Helpers.ExceptionPrinter(ex));
         }
 
+        void ILogService.TraceCritical(String message, Exception ex)
+        {
+            TraceCritical(String.Format("{0} {1}", message, Helpers.ExceptionPrinter(ex)));
+        }
+
         void ILogService.TraceError(string error, Api.OperationMessage ex)
         {
             TraceError2(error, JsonConvert.SerializeObject(ex, JsonSerializerSettings));
@@ -273,7 +278,7 @@ namespace FlexSearch.Logging
             UpdateIndex(indexName, JsonConvert.SerializeObject(indexDetails, JsonSerializerSettings));
         }
 
-        void ILogService.TraceInformation(string informationMessage, string messageDetails) 
+        void ILogService.TraceInformation(string informationMessage, string messageDetails)
         {
             TraceInfomation(informationMessage, messageDetails);
         }
