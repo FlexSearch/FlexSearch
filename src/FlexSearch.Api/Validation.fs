@@ -1,14 +1,13 @@
 ﻿namespace FlexSearch.Api.Validation
 
+open FlexSearch.Api
+open System
+open System.Collections.Concurrent
 open System.Collections.Generic
+open System.ComponentModel
 open System.ComponentModel.DataAnnotations
 open System.Linq
-open System.Collections.Concurrent
 open System.Reflection
-open System
-open System.ComponentModel
-open FlexSearch.Api
-open System.Linq
 
 /// <summary>
 ///     Custom validator interface which will allow validation using Data annotation
@@ -81,9 +80,8 @@ type ValidatableObjectBase<'T>() =
                     let errors = new List<ValidationResult>()
                     if Validator.TryValidateProperty
                            (GetPropertyInfo(columnName).GetValue(this, null), 
-                            new ValidationContext(this, null, null, MemberName = columnName), errors) then 
-                        errors.[0].ErrorMessage
-                    else "" : string
+                            new ValidationContext(this, null, null, MemberName = columnName), errors) then ""
+                    else errors.[0].ErrorMessage
     
     interface IValidator with
         
