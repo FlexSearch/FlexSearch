@@ -34,8 +34,15 @@ open System.Threading.Tasks
 /// </summary>
 [<Name("Http")>]
 [<Sealed>]
-type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>, logger : ILogService ,?port0 : int) = 
+type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpResource>, logger : ILogService, ?port0 : int) = 
     let port = defaultArg port0 9800
+    let accessDenied = """
+Port access issue. Make sure that the running user has necessary permission to open the port. 
+Use the below command to add URL reservation.
+---------------------------------------------------------------------------
+netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
+---------------------------------------------------------------------------
+"""
     
     let httpModule = 
         let modules = httpFactory.GetAllModules()
@@ -119,11 +126,17 @@ type OwinServer(indexService : IIndexService, httpFactory : IFlexFactory<IHttpRe
                     let startOptions = new StartOptions(sprintf "http://+:%i/" port)
                     server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
                     Console.ReadKey() |> ignore
-                with e -> logger.TraceCritical(e)
+                with e -> 
+                    if e.InnerException <> null then 
+                        let innerException = e.InnerException :?> System.Net.HttpListenerException
+                        if innerException.ErrorCode = 5 then 
+                            // Access denied error
+                            logger.TraceCritical(accessDenied, e)
+                        else logger.TraceCritical(e)
+                    else logger.TraceCritical(e)
             try 
                 thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
-            with e -> 
-                logger.TraceCritical(e)
+            with e -> logger.TraceCritical(e)
             ()
         
         member this.Stop() = server.Dispose()
