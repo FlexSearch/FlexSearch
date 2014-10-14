@@ -6,6 +6,7 @@ open System
 open System.Collections.Generic
 open System.ComponentModel
 open System.ComponentModel.DataAnnotations
+open System.Linq
 
 [<ToString>]
 type ShardConfiguration() = 
@@ -131,14 +132,17 @@ type Analyzer() =
 // ----------------------------------------------------------------------------
 //	Scripting related
 // ----------------------------------------------------------------------------
-type Script(source : string, scriptType : ScriptType) = 
+type Script(scriptName : string, source : string, scriptType : ScriptType) = 
     inherit ValidatableObjectBase<Script>()
+    
+    [<Required; PropertyName>]
+    member val ScriptName = scriptName with get, set
     
     [<Required>]
     member val Source = source with get, set
     
     member val ScriptType = ScriptType.ComputedField with get, set
-    new() = Script(Unchecked.defaultof<string>, ScriptType.ComputedField)
+    new() = Script(Unchecked.defaultof<string>, Unchecked.defaultof<string>, ScriptType.ComputedField)
 
 // ----------------------------------------------------------------------------
 //	Search related
@@ -158,6 +162,7 @@ type HighlightOption(fields : List<string>) =
 
 type SearchQuery(index : string, query : string) = 
     inherit ValidatableObjectBase<SearchQuery>()
+    member val QueryName = Unchecked.defaultof<string> with get, set
     member val Columns = new List<string>() with get, set
     
     [<DefaultValue(10)>]
@@ -233,13 +238,8 @@ type Index() =
     member val Analyzers = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase) with get, set
     
     member val Fields = new List<Field>() with get, set
-    
-    [<ValidKeys>]
-    member val Scripts = new Dictionary<string, Script>(StringComparer.OrdinalIgnoreCase) with get, set
-    
-    [<ValidKeys>]
-    member val SearchProfiles = new Dictionary<string, SearchQuery>(StringComparer.OrdinalIgnoreCase) with get, set
-    
+    member val Scripts = new List<Script>() with get, set
+    member val SearchProfiles = new List<SearchQuery>() with get, set
     member val ShardConfiguration = new ShardConfiguration() with get, set
     member val IndexConfiguration = new IndexConfiguration() with get, set
     member val Online = false with get, set
@@ -247,15 +247,14 @@ type Index() =
         seq { 
             yield Helpers.ValidateCollection<Analyzer>(this.Analyzers.Values)
             yield Helpers.ValidateCollection<Field>(this.Fields)
-            yield Helpers.ValidateCollection<Script>(this.Scripts.Values)
-            yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles.Values)
+            yield Helpers.ValidateCollection<Script>(this.Scripts)
+            yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles)
             for field in this.Fields do
                 // Check if the specified script exists
                 if String.IsNullOrWhiteSpace(field.ScriptName) = false then 
-                    match this.Scripts.TryGetValue(field.ScriptName) with
-                    | (true, _) -> ()
-                    | _ -> 
+                    if this.Scripts.FirstOrDefault(fun x -> x.ScriptName = field.ScriptName) = Unchecked.defaultof<Script> then 
                         yield new ValidationResult(Errors.SCRIPT_NOT_FOUND |> AppendKv("ScriptName", field.ScriptName))
+                    else ()
         }
 
 type SearchResults() = 

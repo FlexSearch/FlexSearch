@@ -93,7 +93,7 @@ module FieldPropertiesExtensions =
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
         /// <param name="propName"></param>
-        member this.Build(flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, Script>, 
+        member this.Build(flexAnalyzers : Dictionary<string, Analyzer>, scripts : List<Script>, 
                           factoryCollection : IFactoryCollection, propName : string) = 
             /// Helper to get an analyzer from dictionary and if not found then
             /// tries to resolve from the dictionary
@@ -112,9 +112,9 @@ module FieldPropertiesExtensions =
             let getSource (field : Field) = 
                 if (String.IsNullOrWhiteSpace(field.ScriptName)) then Choice1Of2(None)
                 else 
-                    match scripts.TryGetValue(field.ScriptName) with
-                    | (true, a) -> 
-                        match GenerateStringReturnScript(a.Source) with
+                    match scripts.Find(fun x -> x.ScriptName = field.ScriptName) with
+                    | script -> 
+                        match GenerateStringReturnScript(script.Source) with
                         | Choice1Of2(x) -> Choice1Of2(Some(x))
                         | Choice2Of2(e) -> Choice2Of2(e)
                     | _ -> 
@@ -186,7 +186,7 @@ module FieldPropertiesExtensions =
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
         static member Build(fields : List<Field>, indexConfiguration : IndexConfiguration, 
-                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, Script>, 
+                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : List<Script>, 
                             factoryCollection : IFactoryCollection) = 
             maybe { 
                 let result = new Dictionary<string, FlexField>(StringComparer.OrdinalIgnoreCase)

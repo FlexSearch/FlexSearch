@@ -57,21 +57,21 @@ class Foo {
                        |> Append("Message", e.Message))
     
     type Script with
-        static member Build(scripts : Dictionary<string, Script>, factoryCollection : IFactoryCollection) = 
+        static member Build(scripts : List<Script>, factoryCollection : IFactoryCollection) = 
             maybe { 
-                let getScript (script : KeyValuePair<string, Script>) = 
+                let getScript (script : Script) = 
                     maybe { 
-                        match script.Value.ScriptType with
+                        match script.ScriptType with
                         | ScriptType.SearchProfileSelector -> let! compiledScript = GenerateStringReturnScript
-                                                                                        (script.Value.Source)
+                                                                                        (script.Source)
                                                               return compiledScript
                         | ScriptType.ComputedField -> let! compiledScript = GenerateStringReturnScript
-                                                                                (script.Value.Source)
+                                                                                (script.Source)
                                                       return compiledScript
                         | _ -> 
                             return! Choice2Of2(Errors.UNKNOWN_SCRIPT_TYPE
                                                |> GenerateOperationMessage
-                                               |> Append("Script Type", script.Value.ScriptType.ToString()))
+                                               |> Append("Script Type", script.ScriptType.ToString()))
                     }
                 
                 let profileSelectorScripts = 
@@ -82,9 +82,9 @@ class Foo {
                     new Dictionary<string, System.Dynamic.DynamicObject * double -> double>(StringComparer.OrdinalIgnoreCase)
                 for script in scripts do
                     let! scriptObject = getScript (script)
-                    match script.Value.ScriptType with
-                    | ScriptType.ComputedField -> computedFieldScripts.Add(script.Key, scriptObject)
-                    | ScriptType.SearchProfileSelector -> profileSelectorScripts.Add(script.Key, scriptObject)
+                    match script.ScriptType with
+                    | ScriptType.ComputedField -> computedFieldScripts.Add(script.ScriptName, scriptObject)
+                    | ScriptType.SearchProfileSelector -> profileSelectorScripts.Add(script.ScriptName, scriptObject)
                     | _ -> failwith "not possible"
                 let scriptsManager = 
                     { ComputedFieldScripts = computedFieldScripts

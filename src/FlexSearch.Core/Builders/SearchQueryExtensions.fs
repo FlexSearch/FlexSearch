@@ -28,13 +28,14 @@ module SearchQueryExtensions =
                 return predicate
             }
         
-        static member Build(profiles : Dictionary<string, SearchQuery>, fields : Dictionary<string, FlexField>, 
+        static member Build(profiles : List<SearchQuery>, fields : Dictionary<string, FlexField>, 
                             queryTypes : Dictionary<string, IFlexQuery>, parser : FlexParser) = 
             maybe { 
                 let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
                 for profile in profiles do
-                    let! profileObject = profile.Value.Build(queryTypes, parser)
-                    result.Add(profile.Key, (profileObject, profile.Value))
+                    assert(String.IsNullOrWhiteSpace(profile.QueryName) <> true)
+                    let! profileObject = profile.Build(queryTypes, parser)
+                    result.Add(profile.QueryName, (profileObject, profile))
                 return result
             }
         

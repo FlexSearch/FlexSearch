@@ -74,15 +74,13 @@ module IntegrationTestHelpers =
         // Computed fields
         index.Fields.Add(new Field("fullname", FieldType.Text, ScriptName = "fullname"))
         index.Scripts.Add
-            ("fullname", 
-             
-             new Script("""return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
+            (new Script("fullname", """return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
         let searchProfileQuery = 
-            new SearchQuery(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''")
+            new SearchQuery(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''", QueryName = "test1")
         searchProfileQuery.MissingValueConfiguration.Add("firstname", MissingValueOption.ThrowError)
         searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
         searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
-        index.SearchProfiles.Add("test1", searchProfileQuery)
+        index.SearchProfiles.Add(searchProfileQuery)
         index
     
     let GetBasicIndexSettingsForContact() = 
@@ -123,14 +121,13 @@ module IntegrationTestHelpers =
         // Computed fields
         index.Fields.Add(new Field("fullname", FieldType.Text, ScriptName = "fullname"))
         index.Scripts.Add
-            ("fullname", 
-             new Script("""return fields.givenname + " " + fields.surname;""", ScriptType.ComputedField))
+            (new Script("fullname", """return fields.givenname + " " + fields.surname;""", ScriptType.ComputedField))
         let searchProfileQuery = 
-            new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''")
+            new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''", QueryName = "test1")
         searchProfileQuery.MissingValueConfiguration.Add("givenname", MissingValueOption.ThrowError)
         searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
         searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
-        index.SearchProfiles.Add("test1", searchProfileQuery)
+        index.SearchProfiles.Add(searchProfileQuery)
         index
     
     /// <summary>

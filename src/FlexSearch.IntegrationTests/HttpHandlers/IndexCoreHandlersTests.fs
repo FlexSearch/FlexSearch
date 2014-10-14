@@ -85,12 +85,13 @@ module ``Index Creation Tests`` =
                    {"FieldName" : "lastname" , FieldType : "Text" },
                    {"FieldName" : "fullname" , FieldType : "Text", ScriptName : "fullnamescript"}
                 ],
-                "Scripts" : {
-                    fullnamescript : {
-                        ScriptType : "ComputedField",
-                        Source : "return fields.firstname + \" \" + fields.lastname;"
-                    }
-                }
+                "Scripts" : [
+                        {
+                            "ScriptName" : "fullnamescript",
+                            ScriptType : "ComputedField",
+                            Source : "return fields.firstname + \" \" + fields.lastname;"
+                        }
+                    ]
         }        
         """ (indexName.ToString("N")))
         |> execute
