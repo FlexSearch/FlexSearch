@@ -93,7 +93,7 @@ module FieldPropertiesExtensions =
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
         /// <param name="propName"></param>
-        member this.Build(flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, ScriptProperties>, 
+        member this.Build(flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, Script>, 
                           factoryCollection : IFactoryCollection, propName : string) = 
             /// Helper to get an analyzer from dictionary and if not found then
             /// tries to resolve from the dictionary
@@ -186,7 +186,7 @@ module FieldPropertiesExtensions =
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
         static member Build(fields : Dictionary<string, Field>, indexConfiguration : IndexConfiguration, 
-                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, ScriptProperties>, 
+                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, Script>, 
                             factoryCollection : IFactoryCollection) = 
             maybe { 
                 let result = new Dictionary<string, FlexField>(StringComparer.OrdinalIgnoreCase)

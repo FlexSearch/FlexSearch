@@ -126,14 +126,14 @@ type Analyzer() =
 // ----------------------------------------------------------------------------
 //	Scripting related
 // ----------------------------------------------------------------------------
-type ScriptProperties(source : string, scriptType : ScriptType) = 
-    inherit ValidatableObjectBase<ScriptProperties>()
+type Script(source : string, scriptType : ScriptType) = 
+    inherit ValidatableObjectBase<Script>()
     
     [<Required>]
     member val Source = source with get, set
     
     member val ScriptType = ScriptType.ComputedField with get, set
-    new() = ScriptProperties(Unchecked.defaultof<string>, ScriptType.ComputedField)
+    new() = Script(Unchecked.defaultof<string>, ScriptType.ComputedField)
 
 // ----------------------------------------------------------------------------
 //	Search related
@@ -188,7 +188,7 @@ type SearchQuery(index : string, query : string) =
 //	Index & Document related
 // ----------------------------------------------------------------------------
 type ResultDocument(indexName : string, id : string) = 
-    inherit ValidatableObjectBase<ScriptProperties>()
+    inherit ValidatableObjectBase<Script>()
     member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     member val Highlights = new List<string>() with get, set
     member val Score = 0.0 with get, set
@@ -204,7 +204,7 @@ type ResultDocument(indexName : string, id : string) =
     new() = ResultDocument(Unchecked.defaultof<string>, Unchecked.defaultof<string>)
 
 type FlexDocument(indexName : string, id : string) = 
-    inherit ValidatableObjectBase<ScriptProperties>()
+    inherit ValidatableObjectBase<Script>()
     member val Fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
     
     [<Required>]
@@ -231,7 +231,7 @@ type Index() =
     member val Fields = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase) with get, set
     
     [<ValidKeys>]
-    member val Scripts = new Dictionary<string, ScriptProperties>(StringComparer.OrdinalIgnoreCase) with get, set
+    member val Scripts = new Dictionary<string, Script>(StringComparer.OrdinalIgnoreCase) with get, set
     
     [<ValidKeys>]
     member val SearchProfiles = new Dictionary<string, SearchQuery>(StringComparer.OrdinalIgnoreCase) with get, set
@@ -243,7 +243,7 @@ type Index() =
         seq { 
             yield Helpers.ValidateCollection<Analyzer>(this.Analyzers.Values)
             yield Helpers.ValidateCollection<Field>(this.Fields.Values)
-            yield Helpers.ValidateCollection<ScriptProperties>(this.Scripts.Values)
+            yield Helpers.ValidateCollection<Script>(this.Scripts.Values)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles.Values)
             for field in this.Fields do
                 // Check if the specified script exists

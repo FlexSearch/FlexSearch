@@ -56,10 +56,10 @@ class Foo {
                        |> GenerateOperationMessage
                        |> Append("Message", e.Message))
     
-    type ScriptProperties with
-        static member Build(scripts : Dictionary<string, ScriptProperties>, factoryCollection : IFactoryCollection) = 
+    type Script with
+        static member Build(scripts : Dictionary<string, Script>, factoryCollection : IFactoryCollection) = 
             maybe { 
-                let getScript (script : KeyValuePair<string, ScriptProperties>) = 
+                let getScript (script : KeyValuePair<string, Script>) = 
                     maybe { 
                         match script.Value.ScriptType with
                         | ScriptType.SearchProfileSelector -> let! compiledScript = GenerateStringReturnScript

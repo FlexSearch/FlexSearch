@@ -76,7 +76,7 @@ module IntegrationTestHelpers =
         index.Scripts.Add
             ("fullname", 
              
-             new ScriptProperties("""return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
+             new Script("""return fields["firstname"] + " " + fields["lastname"];""", ScriptType.ComputedField))
         let searchProfileQuery = 
             new SearchQuery(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''")
         searchProfileQuery.MissingValueConfiguration.Add("firstname", MissingValueOption.ThrowError)
@@ -124,7 +124,7 @@ module IntegrationTestHelpers =
         index.Fields.Add("fullname", new Field(FieldType = FieldType.Text, ScriptName = "fullname"))
         index.Scripts.Add
             ("fullname", 
-             new ScriptProperties("""return fields.givenname + " " + fields.surname;""", ScriptType.ComputedField))
+             new Script("""return fields.givenname + " " + fields.surname;""", ScriptType.ComputedField))
         let searchProfileQuery = 
             new SearchQuery(index.IndexName, "givenname = '' AND surname = '' AND cvv2 = '1' AND topic = ''")
         searchProfileQuery.MissingValueConfiguration.Add("givenname", MissingValueOption.ThrowError)
