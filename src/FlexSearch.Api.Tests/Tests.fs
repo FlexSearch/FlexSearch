@@ -120,7 +120,7 @@ module ``Index Field tests`` =
     [<InlineDataAttribute(FieldType.Int)>]
     [<InlineDataAttribute(FieldType.Stored)>]
     let ``Search Analyzer is ignored for {fieldType} field types`` (fieldType : FieldType) = 
-        let field = new Field()
+        let field = new Field("test")
         field.FieldType <- fieldType
         field.SearchAnalyzer <- ""
         ValidateSuccess field
@@ -134,7 +134,7 @@ module ``Index Field tests`` =
     [<InlineDataAttribute(FieldType.Int)>]
     [<InlineDataAttribute(FieldType.Stored)>]
     let ``Index Analyzer is ignored for {fieldType} field types`` (fieldType : FieldType) = 
-        let field = new Field()
+        let field = new Field("test")
         field.FieldType <- fieldType
         field.IndexAnalyzer <- ""
         ValidateSuccess field

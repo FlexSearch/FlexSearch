@@ -43,8 +43,11 @@ type IndexConfiguration() =
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
 
 [<ToString>]
-type Field() = 
+type Field(fieldName : string, fieldType : FieldType) = 
     inherit ValidatableObjectBase<Field>()
+    
+    [<Required; PropertyName>]
+    member val FieldName = fieldName with get, set
     
     [<DefaultValue(true)>]
     member val Analyze = true with get, set
@@ -61,13 +64,15 @@ type Field() =
     [<DefaultValue(StandardAnalyzer)>]
     member val SearchAnalyzer = StandardAnalyzer with get, set
     
-    member val FieldType = FieldType.Text with get, set
+    member val FieldType = fieldType with get, set
     member val PostingsFormat = FieldPostingsFormat.Lucene_4_1 with get, set
     member val Similarity = FieldSimilarity.TFIDF with get, set
     member val IndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions with get, set
     member val TermVector = FieldTermVector.DoNotStoreTermVector with get, set
     member val OmitNorms = true with get, set
     member val ScriptName = "" with get, set
+    new(fieldName : string) = Field(fieldName, FieldType.Text)
+    new() = Field(Unchecked.defaultof<string>, FieldType.Text)
     override this.Validate(context) = 
         seq { 
             if (this.FieldType = FieldType.Text || this.FieldType = FieldType.Highlight 
@@ -227,8 +232,7 @@ type Index() =
     [<ValidKeys>]
     member val Analyzers = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase) with get, set
     
-    [<ValidKeys>]
-    member val Fields = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase) with get, set
+    member val Fields = new List<Field>() with get, set
     
     [<ValidKeys>]
     member val Scripts = new Dictionary<string, Script>(StringComparer.OrdinalIgnoreCase) with get, set
@@ -242,17 +246,16 @@ type Index() =
     override this.Validate(context) = 
         seq { 
             yield Helpers.ValidateCollection<Analyzer>(this.Analyzers.Values)
-            yield Helpers.ValidateCollection<Field>(this.Fields.Values)
+            yield Helpers.ValidateCollection<Field>(this.Fields)
             yield Helpers.ValidateCollection<Script>(this.Scripts.Values)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles.Values)
             for field in this.Fields do
                 // Check if the specified script exists
-                if String.IsNullOrWhiteSpace(field.Value.ScriptName) = false then 
-                    match this.Scripts.TryGetValue(field.Value.ScriptName) with
+                if String.IsNullOrWhiteSpace(field.ScriptName) = false then 
+                    match this.Scripts.TryGetValue(field.ScriptName) with
                     | (true, _) -> ()
                     | _ -> 
-                        yield new ValidationResult(Errors.SCRIPT_NOT_FOUND 
-                                                   |> AppendKv("ScriptName", field.Value.ScriptName))
+                        yield new ValidationResult(Errors.SCRIPT_NOT_FOUND |> AppendKv("ScriptName", field.ScriptName))
         }
 
 type SearchResults() = 

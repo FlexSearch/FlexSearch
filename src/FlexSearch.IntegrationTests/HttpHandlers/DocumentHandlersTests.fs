@@ -27,8 +27,8 @@ type Dummy() =
 module ``Document Tests`` = 
     let TestIndex(indexName) = 
         let index = new Index(IndexName = indexName, Online = true)
-        index.Fields.Add("firstname", new Field(FieldType = FieldType.Text))
-        index.Fields.Add("lastname", new Field(FieldType = FieldType.Text))
+        index.Fields.Add(new Field("firstname", FieldType.Text))
+        index.Fields.Add(new Field("lastname", FieldType.Text))
         index
     
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-1", "")>]

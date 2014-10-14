@@ -65,10 +65,10 @@ module ``Index Creation Tests`` =
         |> withBody (sprintf """
         {
             "IndexName" : "%s",
-            "Fields" : {
-                "firstname" : { FieldType : "Text" },
-                "lastname" : { FieldType : "Text" }
-            }
+            "Fields" : [
+                {"FieldName" : "firstname" , FieldType : "Text" },
+                {"FieldName" : "lastname" , FieldType : "Text" }
+            ]
         }""" (indexName.ToString("N")))
         |> execute
         |> responseStatusEquals HttpStatusCode.Created
@@ -80,11 +80,11 @@ module ``Index Creation Tests`` =
         |> withBody (sprintf """
         {
                 "IndexName" : "%s",
-                "Fields" : {
-                    "firstname" : { FieldType : "Text" },
-                    "lastname" : { FieldType : "Text" },
-                    "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"}
-                },
+                "Fields" : [
+                   {"FieldName" : "firstname" , FieldType : "Text" },
+                   {"FieldName" : "lastname" , FieldType : "Text" },
+                   {"FieldName" : "fullname" , FieldType : "Text", ScriptName : "fullnamescript"}
+                ],
                 "Scripts" : {
                     fullnamescript : {
                         ScriptType : "ComputedField",
@@ -108,8 +108,8 @@ module ``Index Update Tests`` =
     let ``Update an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         let index = new Index(IndexName = indexName.ToString("N"))
         client.AddIndex(index).Result |> ExpectSuccess
-        index.Fields.Add("firstname", new Field(FieldType = FieldType.Text))
-        index.Fields.Add("lastname", new Field(FieldType = FieldType.Text))
+        index.Fields.Add(new Field("firstname", FieldType.Text))
+        index.Fields.Add(new Field("lastname", FieldType.Text))
         let actual = client.UpdateIndex(index).Result
         handler |> VerifyHttpCode HttpStatusCode.OK
     

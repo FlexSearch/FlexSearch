@@ -185,7 +185,7 @@ module FieldPropertiesExtensions =
         /// <param name="flexAnalyzers"></param>
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
-        static member Build(fields : Dictionary<string, Field>, indexConfiguration : IndexConfiguration, 
+        static member Build(fields : List<Field>, indexConfiguration : IndexConfiguration, 
                             flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, Script>, 
                             factoryCollection : IFactoryCollection) = 
             maybe { 
@@ -195,7 +195,7 @@ module FieldPropertiesExtensions =
                 result.Add(Constants.LastModifiedField, GetTimeStampField(indexConfiguration))
                 result.Add(Constants.LastModifiedFieldDv, GetTimeStampDvField(indexConfiguration))
                 for field in fields do
-                    let! fieldObject = field.Value.Build(flexAnalyzers, scripts, factoryCollection, field.Key)
-                    result.Add(field.Key, fieldObject)
+                    let! fieldObject = field.Build(flexAnalyzers, scripts, factoryCollection, field.FieldName)
+                    result.Add(field.FieldName, fieldObject)
                 return result
             }
