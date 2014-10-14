@@ -37,9 +37,9 @@ type IndexConfiguration() =
     /// <summary>
     /// This will be computed at run time based on the index version
     /// </summary>
+    [<Display(AutoGenerateField = false)>]
     member val DefaultIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat> with get, set
     
-    member val EnableVersioning = false with get, set
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
 
 [<ToString>]
