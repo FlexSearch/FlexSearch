@@ -112,8 +112,8 @@ type Tokenizer(tokenizerName : string) =
     new() = Tokenizer(Unchecked.defaultof<_>)
 
 [<ToString>]
-type AnalyzerProperties() = 
-    inherit ValidatableObjectBase<AnalyzerProperties>()
+type Analyzer() = 
+    inherit ValidatableObjectBase<Analyzer>()
     
     [<Required; ValidateComplex>]
     member val Tokenizer = Unchecked.defaultof<Tokenizer> with get, set
@@ -225,7 +225,7 @@ type Index() =
     member val IndexName = Unchecked.defaultof<string> with get, set
     
     [<ValidKeys>]
-    member val Analyzers = new Dictionary<string, AnalyzerProperties>(StringComparer.OrdinalIgnoreCase) with get, set
+    member val Analyzers = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase) with get, set
     
     [<ValidKeys>]
     member val Fields = new Dictionary<string, FieldProperties>(StringComparer.OrdinalIgnoreCase) with get, set
@@ -241,7 +241,7 @@ type Index() =
     member val Online = false with get, set
     override this.Validate(context) = 
         seq { 
-            yield Helpers.ValidateCollection<AnalyzerProperties>(this.Analyzers.Values)
+            yield Helpers.ValidateCollection<Analyzer>(this.Analyzers.Values)
             yield Helpers.ValidateCollection<FieldProperties>(this.Fields.Values)
             yield Helpers.ValidateCollection<ScriptProperties>(this.Scripts.Values)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles.Values)

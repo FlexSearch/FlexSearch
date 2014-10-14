@@ -29,17 +29,17 @@ module Helpers =
 
 module ``Analyzer Properties Tests`` = 
     [<AutoMockData; Theory>]
-    let ``Tokenizer is required`` (analyzer : AnalyzerProperties) = 
+    let ``Tokenizer is required`` (analyzer : Analyzer) = 
         analyzer.Tokenizer <- Unchecked.defaultof<Tokenizer>
         ValidateHasErrors analyzer
     
     [<AutoMockData; Theory>]
-    let ``Filters is required`` (analyzer : AnalyzerProperties) = 
+    let ``Filters is required`` (analyzer : Analyzer) = 
         analyzer.Filters <- null
         ValidateHasErrors analyzer
     
     [<AutoMockData; Theory>]
-    let ``Atleast 1 Filter is required`` (analyzer : AnalyzerProperties) = 
+    let ``Atleast 1 Filter is required`` (analyzer : Analyzer) = 
         analyzer.Filters.Clear()
         ValidateHasErrors analyzer
 
@@ -144,22 +144,22 @@ module ``Index tests`` =
     let ``Analyzers cannot contain in-valid keys``() = 
         let index = new Index()
         index.IndexName <- "valid"
-        index.Analyzers.Add("INVALIDKEY", new AnalyzerProperties())
+        index.Analyzers.Add("INVALIDKEY", new Analyzer())
         ValidateHasErrors index
     
     [<FactAttribute>]
     let ``Analyzers can have valid keys``() = 
         let index = new Index()
         index.IndexName <- "valid"
-        index.Analyzers.Add("validkey", new AnalyzerProperties())
+        index.Analyzers.Add("validkey", new Analyzer())
         ValidateSuccess index
     
     [<FactAttribute>]
     let ``Validation will fail even for a single invalid key``() = 
         let index = new Index()
         index.IndexName <- "valid"
-        index.Analyzers.Add("validkey", new AnalyzerProperties())
-        index.Analyzers.Add("INVALIDKEY", new AnalyzerProperties())
+        index.Analyzers.Add("validkey", new Analyzer())
+        index.Analyzers.Add("INVALIDKEY", new Analyzer())
         ValidateHasErrors index
 
 module ``Operation Message Tests`` = 

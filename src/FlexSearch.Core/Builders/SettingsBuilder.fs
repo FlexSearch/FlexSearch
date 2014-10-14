@@ -29,7 +29,7 @@ type SettingsBuilder(factoryCollection : IFactoryCollection, serverSettings : Se
                 do! (index :> IValidator).MaybeValidator()
                 let! defaultPostingsFormat = index.IndexConfiguration.IndexVersion.GetDefaultPostingsFormat()
                 index.IndexConfiguration.DefaultIndexPostingsFormat <- defaultPostingsFormat
-                let! analyzers = AnalyzerProperties.Build(index.Analyzers, factoryCollection)
+                let! analyzers = Analyzer.Build(index.Analyzers, factoryCollection)
                 let! scriptManager = ScriptProperties.Build(index.Scripts, factoryCollection)
                 let! fields = FieldProperties.Build
                                   (index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)

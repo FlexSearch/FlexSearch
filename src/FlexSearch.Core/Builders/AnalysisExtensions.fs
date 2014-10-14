@@ -77,7 +77,7 @@ module AnalysisExtensions =
                 return tokenizerFactory
             }
     
-    type FlexSearch.Api.AnalyzerProperties with
+    type FlexSearch.Api.Analyzer with
         
         /// <summary>
         /// Return an analyzer from analyzer properties
@@ -96,7 +96,7 @@ module AnalysisExtensions =
         /// </summary>
         /// <param name="analyzersDict"></param>
         /// <param name="factoryCollection"></param>
-        static member Build(analyzersDict : Dictionary<string, FlexSearch.Api.AnalyzerProperties>, 
+        static member Build(analyzersDict : Dictionary<string, FlexSearch.Api.Analyzer>, 
                             factoryCollection : IFactoryCollection) = 
             maybe { 
                 let result = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase)
