@@ -84,7 +84,7 @@ module FieldPropertiesExtensions =
               RequiresAnalyzer = false
               DefaultField = null }
         idField    
-    type FieldProperties with
+    type Field with
         
         /// <summary>
         /// Build method to generate FlexField from Index Properties
@@ -109,7 +109,7 @@ module FieldPropertiesExtensions =
                                    |> Append("Reason", Errors.ANALYZER_NOT_FOUND)
                                    |> Append("AnalyzerName", analyzerName))
             
-            let getSource (field : FieldProperties) = 
+            let getSource (field : Field) = 
                 if (String.IsNullOrWhiteSpace(field.ScriptName)) then Choice1Of2(None)
                 else 
                     match scripts.TryGetValue(field.ScriptName) with
@@ -122,7 +122,7 @@ module FieldPropertiesExtensions =
                                    |> GenerateOperationMessage
                                    |> Append("ScriptName", field.ScriptName))
             
-            let getFieldType (field : FieldProperties) = 
+            let getFieldType (field : Field) = 
                 maybe { 
                     match field.FieldType with
                     | FieldType.Int -> return! Choice1Of2(FlexInt, false)
@@ -155,7 +155,7 @@ module FieldPropertiesExtensions =
                                            |> Append("FieldType", field.FieldType.ToString()))
                 }
             
-            let getField (field : KeyValuePair<string, FieldProperties>) = 
+            let getField (field : KeyValuePair<string, Field>) = 
                 maybe { 
                     let! source = getSource (field.Value)
                     let! (fieldType, requiresAnalyzer) = getFieldType (field.Value)
@@ -176,7 +176,7 @@ module FieldPropertiesExtensions =
                     return fieldFinal
                 }
             
-            getField (new KeyValuePair<string, FieldProperties>(propName, this))
+            getField (new KeyValuePair<string, Field>(propName, this))
         
         /// <summary>
         /// Generate FlexField dictionary from Fields dictionary
@@ -185,7 +185,7 @@ module FieldPropertiesExtensions =
         /// <param name="flexAnalyzers"></param>
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
-        static member Build(fields : Dictionary<string, FieldProperties>, indexConfiguration : IndexConfiguration, 
+        static member Build(fields : Dictionary<string, Field>, indexConfiguration : IndexConfiguration, 
                             flexAnalyzers : Dictionary<string, Analyzer>, scripts : Dictionary<string, ScriptProperties>, 
                             factoryCollection : IFactoryCollection) = 
             maybe { 

@@ -108,8 +108,8 @@ module ``Index Update Tests`` =
     let ``Update an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
         let index = new Index(IndexName = indexName.ToString("N"))
         client.AddIndex(index).Result |> ExpectSuccess
-        index.Fields.Add("firstname", new FieldProperties(FieldType = FieldType.Text))
-        index.Fields.Add("lastname", new FieldProperties(FieldType = FieldType.Text))
+        index.Fields.Add("firstname", new Field(FieldType = FieldType.Text))
+        index.Fields.Add("lastname", new Field(FieldType = FieldType.Text))
         let actual = client.UpdateIndex(index).Result
         handler |> VerifyHttpCode HttpStatusCode.OK
     

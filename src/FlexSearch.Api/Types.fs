@@ -43,8 +43,8 @@ type IndexConfiguration() =
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
 
 [<ToString>]
-type FieldProperties() = 
-    inherit ValidatableObjectBase<FieldProperties>()
+type Field() = 
+    inherit ValidatableObjectBase<Field>()
     
     [<DefaultValue(true)>]
     member val Analyze = true with get, set
@@ -228,7 +228,7 @@ type Index() =
     member val Analyzers = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase) with get, set
     
     [<ValidKeys>]
-    member val Fields = new Dictionary<string, FieldProperties>(StringComparer.OrdinalIgnoreCase) with get, set
+    member val Fields = new Dictionary<string, Field>(StringComparer.OrdinalIgnoreCase) with get, set
     
     [<ValidKeys>]
     member val Scripts = new Dictionary<string, ScriptProperties>(StringComparer.OrdinalIgnoreCase) with get, set
@@ -242,7 +242,7 @@ type Index() =
     override this.Validate(context) = 
         seq { 
             yield Helpers.ValidateCollection<Analyzer>(this.Analyzers.Values)
-            yield Helpers.ValidateCollection<FieldProperties>(this.Fields.Values)
+            yield Helpers.ValidateCollection<Field>(this.Fields.Values)
             yield Helpers.ValidateCollection<ScriptProperties>(this.Scripts.Values)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles.Values)
             for field in this.Fields do

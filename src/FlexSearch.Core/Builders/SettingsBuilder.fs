@@ -31,7 +31,7 @@ type SettingsBuilder(factoryCollection : IFactoryCollection, serverSettings : Se
                 index.IndexConfiguration.DefaultIndexPostingsFormat <- defaultPostingsFormat
                 let! analyzers = Analyzer.Build(index.Analyzers, factoryCollection)
                 let! scriptManager = ScriptProperties.Build(index.Scripts, factoryCollection)
-                let! fields = FieldProperties.Build
+                let! fields = Field.Build
                                   (index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                 fields.Values.CopyTo(fieldsArray, 0)

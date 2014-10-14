@@ -64,7 +64,7 @@ module ``Property name validator tests`` =
         ValidateSuccess tokenizer
     
     module ``Default value tests`` = 
-        let sut = new FieldProperties()
+        let sut = new Field()
         
         [<Fact>]
         let ``'standardanalyzer' should be the default 'SearchAnalyzer'``() = 
@@ -96,7 +96,7 @@ module ``Index Field tests`` =
     [<InlineDataAttribute(FieldType.Highlight)>]
     [<InlineDataAttribute(FieldType.Custom)>]
     let ``Correct Index Analyzer should be specified for {fieldType} field types`` (fieldType : FieldType) = 
-        let field = new FieldProperties()
+        let field = new Field()
         field.FieldType <- fieldType
         field.IndexAnalyzer <- ""
         ValidateHasErrors field
@@ -106,7 +106,7 @@ module ``Index Field tests`` =
     [<InlineDataAttribute(FieldType.Highlight)>]
     [<InlineDataAttribute(FieldType.Custom)>]
     let ``Correct Search Analyzer should be specified for {fieldType} field types`` (fieldType : FieldType) = 
-        let field = new FieldProperties()
+        let field = new Field()
         field.FieldType <- fieldType
         field.SearchAnalyzer <- ""
         ValidateHasErrors field
@@ -120,7 +120,7 @@ module ``Index Field tests`` =
     [<InlineDataAttribute(FieldType.Int)>]
     [<InlineDataAttribute(FieldType.Stored)>]
     let ``Search Analyzer is ignored for {fieldType} field types`` (fieldType : FieldType) = 
-        let field = new FieldProperties()
+        let field = new Field()
         field.FieldType <- fieldType
         field.SearchAnalyzer <- ""
         ValidateSuccess field
@@ -134,7 +134,7 @@ module ``Index Field tests`` =
     [<InlineDataAttribute(FieldType.Int)>]
     [<InlineDataAttribute(FieldType.Stored)>]
     let ``Index Analyzer is ignored for {fieldType} field types`` (fieldType : FieldType) = 
-        let field = new FieldProperties()
+        let field = new Field()
         field.FieldType <- fieldType
         field.IndexAnalyzer <- ""
         ValidateSuccess field
