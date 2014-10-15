@@ -99,6 +99,7 @@ module Errors =
         "ANALYZERS_NOT_SUPPORTED_FOR_FIELD_TYPE:FieldType does not support custom analyzer."
     let UNKNOWN_SCRIPT_TYPE = "UNKNOWN_SCRIPT_TYPE:ScriptType not supported."
     let ANALYZER_NOT_FOUND = "ANALYZER_NOT_FOUND:Analyzer not found."
+    let DUPLICATE_FIELD_VALUE = "DUPLICATE_FIELD_VALUE:List contains a duplicate value."
     // ----------------------------------------------------------------------------
     // Compilation Exceptions
     // ---------------------------------------------------------------------------- 

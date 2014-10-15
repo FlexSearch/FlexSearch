@@ -161,6 +161,20 @@ module ``Index tests`` =
         index.Analyzers.Add("validkey", new Analyzer())
         index.Analyzers.Add("INVALIDKEY", new Analyzer())
         ValidateHasErrors index
+    
+    [<FactAttribute>]
+    let ``Adding duplicate fields to the index should fail``() =
+        let index = new Index(IndexName = "valid")
+        index.Fields.Add(new Field("test"))
+        index.Fields.Add(new Field("test"))
+        ValidateHasErrors index
+
+    [<FactAttribute>]
+    let ``Adding duplicate search profiles to the index should fail``() =
+        let index = new Index(IndexName = "valid")
+        index.SearchProfiles.Add(new SearchQuery("test", "test", QueryName = "test"))
+        index.SearchProfiles.Add(new SearchQuery("test", "test", QueryName = "test"))
+        ValidateHasErrors index
 
 module ``Operation Message Tests`` = 
     [<Theory>]

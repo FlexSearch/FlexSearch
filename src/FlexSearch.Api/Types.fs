@@ -249,6 +249,43 @@ type Index() =
             yield Helpers.ValidateCollection<Field>(this.Fields)
             yield Helpers.ValidateCollection<Script>(this.Scripts)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles)
+            // Check for duplicate field names
+            let duplicateFieldNames = 
+                query { 
+                    for field in this.Fields do
+                        groupBy field.FieldName into g
+                        where (g.Count() > 1)
+                        select g.Key
+                }
+            if duplicateFieldNames.Count() <> 0 then 
+                yield new ValidationResult(Errors.DUPLICATE_FIELD_VALUE |> AppendKv("Field", "FieldName"))
+            // Check for duplicate scripts
+            let duplicateScriptNames = 
+                query { 
+                    for script in this.Scripts do
+                        groupBy script.ScriptName into g
+                        where (g.Count() > 1)
+                        select g.Key
+                }
+            if duplicateScriptNames.Count() <> 0 then 
+                yield new ValidationResult(Errors.DUPLICATE_FIELD_VALUE |> AppendKv("Field", "ScriptName"))
+            // Check if any query name is missing in search profiles. Cannot do this through annotation as the
+            // Query Name is not mandatory for normal Search Queries
+            let missingQueryNames = this.SearchProfiles |> Seq.filter (fun x -> String.IsNullOrWhiteSpace(x.QueryName))
+            if missingQueryNames.Count() <> 0 then 
+                yield new ValidationResult(Errors.MISSING_FIELD_VALUE
+                                           |> AppendKv("Field", "QueryName")
+                                           |> AppendKv("Message", "QueryName is required."))
+            // Check for duplicate Search queries
+            let duplicateSearchQueries = 
+                query { 
+                    for script in this.SearchProfiles do
+                        groupBy script.QueryName into g
+                        where (g.Count() > 1)
+                        select g.Key
+                }
+            if duplicateSearchQueries.Count() <> 0 then 
+                yield new ValidationResult(Errors.DUPLICATE_FIELD_VALUE |> AppendKv("Field", "QueryName"))
             for field in this.Fields do
                 // Check if the specified script exists
                 if String.IsNullOrWhiteSpace(field.ScriptName) = false then 
