@@ -201,7 +201,6 @@ type FlexIndexSetting =
 type FlexShardWriter = 
     { ShardNumber : int
       SearcherManager : SearcherManager
-      ReopenThread : ControlledRealTimeReopenThread
       IndexWriter : IndexWriter
       TrackingIndexWriter : TrackingIndexWriter }
 

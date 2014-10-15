@@ -101,16 +101,9 @@ module Index =
                             match writers with
                             | Choice2Of2(e) -> failwith e.UserMessage
                             | Choice1Of2(indexWriter, trackingIndexWriter) -> 
-                                // Based on Lucene 4.4 the NRT manager is replaced with ControlledRealTimeReopenThread which can take any
-                                // reference manager
-                                let nrtManager = new SearcherManager(indexWriter, true, new SearcherFactory())
-                                
                                 let shard = 
                                     { ShardNumber = a
-                                      SearcherManager = nrtManager
-                                      ReopenThread = Unchecked.defaultof<ControlledRealTimeReopenThread>
-                                      //                                          new ControlledRealTimeReopenThread(trackingIndexWriter, nrtManager, float (25), 
-                                      //                                                                             float (5))
+                                      SearcherManager = new SearcherManager(indexWriter, true, new SearcherFactory())
                                       IndexWriter = indexWriter
                                       TrackingIndexWriter = trackingIndexWriter }
                                 shard)
