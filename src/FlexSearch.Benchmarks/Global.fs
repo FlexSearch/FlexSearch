@@ -1,10 +1,9 @@
 ﻿namespace FlexSearch.Benchmarks
 
-open FlexSearch.TestSupport
 open Autofac
-open FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Core
+open FlexSearch.TestSupport
 open FlexSearch.Utility
 open System
 
@@ -19,16 +18,21 @@ module Global =
     let QueueService = Container.Resolve<IQueueService>()
     let DocumentService = Container.Resolve<IDocumentService>()
     let WikiIndexName = "wikipedia"
+    
     let GetWikiIndex() = 
         let index = new Index()
         index.IndexName <- WikiIndexName
-        index.Fields.Add("title", new FieldProperties(FieldType = FieldType.Text, Store = false))
-        index.Fields.Add("body", new FieldProperties(FieldType = FieldType.Text, Store = false))
+        index.Fields.Add(new Field("title", FieldType.Text, Store = false))
+        index.Fields.Add(new Field("body", FieldType.Text, Store = false))
         index.IndexConfiguration.CommitTimeSeconds <- 500
         index.IndexConfiguration.RefreshTimeMilliseconds <- 500000
         index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
         index.Online <- true
         index
     
-    do IndexService.AddIndex(GetWikiIndex()) |> ignore
-       System.Threading.Thread.Sleep(1000)
+    let AddIndex() = 
+        match IndexService.AddIndex(GetWikiIndex()) with
+        | Choice1Of2(_) -> ()
+        | Choice2Of2(e) -> 
+            if (Errors.INDEX_ALREADY_EXISTS |> GenerateOperationMessage).ErrorCode = e.ErrorCode then ()
+            else failwithf "%A" e

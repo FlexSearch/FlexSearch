@@ -55,7 +55,7 @@ module ReferenceDocumentation =
     let GetAllTypes() = 
         let enums = new Dictionary<string, List<string>>()
         let types = new Dictionary<string, List<TypeMember>>()
-        let assembly = typeof<FlexSearch.Api.AnalyzerProperties>.Assembly
+        let assembly = typeof<FlexSearch.Api.Analyzer>.Assembly
         for typ in assembly.GetTypes().Where(fun x -> x.IsPublic) do
             printfn "%s" typ.Name
             let typeName = typ.Name
@@ -181,7 +181,7 @@ module ReferenceDocumentation =
             output.Add("")
             generateTypeTable (t.Key, t.Value, output)
             output.Add("|===")
-            let value = (typeof<FlexSearch.Api.AnalyzerProperties>.Assembly).GetTypes().First(fun x -> x.Name = t.Key)
+            let value = (typeof<FlexSearch.Api.Analyzer>.Assembly).GetTypes().First(fun x -> x.Name = t.Key)
             try 
                 let instance = Activator.CreateInstance(value)
                 let json = JsonConvert.SerializeObject(instance, Formatting.Indented, jsonSettings)

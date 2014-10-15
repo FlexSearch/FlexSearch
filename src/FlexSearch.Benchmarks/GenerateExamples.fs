@@ -43,7 +43,7 @@ module GenerateExamples =
     let testServer = 
         TestServer.Create(fun app -> 
             let owinServer = 
-                new OwinServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpHandler>>())
+                new OwinServer(Container.Resolve<IIndexService>(), Container.Resolve<IFlexFactory<IHttpResource>>(), Container.Resolve<ILogService>())
             owinServer.Configuration(app))
     
     let document (filename : string) (title : string) (requestBuilder : RequestBuilder) = 

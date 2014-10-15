@@ -1,10 +1,10 @@
-﻿open System
-open FlexSearch.Documention
+﻿open Autofac
+open FlexSearch.Benchmarks
 open FlexSearch.Core
-open Autofac
+open FlexSearch.Documention
 open Nessos.UnionArgParser
 open PerfUtil
-open FlexSearch.Benchmarks
+open System
 
 let GenerateGlossary() = 
     ReferenceDocumentation.GenerateGlossary()
@@ -17,6 +17,7 @@ type Arguments =
     | WikipediaIndexingTest1KB of fileName : string
     | WikipediaIndexingTest4KB of fileName : string
     | WikipediaQueryTests of folderPath : string
+    | WikipediaQueryTestsLong of folderPath : string
     | GenerateWikipedia1KBDump of path : string * outPutFileName : string
     | GenerateWikipedia4KBDump of path : string * outPutFileName : string
     | GenerateWikipediaQueries of folderPath : string
@@ -26,6 +27,8 @@ type Arguments =
             | WikipediaIndexingTest1KB _ -> "Wikipedia 1KB file test. (ex: --WikipediaIndexingTest1KB [fileName]"
             | WikipediaIndexingTest4KB _ -> "Wikipedia 4KB file test. (ex: --WikipediaIndexingTest4KB [fileName]"
             | WikipediaQueryTests _ -> "Wikipedia Query Tests over 4KB index. (ex: --WikipediaQueryTests [folderPath]"
+            | WikipediaQueryTestsLong _ -> 
+                "Wikipedia Query Tests over 4KB index. (ex: --WikipediaQueryTestsLong [folderPath]"
             | GenerateWikipedia1KBDump _ -> 
                 "Wikipedia 1KB test file generation. (ex: --GenerateWikipedia1KBDump [folderPath] [outputFile]"
             | GenerateWikipedia4KBDump _ -> 
@@ -35,22 +38,20 @@ type Arguments =
 
 [<EntryPoint>]
 let main argv = 
-    //WikipediaPerformanceTests.WikipediaQueryTests("F:\wikipedia")
-    //WikipediaPerformanceTests.RandomQueryGenerator ("F:\wikipedia") 
-    //WikipediaPerformanceTests.WikipediaIndexingTest ("F:\wikipedia\wikidump4KB.txt") true
-    let parser = UnionArgParser<Arguments>()
+    Global.AddIndex()
+    //WikipediaPerformanceTests.WikipediaQueryTests("G:\wikipedia")
+    //WikipediaPerformanceTests.RandomQueryGenerator ("G:\wikipedia") 
+    //WikipediaPerformanceTests.WikipediaIndexingTest ("G:\wikipedia\wikidump4KB.txt") true
+    let parser = UnionArgParser.Create<Arguments>()
     if argv.Length = 0 then printfn "%s" (parser.Usage("FlexSearch Benchmark Usage:"))
     else 
         let results = parser.Parse(argv)
         let all = results.GetAllResults()
         match all.Head with
-        | WikipediaIndexingTest1KB(file) -> 
-            WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file Global.IndexService 
-                Global.QueueService
-        | WikipediaIndexingTest4KB(file) -> 
-            WikipediaPerformanceTests.IndexingWikiExtractorDumpBenchMarkTests file Global.IndexService 
-                Global.QueueService
-        | WikipediaQueryTests(folder) -> ()
+        | WikipediaIndexingTest1KB(file) -> WikipediaPerformanceTests.WikipediaIndexingTest file true
+        | WikipediaIndexingTest4KB(file) -> WikipediaPerformanceTests.WikipediaIndexingTest file true
+        | WikipediaQueryTests(folder) -> WikipediaPerformanceTests.WikipediaQueryTests(folder, false)
+        | WikipediaQueryTestsLong(folder) -> WikipediaPerformanceTests.WikipediaQueryTests(folder, true)
         | GenerateWikipedia1KBDump(path, output) -> 
             WikipediaPerformanceTests.CreateWikipediaDumpForWikiExtractor path output 1
         | GenerateWikipedia4KBDump(path, output) -> 

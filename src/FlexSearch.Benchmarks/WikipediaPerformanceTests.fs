@@ -1,17 +1,18 @@
 ﻿namespace FlexSearch.Benchmarks
 
+open Autofac
 open FlexSearch.Api
 open FlexSearch.Core
 open FlexSearch.Utility
+open PerfUtil
 open System
 open System.Collections.Generic
 open System.Diagnostics
 open System.IO
 open System.Linq
-open System.Threading.Tasks.Dataflow
 open System.Threading
 open System.Threading.Tasks
-open Autofac
+open System.Threading.Tasks.Dataflow
 open org.apache.lucene.analysis
 open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.miscellaneous
@@ -24,7 +25,6 @@ open org.apache.lucene.queryparser.classic
 open org.apache.lucene.queryparser.flexible
 open org.apache.lucene.search
 open org.apache.lucene.search.highlight
-open PerfUtil
 
 module WikipediaPerformanceTests = 
     let QueriesCount = 1000
@@ -229,10 +229,10 @@ module WikipediaPerformanceTests =
             let mutable line = file.ReadLine()
             if line = null then proc <- false
             else 
-                let document = new Dictionary<string, string>()
-                document.Add("title", line.Substring(0, line.IndexOf('|') - 1))
-                document.Add("body", line.Substring(line.IndexOf('|') + 1))
-                queueService.AddDocumentQueue(Global.WikiIndexName, (i.ToString()), document)
+                let document = new FlexDocument(IndexName = Global.WikiIndexName, Id = (i.ToString()))
+                document.Fields.Add("title", line.Substring(0, line.IndexOf('|') - 1))
+                document.Fields.Add("body", line.Substring(line.IndexOf('|') + 1))
+                queueService.AddDocumentQueue(document)
                 i <- i + 1
                 line <- file.ReadLine()
         indexService.Commit(Global.WikiIndexName) |> ignore
@@ -265,10 +265,10 @@ module WikipediaPerformanceTests =
     
     let ExecuteIndexingTestThreadLocal(data : WikiArticle array) = 
         let localStore = 
-            new ThreadLocal<Dictionary<string, string>>(fun _ -> 
-            let dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            dict.Add("title", "")
-            dict.Add("body", "")
+            new ThreadLocal<FlexDocument>(fun _ -> 
+            let dict = new FlexDocument(IndexName = Global.WikiIndexName)
+            dict.Fields.Add("title", "")
+            dict.Fields.Add("body", "")
             dict)
         
         let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = -1)
@@ -276,9 +276,10 @@ module WikipediaPerformanceTests =
         Parallel.ForEach(data, parallelOptions, 
                          (fun n -> 
                          try 
-                             localStore.Value.["title"] <- n.Title
-                             localStore.Value.["body"] <- n.Body
-                             match documentService.AddDocument(Global.WikiIndexName, n.Id, localStore.Value) with
+                             localStore.Value.Fields.["title"] <- n.Title
+                             localStore.Value.Fields.["body"] <- n.Body
+                             localStore.Value.Id <- n.Id
+                             match documentService.AddDocument(localStore.Value) with
                              | Choice1Of2(a) -> ()
                              | Choice2Of2(e) -> printfn "Error: indexing document"
                          with e -> printfn "%A" e.Message
@@ -289,10 +290,10 @@ module WikipediaPerformanceTests =
     let ExecuteIndexingTestDataFlow(data : WikiArticle array) = 
         let queueService = Global.QueueService
         for article in data do
-            let document = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            document.Add("title", article.Title)
-            document.Add("body", article.Body)
-            queueService.AddDocumentQueue(Global.WikiIndexName, article.Id, document)
+            let document = new FlexDocument(IndexName = Global.WikiIndexName, Id = article.Id)
+            document.Fields.Add("title", article.Title)
+            document.Fields.Add("body", article.Body)
+            queueService.AddDocumentQueue(document)
         Global.IndexService.Commit(Global.WikiIndexName) |> ignore
     
     let WikipediaIndexingTest (inputFile : string) (useQueue : bool) = 
@@ -311,7 +312,7 @@ module WikipediaPerformanceTests =
             printfn "Records indexed per file: %i" (data.Count())
             printfn "Total Records indexed: %i" (data.Count() * (int) repeat)
             printfn "Total Elapsed time (ms): %f" result.Elapsed.TotalSeconds
-            printfn "Total Data Size (MB): %f" fileSize
+            printfn "Total Data Size (GB): %f" fileSize
             printfn "Indexing Speed (GB/Hr): %f" indexingSpeed
         else failwithf "Cannot find the input file at the specified location: %s" inputFile
     
@@ -338,7 +339,7 @@ module WikipediaPerformanceTests =
     /// Wikipedia queries tests
     /// </summary>
     /// <param name="folderPath"></param>
-    let WikipediaQueryTests(folderPath : string) = 
+    let WikipediaQueryTests(folderPath : string, longTest : bool) = 
         let testFiles = 
             [| "BooleanQueriesAndHighHigh"; "BooleanQueriesAndHighMed"; "BooleanQueriesAndHighLow"; 
                "BooleanQueriesAndMedMed"; "BooleanQueriesAndMedLow"; "BooleanQueriesAndLowLow"; 
@@ -346,12 +347,15 @@ module WikipediaPerformanceTests =
                "BooleanQueriesOrMedMed"; "BooleanQueriesOrMedLow"; "BooleanQueriesOrLowLow"; "Fuzzy1QueriesHigh"; 
                "Fuzzy1QueriesMed"; "Fuzzy1QueriesLow"; "Fuzzy2QueriesHigh"; "Fuzzy2QueriesMed"; "Fuzzy2QueriesLow"; 
                "TermQueriesHigh"; "TermQueriesMed"; "TermQueriesLow" |]
-        let results = new ResizeArray<string * PerfResult>()
+        let results = new ResizeArray<string * int * PerfResult>()
         let repeat = 3.0
         let totalQueriesPerFile = 1000.0
         
-        let runTests (threadCount) = 
+        let runTests (threadCount) =
+            printfn "Starting test for thread count: %i" threadCount 
+            let mutable i = 1
             for file in testFiles do
+                printfn "Executing test %i\%i File: %s Thread Count:%i" i (testFiles.Count()) file threadCount
                 let path = Path.Combine(folderPath, sprintf "%s.txt" file)
                 if File.Exists(path) then 
                     let queries = System.IO.File.ReadAllLines(path)
@@ -359,11 +363,34 @@ module WikipediaPerformanceTests =
                         Benchmark.Run
                             ((fun () -> ExecuteQuery queries Global.SearchService threadCount), (int) repeat, true)
                     printfn "%A" result
-                    results.Add((file, result))
-        runTests 1
-        runTests 2
-        runTests 4
-        runTests -1
-        for (testFile, result) in results do
+                    i <- i + 1
+                    results.Add((file, threadCount, result))
+        if longTest then 
+            runTests 1
+            runTests 2
+            runTests 4
+            runTests -1
+        else runTests -1
+        let fs = 
+            new FileStream(Path.Combine
+                               (folderPath, 
+                                sprintf "QueryTestsResult-%s.txt" (System.DateTime.Now.ToString("yyyyMMddHHmm"))), 
+                           FileMode.Create)
+        let tmp = Console.Out
+        let sw = new StreamWriter(fs)
+        Console.SetOut(sw)
+        printfn "Long Test: %b" longTest
+        printfn "Summary"
+        for (testFile, threadCount, result) in results do
             let time = totalQueriesPerFile * repeat / (float) result.Elapsed.TotalSeconds
-            printfn "%s : %f queries/second" testFile time
+            printfn "%s (Threads:%i) : %f queries/second" testFile threadCount time
+        printfn "Details"
+        for (testFile, threadCount, result) in results do
+            let time = totalQueriesPerFile * repeat / (float) result.Elapsed.TotalSeconds
+            printfn "%s (Threads:%i) : %f queries/second" testFile threadCount time
+            printfn "%A" result
+        sw.Close()
+        let standardOutput = new StreamWriter(Console.OpenStandardOutput())
+        standardOutput.AutoFlush <- true
+        Console.SetOut(standardOutput)
+        printfn "Wikipedia Query tests Finished"
