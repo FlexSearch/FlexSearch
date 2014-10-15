@@ -157,8 +157,8 @@ type IDocumentService =
 /// Queuing related operations
 /// </summary>
 type IQueueService = 
-    abstract AddDocumentQueue : indexName:string * id:string * fields:Dictionary<string, string> -> unit
-    abstract AddOrUpdateDocumentQueue : indexName:string * id:string * fields:Dictionary<string, string> -> unit
+    abstract AddDocumentQueue : document: FlexDocument -> unit
+    abstract AddOrUpdateDocumentQueue : document: FlexDocument -> unit
 
 /// <summary>
 /// Generic logger interface

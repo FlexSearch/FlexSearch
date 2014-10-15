@@ -47,8 +47,7 @@ type QueueService(documentService : IDocumentService) =
     /// <param name="documentId"></param>
     /// <param name="fields"></param>
     /// <param name="nodeState"></param>
-    let processAddQueueItems (indexName, documentId, fields) = ()
-        //documentService.AddDocument(indexName, documentId, fields) |> ignore
+    let processAddQueueItems (document) = documentService.AddDocument(document) |> ignore
     
     /// <summary>
     /// Add or update processing queue method
@@ -57,30 +56,28 @@ type QueueService(documentService : IDocumentService) =
     /// <param name="documentId"></param>
     /// <param name="fields"></param>
     /// <param name="nodeState"></param>
-    let processAddOrUpdateQueueItems (indexName, documentId, fields) = ()
-        //documentService.AddOrUpdateDocument(indexName, documentId, fields) |> ignore
+    let processAddOrUpdateQueueItems (document) = documentService.AddOrUpdateDocument(document) |> ignore
     
     /// <summary>
     /// Queue for add operation 
     /// </summary>
-    let addQueue : ActionBlock<string * string * Dictionary<string, string>> = 
-        new ActionBlock<string * string * Dictionary<string, string>>(processAddQueueItems, executionBlockOptions())
+    let addQueue : ActionBlock<FlexDocument> = 
+        new ActionBlock<FlexDocument>(processAddQueueItems, executionBlockOptions())
     
     /// <summary>
     /// Queue for add or update operation 
     /// </summary>
-    let addOrUpdateQueue : ActionBlock<string * string * Dictionary<string, string>> = 
-        new ActionBlock<string * string * Dictionary<string, string>>(processAddOrUpdateQueueItems, 
-                                                                      executionBlockOptions())
+    let addOrUpdateQueue : ActionBlock<FlexDocument> = 
+        new ActionBlock<FlexDocument>(processAddOrUpdateQueueItems, executionBlockOptions())
     
     interface IQueueService with
         
-        member this.AddDocumentQueue(indexName, documentId, fields) = 
-            Async.AwaitTask(addQueue.SendAsync((indexName, documentId, fields)))
+        member this.AddDocumentQueue(document) = 
+            Async.AwaitTask(addQueue.SendAsync(document))
             |> Async.RunSynchronously
             |> ignore
         
-        member this.AddOrUpdateDocumentQueue(indexName, documentId, fields) = 
-            Async.AwaitTask(addOrUpdateQueue.SendAsync((indexName, documentId, fields)))
+        member this.AddOrUpdateDocumentQueue(document) = 
+            Async.AwaitTask(addOrUpdateQueue.SendAsync(document))
             |> Async.RunSynchronously
             |> ignore

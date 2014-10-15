@@ -13,6 +13,7 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Api.Validation
+open FlexSearch.Common
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -35,7 +36,7 @@ open org.apache.lucene.queryparser.flexible
 open org.apache.lucene.search
 open org.apache.lucene.search.highlight
 open org.apache.lucene.search.postingshighlight
-open FlexSearch.Common
+
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
 // The order of this file does not matter as
@@ -234,8 +235,8 @@ module SearchDsl =
                     flexDocument.Id <- document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
                     flexDocument.IndexName <- flexIndex.IndexSetting.IndexName
                     flexDocument.TimeStamp <- int64 
-                                                     (document.get 
-                                                          (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
+                                                  (document.get 
+                                                       (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
                     if search.ReturnScore then flexDocument.Score <- float (hit.score)
                 else 
                     flexDocument.Fields.Add
