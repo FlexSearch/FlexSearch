@@ -54,7 +54,7 @@ module FactoryService =
     /// Factory implementation
     /// </summary>
     [<Sealed>]
-    type FlexFactory<'T>(container : ILifetimeScope) = 
+    type FlexFactory<'T>(container : ILifetimeScope, logger : ILogService) = 
         
         /// Returns a module by name.
         /// Choice1of3 -> instance of T
@@ -78,10 +78,21 @@ module FactoryService =
                 | null -> 
                     Choice3Of3(Errors.MODULE_NOT_FOUND
                                |> GenerateOperationMessage
-                               |> Append("Module Name", moduleName))
+                               |> Append("ModuleName", moduleName))
                 | _ -> 
                     if metaOnly then Choice2Of3(injectMeta.Metadata)
-                    else Choice1Of3(injectMeta.Value.Value)
+                    else 
+                        try 
+                            let pluginValue = injectMeta.Value.Value
+                            logger.ComponentLoaded(moduleName, typeof<'T>.FullName)
+                            Choice1Of3(pluginValue)
+                        with e -> 
+                            logger.ComponentInitializationFailed(moduleName, typeof<'T>.FullName, e)
+                            Choice3Of3("MODULE_INITIALIZATION_FAILED:Unable to initialize the module."
+                                       |> GenerateOperationMessage
+                                       |> Append("ModuleName", moduleName)
+                                       |> Append("ModuleType", typeof<'T>.FullName)
+                                       |> Append("ErrorMessage", e.Message))
         
         interface IFlexFactory<'T> with
             
@@ -91,7 +102,7 @@ module FactoryService =
                 | _ -> 
                     Choice2Of2(Errors.MODULE_NOT_FOUND
                                |> GenerateOperationMessage
-                               |> Append("Module Name", moduleName))
+                               |> Append("ModuleName", moduleName))
             
             member this.GetMetaData(moduleName) = 
                 match getModuleByName (moduleName, true) with
@@ -99,7 +110,7 @@ module FactoryService =
                 | _ -> 
                     Choice2Of2(Errors.MODULE_NOT_FOUND
                                |> GenerateOperationMessage
-                               |> Append("Module Name", moduleName))
+                               |> Append("ModuleName", moduleName))
             
             member this.ModuleExists(moduleName) = 
                 match getModuleByName (moduleName, true) with
@@ -109,10 +120,14 @@ module FactoryService =
             member this.GetAllModules() = 
                 let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
                 let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                factory 
-                |> Seq.iter 
-                       (fun x -> 
-                       if x.Metadata.ContainsKey("Name") then modules.Add(x.Metadata.["Name"].ToString(), x.Value.Value))
+                for plugin in factory do
+                    if plugin.Metadata.ContainsKey("Name") then 
+                        let pluginName = plugin.Metadata.["Name"].ToString()
+                        try 
+                            let pluginValue = plugin.Value.Value
+                            modules.Add(pluginName, pluginValue)
+                            logger.ComponentLoaded(pluginName, typeof<'T>.FullName)
+                        with e -> logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, e)
                 modules
     
     /// <summary>
