@@ -105,7 +105,7 @@ namespace FlexSearch.Logging
         }
 
         [Event(7, Message = "Staring FlexSearch", Level = EventLevel.Informational, Channel = EventChannel.Admin,
-                Keywords = Keywords.Node)]
+            Keywords = Keywords.Node)]
         private void StartSession()
         {
             if (!IsEnabled()) return;
@@ -192,13 +192,24 @@ namespace FlexSearch.Logging
             }
         }
 
+        [Event(15, Message = "Component Initialization Failed: {0}. \nComponent Type: {1} \nException: {2}",
+            Level = EventLevel.Informational,
+            Channel = EventChannel.Admin, Keywords = Keywords.Node)]
+        private void ComponentInitializationFailed(string componentName, string componentType, string exception)
+        {
+            if (IsEnabled())
+            {
+                WriteEvent(15, componentName, componentType, exception);
+            }
+        }
+
         public class Keywords
         {
-            public const EventKeywords Node = (EventKeywords)0x0001;
-            public const EventKeywords Index = (EventKeywords)0x0002;
-            public const EventKeywords Search = (EventKeywords)0x0004;
-            public const EventKeywords Error = (EventKeywords)0x00008;
-            public const EventKeywords General = (EventKeywords)0x0010;
+            public const EventKeywords Node = (EventKeywords) 0x0001;
+            public const EventKeywords Index = (EventKeywords) 0x0002;
+            public const EventKeywords Search = (EventKeywords) 0x0004;
+            public const EventKeywords Error = (EventKeywords) 0x00008;
+            public const EventKeywords General = (EventKeywords) 0x0010;
         }
 
         void ILogService.AddIndex(string indexName, Api.Index indexDetails)
@@ -281,6 +292,17 @@ namespace FlexSearch.Logging
         void ILogService.TraceInformation(string informationMessage, string messageDetails)
         {
             TraceInfomation(informationMessage, messageDetails);
+        }
+
+
+        void ILogService.ComponentInitializationFailed(string name, string componentType, string message)
+        {
+            ComponentInitializationFailed(name, componentType, message);
+        }
+
+        void ILogService.ComponentInitializationFailed(string name, string componentType, Exception ex)
+        {
+            ComponentInitializationFailed(name, componentType, Helpers.ExceptionPrinter(ex));
         }
     }
 }

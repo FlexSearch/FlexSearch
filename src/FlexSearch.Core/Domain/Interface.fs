@@ -157,8 +157,8 @@ type IDocumentService =
 /// Queuing related operations
 /// </summary>
 type IQueueService = 
-    abstract AddDocumentQueue : document: FlexDocument -> unit
-    abstract AddOrUpdateDocumentQueue : document: FlexDocument -> unit
+    abstract AddDocumentQueue : document:FlexDocument -> unit
+    abstract AddOrUpdateDocumentQueue : document:FlexDocument -> unit
 
 /// <summary>
 /// Generic logger interface
@@ -171,6 +171,8 @@ type ILogService =
     abstract OpenIndex : indexName:string -> unit
     abstract IndexValidationFailed : indexName:string * indexDetails:Index * validationObject:OperationMessage -> unit
     abstract ComponentLoaded : name:string * componentType:string -> unit
+    abstract ComponentInitializationFailed : name:string * componentType:string * ex:Exception -> unit
+    abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
     abstract StartSession : unit -> unit
     abstract EndSession : unit -> unit
     abstract Shutdown : unit -> unit
