@@ -19,7 +19,7 @@ open System.Runtime.Caching
 /// Job service class which will be dynamically injected using IOC.
 /// </summary>
 [<Sealed>]
-type JobService(persistenceStore : IPersistanceStore) = 
+type JobService() = 
     let cache = MemoryCache.Default
     interface IJobService with
         
