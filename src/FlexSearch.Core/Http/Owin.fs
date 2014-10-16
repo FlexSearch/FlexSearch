@@ -95,7 +95,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                     let id = RemoveTrailingSlash owin.Request.Uri.Segments.[2]
                     // Check if the Uri is indices and perform an index exists check
                     if (String.Equals(owin.Request.Uri.Segments.[1], "indices") 
-                        || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) && owin.Request.Method <> "POST" then 
+                        || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) then 
                         match indexService.IndexExists(id) with
                         | true -> matchSubModules (id, x, owin)
                         | false -> 
