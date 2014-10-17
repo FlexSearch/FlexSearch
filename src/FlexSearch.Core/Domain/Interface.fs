@@ -125,8 +125,7 @@ type ISearchService =
     abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
     abstract SearchAsDocmentSeq : SearchQuery -> Choice<seq<ResultDocument> * int * int, OperationMessage>
     abstract SearchAsDictionarySeq : SearchQuery -> Choice<seq<Dictionary<string, string>> * int * int, OperationMessage>
-
-    //abstract SearchUsingProfile : indexName : string * searchProfileName: string * fields : Dictionary<string, string> -> Choice<SearchResults, OperationMessage>
+    abstract SearchUsingProfile : query: SearchQuery * inputFields : Dictionary<string, string> -> Choice<SearchResults, OperationMessage>
 
 /// <summary>
 /// Index related operations

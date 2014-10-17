@@ -115,8 +115,7 @@ module Errors =
     let INVALID_QUERY_TYPE = 
         "INVALID_QUERY_TYPE:QueryType can not be found. Please make sure all compiled dependencies are accessible by the server."
     let INVALID_FIELD_NAME = "INVALID_FIELD_NAME:FieldName can not be found."
-    let MISSING_FIELD_VALUE = "MISSING_FIELD_VALUE:Search value cannot be empty. No value provided for the field."
-    let MISSING_FIELD_VALUE_1 = "MISSING_FIELD_VALUE_1:FieldName No value provided for the field."
+    let MISSING_FIELD_VALUE = "MISSING_FIELD_VALUE:No value provided for the field."
     let UNKNOWN_MISSING_VALUE_OPTION = "UNKNOWN_MISSING_VALUE_OPTION:MissingValueOption not supported."
     let QUERYSTRING_PARSING_ERROR = "QUERYSTRING_PARSING_ERROR:Unable to parse the passed query string."
     let DATA_CANNOT_BE_PARSED = 
