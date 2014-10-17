@@ -37,9 +37,7 @@ type GetSearchHandler(searchService : ISearchService) =
                 let query = 
                     match body with
                     | Some(q) -> q
-                    | None -> 
-                        // It is possible that the query is supplied through query-string
-                        new SearchQuery()
+                    | None -> new SearchQuery()
                 query.QueryString <- GetValueFromQueryString "q" query.QueryString owin
                 query.Columns <- match owin.Request.Query.Get("c") with
                                  | null -> query.Columns
@@ -49,14 +47,14 @@ type GetSearchHandler(searchService : ISearchService) =
                 query.OrderBy <- GetValueFromQueryString "orderby" query.OrderBy owin
                 query.ReturnFlatResult <- GetBoolValueFromQueryString "returnflatresult" query.ReturnFlatResult owin
                 query.IndexName <- indexName
-                match searchService.Search(query) with
-                | Choice1Of2(v') -> 
-                    if query.ReturnFlatResult then 
-                        owin.Response.Headers.Add("RecordsReturned", [| v'.RecordsReturned.ToString() |])
-                        owin.Response.Headers.Add("TotalAvailable", [| v'.TotalAvailable.ToString() |])
-                        let result = v'.Documents |> Seq.map (fun x -> x.Fields)
-                        return! Choice1Of2(result :> obj)
-                    else return! Choice1Of2(v' :> obj)
-                | Choice2Of2(e) -> return! Choice2Of2(e)
+                if query.ReturnFlatResult then 
+                    let! (results, recordsReturned, totalAvailable) = searchService.SearchAsDictionarySeq(query)
+                    owin.Response.Headers.Add("RecordsReturned", [| recordsReturned.ToString() |])
+                    owin.Response.Headers.Add("TotalAvailable", [| totalAvailable.ToString() |])
+                    return! Choice1Of2(results.ToList() :> obj)
+                else 
+                    match searchService.Search(query) with
+                    | Choice1Of2(v') -> return! Choice1Of2(v' :> obj)
+                    | Choice2Of2(e) -> return! Choice2Of2(e)
             }
         (processRequest (id.Value, context), Ok, BadRequest)

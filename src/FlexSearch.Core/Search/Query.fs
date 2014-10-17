@@ -60,8 +60,8 @@ type FlexTermQuery() =
                     let boolClause = 
                         match parameters with
                         | Some(p) -> 
-                            match p.TryFind("clausetype") with
-                            | Some(b) -> 
+                            match p.TryGetValue("clausetype") with
+                            | true, b -> 
                                 match b with
                                 | InvariantEqual "or" -> BooleanClause.Occur.SHOULD
                                 | _ -> BooleanClause.Occur.MUST

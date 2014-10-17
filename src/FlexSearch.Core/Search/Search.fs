@@ -76,32 +76,32 @@ module SearchDsl =
                        |> Append("Field Name", flexField.FieldName))
         | _ -> Choice1Of2()
     
-    let inline GetIntValueFromMap (parameters : Map<string, string> option) key defaultValue = 
+    let inline GetIntValueFromMap (parameters : Dictionary<string, string> option) key defaultValue = 
         match parameters with
         | Some(p) -> 
-            match p.TryFind(key) with
-            | Some(value) -> 
+            match p.TryGetValue(key) with
+            | true, value -> 
                 match System.Int32.TryParse(value) with
                 | (true, result) -> result
                 | _ -> defaultValue
             | _ -> defaultValue
         | _ -> defaultValue
     
-    let inline GetStringValueFromMap (parameters : Map<string, string> option) key defaultValue = 
+    let inline GetStringValueFromMap (parameters : Dictionary<string, string> option) key defaultValue = 
         match parameters with
         | Some(p) -> 
-            match p.TryFind(key) with
-            | Some(value) -> 
+            match p.TryGetValue(key) with
+            | true, value -> 
                 if String.IsNullOrWhiteSpace(value) then value
                 else defaultValue
             | _ -> defaultValue
         | _ -> defaultValue
     
-    let inline GetBoolValueFromMap (parameters : Map<string, string> option) key defaultValue = 
+    let inline GetBoolValueFromMap (parameters : Dictionary<string, string> option) key defaultValue = 
         match parameters with
         | Some(p) -> 
-            match p.TryFind(key) with
-            | Some(value) -> 
+            match p.TryGetValue(key) with
+            | true, value -> 
                 match System.Boolean.TryParse(value) with
                 | (true, result) -> result
                 | _ -> defaultValue
@@ -109,7 +109,7 @@ module SearchDsl =
         | _ -> defaultValue
     
     let GenerateQuery(fields : Dictionary<string, FlexField>, predicate : Predicate, searchQuery : SearchQuery, 
-                      isProfileBased : Map<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
+                      isProfileBased : Dictionary<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
         assert (queryTypes.Count > 0)
         let rec generateQuery (pred : Predicate) = 
             maybe { 
@@ -127,15 +127,15 @@ module SearchDsl =
                     let! value = maybe { 
                                      match isProfileBased with
                                      | Some(source) -> 
-                                         match source.TryFind(f) with
-                                         | Some(v') -> return [| v' |]
+                                         match source.TryGetValue(f) with
+                                         | true, v' -> return [| v' |]
                                          | _ -> 
                                              match searchQuery.MissingValueConfiguration.TryGetValue(f) with
                                              | true, configuration -> 
                                                  match configuration with
                                                  | MissingValueOption.Default -> return! v.GetValueAsArray()
                                                  | MissingValueOption.ThrowError -> 
-                                                     return! Choice2Of2(Errors.MISSING_FIELD_VALUE_1
+                                                     return! Choice2Of2(Errors.MISSING_FIELD_VALUE
                                                                         |> GenerateOperationMessage
                                                                         |> Append("Field Name", f))
                                                  | MissingValueOption.Ignore -> 
@@ -155,8 +155,8 @@ module SearchDsl =
                         let! q = query.GetQuery(field, value.ToArray(), p)
                         match p with
                         | Some(p') -> 
-                            match p'.TryFind("boost") with
-                            | Some(b) -> 
+                            match p'.TryGetValue("boost") with
+                            | true, b -> 
                                 match Int32.TryParse(b) with
                                 | true, b' -> q.setBoost (float32 (b'))
                                 | _ -> ()
@@ -180,7 +180,7 @@ module SearchDsl =
             }
         generateQuery predicate
     
-    let SearchQuery(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
+    let private Search(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
         let indexSearchers = new List<IndexSearcher>()
         for i in 0..flexIndex.Shards.Length - 1 do
             let searcher = (flexIndex.Shards.[i].SearcherManager :> ReferenceManager).acquire() :?> IndexSearcher
@@ -210,9 +210,9 @@ module SearchDsl =
                                 topDocsCollection.[x.ShardNumber] <- topFieldCollector.topDocs())
         let totalDocs = TopDocs.merge (sort, count, topDocsCollection)
         let hits = totalDocs.scoreDocs
-        let searchResults = new SearchResults()
-        searchResults.RecordsReturned <- totalDocs.scoreDocs.Count() - search.Skip
-        searchResults.TotalAvailable <- totalDocs.totalHits
+        let recordsReturned = totalDocs.scoreDocs.Count() - search.Skip
+        let totalAvailable = totalDocs.totalHits
+        
         let highlighterOptions = 
             if search.Highlights <> Unchecked.defaultof<_> then 
                 match search.Highlights.HighlightedFields with
@@ -224,62 +224,92 @@ module SearchDsl =
                     | _ -> None
                 | _ -> None
             else None
-        
-        let mutable skipped : int = 0
-        for hit in hits do
-            if search.Skip > 0 && skipped < search.Skip then skipped <- skipped + 1
-            else 
-                let document = indexSearchers.[hit.shardIndex].doc(hit.doc)
-                let flexDocument = new ResultDocument()
-                if search.ReturnFlatResult <> true then 
-                    flexDocument.Id <- document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
-                    flexDocument.IndexName <- flexIndex.IndexSetting.IndexName
-                    flexDocument.TimeStamp <- int64 
-                                                  (document.get 
-                                                       (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
-                    if search.ReturnScore then flexDocument.Score <- float (hit.score)
+        (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers)
+    
+    let GetDocument(flexIndex : FlexIndex, search : SearchQuery, document : org.apache.lucene.document.Document) = 
+        let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        match search.Columns with
+        // Return no other columns when nothing is passed
+        | x when search.Columns.Count = 0 -> ()
+        // Return all columns when *
+        | x when search.Columns.First() = "*" -> 
+            for field in flexIndex.IndexSetting.Fields do
+                if field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField then ()
                 else 
-                    flexDocument.Fields.Add
-                        (Constants.IdField, 
-                         document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName))
-                    flexDocument.Fields.Add(Constants.TypeField, flexIndex.IndexSetting.IndexName)
-                    flexDocument.Fields.Add
-                        (Constants.LastModifiedField, 
-                         document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
-                    if search.ReturnScore then flexDocument.Fields.Add("_score", hit.score.ToString())
-                match search.Columns with
-                // Return no other columns when nothing is passed
-                | x when search.Columns.Count = 0 -> ()
-                // Return all columns when *
-                | x when search.Columns.First() = "*" -> 
-                    for field in flexIndex.IndexSetting.Fields do
-                        if field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField then ()
-                        else 
-                            let value = document.get (field.SchemaName)
-                            if value <> null then flexDocument.Fields.Add(field.FieldName, value)
-                // Return only the requested columns
-                | _ -> 
-                    for fieldName in search.Columns do
-                        match flexIndex.IndexSetting.FieldsLookup.TryGetValue(fieldName) with
-                        | (true, field) -> 
-                            let value = document.get (field.SchemaName)
-                            if value <> null then flexDocument.Fields.Add(field.FieldName, value)
-                        | _ -> ()
-                if highlighterOptions.IsSome then 
-                    let (field, highlighter) = highlighterOptions.Value
-                    let text = document.get (field.SchemaName)
-                    if text <> null then 
-                        let tokenStream = 
-                            TokenSources.getAnyTokenStream 
-                                (indexSearchers.[hit.shardIndex].getIndexReader(), hit.doc, field.SchemaName, 
-                                 flexIndex.IndexSetting.SearchAnalyzer)
-                        let frags = 
-                            highlighter.getBestTextFragments 
-                                (tokenStream, text, false, search.Highlights.FragmentsToReturn)
-                        for frag in frags do
-                            if frag <> null && frag.getScore() > float32 (0) then 
-                                flexDocument.Highlights.Add(frag.ToString())
-                searchResults.Documents.Add(flexDocument)
+                    let value = document.get (field.SchemaName)
+                    if value <> null then fields.Add(field.FieldName, value)
+        // Return only the requested columns
+        | _ -> 
+            for fieldName in search.Columns do
+                match flexIndex.IndexSetting.FieldsLookup.TryGetValue(fieldName) with
+                | (true, field) -> 
+                    let value = document.get (field.SchemaName)
+                    if value <> null then fields.Add(field.FieldName, value)
+                | _ -> ()
+        fields
+    
+    let SearchDocumentSeq(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
+        let (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers) = 
+            Search(flexIndex, query, search)
+        let skipped = ref 0
+        
+        let results = 
+            seq { 
+                for hit in hits do
+                    if search.Skip > 0 && skipped.Value < search.Skip then skipped.Value <- skipped.Value + 1
+                    else 
+                        let document = indexSearchers.[hit.shardIndex].doc(hit.doc)
+                        let fields = GetDocument(flexIndex, search, document)
+                        let flexDocument = new ResultDocument()
+                        flexDocument.Id <- document.get 
+                                               (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName)
+                        flexDocument.IndexName <- flexIndex.IndexSetting.IndexName
+                        flexDocument.TimeStamp <- int64 
+                                                      (document.get 
+                                                           (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
+                        flexDocument.Fields <- fields
+                        if search.ReturnScore then flexDocument.Score <- float (hit.score)
+                        if highlighterOptions.IsSome then 
+                            let (field, highlighter) = highlighterOptions.Value
+                            let text = document.get (field.SchemaName)
+                            if text <> null then 
+                                let tokenStream = 
+                                    TokenSources.getAnyTokenStream 
+                                        (indexSearchers.[hit.shardIndex].getIndexReader(), hit.doc, field.SchemaName, 
+                                         flexIndex.IndexSetting.SearchAnalyzer)
+                                let frags = 
+                                    highlighter.getBestTextFragments 
+                                        (tokenStream, text, false, search.Highlights.FragmentsToReturn)
+                                for frag in frags do
+                                    if frag <> null && frag.getScore() > float32 (0) then 
+                                        flexDocument.Highlights.Add(frag.ToString())
+                        yield flexDocument
+            }
         for i in 0..indexSearchers.Count - 1 do
             (flexIndex.Shards.[i].SearcherManager :> ReferenceManager).release(indexSearchers.[i])
-        Choice1Of2 searchResults
+        Choice1Of2(results, recordsReturned, totalAvailable)
+    
+    let SearchDictionarySeq(flexIndex : FlexIndex, query : Query, search : SearchQuery) = 
+        let (hits, _, recordsReturned, totalAvailable, indexSearchers) = Search(flexIndex, query, search)
+        let skipped = ref 0
+        
+        let results = 
+            seq { 
+                for hit in hits do
+                    if search.Skip > 0 && skipped.Value < search.Skip then skipped.Value <- skipped.Value + 1
+                    else 
+                        let document = indexSearchers.[hit.shardIndex].doc(hit.doc)
+                        let fields = GetDocument(flexIndex, search, document)
+                        fields.Add
+                            (Constants.IdField, 
+                             document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName))
+                        fields.Add(Constants.TypeField, flexIndex.IndexSetting.IndexName)
+                        fields.Add
+                            (Constants.LastModifiedField, 
+                             document.get (flexIndex.IndexSetting.FieldsLookup.[Constants.LastModifiedField].SchemaName))
+                        if search.ReturnScore then fields.Add("_score", hit.score.ToString())
+                        yield fields
+            }
+        for i in 0..indexSearchers.Count - 1 do
+            (flexIndex.Shards.[i].SearcherManager :> ReferenceManager).release(indexSearchers.[i])
+        Choice1Of2(results, recordsReturned, totalAvailable)

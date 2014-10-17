@@ -58,7 +58,7 @@ type DocumentService(regManager : RegisterationManager, searchService : ISearchS
             q.ReturnScore <- false
             q.ReturnFlatResult <- false
             q.Columns.Add("*")
-            match searchService.Search(flexIndex.Value, q) with
+            match searchService.Search(q) with
             | Choice1Of2(v') -> 
                 if v'.Documents.Count <> 0 then return! Choice1Of2(v'.Documents.First())
                 else return! Choice2Of2(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
@@ -77,7 +77,7 @@ type DocumentService(regManager : RegisterationManager, searchService : ISearchS
             q.Columns.Add("*")
             q.Count <- count
             q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
-            return! searchService.Search(flexIndex.Value, q)
+            return! searchService.Search(q)
         }
     
     /// <summary>

@@ -13,8 +13,8 @@ namespace FlexSearch.Core
 open FlexSearch.Api
 open FlexSearch.Common
 open FlexSearch.Core
-open FlexSearch.Utility
 open FlexSearch.Java
+open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -70,6 +70,14 @@ type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter, se
     member this.GetRegisteration(indexName) = 
         match stateDb.TryGetValue(indexName) with
         | (true, state) -> Choice1Of2(state)
+        | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
+    
+    member this.IsOpen(indexName) = 
+        match stateDb.TryGetValue(indexName) with
+        | (true, state) -> 
+            match state.IndexState with
+            | IndexState.Online -> Choice1Of2(state)
+            | _ -> Choice2Of2(Errors.INDEX_IS_OFFLINE |> GenerateOperationMessage)
         | _ -> Choice2Of2(Errors.INDEX_REGISTERATION_MISSING |> GenerateOperationMessage)
     
     member this.UpdateStatus(indexName, state) = 

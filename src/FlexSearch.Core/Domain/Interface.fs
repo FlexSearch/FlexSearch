@@ -110,7 +110,7 @@ type IIndexValidator =
 /// </summary>
 type IFlexQuery = 
     abstract QueryName : unit -> string []
-    abstract GetQuery : FlexField * string [] * Map<string, string> option -> Choice<Query, OperationMessage>
+    abstract GetQuery : FlexField * string [] * Dictionary<string, string> option -> Choice<Query, OperationMessage>
 
 /// <summary>
 /// FlexParser interface
@@ -123,7 +123,10 @@ type IFlexParser =
 /// </summary>
 type ISearchService = 
     abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
-    abstract Search : FlexIndex * SearchQuery -> Choice<SearchResults, OperationMessage>
+    abstract SearchAsDocmentSeq : SearchQuery -> Choice<seq<ResultDocument> * int * int, OperationMessage>
+    abstract SearchAsDictionarySeq : SearchQuery -> Choice<seq<Dictionary<string, string>> * int * int, OperationMessage>
+
+    //abstract SearchUsingProfile : indexName : string * searchProfileName: string * fields : Dictionary<string, string> -> Choice<SearchResults, OperationMessage>
 
 /// <summary>
 /// Index related operations

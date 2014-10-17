@@ -41,7 +41,7 @@ type SearchService(regManager : RegisterationManager, queryFactory : IFlexFactor
                 result.Add(queryName, pair.Value)
         result
     
-    let Search(flexIndex : FlexIndex, search : SearchQuery) = 
+    let GetSearchPredicate(flexIndex : FlexIndex, search : SearchQuery) = 
         maybe { 
             if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
                 // Search profile based
@@ -50,20 +50,42 @@ type SearchService(regManager : RegisterationManager, queryFactory : IFlexFactor
                     let (p', sq) = p
                     search.MissingValueConfiguration <- sq.MissingValueConfiguration
                     let! values = Parsers.ParseQueryString(search.QueryString)
-                    let! query = SearchDsl.GenerateQuery
-                                     (flexIndex.IndexSetting.FieldsLookup, p', search, (Some(values)), queryTypes)
-                    return! SearchDsl.SearchQuery(flexIndex, query, search)
+                    return! Choice1Of2(p', Some(values))
                 | _ -> return! Choice2Of2(Errors.SEARCH_PROFILE_NOT_FOUND |> GenerateOperationMessage)
-            else 
-                let! predicate = parser.Parse(search.QueryString)
-                match predicate with
-                | NotPredicate(_) -> return! Choice2Of2(Errors.NEGATIVE_QUERY_NOT_SUPPORTED |> GenerateOperationMessage)
-                | _ -> let! query = GenerateQuery
-                                        (flexIndex.IndexSetting.FieldsLookup, predicate, search, None, queryTypes)
-                       return! SearchDsl.SearchQuery(flexIndex, query, search)
+            else let! predicate = parser.Parse(search.QueryString)
+                 return! Choice1Of2(predicate, None)
+        }
+    
+    let GenerateSearchQuery(flexIndex : FlexIndex, search : SearchQuery) = 
+        maybe { 
+            let! (predicate, searchProfile) = GetSearchPredicate(flexIndex, search)
+            match predicate with
+            | NotPredicate(_) -> return! Choice2Of2(Errors.NEGATIVE_QUERY_NOT_SUPPORTED |> GenerateOperationMessage)
+            | _ -> 
+                return! SearchDsl.GenerateQuery
+                            (flexIndex.IndexSetting.FieldsLookup, predicate, search, searchProfile, queryTypes)
         }
     
     interface ISearchService with
-        member this.Search(query) = maybe { let! flexIndex = regManager.GetIndex(query.IndexName)
-                                            return! Search(flexIndex.Value, query) }
-        member this.Search(flexIndex, query) = Search(flexIndex, query)
+        
+        member this.Search(searchQuery) = 
+            maybe { 
+                let! flexIndex = regManager.IsOpen(searchQuery.IndexName)
+                let! query = GenerateSearchQuery(flexIndex.Index.Value, searchQuery)
+                let! (results, recordsReturned, totalAvailable) = SearchDsl.SearchDocumentSeq
+                                                                      (flexIndex.Index.Value, query, searchQuery)
+                let searchResults = new SearchResults()
+                searchResults.Documents <- results.ToList()
+                searchResults.TotalAvailable <- totalAvailable
+                searchResults.RecordsReturned <- recordsReturned
+                return! Choice1Of2(searchResults)
+            }
+        
+        member this.SearchAsDocmentSeq(searchQuery : SearchQuery) = 
+            maybe { let! flexIndex = regManager.IsOpen(searchQuery.IndexName)
+                    let! query = GenerateSearchQuery(flexIndex.Index.Value, searchQuery)
+                    return! SearchDsl.SearchDocumentSeq(flexIndex.Index.Value, query, searchQuery) }
+        member this.SearchAsDictionarySeq(searchQuery : SearchQuery) = 
+            maybe { let! flexIndex = regManager.IsOpen(searchQuery.IndexName)
+                    let! query = GenerateSearchQuery(flexIndex.Index.Value, searchQuery)
+                    return! SearchDsl.SearchDictionarySeq(flexIndex.Index.Value, query, searchQuery) }

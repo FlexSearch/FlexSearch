@@ -100,6 +100,13 @@ module HttpHelpers =
         | null -> defaultValue
         | value -> value
     
+    let GetValueFromQueryString1 key (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> Choice2Of2(Errors.MISSING_FIELD_VALUE
+                       |> GenerateOperationMessage
+                       |> Append("Parameter", key))
+        | value -> Choice1Of2(value)
+            
     let GetIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
@@ -115,6 +122,20 @@ module HttpHelpers =
             match Boolean.TryParse(value) with
             | true, v' -> v'
             | _ -> defaultValue
+    
+    let GetDateTimeValueFromQueryString key (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> 
+            Choice2Of2(Errors.MISSING_FIELD_VALUE
+                       |> GenerateOperationMessage
+                       |> Append("Parameter", key))
+        | value -> 
+            match Int64.TryParse(value) with
+            | true, v' -> Choice1Of2(v')
+            | _ -> 
+                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
+                           |> GenerateOperationMessage
+                           |> Append("Parameter", key))
     
     let inline CheckIdPresent(owin : IOwinContext) = 
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])

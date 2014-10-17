@@ -86,7 +86,7 @@ type Value =
 /// </summary>
 type Predicate = 
     | NotPredicate of Predicate
-    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Map<string, string> option
+    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Dictionary<string, string> option
     | OrPredidate of Lhs : Predicate * Rhs : Predicate
     | AndPredidate of Lhs : Predicate * Rhs : Predicate
 
