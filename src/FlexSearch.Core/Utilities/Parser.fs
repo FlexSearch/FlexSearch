@@ -63,12 +63,18 @@ module Parsers =
         many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':') 
             "Field name should be alphanumber without '(', ')' and ' '." .>> ws
     
+    let DictionaryOfList(elements : (string * string) list) = 
+        let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        for (key, value) in elements do
+            result.Add(key, value)
+        result
+    
     // ----------------------------------------------------------------------------
     // Query string parser 
     // Format: fieldname:'value',fieldname:'value',fieldname:'value'
     // ----------------------------------------------------------------------------
     let private keyValue = identifier .>>. (str_ws ":" >>. ws >>. stringLiteralAsString) .>> ws
-    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> Map.ofList .>> ws
+    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> DictionaryOfList .>> ws //Map.ofList .>> ws
     let private keyValuePairsBetweenBracket = between (str_ws "{") (str_ws "}") keyValuePairs .>> ws
     let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
     
