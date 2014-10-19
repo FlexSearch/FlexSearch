@@ -37,6 +37,7 @@ type IFlexClient =
     inherit IIndexServiceClient
     inherit IDocumentServiceClient
     inherit ISearchServiceClient
+    abstract HttpClient : HttpClient
 
 /// <summary>
 /// Simple request logging handler. This is not thread safe. Only use
@@ -100,7 +101,7 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
             with :? System.AggregateException as e -> 
                 let instance = Activator.CreateInstance<Response<'U>>()
                 let exn = e.Flatten()
-                instance.Error <- (exn.InnerException.Message |> GenerateOperationMessage)
+                instance.Error <- (sprintf "CLIENT_ERROR:%s" exn.InnerException.Message |> GenerateOperationMessage)
                 if exn.InnerException.InnerException <> null then 
                     instance.Error <- (instance.Error |> Append("Reason", exn.InnerException.InnerException.Message))
                 return instance
@@ -115,6 +116,7 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
     member this.DeleteHelper<'U>(uri : string) = 
         async { return! this.RequestProcessor<'U>(fun () -> client.DeleteAsync(uri)) }
     interface IFlexClient with
+        member x.HttpClient : HttpClient = client
         // Search related
         member this.Search(searchRequest : SearchQuery) : Task<Response<SearchResults>> = 
             Async.StartAsTask
