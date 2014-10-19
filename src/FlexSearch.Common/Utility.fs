@@ -13,6 +13,7 @@ namespace FlexSearch.Utility
 open Microsoft.FSharp.Core.Printf
 open System
 open System.Collections.Generic
+open System.Globalization
 open System.IO
 open System.Reflection
 open System.Security.AccessControl
@@ -65,6 +66,13 @@ module DataType =
 module Helpers = 
     /// Returns current date time in Flex compatible format
     let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmssfff"))
+    
+    let inline ParseDate(date : string) = 
+        match DateTime.TryParseExact
+                  (date, [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |], CultureInfo.InvariantCulture, 
+                   DateTimeStyles.None) with
+        | true, date -> Choice1Of2(date)
+        | _ -> Choice2Of2("UNABLE_TO_PARSE_DATETIME:The specified date time is not in a supported format.")
     
     /// Utility method to load a file into text string
     let LoadFile(filePath : string) = 

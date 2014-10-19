@@ -69,51 +69,47 @@ id,topic,surname,cvv2,company
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory; AutoMockIntegrationData>]
-    let ``If Flat structure is requested then id column will be be populated in Fields`` (index : Index, 
-                                                                                          indexService : IIndexService, 
-                                                                                          documentService : IDocumentService, 
-                                                                                          searchService : ISearchService) = 
+    let ``SearchAsDictionarySeq will return the id column populated in Fields`` (index : Index, 
+                                                                                 indexService : IIndexService, 
+                                                                                 documentService : IDocumentService, 
+                                                                                 searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
-        query.ReturnFlatResult <- true
-        let result = GetSuccessChoice(searchService.Search(query))
-        Assert.True(result.Documents.[0].Fields.ContainsKey(Constants.IdField))
+        let (result, _, _) = GetSuccessChoice(searchService.SearchAsDictionarySeq(query))
+        Assert.True(result.ToList().[0].ContainsKey(Constants.IdField))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory; AutoMockIntegrationData>]
-    let ``If Flat structure is requested then lastmodified column will be be populated in Fields`` (index : Index, 
-                                                                                                    indexService : IIndexService, 
-                                                                                                    documentService : IDocumentService, 
-                                                                                                    searchService : ISearchService) = 
+    let ``SearchAsDictionarySeq will return the lastmodified column populated in Fields`` (index : Index, 
+                                                                                           indexService : IIndexService, 
+                                                                                           documentService : IDocumentService, 
+                                                                                           searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
-        query.ReturnFlatResult <- true
-        let result = GetSuccessChoice(searchService.Search(query))
-        Assert.True(result.Documents.[0].Fields.ContainsKey(Constants.LastModifiedField))
+        let (result, _, _) = GetSuccessChoice(searchService.SearchAsDictionarySeq(query))
+        Assert.True(result.ToList().[0].ContainsKey(Constants.LastModifiedField))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory; AutoMockIntegrationData>]
-    let ``If Flat structure is requested then type column will be be populated in Fields`` (index : Index, 
-                                                                                            indexService : IIndexService, 
-                                                                                            documentService : IDocumentService, 
-                                                                                            searchService : ISearchService) = 
+    let ``SearchAsDictionarySeq will return the type column populated in Fields`` (index : Index, 
+                                                                                   indexService : IIndexService, 
+                                                                                   documentService : IDocumentService, 
+                                                                                   searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
-        query.ReturnFlatResult <- true
-        let result = GetSuccessChoice(searchService.Search(query))
-        Assert.True(result.Documents.[0].Fields.ContainsKey(Constants.TypeField))
+        let (result, _, _) = GetSuccessChoice(searchService.SearchAsDictionarySeq(query))
+        Assert.True(result.ToList().[0].ContainsKey(Constants.TypeField))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory; AutoMockIntegrationData>]
-    let ``If Flat structure is requested then _score column will be be populated in Fields`` (index : Index, 
-                                                                                              indexService : IIndexService, 
-                                                                                              documentService : IDocumentService, 
-                                                                                              searchService : ISearchService) = 
+    let ``SearchAsDictionarySeq will return the _score column populated in Fields`` (index : Index, 
+                                                                                     indexService : IIndexService, 
+                                                                                     documentService : IDocumentService, 
+                                                                                     searchService : ISearchService) = 
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "cvv2 eq '1'")
-        query.ReturnFlatResult <- true
-        let result = GetSuccessChoice(searchService.Search(query))
-        Assert.True(result.Documents.[0].Fields.ContainsKey("_score"))
+        let (result, _, _) = GetSuccessChoice(searchService.SearchAsDictionarySeq(query))
+        Assert.True(result.ToList().[0].ContainsKey("_score"))
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory; AutoMockIntegrationData>]
@@ -308,7 +304,7 @@ id,topic,surname,cvv2,givenname
         AddTestDataToIndex(index, testData, documentService, indexService)
         let query = new SearchQuery(index.IndexName, "{surname:'hewitt'}")
         query.SearchProfile <- "test1"
-        searchService.Search(query) |> ExpectErrorCode(MISSING_FIELD_VALUE_1 |> GenerateOperationMessage)
+        searchService.Search(query) |> ExpectErrorCode(MISSING_FIELD_VALUE |> GenerateOperationMessage)
         indexService.DeleteIndex(index.IndexName) |> ExpectSuccess
     
     [<Theory; AutoMockIntegrationData>]
