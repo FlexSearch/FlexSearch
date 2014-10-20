@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <Tailcalls>false</Tailcalls>
-    <OutputPath>G:\GitHub\FlexSearch\build-debug\Plugins\</OutputPath>
+    <OutputPath>..\..\build-debug\Plugins\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>bin\Debug\FlexSearch.DuplicateDetection.XML</DocumentationFile>
