@@ -17,6 +17,7 @@ open FlexSearch.Utility
 open Microsoft.Owin
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
+open Newtonsoft.Json.Schema
 open ProtoBuf
 open System
 open System.Collections.Concurrent
@@ -88,12 +89,8 @@ module HttpHelpers =
     let NotFound = HttpStatusCode.NotFound
     let BadRequest = HttpStatusCode.BadRequest
     let Conflict = HttpStatusCode.Conflict
-    let CREATED (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Created value owin
-    let ACCEPTED (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Accepted value owin
-    let OK (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.OK value owin
     let BAD_REQUEST (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.BadRequest value owin
     let NOT_FOUND (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.NotFound value owin
-    let CONFLICT (value : obj) (owin : IOwinContext) = WriteResponse HttpStatusCode.Conflict value owin
     
     let GetValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
@@ -102,11 +99,12 @@ module HttpHelpers =
     
     let GetValueFromQueryString1 key (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
-        | null -> Choice2Of2(Errors.MISSING_FIELD_VALUE
+        | null -> 
+            Choice2Of2(Errors.MISSING_FIELD_VALUE
                        |> GenerateOperationMessage
                        |> Append("Parameter", key))
         | value -> Choice1Of2(value)
-            
+    
     let GetIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
