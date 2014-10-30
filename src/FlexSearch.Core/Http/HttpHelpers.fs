@@ -13,19 +13,10 @@ namespace FlexSearch.Core
 open FlexSearch
 open FlexSearch.Api
 open FlexSearch.Api.Messages
-open FlexSearch.Utility
 open Microsoft.Owin
-open Newtonsoft.Json
-open Newtonsoft.Json.Converters
-open Newtonsoft.Json.Schema
-open ProtoBuf
 open System
 open System.Collections.Concurrent
-open System.IO
-open System.Linq
 open System.Net
-open System.Text
-open System.Threading
 
 [<AutoOpen>]
 module HttpHelpers = 
@@ -138,19 +129,6 @@ module HttpHelpers =
     let inline CheckIdPresent(owin : IOwinContext) = 
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
         else None
-    
-    let ResponseProcessor (f : Choice<'T, OperationMessage>) success failure (owin : IOwinContext) = 
-        // For parameter less constructor the performance of Activator is as good as direct initialization. Based on the 
-        // finding of http://geekswithblogs.net/mrsteve/archive/2012/02/11/c-sharp-performance-new-vs-expression-tree-func-vs-activator.createinstance.aspx
-        // In future we can cache it if performance is found to be an issue.
-        let instance = Activator.CreateInstance<Response<'T>>()
-        match f with
-        | Choice1Of2(r) -> 
-            instance.Data <- r
-            success instance owin
-        | Choice2Of2(r) -> 
-            instance.Error <- r
-            failure instance owin
     
     let inline RemoveTrailingSlash(input : string) = 
         if input.EndsWith("/") then input.Substring(0, (input.Length - 1))
