@@ -183,3 +183,15 @@ module ``Operation Message Tests`` =
     let ``Error code should be 1000``(input) = 
         let sut = sprintf "ErrorCode = '%s'" input
         Assert.Equal<int>(1000, OperationMessage.GetErrorCode(sut))
+
+module ``Custom Attribute Reading Tests`` =
+    
+    /// <summary>
+    /// Test for: 'Description' property specified was not found.
+    /// </summary>
+    [<Fact>]
+    let ``Can read all attributes on Analyzer`` () =
+        let t = typeof<Analyzer>
+        for p in t.GetProperties() do
+            for a in p.GetCustomAttributes(true) do
+                Assert.True(a <> null)
