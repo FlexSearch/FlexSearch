@@ -2,10 +2,15 @@
 
 open System
 open System.Collections.Generic
+open System.Runtime.Serialization
 
+[<DataContract; CLIMutableAttribute>]
 type OperationMessage = 
-    { DeveloperMessage : string
+    { [<DataMember(Order = 1)>]
+      DeveloperMessage : string
+      [<DataMember(Order = 2)>]
       UserMessage : string
+      [<DataMember(Order = 3)>]
       ErrorCode : string }
     static member GetErrorCode(input : string) = 
         let first = input.IndexOf(''')
@@ -75,7 +80,6 @@ module Errors =
     let FILE_NOT_FOUND = "FILE_NOT_FOUND:The requested file does not exist at the provided location."
     let FILE_READ_ERROR = "FILE_READ_ERROR:An error occurred while reading the file."
     let FILE_WRITE_ERROR = "FILE_WRITE_ERROR:An error occurred while writing the file."
-
     // ----------------------------------------------------------------------------
     // Validation Exceptions
     // ----------------------------------------------------------------------------
