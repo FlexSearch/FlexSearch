@@ -47,7 +47,6 @@ module Main =
         builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings>() |> ignore
         builder.RegisterInstance(logService).As<ILogService>() |> ignore
         // Interface scanning
-        builder |> FactoryService.RegisterInterfaceAssemblies<IImportHandler>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexFilterFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterInterfaceAssemblies<IFlexQuery>
@@ -57,7 +56,6 @@ module Main =
         builder |> FactoryService.RegisterAbstractClassAssemblies<Analyzer>
         // Factory registration
         builder |> FactoryService.RegisterSingleFactoryInstance<IHttpResource>
-        builder |> FactoryService.RegisterSingleFactoryInstance<IImportHandler>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexFilterFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexTokenizerFactory>
         builder |> FactoryService.RegisterSingleFactoryInstance<IFlexQuery>

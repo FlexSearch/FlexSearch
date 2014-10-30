@@ -124,8 +124,10 @@ type IFlexParser =
 type ISearchService = 
     abstract Search : SearchQuery -> Choice<SearchResults, OperationMessage>
     abstract SearchAsDocmentSeq : SearchQuery -> Choice<seq<ResultDocument> * int * int, OperationMessage>
-    abstract SearchAsDictionarySeq : SearchQuery -> Choice<seq<Dictionary<string, string>> * int * int, OperationMessage>
-    abstract SearchUsingProfile : query: SearchQuery * inputFields : Dictionary<string, string> -> Choice<SearchResults, OperationMessage>
+    abstract SearchAsDictionarySeq : SearchQuery
+     -> Choice<seq<Dictionary<string, string>> * int * int, OperationMessage>
+    abstract SearchUsingProfile : query:SearchQuery * inputFields:Dictionary<string, string>
+     -> Choice<SearchResults, OperationMessage>
 
 /// <summary>
 /// Index related operations
@@ -203,15 +205,6 @@ type IResourceService =
     abstract DeleteResource<'T> : resourceName:string -> Choice<unit, OperationMessage>
 
 /// <summary>
-/// Import handler interface to support bulk indexing
-/// </summary>
-type IImportHandler = 
-    abstract SupportsBulkIndexing : unit -> bool
-    abstract SupportsIncrementalIndexing : unit -> bool
-    abstract ProcessBulkRequest : string * ImportRequest -> unit
-    abstract ProcessIncrementalRequest : string * ImportRequest -> Choice<unit, OperationMessage>
-
-/// <summary>
 /// Interface which exposes all top level factories
 /// Could have exposed all these through a simple dictionary over IFlexFactory
 /// but then we would have to perform a look up to get each factory instance.
@@ -223,4 +216,12 @@ type IFactoryCollection =
     abstract TokenizerFactory : IFlexFactory<IFlexTokenizerFactory>
     abstract AnalyzerFactory : IFlexFactory<Analyzer>
     abstract SearchQueryFactory : IFlexFactory<IFlexQuery>
-    abstract ImportHandlerFactory : IFlexFactory<IImportHandler>
+
+///// <summary>
+///// Import handler interface to support bulk indexing
+///// </summary>
+//type IImportHandler = 
+//    abstract SupportsBulkIndexing : unit -> bool
+//    abstract SupportsIncrementalIndexing : unit -> bool
+//    abstract ProcessBulkRequest : string * ImportRequest -> unit
+//    abstract ProcessIncrementalRequest : string * ImportRequest -> Choice<unit, OperationMessage>

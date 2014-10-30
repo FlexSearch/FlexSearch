@@ -134,13 +134,12 @@ module FactoryService =
     /// Concrete implementation of IFactoryCollection
     /// </summary>
     [<Sealed>]
-    type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory, importHandlerFactory) = 
+    type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory) = 
         interface IFactoryCollection with
             member this.FilterFactory = filterFactory
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
             member this.SearchQueryFactory = searchQueryFactory
-            member this.ImportHandlerFactory = importHandlerFactory
     
     let RegisterSingleFactoryInstance<'T>(builder : ContainerBuilder) = 
         builder.RegisterType<FlexFactory<'T>>().As<IFlexFactory<'T>>().SingleInstance() |> ignore
