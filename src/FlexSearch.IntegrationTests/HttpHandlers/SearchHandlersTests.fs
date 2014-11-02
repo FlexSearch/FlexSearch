@@ -22,83 +22,69 @@ module ``Search Tests`` =
     open FlexSearch.TestSupport.RestHelpers
     open FlexSearch.Client
 
-    let Query (body : string) (recordsReturned : int) (available : int) (server : TestServer) = 
-        let query = sprintf """{"QueryString": "%s"}""" body
-        server
-        |> request "POST" "/indices/contact/search?c=firstname,lastname"
-        |> withBody query
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> responseMatches "Data.RecordsReturned" (recordsReturned.ToString())
-        |> responseMatches "Data.TotalAvailable" (available.ToString())
+    let Query (queryString : string) (recordsReturned : int) (available : int) (client : IFlexClient) = 
+        let searchQuery = new SearchQuery("contact", queryString)
+        searchQuery.Columns.Add("firstname")
+        searchQuery.Columns.Add("lastname")
+        let response = client.Search(searchQuery).Result
+        Assert.Equal<int>(recordsReturned, response.Data.RecordsReturned)
+        Assert.Equal<int>(available, response.Data.TotalAvailable)
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-term-1", "Term search using '=' operator")>]
-    let ``Term Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "firstname = 'Kathy' and lastname = 'Banks'" 1 1 
+    let ``Term Query Test 1`` (client : IFlexClient) = client |> Query "firstname = 'Kathy' and lastname = 'Banks'" 1 1 
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-term-2", "Term search using 'eq' operator")>]
-    let ``Term Query Test 2`` (server : TestServer, client : IFlexClient) = server |> Query "firstname eq 'Kathy' and lastname eq 'Banks'" 1 1
+    let ``Term Query Test 2`` (client : IFlexClient) = client |> Query "firstname eq 'Kathy' and lastname eq 'Banks'" 1 1
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-fuzzy-1", "Fuzzy search using 'fuzzy' operator")>]
-    let ``Fuzzy Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "firstname fuzzy 'Kathy'" 3 3
+    let ``Fuzzy Query Test 1`` (client : IFlexClient) = client |> Query "firstname fuzzy 'Kathy'" 3 3
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-fuzzy-2", "Fuzzy search using '~=' operator")>]
-    let ``Fuzzy Query Test 2`` (server : TestServer, client : IFlexClient) = server |> Query "firstname ~= 'Kathy'" 3 3
+    let ``Fuzzy Query Test 2`` (client : IFlexClient) = client |> Query "firstname ~= 'Kathy'" 3 3
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
-    let ``Fuzzy Query Test 3`` (server : TestServer, client : IFlexClient) = server |> Query "firstname ~= 'Kathy' {slop : '2'}" 3 3
+    let ``Fuzzy Query Test 3`` (client : IFlexClient) = client |> Query "firstname ~= 'Kathy' {slop : '2'}" 3 3
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-phrase-1", "Phrase search using match operator")>]
-    let ``Phrase Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "description match 'Nunc purus'" 4 4
+    let ``Phrase Query Test 1`` (client : IFlexClient) = client |> Query "description match 'Nunc purus'" 4 4
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
-    let ``Wildcard Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "firstname like 'ca*'" 3 3
+    let ``Wildcard Query Test 1`` (client : IFlexClient) = client |> Query "firstname like 'ca*'" 3 3
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-wildcard-2", "Wildcard search using '%=' operator")>]
-    let ``Wildcard Query Test 2`` (server : TestServer, client : IFlexClient) = server |> Query "firstname %= 'ca*'" 3 3
+    let ``Wildcard Query Test 2`` (client : IFlexClient) = client |> Query "firstname %= 'ca*'" 3 3
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-wildcard-3", "Wildcard search with single character operator")>]
-    let ``Wildcard Query Test 3`` (server : TestServer, client : IFlexClient) = server |> Query "firstname %= 'Cat?y'" 1 1
+    let ``Wildcard Query Test 3`` (client : IFlexClient) = client |> Query "firstname %= 'Cat?y'" 1 1
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-regex-1", "Regex search using regex operator")>]
-    let ``Regex Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "firstname regex '[ck]Athy'" 3 3
+    let ``Regex Query Test 1`` (client : IFlexClient) = client |> Query "firstname regex '[ck]Athy'" 3 3
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-matchall-1", "Match all search using 'matchall' operator")>]
-    let ``Matchall Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "firstname matchall '*'" 10 50
+    let ``Matchall Query Test 1`` (client : IFlexClient) = client |> Query "firstname matchall '*'" 10 50
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-range-1", "Greater than '>' operator")>]
-    let ``NumericRange Query Test 1`` (server : TestServer, client : IFlexClient) = server |> Query "cvv2 > '100'" 10 48
+    let ``NumericRange Query Test 1`` (client : IFlexClient) = client |> Query "cvv2 > '100'" 10 48
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-range-2", "Greater than or equal to '>=' operator")>]
-    let ``NumericRange Query Test 2`` (server : TestServer, client : IFlexClient) = server |> Query "cvv2 >= '200'" 10 41
+    let ``NumericRange Query Test 2`` (client : IFlexClient) = client |> Query "cvv2 >= '200'" 10 41
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-range-3", "Smaller than '<' operator")>]
-    let ``NumericRange Query Test 3`` (server : TestServer, client : IFlexClient) = server |> Query "cvv2 < '150'" 7 7
+    let ``NumericRange Query Test 3`` (client : IFlexClient) = client |> Query "cvv2 < '150'" 7 7
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-range-1", "Smaller than or equal to '<=' operator")>]
-    let ``NumericRange Query Test 4`` (server : TestServer, client : IFlexClient) = server |> Query "cvv2 <= '500'" 10 26
+    let ``NumericRange Query Test 4`` (client : IFlexClient) = client |> Query "cvv2 <= '500'" 10 26
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-search-highlighting-1", "Text highlighting example")>]
-    let ``Search Highlight Feature Test1`` (server : TestServer) = 
-        let query = new SearchQuery("contact", " description = 'Nullam'")
+    let ``Search Highlight Feature Test1`` (client : IFlexClient) = 
+        let query = new SearchQuery("contact", "description = 'Nullam'")
         let highlight = new List<string>()
         highlight.Add("description")
         query.Highlights <- new HighlightOption(highlight)
-        server
-        |> request "POST" "/indices/contact/search?c=firstname,lastname,description"
-        |> withBody """
-        {
-          "Count": 2,  
-          "Highlights": {
-            "FragmentsToReturn": 2,
-            "HighlightedFields": [
-              "description"
-            ],
-            "PostTag": "</B>",
-            "PreTag": "</B>"
-          },
-          "QueryString": " description = 'Nullam'",
-          }   
-        """
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
-        |> ignore
+        query.Highlights.FragmentsToReturn <- 2
+        query.Columns.Add("firstname")
+        query.Columns.Add("lastname")
+        query.Columns.Add("description")
+
+        let result = client.Search(query).Result
+        Assert.True(result.Data.Documents.Count > 0)
