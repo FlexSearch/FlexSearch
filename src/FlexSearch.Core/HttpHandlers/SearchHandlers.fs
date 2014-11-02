@@ -14,19 +14,28 @@ open FlexSearch.Api
 open FlexSearch.Common
 open FlexSearch.Core
 open FlexSearch.Core.HttpHelpers
-open FlexSearch.Utility
 open Microsoft.Owin
-open Newtonsoft.Json
-open Owin
-open System
-open System.Collections.Generic
-open System.ComponentModel
-open System.ComponentModel.Composition
-open System.IO
 open System.Linq
-open System.Net
-open System.Net.Http
 
+/// <summary>
+///  Search for documents
+/// </summary>
+/// <remarks>
+/// Search across the index for documents using SQL like query syntax.
+/// {{note: Any parameter passed as part of query string takes precedence over the same parameter in the request body.}}
+/// </remarks>
+/// <parameters>
+/// <parameter name="q" required="true">Short hand for 'QueryString'.</parameter>
+/// <parameter name="c" required="false">Short hand for 'Columns'.</parameter>
+/// <parameter name="count">Count parameter. Refer to 'Search Query' properties.</parameter>
+/// <parameter name="skip">Skip parameter. Refer to 'Search Query' properties.</parameter>
+/// <parameter name="orderby">Order by parameter. Refer to 'Search Query' properties.</parameter>
+/// <parameter name="returnflatresult">Return flat results parameter. Refer to 'Search Query' properties.</parameter>
+/// </parameters>
+/// <method>GET|POST</method>
+/// <uri>/indices/:id/search</uri>
+/// <resource>search</resource>
+/// <id>search-an-index</id>
 [<Name("GET|POST-/indices/:id/search")>]
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 

@@ -12,14 +12,20 @@ namespace FlexSearch.Core.HttpHandlers
 
 open FlexSearch.Api
 open FlexSearch.Api.Messages
-open FlexSearch.Api.Validation
-open FlexSearch.Common
 open FlexSearch.Core
-open Microsoft.Owin
-open Owin
-open System
-open System.Collections.Generic
 
+/// <summary>
+///  Get top documents
+/// </summary>
+/// <remarks>
+/// Returns top 10 documents from the index. This is not the preferred 
+/// way to retrieve documents from an index. This is provided
+/// for quick testing only.
+/// </remarks>
+/// <method>GET</method>
+/// <uri>/indices/:indexName/documents</uri>
+/// <resource>document</resource>
+/// <id>get-documents</id>
 [<Name("GET-/indices/:id/documents")>]
 [<Sealed>]
 type GetDocumentsHandler(documentService : IDocumentService) = 
@@ -28,13 +34,36 @@ type GetDocumentsHandler(documentService : IDocumentService) =
         let count = GetIntValueFromQueryString "count" 10 context
         (documentService.GetDocuments(id.Value, count), Ok, BadRequest)
 
+/// <summary>
+///  Get document by Id
+/// </summary>
+/// <remarks>
+/// Returns a document by id. This returns all the fields associated
+/// with the current document. Use 'Search' endpoint to customize the 
+/// fields to be returned.
+/// </remarks>
+/// <method>GET</method>
+/// <uri>/indices/:indexName/documents/:documentId</uri>
+/// <resource>document</resource>
+/// <id>get-document-by-id</id>
 [<Name("GET-/indices/:id/documents/:id")>]
 [<Sealed>]
 type GetDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<unit, ResultDocument>()
-    override this.Process(id, subId, body, context) = 
-        (documentService.GetDocument(id.Value, subId.Value), Ok, NotFound)
+    override this.Process(id, subId, body, context) = (documentService.GetDocument(id.Value, subId.Value), Ok, NotFound)
 
+/// <summary>
+///  Create a new document
+/// </summary>
+/// <remarks>
+/// Create a new document. By default this does not check if the id of the 
+/// of the document is unique across the index. Use a timestamp of -1 to 
+/// enforce unique id check.
+/// </remarks>
+/// <method>POST</method>
+/// <uri>/indices/:indexName/documents</uri>
+/// <resource>document</resource>
+/// <id>create-document-by-id</id>
 [<Name("POST-/indices/:id/documents")>]
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
@@ -47,6 +76,16 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
                 (Choice2Of2(error), Created, Conflict)
             else (Choice2Of2(error), Created, BadRequest)
 
+/// <summary>
+///  Delete a document
+/// </summary>
+/// <remarks>
+/// Delete a document by Id.
+/// </remarks>
+/// <method>DELETE</method>
+/// <uri>/indices/:indexId/documents/:documentId</uri>
+/// <resource>document</resource>
+/// <id>delete-document-by-id</id>
 [<Name("DELETE-/indices/:id/documents/:id")>]
 [<Sealed>]
 type DeleteDocumentByIdHandler(documentService : IDocumentService) = 
@@ -54,6 +93,18 @@ type DeleteDocumentByIdHandler(documentService : IDocumentService) =
     override this.Process(id, subId, body, context) = 
         (documentService.DeleteDocument(id.Value, subId.Value), Ok, BadRequest)
 
+/// <summary>
+///  Create or update a document
+/// </summary>
+/// <remarks>
+/// Creates or updates an existing document. This is idempotent as repeated calls to the
+/// endpoint will have the same effect. Many concurrency control parameters can be 
+/// applied using timestamp field.
+/// </remarks>
+/// <method>PUT</method>
+/// <uri>/indices/:indexId/documents/:documentId</uri>
+/// <resource>document</resource>
+/// <id>update-document-by-id</id>
 [<Name("PUT-/indices/:id/documents/:id")>]
 [<Sealed>]
 type PutDocumentByIdHandler(documentService : IDocumentService) = 
