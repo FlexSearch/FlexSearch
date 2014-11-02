@@ -194,6 +194,8 @@
       <HintPath>..\packages\Microsoft.Tpl.Dataflow.4.5.23\lib\portable-net45+win8+wpa81\System.Threading.Tasks.Dataflow.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="UnionArgParser">
       <HintPath>..\packages\UnionArgParser.0.8.0\lib\net40\UnionArgParser.dll</HintPath>
       <Private>True</Private>
@@ -216,6 +218,11 @@
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
       <Name>FlexSearch.Api</Name>
       <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Client\FlexSearch.Client.fsproj">
+      <Name>FlexSearch.Client</Name>
+      <Project>{e9a351e4-311b-4c7e-a483-e38fd96da0ca}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">

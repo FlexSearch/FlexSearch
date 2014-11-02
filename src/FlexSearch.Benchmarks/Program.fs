@@ -5,8 +5,10 @@ open FlexSearch.Documention
 open Nessos.UnionArgParser
 open PerfUtil
 open System
+open FlexSearch.Documention.GenerateExamples
 
 let GenerateGlossary() = 
+    
     ReferenceDocumentation.GenerateGlossary()
     printfn "Missing Definition"
     for def in ReferenceDocumentation.missingDefinitions do
@@ -38,7 +40,11 @@ type Arguments =
 
 [<EntryPoint>]
 let main argv = 
-    Global.AddIndex()
+    GenerateApiDocumentation()
+    //GenerateGlossary()
+    //GenerateIndicesExamples()
+    //Global.AddIndex()
+    
     //WikipediaPerformanceTests.WikipediaQueryTests("G:\wikipedia")
     //WikipediaPerformanceTests.RandomQueryGenerator ("G:\wikipedia") 
     //WikipediaPerformanceTests.WikipediaIndexingTest ("G:\wikipedia\wikidump4KB.txt") true
