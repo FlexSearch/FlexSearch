@@ -39,6 +39,12 @@ type IFlexClient =
     inherit ISearchServiceClient
     abstract HttpClient : HttpClient
 
+type RequestDetails() = 
+    member val HttpRequest = Unchecked.defaultof<HttpRequestMessage> with get, set
+    member val RequestBody = Unchecked.defaultof<string> with get, set
+    member val HttpResponse = Unchecked.defaultof<HttpResponseMessage> with get, set
+    member val ResponseBody = Unchecked.defaultof<string> with get, set
+
 /// <summary>
 /// Simple request logging handler. This is not thread safe. Only use
 /// for testing
@@ -46,23 +52,30 @@ type IFlexClient =
 type LoggingHandler(innerHandler : HttpMessageHandler) = 
     inherit DelegatingHandler(innerHandler)
     let log = new StringBuilder()
+    let requestLog = new RequestDetails()
     let mutable statusCode = System.Net.HttpStatusCode.OK
     member this.Log() = log
+    member this.RequestLog() = requestLog
     member this.StatusCode() = statusCode
     override this.SendAsync(request : HttpRequestMessage, cancellationToken) = 
         let log (work : Task<HttpResponseMessage>) = 
             async { 
+                requestLog.HttpRequest <- request
                 log.AppendLine("Request") |> ignore
                 log.Append(request.Method.ToString() + " ") |> ignore
                 log.AppendLine(request.RequestUri.ToString()) |> ignore
                 // Add body here
-                if request.Content <> null then let! requestBody = Async.AwaitTask(request.Content.ReadAsStringAsync())
-                                                log.AppendLine(requestBody) |> ignore
+                if request.Content <> null then 
+                    let! requestBody = Async.AwaitTask(request.Content.ReadAsStringAsync())
+                    requestLog.RequestBody <- requestBody
+                    log.AppendLine(requestBody) |> ignore
                 log.AppendLine("----------------------------------") |> ignore
                 log.AppendLine("Response") |> ignore
                 let! response = Async.AwaitTask(work)
                 statusCode <- response.StatusCode
                 let! responseBody = Async.AwaitTask(response.Content.ReadAsStringAsync())
+                requestLog.HttpResponse <- response
+                requestLog.ResponseBody <- responseBody
                 log.AppendLine(responseBody) |> ignore
                 return response
             }
