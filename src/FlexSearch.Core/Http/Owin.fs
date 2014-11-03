@@ -125,7 +125,6 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
                     let startOptions = new StartOptions(sprintf "http://+:%i/" port)
                     server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
-                    Console.ReadKey() |> ignore
                 with e -> 
                     if e.InnerException <> null then 
                         let innerException = e.InnerException :?> System.Net.HttpListenerException
