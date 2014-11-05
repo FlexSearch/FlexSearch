@@ -39,7 +39,7 @@ open System.Linq
 [<Name("GET|POST-/indices/:id/search")>]
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 
-    inherit HttpHandlerBase<SearchQuery, obj>()
+    inherit HttpHandlerBase<SearchQuery, obj>(false)
     override this.Process(id, subId, body, context) = 
         let processRequest (indexName, owin : IOwinContext) = 
             maybe { 
