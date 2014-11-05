@@ -46,10 +46,10 @@ module HttpHelpers =
     let WriteResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
         owin.Response.StatusCode <- int statusCode
         let format = GetResponseFormat owin
-        owin.Response.ContentType <- format
+        owin.Response.ContentType <- format               
         if response <> Unchecked.defaultof<_> then 
             match Formatters.TryGetValue(format) with
-            | true, formatter -> formatter.Serialize(response, owin.Response.Body)
+            | true, formatter -> formatter.Serialize(response, owin)
             | _ -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
     
     let inline IsNull(x) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)

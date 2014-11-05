@@ -19,6 +19,7 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
+open Microsoft.Owin
 open System.Reflection
 open System.Threading
 open System.Threading.Tasks.Dataflow
@@ -56,6 +57,7 @@ type IPersistanceStore =
 type IFormatter = 
     abstract SupportedHeaders : unit -> string []
     abstract Serialize : body:obj * stream:Stream -> unit
+    abstract Serialize : body: obj * context : IOwinContext -> unit
     abstract SerializeToString : body:obj -> string
     abstract DeSerialize<'T> : stream:Stream -> 'T
 
