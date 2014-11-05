@@ -94,7 +94,7 @@ module Main =
                 let indexService = container.Resolve<IIndexService>()
                 let httpFactory = container.Resolve<IFlexFactory<IHttpResource>>()
                 let loggerService = container.Resolve<ILogService>()
-                httpServer <- new OwinServer(indexService, httpFactory, loggerService)
+                httpServer <- new OwinServer(indexService, httpFactory, loggerService, serverSettings.HttpPort)
                 httpServer.Start()
             with e -> printfn "%A" e
         
