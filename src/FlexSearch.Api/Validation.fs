@@ -202,7 +202,7 @@ module Helpers =
         if enumerableValue.Any
                (fun x -> 
                Validator.TryValidateObject
-                   (enumerableValue, new ValidationContext(enumerableValue, null, null), results, true) = false) then 
+                   (x, new ValidationContext(x, null, null), results, true) = false) then 
             results.First()
         else ValidationResult.Success
     
