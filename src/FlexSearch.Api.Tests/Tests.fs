@@ -141,25 +141,25 @@ module ``Index Field tests`` =
 
 module ``Index tests`` = 
     [<FactAttribute>]
-    let ``Analyzers cannot contain in-valid keys``() = 
+    let ``Script cannot contain in-valid script name``() = 
         let index = new Index()
         index.IndexName <- "valid"
-        index.Analyzers.Add("INVALIDKEY", new Analyzer())
+        index.Scripts.Add(new Script("INVALIDKEY", "dummy", ScriptType.ComputedField))
         ValidateHasErrors index
     
     [<FactAttribute>]
-    let ``Analyzers can have valid keys``() = 
+    let ``Scripts can have valid keys``() = 
         let index = new Index()
         index.IndexName <- "valid"
-        index.Analyzers.Add("validkey", new Analyzer())
+        index.Scripts.Add(new Script("validkey", "dummy", ScriptType.ComputedField))
         ValidateSuccess index
     
     [<FactAttribute>]
     let ``Validation will fail even for a single invalid key``() = 
         let index = new Index()
         index.IndexName <- "valid"
-        index.Analyzers.Add("validkey", new Analyzer())
-        index.Analyzers.Add("INVALIDKEY", new Analyzer())
+        index.Scripts.Add(new Script("validkey", "dummy", ScriptType.ComputedField))
+        index.Scripts.Add(new Script("INVALIDKEY", "dummy", ScriptType.ComputedField))
         ValidateHasErrors index
     
     [<FactAttribute>]

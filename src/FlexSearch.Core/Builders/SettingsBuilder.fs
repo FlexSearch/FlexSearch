@@ -15,27 +15,24 @@ open FlexSearch.Api
 open FlexSearch.Api.Validation
 open FlexSearch.Common
 open FlexSearch.Core
-open System.Collections.Generic
-open org.apache.lucene.analysis
+open System.IO
 
 /// <summary>
 /// Top level settings builder
 /// </summary>
 [<Sealed>]
-type SettingsBuilder(factoryCollection : IFactoryCollection, serverSettings : ServerSettings) = 
+type SettingsBuilder(factoryCollection : IFactoryCollection, analyzerService : IAnalyzerService, serverSettings : ServerSettings) = 
     interface ISettingsBuilder with
         member this.BuildSetting(index : FlexSearch.Api.Index) = 
             maybe { 
                 do! (index :> IValidator).MaybeValidator()
                 let! defaultPostingsFormat = index.IndexConfiguration.IndexVersion.GetDefaultPostingsFormat()
                 index.IndexConfiguration.DefaultIndexPostingsFormat <- defaultPostingsFormat
-                let! analyzers = Analyzer.Build(index.Analyzers, factoryCollection)
                 let! scriptManager = Script.Build(index.Scripts, factoryCollection)
-                let! fields = Field.Build
-                                  (index.Fields, index.IndexConfiguration, analyzers, index.Scripts, factoryCollection)
+                let! fields = Field.Build(index.Fields, index.IndexConfiguration, analyzerService, index.Scripts)
                 let fieldsArray : FlexField array = Array.zeroCreate fields.Count
                 fields.Values.CopyTo(fieldsArray, 0)
-                let baseFolder = serverSettings.DataFolder + "\\" + index.IndexName
+                let baseFolder = Path.Combine(serverSettings.DataFolder, index.IndexName)
                 let indexAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, true)
                 let searchAnalyzer = FlexField.GetPerFieldAnalyzerWrapper(fieldsArray, false)
                 let! searchProfiles = FlexSearch.Api.SearchQuery.Build

@@ -283,6 +283,12 @@ type Analyzer() =
     inherit ValidatableObjectBase<Analyzer>()
     
     /// <summary>
+    /// Name of the analyzer
+    /// </summary>
+    [<Required>]
+    member val AnalyzerName = Unchecked.defaultof<string> with get, set
+    
+    /// <summary>
     /// AUTO
     /// </summary>
     [<Required; ValidateComplex>]
@@ -565,13 +571,6 @@ type Index() =
     member val IndexName = Unchecked.defaultof<string> with get, set
     
     /// <summary>
-    /// Analyzers to be used as part of the index. These have index level 
-    /// visibility.
-    /// </summary>
-    [<ValidKeys>]
-    member val Analyzers = new Dictionary<string, Analyzer>(StringComparer.OrdinalIgnoreCase) with get, set
-    
-    /// <summary>
     /// Fields to be used in index.
     /// </summary>
     member val Fields = new List<Field>() with get, set
@@ -605,7 +604,6 @@ type Index() =
     
     override this.Validate(context) = 
         seq { 
-            yield Helpers.ValidateCollection<Analyzer>(this.Analyzers.Values)
             yield Helpers.ValidateCollection<Field>(this.Fields)
             yield Helpers.ValidateCollection<Script>(this.Scripts)
             yield Helpers.ValidateCollection<SearchQuery>(this.SearchProfiles)

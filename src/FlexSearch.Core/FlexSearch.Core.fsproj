@@ -113,6 +113,7 @@
     <Compile Include="Services\FactoryService.fs" />
     <Compile Include="Services\JobService.fs" />
     <Compile Include="Services\ResourceService.fs" />
+    <Compile Include="Services\AnalyzerService.fs" />
     <Compile Include="Http\Formatters.fs" />
     <Compile Include="Http\HttpHelpers.fs" />
     <Compile Include="Http\Owin.fs" />

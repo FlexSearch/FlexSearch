@@ -14,12 +14,12 @@ open FlexSearch.Api
 open FlexSearch.Api.Messages
 open FlexSearch.Core
 open FlexSearch.Utility
+open Microsoft.Owin
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
-open Microsoft.Owin
 open System.Reflection
 open System.Threading
 open System.Threading.Tasks.Dataflow
@@ -57,7 +57,7 @@ type IPersistanceStore =
 type IFormatter = 
     abstract SupportedHeaders : unit -> string []
     abstract Serialize : body:obj * stream:Stream -> unit
-    abstract Serialize : body: obj * context : IOwinContext -> unit
+    abstract Serialize : body:obj * context:IOwinContext -> unit
     abstract SerializeToString : body:obj -> string
     abstract DeSerialize<'T> : stream:Stream -> 'T
 
@@ -207,6 +207,16 @@ type IResourceService =
     abstract DeleteResource<'T> : resourceName:string -> Choice<unit, OperationMessage>
 
 /// <summary>
+///  Analyzer/Analysis related services
+/// </summary>
+type IAnalyzerService = 
+    abstract GetAnalyzer : analyzerName:string -> Choice<Analyzer, OperationMessage>
+    abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, OperationMessage>
+    abstract AddOrUpdateAnalyzer : analyzer:FlexSearch.Api.Analyzer -> Choice<unit, OperationMessage>
+    abstract GetAllAnalyzers : unit -> Choice<List<Analyzer>, OperationMessage>
+    abstract Analyze : analyzerName:string * input:string -> Choice<List<string>, OperationMessage>
+
+/// <summary>
 /// Interface which exposes all top level factories
 /// Could have exposed all these through a simple dictionary over IFlexFactory
 /// but then we would have to perform a look up to get each factory instance.
@@ -218,7 +228,6 @@ type IFactoryCollection =
     abstract TokenizerFactory : IFlexFactory<IFlexTokenizerFactory>
     abstract AnalyzerFactory : IFlexFactory<Analyzer>
     abstract SearchQueryFactory : IFlexFactory<IFlexQuery>
-
 ///// <summary>
 ///// Import handler interface to support bulk indexing
 ///// </summary>

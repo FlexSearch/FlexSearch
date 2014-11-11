@@ -11,11 +11,11 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Core
-open System.Collections.Generic
-open System
-open org.apache.lucene.analysis
 open FlexSearch.Common
+open FlexSearch.Core
+open System
+open System.Collections.Generic
+open org.apache.lucene.analysis
 
 [<AutoOpen>]
 module FieldPropertiesExtensions = 
@@ -34,8 +34,7 @@ module FieldPropertiesExtensions =
         let idField = 
             { FieldName = Constants.IdField
               SchemaName = 
-                  sprintf "%s<%s>" Constants.IdField 
-                      (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
+                  sprintf "%s<%s>" Constants.IdField (configuration.IdFieldPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexCustom(keyWordAnalyzer, keyWordAnalyzer, indexInformation)
               FieldInformation = None
               Source = None
@@ -65,7 +64,7 @@ module FieldPropertiesExtensions =
               RequiresAnalyzer = false
               DefaultField = null }
         idField
-
+    
     /// <summary>
     /// FieldType to be used for ID fields
     /// </summary>
@@ -73,7 +72,7 @@ module FieldPropertiesExtensions =
         let idField = 
             { FieldName = Constants.LastModifiedFieldDv
               SchemaName = 
-                  sprintf "%s<%s>" Constants.LastModifiedFieldDv
+                  sprintf "%s<%s>" Constants.LastModifiedFieldDv 
                       (configuration.DefaultIndexPostingsFormat.ToString().ToLowerInvariant())
               FieldType = FlexDateTime
               FieldInformation = None
@@ -83,7 +82,8 @@ module FieldPropertiesExtensions =
               StoreInformation = FieldStoreInformation.Create(false, true)
               RequiresAnalyzer = false
               DefaultField = null }
-        idField    
+        idField
+    
     type Field with
         
         /// <summary>
@@ -93,22 +93,7 @@ module FieldPropertiesExtensions =
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
         /// <param name="propName"></param>
-        member this.Build(flexAnalyzers : Dictionary<string, Analyzer>, scripts : List<Script>, 
-                          factoryCollection : IFactoryCollection, propName : string) = 
-            /// Helper to get an analyzer from dictionary and if not found then
-            /// tries to resolve from the dictionary
-            let getAnalyzer (analyzerName) = 
-                // First try finding it in the same configuration file
-                match flexAnalyzers.TryGetValue(analyzerName) with
-                | (true, analyzer) -> Choice1Of2(analyzer)
-                | _ -> 
-                    match factoryCollection.AnalyzerFactory.GetModuleByName(analyzerName) with
-                    | Choice1Of2(analyzer) -> Choice1Of2(analyzer)
-                    | Choice2Of2(error) -> 
-                        Choice2Of2(error
-                                   |> Append("Reason", Errors.ANALYZER_NOT_FOUND)
-                                   |> Append("AnalyzerName", analyzerName))
-            
+        member this.Build(analyzerService : IAnalyzerService, scripts : List<Script>, propName : string) = 
             let getSource (field : Field) = 
                 if (String.IsNullOrWhiteSpace(field.ScriptName)) then Choice1Of2(None)
                 else 
@@ -133,8 +118,8 @@ module FieldPropertiesExtensions =
                     | FieldType.Stored -> return! Choice1Of2(FlexStored, false)
                     | FieldType.ExactText -> return! Choice1Of2(FlexExactText(keyWordAnalyzer), true)
                     | FieldType.Text | FieldType.Highlight | FieldType.Custom -> 
-                        let! searchAnalyzer = getAnalyzer (field.SearchAnalyzer)
-                        let! indexAnalyzer = getAnalyzer (field.IndexAnalyzer)
+                        let! searchAnalyzer = analyzerService.GetAnalyzer(field.SearchAnalyzer)
+                        let! indexAnalyzer = analyzerService.GetAnalyzer(field.IndexAnalyzer)
                         match field.FieldType with
                         | FieldType.Text -> return! Choice1Of2(FlexText(searchAnalyzer, indexAnalyzer), true)
                         | FieldType.Highlight -> return! Choice1Of2(FlexHighlight(searchAnalyzer, indexAnalyzer), true)
@@ -186,8 +171,7 @@ module FieldPropertiesExtensions =
         /// <param name="scripts"></param>
         /// <param name="factoryCollection"></param>
         static member Build(fields : List<Field>, indexConfiguration : IndexConfiguration, 
-                            flexAnalyzers : Dictionary<string, Analyzer>, scripts : List<Script>, 
-                            factoryCollection : IFactoryCollection) = 
+                            analyzerService : IAnalyzerService, scripts : List<Script>) = 
             maybe { 
                 let result = new Dictionary<string, FlexField>(StringComparer.OrdinalIgnoreCase)
                 // Add system fields
@@ -195,7 +179,7 @@ module FieldPropertiesExtensions =
                 result.Add(Constants.LastModifiedField, GetTimeStampField(indexConfiguration))
                 result.Add(Constants.LastModifiedFieldDv, GetTimeStampDvField(indexConfiguration))
                 for field in fields do
-                    let! fieldObject = field.Build(flexAnalyzers, scripts, factoryCollection, field.FieldName)
+                    let! fieldObject = field.Build(analyzerService, scripts, field.FieldName)
                     result.Add(field.FieldName, fieldObject)
                 return result
             }
