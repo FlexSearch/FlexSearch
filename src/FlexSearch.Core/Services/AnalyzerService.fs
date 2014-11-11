@@ -28,20 +28,29 @@ open org.apache.lucene.search
 /// </summary>
 type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : IThreadSafeWriter, logger : ILogService, serverSettings : ServerSettings) = 
     let analyzerRepository = 
-        new ConcurrentDictionary<string, org.apache.lucene.analysis.Analyzer>(StringComparer.OrdinalIgnoreCase)
+        new ConcurrentDictionary<string, org.apache.lucene.analysis.Analyzer * Analyzer>(StringComparer.OrdinalIgnoreCase)
     
     let AddOrUpdateAnalyzer(analyzerInfo : Analyzer) = 
         maybe { 
             let! instance = analyzerInfo.Build(analyzerInfo.AnalyzerName, factoryService)
+            let value = (instance, analyzerInfo)
             // Update the content without any comparison
-            analyzerRepository.AddOrUpdate(analyzerInfo.AnalyzerName, instance, fun key oldValue -> instance) |> ignore
+            analyzerRepository.AddOrUpdate(analyzerInfo.AnalyzerName, value, fun key _ -> value) |> ignore
             do! threadSafeWriter.WriteFile
                     (Path.Combine(serverSettings.ConfFolder, "analyzers", analyzerInfo.AnalyzerName), analyzerInfo)
         }
     
     let GetAnalyzer(analyzerName : string) = 
         match analyzerRepository.TryGetValue(analyzerName) with
-        | true, a -> Choice1Of2(a)
+        | true, (a, _) -> Choice1Of2(a)
+        | _ -> 
+            Choice2Of2("ANALYZER_NOT_FOUND:Analyzer not found."
+                       |> GenerateOperationMessage
+                       |> Append("AnalyzerName", analyzerName))
+    
+    let GetAnalyzerInfo(analyzerName : string) = 
+        match analyzerRepository.TryGetValue(analyzerName) with
+        | true, (_, a) -> Choice1Of2(a)
         | _ -> 
             Choice2Of2("ANALYZER_NOT_FOUND:Analyzer not found."
                        |> GenerateOperationMessage
@@ -57,6 +66,12 @@ type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : ITh
                        |> GenerateOperationMessage
                        |> Append("AnalyzerName", analyzerName))
     
+    let GetAllAnalyzers() = 
+        let analyzers = new List<Analyzer>()
+        for (_, analyzerInfo) in analyzerRepository.Values.ToList() do
+            analyzers.Add(analyzerInfo)
+        Choice1Of2(analyzers)
+    
     let LoadAllAnalyzers() = 
         Directory.CreateDirectory(Path.Combine(serverSettings.ConfFolder, "analyzers")) |> ignore
         // Load all custom analyzer
@@ -65,18 +80,19 @@ type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : ITh
             | Choice1Of2(analyzerInfo) -> 
                 let analyzerInstance = analyzerInfo.Build(analyzerInfo.AnalyzerName, factoryService)
                 match analyzerInstance with
-                | Choice1Of2(a) -> analyzerRepository.TryAdd(analyzerInfo.AnalyzerName, a) |> ignore
+                | Choice1Of2(a) -> analyzerRepository.TryAdd(analyzerInfo.AnalyzerName, (a, analyzerInfo)) |> ignore
                 | Choice2Of2(e) -> 
                     logger.ComponentInitializationFailed(analyzerInfo.AnalyzerName, "Analyzer", e.ToString())
             | Choice2Of2(e) -> logger.ComponentInitializationFailed(file, "Analyzer", e.ToString())
-        // Load all out of box analyzers
+        // Load all out of box analyzers. These don't have any specific analyzer information
         factoryService.AnalyzerFactory.GetAllModules() 
-        |> Seq.iter (fun x -> analyzerRepository.TryAdd(x.Key, x.Value) |> ignore)
+        |> Seq.iter (fun x -> analyzerRepository.TryAdd(x.Key, (x.Value, new Analyzer(AnalyzerName = x.Key))) |> ignore)
     
     do LoadAllAnalyzers()
     interface IAnalyzerService with
         member x.AddOrUpdateAnalyzer(analyzer) = AddOrUpdateAnalyzer(analyzer)
         member x.Analyze(analyzerName : string, input : string) = failwith "Not implemented yet"
         member x.DeleteAnalyzer(analyzerName : string) = DeleteAnalyzer(analyzerName)
-        member x.GetAllAnalyzers() = Choice1Of2(analyzerRepository.Values.ToList())
+        member x.GetAllAnalyzers() = GetAllAnalyzers()
         member x.GetAnalyzer(analyzerName : string) = GetAnalyzer(analyzerName)
+        member x.GetAnalyzerInfo(analyzerName : string) = GetAnalyzerInfo(analyzerName)

@@ -122,6 +122,7 @@
     <Compile Include="HttpHandlers\SearchHandlers.fs" />
     <Compile Include="HttpHandlers\JobHandlers.fs" />
     <Compile Include="HttpHandlers\ListHandlers.fs" />
+    <Compile Include="HttpHandlers\AnalysisHandlers.fs" />
     <Compile Include="ModuleInitializer.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />
