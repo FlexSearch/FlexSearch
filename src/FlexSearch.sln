@@ -45,6 +45,12 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.DuplicateDetecti
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Weavers", "Weavers\Weavers.fsproj", "{0EA08BA3-9BDC-4936-BFFC-56A2419CD5CA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8BA08AD3-F42A-47D4-AD97-12D5C7184753}"
+	ProjectSection(SolutionItems) = preProject
+		build.bat = build.bat
+		build.fsx = build.fsx
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,8 +71,7 @@ Global
 		{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}.Release|x64.ActiveCfg = Release|x64
-		{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}.Release|x64.Build.0 = Release|x64
+		{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}.Release|x64.ActiveCfg = Release|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -97,8 +102,7 @@ Global
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.ActiveCfg = Release|x64
-		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.Build.0 = Release|x64
+		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.ActiveCfg = Release|Any CPU
 		{BC622920-1E51-459A-8DFA-C89EF6FC33EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BC622920-1E51-459A-8DFA-C89EF6FC33EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC622920-1E51-459A-8DFA-C89EF6FC33EE}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

@@ -5,10 +5,10 @@ using System.Reflection;
 [assembly: AssemblyDescriptionAttribute("FlexSearch Logging Library")]
 [assembly: AssemblyProductAttribute("FlexSearch")]
 [assembly: AssemblyCopyrightAttribute("(c) Seemant Rajvanshi, 2012 - 2014")]
-[assembly: AssemblyFileVersionAttribute("0.23.0.0")]
-[assembly: AssemblyVersionAttribute("0.23.0.0")]
+[assembly: AssemblyFileVersionAttribute("0.24.0.0")]
+[assembly: AssemblyVersionAttribute("0.24.0.0")]
 namespace System {
     internal static class AssemblyVersionInformation {
-        internal const string Version = "0.23.0.0";
+        internal const string Version = "0.24.0.0";
     }
 }

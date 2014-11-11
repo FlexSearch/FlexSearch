@@ -1,8 +1,8 @@
 ﻿namespace System
 open System.Reflection
 
-[<assembly: AssemblyTitleAttribute("FlexSearch Core Library")>]
-[<assembly: AssemblyDescriptionAttribute("FlexSearch Core Library")>]
+[<assembly: AssemblyTitleAttribute("FlexSearch Common Utilities")>]
+[<assembly: AssemblyDescriptionAttribute("FlexSearch Common Utilities")>]
 [<assembly: AssemblyProductAttribute("FlexSearch")>]
 [<assembly: AssemblyCopyrightAttribute("(c) Seemant Rajvanshi, 2012 - 2014")>]
 [<assembly: AssemblyFileVersionAttribute("0.23.0.0")>]

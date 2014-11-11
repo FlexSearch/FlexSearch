@@ -1,15 +1,13 @@
-namespace System
-
+﻿namespace System
 open System.Reflection
 
-[<AssemblyTitleAttribute("FlexSearch Server")>]
-[<AssemblyDescriptionAttribute("FlexSearch Server")>]
-[<AssemblyProductAttribute("FlexSearch")>]
-[<AssemblyCopyrightAttribute("(c) Seemant Rajvanshi, 2012 - 2014")>]
-[<AssemblyFileVersionAttribute("0.21.1.0")>]
-[<AssemblyVersionAttribute("0.21.1.0")>]
+[<assembly: AssemblyTitleAttribute("FlexSearch Server")>]
+[<assembly: AssemblyDescriptionAttribute("FlexSearch Server")>]
+[<assembly: AssemblyProductAttribute("FlexSearch")>]
+[<assembly: AssemblyCopyrightAttribute("(c) Seemant Rajvanshi, 2012 - 2014")>]
+[<assembly: AssemblyFileVersionAttribute("0.23.0.0")>]
+[<assembly: AssemblyVersionAttribute("0.23.0.0")>]
 do ()
 
-module internal AssemblyVersionInformation = 
-    [<Literal>]
-    let Version = "0.21.1.0"
+module internal AssemblyVersionInformation =
+    let [<Literal>] Version = "0.23.0.0"

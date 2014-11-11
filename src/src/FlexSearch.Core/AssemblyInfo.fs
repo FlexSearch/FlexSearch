@@ -5,9 +5,9 @@ open System.Reflection
 [<assembly: AssemblyDescriptionAttribute("FlexSearch Core Library")>]
 [<assembly: AssemblyProductAttribute("FlexSearch")>]
 [<assembly: AssemblyCopyrightAttribute("(c) Seemant Rajvanshi, 2012 - 2014")>]
-[<assembly: AssemblyFileVersionAttribute("0.23.0.0")>]
-[<assembly: AssemblyVersionAttribute("0.23.0.0")>]
+[<assembly: AssemblyFileVersionAttribute("0.21.1.0")>]
+[<assembly: AssemblyVersionAttribute("0.21.1.0")>]
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] Version = "0.23.0.0"
+    let [<Literal>] Version = "0.21.1.0"
