@@ -215,7 +215,7 @@ type IAnalyzerService =
     abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, OperationMessage>
     abstract AddOrUpdateAnalyzer : analyzer:FlexSearch.Api.Analyzer -> Choice<unit, OperationMessage>
     abstract GetAllAnalyzers : unit -> Choice<List<FlexSearch.Api.Analyzer>, OperationMessage>
-    abstract Analyze : analyzerName:string * input:string -> Choice<List<string>, OperationMessage>
+    abstract Analyze : analyzerName:string * input:string -> Choice<string, OperationMessage>
 
 /// <summary>
 /// Interface which exposes all top level factories

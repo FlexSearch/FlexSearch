@@ -21,6 +21,7 @@ open System.Collections.Generic
 open System.IO
 open System.Linq
 open org.apache.lucene.search
+open org.apache.lucene.queryparser.classic
 
 [<Sealed>]
 /// <summary>
@@ -72,6 +73,13 @@ type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : ITh
             analyzers.Add(analyzerInfo)
         Choice1Of2(analyzers)
     
+    let Analyze(name, input) = maybe {
+        let! analyzer = GetAnalyzer(name)
+        let query = new QueryParser("", analyzer)
+        let result = query.parse(input)
+        return result.ToString()
+    }
+
     let LoadAllAnalyzers() = 
         Directory.CreateDirectory(Path.Combine(serverSettings.ConfFolder, "analyzers")) |> ignore
         // Load all custom analyzer
@@ -91,7 +99,7 @@ type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : ITh
     do LoadAllAnalyzers()
     interface IAnalyzerService with
         member x.AddOrUpdateAnalyzer(analyzer) = AddOrUpdateAnalyzer(analyzer)
-        member x.Analyze(analyzerName : string, input : string) = failwith "Not implemented yet"
+        member x.Analyze(analyzerName : string, input : string) = Analyze(analyzerName, input)
         member x.DeleteAnalyzer(analyzerName : string) = DeleteAnalyzer(analyzerName)
         member x.GetAllAnalyzers() = GetAllAnalyzers()
         member x.GetAnalyzer(analyzerName : string) = GetAnalyzer(analyzerName)

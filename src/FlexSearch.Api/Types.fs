@@ -752,18 +752,14 @@ type Job() =
     /// Any message that is associated with the job.
     /// </summary>
     member val Message = "" with get, set
-//[<ToString; Sealed>]
-//type ImportRequest() = 
-//    inherit ValidatableObjectBase<ImportRequest>()
-//    member val Id = "" with get, set
-//    member val Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) with get, set
-//    
-//    [<DefaultValue(false)>]
-//    member val ForceCreate = false with get, set
-//    
-//    member val JobId = "" with get, set
-//
-//[<ToString; Sealed>]
-//type ImportResponse() = 
-//    member val JobId = "" with get, set
-//    member val Message = "" with get, set
+
+/// <summary>
+/// Request to analyze a text against an analyzer. The reason to force
+/// this parameter to request body is to avoid escaping of restricted characters
+/// in the uri.
+/// This is helpful during analyzer testing.
+/// </summary>
+[<ToString; Sealed>]
+type AnalysisRequest() =
+    [<Required>]
+    member val Text = Unchecked.defaultof<string> with get, set

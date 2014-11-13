@@ -42,6 +42,20 @@ type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) =
     override this.Process(id, subId, body, context) = (analyzerService.GetAllAnalyzers(), Ok, BadRequest)
 
 /// <summary>
+///  Analyze a text string using the passed analyzer.
+/// </summary>
+/// <method>POST</method>
+/// <uri>/analyzers/:analyzerName/analyze</uri>
+/// <resource>analyzer</resource>
+/// <id>get-analyze-text</id>
+[<Name("POST-/analyzers/:id/analyze")>]
+[<Sealed>]
+type AnalyzeTextHandler(analyzerService : IAnalyzerService) = 
+    inherit HttpHandlerBase<AnalysisRequest, string>()
+    override this.Process(id, subId, body, context) = 
+        (analyzerService.Analyze(id.Value, body.Value.Text), Ok, BadRequest)
+
+/// <summary>
 ///  Delete an analyzer by Id
 /// </summary>
 /// <method>DELETE</method>
