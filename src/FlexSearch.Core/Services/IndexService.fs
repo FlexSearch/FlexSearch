@@ -31,7 +31,7 @@ open org.apache.lucene.search
 /// module but to only pass mutable state as an instance of NodeState
 /// </summary>
 /// <param name="state"></param>
-type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regManager : RegisterationManager, formatter : IFormatter, serverSettings : ServerSettings) = 
+type IndexService(settingsBuilder : ISettingsBuilder, analyzerService : IAnalyzerService, logger : ILogService, regManager : RegisterationManager, formatter : IFormatter, serverSettings : ServerSettings) = 
     
     /// <summary>
     /// Get an existing index details
@@ -235,7 +235,7 @@ type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regM
     /// <param name="nodeState"></param>
     let LoadAllIndex() = 
         for x in Directory.EnumerateDirectories(serverSettings.DataFolder) do
-            let confPath = Path.Combine(x, "conf.yml")
+            let confPath = Path.Combine(x, sprintf "conf%s" Constants.SettingsFileExtension)
             if File.Exists(confPath) then 
                 use stream = new FileStream(confPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
                 let indexInfo = formatter.DeSerialize<Index>(stream)
@@ -248,13 +248,9 @@ type IndexService(settingsBuilder : ISettingsBuilder, logger : ILogService, regM
                                 regManager.UpdateRegisteration
                                     (indexInfo.IndexName, IndexState.Online, indexInfo, Some(index)) |> ignore
                             | _ -> ()
-                        | _ -> ()
-                    //indexLogger.Info(sprintf "Index: %s loaded successfully." x.IndexName)
-                    with ex -> ()
-                //indexLogger.Error("Loading index from file failed.", ex)
-                else 
-                    //indexLogger.Info(sprintf "Index: %s is not loaded as it is set to be offline." x.IndexName)
-                    regManager.UpdateRegisteration(indexInfo.IndexName, IndexState.Online, indexInfo, None) |> ignore
+                        | Choice2Of2(e) -> logger.IndexValidationFailed(indexInfo.IndexName, indexInfo, e)
+                    with ex -> logger.TraceError(sprintf "Index Loading failure: %s." indexInfo.IndexName, ex)
+                else regManager.UpdateRegisteration(indexInfo.IndexName, IndexState.Online, indexInfo, None) |> ignore
     
     do LoadAllIndex()
     interface IIndexService with

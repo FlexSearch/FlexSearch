@@ -75,7 +75,7 @@ type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : ITh
     let LoadAllAnalyzers() = 
         Directory.CreateDirectory(Path.Combine(serverSettings.ConfFolder, "analyzers")) |> ignore
         // Load all custom analyzer
-        for file in Directory.EnumerateFiles(Path.Combine(serverSettings.ConfFolder, "analyzers"), "*.yml") do
+        for file in Directory.EnumerateFiles(Path.Combine(serverSettings.ConfFolder, "analyzers"), sprintf "*%s" Constants.SettingsFileExtension) do
             match threadSafeWriter.ReadFile<Analyzer>(file) with
             | Choice1Of2(analyzerInfo) -> 
                 let analyzerInstance = analyzerInfo.Build(analyzerInfo.AnalyzerName, factoryService)

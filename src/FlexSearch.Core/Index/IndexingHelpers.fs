@@ -101,7 +101,7 @@ type RegisterationManager(writer : IThreadSafeWriter, formatter : IFormatter, se
             assert (indexName <> null)
             // Only write to file for non ram type indices
             if indexInfo.IndexConfiguration.DirectoryType <> DirectoryType.Ram then 
-                do! writer.WriteFile<Index>(Path.Combine(serverSettings.DataFolder, indexName, "conf.yml"), indexInfo)
+                do! writer.WriteFile<Index>(Path.Combine(serverSettings.DataFolder, indexName, sprintf "conf%s" Constants.SettingsFileExtension), indexInfo)
             match stateDb.TryGetValue(indexName) with
             | (true, reg) -> 
                 let registeration = 

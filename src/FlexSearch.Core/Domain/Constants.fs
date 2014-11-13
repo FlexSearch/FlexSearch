@@ -31,3 +31,6 @@ module Constants =
     let PluginFolder = 
         Directory.CreateDirectory(pluginFolder) |> ignore
         pluginFolder
+
+    /// Extension to be used by settings file
+    let SettingsFileExtension = ".yml"
