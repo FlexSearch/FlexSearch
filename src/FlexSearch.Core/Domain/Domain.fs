@@ -149,6 +149,7 @@ type FlexFieldType =
     | FlexDateTime
     | FlexInt
     | FlexDouble
+    | FlexLong
 
 /// <summary>
 /// General Field which represents the basic properties for the field to be indexed

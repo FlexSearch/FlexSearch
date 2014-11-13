@@ -59,6 +59,7 @@ module FlexField =
         | FlexInt(_) -> SortField.Type.INT
         | FlexDouble(_) -> SortField.Type.DOUBLE
         | FlexHighlight(_) -> failwithf "Sorting is not possible on string or text data type."
+        | FlexLong(_) -> SortField.Type.LONG
     
     /// <summary>
     /// Gets the default string value associated with the field type.
@@ -76,6 +77,7 @@ module FlexField =
         | FlexInt(_) -> "0"
         | FlexDouble(_) -> "0.0"
         | FlexHighlight(_) -> "null"
+        | FlexLong(_) -> "0"
     
     /// <summary>
     /// Creates Lucene's field types. This is only used for FlexCustom data type to
@@ -149,6 +151,9 @@ module FlexField =
         | FlexDouble -> 
             ParseDouble (fun x -> new DoubleField(flexField.FieldName, x, flexField.StoreInformation.Store) :> Field) 
                 flexField.DefaultField value
+        | FlexLong -> 
+            ParseLong (fun x -> new LongField(flexField.FieldName, x, flexField.StoreInformation.Store) :> Field) 
+                flexField.DefaultField value
     
     /// <summary>
     /// Set the value of index field using the passed value
@@ -180,6 +185,10 @@ module FlexField =
             match Double.TryParse(value) with
             | (true, value) -> lucenceField.setDoubleValue (value)
             | _ -> lucenceField.setDoubleValue (0.0)
+        | FlexLong -> 
+            match Int64.TryParse(value) with
+            | (true, value) -> lucenceField.setLongValue (value)
+            | _ -> lucenceField.setLongValue (int64 0)
     
     /// <summary>
     /// Creates a default Lucene index field for the passed flex field.
@@ -201,6 +210,7 @@ module FlexField =
             new LongField(flexField.SchemaName, DateTimeDefaultValue.Force(), flexField.StoreInformation.Store) :> Field
         | FlexInt -> new IntField(flexField.SchemaName, 0, flexField.StoreInformation.Store) :> Field
         | FlexDouble -> new DoubleField(flexField.SchemaName, 0.0, flexField.StoreInformation.Store) :> Field
+        | FlexLong -> new LongField(flexField.SchemaName, int64 0, flexField.StoreInformation.Store) :> Field
     
     /// <summary>
     /// Set the value of index field to the default value
@@ -219,6 +229,7 @@ module FlexField =
         | FlexDateTime -> luceneField.setLongValue (DateTimeDefaultValue.Force())
         | FlexInt -> luceneField.setIntValue (0)
         | FlexDouble -> luceneField.setDoubleValue (0.0)
+        | FlexLong -> luceneField.setLongValue (int64 0)
     
     /// <summary>
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
@@ -239,7 +250,7 @@ module FlexField =
                           | FlexText(a, b) -> analyzerMap.put (x.FieldName, b) |> ignore
                           | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> ()
+                          | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored | FlexLong -> ()
                       else 
                           match x.FieldType with
                           | FlexCustom(a, b, c) -> analyzerMap.put (x.FieldName, a) |> ignore
@@ -247,5 +258,5 @@ module FlexField =
                           | FlexText(a, _) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
                           | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> ())
+                          | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored | FlexLong -> ())
         new PerFieldAnalyzerWrapper(new org.apache.lucene.analysis.standard.StandardAnalyzer(), analyzerMap)

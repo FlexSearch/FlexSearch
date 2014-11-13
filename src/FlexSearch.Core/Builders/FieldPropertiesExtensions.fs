@@ -115,6 +115,7 @@ module FieldPropertiesExtensions =
                     | FieldType.Bool -> return! Choice1Of2(FlexBool(keyWordAnalyzer), true)
                     | FieldType.Date -> return! Choice1Of2(FlexDate, false)
                     | FieldType.DateTime -> return! Choice1Of2(FlexDateTime, false)
+                    | FieldType.Long -> return! Choice1Of2(FlexLong, false)
                     | FieldType.Stored -> return! Choice1Of2(FlexStored, false)
                     | FieldType.ExactText -> return! Choice1Of2(FlexExactText(keyWordAnalyzer), true)
                     | FieldType.Text | FieldType.Highlight | FieldType.Custom -> 
