@@ -71,3 +71,9 @@ module ``Parser Tests`` =
         match ParseQueryString(sut) with
         | Choice1Of2(result) -> Assert.Equal(result.Count, expected)
         | Choice2Of2(_) -> Assert.True(false,  "Expected query string to pass")
+    
+    [<Theory>]
+    [<InlineData("abc ='1234'")>]
+    [<InlineData("abc ='a1234'")>]
+    let ``Expressions with spacing issues should parse``(sut: string) =
+        test2 sut

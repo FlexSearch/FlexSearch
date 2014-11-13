@@ -57,11 +57,11 @@ module Parsers =
     let value = choice [ stringLiteral; listOfValues ]
     
     /// <summary>
-    /// Indentifier implementation. Alphanumric character without spaces
+    /// Identifier implementation. Alphanumeric character without spaces
     /// </summary>
     let identifier = 
-        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':') 
-            "Field name should be alphanumber without '(', ')' and ' '." .>> ws
+        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''') 
+            "Field name should be alpha number without '(', ')' and ' '." .>> ws
     
     let DictionaryOfList(elements : (string * string) list) = 
         let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
