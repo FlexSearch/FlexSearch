@@ -245,18 +245,18 @@ module FlexField =
         fields |> Array.iter (fun x -> 
                       if isIndexAnalyzer then 
                           match x.FieldType with
-                          | FlexCustom(a, b, c) -> analyzerMap.put (x.FieldName, b) |> ignore
-                          | FlexHighlight(a, b) -> analyzerMap.put (x.FieldName, b) |> ignore
-                          | FlexText(a, b) -> analyzerMap.put (x.FieldName, b) |> ignore
-                          | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
+                          | FlexCustom(a, b, c) -> analyzerMap.put (x.SchemaName, b) |> ignore
+                          | FlexHighlight(a, b) -> analyzerMap.put (x.SchemaName, b) |> ignore
+                          | FlexText(a, b) -> analyzerMap.put (x.SchemaName, b) |> ignore
+                          | FlexExactText(a) -> analyzerMap.put (x.SchemaName, a) |> ignore
+                          | FlexBool(a) -> analyzerMap.put (x.SchemaName, a) |> ignore
                           | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored | FlexLong -> ()
                       else 
                           match x.FieldType with
-                          | FlexCustom(a, b, c) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexHighlight(a, _) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexText(a, _) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexExactText(a) -> analyzerMap.put (x.FieldName, a) |> ignore
-                          | FlexBool(a) -> analyzerMap.put (x.FieldName, a) |> ignore
+                          | FlexCustom(a, b, c) -> analyzerMap.put (x.SchemaName, a) |> ignore
+                          | FlexHighlight(a, _) -> analyzerMap.put (x.SchemaName, a) |> ignore
+                          | FlexText(a, _) -> analyzerMap.put (x.SchemaName, a) |> ignore
+                          | FlexExactText(a) -> analyzerMap.put (x.SchemaName, a) |> ignore
+                          | FlexBool(a) -> analyzerMap.put (x.SchemaName, a) |> ignore
                           | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored | FlexLong -> ())
         new PerFieldAnalyzerWrapper(new org.apache.lucene.analysis.standard.StandardAnalyzer(), analyzerMap)
