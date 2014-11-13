@@ -37,6 +37,7 @@ type CustomAnalyzer(tokenizerFactory : IFlexTokenizerFactory, filterFactories : 
     override this.createComponents (fieldName : string, reader : Reader) = 
         let source = tokenizerFactory.Create(reader)
         let mutable result = filterFactories.First().Create(source)
-        for filterFactory in filterFactories.Skip(1) do
-            result <- filterFactory.Create(result)
+        if filterFactories.Count() > 1 then
+            for i = 1 to filterFactories.Count() - 1 do
+                result <- filterFactories.[i].Create(result)
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
