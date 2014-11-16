@@ -103,7 +103,7 @@ module RestHelpers =
     
     let ExpectSuccess(message : Response<'T>) = 
         if obj.ReferenceEquals(message.Error, null) = false then 
-            Assert.True(1 = 2, sprintf "Expecting a success but received failure: %A" message)
+            Assert.True(1 = 2, sprintf "Expecting a success but received failure: %A" message.Error)
     
     let VerifyErrorCode (errorMessage : string) (message : Response<'T>) = 
         Assert.Equal<String>(errorMessage.GetErrorCode(), message.Error.ErrorCode)

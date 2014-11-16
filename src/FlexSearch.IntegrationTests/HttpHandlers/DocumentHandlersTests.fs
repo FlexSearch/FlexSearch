@@ -33,11 +33,10 @@ module ``Document Tests`` =
     
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-1", "")>]
     let ``Get top 10 documents from an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
-        let actual = client.GetTopDocuments("contact", 10).Result
+        let actual = client.GetTopDocuments("country", 10).Result
         actual |> ExpectSuccess
         handler |> VerifyHttpCode HttpStatusCode.OK
         Assert.Equal<int>(10, actual.Data.RecordsReturned)
-        Assert.Equal<int>(50, actual.Data.TotalAvailable)
     
     [<Theory; AutoMockIntegrationData; Example("post-indices-id-documents-id-2", "")>]
     let ``Add a document to an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
@@ -70,12 +69,12 @@ module ``Document Tests`` =
 
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-id-1", "")>]
     let ``Get a document from an index`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
-        let actual = client.GetDocument("contact", "1").Result
+        let actual = client.GetDocument("country", "10").Result
         actual |> ExpectSuccess
-        Assert.Equal<String>("1", actual.Data.Id)
+        Assert.Equal<String>("10", actual.Data.Id)
 
     [<Theory; AutoMockIntegrationData; Example("get-indices-id-documents-id-2", "")>]
     let ``Non existing document should return Not found`` (client : IFlexClient, indexName : Guid, handler : LoggingHandler) = 
-        let actual = client.GetDocument("contact", "55").Result
+        let actual = client.GetDocument("country", "355").Result
         handler |> VerifyHttpCode HttpStatusCode.NotFound
 

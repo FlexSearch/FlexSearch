@@ -65,9 +65,10 @@
   <ItemGroup>
     <Compile Include="TestData.fs" />
     <Compile Include="Helpers.fs" />
+    <Compile Include="Builders.fs" />
+    <None Include="packages.config" />
     <Compile Include="Attributes.fs" />
     <Compile Include="RestHelpers.fs" />
-    <None Include="packages.config" />
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
@@ -265,6 +266,11 @@
     <ProjectReference Include="..\FlexSearch.Logging\FlexSearch.Logging.csproj">
       <Name>FlexSearch.Logging</Name>
       <Project>{b43636f8-d809-4b73-a1da-c5f17df05992}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Server\FlexSearch.Server.fsproj">
+      <Name>FlexSearch.Server</Name>
+      <Project>{0abe2f45-cf90-40ec-98cd-144eb0ae9bdd}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

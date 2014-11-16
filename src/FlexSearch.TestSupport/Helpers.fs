@@ -32,7 +32,16 @@ module Helpers =
         match choice with
         | Choice1Of2(success) -> success
         | Choice2Of2(error) -> failwithf "Expected the result to be success but received failure: %s" error.DeveloperMessage
-    
+
+    /// <summary>
+    /// Gets the Choice1 (success) option
+    /// </summary>
+    /// <param name="choice"></param>
+    let GetFailureChoice(choice : Choice<'T, OperationMessage>) = 
+        match choice with
+        | Choice1Of2(success) -> failwithf "Expected the result to be failure but received success: %A" success
+        | Choice2Of2(error) -> error
+            
     /// <summary>
     /// Returns success if Choice1 is present
     /// </summary>
@@ -74,3 +83,4 @@ module Helpers =
     let DocumentationConf = 
         { DocumentationFolder = @"F:\SkyDrive\FlexSearch Documentation\source\docs\examples"
           ApiFile = @"F:\Github\FlexSearch\idl\Api.thrift" }
+

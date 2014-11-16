@@ -286,6 +286,11 @@
       <Project>{b43636f8-d809-4b73-a1da-c5f17df05992}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Server\FlexSearch.Server.fsproj">
+      <Name>FlexSearch.Server</Name>
+      <Project>{0abe2f45-cf90-40ec-98cd-144eb0ae9bdd}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj">
       <Name>FlexSearch.TestSupport</Name>
       <Project>{6f26a1d2-ef8a-4ec7-adba-25844be00b74}</Project>

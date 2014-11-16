@@ -67,7 +67,7 @@ module ``Basic index operation tests`` =
 
 module ``Dynamic field tests`` = 
     let testData = """
-id,topic,givenname,surname,cvv2
+id,topic,firstname,lastname,cvv2
 1,a,aron,jhonson,1
 2,c,steve,hewitt,1
 3,b,george,Garner,1
@@ -87,12 +87,12 @@ id,topic,givenname,surname,cvv2
 
 module ``Index reloading tests`` =
     let testData = """
-id,topic,givenname,surname,cvv2
-1,a,aron,jhonson,1
-2,c,steve,hewitt,1
-3,b,george,Garner,1
-4,e,jhon,Garner,1
-5,d,simon,jhonson,1"""
+id
+1
+2
+3
+4
+5"""
 
     [<Theory>][<AutoMockIntegrationData>]
     let ``An index can be reloaded from the disk after closing`` (index : Index, indexService : IIndexService, 
