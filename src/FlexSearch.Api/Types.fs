@@ -561,14 +561,14 @@ type FlexDocument(indexName : string, id : string) =
 /// user to enable an index before using it.
 /// </summary>
 [<ToString; Sealed>]
-type Index() = 
+type Index(indexName : string) = 
     inherit ValidatableObjectBase<Index>()
     
     /// <summary>
     /// Name of the index
     /// </summary>
     [<PropertyName; Required(AllowEmptyStrings = false)>]
-    member val IndexName = Unchecked.defaultof<string> with get, set
+    member val IndexName = indexName with get, set
     
     /// <summary>
     /// Fields to be used in index.
@@ -602,6 +602,9 @@ type Index() =
     [<DefaultValue(false)>]
     member val Online = false with get, set
     
+    new() = Index(Unchecked.defaultof<string>)
+    member this.AddField(fieldName : string) = this.Fields.Add(new Field(fieldName))
+    member this.AddField(fieldName : string, fieldType : FieldType) = this.Fields.Add(new Field(fieldName, fieldType))
     override this.Validate(context) = 
         seq { 
             yield Helpers.ValidateCollection<Field>(this.Fields)
@@ -760,6 +763,6 @@ type Job() =
 /// This is helpful during analyzer testing.
 /// </summary>
 [<ToString; Sealed>]
-type AnalysisRequest() =
+type AnalysisRequest() = 
     [<Required>]
     member val Text = Unchecked.defaultof<string> with get, set
