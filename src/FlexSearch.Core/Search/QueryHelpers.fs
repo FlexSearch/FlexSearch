@@ -52,7 +52,7 @@ module QueryHelpers =
     // Check if the passed field is numeric field
     let inline IsNumericField(flexField : FlexField) = 
         match flexField.FieldType with
-        | FlexDate | FlexDateTime | FlexInt | FlexDouble -> true
+        | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexLong -> true
         | _ -> false
     
     // Get a search query parser associated with the field 
@@ -63,7 +63,7 @@ module QueryHelpers =
         | FlexText(a, _) -> Some(a)
         | FlexExactText(a) -> Some(a)
         | FlexBool(a) -> Some(a)
-        | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored -> None
+        | FlexDate | FlexDateTime | FlexInt | FlexDouble | FlexStored | FlexLong -> None
     
     // Find terms associated with the search string
     let inline GetTerms(flexField : FlexField, value) = 
@@ -87,7 +87,7 @@ module QueryHelpers =
     
     let NumericTermQuery(flexIndexField, value) = 
         match flexIndexField.FieldType with
-        | FlexDate | FlexDateTime -> 
+        | FlexDate | FlexDateTime | FlexLong -> 
             match Int64.TryParse(value) with
             | (true, val1) -> 
                 Choice1Of2

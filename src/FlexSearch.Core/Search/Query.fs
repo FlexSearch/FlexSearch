@@ -191,7 +191,7 @@ type FlexGreaterQuery() =
             match IsNumericField(flexIndexField) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime -> 
+                | FlexDate | FlexDateTime | FlexLong -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
@@ -244,7 +244,7 @@ type FlexGreaterThanEqualQuery() =
             match IsNumericField(flexIndexField) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime -> 
+                | FlexDate | FlexDateTime | FlexLong -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
@@ -297,7 +297,7 @@ type FlexLessThanQuery() =
             match IsNumericField(flexIndexField) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime -> 
+                | FlexDate | FlexDateTime | FlexLong -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
@@ -350,7 +350,7 @@ type FlexLessThanEqualQuery() =
             match IsNumericField(flexIndexField) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime -> 
+                | FlexDate | FlexDateTime | FlexLong -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
