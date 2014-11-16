@@ -87,6 +87,7 @@
     <Compile Include="Domain\Domain.fs" />
     <Compile Include="Domain\Interface.fs" />
     <Compile Include="Domain\Settings.fs" />
+    <Compile Include="Domain\Resources.fs" />
     <Compile Include="Analysis\CustomAnalyzer.fs" />
     <Compile Include="Analysis\Analyzers.fs" />
     <Compile Include="Analysis\Filters.fs" />
@@ -114,6 +115,7 @@
     <Compile Include="Services\JobService.fs" />
     <Compile Include="Services\ResourceService.fs" />
     <Compile Include="Services\AnalyzerService.fs" />
+    <Compile Include="Services\DemoIndexService.fs" />
     <Compile Include="Http\Formatters.fs" />
     <Compile Include="Http\HttpHelpers.fs" />
     <Compile Include="Http\Owin.fs" />
@@ -123,6 +125,7 @@
     <Compile Include="HttpHandlers\JobHandlers.fs" />
     <Compile Include="HttpHandlers\ListHandlers.fs" />
     <Compile Include="HttpHandlers\AnalysisHandlers.fs" />
+    <Compile Include="HttpHandlers\DemoHandler.fs" />
     <Compile Include="ModuleInitializer.fs" />
     <Compile Include="Main.fs" />
     <Compile Include="AssemblyInfo.fs" />

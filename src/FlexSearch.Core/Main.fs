@@ -72,6 +72,7 @@ module Main =
         builder |> FactoryService.RegisterSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.RegisterSingleInstance<JobService, IJobService>
         builder |> FactoryService.RegisterSingleInstance<AnalyzerService, IAnalyzerService>
+        builder |> FactoryService.RegisterSingleInstance<DemoIndexService, DemoIndexService>
         builder |> FactoryService.RegisterSingleInstance<ResourceService, IResourceService>
         builder |> FactoryService.RegisterSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
         builder.Build()
