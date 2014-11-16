@@ -19,7 +19,8 @@ module ReferenceDocumentation =
     type System.String with
         member this.CamelCaseToSeparate() = System.Text.RegularExpressions.Regex.Replace(this, "([A-Z])", " $1")
     
-    let GlossaryPath = @"G:\Bitbucket\flex-docs\src\data\glossary"
+    let GlossaryPath = @"G:\Bitbucket\flexsearch-documentation\src\content\docs\glossary"
+    let GlossaryDataPath = @"G:\Bitbucket\flexsearch-documentation\src\data\glossary"
     let jsonSettings = new JsonSerializerSettings()
     
     jsonSettings.Converters.Add(new StringEnumConverter())
@@ -132,6 +133,21 @@ module ReferenceDocumentation =
                 types.Add(def)
                 printfn ""
         types
+    
+    let glossaryTemplate = """---
+title: Glossary - <Title>
+layout: docs.html
+titleOff: true
+---
+{{include 'properties' <Title>}}
+"""
+    
+    let GenerateGlossaryPages() = 
+        for g in Directory.EnumerateFiles(GlossaryDataPath, "*.json") do
+            let title = Path.GetFileNameWithoutExtension(g)
+            let path = Path.Combine(GlossaryPath, title + ".md")
+            let content = glossaryTemplate.Replace("<Title>", title)
+            File.WriteAllText(path, content)
     
     let GenerateGlossary() = 
         let types = GetAllTypes()

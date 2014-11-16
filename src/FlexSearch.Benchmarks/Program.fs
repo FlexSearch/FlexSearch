@@ -6,6 +6,7 @@ open Nessos.UnionArgParser
 open PerfUtil
 open System
 open FlexSearch.Documention.GenerateExamples
+open FlexSearch.Documention
 
 let GenerateGlossary() = 
     
@@ -40,8 +41,9 @@ type Arguments =
 
 [<EntryPoint>]
 let main argv = 
-    GenerateApiDocumentation()
+    //GenerateApiDocumentation()
     //GenerateGlossary()
+    ReferenceDocumentation.GenerateGlossaryPages()
     //GenerateIndicesExamples()
     //Global.AddIndex()
     

@@ -32,10 +32,12 @@ module GenerateExamples =
         member val RequestBody = Unchecked.defaultof<string> with get, set
         member val Response = Unchecked.defaultof<_> with get, set
         member val ResponseBody = Unchecked.defaultof<string> with get, set
+        member val ResponseBodyJson = Unchecked.defaultof<_> with get, set
     
     let Container = IntegrationTestHelpers.Container
-    let exampleFolder = @"G:\Bitbucket\flex-docs\src\data\rest-examples"
-    let apiFolder = @"G:\Bitbucket\flex-docs\src\data\endpoints"
+    let demoService = Container.Resolve<FlexSearch.Core.Services.DemoIndexService>()
+    let exampleFolder = @"G:\Bitbucket\flexsearch-documentation\src\data\rest-examples"
+    let apiFolder = @"G:\Bitbucket\flexsearch-documentation\src\data\endpoints"
     
     let testServer = 
         TestServer.Create(fun app -> 
@@ -61,22 +63,25 @@ module GenerateExamples =
                 let example = new Example()
                 printfn "Method Name: %s" m.Name
                 try 
-                    let paramCount = m.GetParameters().Count()
                     let testServer = testServer
-                    let indexName = Guid.NewGuid()
+                    let indexNameGuid = Guid.NewGuid()
+                    let indexName = indexNameGuid.ToString("N")
+                    let index = demoService.GetDemoIndex()
                     let loggingHandler = new LoggingHandler(testServer.Handler)
                     let httpClient = new HttpClient(loggingHandler)
-                    let flexClient = new FlexClient(httpClient)
+                    let flexClient = new FlexClient(httpClient) :> IFlexClient
                     
                     let parameters = 
-                        if paramCount = 3 then 
-                            [| flexClient :> obj
-                               indexName :> obj
-                               loggingHandler :> obj |]
-                        else if paramCount = 2 then 
-                            [| testServer :> obj
-                               flexClient :> obj |]
-                        else [| flexClient :> obj |]
+                        let parameters = new List<obj>()
+                        for p in m.GetParameters() do
+                            if p.ParameterType = typeof<String> then parameters.Add(indexName :> obj)
+                            else if p.ParameterType = typeof<FlexSearch.Api.Index> then parameters.Add(index :> obj)
+                            else if p.ParameterType = typeof<TestServer> then parameters.Add(testServer :> obj)
+                            else if p.ParameterType = typeof<LoggingHandler> then parameters.Add(loggingHandler :> obj)
+                            else if p.ParameterType = typeof<IFlexClient> then parameters.Add(flexClient :> obj)
+                            else if p.ParameterType = typeof<Guid> then parameters.Add(indexNameGuid :> obj)
+                            else failwithf "Unknown parameter : %s" (p.ParameterType.ToString())
+                        parameters.ToArray()
                     
                     let result = m.Invoke(null, parameters)
                     let attributeValue = 
@@ -89,11 +94,17 @@ module GenerateExamples =
                     example.Response <- loggingHandler.RequestLog().HttpResponse
                     let responseBody = JsonConvert.DeserializeObject(loggingHandler.RequestLog().ResponseBody)
                     example.ResponseBody <- JsonConvert.SerializeObject(responseBody, jsonSettings)
-                    let requestBody = JsonConvert.DeserializeObject(loggingHandler.RequestLog().RequestBody)
+                    example.ResponseBodyJson <- responseBody
+                    let requestBody = 
+                        if loggingHandler.RequestLog().RequestBody <> null then
+                            JsonConvert.DeserializeObject(loggingHandler.RequestLog().RequestBody)
+                        else null
                     example.RequestBody <- JsonConvert.SerializeObject(requestBody, jsonSettings)
                     examples.Add(example)
                     ()
-                with e -> printfn "%s" e.Message
+                with e -> 
+                    printfn "%s" e.Message
+                    raise (e)
         document (examples)
     
     type ApiParameter() = 
