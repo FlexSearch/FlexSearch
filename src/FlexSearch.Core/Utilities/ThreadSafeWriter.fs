@@ -71,11 +71,11 @@ type ThreadSafeFileWiter(formatter : IFormatter) =
         
         member this.WriteFile<'T>(filePath : string, content : 'T) = 
             let path = GetPathWithExtension(filePath)
-            use mutex = new Mutex(false, path.Replace("\\", ""))
+            use mutex = new Mutex(true, path.Replace("\\", ""))
             Directory.CreateDirectory(Path.GetDirectoryName(path)) |> ignore
             try 
-                mutex.WaitOne() |> ignore
-                use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)
+                mutex.WaitOne(-1) |> ignore
+                use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
                 let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
                 file.Write(byteContent, 0, byteContent.Length)
                 mutex.ReleaseMutex()
