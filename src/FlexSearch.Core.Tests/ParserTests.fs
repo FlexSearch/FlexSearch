@@ -60,15 +60,15 @@ module ``Parser Tests`` =
     [<InlineData("abc eq 'a' AND pr eq 'b'")>]
     let ``Simple expression should parse`` (sut: string) =
         test2 sut
-
+    
     [<Theory>]
-    [<InlineData("{f1: 'v1',f2 : 'v2'}", 2)>]
-    [<InlineData(" { f1:  'v1' , f2 : 'v2'}", 2)>]
-    [<InlineData("{   f1           : 'v1'  }   ", 1)>]
-    [<InlineData("        {f1: 'v1',f2:'v2',f3 : 'v3'}", 3)>]
-    [<InlineData("{f1 : 'v\\'1',f2 : 'v2'}", 2)>]
+    [<InlineData("f1: 'v1',f2 : 'v2'", 2)>]
+    [<InlineData(" f1:  'v1' , f2 : 'v2'", 2)>]
+    [<InlineData("   f1           : 'v1'     ", 1)>]
+    [<InlineData("        f1: 'v1',f2:'v2',f3 : 'v3'", 3)>]
+    [<InlineData("f1 : 'v\\'1',f2 : 'v2'", 2)>]
     let ``Search Profile QueryString should parse`` (sut: string, expected: int) =
-        match ParseQueryString(sut) with
+        match ParseQueryString(sut, false) with
         | Choice1Of2(result) -> Assert.Equal(result.Count, expected)
         | Choice2Of2(_) -> Assert.True(false,  "Expected query string to pass")
     

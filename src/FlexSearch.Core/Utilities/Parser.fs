@@ -74,22 +74,27 @@ module Parsers =
     // Format: fieldname:'value',fieldname:'value',fieldname:'value'
     // ----------------------------------------------------------------------------
     let private keyValue = identifier .>>. (str_ws ":" >>. ws >>. stringLiteralAsString) .>> ws
-    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> DictionaryOfList .>> ws //Map.ofList .>> ws
+    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> DictionaryOfList .>> ws
     let private keyValuePairsBetweenBracket = between (str_ws "{") (str_ws "}") keyValuePairs .>> ws
-    let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
+    let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairs .>> eof
+    let private queryStringParserWithBracket : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
     
     /// <summary>
     /// Search profile query string parser 
     /// Format: fieldname:'value',fieldname:'value',fieldname:'value'
     /// </summary>
     /// <param name="input"></param>
-    let ParseQueryString(input : string) = 
-        match run queryStringParser input with
-        | Success(result, _, _) -> Choice1Of2(result)
-        | Failure(errorMsg, _, _) -> 
-            Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
-                       |> GenerateOperationMessage
-                       |> Append("Message", errorMsg))
+    let ParseQueryString(input : string, withBrackets : bool) = 
+        let parse (queryString) (parser) = 
+            match run parser queryString with
+            | Success(result, _, _) -> Choice1Of2(result)
+            | Failure(errorMsg, _, _) -> 
+                Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
+                           |> GenerateOperationMessage
+                           |> Append("Message", errorMsg))
+        assert (input <> null)
+        if withBrackets then queryStringParserWithBracket |> parse input
+        else queryStringParser |> parse input
     
     /// <summary>
     /// Boost parser implemented using optional argument for optimization

@@ -51,7 +51,7 @@ type SearchService(regManager : RegisterationManager, queryFactory : IFlexFactor
                     search.MissingValueConfiguration <- sq.MissingValueConfiguration
                     let! values = match inputValues with
                                   | Some(values) -> Choice1Of2(values)
-                                  | None -> Parsers.ParseQueryString(search.QueryString)
+                                  | None -> Parsers.ParseQueryString(search.QueryString, false)
                     return! Choice1Of2(p', Some(values))
                 | _ -> return! Choice2Of2(Errors.SEARCH_PROFILE_NOT_FOUND |> GenerateOperationMessage)
             else let! predicate = parser.Parse(search.QueryString)

@@ -241,7 +241,7 @@ id,et1,t2,i1,t1
     [<Fact>]
     member __.``Searching with searchprofile 'profile1' will return 2 record``() = 
         let result = 
-            __.Query("{t1:'jhon',t2:'hewitt',i1:'1',et1:'c'}")
+            __.Query("t1:'jhon',t2:'hewitt',i1:'1',et1:'c'")
             |> __.WithSearchProfile "profile1"
             |> __.SearchResults
             |> __.ExpectSuccess
@@ -250,7 +250,7 @@ id,et1,t2,i1,t1
     [<Fact>]
     member __.``If no value for i1 is passed then the default configured value of 1 will be used``() = 
         let result = 
-            __.Query("{t1:'jhon',t2:'hewitt',et1:'c'}")
+            __.Query("t1:'jhon',t2:'hewitt',et1:'c'")
             |> __.WithSearchProfile "profile1"
             |> __.SearchResults
             |> __.ExpectSuccess
@@ -259,7 +259,7 @@ id,et1,t2,i1,t1
     [<Fact>]
     member __.``If no value for i1 is passed and no value for et1 is passed then et1 will be ignored``() = 
         let result = 
-            __.Query("{t1:'jhon',t2:'hewitt'}")
+            __.Query("t1:'jhon',t2:'hewitt'")
             |> __.WithSearchProfile "profile1"
             |> __.SearchResults
             |> __.ExpectSuccess
@@ -268,7 +268,7 @@ id,et1,t2,i1,t1
     [<Fact>]
     member __.``If no value for t1 is passed then the profile will throw error as that option is set``() = 
         let result = 
-            __.Query("{t2:'hewitt'}")
+            __.Query("t2:'hewitt'")
             |> __.WithSearchProfile "profile1"
             |> __.SearchResults
             |> __.ExpectFailure
@@ -277,7 +277,7 @@ id,et1,t2,i1,t1
     [<Fact>]
     member __.``If no value for t2 is passed then the profile will throw error as the value is missing``() = 
         let result = 
-            __.Query("{t1:'jhon'}")
+            __.Query("t1:'jhon'")
             |> __.WithSearchProfile "profile1"
             |> __.SearchResults
             |> __.ExpectFailure
