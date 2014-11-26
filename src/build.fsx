@@ -9,14 +9,21 @@ open System.Linq
 RestorePackages()
 
 // Version information
-let version = "0.23.1.1"
-let fileVersion = "0.23.1.1"
+let majorVersion = 0
+let minorVersion = 23
+let patchLevel = 2
+let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
+let version = sprintf "%i.%i.%i-alpha+%s" majorVersion minorVersion patchLevel buildVersion
 let productName = "FlexSearch"
 let copyright = "(c) Seemant Rajvanshi, 2012 - 2014"
 // Properties
 let buildDir = @".\build\"
 let testDir = @".\build\"
 let deployDir = @".\deploy\"
+
+// Create necessary directories if they don't exist
+Directory.CreateDirectory(buildDir)
+Directory.CreateDirectory(deployDir)
 
 /// <summary>
 /// Delete and move files to correct folders
@@ -60,7 +67,7 @@ let AssemblyInfo path title =
                                                                       Attribute.Description title
                                                                       Attribute.Product productName
                                                                       Attribute.Copyright copyright
-                                                                      Attribute.FileVersion fileVersion
+                                                                      Attribute.FileVersion version
                                                                       Attribute.Version version ]
 
 let AssemblyInfoCSharp path title = 
@@ -68,7 +75,7 @@ let AssemblyInfoCSharp path title =
                                                                                  Attribute.Description title
                                                                                  Attribute.Product productName
                                                                                  Attribute.Copyright copyright
-                                                                                 Attribute.FileVersion fileVersion
+                                                                                 Attribute.FileVersion version
                                                                                  Attribute.Version version ]
 
 // Targets
