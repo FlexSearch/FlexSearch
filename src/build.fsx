@@ -9,8 +9,8 @@ open System.Linq
 RestorePackages()
 
 // Version information
-let version = "0.23.0.0"
-let fileVersion = "0.23.0.0"
+let version = "0.23.1.1"
+let fileVersion = "0.23.1.1"
 let productName = "FlexSearch"
 let copyright = "(c) Seemant Rajvanshi, 2012 - 2014"
 // Properties
