@@ -23,65 +23,61 @@ open System.Collections.Generic
 open System.Data
 open System.Data.SqlClient
 open System.IO
+open FlexSearch.Api.Validation
+open System.ComponentModel.DataAnnotations
+
+/// <summary>
+/// Represents a request which can be sent to Sql connector to index SQL data
+/// </summary>
+[<Sealed>]
+type SqlIndexingRequest() = 
+    inherit ValidatableObjectBase<SqlIndexingRequest>()
+    
+    /// <summary>
+    /// Name of the index
+    /// </summary>
+    [<Required>]
+    member val IndexName = Unchecked.defaultof<string> with get, set
+    
+    /// <summary>
+    /// The query to be used to fetch data from Sql server
+    /// </summary>
+    [<Required>]
+    member val Query = Unchecked.defaultof<string> with get, set
+    
+    /// <summary>
+    /// Connection string used to connect to the server
+    /// </summary>
+    [<Required>]
+    member val ConnectionString = Unchecked.defaultof<string> with get, set
+    
+    /// <summary>
+    /// Signifies if all updates to the index are create
+    /// </summary>
+    [<Required>]
+    member val ForceCreate = true with get, set
 
 [<Sealed>]
-type SqlQuery() = 
-    member val SingleRequestQuery = "" with get, set
-    member val BulkRequestQuery = "" with get, set
-
-[<Sealed>]
-type SqlSetting() = 
-    member val ConnectionString = "" with get, set
-    member val Queries = new ConcurrentDictionary<string, SqlQuery>(StringComparer.OrdinalIgnoreCase) with get, set
-
-[<Sealed>]
-[<Name("POST-/indices/:id/sql/:id")>]
+[<Name("POST-/indices/:id/sql")>]
 type SqlHandler(serverSettings : ServerSettings, queueService : IQueueService, jobService : IJobService, threadSafeWriter : IThreadSafeWriter, logger : ILogService) = 
-    inherit HttpHandlerBase<unit, Guid>()
+    inherit HttpHandlerBase<SqlIndexingRequest, string>()
     
-    // Generate a sample file for user
-    let sampleFile = 
-        let sampleData = new ConcurrentDictionary<string, SqlSetting>()
-        let sqlSettings = new SqlSetting()
-        sqlSettings.ConnectionString <- "connectionString"
-        sqlSettings.Queries.TryAdd
-            ("query1", new SqlQuery(SingleRequestQuery = "singleRequestQuery1", BulkRequestQuery = "bulkRequestQuery1")) 
-        |> ignore
-        sqlSettings.Queries.TryAdd
-            ("query2", new SqlQuery(SingleRequestQuery = "singleRequestQuery2", BulkRequestQuery = "bulkRequestQuery2")) 
-        |> ignore
-        sampleData.TryAdd("SqlSettings1", sqlSettings) |> ignore
-        sampleData.TryAdd("SqlSettings2", sqlSettings) |> ignore
-        threadSafeWriter.WriteFile(Path.Combine(serverSettings.ConfFolder, "SqlConnector", "sample.yml"), sampleData)
-    
-    let settings = 
-        match threadSafeWriter.ReadFile<ConcurrentDictionary<string, SqlSetting>>
-                  (Path.Combine(serverSettings.ConfFolder, "SqlConnector", "sql.yml")) with
-        | Choice1Of2(s) -> 
-            let result = new ConcurrentDictionary<string, SqlSetting>(StringComparer.OrdinalIgnoreCase)
-            for setting in s do
-                let queries = new ConcurrentDictionary<string, SqlQuery>(StringComparer.OrdinalIgnoreCase)
-                for sql in setting.Value.Queries do
-                    queries.TryAdd(sql.Key, sql.Value) |> ignore
-                setting.Value.Queries <- queries
-                result.TryAdd(setting.Key, setting.Value) |> ignore
-            result
-        | Choice2Of2(e) -> failwithf "%A" e
-    
-    let ExecuteSql(connectionString, query, indexName, jobId, forceCreate) = 
-        try 
-            use connection = new SqlConnection(connectionString)
-            use command = new SqlCommand(query, Connection = connection, CommandType = CommandType.Text)
+    let ExecuteSql(request : SqlIndexingRequest, jobId) = 
+        let job = new Job(JobId = jobId, Status = JobStatus.InProgress)
+        jobService.UpdateJob(job) |> ignore
+        try       
+            use connection = new SqlConnection(request.ConnectionString)
+            use command = new SqlCommand(request.Query, Connection = connection, CommandType = CommandType.Text)
             command.CommandTimeout <- 300
             connection.Open()
             let mutable rows = 0
             use reader = command.ExecuteReader()
             if reader.HasRows = true then 
                 while reader.Read() do
-                    let document = new FlexDocument(IndexName = indexName, Id = reader.[0].ToString())
+                    let document = new FlexDocument(IndexName = request.IndexName, Id = reader.[0].ToString())
                     for i = 1 to reader.FieldCount - 1 do
                         document.Fields.Add(reader.GetName(i), reader.GetValue(i).ToString())
-                    if forceCreate then queueService.AddDocumentQueue(document)
+                    if request.ForceCreate then queueService.AddDocumentQueue(document)
                     else queueService.AddOrUpdateDocumentQueue(document)
                     rows <- rows + 1
                     if String.IsNullOrWhiteSpace(jobId) <> true && rows % 5000 = 0 then 
@@ -100,50 +96,31 @@ type SqlHandler(serverSettings : ServerSettings, queueService : IQueueService, j
                         new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = "No rows returned.", 
                                 ProcessedItems = rows)
                     jobService.UpdateJob(job) |> ignore
-                logger.TraceError(sprintf "SQL connector error. No rows returned. Query:{%s}" query)
+                logger.TraceError(sprintf "SQL connector error. No rows returned. Query:{%s}" request.Query)
         with e -> 
             if String.IsNullOrWhiteSpace(jobId) <> true then 
                 let job = new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = e.Message)
                 jobService.UpdateJob(job) |> ignore
             logger.TraceError(sprintf "SQL connector error: %s" (ExceptionPrinter(e)))
-    
-    let GetQuery(queryName, sqlSettings : SqlSetting) = 
-        match sqlSettings.Queries.TryGetValue(queryName) with
-        | true, query -> Choice1Of2(query)
-        | _ -> Choice2Of2("QUERY_NOT_FOUND:Query does not exist." |> GenerateOperationMessage)
-    
+            
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
-            let rec loop = 
+            let rec loop() = 
                 async { 
-                    let! (connectionString, query, indexName, jobId, forceCreate) = inbox.Receive()
-                    ExecuteSql(connectionString, query, indexName, jobId, forceCreate)
-                    return! loop
+                    let! (body, jobId) = inbox.Receive()
+                    ExecuteSql(body, jobId)
+                    return! loop()
                 }
-            loop)
+            loop())
     
-    let ProcessRequest(index : string, connectionName : string, context : IOwinContext) = 
+    let ProcessRequest(index : string, body : SqlIndexingRequest, context : IOwinContext) = 
         maybe { 
-            let queryName = GetValueFromQueryString "query" "default" context
-            let forceCreate = GetBoolValueFromQueryString "forcecreate" false context
-            match settings.TryGetValue(connectionName) with
-            | true, c -> 
-                match context.Request.Query.Get("id") with
-                | null -> 
-                    // Bulk request
-                    let! query = GetQuery(queryName, c)
-                    let jobId = Guid.NewGuid()
-                    bulkRequestProcessor.Post
-                        (c.ConnectionString, query.BulkRequestQuery, index, jobId.ToString(), forceCreate)
-                    return! Choice1Of2(jobId)
-                | id -> 
-                    // Single index request
-                    let! query = GetQuery(queryName, c)
-                    let singleRequestQuery = query.SingleRequestQuery.Replace("{id}", id)
-                    ExecuteSql(c.ConnectionString, singleRequestQuery, index, "", forceCreate)
-                    return! Choice1Of2(Guid.Empty)
-            | _ -> return! Choice2Of2("CONNECTION_NOT_FOUND:Connection does not exist." |> GenerateOperationMessage)
+            body.IndexName <- index
+            do! (body :> IValidator).MaybeValidator()
+            let jobId = Guid.NewGuid()
+            bulkRequestProcessor.Post(body, jobId.ToString())
+            return! Choice1Of2(jobId.ToString())
         }
     
     override this.Process(index, connectionName, body, context) = 
-        ((ProcessRequest(index.Value, connectionName.Value, context)), Ok, BadRequest)
+        (ProcessRequest(index.Value, body.Value, context), Ok, BadRequest)
