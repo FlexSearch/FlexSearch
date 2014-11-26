@@ -238,9 +238,9 @@ type IndexService(settingsBuilder : ISettingsBuilder, analyzerService : IAnalyze
             let confPath = Path.Combine(x, sprintf "conf%s" Constants.SettingsFileExtension)
             if File.Exists(confPath) then 
                 use stream = new FileStream(confPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                let indexInfo = formatter.DeSerialize<Index>(stream)
-                if indexInfo.Online then 
-                    try 
+                try 
+                    let indexInfo = formatter.DeSerialize<Index>(stream)
+                    if indexInfo.Online then 
                         match settingsBuilder.BuildSetting(indexInfo) with
                         | Choice1Of2(flexIndexSetting) -> 
                             match Index.AddIndex(flexIndexSetting) with
@@ -249,8 +249,10 @@ type IndexService(settingsBuilder : ISettingsBuilder, analyzerService : IAnalyze
                                     (indexInfo.IndexName, IndexState.Online, indexInfo, Some(index)) |> ignore
                             | _ -> ()
                         | Choice2Of2(e) -> logger.IndexValidationFailed(indexInfo.IndexName, indexInfo, e)
-                    with ex -> logger.TraceError(sprintf "Index Loading failure: %s." indexInfo.IndexName, ex)
-                else regManager.UpdateRegisteration(indexInfo.IndexName, IndexState.Online, indexInfo, None) |> ignore
+                    else 
+                        regManager.UpdateRegisteration(indexInfo.IndexName, IndexState.Online, indexInfo, None) 
+                        |> ignore
+                with ex -> logger.TraceError(sprintf "Index Loading failure from path: %s." confPath, ex)
     
     do LoadAllIndex()
     interface IIndexService with
