@@ -1,8 +1,0 @@
-assembly_info:
-  patch: false
-build_script:
-  src\build.bat
-test: off
-artifacts:
-  - path: src\deploy\*.zip
-    name: FlexSearch

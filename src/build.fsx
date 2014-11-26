@@ -6,7 +6,12 @@ open Fake.AssemblyInfoFile
 open System.IO
 open System.Linq
 
+TraceEnvironmentVariables()
+
 RestorePackages()
+
+if buildServer = BuildServer.AppVeyor then
+    MSBuildLoggers <- @"""C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll""" :: MSBuildLoggers
 
 // Version information
 let majorVersion = 0
@@ -105,4 +110,4 @@ Target "Zip"
 "Clean" ==> "BuildApp" // ==> "Test"
                        ==> "Default" ==> "MoveFiles" ==> "Zip"
 // start build
-Run "Zip"
+RunTargetOrDefault "Zip"
