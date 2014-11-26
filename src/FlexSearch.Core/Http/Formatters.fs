@@ -64,7 +64,7 @@ type NewtonsoftJsonFormatter() =
                 writer.Write(")")
         
         member x.SupportedHeaders() : string [] = 
-            [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
+            [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8"; "application/javascript" |]
 
 [<Sealed>]
 type ProtoBufferFormatter() = 
