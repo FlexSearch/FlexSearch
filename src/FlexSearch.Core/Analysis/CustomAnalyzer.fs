@@ -8,42 +8,36 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
-// ----------------------------------------------------------------------------
 
-open FlexSearch.Core.Interface
 open FlexSearch.Core
-
+open System.Collections.Generic
+open System.ComponentModel.Composition
+open System.Linq
 open java.io
 open java.util
-
 open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.charfilter
+open org.apache.lucene.analysis.core
 open org.apache.lucene.analysis.miscellaneous
 open org.apache.lucene.analysis.phonetic
 open org.apache.lucene.analysis.standard
 open org.apache.lucene.analysis.util
 
-open System.Collections.Generic
-open System.ComponentModel.Composition
-open System.Linq
-
-// ----------------------------------------------------------------------------
-// Custom analyzer which can take any combination of filters
-// ----------------------------------------------------------------------------
-type CustomAnalyzer(tokenizerFactory: IFlexTokenizerFactory, filterFactories: IFlexFilterFactory[]) =
+/// <summary>
+/// Custom analyzer which can take any combination of filters
+/// </summary>
+[<Sealed>]
+type CustomAnalyzer(tokenizerFactory : IFlexTokenizerFactory, filterFactories : IFlexFilterFactory []) = 
     inherit Analyzer()
-    do
-        if filterFactories.Count() = 0 then
-            failwithf "Atleast 1 filter must be specified"
-
-    override this.createComponents(fieldName: string, reader: Reader) =
+    
+    do 
+        if filterFactories.Count() = 0 then failwithf "Atleast 1 filter must be specified"
+    
+    override this.createComponents (fieldName : string, reader : Reader) = 
         let source = tokenizerFactory.Create(reader)
         let mutable result = filterFactories.First().Create(source)
-        for filterFactory in filterFactories.Skip(1) do
-            result <- filterFactory.Create(result)
+        if filterFactories.Count() > 1 then
+            for i = 1 to filterFactories.Count() - 1 do
+                result <- filterFactories.[i].Create(result)
         new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
-            
-

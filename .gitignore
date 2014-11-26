@@ -108,6 +108,7 @@ _TeamCity*
 *.dotCover
 
 # NCrunch
+src/_NCrunch_FlexSearch
 *.ncrunch*
 .*crunch*.local.xml
 
@@ -219,3 +220,4 @@ pip-log.txt
 .mr.developer.cfg
 #/idl/gen-csharp
 build-debug
+/src/FlexSearch.Java/target/

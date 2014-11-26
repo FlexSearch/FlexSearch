@@ -15,8 +15,8 @@ module Parsers =
     open FParsec
     open FParsec.CharParsers
     open FParsec.Primitives
-    open FlexSearch.Api.Message
-    open FlexSearch.Core.Pool
+    open FlexSearch.Api
+    open FlexSearch.Common
     open System
     open System.Collections.Generic
     open System.Linq
@@ -57,31 +57,44 @@ module Parsers =
     let value = choice [ stringLiteral; listOfValues ]
     
     /// <summary>
-    /// Indentifier implementation. Alphanumric character without spaces
+    /// Identifier implementation. Alphanumeric character without spaces
     /// </summary>
     let identifier = 
-        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':') 
-            "Field name should be alphanumber without '(', ')' and ' '." .>> ws
+        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''') 
+            "Field name should be alpha number without '(', ')' and ' '." .>> ws
+    
+    let DictionaryOfList(elements : (string * string) list) = 
+        let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        for (key, value) in elements do
+            result.Add(key, value)
+        result
     
     // ----------------------------------------------------------------------------
     // Query string parser 
     // Format: fieldname:'value',fieldname:'value',fieldname:'value'
     // ----------------------------------------------------------------------------
     let private keyValue = identifier .>>. (str_ws ":" >>. ws >>. stringLiteralAsString) .>> ws
-    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> Map.ofList .>> ws
+    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> DictionaryOfList .>> ws
     let private keyValuePairsBetweenBracket = between (str_ws "{") (str_ws "}") keyValuePairs .>> ws
-    let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
+    let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairs .>> eof
+    let private queryStringParserWithBracket : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
     
     /// <summary>
-    /// Searchprofile query string parser 
+    /// Search profile query string parser 
     /// Format: fieldname:'value',fieldname:'value',fieldname:'value'
     /// </summary>
     /// <param name="input"></param>
-    let ParseQueryString(input : string) = 
-        match run queryStringParser input with
-        | Success(result, _, _) -> Choice1Of2(result)
-        | Failure(errorMsg, _, _) -> 
-            Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
+    let ParseQueryString(input : string, withBrackets : bool) = 
+        let parse (queryString) (parser) = 
+            match run parser queryString with
+            | Success(result, _, _) -> Choice1Of2(result)
+            | Failure(errorMsg, _, _) -> 
+                Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
+                           |> GenerateOperationMessage
+                           |> Append("Message", errorMsg))
+        assert (input <> null)
+        if withBrackets then queryStringParserWithBracket |> parse input
+        else queryStringParser |> parse input
     
     /// <summary>
     /// Boost parser implemented using optional argument for optimization
@@ -109,7 +122,8 @@ module Parsers =
     /// Default Parser for query parsing. 
     /// Note: The reason to create a parser class is to hide FParsec OperatorPrecedenceParser
     /// as it is not thread safe. This class will be created using object pool
-    /// </summary>    
+    /// </summary> 
+    [<Sealed>]
     type FlexParser() = 
         inherit PooledObject()
         let opp = new OperatorPrecedenceParser<Predicate, unit, unit>()
@@ -130,16 +144,12 @@ module Parsers =
             |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 2, Assoc.Left, fun x y -> AndPredidate(x, y))))
             notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, fun x -> NotPredicate(x))))
         
-        member this.Parse(input : string) = 
-            match run Parser input with
-            | Success(result, _, _) -> Choice1Of2(result)
-            | Failure(errorMsg, _, _) -> 
-                Choice2Of2(OperationMessage.WithDeveloperMessage(MessageConstants.QUERYSTRING_PARSING_ERROR, errorMsg))
-    
-    /// <summary>
-    /// Generates an object pool for the parser
-    /// </summary>
-    /// <param name="poolSize"></param>
-    let getParserPool (poolSize : int) = 
-        let factory() = new FlexParser()
-        new ObjectPool<FlexParser>(factory, poolSize)
+        interface IFlexParser with
+            member this.Parse(input : string) = 
+                assert (input <> null)
+                match run Parser input with
+                | Success(result, _, _) -> Choice1Of2(result)
+                | Failure(errorMsg, _, _) -> 
+                    Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
+                               |> GenerateOperationMessage
+                               |> Append("Message", errorMsg))

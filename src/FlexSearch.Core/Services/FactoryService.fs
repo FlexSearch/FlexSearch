@@ -8,11 +8,11 @@
 //
 // You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core
+namespace FlexSearch.Core.Services
 
 open Autofac
 open Autofac.Features.Metadata
-open FlexSearch.Api.Message
+open FlexSearch.Api
 open FlexSearch.Core
 open FlexSearch.Utility
 open System
@@ -47,14 +47,14 @@ module FactoryService =
         builder.RegisterAssemblyTypes(AppDomain.CurrentDomain.GetAssemblies()).Where(fun t -> t.BaseType = typeof<'T>).As<'T>
             () |> ignore
     
-    let RegisterSingleInstance<'T, 'U> (builder: ContainerBuilder) =
-        builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore 
-
+    let RegisterSingleInstance<'T, 'U>(builder : ContainerBuilder) = 
+        builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore
     
     /// <summary>
     /// Factory implementation
     /// </summary>
-    type FlexFactory<'T>(container : IContainer, moduleType) = 
+    [<Sealed>]
+    type FlexFactory<'T>(container : ILifetimeScope, logger : ILogService) = 
         
         /// Returns a module by name.
         /// Choice1of3 -> instance of T
@@ -62,7 +62,9 @@ module FactoryService =
         /// Choice3of3 -> error
         let getModuleByName (moduleName, metaOnly) = 
             if (System.String.IsNullOrWhiteSpace(moduleName)) then 
-                Choice3Of3(OperationMessage.WithPropertyName(MessageConstants.MODULE_NOT_FOUND, moduleName))
+                Choice3Of3(Errors.MODULE_NOT_FOUND
+                           |> GenerateOperationMessage
+                           |> Append("Module Name", moduleName))
             else 
                 // We cannot use a global instance of factory as it will cache the instances. We
                 // need a new instance of T per request 
@@ -73,46 +75,71 @@ module FactoryService =
                         a.Metadata.Keys.Contains("Name") 
                         && String.Equals(a.Metadata.["Name"].ToString(), moduleName, StringComparison.OrdinalIgnoreCase))
                 match injectMeta with
-                | null -> Choice3Of3(OperationMessage.WithPropertyName(MessageConstants.MODULE_NOT_FOUND, moduleName))
+                | null -> 
+                    Choice3Of3(Errors.MODULE_NOT_FOUND
+                               |> GenerateOperationMessage
+                               |> Append("ModuleName", moduleName))
                 | _ -> 
                     if metaOnly then Choice2Of3(injectMeta.Metadata)
-                    else Choice1Of3(injectMeta.Value.Value)
+                    else 
+                        try 
+                            let pluginValue = injectMeta.Value.Value
+                            logger.ComponentLoaded(moduleName, typeof<'T>.FullName)
+                            Choice1Of3(pluginValue)
+                        with e -> 
+                            logger.ComponentInitializationFailed(moduleName, typeof<'T>.FullName, e)
+                            Choice3Of3("MODULE_INITIALIZATION_FAILED:Unable to initialize the module."
+                                       |> GenerateOperationMessage
+                                       |> Append("ModuleName", moduleName)
+                                       |> Append("ModuleType", typeof<'T>.FullName)
+                                       |> Append("ErrorMessage", e.Message))
         
         interface IFlexFactory<'T> with
             
             member this.GetModuleByName(moduleName) = 
                 match getModuleByName (moduleName, false) with
                 | Choice1Of3(x) -> Choice1Of2(x)
-                | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.MODULE_NOT_FOUND, moduleName))
+                | _ -> 
+                    Choice2Of2(Errors.MODULE_NOT_FOUND
+                               |> GenerateOperationMessage
+                               |> Append("ModuleName", moduleName))
             
             member this.GetMetaData(moduleName) = 
                 match getModuleByName (moduleName, true) with
                 | Choice2Of3(x) -> Choice1Of2(x)
-                | _ -> Choice2Of2(OperationMessage.WithPropertyName(MessageConstants.MODULE_NOT_FOUND, moduleName))
+                | _ -> 
+                    Choice2Of2(Errors.MODULE_NOT_FOUND
+                               |> GenerateOperationMessage
+                               |> Append("ModuleName", moduleName))
             
             member this.ModuleExists(moduleName) = 
                 match getModuleByName (moduleName, true) with
-                | Choice1Of3(_) -> true
-                | _ -> false
+                | Choice1Of3(_) -> false
+                | _ -> true
             
             member this.GetAllModules() = 
                 let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
                 let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                factory |> Seq.iter (fun x -> modules.Add(x.Metadata.["Name"].ToString(), x.Value.Value))
+                for plugin in factory do
+                    if plugin.Metadata.ContainsKey("Name") then 
+                        let pluginName = plugin.Metadata.["Name"].ToString()
+                        try 
+                            let pluginValue = plugin.Value.Value
+                            modules.Add(pluginName, pluginValue)
+                            logger.ComponentLoaded(pluginName, typeof<'T>.FullName)
+                        with e -> logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, e)
                 modules
     
     /// <summary>
     /// Concrete implementation of IFactoryCollection
     /// </summary>
-    type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory, httpModuleFactory, importHandlerFactory, resourceLoader) = 
+    [<Sealed>]
+    type FactoryCollection(filterFactory, tokenizerFactory, analyzerFactory, searchQueryFactory) = 
         interface IFactoryCollection with
             member this.FilterFactory = filterFactory
             member this.TokenizerFactory = tokenizerFactory
             member this.AnalyzerFactory = analyzerFactory
             member this.SearchQueryFactory = searchQueryFactory
-            member this.HttpModuleFactory = httpModuleFactory
-            member this.ImportHandlerFactory = importHandlerFactory
-            member this.ResourceLoader = resourceLoader
-
-    let RegisterSingleFactoryInstance<'T> (builder: ContainerBuilder) =
-        builder.RegisterType<FlexFactory<'T>>().As<IFlexFactory<'T>>().SingleInstance() |> ignore 
+    
+    let RegisterSingleFactoryInstance<'T>(builder : ContainerBuilder) = 
+        builder.RegisterType<FlexFactory<'T>>().As<IFlexFactory<'T>>().SingleInstance() |> ignore

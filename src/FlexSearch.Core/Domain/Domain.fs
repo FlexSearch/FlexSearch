@@ -11,7 +11,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api
-open FlexSearch.Api.Message
 open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
@@ -35,6 +34,29 @@ open org.apache.lucene.index
 open org.apache.lucene.search
 open org.apache.lucene.store
 
+/// <summary>
+/// Version cache store used across the system. This helps in resolving 
+/// conflicts arising out of concurrent threads trying to update a Lucene document.
+/// </summary>
+type IVersioningCacheStore = 
+    abstract AddOrUpdate : id:string * version:int64 * comparison:int64 -> bool
+    abstract Delete : id:string * version:Int64 -> bool
+    abstract GetValue : id:string -> int64
+
+/// <summary>
+/// Version manager used to manage document version across all shards in an index.
+/// We will have one Version Manager per index.
+/// </summary>
+type IVersionManager = 
+    abstract VersionCheck : document:FlexDocument * newVersion:int64 -> Choice<int64, OperationMessage>
+    abstract VersionCheck : document:FlexDocument * shardNumber:int * newVersion:int64
+     -> Choice<int64, OperationMessage>
+    abstract AddOrUpdate : id:string * shardNumber:int * version:int64 * comparison:int64 -> bool
+    abstract Delete : id:string * shardNumber:int * version:Int64 -> bool
+
+type IShardMapper = 
+    abstract MapToShard : id:string -> int
+
 // ----------------------------------------------------------------------------
 // Contains all the indexing related data type definitions 
 // ----------------------------------------------------------------------------
@@ -53,10 +75,10 @@ type Value =
     member this.GetValueAsArray() = 
         match this with
         | SingleValue(v) -> 
-            if String.IsNullOrWhiteSpace(v) then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            if String.IsNullOrWhiteSpace(v) then Choice2Of2(MISSING_FIELD_VALUE |> GenerateOperationMessage)
             else Choice1Of2([| v |])
         | ValueList(v) -> 
-            if v.Length = 0 then Choice2Of2(MessageConstants.MISSING_FIELD_VALUE)
+            if v.Length = 0 then Choice2Of2(MISSING_FIELD_VALUE |> GenerateOperationMessage)
             else Choice1Of2(v.ToArray())
 
 /// <summary>
@@ -64,7 +86,7 @@ type Value =
 /// </summary>
 type Predicate = 
     | NotPredicate of Predicate
-    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Map<string, string> option
+    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Dictionary<string, string> option
     | OrPredidate of Lhs : Predicate * Rhs : Predicate
     | AndPredidate of Lhs : Predicate * Rhs : Predicate
 
@@ -76,7 +98,7 @@ type FieldStoreInformation =
       /// Short circuit field to help in bypassing enumeration over field type if a field is 
       /// stored only 
       IsStoredOnly : bool
-      /// Helper field to get lucene compatible store option. This is used like a
+      /// Helper field to get Lucene compatible store option. This is used like a
       /// cached value so that we don't generate it more than once.
       Store : Field.Store }
     static member Create(isStoredOnly : bool, isStored : bool) = 
@@ -95,13 +117,6 @@ type FieldStoreInformation =
               IsStoredOnly = false }
 
 /// <summary>
-/// Represents the various analyzers associated with a field
-/// </summary>
-type FieldAnalyzers = 
-    { SearchAnalyzer : Analyzer
-      IndexAnalyzer : Analyzer }
-
-/// <summary>
 /// Other field related information    
 /// </summary>
 type FieldInformation = 
@@ -114,40 +129,47 @@ type FieldInformation =
 type FieldIndexingInformation = 
     { Index : bool
       Tokenize : bool
-      /// This maps to lucene's term vectors and is only used for flex custom
+      /// This maps to Lucene's term vectors and is only used for flex custom
       /// data type
-      FieldTermVector : FieldTermVector }
+      FieldTermVector : FieldTermVector
+      /// This maps to Lucene's field index options
+      FieldIndexOptions : FieldIndexOptions }
 
 /// <summary>
 /// Represents the various data types supported by Flex
 /// </summary>
 type FlexFieldType = 
     | FlexStored
-    | FlexCustom of FieldAnalyzers * FieldIndexingInformation
-    | FlexHighlight of FieldAnalyzers
-    | FlexText of FieldAnalyzers
-    | FlexExactText of Analyzer
-    | FlexBool of Analyzer
+    | FlexCustom of searchAnalyzer : Analyzer * indexAnalyzer : Analyzer * indexingInformation : FieldIndexingInformation
+    | FlexHighlight of searchAnalyzer : Analyzer * indexAnalyzer : Analyzer
+    | FlexText of searchAnalyzer : Analyzer * indexAnalyzer : Analyzer
+    | FlexExactText of analyzer : Analyzer
+    | FlexBool of analyzer : Analyzer
     | FlexDate
     | FlexDateTime
     | FlexInt
     | FlexDouble
+    | FlexLong
 
 /// <summary>
 /// General Field which represents the basic properties for the field to be indexed
 /// </summary>
 type FlexField = 
     { FieldName : string
+      SchemaName : string
       StoreInformation : FieldStoreInformation
+      PostingsFormat : FieldPostingsFormat
+      // DocValuesFormat : FieldDocValuesFormat
+      Similarity : FieldSimilarity
       FieldType : FlexFieldType
-      Source : (System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>) option
+      Source : System.Func<System.Dynamic.DynamicObject, string> option
       /// This is applicable to all fields apart from stored only so making
       /// it an optional field. 
       FieldInformation : FieldInformation option
       /// Helper property to determine if the field needs any analyzer.
       /// This will save matching effort over field type
       RequiresAnalyzer : bool
-      /// Default lucene field for the flex field. This is used when the 
+      /// Default Lucene field for the flex field. This is used when the 
       /// the data submitted for indexing is invalid.
       DefaultField : Field }
 
@@ -155,9 +177,9 @@ type FlexField =
 // Search profile related types
 // ----------------------------------------------------------------------------
 type ScriptsManager = 
-    { ComputedFieldScripts : Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
-      ProfileSelectorScripts : Dictionary<string, System.Func<System.Collections.Generic.IReadOnlyDictionary<string, string>, string>>
-      CustomScoringScripts : Dictionary<string, IReadOnlyDictionary<string, string> * double -> double> }
+    { ComputedFieldScripts : Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>
+      ProfileSelectorScripts : Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>
+      CustomScoringScripts : Dictionary<string, System.Dynamic.DynamicObject * double -> double> }
 
 /// <summary>
 /// General index settings
@@ -179,8 +201,7 @@ type FlexIndexSetting =
 /// </summary>
 type FlexShardWriter = 
     { ShardNumber : int
-      NRTManager : SearcherManager
-      ReopenThread : ControlledRealTimeReopenThread
+      SearcherManager : SearcherManager
       IndexWriter : IndexWriter
       TrackingIndexWriter : TrackingIndexWriter }
 
@@ -188,29 +209,7 @@ type FlexShard =
     { ShardNumber : int }
 
 /// <summary>
-/// Represents an index in Flex terms which may consist of a number of
-/// valid lucene indices.
-/// </summary>
-type FlexIndex = 
-    { IndexSetting : FlexIndexSetting
-      Shards : FlexShardWriter []
-      Token : CancellationTokenSource }
-
-/// <summary>
-/// Case insensitive keyword analyzer 
-/// </summary>
-[<Export(typeof<Analyzer>)>]
-[<PartCreationPolicy(CreationPolicy.NonShared)>]
-[<ExportMetadata("Name", "CaseInsensitiveKeywordAnalyzer")>]
-type CaseInsensitiveKeywordAnalyzer() = 
-    inherit Analyzer()
-    override this.createComponents (fieldName : string, reader : Reader) = 
-        let source = new KeywordTokenizer(reader)
-        let result = new LowerCaseFilter(Constants.LuceneVersion, source)
-        new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
-
-/// <summary>
-/// Represents a dummy lucene document. There will be one per index stored in a dictionary
+/// Represents a dummy Lucene document. There will be one per index stored in a dictionary
 /// </summary>
 type ThreadLocalDocument = 
     { Document : Document
@@ -218,37 +217,24 @@ type ThreadLocalDocument =
       LastGeneration : int }
 
 /// <summary>
-/// Stores all mutable index related state data. This will be passed around
-/// in a controlled manner and is thread-safe.
+/// Represents an index in Flex terms which may consist of a number of
+/// valid Lucene indices.
 /// </summary>
-type IndicesState = 
-    { /// Dictionary to hold the current status of the indices. This is a thread 
-      /// safe dictionary so it is easier to update it compared to a
-      /// mutable field on index setting 
-      IndexStatus : ConcurrentDictionary<string, IndexState>
-      /// Dictionary to hold all the information about currently active index and their status
-      IndexRegisteration : ConcurrentDictionary<string, FlexIndex>
-      /// For optimal indexing performance, re-use the Field and Document 
-      /// instance for more than one document. But that is not easily possible
-      /// in a multi-threaded scenario using TPL data flow as we don't know which 
-      /// thread it is using to execute each task. The easiest way
-      /// is to use ThreadLocal value to create a local copy of the index document.
-      /// The implication of creating one lucene document class per document to 
-      /// be indexed is the penalty it has in terms of garbage collection. Also,
-      /// lucene's document and index classes can't be shared across threads.
-      ThreadLocalStore : ThreadLocal<ConcurrentDictionary<string, ThreadLocalDocument>> }
-    
-    member this.GetStatus(indexName) = 
-        match this.IndexStatus.TryGetValue(indexName) with
-        | (true, state) -> Choice1Of2(state)
-        | _ -> Choice2Of2(MessageConstants.INDEX_NOT_FOUND)
-    
-    member this.GetRegisteration(indexName) = 
-        match this.IndexRegisteration.TryGetValue(indexName) with
-        | (true, state) -> Choice1Of2(state)
-        | _ -> Choice2Of2(MessageConstants.INDEX_REGISTERATION_MISSING)
-    
-    member this.AddStatus(indexName, status) = 
-        match this.IndexStatus.TryAdd(indexName, status) with
-        | true -> Choice1Of2()
-        | false -> Choice2Of2(MessageConstants.ERROR_ADDING_INDEX_STATUS)
+type FlexIndex = 
+    { IndexSetting : FlexIndexSetting
+      Shards : FlexShardWriter []
+      ThreadLocalStore : ThreadLocal<ThreadLocalDocument>
+      VersioningManager : IVersionManager
+      Token : CancellationTokenSource }
+
+/// <summary>
+/// Case insensitive keyword analyzer 
+/// </summary>
+[<Name("CaseInsensitiveKeywordAnalyzer")>]
+[<Sealed>]
+type CaseInsensitiveKeywordAnalyzer() = 
+    inherit Analyzer()
+    override this.createComponents (fieldName : string, reader : Reader) = 
+        let source = new KeywordTokenizer(reader)
+        let result = new LowerCaseFilter(source)
+        new org.apache.lucene.analysis.Analyzer.TokenStreamComponents(source, result)
