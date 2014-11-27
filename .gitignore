@@ -221,3 +221,11 @@ pip-log.txt
 #/idl/gen-csharp
 build-debug
 /src/FlexSearch.Java/target/
+src/FlexSearch.Api/AssemblyInfo.fs
+src/FlexSearch.Client/AssemblyInfo.fs
+src/FlexSearch.Client/AssemblyInfo.fs
+src/FlexSearch.Common/AssemblyInfo.fs
+src/FlexSearch.Connectors/AssemblyInfo.fs
+src/FlexSearch.Core/AssemblyInfo.fs
+src/FlexSearch.Logging/Properties/AssemblyInfo.cs
+src/FlexSearch.Server/AssemblyInfo.fs
