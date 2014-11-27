@@ -55,6 +55,7 @@ type GetSearchHandler(searchService : ISearchService) =
                 query.Skip <- GetIntValueFromQueryString "skip" query.Skip owin
                 query.OrderBy <- GetValueFromQueryString "orderby" query.OrderBy owin
                 query.ReturnFlatResult <- GetBoolValueFromQueryString "returnflatresult" query.ReturnFlatResult owin
+                query.SearchProfile <- GetValueFromQueryString "searchprofile" "" owin
                 query.IndexName <- indexName
                 if query.ReturnFlatResult then 
                     let! (results, recordsReturned, totalAvailable) = searchService.SearchAsDictionarySeq(query)
