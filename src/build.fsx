@@ -7,10 +7,8 @@ open System.IO
 open System.Linq
 
 TraceEnvironmentVariables()
-
 RestorePackages()
-
-if buildServer = BuildServer.AppVeyor then
+if buildServer = BuildServer.AppVeyor then 
     MSBuildLoggers <- @"""C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll""" :: MSBuildLoggers
 
 // Version information
@@ -85,6 +83,11 @@ let AssemblyInfoCSharp path title =
 
 // Targets
 Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib" ])
+// This is to ensure that the compiled weaver is copied to the correct folder so that Fody can pick it up
+Target "BuildWeaver" (fun _ -> 
+    !!"weavers/weavers.fsproj"
+    |> MSBuildRelease "weavers/bin/release" "Build"
+    |> Log "BuildWeaver-Output: ")
 Target "BuildApp" (fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
@@ -93,7 +96,7 @@ Target "BuildApp" (fun _ ->
     AssemblyInfo "FlexSearch.Connectors" "FlexSearch Coneectors"
     AssemblyInfo "FlexSearch.Client" "FlexSearch Client"
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
-    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "AppBuild-Output: ")
+    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: ")
 Target "Test" (fun _ -> 
     let errorCode = 
         [ Path.Combine(testDir, "FlexSearch.Tests.exe") ]
@@ -107,7 +110,7 @@ Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
     (fun _ -> !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir + "FlexSearch." + version + ".zip"))
 // Dependencies
-"Clean" ==> "BuildApp" // ==> "Test"
-                       ==> "Default" ==> "MoveFiles" ==> "Zip"
+"Clean" ==> "BuildWeaver" ==> "BuildApp" // ==> "Test"
+                                         ==> "Default" ==> "MoveFiles" ==> "Zip"
 // start build
 RunTargetOrDefault "Zip"
