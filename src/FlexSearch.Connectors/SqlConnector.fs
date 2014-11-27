@@ -56,6 +56,12 @@ type SqlIndexingRequest() =
     /// </summary>
     [<Required>]
     member val ForceCreate = true with get, set
+    
+    /// <summary>
+    /// Signifies if the connector should create a job for the task and return a jobId which can be used
+    /// to check the status of the job.
+    /// </summary>
+    member val CreateJob = false with get, set
 
 [<Sealed>]
 [<Name("POST-/indices/:id/sql")>]
@@ -63,9 +69,10 @@ type SqlHandler(serverSettings : ServerSettings, queueService : IQueueService, j
     inherit HttpHandlerBase<SqlIndexingRequest, string>()
     
     let ExecuteSql(request : SqlIndexingRequest, jobId) = 
-        let job = new Job(JobId = jobId, Status = JobStatus.InProgress)
-        jobService.UpdateJob(job) |> ignore
-        try       
+        if request.CreateJob then 
+            let job = new Job(JobId = jobId, Status = JobStatus.InProgress)
+            jobService.UpdateJob(job) |> ignore
+        try 
             use connection = new SqlConnection(request.ConnectionString)
             use command = new SqlCommand(request.Query, Connection = connection, CommandType = CommandType.Text)
             command.CommandTimeout <- 300
@@ -102,7 +109,7 @@ type SqlHandler(serverSettings : ServerSettings, queueService : IQueueService, j
                 let job = new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = e.Message)
                 jobService.UpdateJob(job) |> ignore
             logger.TraceError(sprintf "SQL connector error: %s" (ExceptionPrinter(e)))
-            
+    
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
             let rec loop() = 
@@ -117,9 +124,15 @@ type SqlHandler(serverSettings : ServerSettings, queueService : IQueueService, j
         maybe { 
             body.IndexName <- index
             do! (body :> IValidator).MaybeValidator()
-            let jobId = Guid.NewGuid()
-            bulkRequestProcessor.Post(body, jobId.ToString())
-            return! Choice1Of2(jobId.ToString())
+            let jobId = 
+                if body.CreateJob then 
+                    let guid = Guid.NewGuid()
+                    bulkRequestProcessor.Post(body, guid.ToString())
+                    guid.ToString()
+                else 
+                    ExecuteSql(body, "")
+                    ""
+            return! Choice1Of2(jobId)
         }
     
     override this.Process(index, connectionName, body, context) = 
