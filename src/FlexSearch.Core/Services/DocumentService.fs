@@ -93,8 +93,8 @@ type DocumentService(regManager : RegisterationManager, searchService : ISearchS
             let! (flexIndex, documentTemplate) = Index.GetDocumentTemplate(flexIndex.Value)
             let! (targetIndex, documentTemplate) = Index.UpdateDocument(flexIndex, document)
             flexIndex.Shards.[targetIndex]
-                .TrackingIndexWriter.updateDocument(new Term(Constants.IdField, document.Id), documentTemplate.Document) 
-            |> ignore
+                .TrackingIndexWriter.updateDocument(new Term(flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, 
+                                                             document.Id), documentTemplate.Document) |> ignore
         }
     
     /// <summary>
