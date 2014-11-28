@@ -123,8 +123,9 @@ type DocumentService(regManager : RegisterationManager, searchService : ISearchS
             let! (flexIndex, documentTemplate) = Index.GetDocumentTemplate(flexIndex.Value)
             let targetShard = MapToShard documentId flexIndex.Shards.Length
             flexIndex.VersioningManager.Delete(documentId, targetShard, 0L) |> ignore
-            flexIndex.Shards.[targetShard].TrackingIndexWriter.deleteDocuments(new Term(Constants.IdField, documentId)) 
-            |> ignore
+            flexIndex.Shards.[targetShard]
+                .TrackingIndexWriter.deleteDocuments(new Term(flexIndex.IndexSetting.FieldsLookup.[Constants.IdField].SchemaName, 
+                                                              documentId)) |> ignore
         }
     
     /// <summary>
