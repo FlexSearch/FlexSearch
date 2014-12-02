@@ -73,25 +73,30 @@ type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : ITh
             analyzers.Add(analyzerInfo)
         Choice1Of2(analyzers)
     
-    let Analyze(name, input) = maybe {
-        let! analyzer = GetAnalyzer(name)
-        let query = new QueryParser("", analyzer)
-        let result = query.parse(input)
-        return result.ToString()
-    }
-
+    let Analyze(name, input) = 
+        maybe { 
+            let! analyzer = GetAnalyzer(name)
+            let query = new QueryParser("", analyzer)
+            let result = query.parse (input)
+            return result.ToString()
+        }
+    
     let LoadAllAnalyzers() = 
         Directory.CreateDirectory(Path.Combine(serverSettings.ConfFolder, "analyzers")) |> ignore
         // Load all custom analyzer
-        for file in Directory.EnumerateFiles(Path.Combine(serverSettings.ConfFolder, "analyzers"), sprintf "*%s" Constants.SettingsFileExtension) do
-            match threadSafeWriter.ReadFile<Analyzer>(file) with
-            | Choice1Of2(analyzerInfo) -> 
-                let analyzerInstance = analyzerInfo.Build(analyzerInfo.AnalyzerName, factoryService)
-                match analyzerInstance with
-                | Choice1Of2(a) -> analyzerRepository.TryAdd(analyzerInfo.AnalyzerName, (a, analyzerInfo)) |> ignore
-                | Choice2Of2(e) -> 
-                    logger.ComponentInitializationFailed(analyzerInfo.AnalyzerName, "Analyzer", e.ToString())
-            | Choice2Of2(e) -> logger.ComponentInitializationFailed(file, "Analyzer", e.ToString())
+        for file in Directory.EnumerateFiles
+                        (Path.Combine(serverSettings.ConfFolder, "analyzers"), 
+                         sprintf "*%s" Constants.SettingsFileExtension) do
+            try 
+                match threadSafeWriter.ReadFile<Analyzer>(file) with
+                | Choice1Of2(analyzerInfo) -> 
+                    let analyzerInstance = analyzerInfo.Build(analyzerInfo.AnalyzerName, factoryService)
+                    match analyzerInstance with
+                    | Choice1Of2(a) -> analyzerRepository.TryAdd(analyzerInfo.AnalyzerName, (a, analyzerInfo)) |> ignore
+                    | Choice2Of2(e) -> 
+                        logger.ComponentInitializationFailed(analyzerInfo.AnalyzerName, "Analyzer", e.ToString())
+                | Choice2Of2(e) -> logger.ComponentInitializationFailed(file, "Analyzer", e.ToString())
+            with e -> logger.TraceError(sprintf "Failed loading analyzer: %s" file, e)
         // Load all out of box analyzers. These don't have any specific analyzer information
         factoryService.AnalyzerFactory.GetAllModules() 
         |> Seq.iter (fun x -> analyzerRepository.TryAdd(x.Key, (x.Value, new Analyzer(AnalyzerName = x.Key))) |> ignore)
