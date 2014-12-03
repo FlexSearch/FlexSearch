@@ -17,19 +17,18 @@ Most of the road map is suggestive at the moment and might change depending upon
 
 - 0.22 (To be released)
   - There are around 400 tests at the moment but there are still few hotspots in the code base which are not covered through tests. The major goal of this release will be to plug all those gaps and have a 100 percent testable code base.
-  - More examples: There are around 100 examples in the documentation but a lot more could be done to improve the quality of those examples.
-  - Bug fixes 
-  - Stable API for connector model
-  - SQL and CSV connectors
-  - Add stress tests
-  - Finalize Wikipedia based tests
-  - Add FSCheck based random testing
-  - Add analysis service
-  - Create a homepage at the server root to display basic information. At the moment it just reports FlexSearch with version number.
+  - ~~More examples: There are around 100 examples in the documentation but a lot more could be done to improve the quality of those examples.~~
+  - ~~Bug fixes~~
+  - ~~Stable API for connector model~~
+  - ~~SQL and CSV connectors~~
+  - ~~Add stress tests~~
+  - ~~Finalize Wikipedia based tests~~
+  - ~~Add analysis service~~
+  - ~~Create a homepage at the server root to display basic information. At the moment it just reports FlexSearch with version number.~~
   
 - 0.23 (TBR)
   -   Release duplicate detection studio application (free WPF application)
-  -   Release Background duplicate matching functionality
+  -   ~~Release Background duplicate matching functionality~~
 
 -   0.25 (TBR)
   - Freeze all API for version 1.0     
