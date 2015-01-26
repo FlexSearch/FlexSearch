@@ -19,9 +19,6 @@ module Main =
     open FlexSearch.Core
     open FlexSearch.Core.Services
     open FlexSearch.Utility
-    open Microsoft.Owin
-    open Newtonsoft.Json
-    open Owin
     open System
     open System.Collections.Concurrent
     open System.Collections.Generic

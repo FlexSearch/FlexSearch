@@ -66,6 +66,11 @@
     <Compile Include="AssemblyInfo.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.Http\FlexSearch.Http.fsproj">
+      <Name>FlexSearch.Http</Name>
+      <Project>{0634b15c-b81e-44c8-b46d-cb6197988fa6}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="CsvHelper">
       <HintPath>..\packages\CsvHelper.2.8.2\lib\net40-client\CsvHelper.dll</HintPath>
       <Private>True</Private>

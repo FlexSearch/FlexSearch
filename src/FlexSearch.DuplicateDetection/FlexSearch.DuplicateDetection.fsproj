@@ -214,6 +214,11 @@
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Http\FlexSearch.Http.fsproj">
+      <Name>FlexSearch.Http</Name>
+      <Project>{0634b15c-b81e-44c8-b46d-cb6197988fa6}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
