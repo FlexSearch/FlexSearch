@@ -248,6 +248,11 @@
       <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Bootstrapper\FlexSearch.Bootstrapper.fsproj">
+      <Name>FlexSearch.Bootstrapper</Name>
+      <Project>{c8122e6b-66be-418d-808e-c50871926552}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Client\FlexSearch.Client.fsproj">
       <Name>FlexSearch.Client</Name>
       <Project>{e9a351e4-311b-4c7e-a483-e38fd96da0ca}</Project>
@@ -261,6 +266,11 @@
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Http\FlexSearch.Http.fsproj">
+      <Name>FlexSearch.Http</Name>
+      <Project>{0634b15c-b81e-44c8-b46d-cb6197988fa6}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Logging\FlexSearch.Logging.csproj">

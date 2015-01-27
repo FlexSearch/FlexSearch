@@ -142,10 +142,10 @@ type SqlHandler(regManager : RegisterationManager, searchService : ISearchServic
     let PerformDuplicateDetection(jobId, session : Session) = 
         maybe { 
             let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
-            let mainQuery = 
-                sprintf "%s > '%s' AND %s < '%s'" session.DateTimeField 
-                    (session.RangeStartTime.ToString("yyyyMMddHHmmssfff")) session.DateTimeField 
-                    (session.RangeEndTime.ToString("yyyyMMddHHmmssfff"))
+            let mainQuery = "_lastmodified > '20130101'"
+//                sprintf "%s > '%s' AND %s < '%s'" session.DateTimeField 
+//                    (session.RangeStartTime.ToString("yyyyMMddHHmmssfff")) session.DateTimeField 
+//                    (session.RangeEndTime.ToString("yyyyMMddHHmmssfff"))
             let mainQuery = new SearchQuery(session.IndexName, mainQuery, Count = (int32) System.Int16.MaxValue)
             // TODO: Future optimization: bring only the required columns
             mainQuery.Columns.Add("*")
