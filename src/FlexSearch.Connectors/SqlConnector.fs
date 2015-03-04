@@ -62,6 +62,16 @@ type SqlIndexingRequest() =
     /// to check the status of the job.
     /// </summary>
     member val CreateJob = false with get, set
+    
+    /// <summary>
+    /// Custom time out value to be used with the sql command
+    /// </summary>
+    member val TimeOut = 300 with get, set
+    
+    /// <summary>
+    /// Custom offset that can be used to simulate sql kind of offset functionality
+    /// </summary>
+    member val Offset = 0 with get, set
 
 [<Sealed>]
 [<Name("POST-/indices/:id/sql")>]
@@ -75,18 +85,20 @@ type SqlHandler(serverSettings : ServerSettings, queueService : IQueueService, j
         try 
             use connection = new SqlConnection(request.ConnectionString)
             use command = new SqlCommand(request.Query, Connection = connection, CommandType = CommandType.Text)
-            command.CommandTimeout <- 300
+            command.CommandTimeout <- request.TimeOut
             connection.Open()
             let mutable rows = 0
             use reader = command.ExecuteReader()
             if reader.HasRows = true then 
                 while reader.Read() do
-                    let document = new FlexDocument(IndexName = request.IndexName, Id = reader.[0].ToString())
-                    for i = 1 to reader.FieldCount - 1 do
-                        document.Fields.Add(reader.GetName(i), reader.GetValue(i).ToString())
-                    if request.ForceCreate then queueService.AddDocumentQueue(document)
-                    else queueService.AddOrUpdateDocumentQueue(document)
                     rows <- rows + 1
+                    if rows < request.Offset then ()
+                    else 
+                        let document = new FlexDocument(IndexName = request.IndexName, Id = reader.[0].ToString())
+                        for i = 1 to reader.FieldCount - 1 do
+                            document.Fields.Add(reader.GetName(i), reader.GetValue(i).ToString())
+                        if request.ForceCreate then queueService.AddDocumentQueue(document)
+                        else queueService.AddOrUpdateDocumentQueue(document)
                     if String.IsNullOrWhiteSpace(jobId) <> true && rows % 5000 = 0 then 
                         let job = 
                             new Job(JobId = jobId, Status = JobStatus.InProgress, Message = "", ProcessedItems = rows)
