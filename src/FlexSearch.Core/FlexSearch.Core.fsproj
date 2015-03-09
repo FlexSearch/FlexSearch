@@ -15,7 +15,7 @@
     <RestorePackages>true</RestorePackages>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>395d4ffb</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>27e97814</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -84,6 +84,9 @@
   <ItemGroup>
     <Compile Include="Domain\Constants.fs" />
     <Compile Include="Domain\Attributes.fs" />
+    <Compile Include="Domain\Errors.fs" />
+    <Compile Include="Domain\Validators.fs" />
+    <Compile Include="Domain\Dtos.fs" />
     <Compile Include="Domain\Domain.fs" />
     <Compile Include="Domain\Interface.fs" />
     <Compile Include="Domain\Settings.fs" />
@@ -95,9 +98,11 @@
     <Compile Include="Utilities\ThreadSafeWriter.fs" />
     <Compile Include="Utilities\Parser.fs" />
     <Compile Include="Utilities\DynamicDictionary.fs" />
+    <Compile Include="Lucene\Core.fs" />
     <Compile Include="Index\FlexField.fs" />
     <Compile Include="Index\IndexingHelpers.fs" />
     <Compile Include="Index\PerThreadVersionPKLookup.fs" />
+    <Compile Include="Index\IndexWriter.fs" />
     <Compile Include="Index\IndexOperations.fs" />
     <Compile Include="Search\Search.fs" />
     <Compile Include="Search\QueryHelpers.fs" />
@@ -286,13 +291,17 @@
       <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <Reference Include="ToString">
+      <HintPath>..\packages\ToString.Fody.1.6.3.0\Lib\portable-net4+sl4+wp7+win8+MonoAndroid16+MonoTouch40\ToString.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
-  <Import Project="..\packages\Fody.1.25.0\build\Fody.targets" Condition="Exists('..\packages\Fody.1.25.0\build\Fody.targets')" />
+  <Import Project="..\packages\Fody.1.27.1\build\Fody.targets" Condition="Exists('..\packages\Fody.1.27.1\build\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Fody.1.25.0\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.25.0\build\Fody.targets'))" />
+    <Error Condition="!Exists('..\packages\Fody.1.27.1\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.27.1\build\Fody.targets'))" />
   </Target>
   <!--<Import Project="..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />-->
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

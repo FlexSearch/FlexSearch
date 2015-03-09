@@ -17,6 +17,30 @@ open System.IO
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
 module Constants = 
+    [<Literal>]
+    let IdField = "_id"
+    
+    [<Literal>]
+    let LastModifiedField = "_lastmodified"
+    
+    [<Literal>]
+    let LastModifiedFieldDv = "_lastmodifieddv"
+
+    [<Literal>]
+    let TypeField = "_type"
+    
+    [<Literal>]
+    let VersionField = "_version"
+    
+    [<Literal>]
+    let DocumentField = "_document"
+    
+    [<Literal>]
+    let DotNetFrameWork = "4.5.1"
+
+    [<Literal>]
+    let StandardAnalyzer = "standardanalyzer"
+
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let private confFolder = Path.Combine(rootFolder, "Conf")
