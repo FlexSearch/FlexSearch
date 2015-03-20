@@ -82,36 +82,16 @@
   <Import Project="$(FSharpTargetsPath)" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <ItemGroup>
-    <Compile Include="Domain\Constants.fs" />
-    <Compile Include="Domain\Attributes.fs" />
-    <Compile Include="Domain\Errors.fs" />
-    <Compile Include="Domain\Validators.fs" />
-    <Compile Include="Domain\Dtos.fs" />
-    <Compile Include="Domain\Domain.fs" />
-    <Compile Include="Domain\Interface.fs" />
-    <Compile Include="Domain\Settings.fs" />
-    <Compile Include="Domain\Resources.fs" />
-    <Compile Include="Analysis\CustomAnalyzer.fs" />
-    <Compile Include="Analysis\Analyzers.fs" />
-    <Compile Include="Analysis\Filters.fs" />
-    <Compile Include="Analysis\Tokenizers.fs" />
-    <Compile Include="Utilities\ThreadSafeWriter.fs" />
-    <Compile Include="Utilities\Parser.fs" />
-    <Compile Include="Utilities\DynamicDictionary.fs" />
-    <Compile Include="Lucene\Core.fs" />
-    <Compile Include="Index\FlexField.fs" />
-    <Compile Include="Index\IndexingHelpers.fs" />
-    <Compile Include="Index\PerThreadVersionPKLookup.fs" />
-    <Compile Include="Index\IndexWriter.fs" />
-    <Compile Include="Index\IndexOperations.fs" />
-    <Compile Include="Search\Search.fs" />
-    <Compile Include="Search\QueryHelpers.fs" />
-    <Compile Include="Search\Query.fs" />
-    <Compile Include="Builders\ScriptPropertiesExtensions.fs" />
-    <Compile Include="Builders\FieldPropertiesExtensions.fs" />
-    <Compile Include="Builders\AnalysisExtensions.fs" />
-    <Compile Include="Builders\SearchQueryExtensions.fs" />
-    <Compile Include="Builders\SettingsBuilder.fs" />
+    <Compile Include="Resources.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="Infrastructure.fs" />
+    <Compile Include="Domain.fs" />
+    <Compile Include="Interface.fs" />
+    <Compile Include="Settings.fs" />
+    <Compile Include="Parser.fs" />
+    <Compile Include="Search.fs" />
+    <Compile Include="Index.fs" />
+    <Compile Include="Services.fs" />
     <Compile Include="Services\IndexService.fs" />
     <Compile Include="Services\DocumentService.fs" />
     <Compile Include="Services\QueueService.fs" />
@@ -120,19 +100,23 @@
     <Compile Include="Services\ResourceService.fs" />
     <Compile Include="Services\AnalyzerService.fs" />
     <Compile Include="Services\DemoIndexService.fs" />
-    <Compile Include="ModuleInitializer.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
     <None Include="App.config" />
     <Content Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Esent.Collections">
+      <HintPath>..\packages\Microsoft.Database.Collections.Generic.1.9.2.0\lib\net40\Esent.Collections.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Esent.Interop">
+      <HintPath>..\packages\ManagedEsent.1.9.2.0\lib\net40\Esent.Interop.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.5.0.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
-    </Reference>
-    <Reference Include="FlexSearch.Java">
-      <HintPath>..\..\lib\FlexSearch.Java.dll</HintPath>
     </Reference>
     <Reference Include="FParsec">
       <HintPath>..\packages\FParsec.1.0.1\lib\net40-client\FParsec.dll</HintPath>
@@ -262,6 +246,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.IO.RecyclableMemoryStream">
+      <HintPath>..\packages\Microsoft.IO.RecyclableMemoryStream.1.0.0.0\lib\net45\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Owin">
       <HintPath>..\packages\Microsoft.Owin.3.0.0\lib\net45\Microsoft.Owin.dll</HintPath>
       <Private>True</Private>
@@ -273,6 +261,26 @@
     </Reference>
     <Reference Include="Owin">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="protobuf-net">
+      <HintPath>..\packages\protobuf-net.2.0.0.668\lib\net40\protobuf-net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Serilog">
+      <HintPath>..\packages\Serilog.1.4.204\lib\net45\Serilog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Serilog.Extras.FSharp">
+      <HintPath>..\packages\Serilog.Extras.FSharp.1.4.204\lib\portable-net45+win+wpa81+wp80+MonoAndroid10+MonoTouch10\Serilog.Extras.FSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Serilog.FullNetFx">
+      <HintPath>..\packages\Serilog.1.4.204\lib\net45\Serilog.FullNetFx.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Shielded">
+      <HintPath>..\packages\Shielded.1.1.3\lib\net40\Shielded.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -293,16 +301,6 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
-      <Name>FlexSearch.Api</Name>
-      <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">
-      <Name>FlexSearch.Common</Name>
-      <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <Reference Include="ToString">
       <HintPath>..\packages\ToString.Fody.1.6.3.0\Lib\portable-net4+sl4+wp7+win8+MonoAndroid16+MonoTouch40\ToString.dll</HintPath>
       <Private>False</Private>

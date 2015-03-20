@@ -15,7 +15,6 @@ open FlexSearch.Api.Messages
 open FlexSearch.Api.Validation
 open FlexSearch.Common
 open FlexSearch.Core
-open FlexSearch.Utility
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -24,16 +23,16 @@ open System.IO
 open System.Linq
 open java.io
 open java.util
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
-open org.apache.lucene.analysis.miscellaneous
-open org.apache.lucene.analysis.util
-open org.apache.lucene.codecs
-open org.apache.lucene.codecs.lucene42
-open org.apache.lucene.document
-open org.apache.lucene.index
-open org.apache.lucene.search
-open org.apache.lucene.store
+open FlexLucene.Analysis
+open FlexLucene.Analysis.Core
+open FlexLucene.Analysis.Miscellaneous
+open FlexLucene.Analysis.Util
+open FlexLucene.Codecs
+open FlexLucene.Codecs.Lucene42
+open FlexLucene.Document
+open FlexLucene.Index
+open FlexLucene.Search
+open FlexLucene.Store
 
 /// <summary>
 /// Service wrapper around all document related services

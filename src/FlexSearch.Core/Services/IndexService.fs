@@ -10,17 +10,13 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core.Services
 
-open FlexSearch.Api
-open FlexSearch.Api.Messages
-open FlexSearch.Api.Validation
-open FlexSearch.Common
 open FlexSearch.Core
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
 open System.Linq
-open org.apache.lucene.search
+open FlexLucene.Search
 
 [<Sealed>]
 /// <summary>

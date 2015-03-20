@@ -10,8 +10,6 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open FlexSearch.Api
-open FlexSearch.Utility
 open System
 open System.IO
 open System.Linq

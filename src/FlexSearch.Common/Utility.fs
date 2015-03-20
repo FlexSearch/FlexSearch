@@ -138,3 +138,6 @@ module Helpers =
                 if (e.InnerException <> null) then printException e.InnerException (count + 1)
         printException e 1
         sb.ToString()
+
+    // Debugging related
+    let (!>) (message : string) = System.Diagnostics.Debug.WriteLine(message)

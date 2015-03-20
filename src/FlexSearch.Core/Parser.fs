@@ -10,13 +10,51 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open System
+open System.Collections.Generic
+open System.Linq
+
+/// <summary>
+/// Represents the Values which can be used in the query string
+/// </summary>
+type Value = 
+    | SingleValue of string
+    | ValueList of string list
+    
+    member this.GetValueAsList() = 
+        match this with
+        | SingleValue(v) -> [ v ]
+        | ValueList(v) -> v
+    
+    member this.GetValueAsArray() = 
+        match this with
+        | SingleValue(v) -> 
+            if String.IsNullOrWhiteSpace(v) then fail (MissingFieldValue("TODO"))
+            else ok ([| v |])
+        | ValueList(v) -> 
+            if v.Length = 0 then fail (MissingFieldValue("TODO"))
+            else ok (v.ToArray())
+
+/// <summary>
+/// Acceptable Predicates for a query
+/// </summary>
+type Predicate = 
+    | NotPredicate of Predicate
+    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Dictionary<string, string> option
+    | OrPredidate of Lhs : Predicate * Rhs : Predicate
+    | AndPredidate of Lhs : Predicate * Rhs : Predicate
+
+/// <summary>
+/// FlexParser interface
+/// </summary>
+type IFlexParser = 
+    abstract Parse : string -> Choice<Predicate, Error>
+
 [<AutoOpen>]
 module Parsers = 
     open FParsec
     open FParsec.CharParsers
     open FParsec.Primitives
-    open FlexSearch.Api
-    open FlexSearch.Common
     open System
     open System.Collections.Generic
     open System.Linq
@@ -149,7 +187,4 @@ module Parsers =
                 assert (input <> null)
                 match run Parser input with
                 | Success(result, _, _) -> Choice1Of2(result)
-                | Failure(errorMsg, _, _) -> 
-                    Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
-                               |> GenerateOperationMessage
-                               |> Append("Message", errorMsg))
+                | Failure(errorMsg, _, _) -> Choice2Of2(QueryStringParsingError(errorMsg))

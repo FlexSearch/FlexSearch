@@ -10,18 +10,14 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core.Services
 
-open FlexSearch.Api
-open FlexSearch.Api.Messages
-open FlexSearch.Api.Validation
-open FlexSearch.Common
 open FlexSearch.Core
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
 open System.Linq
-open org.apache.lucene.search
-open org.apache.lucene.queryparser.classic
+open FlexLucene.Search
+open FlexLucene.Queryparser.Classic
 
 [<Sealed>]
 /// <summary>
@@ -29,7 +25,7 @@ open org.apache.lucene.queryparser.classic
 /// </summary>
 type AnalyzerService(factoryService : IFactoryCollection, threadSafeWriter : IThreadSafeWriter, logger : ILogService, serverSettings : ServerSettings) = 
     let analyzerRepository = 
-        new ConcurrentDictionary<string, org.apache.lucene.analysis.Analyzer * Analyzer>(StringComparer.OrdinalIgnoreCase)
+        new ConcurrentDictionary<string, FlexLucene.Analysis.Analyzer * Analyzer>(StringComparer.OrdinalIgnoreCase)
     
     let AddOrUpdateAnalyzer(analyzerInfo : Analyzer) = 
         maybe { 
