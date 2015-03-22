@@ -124,22 +124,7 @@ type ISearchService =
     abstract SearchUsingProfile : query:SearchQuery.T * inputFields:Dictionary<string, string>
      -> Choice<SearchResults, Error>
 
-/// <summary>
-/// Index related operations
-/// </summary>
-type IIndexService = 
-    abstract GetIndex : string -> Choice<Index.T, Error>
-    abstract UpdateIndex : Index.T -> Choice<unit, Error>
-    abstract DeleteIndex : string -> Choice<unit, Error>
-    abstract AddIndex : Index.T -> Choice<CreateResponse, Error>
-    abstract GetAllIndex : unit -> Choice<List<Index.T>, Error>
-    abstract IndexExists : string -> bool
-    abstract GetIndexStatus : string -> Choice<IndexState, Error>
-    abstract OpenIndex : string -> Choice<unit, Error>
-    abstract CloseIndex : string -> Choice<unit, Error>
-    abstract Commit : string -> Choice<unit, Error>
-    abstract Refresh : string -> Choice<unit, Error>
-    abstract GetIndexSearchers : string -> Choice<List<IndexSearcher>, Error>
+
 
 /// <summary>
 /// Document related operations

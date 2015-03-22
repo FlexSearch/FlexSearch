@@ -206,23 +206,33 @@ module Helpers =
     open Microsoft.FSharp.Reflection
     open System.Collections.Generic
     
+    let (+/) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
+    let loopDir (dir : string) = Directory.EnumerateDirectories(dir)
+    let loopFiles (dir : string) = Directory.EnumerateFiles(dir)
+    let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
+    
+    let emptyDir (path) = 
+        loopDir path |> Seq.iter (fun x -> Directory.Delete(x, true))
+        loopFiles path |> Seq.iter (fun x -> File.Delete(x))
+    
+    let delDir (path) = 
+        emptyDir path
+        Directory.Delete(path)
+    
     /// Check for null
     let inline isNull (x : ^a when ^a : not struct) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
     
-    let inline throwIfNull (name) (x) = if isNull(x) then failwithf "Internal Error: %s object cannot be null." name
-
+    /// Check if not null
+    let inline notNull (x : ^a when ^a : not struct) = not (obj.ReferenceEquals(x, Unchecked.defaultof<_>))
+    
+    let inline isBlank (x : string) = String.IsNullOrWhiteSpace x
+    let inline notBlank (x : string) = not (isBlank x)
+    
+    let inline throwIfNull (name) (x) = 
+        if isNull (x) then failwithf "Internal Error: %s object cannot be null." name
+    
     /// Returns current date time in Flex compatible format
     let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmssfff"))
-    
-    /// <summary>
-    /// Convert a .net dictionary to java based hash map
-    /// </summary>
-    /// <param name="dict"></param>
-    [<CompiledNameAttribute("DictToMap")>]
-    let dictToMap (dict : Dictionary<string, string>) = 
-        let map = new java.util.HashMap()
-        dict |> Seq.iter (fun pair -> map.Add(pair.Key, pair.Value))
-        map
     
     /// <summary>
     /// Simple exception formatter
@@ -335,3 +345,27 @@ module DataType =
         match String.IsNullOrWhiteSpace str with
         | true -> Some(str)
         | _ -> None
+
+[<AutoOpenAttribute>]
+module DictionaryHelpers = 
+    /// Convert a .net dictionary to java based hash map
+    [<CompiledNameAttribute("DictToMap")>]
+    let dictToMap (dict : Dictionary<string, string>) = 
+        let map = new java.util.HashMap()
+        dict |> Seq.iter (fun pair -> map.Add(pair.Key, pair.Value))
+        map
+    
+    let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
+        match dict.TryGetValue(value) with
+        | true, v -> Choice1Of2(v)
+        | _ -> Choice2Of2(error (value))
+    
+    let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
+    let conDict<'T>() = new ConcurrentDictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
+    let tryAdd<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value)
+    let add<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value) |> ignore
+    
+    let addOrUpdate<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = 
+        match dict.TryGetValue(key) with
+        | true, v -> dict.TryUpdate(key, value, v) |> ignore
+        | _ -> dict.TryAdd(key, value) |> ignore

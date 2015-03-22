@@ -25,7 +25,6 @@ open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open java.io
-open java.lang
 open java.util
 
 type FieldsMeta = 
@@ -141,7 +140,7 @@ module IndexSettingBuilder =
                        ())
         new PerFieldAnalyzerWrapper(new FlexLucene.Analysis.Standard.StandardAnalyzer(), analyzerMap)
     
-    let withFields (fields : Field.Dto array, analyzerService : LazyFactory<FlexLucene.Analysis.Analyzer, Analyzer>) 
+    let withFields (fields : Field.Dto array, analyzerService : LazyFactory<FlexLucene.Analysis.Analyzer, Analyzer.T>) 
         (build) = 
         if isNull (build.Setting.ScriptsManager) then 
             failwithf "Internal Error: Script manager should be initialized before creating IndexFields."
@@ -166,27 +165,31 @@ module IndexSettingBuilder =
     let withSearchProfiles (profiles : SearchQuery.T array, parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery.T>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
-            assert (String.IsNullOrWhiteSpace(profile.QueryName) <> true)
-            let predicate = returnOrFail (parser.Parse(profile.QueryString))
+            assert (notBlank profile.QueryName)
+            let predicate = returnOrFail <| parser.Parse profile.QueryString
             result.Add(profile.QueryName, (predicate, profile))
         { build with Setting = { build.Setting with SearchProfiles = result } }
     
     /// Build the final index setting object
     let build (build) = 
-        throwIfNull ("SearchProfiles") (build.Setting.SearchProfiles)
-        throwIfNull ("Fields") (build.Setting.Fields)
-        throwIfNull ("FieldsLookup") (build.Setting.FieldsLookup)
-        throwIfNull ("IndexConfiguration") (build.Setting.IndexConfiguration)
-        throwIfNull ("ShardConfiguration") (build.Setting.ShardConfiguration)
-        throwIfNull ("IndexAnalyzer") (build.Setting.IndexAnalyzer)
-        throwIfNull ("SearchAnalyzer") (build.Setting.SearchAnalyzer)
+        assert (notNull build.Setting.SearchProfiles)
+        assert (notNull build.Setting.Fields)
+        assert (notNull build.Setting.FieldsLookup)
+        assert (notNull build.Setting.IndexConfiguration)
+        assert (notNull build.Setting.ShardConfiguration)
+        assert (notNull build.Setting.IndexAnalyzer)
+        assert (notNull build.Setting.SearchAnalyzer)
         build.Setting
 
 /// Builders related to creating Lucene IndexWriterConfig
 module IndexWriterConfigBuilder = 
     /// Returns an instance of per field similarity provider 
     let getSimilarityProvider (s : IndexSetting.T) = 
-        let defaultSimilarity = FieldSimilarity.getLuceneT (s.IndexConfiguration.DefaultFieldSimilarity) |> extract
+        let defaultSimilarity = 
+            s.IndexConfiguration.DefaultFieldSimilarity
+            |> FieldSimilarity.getLuceneT
+            |> extract
+        
         let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
         for field in s.FieldsLookup do
             // Only add if the format is not same as default postings format
@@ -207,17 +210,17 @@ module IndexWriterConfigBuilder =
             |> IndexVersion.getDefaultCodec
             |> extract
         
-        let similarityProvider = getSimilarityProvider (s)
-        iwc.SetOpenMode(FlexLucene.Index.IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
-        iwc.SetRAMBufferSizeMB(System.Double.Parse(s.IndexConfiguration.RamBufferSizeMb.ToString())) |> ignore
+        let similarityProvider = s |> getSimilarityProvider
+        iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
+        iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb) |> ignore
+        iwc.SetMaxBufferedDocs(s.IndexConfiguration.MaxBufferedDocs) |> ignore
         iwc.SetCodec(codec) |> ignore
         iwc.SetSimilarity(similarityProvider) |> ignore
         iwc
     
     /// Used for updating real time Index writer settings
     let updateWithSettings (s : IndexSetting.T) (iwc : LiveIndexWriterConfig) = 
-        iwc.SetRAMBufferSizeMB(System.Double.Parse(s.IndexConfiguration.RamBufferSizeMb.ToString())) |> ignore
-        iwc
+        iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb)
 
 module DocumentTemplate = 
     /// This is responsible for creating a wrapper around Document which can be cached and re-used.
@@ -318,12 +321,32 @@ module TransacationLog =
         | Delete = 3
     
     /// Represents a single Transaction log record entry.
+    [<CLIMutableAttribute>]
     type T = 
         { TransactionId : int64
           Operation : Operation
           Document : Document.T
+          /// This will be used for delete operation as we
+          /// don't require a document
           Id : string
+          /// This will be used for delete operation
           Query : string }
+        
+        static member Create(tranxId, operation, document, ?id : string, ?query : string) = 
+            let id = defaultArg id String.Empty
+            let query = defaultArg query String.Empty
+            { TransactionId = tranxId
+              Operation = operation
+              Document = document
+              Id = id
+              Query = query }
+        
+        static member Create(txId, id) = 
+            { TransactionId = txId
+              Operation = Operation.Delete
+              Document = Document.T.Default
+              Id = id
+              Query = String.Empty }
     
     let serializer (stream, entry : T) = Serializer.Serialize(stream, entry)
     
@@ -332,8 +355,7 @@ module TransacationLog =
         let mutable currentGen = gen
         let mutable fileStream = Unchecked.defaultof<_>
         let populateFS() = 
-            fileStream <- new FileStream(Path.Combine(path, gen.ToString()), FileMode.Append, FileAccess.Write, 
-                                         FileShare.ReadWrite)
+            fileStream <- new FileStream(path +/ gen.ToString(), FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
         
         let processor = 
             MailboxProcessor.Start(fun inbox -> 
@@ -368,26 +390,64 @@ module ShardWriter =
         | Closing
         | Faulted
     
+    /// Returns the user commit data to be stored with the index
+    let getCommitData (gen : int64) = hashMap() |> putC (Constants.generationLabel, gen)
+    
+    type FileWriter(directory, config) = 
+        inherit IndexWriter(directory, config)
+        let mutable state = Unchecked.defaultof<T>
+        member __.SetState(s : T) = state <- s
+        
+        /// This will be executed before pending added and deleted documents 
+        /// are flushed to the Directory. This gives us the best place to
+        /// automate things around Lucene flush logic. 
+        override this.doBeforeFlush() = 
+            // Save the current generation in the commit data so that
+            // it can be used for shard recovery 
+            this.SetCommitData(getCommitData (state.Generation))
+            // Increment the current generation so that the log file 
+            // can be switched
+            state.GetNextGen() |> ignore
+        
+        /// A hook for extending classes to execute operations after pending 
+        /// added and deleted documents have been flushed to the Directory but 
+        /// before the change is committed (new segments_N file written).
+        override this.doAfterFlush() = 
+            let current = state.LastCommitTime
+            let commitTime = DateTime.Now.Ticks
+            // We don't care if something else has changed the time as this is a
+            // fallback mechanism
+            Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
+            // Auto commit after flush
+            this.Commit()
+    
     /// An IndexWriter creates and maintains an index. This is a wrapper around
     /// Lucene IndexWriter to expose the functionality in a controlled and functional 
     /// manner.
     /// Note: This encapsulates the functionality of IndexWriter, TrackingIndexWriter and
     /// SearcherManger through an easy to manage abstraction.
-    type T = 
-        { IndexWriter : IndexWriter
+    and T = 
+        { IndexWriter : FileWriter
           TrackingIndexWriter : TrackingIndexWriter
           SearcherManager : SearcherManager
           TxWriter : TransacationLog.TxWriter
+          CommitDuration : int64
           /// Shows the status of the current Shard
           Status : Status
           /// Represents the generation of commit
           Generation : int64
+          /// Represents the last commit time. This is used by the
+          /// timebased commit to check if auto-commit should take
+          /// place or not.
+          LastCommitTime : int64
           /// Represents the current modify index. This is used by for
           /// recovery and shard sync from transaction logs.
           ModifyIndex : int64
           /// Transaction log path to be used
           TxLogPath : string
           ShardNo : int }
+        member this.GetNextIndex() = Interlocked.Increment(ref this.ModifyIndex)
+        member this.GetNextGen() = Interlocked.Increment(ref this.Generation)
     
     /// Get the highest modified index value from the shard   
     let getMaxModifyIndex (r : IndexReader) = 
@@ -398,29 +458,31 @@ module ShardWriter =
             let nDocs = reader.getNumericDocValues ("modifyindex")
             let liveDocs = reader.getLiveDocs()
             for j = 0 to reader.maxDoc() do
-                if (liveDocs <> null || liveDocs.get (j)) then max <- Math.max (max, nDocs.get (j))
+                if (liveDocs <> null || liveDocs.get (j)) then max <- Math.Max(max, nDocs.get (j))
         max
     
-    let create (shardNumber : int, config : IndexWriterConfig, basePath : string, directory : FlexLucene.Store.Directory) = 
-        let iw = new IndexWriter(directory, config)
+    let create (shardNumber : int, commitDuration : int, config : IndexWriterConfig, basePath : string, 
+                directory : FlexLucene.Store.Directory) = 
+        let iw = new FileWriter(directory, config)
         let commitData = iw.GetCommitData()
-        let generation = (commitData.getOrDefault ("Generation", 0L)) :?> int64
+        let generation = (commitData.getOrDefault (Constants.generationLabel, 0L)) :?> int64
         let modifyIndex = DirectoryReader.Open(iw, true) |> getMaxModifyIndex
+        let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         
-        let logPath = 
-            Path.Combine([| basePath
-                            "shards"
-                            shardNumber.ToString()
-                            "txlogs" |])
-        { IndexWriter = iw
-          TrackingIndexWriter = new TrackingIndexWriter(iw)
-          SearcherManager = new SearcherManager(directory, new SearcherFactory())
-          Generation = generation
-          Status = Opening
-          ModifyIndex = modifyIndex
-          TxWriter = new TransacationLog.TxWriter(logPath, generation)
-          TxLogPath = logPath
-          ShardNo = shardNumber }
+        let state = 
+            { IndexWriter = iw
+              TrackingIndexWriter = new TrackingIndexWriter(iw)
+              SearcherManager = new SearcherManager(directory, new SearcherFactory())
+              Generation = generation
+              CommitDuration = int64 commitDuration
+              LastCommitTime = 0L
+              Status = Opening
+              ModifyIndex = modifyIndex
+              TxWriter = new TransacationLog.TxWriter(logPath, generation)
+              TxLogPath = logPath
+              ShardNo = shardNumber }
+        iw.SetState(state)
+        state
     
     /// Commits all pending changes (added & deleted documents, segment merges, added indexes, etc.) to the index, 
     /// and syncs all referenced index files, such that a reader will see the changes and the index updates will 
@@ -428,7 +490,10 @@ module ShardWriter =
     /// merges to finish. This may be a costly operation, so you should test the cost in your application and 
     /// do it only when really necessary.
     let commit (sw : T) = 
-        if sw.IndexWriter.HasUncommittedChanges() then sw.IndexWriter.Commit()
+        if sw.IndexWriter.HasUncommittedChanges() 
+           && DateTime.Now.Ticks - sw.LastCommitTime > TimeSpan.TicksPerSecond * sw.CommitDuration then 
+            // We don't have to update any state variables as commit will trigger a flush 
+            sw.IndexWriter.Commit()
     
     /// Commits all changes to an index, waits for pending merges to complete, closes all 
     /// associated files and releases the write lock.
@@ -445,7 +510,7 @@ module ShardWriter =
     let deleteDocument (id : string) (sw : T) = sw.TrackingIndexWriter.DeleteDocuments(id.IdTerm()) |> ignore
     
     /// Delete all documents in the index.
-    let deleteAll () (sw : T) = sw.TrackingIndexWriter.DeleteAll()
+    let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll()
     
     /// Updates a document by id by first deleting the document containing term and then 
     /// adding the new document.
@@ -603,7 +668,7 @@ module VersionCache =
 module IndexWriter = 
     ///  Method to map a string based id to a Lucene shard 
     /// Uses MurmurHash2 algorithm
-    let mapToShard (id : string) shardCount = 
+    let inline mapToShard shardCount (id : string) = 
         if (shardCount = 1) then 0
         else 
             let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
@@ -616,17 +681,18 @@ module IndexWriter =
     /// SearcherManger through an easy to manage abstraction.    
     type T = 
         { Template : ThreadLocal<DocumentTemplate.T>
+          Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
           Buffer : ActionBlock<IndexCommand>
-          Mapper : string -> int -> int
           Settings : IndexSetting.T }
     
     and IndexCommand = 
-        | Create of document : Document * T
-        | Update of document : Document * T
-        | Delete of query : string * T
+        | Create of document : Document.T * shard : int * state : T
+        | Update of document : Document.T * shard : int * state : T
+        | Delete of query : string * shard : int * state : T
         | Commit of generation : int64
     
+    /// Create index settings from the Index Dto
     let createIndexSetting (index : Index.T, analyzerService) = 
         withIndexName (index.IndexName, "")
         |> withShardConfiguration (index.ShardConfiguration)
@@ -649,33 +715,90 @@ module IndexWriter =
         
         // Create a shard for the index
         let createShard (n) = 
-            let path = 
-                Path.Combine([| settings.BaseFolder
-                                "shards"
-                                n.ToString()
-                                "index" |])
-            
+            let path = settings.BaseFolder +/ "shards" +/ n.ToString() +/ "index"
             let indexWriterConfig = IndexWriterConfigBuilder.buildWithSettings (settings)
             let dir = DirectoryType.getIndexDirectory (settings.IndexConfiguration.DirectoryType, path) |> extract
-            ShardWriter.create (n, indexWriterConfig, settings.BaseFolder, dir)
+            ShardWriter.create 
+                (n, settings.IndexConfiguration.CommitTimeSeconds, indexWriterConfig, settings.BaseFolder, dir)
         
         let shardWriters = Array.init settings.ShardConfiguration.ShardCount createShard
+        let caches = shardWriters |> Array.map (fun x -> VersionCache.create (settings, x))
         { Template = template
-          Mapper = mapToShard
           Buffer = new ActionBlock<IndexCommand>(processIndexRequest)
           ShardWriters = shardWriters
+          Caches = caches
           Settings = settings }
+    
+    /// Close the index    
+    let close (writer : T) = 
+        writer.Buffer.Complete()
+        await <| writer.Buffer.Completion
+        writer.ShardWriters |> Array.iter (fun s -> ShardWriter.close (s))
+    
+    let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
+    
+    /// Add or update a document
+    let inline private addOrUpdateDocument (document : Document.T, create : bool) (s : T) = 
+        let shardNo = document.Id |> mapToShard s.ShardWriters.Length
+        s.Caches.[shardNo] |> VersionCache.versionCheck document
+        let doc = s.Template.Value |> DocumentTemplate.updateTempate document
+        let txId = s.ShardWriters.[shardNo].GetNextIndex()
+        
+        let opCode = 
+            if create then TransacationLog.Operation.Create
+            else TransacationLog.Operation.Update
+        document.ModifyIndex <- txId
+        let txEntry = TransacationLog.T.Create(txId, opCode, document)
+        use stream = memoryManager.GetStream()
+        TransacationLog.serializer (stream, txEntry)
+        s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation)
+        s.ShardWriters.[shardNo] |> if create then ShardWriter.addDocument doc
+                                    else ShardWriter.updateDocument (document.Id, doc)
+    
+    /// Add a document to the index
+    let addDocument (document : Document.T) (s : T) = s |> addOrUpdateDocument (document, true)
+    
+    /// Add a document to the index
+    let updateDocument (document : Document.T) (s : T) = s |> addOrUpdateDocument (document, false)
+    
+    /// Delete a document from index
+    let deleteDocument (id : string) (s : T) = 
+        let shardNo = id |> mapToShard s.ShardWriters.Length
+        let txId = s.ShardWriters.[shardNo].GetNextIndex()
+        let txEntry = TransacationLog.T.Create(txId, id)
+        use stream = memoryManager.GetStream()
+        let data = TransacationLog.serializer (stream, txEntry)
+        s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id
+    
+    /// Refresh the index    
+    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.referesh)
+    
+    /// Commit unsaved data to the index
+    let commit (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit)
+    
+    let getRealTimeSearchers (s : T) = 
+        Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
+        
+    let getRealTimeSearcher (shardNo : int) (s : T) = 
+        assert (s.ShardWriters.Length <= shardNo)
+        ShardWriter.getRealTimeSearcher <| s.ShardWriters.[shardNo]
 
-//    member __.AddDocument(document : Document.T) = 
-//        shardWriters.[mapper (document.Id)].AddDocument(GetDocumentTemplate().UpdateTempate(document))
-//    member __.UpdateDocument(document : Document.T) = 
-//        shardWriters.[mapper (document.Id)].UpdateDocument(document.Id, GetDocumentTemplate().UpdateTempate(document))
-//    member __.DeleteDocument(id : string) = shardWriters.[mapper (id)].DeleteDocument(id)
-//    member __.GetRealTimeSearchers() = shardWriters |> Array.map (fun shard -> shard.GetRealTimeSearcher())
-//    member __.GetRealTimeSearcherForId(id : string) = shardWriters.[mapper (id)].GetRealTimeSearcher()
-//    member __.Commit() = shardWriters |> Array.iter (fun shard -> shard.Commit())
-//    member __.Close() = shardWriters |> Array.iter (fun shard -> shard.Close())
-//    member __.Refresh() = shardWriters |> Array.iter (fun shard -> shard.Referesh())
+/// Index related operations
+type IIndexService = 
+    abstract GetIndex : string -> Choice<Index.T, Error>
+    abstract UpdateIndex : Index.T -> Choice<unit, Error>
+    abstract DeleteIndex : string -> Choice<unit, Error>
+    abstract AddIndex : Index.T -> Choice<CreateResponse, Error>
+    abstract GetAllIndex : unit -> Index.T array
+    abstract IndexExists : string -> bool
+    abstract GetIndexStatus : string -> Choice<IndexState, Error>
+    abstract OpenIndex : string -> Choice<unit, Error>
+    abstract CloseIndex : string -> Choice<unit, Error>
+    abstract Commit : string -> Choice<unit, Error>
+    abstract Refresh : string -> Choice<unit, Error>
+    abstract GetRealtimeSearchers : string -> Choice<array<RealTimeSearcher>, Error>
+    abstract GetRealtimeSearcher : string * int -> Choice<RealTimeSearcher, Error>
+
 module State = 
     open Microsoft.FSharp.Core
     open Microsoft.Isam.Esent.Collections.Generic
@@ -695,9 +818,6 @@ module State =
         { Key : string
           Type : string
           Data : string
-          // This can be used to sync in case of 
-          // distributed engine
-          //IsDeleted : bool
           ModifyIndex : int64 }
     
     /// Store is used to save persistant settings.
@@ -712,6 +832,16 @@ module State =
         let mutable modifyindex : int64 = 
             db.Values.OrderByDescending(fun x -> x.ModifyIndex).Select(fun x -> x.ModifyIndex).FirstOrDefault()
         let getNextIndex() = Interlocked.Increment(ref modifyindex)
+        
+        member __.GetItem<'T>(key : string) = 
+            let key = String.Concat(typeof<'T>.Name, key)
+            match db.TryGetValue(key) with
+            | true, v -> ok <| JsonConvert.DeserializeObject<'T>(v.Data)
+            | _ -> fail <| KeyNotFound key
+        
+        member __.GetItems<'T>() = 
+            db.Values.Where(fun x -> x.Type = typeof<'T>.Name)
+              .Select(fun x -> JsonConvert.DeserializeObject<'T>(x.Data))
         
         /// Add or Update an item in the store by key 
         member __.UpdateItem<'T>(key : string, item : 'T) = 
@@ -731,7 +861,8 @@ module State =
             assert (not (isNull key))
             let key = String.Concat(typeof<'T>.Name, key)
             db.Remove(key) |> ignore
-//    type T = 
-//        { Indices : ConcurrentDictionary<string, LazyFactory<Registeration, Index.T>>
-//          Analyzers : ConcurrentDictionary<string, LazyFactory<Analyzer, Analyzer.T>>
-//          Store : Store }
+    
+    type T = 
+        { IndexStates : ConcurrentDictionary<string, IndexState>
+          IndexWriters : ConcurrentDictionary<string, IndexWriter.T>
+          Store : Store }

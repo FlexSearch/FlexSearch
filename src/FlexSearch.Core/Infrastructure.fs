@@ -1,4 +1,20 @@
-﻿
+﻿// ----------------------------------------------------------------------------
+//  Licensed to FlexSearch under one or more contributor license 
+//  agreements. See the NOTICE file distributed with this work 
+//  for additional information regarding copyright ownership. 
+//
+//  This source code is subject to terms and conditions of the 
+//  Apache License, Version 2.0. A copy of the license can be 
+//  found in the License.txt file at the root of this distribution. 
+//  You may also obtain a copy of the License at:
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+//  By using this source code in any fashion, you are agreeing
+//  to be bound by the terms of the Apache License, Version 2.0.
+//
+//  You must not remove this notice, or any other, from this software.
+// ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
 open FlexLucene.Analysis.Custom
@@ -13,6 +29,9 @@ open System.Runtime.Serialization
 [<RequireQualifiedAccess>]
 /// Contains all the flex constants which do not change per instance
 module Constants = 
+    [<Literal>]
+    let generationLabel = "generation"
+    
     [<Literal>]
     let IdField = "_id"
     
@@ -50,7 +69,7 @@ module Constants =
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let private confFolder = Path.Combine(rootFolder, "Conf")
     let private pluginFolder = Path.Combine(rootFolder, "Plugins")
-    let private logFolder = Path.Combine(rootFolder, "Logs")
+    let private logsFolder = Path.Combine(rootFolder, "Logs")
     
     /// Flex index folder
     let ConfFolder = 
@@ -64,8 +83,8 @@ module Constants =
     
     /// Flex logs folder
     let LogsFolder = 
-        Directory.CreateDirectory(logFolder) |> ignore
-        LogsFolder
+        Directory.CreateDirectory(logsFolder) |> ignore
+        logsFolder
     
     /// Extension to be used by settings file
     let SettingsFileExtension = ".yml"
@@ -103,6 +122,8 @@ type Error =
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string
     // Indexing related errrors
+    | IndexInOpenState of indexName : string
+    | IndexInInvalidState of indexName : string
     | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>
     | IndexNotFound of indexName : string
     | DocumentIdAlreadyExists of indexName : string * id : string
@@ -279,6 +300,25 @@ type IValidate<'T> =
 module Operators = 
     open System.Collections
     
+    let wrap f state = 
+        f()
+        state
+    
+    let (|>>) state f = wrap f state
+    
+    let unwrap f combined = 
+        let (c, state) = combined
+        let result = f state
+        (result, state)
+    
+    let (==>) combined f = unwrap f combined
+    let ignoreWrap f combined = f; combined
+    
+    let combine f g h = 
+        let r1 = f h
+        let r2 = g h
+        (r1, r2)
+    
     /// Wraps a value in a Success
     let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
     
@@ -290,6 +330,9 @@ module Operators =
         match result with
         | Choice2Of2 _ -> true
         | _ -> false
+    
+    /// Returns true if the result was successful.
+    let inline succeeded result = not <| failed result
     
     /// Takes a Result and maps it with fSuccess if it is a Success otherwise it maps it with fFailure.
     let inline either fSuccess fFailure trialResult = 
@@ -474,8 +517,8 @@ module Operators =
         let propertyNameRegex fieldName input = regexMatch fieldName "^[a-z0-9_]*$" input
         
         let invalidPropertyName fieldName input = 
-            if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) 
-               || String.Equals(input, Constants.TypeField) then fail (InvalidPropertyName(fieldName))
+            if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
+                fail (InvalidPropertyName(fieldName))
             else ok()
         
         let propertyNameValidator fieldName input = 

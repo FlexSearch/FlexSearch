@@ -291,18 +291,17 @@ type ScriptType =
     /// get executed at index time only.
     | ComputedField = 3
 
-/// Represents the current state of the index.
-type IndexState = 
-    | Undefined = 0
-    /// Index is opening. 
-    | Opening = 1
-    /// Index is Online.
-    | Online = 2
-    /// Index is off-line.
-    | Offline = 3
-    /// Index is closing
-    | Closing = 4
-
+///// Represents the current state of the index.
+//type IndexState = 
+//    | Undefined = 0
+//    /// Index is opening. 
+//    | Opening = 1
+//    /// Index is Online.
+//    | Online = 2
+//    /// Index is off-line.
+//    | Offline = 3
+//    /// Index is closing
+//    | Closing = 4
 /// Represents the status of job.
 type JobStatus = 
     | Undefined = 0
@@ -490,6 +489,9 @@ module IndexConfiguration =
           /// for buffering added documents and deletions 
           /// before they are flushed to the Directory.
           RamBufferSizeMb : int
+          /// The number of buffered added documents that will 
+          /// trigger a flush if enabled.
+          MaxBufferedDocs : int
           /// The amount of time in milliseconds that FlexSearch 
           /// should wait before reopening index reader. This 
           /// helps in keeping writing and real time aspects of 
@@ -513,11 +515,12 @@ module IndexConfiguration =
           DefaultFieldSimilarity : FieldSimilarity.T }
         
         static member Default = 
-            { CommitTimeSeconds = 60
+            { CommitTimeSeconds = 300
               DirectoryType = DirectoryType.T.MemoryMapped
               DefaultWriteLockTimeout = 1000
               RamBufferSizeMb = 100
-              RefreshTimeMilliseconds = 25
+              MaxBufferedDocs = -1
+              RefreshTimeMilliseconds = 500
               IndexVersion = IndexVersion.T.Lucene_5_0_0
               UseBloomFilterForId = Nullable(true)
               IdIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.T>
@@ -531,6 +534,7 @@ module IndexConfiguration =
                   DirectoryType = this.DirectoryType |> Args.enum T.Default.DirectoryType
                   DefaultWriteLockTimeout = this.DefaultWriteLockTimeout |> Args.int T.Default.DefaultWriteLockTimeout
                   RamBufferSizeMb = this.RamBufferSizeMb |> Args.int T.Default.RamBufferSizeMb
+                  MaxBufferedDocs = this.MaxBufferedDocs |> Args.int T.Default.MaxBufferedDocs
                   RefreshTimeMilliseconds = this.RefreshTimeMilliseconds |> Args.int T.Default.RefreshTimeMilliseconds
                   IndexVersion = this.IndexVersion |> Args.enum T.Default.IndexVersion
                   DefaultFieldSimilarity = this.DefaultFieldSimilarity |> Args.enum T.Default.DefaultFieldSimilarity
@@ -539,7 +543,8 @@ module IndexConfiguration =
                   DefaultIndexPostingsFormat = this.DefaultIndexPostingsFormat }
             
             member this.Validate() = this.CommitTimeSeconds
-                                     |> gte "CommitTimeSeconds" 15
+                                     |> gte "CommitTimeSeconds" 30
+                                     >>= (fun _ -> this.MaxBufferedDocs |> gte "MaxBufferedDocs" 2)
                                      >>= (fun _ -> this.RamBufferSizeMb |> gte "RamBufferSizeMb" 20)
                                      >>= (fun _ -> this.RefreshTimeMilliseconds |> gte "RefreshTimeMilliseconds" 25)
     
@@ -826,9 +831,10 @@ module Field =
             fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
         | _ -> failwithf "Invalid Field term vector"
         fieldType
+    
     let store = Field.Store.YES
     let doNotStore = Field.Store.NO
-    let getStringField(fieldName, value, store) = new StringField(fieldName, value, store) :> Field
+    let getStringField (fieldName, value, store) = new StringField(fieldName, value, store) :> Field
     let getTextField (fieldName, value, store) = new TextField(fieldName, value, store) :> Field
     let getLongField (fieldName, value : int64, store : Field.Store) = new LongField(fieldName, value, store) :> Field
     let getIntField (fieldName, value : int32, store : Field.Store) = new IntField(fieldName, value, store) :> Field
@@ -919,13 +925,9 @@ module Field =
     let getTimeStampField (postingsFormat : FieldPostingsFormat.T) = 
         create (Constants.LastModifiedField, postingsFormat, FieldType.DateTime)
     
-    /// Field to be used by time stamp DV field
-    let getTimeStampDvField (postingsFormat : FieldPostingsFormat.T) = 
-        create (Constants.LastModifiedFieldDv, postingsFormat, FieldType.DateTime)
-    
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.T, 
-               analyzerFactory : LazyFactory<FlexLucene.Analysis.Analyzer, Analyzer>, scriptsManager : ScriptsManager) = 
+               analyzerFactory : LazyFactory<FlexLucene.Analysis.Analyzer, Analyzer.T>, scriptsManager : ScriptsManager) = 
         let getSource (field : Dto) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok (None)
             else 
@@ -1083,6 +1085,7 @@ module Document =
     /// A document consists of several fields. A field represents the actual data to be indexed. In database 
     /// analogy an index can be considered as a table while a document is a row of that table. Like a table a 
     /// FlexSearch document requires a fix schema and all fields should have a field type.
+    [<CLIMutableAttribute>]
     type T = 
         { /// Fields to be added to the document for indexing.
           Fields : Dictionary<string, string>
@@ -1097,6 +1100,7 @@ module Document =
           /// + 1 - Ensure that the document does exist. This is not relevant for create operation.
           /// > 1 - Ensure that the version matches exactly. This is not relevant for create operation.
           mutable TimeStamp : Int64
+          mutable ModifyIndex : Int64
           /// Name of the index
           IndexName : string
           /// AUTO
@@ -1107,6 +1111,7 @@ module Document =
               Id = Unchecked.defaultof<_>
               TimeStamp = Unchecked.defaultof<_>
               IndexName = Unchecked.defaultof<_>
+              ModifyIndex = Unchecked.defaultof<_>
               MetaData = Unchecked.defaultof<_> }
         
         interface IValidate<T> with
@@ -1292,8 +1297,8 @@ type Response<'T>() =
     member val Data = Unchecked.defaultof<'T> with get, set
     member val Error = Unchecked.defaultof<OperationMessage> with get, set
 
-type CreateResponse() = 
-    member val Id = Unchecked.defaultof<string> with get, set
+type CreateResponse(id : string) = 
+    member val Id = id with get, set
 
 type IndexStatusResponse() = 
     member val Status = Unchecked.defaultof<IndexState> with get, set
