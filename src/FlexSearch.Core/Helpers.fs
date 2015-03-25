@@ -345,27 +345,3 @@ module DataType =
         match String.IsNullOrWhiteSpace str with
         | true -> Some(str)
         | _ -> None
-
-[<AutoOpenAttribute>]
-module DictionaryHelpers = 
-    /// Convert a .net dictionary to java based hash map
-    [<CompiledNameAttribute("DictToMap")>]
-    let dictToMap (dict : Dictionary<string, string>) = 
-        let map = new java.util.HashMap()
-        dict |> Seq.iter (fun pair -> map.Add(pair.Key, pair.Value))
-        map
-    
-    let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
-        match dict.TryGetValue(value) with
-        | true, v -> Choice1Of2(v)
-        | _ -> Choice2Of2(error (value))
-    
-    let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
-    let conDict<'T>() = new ConcurrentDictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
-    let tryAdd<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value)
-    let add<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value) |> ignore
-    
-    let addOrUpdate<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = 
-        match dict.TryGetValue(key) with
-        | true, v -> dict.TryUpdate(key, value, v) |> ignore
-        | _ -> dict.TryAdd(key, value) |> ignore

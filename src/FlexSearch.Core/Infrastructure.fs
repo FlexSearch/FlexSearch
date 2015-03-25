@@ -24,6 +24,10 @@ open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
 open System.Runtime.Serialization
+open Microsoft.Isam.Esent.Collections.Generic
+open System.Threading
+open System.Linq
+open Newtonsoft.Json
 
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
@@ -286,9 +290,9 @@ module OperationMessageExtensions =
     
     let AppendKv (key, value) (message : string) = sprintf "%s; %s = %s" message key value
 
-type IFreezable = 
-    abstract Freeze : unit -> unit
-
+//
+//type IFreezable = 
+//    abstract Freeze : unit -> unit
 type IValidate = 
     abstract Validate : unit -> Choice<unit, Error>
 
@@ -565,41 +569,201 @@ module Operators =
         | true, a -> a
         | _ -> failureDefault
 
-type LazyFactory<'T, 'TMetaData>(generator : 'TMetaData -> 'T, persistanceStore : string * 'TMetaData -> Choice<unit, Error>, threadSafe : bool) = 
-    let store = new ConcurrentDictionary<string, Lazy<'T, 'TMetaData>>(StringComparer.OrdinalIgnoreCase)
+[<AutoOpenAttribute>]
+module DictionaryHelpers = 
+    /// Convert a .net dictionary to java based hash map
+    [<CompiledNameAttribute("DictToMap")>]
+    let inline dictToMap (dict : Dictionary<string, string>) = 
+        let map = new java.util.HashMap()
+        dict |> Seq.iter (fun pair -> map.Add(pair.Key, pair.Value))
+        map
+    
+    let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
+        match dict.TryGetValue(value) with
+        | true, v -> Choice1Of2(v)
+        | _ -> Choice2Of2(error (value))
+    
+    let inline tryGet (key) (dict : IDictionary<string, _>) = 
+        match dict.TryGetValue(key) with
+        | true, v -> Choice1Of2(v)
+        | _ -> Choice2Of2(KeyNotFound(key))
+    
+    let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
+    let inline conDict<'T>() = new ConcurrentDictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
+    let inline tryAdd<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value)
+    let inline add<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value) |> ignore
+    
+    let inline addOrUpdate<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = 
+        match dict.TryGetValue(key) with
+        | true, v -> dict.TryUpdate(key, value, v) |> ignore
+        | _ -> dict.TryAdd(key, value) |> ignore
+
+module LazyFactory = 
+    open Microsoft.Isam.Esent.Collections.Generic
+    open Newtonsoft.Json
+    open System.Linq
+    
+    /// Item to be stored in the item
+    [<Serializable; CLIMutableAttribute>]
+    type private StoreItem = 
+        { Key : string
+          Type : string
+          Data : string }
+    
+    /// Store is used to save persistant settings.
+    type Store(?inMemory : bool) = 
+        let inMemory = defaultArg inMemory false
+        
+        let db = 
+            match inMemory with
+            | true -> conDict<StoreItem>() :> IDictionary<string, StoreItem>
+            | false -> new PersistentDictionary<string, StoreItem>("Conf") :> IDictionary<string, StoreItem>
+        
+        member __.GetItem<'T>(key : string) = 
+            let key = String.Concat(typeof<'T>.Name, key)
+            match db.TryGetValue(key) with
+            | true, v -> ok <| JsonConvert.DeserializeObject<'T>(v.Data)
+            | _ -> fail <| KeyNotFound key
+        
+        member __.GetItems<'T>() = 
+            db.Values.Where(fun x -> x.Type = typeof<'T>.Name)
+              .Select(fun x -> JsonConvert.DeserializeObject<'T>(x.Data))
+        
+        /// Add or Update an item in the store by key 
+        member __.UpdateItem<'T>(key : string, item : 'T) = 
+            assert (not (isNull key))
+            let key = String.Concat(typeof<'T>.Name, key)
+            
+            let item = 
+                { Key = key
+                  Type = typeof<'T>.Name
+                  Data = JsonConvert.SerializeObject(item) }
+            match db.TryGetValue(key) with
+            | true, v -> db.[key] <- item
+            | _ -> db.Add(key, item)
+        
+        member __.DeleteItem<'T>(key : string) = 
+            assert (not (isNull key))
+            let key = String.Concat(typeof<'T>.Name, key)
+            db.Remove(key) |> ignore
+    
+    type FactoryItem<'LuceneObject, 'FlexMeta, 'FlexState> = 
+        { MetaData : 'FlexMeta
+          State : 'FlexState
+          Value : 'LuceneObject option }
+    
+    type T<'LuceneObject, 'FlexMeta, 'FlexState> = 
+        { PersistenceStore : Store
+          ObjectStore : ConcurrentDictionary<string, FactoryItem<'LuceneObject, 'FlexMeta, 'FlexState>>
+          Generator : option<'FlexMeta -> Choice<'LuceneObject, Error>> }
+    
+    /// Create a new LazyFactory object
+    let create<'LuceneObject, 'FlexMeta, 'FlexState> generator store = 
+        { PersistenceStore = store
+          ObjectStore = conDict<FactoryItem<'LuceneObject, 'FlexMeta, 'FlexState>>()
+          Generator = generator }
+    
+    /// Update an item by key
+    let inline private updateItemInObjectStore (key) (value) (store : T<_, _, _>) = 
+        let _, oldVal = store.ObjectStore.TryGetValue(key)
+        store.ObjectStore.TryUpdate(key, value, oldVal) |> ignore
+    
+    /// Get the state of the object associated with the key
+    let inline getState (key) (store : T<_, _, _>) = 
+        match store.ObjectStore.TryGetValue(key) with
+        | true, a -> ok a.State
+        | _ -> fail (KeyNotFound(key))
+    
+    /// Update the state of the object
+    let inline updateState (key, newState : 'FlexState) (store : T<_, _, 'FlexState>) = 
+        match store.ObjectStore.TryGetValue(key) with
+        | true, oldValue -> 
+            let newValue = 
+                { MetaData = oldValue.MetaData
+                  State = newState
+                  Value = oldValue.Value }
+            store.ObjectStore.TryUpdate(key, newValue, oldValue) |> ignore
+            ok()
+        | _ -> fail (KeyNotFound(key))
     
     /// Get an item by key
-    member __.GetItem(key) = 
-        match store.TryGetValue(key) with
+    let inline getItem (key) (store : T<_, _, _>) = 
+        match store.ObjectStore.TryGetValue(key) with
         | true, a -> ok a
         | _ -> fail (KeyNotFound(key))
     
-    /// Get an instance of the object by key
-    member __.GetInstance(key) = 
-        match store.TryGetValue(key) with
-        | true, a -> ok a.Value
+    /// Returns the item if it exists otherwise executes the custom error handler
+    let inline getItemOrError (key) (error) (factory : T<_,_,_>) =
+        match factory.ObjectStore.TryGetValue(key) with
+        | true, item -> ok(item)
+        | _ -> fail (error (key))
+
+    /// Get an instance of the object by key. If the instance does not exist then
+    /// the factory will create a new instance provided the object is in correct state.
+    let inline getInstance (key) (store : T<_, _, _>) = 
+        match store.ObjectStore.TryGetValue(key) with
+        | true, a -> 
+            match a.Value with
+            | Some(v) -> ok <| v
+            | _ -> 
+                match store.Generator with
+                | Some(generator) -> 
+                    match generator (a.MetaData) with
+                    | Choice1Of2(value) -> 
+                        let newItem = { a with Value = Some(value) }
+                        store |> updateItemInObjectStore key newItem
+                        ok <| value
+                    | Choice2Of2(error) -> fail <| error
+                | None -> 
+                    failwithf 
+                        "Internal Error: Generating value from factory is not possible when generator is not defined."
         | _ -> fail (KeyNotFound(key))
     
     /// Get the meta data associated with a key
-    member __.GetMetaData(key) = 
-        match store.TryGetValue(key) with
-        | true, a -> ok a.Metadata
+    let inline getMetaData (key) (store : T<_, _, _>) = 
+        match store.ObjectStore.TryGetValue(key) with
+        | true, a -> ok a.MetaData
         | _ -> fail (KeyNotFound(key))
     
     /// Delete an item with the key
-    member __.DeleteItem(key) = store.TryRemove(key) |> ignore
+    let inline deleteItem (key) (store : T<_, _, _>) = 
+        store.ObjectStore.TryRemove(key) |> ignore
+        store.PersistenceStore.DeleteItem(key) |> ignore
     
     ///  Add or update an item
-    member __.UpdateItem(key, metaData : 'TMetaData) = 
-        // Check if the item already exists in the store
-        let generator = fun _ -> generator (metaData)
-        let value = new Lazy<'T, 'TMetaData>(generator, metaData, threadSafe)
+    let inline updateMetaData (key, state, metaData : 'FlexMeta) (store : T<_, _, _>) = 
+        let value = 
+            { MetaData = metaData
+              State = state
+              Value = None }
         // Remove the older item if it exists. In case other objects have reference to the 
         // value they can keep on using it. Once those objects are disposed the value should
         // get garbage collected.
-        store.TryRemove(key) |> ignore
-        store.TryAdd(key, value) |> ignore
-        persistanceStore (key, metaData)
+        store.ObjectStore.TryRemove(key) |> ignore
+        store.ObjectStore.TryAdd(key, value) |> ignore
+        store.PersistenceStore.UpdateItem(key, metaData)
+    
+    /// Checks if a given key exists in the store
+    let inline exists (key) (error) (factory : T<_, _, _>) = 
+        match factory.ObjectStore.TryGetValue(key) with
+        | true, v -> ok()
+        | _ -> fail (error (key))
+    
+    /// Returns both state and the instance 
+    let inline getStateAndInstance (key) (factory : T<_, _, _>) = 
+        match factory |> getInstance key with
+        | Choice1Of2(instance) -> ok (factory.ObjectStore.[key].State, instance)
+        | Choice2Of2(error) -> fail error
+    
+    /// Update the instance in a factory. This ahould be used for complex object generation where
+    /// providing a simple generator is not possible
+    let inline updateInstance (key, instance) (factory : T<_, _, _>) = 
+        match factory.ObjectStore.TryGetValue(key) with
+        | true, value -> 
+            let newItem = { value with Value = Some(instance) }
+            factory |> updateItemInObjectStore key value
+            ok()
+        | _ -> fail (KeyNotFound(key))
 
 [<AutoOpenAttribute>]
 module LuceneHelpers = 
