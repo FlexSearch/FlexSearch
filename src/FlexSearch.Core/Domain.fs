@@ -642,7 +642,7 @@ module Analyzer =
         builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
         def.Filters |> Seq.iter (fun f -> builder.addTokenFilter (f.FilterName, dictToMap (f.Parameters)) |> ignore)
         try 
-            ok (builder.build())
+            ok (builder.build() :> Analyzer)
         with ex -> fail (AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex)))
 
 [<RequireQualifiedAccessAttribute>]
