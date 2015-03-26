@@ -395,6 +395,12 @@ module FieldType =
         | Double
         | Long
     
+    /// Check if the passed field is numeric field
+    let inline isNumericField (f : T) = 
+        match f with
+        | Date | DateTime | Int | Double | Long -> true
+        | _ -> false
+    
     /// Checks if a given field type requires an analyzer
     let inline requiresAnalyzer f = 
         match f with
@@ -882,6 +888,17 @@ module Field =
         | FieldType.Double -> getDoubleField (flexField.SchemaName, 0.0, storeInfo)
         | FieldType.Long -> getLongField (flexField.SchemaName, int64 0, storeInfo)
     
+    /// Get a search query parser associated with the field 
+    let inline getSearchAnalyzer (flexField : T) = 
+        match flexField.FieldType with
+        | FieldType.Custom(a, b, c) -> Some(a)
+        | FieldType.Highlight(a, _) -> Some(a)
+        | FieldType.Text(a, _) -> Some(a)
+        | FieldType.ExactText(a) -> Some(a)
+        | FieldType.Bool(a) -> Some(a)
+        | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
+            None
+    
     /// Set the value of index field to the default value
     let inline updateLuceneFieldToDefault flexField (luceneField : Field) = 
         match flexField.FieldType with
@@ -1100,19 +1117,21 @@ module Document =
           /// + 1 - Ensure that the document does exist. This is not relevant for create operation.
           /// > 1 - Ensure that the version matches exactly. This is not relevant for create operation.
           mutable TimeStamp : Int64
-          mutable ModifyIndex : Int64
+          /// mutable ModifyIndex : Int64
           /// Name of the index
           IndexName : string
-          /// AUTO
-          MetaData : Meta }
+          /// Any matched text highlighted snippets. Note: Only used for results
+          mutable Highlights : List<string>
+          /// Score of the returned document. Note: Only used for results
+          mutable Score : double }
         
         static member Default = 
             { Fields = Unchecked.defaultof<_>
               Id = Unchecked.defaultof<_>
               TimeStamp = Unchecked.defaultof<_>
               IndexName = Unchecked.defaultof<_>
-              ModifyIndex = Unchecked.defaultof<_>
-              MetaData = Unchecked.defaultof<_> }
+              Highlights = Unchecked.defaultof<_>
+              Score = Unchecked.defaultof<_> }
         
         interface IValidate<T> with
             member this.SetDefaults() = this
