@@ -18,16 +18,16 @@
 namespace FlexSearch.Core
 
 open FlexLucene.Analysis.Custom
+open Microsoft.Isam.Esent.Collections.Generic
+open Newtonsoft.Json
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
 open System.IO
-open System.Runtime.Serialization
-open Microsoft.Isam.Esent.Collections.Generic
-open System.Threading
 open System.Linq
-open Newtonsoft.Json
+open System.Runtime.Serialization
+open System.Threading
 
 [<AutoOpen>]
 [<RequireQualifiedAccess>]
@@ -693,11 +693,20 @@ module LazyFactory =
         | _ -> fail (KeyNotFound(key))
     
     /// Returns the item if it exists otherwise executes the custom error handler
-    let inline getItemOrError (key) (error) (factory : T<_,_,_>) =
+    let inline getItemOrError (key) (error) (factory : T<_, _, _>) = 
         match factory.ObjectStore.TryGetValue(key) with
-        | true, item -> ok(item)
+        | true, item -> ok (item)
         | _ -> fail (error (key))
-
+    
+    /// Returns the item if it exists otherwise executes the custom error handler
+    let inline getAsTuple (key) (error) (factory : T<_, _, _>) = 
+        match factory.ObjectStore.TryGetValue(key) with
+        | true, item -> 
+            if item.Value.IsNone then
+                failwithf "Internal Error: GetAsTuple should only be used with initialized instance."
+            ok (item.MetaData, item.State, item.Value.Value)
+        | _ -> fail (error (key))
+    
     /// Get an instance of the object by key. If the instance does not exist then
     /// the factory will create a new instance provided the object is in correct state.
     let inline getInstance (key) (store : T<_, _, _>) = 
