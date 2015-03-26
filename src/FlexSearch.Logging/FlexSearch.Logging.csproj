@@ -64,10 +64,6 @@
       <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
       <Name>FlexSearch.Api</Name>
     </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">
-      <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
-      <Name>FlexSearch.Common</Name>
-    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
       <Name>FlexSearch.Core</Name>

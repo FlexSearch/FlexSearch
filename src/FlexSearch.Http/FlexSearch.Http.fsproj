@@ -73,11 +73,6 @@
     <Content Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">
-      <Name>FlexSearch.Common</Name>
-      <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <Reference Include="Autofac">
       <HintPath>..\packages\Autofac.3.5.2\lib\net40\Autofac.dll</HintPath>
       <Private>True</Private>

@@ -271,11 +271,6 @@
       <Project>{c8122e6b-66be-418d-808e-c50871926552}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Common\FlexSearch.Common.fsproj">
-      <Name>FlexSearch.Common</Name>
-      <Project>{bc622920-1e51-459a-8dfa-c89ef6fc33ee}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
