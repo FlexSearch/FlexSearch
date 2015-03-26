@@ -674,7 +674,7 @@ module Script =
             
             member this.Validate() = this.ScriptName
                                      |> propertyNameValidator "ScriptName"
-                                     >>= fun _ -> this.Source |> notEmpty "Source"
+                                     >>= fun _ -> this.Source |> notBlank "Source"
     
     /// Template method code for computed field script
     let private computedFieldScriptTemplate = """
@@ -1136,8 +1136,8 @@ module Document =
         interface IValidate<T> with
             member this.SetDefaults() = this
             member this.Validate() = this.IndexName
-                                     |> notEmpty "IndexName"
-                                     >>= fun _ -> this.Id |> notEmpty "Id"
+                                     |> notBlank "IndexName"
+                                     >>= fun _ -> this.Id |> notBlank "Id"
 
 /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
 /// to support features like schema and sharding. So in this sense a FlexSearch 
@@ -1219,7 +1219,7 @@ module Index =
                     // Query Name is not mandatory for normal Search Queries
                     let missingQueryNames = 
                         this.SearchProfiles |> Seq.filter (fun x -> String.IsNullOrWhiteSpace(x.QueryName))
-                    if missingQueryNames.Count() <> 0 then fail (NotEmpty("QueryName"))
+                    if missingQueryNames.Count() <> 0 then fail (NotBlank("QueryName"))
                     else ok()
                 
                 this.IndexName
