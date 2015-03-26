@@ -102,11 +102,11 @@ type Error =
     | LessThan of fieldName : string * upperLimit : string * value : string
     | GreaterThanEqual of fieldName : string * lowerLimit : string * value : string
     | LessThanEqual of fieldName : string * lowerLimit : string * value : string
-    | NotEmpty of fieldName : string
+    | NotBlank of fieldName : string
     | RegexMatch of fieldName : string * regexExpr : string
     | KeyNotFound of key : string
     // Domain related
-    | InvalidPropertyName of fieldName : string
+    | InvalidPropertyName of fieldName : string * value : string
     | AnalyzerIsMandatory of fieldName : string
     | DuplicateFieldValue of groupName : string * fieldName : string
     | ScriptNotFound of scriptName : string * fieldName : string
@@ -119,6 +119,7 @@ type Error =
     | ScriptCannotBeCompiled of error : string
     | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
     // Search Realted
+    | QueryNotFound of queryName : string
     | StoredFieldCannotBeSearched of fieldName : string
     | MissingFieldValue of fieldName : string
     | UnknownMissingVauleOption of fieldName : string
@@ -484,65 +485,71 @@ module Operators =
     
     /// Wraps computations in an error handling computation expression.
     let maybe = ErrorHandlingBuilder()
+
+[<AutoOpenAttribute>]
+module Validators = 
+    /// Checks of the given input array has any duplicates    
+    let hasDuplicates groupName fieldName (input : array<string>) = 
+        if input.Count() = input.Distinct().Count() then ok()
+        else fail (DuplicateFieldValue(groupName, fieldName))
     
-    [<AutoOpenAttribute>]
-    module Validators = 
-        open System.Linq
-        
-        let hasDuplicates groupName fieldName (input : array<string>) = 
-            if input.Count() = input.Distinct().Count() then ok()
-            else fail (DuplicateFieldValue(groupName, fieldName))
-        
-        let gt fieldName limit input = 
-            if input > limit then ok()
-            else fail (GreaterThan(fieldName, limit.ToString(), input.ToString()))
-        
-        let gte fieldName limit input = 
-            if input >= limit then ok()
-            else fail (GreaterThanEqual(fieldName, limit.ToString(), input.ToString()))
-        
-        let lessThan fieldName limit input = 
-            if input < limit then ok()
-            else fail (LessThan(fieldName, limit.ToString(), input.ToString()))
-        
-        let lessThanEqual fieldName limit input = 
-            if fieldName <= limit then ok()
-            else fail (LessThanEqual(fieldName, limit.ToString(), input.ToString()))
-        
-        let notEmpty fieldName input = 
-            if not (String.IsNullOrWhiteSpace(fieldName)) then ok()
-            else fail (NotEmpty(fieldName))
-        
-        let regexMatch fieldName regexExpr input = 
-            let m = System.Text.RegularExpressions.Regex.Match(input, regexExpr)
-            if m.Success then ok()
-            else fail (RegexMatch(fieldName, regexExpr))
-        
-        let propertyNameRegex fieldName input = regexMatch fieldName "^[a-z0-9_]*$" input
-        
-        let invalidPropertyName fieldName input = 
-            if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
-                fail (InvalidPropertyName(fieldName))
-            else ok()
-        
-        let propertyNameValidator fieldName input = 
-            notEmpty fieldName input >>= fun _ -> propertyNameRegex fieldName input 
-            >>= fun _ -> invalidPropertyName fieldName input
-        
-        let seqValidator (input : seq<IValidate>) = 
-            let res = 
-                input
-                |> Seq.map (fun x -> x.Validate())
-                |> Seq.filter failed
-                |> Seq.toArray
-            if res.Length = 0 then ok()
-            else res.[0]
+    /// Checks if a given value is greater than the lower limit
+    let gt fieldName lowerLimit input = 
+        if input > lowerLimit then ok()
+        else fail (GreaterThan(fieldName, lowerLimit.ToString(), input.ToString()))
     
-    /// Wrapper around Dictionary lookup.
-    let KeyExists(key, dict : Dictionary<string, _>) = 
-        match dict.TryGetValue(key) with
-        | (true, value) -> ok (value)
-        | _ -> fail (KeyNotFound("TODO"))
+    /// Checks if the passed value is greater than or equal to the lower limit
+    let gte fieldName lowerLimit input = 
+        if input >= lowerLimit then ok()
+        else fail (GreaterThanEqual(fieldName, lowerLimit.ToString(), input.ToString()))
+    
+    /// Checks if a given value is less than the upper limit
+    let lessThan fieldName upperLimit input = 
+        if input < upperLimit then ok()
+        else fail (LessThan(fieldName, upperLimit.ToString(), input.ToString()))
+    
+    /// Checks if the passed value is less than or equal to the upper limit
+    let lessThanEqual fieldName upperLimit input = 
+        if input <= upperLimit then ok()
+        else fail (LessThanEqual(fieldName, upperLimit.ToString(), input.ToString()))
+    
+    /// Checks if the given string is null or empty
+    let notBlank fieldName input = 
+        if not (String.IsNullOrWhiteSpace(input)) then ok()
+        else fail (NotBlank(fieldName))
+    
+    /// Checks if a given value satisfies the provided regex expression 
+    let regexMatch fieldName regexExpr input = 
+        let m = System.Text.RegularExpressions.Regex.Match(input, regexExpr)
+        if m.Success then ok()
+        else fail (RegexMatch(fieldName, regexExpr))
+    
+    /// Validates if the property name satisfies the naming rules
+    let propertyNameRegex fieldName input = 
+        match input |> regexMatch fieldName "^[a-z0-9_]*$" with
+        | Choice1Of2(_) -> ok()
+        | Choice2Of2(_) -> fail <| InvalidPropertyName(fieldName, input)
+    
+    /// Checks if the property name is not in the restricted field names
+    let invalidPropertyName fieldName input = 
+        if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
+            fail (InvalidPropertyName(fieldName, input))
+        else ok()
+    
+    /// Validates a given value against the property name rules
+    let propertyNameValidator fieldName input = 
+        notBlank fieldName input >>= fun _ -> propertyNameRegex fieldName input 
+        >>= fun _ -> invalidPropertyName fieldName input
+    
+    /// Validates a given sequence in which each element implements IValidate    
+    let seqValidator (input : seq<IValidate>) = 
+        let res = 
+            input
+            |> Seq.map (fun x -> x.Validate())
+            |> Seq.filter failed
+            |> Seq.toArray
+        if res.Length = 0 then ok()
+        else res.[0]
     
     let inline isBoolean (value : string) = 
         match Boolean.TryParse(value) with
@@ -702,7 +709,7 @@ module LazyFactory =
     let inline getAsTuple (key) (error) (factory : T<_, _, _>) = 
         match factory.ObjectStore.TryGetValue(key) with
         | true, item -> 
-            if item.Value.IsNone then
+            if item.Value.IsNone then 
                 failwithf "Internal Error: GetAsTuple should only be used with initialized instance."
             ok (item.MetaData, item.State, item.Value.Value)
         | _ -> fail (error (key))
@@ -785,6 +792,7 @@ module LuceneHelpers =
 [<AutoOpenAttribute>]
 module JavaHelpers = 
     open java.util
+    
     // These are needed to satisfy certain Lucene query requirements
     let inline GetJavaDouble(value : Double) = java.lang.Double(value)
     let inline GetJavaInt(value : int) = java.lang.Integer(value)
@@ -795,7 +803,6 @@ module JavaHelpers =
     let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
     let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
     let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
-
     let hashMap() = new HashMap()
     
     /// Put an item in the hashmap and continue

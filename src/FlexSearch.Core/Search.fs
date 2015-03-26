@@ -90,6 +90,7 @@ module SearchDsl =
     
     let inline GetBoolValueFromMap (parameters : Dictionary<string, string> option) key defaultValue = 
         processDictionary (parameters, key, (System.Boolean.TryParse), defaultValue)
+    let queryNotFound queryName = QueryNotFound <| queryName
     
     let GenerateQuery(fields : Dictionary<string, Field.T>, predicate : Predicate, searchQuery : SearchQuery.T, 
                       isProfileBased : Dictionary<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
@@ -111,7 +112,7 @@ module SearchDsl =
                 | Condition(f, o, v, p) -> 
                     let! field = validateFieldExists (f)
                     do! IsStoredField(field)
-                    let! query = KeyExists(o, queryTypes)
+                    let! query = queryTypes |> keyExists (o, queryNotFound)
                     let! value = maybe { 
                                      match isProfileBased with
                                      | Some(source) -> 

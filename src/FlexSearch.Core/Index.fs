@@ -165,7 +165,6 @@ module IndexSettingBuilder =
     let withSearchProfiles (profiles : SearchQuery.T array, parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery.T>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
-            assert (notBlank profile.QueryName)
             let predicate = returnOrFail <| parser.Parse profile.QueryString
             result.Add(profile.QueryName, (predicate, profile))
         { build with Setting = { build.Setting with SearchProfiles = result } }
