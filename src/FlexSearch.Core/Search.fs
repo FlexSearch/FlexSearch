@@ -295,26 +295,13 @@ module SearchDsl =
             }
         for i in 0..indexSearchers.Length - 1 do
             (indexSearchers.[i] :> IDisposable).Dispose()
-        ok(results, recordsReturned, totalAvailable)
-
-[<AutoOpen>]
-module JavaHelpers = 
-    // These are needed to satisfy certain Lucene query requirements
-    let inline GetJavaDouble(value : Double) = java.lang.Double(value)
-    let inline GetJavaInt(value : int) = java.lang.Integer(value)
-    let inline GetJavaLong(value : int64) = java.lang.Long(value)
-    let JavaLongMax = java.lang.Long(java.lang.Long.MAX_VALUE)
-    let JavaLongMin = java.lang.Long(java.lang.Long.MIN_VALUE)
-    let JavaDoubleMax = java.lang.Double(java.lang.Double.MAX_VALUE)
-    let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
-    let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
-    let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
+        ok (results, recordsReturned, totalAvailable)
 
 [<AutoOpen>]
 module QueryHelpers = 
     // Find terms associated with the search string
     let inline GetTerms(flexField : Field.T, value) = 
-        match Field.getSearchAnalyzer(flexField) with
+        match Field.getSearchAnalyzer (flexField) with
         | Some(a) -> parseTextUsingAnalyzer (a, flexField.SchemaName, value)
         | None -> new List<string>([ value ])
     
@@ -332,23 +319,23 @@ module QueryHelpers =
                    parameters.Add(x.Substring(0, x.IndexOf(":")), x.Substring(x.IndexOf(":") + 1)))
         parameters
     
-    let NumericTermQuery(flexIndexField, value) = 
+    let NumericTermQuery(flexIndexField : Field.T, value) = 
         match flexIndexField.FieldType with
-        | FlexDate | FlexDateTime | FlexLong -> 
+        | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
             match Int64.TryParse(value) with
             | (true, val1) -> 
                 ok 
                     (NumericRangeQuery.NewLongRange
                          (flexIndexField.SchemaName, GetJavaLong(val1), GetJavaLong(val1), true, true) :> Query)
             | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-        | FlexInt -> 
+        | FieldType.Int -> 
             match Int32.TryParse(value) with
             | (true, val1) -> 
                 Choice1Of2
                     (NumericRangeQuery.NewIntRange
                          (flexIndexField.SchemaName, GetJavaInt(val1), GetJavaInt(val1), true, true) :> Query)
             | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-        | FlexDouble -> 
+        | FieldType.Double -> 
             match Double.TryParse(value) with
             | (true, val1) -> 
                 Choice1Of2
@@ -366,7 +353,7 @@ type FlexTermQuery() =
     interface IFlexQuery with
         member this.QueryName() = [| "eq"; "=" |]
         member this.GetQuery(flexIndexField, values, parameters) = 
-            match IsNumericField(flexIndexField) with
+            match FieldType.isNumericField (flexIndexField.FieldType) with
             | true -> NumericTermQuery(flexIndexField, values.[0])
             | false -> 
                 let terms = GetTerms(flexIndexField, values.[0])
@@ -510,24 +497,24 @@ type FlexGreaterQuery() =
             // special character
             let includeLower = false
             let includeUpper = true
-            match IsNumericField(flexIndexField) with
+            match FieldType.isNumericField (flexIndexField.FieldType) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime | FlexLong -> 
+                | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.NewLongRange
                                  (flexIndexField.SchemaName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexInt -> 
+                | FieldType.Int -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.NewIntRange
                                  (flexIndexField.SchemaName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexDouble -> 
+                | FieldType.Double -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
@@ -548,24 +535,24 @@ type FlexGreaterThanEqualQuery() =
             // special character
             let includeLower = true
             let includeUpper = true
-            match IsNumericField(flexIndexField) with
+            match FieldType.isNumericField (flexIndexField.FieldType) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime | FlexLong -> 
+                | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, GetJavaLong(val1), JavaLongMax, includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexInt -> 
+                | FieldType.Int -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, GetJavaInt(val1), JavaIntMax, includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexDouble -> 
+                | FieldType.Double -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
@@ -586,24 +573,24 @@ type FlexLessThanQuery() =
             // special character
             let includeLower = true
             let includeUpper = false
-            match IsNumericField(flexIndexField) with
+            match FieldType.isNumericField (flexIndexField.FieldType) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime | FlexLong -> 
+                | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexInt -> 
+                | FieldType.Int -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexDouble -> 
+                | FieldType.Double -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
@@ -624,24 +611,24 @@ type FlexLessThanEqualQuery() =
             // special character
             let includeLower = true
             let includeUpper = true
-            match IsNumericField(flexIndexField) with
+            match FieldType.isNumericField (flexIndexField.FieldType) with
             | true -> 
                 match flexIndexField.FieldType with
-                | FlexDate | FlexDateTime | FlexLong -> 
+                | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
                     match Int64.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newLongRange 
                                  (flexIndexField.SchemaName, JavaLongMin, GetJavaLong(val1), includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexInt -> 
+                | FieldType.Int -> 
                     match Int32.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2
                             (NumericRangeQuery.newIntRange 
                                  (flexIndexField.SchemaName, JavaIntMin, GetJavaInt(val1), includeLower, includeUpper) :> Query)
                     | _ -> fail (DataCannotBeParsed(flexIndexField.FieldName))
-                | FlexDouble -> 
+                | FieldType.Double -> 
                     match Double.TryParse(values.[0]) with
                     | true, val1 -> 
                         Choice1Of2

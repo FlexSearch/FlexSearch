@@ -944,7 +944,7 @@ module Field =
     
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.T, 
-               analyzerFactory : LazyFactory<FlexLucene.Analysis.Analyzer, Analyzer.T>, scriptsManager : ScriptsManager) = 
+               analyzerFactory : LazyFactory.T<Analyzer, Analyzer.T, _>, scriptsManager : ScriptsManager) = 
         let getSource (field : Dto) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok (None)
             else 
@@ -964,8 +964,8 @@ module Field =
                 | FieldType.Dto.Stored -> return FieldType.Stored
                 | FieldType.Dto.ExactText -> return FieldType.ExactText(CaseInsensitiveKeywordAnalyzer)
                 | FieldType.Dto.Text | FieldType.Dto.Highlight | FieldType.Dto.Custom -> 
-                    let! searchAnalyzer = analyzerFactory.GetInstance(field.SearchAnalyzer)
-                    let! indexAnalyzer = analyzerFactory.GetInstance(field.IndexAnalyzer)
+                    let! searchAnalyzer = analyzerFactory |> LazyFactory.getInstance field.SearchAnalyzer
+                    let! indexAnalyzer = analyzerFactory |> LazyFactory.getInstance field.IndexAnalyzer
                     match field.FieldType with
                     | FieldType.Dto.Text -> return FieldType.Text(searchAnalyzer, indexAnalyzer)
                     | FieldType.Dto.Highlight -> return FieldType.Highlight(searchAnalyzer, indexAnalyzer)
@@ -1237,7 +1237,7 @@ module Index =
 /// Helper DTOs
 //////////////////////////////////////////////////////////////////////////
 /// Represents the result returned by FlexSearch for a given search query.
-[<ToString; Sealed>]
+[<Sealed>]
 type SearchResults() = 
     
     /// Documents which are returned as a part of search response.
@@ -1319,8 +1319,8 @@ type Response<'T>() =
 type CreateResponse(id : string) = 
     member val Id = id with get, set
 
-type IndexStatusResponse() = 
-    member val Status = Unchecked.defaultof<IndexState> with get, set
+//type IndexStatusResponse() = 
+//    member val Status = Unchecked.defaultof<IndexState> with get, set
 
 type IndexExistsResponse() = 
     member val Exists = Unchecked.defaultof<bool> with get, set

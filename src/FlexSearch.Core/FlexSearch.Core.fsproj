@@ -89,27 +89,15 @@
     <Compile Include="Interface.fs" />
     <Compile Include="Settings.fs" />
     <Compile Include="Parser.fs" />
-    <Compile Include="Search.fs" />
     <Compile Include="Index.fs" />
+    <Compile Include="Search.fs" />
     <Compile Include="Services.fs" />
-    <Compile Include="Services\IndexService.fs" />
-    <Compile Include="Services\DocumentService.fs" />
-    <Compile Include="Services\QueueService.fs" />
-    <Compile Include="Services\SearchService..fs" />
-    <Compile Include="Services\JobService.fs" />
-    <Compile Include="Services\ResourceService.fs" />
-    <Compile Include="Services\AnalyzerService.fs" />
-    <Compile Include="Services\DemoIndexService.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
     <None Include="App.config" />
     <Content Include="FodyWeavers.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="BinaryRage">
-      <HintPath>..\packages\BinaryRage.0.1.3\lib\net40\BinaryRage.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Esent.Collections">
       <HintPath>..\packages\Microsoft.Database.Collections.Generic.1.9.2.0\lib\net40\Esent.Collections.dll</HintPath>
       <Private>True</Private>
@@ -247,7 +235,7 @@
     </Reference>
     <Reference Include="Janitor">
       <HintPath>..\packages\Janitor.Fody.1.1.0.0\Lib\portable-net4+sl5+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\Janitor.dll</HintPath>
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.IO.RecyclableMemoryStream">

@@ -140,7 +140,7 @@ module IndexSettingBuilder =
                        ())
         new PerFieldAnalyzerWrapper(new FlexLucene.Analysis.Standard.StandardAnalyzer(), analyzerMap)
     
-    let withFields (fields : Field.Dto array, analyzerService : LazyFactory<FlexLucene.Analysis.Analyzer, Analyzer.T>) 
+    let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.T, _>) 
         (build) = 
         if isNull (build.Setting.ScriptsManager) then 
             failwithf "Internal Error: Script manager should be initialized before creating IndexFields."
@@ -747,7 +747,7 @@ module IndexWriter =
         let opCode = 
             if create then TransacationLog.Operation.Create
             else TransacationLog.Operation.Update
-        document.ModifyIndex <- txId
+        //document.ModifyIndex <- txId
         let txEntry = TransacationLog.T.Create(txId, opCode, document)
         use stream = memoryManager.GetStream()
         TransacationLog.serializer (stream, txEntry)
