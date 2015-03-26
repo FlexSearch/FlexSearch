@@ -6,23 +6,12 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{527581E3-C4E4-447D-918D-675C7D7FB9E5}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Core", "FlexSearch.Core\FlexSearch.Core.fsproj", "{9E4F3C02-6EAE-46B0-9C3F-2EE8EB4EA560}"
-	ProjectSection(ProjectDependencies) = postProject
-		{38D53A73-63C2-4D03-B745-027B2FB63418} = {38D53A73-63C2-4D03-B745-027B2FB63418}
-	EndProjectSection
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Core.Tests", "FlexSearch.Core.Tests\FlexSearch.Core.Tests.fsproj", "{C3F496FF-ABFE-4504-9E75-A0C1B1091D59}"
-	ProjectSection(ProjectDependencies) = postProject
-		{38D53A73-63C2-4D03-B745-027B2FB63418} = {38D53A73-63C2-4D03-B745-027B2FB63418}
-	EndProjectSection
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.TestSupport", "FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj", "{6F26A1D2-EF8A-4EC7-ADBA-25844BE00B74}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.IntegrationTests", "FlexSearch.IntegrationTests\FlexSearch.IntegrationTests.fsproj", "{7879D589-02A7-45BD-B80B-A37BB560457F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{38D53A73-63C2-4D03-B745-027B2FB63418} = {38D53A73-63C2-4D03-B745-027B2FB63418}
-	EndProjectSection
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.fsproj", "{38D53A73-63C2-4D03-B745-027B2FB63418}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Api.Tests", "FlexSearch.Api.Tests\FlexSearch.Api.Tests.fsproj", "{E0589B70-A993-4F58-BAE8-AEDA39F1A500}"
 EndProject
@@ -100,16 +89,6 @@ Global
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{7879D589-02A7-45BD-B80B-A37BB560457F}.Release|x64.ActiveCfg = Release|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Release|Any CPU.Build.0 = Release|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{38D53A73-63C2-4D03-B745-027B2FB63418}.Release|x64.ActiveCfg = Release|Any CPU
 		{E0589B70-A993-4F58-BAE8-AEDA39F1A500}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E0589B70-A993-4F58-BAE8-AEDA39F1A500}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0589B70-A993-4F58-BAE8-AEDA39F1A500}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

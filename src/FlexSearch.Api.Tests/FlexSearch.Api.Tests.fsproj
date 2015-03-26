@@ -66,13 +66,6 @@
     <None Include="packages.config" />
     <None Include="app.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
-      <Name>FlexSearch.Api</Name>
-      <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>

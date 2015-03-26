@@ -265,11 +265,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.fsproj">
-      <Name>FlexSearch.Api</Name>
-      <Project>{38d53a73-63c2-4d03-b745-027b2fb63418}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Bootstrapper\FlexSearch.Bootstrapper.fsproj">
       <Name>FlexSearch.Bootstrapper</Name>
       <Project>{c8122e6b-66be-418d-808e-c50871926552}</Project>
