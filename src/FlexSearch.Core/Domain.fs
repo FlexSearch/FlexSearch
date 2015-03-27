@@ -1312,15 +1312,47 @@ type SearchResults() =
 //    inherit ValidatableBase()
 //    member val Text = Unchecked.defaultof<string> with get, set
 //    override this.Validate() = this.Text |> notEmpty "Text"
-type Response<'T>() = 
-    member val Data = Unchecked.defaultof<'T> with get, set
-    member val Error = Unchecked.defaultof<OperationMessage> with get, set
 
 type CreateResponse(id : string) = 
     member val Id = id with get, set
 
 //type IndexStatusResponse() = 
 //    member val Status = Unchecked.defaultof<IndexState> with get, set
-
 type IndexExistsResponse() = 
     member val Exists = Unchecked.defaultof<bool> with get, set
+
+module ServerSettings = 
+    [<CLIMutableAttribute>]
+    type T = 
+        { HttpPort : int
+          DataFolder : string
+          PluginFolder : string
+          ConfFolder : string
+          NodeName : string }
+        /// <summary>
+        /// Get default server configuration
+        /// </summary>
+        static member GetDefault() = 
+            let setting = 
+                { HttpPort = 9800
+                  DataFolder = Helpers.GenerateAbsolutePath("./data")
+                  PluginFolder = Constants.PluginFolder
+                  ConfFolder = Constants.ConfFolder
+                  NodeName = "FlexSearchNode" }
+            setting
+    
+    /// Reads server configuration from the given file
+    let createFromFile (path : string, formatter : IFormatter) = 
+        assert (String.IsNullOrWhiteSpace(path) <> true)
+        if File.Exists(path) then 
+            let fileStream = new FileStream(path, FileMode.Open)
+            let parsedResult = formatter.DeSerialize<T>(fileStream)
+            
+            let setting = 
+                { HttpPort = parsedResult.HttpPort
+                  DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
+                  PluginFolder = Constants.PluginFolder
+                  ConfFolder = Constants.ConfFolder
+                  NodeName = parsedResult.NodeName }
+            Choice1Of2(setting)
+        else Choice2Of2(Errors.UNABLE_TO_PARSE_CONFIG |> GenerateOperationMessage)
