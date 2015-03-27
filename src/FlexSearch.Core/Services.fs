@@ -60,6 +60,22 @@ module State =
     /// Check if a given index exists
     let indexExists (indexName) (state : T) = state.IndexFactory |> LazyFactory.exists indexName indexNotFound
 
+/// Index related operations
+type IIndexService = 
+    abstract GetIndex : string -> Choice<Index.T, Error>
+    abstract UpdateIndex : Index.T -> Choice<unit, Error>
+    abstract DeleteIndex : string -> Choice<unit, Error>
+    abstract AddIndex : Index.T -> Choice<CreateResponse, Error>
+    abstract GetAllIndex : unit -> Index.T array
+    abstract IndexExists : string -> bool
+    abstract GetIndexStatus : string -> Choice<IndexState, Error>
+    abstract OpenIndex : string -> Choice<unit, Error>
+    abstract CloseIndex : string -> Choice<unit, Error>
+    abstract Commit : string -> Choice<unit, Error>
+    abstract Refresh : string -> Choice<unit, Error>
+    abstract GetRealtimeSearchers : string -> Choice<array<RealTimeSearcher>, Error>
+    abstract GetRealtimeSearcher : string * int -> Choice<RealTimeSearcher, Error>
+
 module IndexService = 
     /// Returns IndexNotFound error
     let indexNotFound (indexName) = IndexNotFound <| indexName
