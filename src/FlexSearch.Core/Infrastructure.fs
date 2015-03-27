@@ -134,6 +134,9 @@ type Error =
     | DocumentIdAlreadyExists of indexName : string * id : string
     | DocumentIdNotFound of indexName : string * id : string
     | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
+    // Modules related
+    | ModuleNotFound of moduleName : string * moduleType : string
+    | ModuleInitializationError of moduleName : string * moduleType : string * error : string
     // Generic error to be used by plugins
     | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
 
@@ -811,6 +814,27 @@ module JavaHelpers =
         hashMap
     
     let put (key, value) (hashMap : HashMap) = hashMap.put (key, value) |> ignore
+
+/// Generic logger interface
+type ILogService = 
+//    abstract AddIndex : indexName:string * indexDetails:Index.T -> unit
+//    abstract UpdateIndex : indexName:string * indexDetails:Index.T -> unit
+    abstract DeleteIndex : indexName:string -> unit
+    abstract CloseIndex : indexName:string -> unit
+    abstract OpenIndex : indexName:string -> unit
+//    abstract IndexValidationFailed : indexName:string * indexDetails:Index.T * validationObject:Error -> unit
+    abstract ComponentLoaded : name:string * componentType:string -> unit
+    abstract ComponentInitializationFailed : name:string * componentType:string * ex:Exception -> unit
+    abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
+    abstract StartSession : unit -> unit
+    abstract EndSession : unit -> unit
+    abstract Shutdown : unit -> unit
+    abstract TraceCritical : message:string * ex:Exception -> unit
+    abstract TraceCritical : ex:Exception -> unit
+    abstract TraceError : error:string * ex:Exception -> unit
+    abstract TraceError : error:string -> unit
+    abstract TraceError : error:string * ex:Error -> unit
+    abstract TraceInformation : infoMessage:string * messageDetails:string -> unit
 
 [<AutoOpenAttribute>]
 module Logging = 
