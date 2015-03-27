@@ -175,17 +175,11 @@ module HttpHelpers =
             | true, formatter -> 
                 try 
                     let result = formatter.DeSerialize<'T>(request.Body)
-                    if IsNull result then 
-                        Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
-                                   |> GenerateOperationMessage
-                                   |> Append("Message", "No body is defined."))
-                    else Choice1Of2(result)
-                with ex -> 
-                    Choice2Of2(Errors.HTTP_UNABLE_TO_PARSE
-                               |> GenerateOperationMessage
-                               |> Append("Message", ex.Message))
-            | _ -> Choice2Of2(Errors.HTTP_UNSUPPORTED_CONTENT_TYPE |> GenerateOperationMessage)
-        else Choice2Of2(Errors.HTTP_NO_BODY_DEFINED |> GenerateOperationMessage)
+                    if IsNull result then fail HttpNoBodyDefined
+                    else ok result
+                with ex -> fail <| HttpUnableToParse ex.Message
+            | _ -> fail HttpUnsupportedContentType
+        else fail HttpNoBodyDefined
     
     let Created = HttpStatusCode.Created
     let Accepted = HttpStatusCode.Accepted
@@ -203,10 +197,7 @@ module HttpHelpers =
     
     let GetValueFromQueryString1 key (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
-        | null -> 
-            Choice2Of2(Errors.MISSING_FIELD_VALUE
-                       |> GenerateOperationMessage
-                       |> Append("Parameter", key))
+        | null -> fail <| MissingFieldValue key
         | value -> Choice1Of2(value)
     
     let GetIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
@@ -227,17 +218,11 @@ module HttpHelpers =
     
     let GetDateTimeValueFromQueryString key (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
-        | null -> 
-            Choice2Of2(Errors.MISSING_FIELD_VALUE
-                       |> GenerateOperationMessage
-                       |> Append("Parameter", key))
+        | null -> fail <| MissingFieldValue key
         | value -> 
             match Int64.TryParse(value) with
             | true, v' -> Choice1Of2(v')
-            | _ -> 
-                Choice2Of2(Errors.DATA_CANNOT_BE_PARSED
-                           |> GenerateOperationMessage
-                           |> Append("Parameter", key))
+            | _ -> fail <| MissingFieldValue key
     
     let inline CheckIdPresent(owin : IOwinContext) = 
         if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
@@ -259,9 +244,20 @@ type IHttpResource =
     abstract FailOnMissingBody : bool
     abstract Execute : id:option<string> * subid:option<string> * context:IOwinContext -> unit
 
-type Response<'T>() = 
-    member val Data = Unchecked.defaultof<'T> with get, set
-    member val Error = Unchecked.defaultof<OperationMessage> with get, set
+/// Standard FlexSearch response to all web requests 
+type Response<'T> = 
+    { Data : 'T
+      Error : OperationMessage }
+    
+    /// Populate response with data part populated
+    static member WithData(data) = 
+        { Data = data
+          Error = Unchecked.defaultof<_> }
+    
+    /// Populate response with error part populated
+    static member WithError(error) = 
+        { Data = Unchecked.defaultof<'T>
+          Error = error |> toMessage }
 
 /// <summary>
 /// Handler base class which exposes common Http Handler functionality
@@ -277,24 +273,24 @@ type HttpHandlerBase<'T, 'U>(?failOnMissingBody0 : bool, ?fullControl0 : bool) =
     
     member __.Deserialize(request : IOwinRequest) = GetRequestBody<'T>(request)
     
-    member __.Serialize (response : Choice<'U, OperationMessage>) (successStatus : HttpStatusCode) 
-           (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+    member __.Serialize (response : Choice<'U, Error>) (successStatus : HttpStatusCode) (failureStatus : HttpStatusCode) 
+           (owinContext : IOwinContext) = 
         // For parameter less constructor the performance of Activator is as good as direct initialization. Based on the 
         // finding of http://geekswithblogs.net/mrsteve/archive/2012/02/11/c-sharp-performance-new-vs-expression-tree-func-vs-activator.createinstance.aspx
         // In future we can cache it if performance is found to be an issue.
-        let instance = Activator.CreateInstance<Response<'U>>()
+        //let instance = Activator.CreateInstance<Response<'U>>()
         match response with
         | Choice1Of2(r) -> 
-            instance.Data <- r
+            let instance = Response<'U>.WithData(r)
+            //instance.Data <- r
             WriteResponse successStatus instance owinContext
         | Choice2Of2(r) -> 
-            instance.Error <- r
+            let instance = Response<'U>.WithError(r)
             WriteResponse failureStatus instance owinContext
     
     abstract Process : id:option<string> * subId:option<string> * body:Option<'T> * context:IOwinContext
-     -> Choice<'U, OperationMessage> * HttpStatusCode * HttpStatusCode
-    override __.Process(_, _, _, _) = 
-        (Choice2Of2(Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage), HttpStatusCode.OK, HttpStatusCode.BadRequest)
+     -> Choice<'U, Error> * HttpStatusCode * HttpStatusCode
+    override __.Process(_, _, _, _) = (fail HttpNotSupported, HttpStatusCode.OK, HttpStatusCode.BadRequest)
     abstract Process : context:IOwinContext -> unit
     override __.Process(context) = context |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
     interface IHttpResource with
@@ -356,9 +352,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
             let getModule lookupValue (id : option<string>) (subId : option<string>) (owin : IOwinContext) = 
                 match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
                 | (true, x) -> x.Execute(id, subId, owin)
-                | _ -> 
-                    owin 
-                    |> BAD_REQUEST(new Response<unit>(Error = (Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)))
+                | _ -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
             
             let matchSubModules (id : string, x : int, owin : IOwinContext) = 
                 match x with
@@ -370,9 +364,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                 | 5 -> 
                     getModule ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
                         (Some(id)) (Some(owin.Request.Uri.Segments.[4])) owin
-                | _ -> 
-                    owin 
-                    |> BAD_REQUEST(new Response<unit>(Error = (Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)))
+                | _ -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
             
             try 
                 match owin.Request.Uri.Segments.Length with
@@ -387,14 +379,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                         || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) then 
                         match indexExists (id) with
                         | true -> matchSubModules (id, x, owin)
-                        | false -> 
-                            owin 
-                            |> NOT_FOUND
-                                   (new Response<unit>(Error = (Errors.INDEX_NOT_FOUND |> GenerateOperationMessage)))
+                        | false -> owin |> NOT_FOUND(Response<unit>.WithError(IndexNotFound id))
                     else matchSubModules (id, x, owin)
-                | _ -> 
-                    owin 
-                    |> BAD_REQUEST(new Response<unit>(Error = (Errors.HTTP_NOT_SUPPORTED |> GenerateOperationMessage)))
+                | _ -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
             with __ -> ()
         }
     

@@ -125,11 +125,8 @@ module Parsers =
     let ParseQueryString(input : string, withBrackets : bool) = 
         let parse (queryString) (parser) = 
             match run parser queryString with
-            | Success(result, _, _) -> Choice1Of2(result)
-            | Failure(errorMsg, _, _) -> 
-                Choice2Of2(Errors.QUERYSTRING_PARSING_ERROR
-                           |> GenerateOperationMessage
-                           |> Append("Message", errorMsg))
+            | Success(result, _, _) -> ok result
+            | Failure(errorMsg, _, _) -> Choice2Of2 <| QueryStringParsingError errorMsg
         assert (input <> null)
         if withBrackets then queryStringParserWithBracket |> parse input
         else queryStringParser |> parse input
@@ -183,8 +180,8 @@ module Parsers =
             notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, fun x -> NotPredicate(x))))
         
         interface IFlexParser with
-            member this.Parse(input : string) = 
+            member __.Parse(input : string) = 
                 assert (input <> null)
                 match run Parser input with
-                | Success(result, _, _) -> Choice1Of2(result)
-                | Failure(errorMsg, _, _) -> Choice2Of2(QueryStringParsingError(errorMsg))
+                | Success(result, _, _) -> ok result
+                | Failure(errorMsg, _, _) -> Choice2Of2 <| QueryStringParsingError errorMsg

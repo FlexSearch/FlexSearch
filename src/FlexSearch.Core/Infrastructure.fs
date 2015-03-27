@@ -137,13 +137,33 @@ type Error =
     // Modules related
     | ModuleNotFound of moduleName : string * moduleType : string
     | ModuleInitializationError of moduleName : string * moduleType : string * error : string
+    // Http server related
+    | HttpUnableToParse of error : string
+    | HttpUnsupportedContentType
+    | HttpNoBodyDefined
+    | HttpNotSupported
+    | HttpUriIdNotSupplied
+    // Configuration related
+    | UnableToParseConfig of error : string
     // Generic error to be used by plugins
     | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
 
 exception ValidationException of Error
+[<CLIMutableAttribute>]
+type OperationMessage = 
+    { DeveloperMessage : string
+      UserMessage : string
+      ErrorCode : string }
 
 [<AutoOpen>]
 module Errors = 
+    let inline toMessage (error : Error) =
+        {
+            DeveloperMessage = ""
+            UserMessage = ""
+            ErrorCode = ""
+        }        
+    
     let inline ex (error) = raise (ValidationException(error))
     let INDEX_NOT_FOUND = "INDEX_NOT_FOUND:Index not found."
     let INDEX_ALREADY_EXISTS = "INDEX_ALREADY_EXISTS:Index already exists."
@@ -262,41 +282,6 @@ type NameAttribute(name : string) =
     inherit Attribute()
     member this.Name = name
 
-[<DataContract; CLIMutableAttribute>]
-type OperationMessage = 
-    { [<DataMember(Order = 1)>]
-      DeveloperMessage : string
-      [<DataMember(Order = 2)>]
-      UserMessage : string
-      [<DataMember(Order = 3)>]
-      ErrorCode : string }
-
-[<AutoOpen>]
-module OperationMessageExtensions = 
-    type String with
-        member this.GetErrorCode() = 
-            assert (this.Contains(":"))
-            this.Substring(0, this.IndexOf(":"))
-    
-    /// <summary>
-    /// Append the given key value pair to the developer message
-    /// The developer message has a format of key1='value1',key2='value2'
-    /// This is specifically done to enable easy error message parsing in the user interface
-    /// </summary>
-    let Append (key, value) (message : OperationMessage) = 
-        { message with DeveloperMessage = sprintf "%s; %s = '%s'" message.DeveloperMessage key value }
-    
-    let GenerateOperationMessage(input : string) = 
-        assert (input.Contains(":"))
-        { DeveloperMessage = ""
-          UserMessage = input.Substring(input.IndexOf(":") + 1)
-          ErrorCode = input.Substring(0, input.IndexOf(":")) }
-    
-    let AppendKv (key, value) (message : string) = sprintf "%s; %s = %s" message key value
-
-//
-//type IFreezable = 
-//    abstract Freeze : unit -> unit
 type IValidate = 
     abstract Validate : unit -> Choice<unit, Error>
 

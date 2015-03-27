@@ -1312,7 +1312,6 @@ type SearchResults() =
 //    inherit ValidatableBase()
 //    member val Text = Unchecked.defaultof<string> with get, set
 //    override this.Validate() = this.Text |> notEmpty "Text"
-
 type CreateResponse(id : string) = 
     member val Id = id with get, set
 
@@ -1354,5 +1353,5 @@ module ServerSettings =
                   PluginFolder = Constants.PluginFolder
                   ConfFolder = Constants.ConfFolder
                   NodeName = parsedResult.NodeName }
-            Choice1Of2(setting)
-        else Choice2Of2(Errors.UNABLE_TO_PARSE_CONFIG |> GenerateOperationMessage)
+            ok setting
+        else fail <| UnableToParseConfig ""
