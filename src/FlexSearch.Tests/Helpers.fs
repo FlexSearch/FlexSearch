@@ -1,4 +1,5 @@
-﻿module Helpers
+﻿[<AutoOpenAttribute>]
+module Helpers
 
 open Fixie
 open System
@@ -25,3 +26,8 @@ type SingleInstancePerClassConvention() as self =
         self.Classes.NameEndsWith([| "Tests"; "Test" |]) |> ignore
         self.ClassExecution.CreateInstancePerClass() |> ignore
         self.Parameters.Add<FromInputAttributes>() |> ignore
+
+type SingleInstancePerClassConvention1() as self = 
+    inherit Convention()
+    do 
+        self.Methods.Where(fun x -> x.IsStatic && x.IsPublic) |> ignore
