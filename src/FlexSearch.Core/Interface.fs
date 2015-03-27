@@ -25,9 +25,7 @@ open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
 
-type IServer = 
-    abstract Start : unit -> unit
-    abstract Stop : unit -> unit
+
 
 /// <summary>
 /// General key value based settings store used across Flex to store all settings
@@ -40,15 +38,7 @@ type IPersistanceStore =
     abstract Delete<'T> : key:string -> Choice<unit, Error>
     abstract DeleteAll<'T> : unit -> Choice<unit, Error>
 
-/// <summary>
-/// Formatter interface for supporting multiple formats in the HTTP engine
-/// </summary>
-type IFormatter = 
-    abstract SupportedHeaders : unit -> string []
-    abstract Serialize : body:obj * stream:Stream -> unit
-    abstract Serialize : body:obj * context:IOwinContext -> unit
-    abstract SerializeToString : body:obj -> string
-    abstract DeSerialize<'T> : stream:Stream -> 'T
+
 
 /// <summary>
 /// General factory Interface for all MEF based factories
@@ -107,28 +97,6 @@ type IQueueService =
     abstract AddDocumentQueue : document:Document.T -> unit
     abstract AddOrUpdateDocumentQueue : document:Document.T -> unit
 
-/// <summary>
-/// Generic logger interface
-/// </summary>
-type ILogService = 
-    abstract AddIndex : indexName:string * indexDetails:Index.T -> unit
-    abstract UpdateIndex : indexName:string * indexDetails:Index.T -> unit
-    abstract DeleteIndex : indexName:string -> unit
-    abstract CloseIndex : indexName:string -> unit
-    abstract OpenIndex : indexName:string -> unit
-    abstract IndexValidationFailed : indexName:string * indexDetails:Index.T * validationObject:Error -> unit
-    abstract ComponentLoaded : name:string * componentType:string -> unit
-    abstract ComponentInitializationFailed : name:string * componentType:string * ex:Exception -> unit
-    abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
-    abstract StartSession : unit -> unit
-    abstract EndSession : unit -> unit
-    abstract Shutdown : unit -> unit
-    abstract TraceCritical : message:string * ex:Exception -> unit
-    abstract TraceCritical : ex:Exception -> unit
-    abstract TraceError : error:string * ex:Exception -> unit
-    abstract TraceError : error:string -> unit
-    abstract TraceError : error:string * ex:Error -> unit
-    abstract TraceInformation : infoMessage:string * messageDetails:string -> unit
 
 /// <summary>
 /// Generic job service interface
