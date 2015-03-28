@@ -340,6 +340,13 @@ module Operators =
         | Choice1Of2(x) -> x
         | Choice2Of2(err) -> raise (ValidationException(err))
     
+    /// Takes a bool value and returns ok for sucess and predefined error
+    /// for failure
+    let inline boolToResult err result = 
+        match result with
+        | true -> ok()
+        | false -> fail (err)
+    
     //    /// If the given result is a Success the wrapped value will be returned. 
     //    ///Otherwise the function throws an exception with Failure message of the result.
     //    let inline returnOrFail result = 
@@ -538,31 +545,6 @@ module Validators =
             |> Seq.toArray
         if res.Length = 0 then ok()
         else res.[0]
-    
-    let inline isBoolean (value : string) = 
-        match Boolean.TryParse(value) with
-        | true, a -> ok (a)
-        | _ -> fail()
-    
-    let pBool (failureDefault) (value : string) = 
-        match Boolean.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
-    
-    let pLong (failureDefault) (value : string) = 
-        match Int64.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
-    
-    let pInt (failureDefault) (value : string) = 
-        match Int32.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
-    
-    let pDouble (failureDefault) (value : string) = 
-        match Double.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
 
 [<AutoOpenAttribute>]
 module DictionaryHelpers = 
