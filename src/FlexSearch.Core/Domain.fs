@@ -645,9 +645,9 @@ module Analyzer =
     /// Build a Lucene Analyzer from FlexSearch Analyzer DTO
     let build (def : T) = 
         let builder = CustomAnalyzer.Builder()
-        builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
-        def.Filters |> Seq.iter (fun f -> builder.addTokenFilter (f.FilterName, dictToMap (f.Parameters)) |> ignore)
         try 
+            builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
+            def.Filters |> Seq.iter (fun f -> builder.addTokenFilter (f.FilterName, dictToMap (f.Parameters)) |> ignore)
             ok (builder.build() :> Analyzer)
         with ex -> fail (AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex)))
 
