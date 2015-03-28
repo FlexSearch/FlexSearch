@@ -140,8 +140,7 @@ module IndexSettingBuilder =
                        ())
         new PerFieldAnalyzerWrapper(new FlexLucene.Analysis.Standard.StandardAnalyzer(), analyzerMap)
     
-    let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.T, _>) 
-        (build) = 
+    let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.T, _>) (build) = 
         if isNull (build.Setting.ScriptsManager) then 
             failwithf "Internal Error: Script manager should be initialized before creating IndexFields."
         let ic = build.Setting.IndexConfiguration
@@ -509,7 +508,7 @@ module ShardWriter =
     let deleteDocument (id : string) (sw : T) = sw.TrackingIndexWriter.DeleteDocuments(id.IdTerm()) |> ignore
     
     /// Delete all documents in the index.
-    let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll()
+    let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll() |> ignore
     
     /// Updates a document by id by first deleting the document containing term and then 
     /// adding the new document.
@@ -746,6 +745,7 @@ module IndexWriter =
         let opCode = 
             if create then TransacationLog.Operation.Create
             else TransacationLog.Operation.Update
+        
         //document.ModifyIndex <- txId
         let txEntry = TransacationLog.T.Create(txId, opCode, document)
         use stream = memoryManager.GetStream()
@@ -759,6 +759,9 @@ module IndexWriter =
     
     /// Add a document to the index
     let updateDocument (document : Document.T) (s : T) = s |> addOrUpdateDocument (document, false)
+    
+    /// Delete all documents in the index
+    let deleteAllDocuments (s : T) = s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))
     
     /// Delete a document from index
     let deleteDocument (id : string) (s : T) = 
@@ -777,7 +780,7 @@ module IndexWriter =
     
     let getRealTimeSearchers (s : T) = 
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
-        
+    
     let getRealTimeSearcher (shardNo : int) (s : T) = 
         assert (s.ShardWriters.Length <= shardNo)
         ShardWriter.getRealTimeSearcher <| s.ShardWriters.[shardNo]

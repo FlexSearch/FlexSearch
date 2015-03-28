@@ -95,7 +95,6 @@ module IndexService =
             let! item = state.IndexFactory |> LazyFactory.getItemOrError indexName indexNotFound
             let updatedIndex = { item.MetaData with Online = Nullable(true) }
             state.Store.UpdateItem(indexName, updatedIndex)
-            let setting = IndexWriter.createIndexSetting (updatedIndex, state.AnalyzerFactory)
             do! state |> loadIndex updatedIndex
         }
     
@@ -188,12 +187,21 @@ module IndexService =
                                                       |> LazyFactory.getAsTuple indexName indexNotFound
                         return writer |> IndexWriter.getRealTimeSearcher shardNo }
 
+/// Document related operations
+type IDocumentService = 
+    abstract GetDocument : indexName:string * id:string -> Choice<Document.T, Error>
+    abstract GetDocuments : indexName:string * count:int -> Choice<Document.T, Error>
+    abstract AddOrUpdateDocument : document:Document.T -> Choice<unit, Error>
+    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
+    abstract AddDocument : document:Document.T -> Choice<CreateResponse, Error>
+    abstract DeleteAllDocuments : indexName:string -> Choice<unit, Error>
+
 module DocumentService = 
     /// Get a document by Id
-    let getDocument (indexName) (id) = ()
+    let getDocument (indexName) (id)  (state : State.T) = ()
     
     /// Get top 10 document from the index
-    let getDocuments (indexName) = ()
+    let getDocuments (indexName)  (state : State.T) = ()
     
     /// Add or update an existing document
     let addOrUpdateDocument (document : Document.T) (state : State.T) = 
@@ -205,10 +213,27 @@ module DocumentService =
         }
     
     /// Add a new document to the index
-    let addDocument (document : Document.T) = ()
+    let addDocument (document : Document.T) (state : State.T) = 
+        maybe { 
+            do! (document :> IValidate).Validate()
+            if document.TimeStamp > 0L then 
+                return! fail <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
+            let! writer = state.IndexFactory |> LazyFactory.getInstance document.IndexName
+            writer |> IndexWriter.addDocument document
+            return new CreateResponse(document.Id)
+        }
     
     /// Delete a document by Id
-    let deleteDocument (indexName) (id) = ()
-    
+    let deleteDocument (indexName) (id)  (state : State.T) = 
+        maybe { 
+            let! writer = state.IndexFactory |> LazyFactory.getInstance indexName
+            writer |> IndexWriter.deleteDocument id
+        }
+
     /// Delete all documents of an index
-    let deleteAllDocument (indexName) = ()
+    let deleteAllDocument (indexName)  (state : State.T) = 
+        maybe { 
+            let! writer = state.IndexFactory |> LazyFactory.getInstance indexName
+            writer |> IndexWriter.deleteAllDocuments
+        }
+

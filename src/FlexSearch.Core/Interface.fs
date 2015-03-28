@@ -79,16 +79,6 @@ type ISearchService =
 
 
 
-/// <summary>
-/// Document related operations
-/// </summary>
-type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<Document.T, Error>
-    abstract GetDocuments : indexName:string * count:int -> Choice<Document.T, Error>
-    abstract AddOrUpdateDocument : document:Document.T -> Choice<unit, Error>
-    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
-    abstract AddDocument : document:Document.T -> Choice<CreateResponse, Error>
-    abstract DeleteAllDocuments : indexName:string -> Choice<unit, Error>
 
 /// <summary>
 /// Queuing related operations
