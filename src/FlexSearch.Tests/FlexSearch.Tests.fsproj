@@ -66,6 +66,14 @@
     <Content Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Autofac">
+      <HintPath>..\packages\Autofac.3.5.2\lib\net40\Autofac.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EventSourceProxy.NuGet">
+      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.4\lib\EventSourceProxy.NuGet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Fixie">
       <HintPath>..\packages\Fixie.1.0.0.15\lib\net45\Fixie.dll</HintPath>
       <Private>True</Private>
