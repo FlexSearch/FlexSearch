@@ -80,7 +80,7 @@ module FactoryService =
                             logger.ComponentLoaded(moduleName, typeof<'T>.FullName)
                             Choice1Of3(pluginValue)
                         with e -> 
-                            logger.ComponentInitializationFailed(moduleName, typeof<'T>.FullName, e)
+                            logger.ComponentInitializationFailed(moduleName, typeof<'T>.FullName, exceptionPrinter e)
                             Choice3Of3 <| ModuleInitializationError(moduleName, moduleTypeName, e.Message)
         
         interface IFlexFactory<'T> with
@@ -110,7 +110,7 @@ module FactoryService =
                             let pluginValue = plugin.Value.Value
                             modules.Add(pluginName, pluginValue)
                             logger.ComponentLoaded(pluginName, typeof<'T>.FullName)
-                        with e -> logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, e)
+                        with e -> logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, exceptionPrinter e)
                 modules
     
     let registerSingleFactoryInstance<'T> (builder : ContainerBuilder) = 

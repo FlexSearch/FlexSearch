@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open EventSourceProxy.NuGet
 open FlexLucene.Analysis.Custom
 open Microsoft.Isam.Esent.Collections.Generic
 open Newtonsoft.Json
@@ -149,6 +150,7 @@ type Error =
     | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
 
 exception ValidationException of Error
+
 [<CLIMutableAttribute>]
 type OperationMessage = 
     { DeveloperMessage : string
@@ -157,12 +159,10 @@ type OperationMessage =
 
 [<AutoOpen>]
 module Errors = 
-    let inline toMessage (error : Error) =
-        {
-            DeveloperMessage = ""
-            UserMessage = ""
-            ErrorCode = ""
-        }        
+    let inline toMessage (error : Error) = 
+        { DeveloperMessage = ""
+          UserMessage = ""
+          ErrorCode = "" }
     
     let inline ex (error) = raise (ValidationException(error))
     let INDEX_NOT_FOUND = "INDEX_NOT_FOUND:Index not found."
@@ -800,43 +800,111 @@ module JavaHelpers =
     
     let put (key, value) (hashMap : HashMap) = hashMap.put (key, value) |> ignore
 
-/// Generic logger interface
-type ILogService = 
-//    abstract AddIndex : indexName:string * indexDetails:Index.T -> unit
-//    abstract UpdateIndex : indexName:string * indexDetails:Index.T -> unit
-    abstract DeleteIndex : indexName:string -> unit
-    abstract CloseIndex : indexName:string -> unit
-    abstract OpenIndex : indexName:string -> unit
-//    abstract IndexValidationFailed : indexName:string * indexDetails:Index.T * validationObject:Error -> unit
-    abstract ComponentLoaded : name:string * componentType:string -> unit
-    abstract ComponentInitializationFailed : name:string * componentType:string * ex:Exception -> unit
-    abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
-    abstract StartSession : unit -> unit
-    abstract EndSession : unit -> unit
-    abstract Shutdown : unit -> unit
-    abstract TraceCritical : message:string * ex:Exception -> unit
-    abstract TraceCritical : ex:Exception -> unit
-    abstract TraceError : error:string * ex:Exception -> unit
-    abstract TraceError : error:string -> unit
-    abstract TraceError : error:string * ex:Error -> unit
-    abstract TraceInformation : infoMessage:string * messageDetails:string -> unit
+open Microsoft.Diagnostics.Tracing
+open Microsoft.FSharp.Core.LanguagePrimitives
 
-[<AutoOpenAttribute>]
-module Logging = 
-    open Serilog
+/// Simple enum wrapper for possible Task values
+module Tasks = 
+    [<Literal>]
+    let WebRequest : EventTask = enum 1
+
+/// Simple enum wrapper for possible Keyword values
+module Keywords = 
+    [<Literal>]
+    let IndexManagement : EventKeywords = EnumOfValue<int64, EventKeywords> 1L
     
-    let outputTemplate = "{Timestamp:HH:mm} [{Level}] ({ThreadId}) {Message}{NewLine}{Exception}"
+    [<Literal>]
+    let Node : EventKeywords = EnumOfValue<int64, EventKeywords> 2L
     
-    let logger = 
-        let config = new LoggerConfiguration()
-        config.WriteTo.RollingFile
-            (@"/Logs/log-{Date}.txt", Events.LogEventLevel.Debug, outputTemplate, 
-             fileSizeLimitBytes = new Nullable<int64>(10000L), retainedFileCountLimit = Nullable()) |> ignore
-        config.WriteTo.ColoredConsole() |> ignore
-        config.CreateLogger()
+    [<Literal>]
+    let Components : EventKeywords = EnumOfValue<int64, EventKeywords> 3L
+
+/// Generic logger interface
+[<EventSourceImplementation(Name = "FlexSearch")>]
+[<Interface>]
+type ILogService = 
     
-    let debug (message, param) = logger.Debug(message, param)
-    let warn (message, param) = logger.Warning(message, param)
-    let info (message, param) = logger.Information(message, param)
-    let error (message, param) = logger.Error(message, param)
-    let fatal (message, param) = logger.Fatal(message, param)
+    [<EventAttribute(1, Message = "Adding new index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
+                     Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+    abstract AddIndex : indexName:string * indexDetails:string -> unit
+    
+    [<EventAttribute(2, Message = "Updating index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
+                     Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+    abstract UpdateIndex : indexName:string * indexDetails:string -> unit
+    
+    [<EventAttribute(3, Message = "Deleting index {0}", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
+                     Keywords = Keywords.IndexManagement)>]
+    abstract DeleteIndex : indexName:string -> unit
+    
+    [<EventAttribute(4, Message = "Closing index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
+                     Keywords = Keywords.IndexManagement)>]
+    abstract CloseIndex : indexName:string -> unit
+    
+    [<EventAttribute(5, Message = "Opening index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
+                     Keywords = Keywords.IndexManagement)>]
+    abstract OpenIndex : indexName:string -> unit
+    
+    [<EventAttribute(6, Message = "Loading index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
+                     Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+    abstract LoadingIndex : indexName:string * indexDetails:string -> unit
+    
+    [<EventAttribute(7, Message = "Failed to load index {0}. \nIndexDetails: \n{1} \nError details: \n{2}", 
+                     Level = EventLevel.Error, Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+    abstract IndexLoadingFailed : indexName:string * indexDetails:string * validationObject:string -> unit
+    
+    [<EventAttribute(8, Message = "Loading Component of type: {0} \nLoaded component details:\n{1}", 
+                     Level = EventLevel.Informational, Channel = EventChannel.Admin, Keywords = Keywords.Components)>]
+    abstract ComponentLoaded : componentType:string * componentNames:string -> unit
+    
+    [<EventAttribute(9, Message = "Component initialization failed: {0}. Component type: {1} \nError details: \n{2}", 
+                     Level = EventLevel.Error, Channel = EventChannel.Admin, Keywords = Keywords.Components)>]
+    abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
+    
+    [<EventAttribute(10, Message = "Staring FlexSearch.\nDetails: \n{0}", Level = EventLevel.Informational, 
+                     Channel = EventChannel.Admin, Keywords = Keywords.Node)>]
+    abstract StartSession : details:string -> unit
+    
+    [<EventAttribute(11, Message = "Quiting FlexSearch.", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
+                     Keywords = Keywords.Node)>]
+    abstract EndSession : unit -> unit
+    
+    [<EventAttribute(12, Message = "FlexSearch termination request received.", Level = EventLevel.Informational, 
+                     Channel = EventChannel.Admin, Keywords = Keywords.Node)>]
+    abstract Shutdown : unit -> unit
+    
+    [<EventAttribute(13, Message = "{0}", Level = EventLevel.Critical, Channel = EventChannel.Admin, 
+                     Keywords = EventKeywords.None)>]
+    abstract Fatal : message:string -> unit
+    
+    [<EventAttribute(14, Message = "{0}", Level = EventLevel.Verbose, Channel = EventChannel.Admin, 
+                     Keywords = EventKeywords.None)>]
+    abstract Debug : message:string -> unit
+    
+    [<EventAttribute(15, Message = "{0}", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
+                     Keywords = EventKeywords.None)>]
+    abstract Info : message:string -> unit
+    
+    [<EventAttribute(16, Message = "{0}", Level = EventLevel.Warning, Channel = EventChannel.Admin, 
+                     Keywords = EventKeywords.None)>]
+    abstract Warn : message:string -> unit
+    
+    [<EventAttribute(17, Message = "{0}", Level = EventLevel.Error, Channel = EventChannel.Admin, 
+                     Keywords = EventKeywords.None)>]
+    abstract Error : message:string -> unit
+
+[<AutoOpen>]
+module Log = 
+    /// Default logger for FlexSearch
+    let logger = EventSourceImplementer.GetEventSourceAs<ILogService>()
+    
+    let debug message = logger.Debug(message)
+    let debugEx (ex : Exception) = logger.Debug(exceptionPrinter ex)
+    let warn message = logger.Warn(message)
+    let warnEx (ex : Exception) = logger.Warn(exceptionPrinter ex)
+    let info message = logger.Info(message)
+    let infoEx (ex : Exception) = logger.Info(exceptionPrinter ex)
+    let error message = logger.Error(message)
+    let errorEx (ex : Exception) = logger.Error(exceptionPrinter ex)
+    let fatal message = logger.Fatal(message)
+    let fatalEx (ex : Exception) = logger.Fatal(exceptionPrinter ex)
+    let fatalWithMsg msg (ex : Exception) = logger.Fatal(sprintf "%s \n%s" msg (exceptionPrinter ex))
