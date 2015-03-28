@@ -312,6 +312,14 @@ module Helpers =
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module DataType = 
+    open Microsoft.Owin
+    
+    /// Wraps a value in a Success
+    let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
+    
+    /// Wraps a message in a Failure
+    let inline fail<'a, 'b> (msg : 'b) : Choice<'a, 'b> = Choice2Of2 msg
+    
     let (|InvariantEqual|_|) (str : string) arg = 
         if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some()
         else None
@@ -345,3 +353,102 @@ module DataType =
         match String.IsNullOrWhiteSpace str with
         | true -> Some(str)
         | _ -> None
+    
+    let inline isBoolean (value : string) = 
+        match Boolean.TryParse(value) with
+        | true, a -> ok (a)
+        | _ -> fail()
+    
+    let inline pBool (failureDefault) (value : string) = 
+        match Boolean.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
+    
+    let inline pLong (failureDefault) (value : string) = 
+        match Int64.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
+    
+    let inline pInt (failureDefault) (value : string) = 
+        match Int32.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
+    
+    let inline pDouble (failureDefault) (value : string) = 
+        match Double.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
+    
+    /// Get a value from a dictionary and perform a parsing operation. In case the
+    /// operation fails or there is any other error it returns the default value
+    let inline getFromDict<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
+               (dict : Dictionary<string, string>) = 
+        if dict.Count = 0 then defaultValue
+        else 
+            match dict.TryGetValue(key) with
+            | true, value -> value |> existsCase defaultValue
+            | _ -> defaultValue
+    
+    /// Get a value from a dictionary and perform a parsing operation. In case the
+    /// operation fails or there is any other error it returns the default value
+    let inline getFromOptDict<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
+               (dict : Dictionary<string, string> option) = 
+        match dict with
+        | Some(dict) -> dict |> getFromDict key existsCase defaultValue
+        | None -> defaultValue
+    
+    /// Get a value from a readonly collection and perform a parsing operation. In case the
+    /// operation fails or there is any other error it returns the default value    
+    let inline getFromCollection<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
+               (coll : IReadableStringCollection) = 
+        match coll.Get key with
+        | null -> defaultValue
+        | value -> value |> existsCase defaultValue
+    
+    /// Get integer from dictionary
+    let inline intFromDict key defaultValue (dict : Dictionary<string, string>) = 
+        dict |> getFromDict key pInt defaultValue
+    
+    /// Get integer from optional dictionary
+    let inline intFromOptDict key defaultValue (dict : Dictionary<string, string> option) = 
+        dict |> getFromOptDict key pInt defaultValue
+    
+    /// Get integer from string collection
+    let inline intFromCollection key defaultValue (dict : IReadableStringCollection) = 
+        dict |> getFromCollection key pInt defaultValue
+    
+    /// Get long from dictionary
+    let inline longFromDict key defaultValue (dict : Dictionary<string, string>) = 
+        dict |> getFromDict key pLong defaultValue
+    
+    /// Get long from optional dictionary
+    let inline longFromOptDict key defaultValue (dict : Dictionary<string, string> option) = 
+        dict |> getFromOptDict key pLong defaultValue
+    
+    /// Get long from string collection
+    let inline longFromCollection key defaultValue (dict : IReadableStringCollection) = 
+        dict |> getFromCollection key pLong defaultValue
+    
+    /// Get double from dictionary
+    let inline doubleFromDict key defaultValue (dict : Dictionary<string, string>) = 
+        dict |> getFromDict key pDouble defaultValue
+    
+    /// Get double from optional dictionary
+    let inline doubleFromOptDict key defaultValue (dict : Dictionary<string, string> option) = 
+        dict |> getFromOptDict key pDouble defaultValue
+    
+    /// Get double from string collection
+    let inline doubleFromCollection key defaultValue (dict : IReadableStringCollection) = 
+        dict |> getFromCollection key pDouble defaultValue
+    
+    /// Get bool from dictionary
+    let inline boolFromDict key defaultValue (dict : Dictionary<string, string>) = 
+        dict |> getFromDict key pBool defaultValue
+    
+    /// Get integer from optional dictionary
+    let inline boolFromOptDict key defaultValue (dict : Dictionary<string, string> option) = 
+        dict |> getFromOptDict key pBool defaultValue
+    
+    /// Get integer from string collection
+    let inline boolFromCollection key defaultValue (dict : IReadableStringCollection) = 
+        dict |> getFromCollection key pBool defaultValue
