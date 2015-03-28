@@ -121,10 +121,12 @@ type Error =
     | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
     // Search Realted
     | QueryNotFound of queryName : string
+    | InvalidFieldName of fieldName : string
     | StoredFieldCannotBeSearched of fieldName : string
     | MissingFieldValue of fieldName : string
     | UnknownMissingVauleOption of fieldName : string
-    | DataCannotBeParsed of fieldName : string
+    | DataCannotBeParsed of fieldName : string * expectedDataType : string
+    | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string
     // Indexing related errrors
@@ -751,37 +753,9 @@ module LazyFactory =
             ok()
         | _ -> fail (KeyNotFound(key))
 
-[<AutoOpenAttribute>]
-module LuceneHelpers = 
-    open FlexLucene.Index
-    
-    type String with
-        member this.Term(fld : string) = new Term(fld, this)
-        member this.IdTerm() = new Term(Constants.IdField, this)
-
-[<AutoOpenAttribute>]
-module JavaHelpers = 
-    open java.util
-    
-    // These are needed to satisfy certain Lucene query requirements
-    let inline GetJavaDouble(value : Double) = java.lang.Double(value)
-    let inline GetJavaInt(value : int) = java.lang.Integer(value)
-    let inline GetJavaLong(value : int64) = java.lang.Long(value)
-    let JavaLongMax = java.lang.Long(java.lang.Long.MAX_VALUE)
-    let JavaLongMin = java.lang.Long(java.lang.Long.MIN_VALUE)
-    let JavaDoubleMax = java.lang.Double(java.lang.Double.MAX_VALUE)
-    let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
-    let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
-    let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
-    let hashMap() = new HashMap()
-    
-    /// Put an item in the hashmap and continue
-    let putC (key, value) (hashMap : HashMap) = 
-        hashMap.put (key, value) |> ignore
-        hashMap
-    
-    let put (key, value) (hashMap : HashMap) = hashMap.put (key, value) |> ignore
-
+// ----------------------------------------------------------------------------
+// Logging Section
+// ----------------------------------------------------------------------------
 open Microsoft.Diagnostics.Tracing
 open Microsoft.FSharp.Core.LanguagePrimitives
 

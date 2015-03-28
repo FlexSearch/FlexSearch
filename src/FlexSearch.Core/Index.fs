@@ -683,6 +683,7 @@ module IndexWriter =
           ShardWriters : ShardWriter.T array
           Buffer : ActionBlock<IndexCommand>
           Settings : IndexSetting.T }
+        member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
     and IndexCommand = 
         | Create of document : Document.T * shard : int * state : T

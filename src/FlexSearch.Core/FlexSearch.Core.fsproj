@@ -87,6 +87,7 @@
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="Domain.fs" />
+    <Compile Include="LuceneHelpers.fs" />
     <Compile Include="Interface.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Index.fs" />
