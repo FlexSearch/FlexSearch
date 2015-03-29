@@ -121,13 +121,8 @@ module Main =
     open Autofac
     open Autofac.Extras.Attributed
     open FlexSearch.Core
-    open FlexSearch.Core.Formatters
     
-    /// <summary>
     /// Get a container with all dependencies setup
-    /// </summary>
-    /// <param name="serverSettings"></param>
-    /// <param name="testServer"></param>
     let getContainer (serverSettings : ServerSettings.T, logService : ILogService, testServer : bool) = 
         let builder = new ContainerBuilder()
         // Register the service to consume with meta-data.
