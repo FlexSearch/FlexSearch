@@ -26,6 +26,7 @@ open Owin
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
+open System.ComponentModel.Composition
 open System.IO
 open System.Net
 open System.Threading
@@ -130,73 +131,81 @@ type YamlFormatter() =
         member __.Serialize(body : obj, context : IOwinContext) : unit = serialize (body, context.Response.Body)
         member __.SupportedHeaders() : string [] = [| "application/yaml" |]
 
-// ----------------------------------------------------------------------------
-// Http related types and helpers
-// ----------------------------------------------------------------------------
-/// Http Handler properties to define the behaviour of
-/// Http Rest web service
-type HttpHandlerProperties = 
-    { /// Do not do any processing and let the
-      /// target method do all the processing
-      FullControl : bool
-      /// Throw error if the request is missing 
-      /// the body
-      FailOnMissingBody : bool
-      /// Validate if the given index is present
-      CheckIndexExists : bool
-      /// Check if the given index is online or not?
-      CheckIndexIsOnline : bool
-      /// Validate the request or not?
-      ValidateDto : bool
-      /// Set the request DTO values from the query string
-      SetValuesFromQueryString : bool }
+[<AutoOpenAttribute>]
+module Http = 
+    // ----------------------------------------------------------------------------
+    // Http related types and helpers
+    // ----------------------------------------------------------------------------     
+    /// Http Handler properties to define the behaviour of
+    /// Http Rest web service
+    type HttpHandlerProperties = 
+        { /// Throw error if the request is missing 
+          /// the body
+          FailOnMissingBody : bool
+          /// Validate if the given index is present
+          CheckIndexExists : bool
+          /// Check if the given index is online or not?
+          CheckIndexIsOnline : bool
+          /// Validate the request or not?
+          ValidateDto : bool
+          /// Set the request DTO values from the query string
+          SetValuesFromQueryString : bool }
+        
+        static member CompleteControl = 
+            { FailOnMissingBody = false
+              CheckIndexExists = false
+              CheckIndexIsOnline = false
+              ValidateDto = false
+              SetValuesFromQueryString = false }
+        
+        static member OnlineIndex = 
+            { FailOnMissingBody = true
+              CheckIndexExists = true
+              CheckIndexIsOnline = true
+              ValidateDto = true
+              SetValuesFromQueryString = true }
+        
+        static member IndexExists = 
+            { FailOnMissingBody = true
+              CheckIndexExists = true
+              CheckIndexIsOnline = false
+              ValidateDto = true
+              SetValuesFromQueryString = true }
     
-    static member CompleteControl = 
-        { FullControl = true
-          FailOnMissingBody = false
-          CheckIndexExists = false
-          CheckIndexIsOnline = false
-          ValidateDto = false
-          SetValuesFromQueryString = false }
+    type RequestContext = 
+        { ResName : string
+          ResId : string option
+          SubResName : string option
+          SubResId : string option
+          OwinContext : IOwinContext }
+        static member Create(owinContext, resName, ?resId, ?subResName, ?subResId) = 
+            { ResName = resName
+              ResId = resId
+              SubResName = subResName
+              SubResId = subResId
+              OwinContext = owinContext }
     
-    static member OnlineIndex = 
-        { FullControl = false
-          FailOnMissingBody = true
-          CheckIndexExists = true
-          CheckIndexIsOnline = true
-          ValidateDto = true
-          SetValuesFromQueryString = true }
+    type ResponseContext<'T> = 
+        | SomeResponse of responseBody : Choice<'T, Error> * successCode : HttpStatusCode * failureCode : HttpStatusCode
+        | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode
+        | FailureResponse of responseBody : Error * failureCode : HttpStatusCode
+        | NoResponse
     
-    static member IndexExists = 
-        { FullControl = false
-          FailOnMissingBody = true
-          CheckIndexExists = true
-          CheckIndexIsOnline = false
-          ValidateDto = true
-          SetValuesFromQueryString = true }
-
-/// HTTP resource to handle incoming requests
-type IHttpResource = 
-    abstract Properties : HttpHandlerProperties
-    abstract Execute : id:option<string> * subid:option<string> * context:IOwinContext -> unit
-
-/// Standard FlexSearch response to all web requests 
-type Response<'T> = 
-    { Data : 'T
-      Error : OperationMessage }
+    /// Standard FlexSearch response to all web requests 
+    type Response<'T> = 
+        { Data : 'T
+          Error : OperationMessage }
+        
+        /// Populate response with data part populated
+        static member WithData(data) = 
+            { Data = data
+              Error = Unchecked.defaultof<_> }
+        
+        /// Populate response with error part populated
+        static member WithError(error) = 
+            { Data = Unchecked.defaultof<'T>
+              Error = error |> toMessage }
     
-    /// Populate response with data part populated
-    static member WithData(data) = 
-        { Data = data
-          Error = Unchecked.defaultof<_> }
-    
-    /// Populate response with error part populated
-    static member WithError(error) = 
-        { Data = Unchecked.defaultof<'T>
-          Error = error |> toMessage }
-
-[<AutoOpen>]
-module HttpHelpers = 
     let private Formatters = new ConcurrentDictionary<string, IFormatter>(StringComparer.OrdinalIgnoreCase)
     let protoFormatter = new ProtoBufferFormatter() :> IFormatter
     let jsonFormatter = new NewtonsoftJsonFormatter() :> IFormatter
@@ -263,64 +272,80 @@ module HttpHelpers =
     let inline getIndexName (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[2]
     let inline subId (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[4]
     
-    /// This is responsible for generating routing lookup table from the registerd http modules
-    let generateRoutingTable (modules : Dictionary<string, IHttpResource>) = 
-        let result = new Dictionary<string, IHttpResource>(StringComparer.OrdinalIgnoreCase)
-        for m in modules do
-            // check if the key supports more than one http verb
-            if m.Key.Contains("|") then 
-                let verb = m.Key.Substring(0, m.Key.IndexOf("-"))
-                let verbs = verb.Split([| '|' |], StringSplitOptions.RemoveEmptyEntries)
-                let value = m.Key.Substring(m.Key.IndexOf("-") + 1)
-                for v in verbs do
-                    result.Add(v + "-" + value, m.Value)
-            else result.Add(m.Key, m.Value)
-        result
-
-/// Handler base class which exposes common Http Handler functionality
-[<AbstractClass>]
-type HttpHandlerBase<'T, 'U when 'T :> IValidate>(?properties0 : HttpHandlerProperties) = 
-    let properties = defaultArg properties0 HttpHandlerProperties.OnlineIndex
-    
-    let hasBody = 
-        if typeof<'T> = typeof<unit> then false
-        else true
-    
-    member __.Deserialize(request : IOwinRequest) = getRequestBody<'T> (request)
-    
-    member __.Serialize (response : Choice<'U, Error>) (successStatus : HttpStatusCode) (failureStatus : HttpStatusCode) 
-           (owinContext : IOwinContext) = 
-        match response with
-        | Choice1Of2(r) -> 
-            let instance = Response<'U>.WithData(r)
+    /// Handler base class which exposes common Http Handler functionality
+    [<AbstractClass>]
+    type HttpHandlerBase<'T, 'U when 'T :> IValidate>(?properties0 : HttpHandlerProperties) = 
+        let properties = defaultArg properties0 HttpHandlerProperties.OnlineIndex
+        
+        let hasBody = 
+            if typeof<'T> = typeof<unit> then false
+            else true
+        
+        member __.SerializeSuccess (response : 'U) (successStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+            let instance = Response<'U>.WithData(response)
             owinContext |> writeResponse successStatus instance
-        | Choice2Of2(r) -> 
-            let instance = Response<'U>.WithError(r)
+        
+        member __.SerializeFailure (response : Error) (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+            let instance = Response<'U>.WithError(response)
             owinContext |> writeResponse failureStatus instance
+        
+        member this.Serialize (response : Choice<'U, Error>) (successStatus : HttpStatusCode) 
+               (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+            match response with
+            | Choice1Of2(r) -> owinContext |> this.SerializeSuccess r successStatus
+            | Choice2Of2(r) -> owinContext |> this.SerializeFailure r successStatus
+        
+        abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
+        member this.Execute(request : RequestContext) = 
+            let processHandler (body) = 
+                match this.Process(request, body) with
+                | SomeResponse(body, successCode, failureCode) -> 
+                    request.OwinContext |> this.Serialize body successCode failureCode
+                | SuccessResponse(body, successCode) -> request.OwinContext |> this.SerializeSuccess body successCode
+                | FailureResponse(body, failureCode) -> request.OwinContext |> this.SerializeFailure body failureCode
+                | NoResponse -> ()
+            
+            let processFailure (e) = 
+                request.OwinContext |> this.Serialize (fail e) HttpStatusCode.OK HttpStatusCode.BadRequest
+            match hasBody with
+            | true -> 
+                match getRequestBody<'T> (request.OwinContext.Request) with
+                | Choice1Of2 a -> processHandler (Some(a))
+                | Choice2Of2 b -> 
+                    if properties.FailOnMissingBody then processFailure (b)
+                    else processHandler (None)
+            | false -> processHandler (None)
     
-    abstract Process : id:option<string> * subId:option<string> * body:Option<'T> * context:IOwinContext
-     -> Choice<'U, Error> * HttpStatusCode * HttpStatusCode
-    override __.Process(_, _, _, _) = (fail HttpNotSupported, HttpStatusCode.OK, HttpStatusCode.BadRequest)
-    abstract Process : context:IOwinContext -> unit
-    override __.Process(context) = context |> BAD_REQUEST Errors.HTTP_NOT_SUPPORTED
-    interface IHttpResource with
-        member __.Properties = properties
-        member this.Execute(id, subId, context) = 
-            if properties.FullControl then this.Process(context)
-            else if hasBody then 
-                match this.Deserialize(context.Request) with
-                | Choice1Of2(body) -> 
-                    let (response, successCode, failureCode) = this.Process(id, subId, (Some(body)), context)
-                    context |> this.Serialize (response) successCode failureCode
-                | Choice2Of2(e) -> 
-                    if properties.FailOnMissingBody then 
-                        context |> this.Serialize (fail e) HttpStatusCode.OK HttpStatusCode.BadRequest
-                    else 
-                        let (response, successCode, failureCode) = this.Process(id, subId, None, context)
-                        context |> this.Serialize (response) successCode failureCode
-            else 
-                let (response, successCode, failureCode) = this.Process(id, subId, None, context)
-                context |> this.Serialize (response) successCode failureCode
+    /// This is responsible for generating routing lookup table from the registerd http modules
+    let generateRoutingTable (modules : Dictionary<string, HttpHandlerBase<_, _>>) = 
+        let result = new Dictionary<string, HttpHandlerBase<_, _>>(StringComparer.OrdinalIgnoreCase)
+        for m in modules do
+            let valueWithSlash, valueWithoutSlash = 
+                let intermediate = m.Key.Substring(m.Key.IndexOf("-") + 1)
+                let valueWithoutSlash = removeTrailingSlash intermediate
+                let valueWithSlash = intermediate + "/"
+                (valueWithSlash, valueWithoutSlash)
+            
+            let verb = m.Key.Substring(0, m.Key.IndexOf("-"))
+            // check if the key supports more than one http verb by splitting at |
+            let verbs = verb.Split([| '|' |], StringSplitOptions.RemoveEmptyEntries)
+            for v in verbs do
+                result.Add(v + valueWithSlash, m.Value)
+                result.Add(v + valueWithoutSlash, m.Value)
+        result
+    
+    type IOwinContext with
+        member this.Segment(segNo : int) = this.Request.Uri.Segments.[segNo]
+        member this.SegmentWithOutSlash(segNo : int) = removeTrailingSlash this.Request.Uri.Segments.[segNo]
+        member this.HttpMethod = this.Request.Method
+        member this.RequestContext = 
+            match this.Request.Uri.Segments.Length with
+            | 1 -> RequestContext.Create(this, "/")
+            | 2 -> RequestContext.Create(this, this.Segment(1))
+            | 3 -> RequestContext.Create(this, this.SegmentWithOutSlash(1), this.Segment(2))
+            | 4 -> RequestContext.Create(this, this.Segment(1), this.Segment(2), this.Segment(3))
+            | 5 -> RequestContext.Create(this, this.Segment(1), this.Segment(2), this.Segment(3), this.Segment(4))
+            | _ -> failwithf "Internal Error: FlexSearch does not support URI more than 5 segments."
 
 type IServer = 
     abstract Start : unit -> unit
@@ -328,7 +353,7 @@ type IServer =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(indexExists : string -> bool, modules : Dictionary<string, IHttpResource>, logger : ILogService, ?port0 : int) = 
+type OwinServer(indexExists : string -> bool, httpModule : Dictionary<string, HttpHandlerBase<_, Error>>, logger : ILogService, ?port0 : int) = 
     let port = defaultArg port0 9800
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
@@ -338,58 +363,36 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 ---------------------------------------------------------------------------
 """
     
-    let httpModule = 
-        let result = new Dictionary<string, IHttpResource>(StringComparer.OrdinalIgnoreCase)
-        for m in modules do
-            // check if the key supports more than one http verb
-            if m.Key.Contains("|") then 
-                let verb = m.Key.Substring(0, m.Key.IndexOf("-"))
-                let verbs = verb.Split([| '|' |], StringSplitOptions.RemoveEmptyEntries)
-                let value = m.Key.Substring(m.Key.IndexOf("-") + 1)
-                for v in verbs do
-                    result.Add(v + "-" + value, m.Value)
-            else result.Add(m.Key, m.Value)
-        result
-    
     /// Default OWIN method to process request
     let exec (owin : IOwinContext) = 
         async { 
-            let getModule lookupValue (id : option<string>) (subId : option<string>) (owin : IOwinContext) = 
-                match httpModule.TryGetValue(owin.Request.Method.ToLowerInvariant() + "-" + lookupValue) with
-                | (true, x) -> x.Execute(id, subId, owin)
-                | _ -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
-            
-            let matchSubModules (id : string, x : int, owin : IOwinContext) = 
-                match x with
-                | 3 -> getModule ("/" + owin.Request.Uri.Segments.[1] + ":id") (Some(id)) None owin
-                | 4 -> 
-                    getModule 
-                        ("/" + owin.Request.Uri.Segments.[1] + ":id/" 
-                         + removeTrailingSlash owin.Request.Uri.Segments.[3]) (Some(id)) None owin
-                | 5 -> 
-                    getModule ("/" + owin.Request.Uri.Segments.[1] + ":id/" + owin.Request.Uri.Segments.[3] + ":id") 
-                        (Some(id)) (Some(owin.Request.Uri.Segments.[4])) owin
-                | _ -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
-            
+            let findHandler lookupValue = 
+                match httpModule.TryGetValue(lookupValue) with
+                | (true, x) -> Some x
+                | _ -> None
             try 
-                match owin.Request.Uri.Segments.Length with
-                // Server root
-                | 1 -> getModule "/" None None owin
-                // Root resource request
-                | 2 -> getModule ("/" + removeTrailingSlash owin.Request.Uri.Segments.[1]) None None owin
-                | x when x > 2 && x <= 5 -> 
-                    let id = removeTrailingSlash owin.Request.Uri.Segments.[2]
-                    // Check if the Uri is indices and perform an index exists check
-                    if (String.Equals(owin.Request.Uri.Segments.[1], "indices") 
-                        || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) then 
-                        match indexExists (id) with
-                        | true -> matchSubModules (id, x, owin)
-                        | false -> owin |> NOT_FOUND(Response<unit>.WithError(IndexNotFound id))
-                    else matchSubModules (id, x, owin)
-                | _ -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
+                let httpHandler = 
+                    match owin.Request.Uri.Segments.Length with
+                    | 1 -> findHandler (owin.HttpMethod + "/") // Server root
+                    | 2 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1)) // /Resource
+                    | 3 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id") // /Resource/:Id
+                    | 4 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id/" + owin.Segment(3)) // /Resource/:Id/command
+                    | 5 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id/" + owin.Segment(3) + ":id") // /Resource/:Id/SubResouce/:Id
+                    | _ -> None
+                match httpHandler with
+                | Some(handler) -> handler.Execute(owin.RequestContext)
+                | None -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
             with __ -> ()
         }
     
+    //    let id = removeTrailingSlash owin.Request.Uri.Segments.[2]
+    //                        // Check if the Uri is indices and perform an index exists check
+    //                        if (String.Equals(owin.Request.Uri.Segments.[1], "indices") 
+    //                            || String.Equals(owin.Request.Uri.Segments.[1], "indices/")) then 
+    //                            match indexExists (id) with
+    //                            | true -> matchSubModules (id, x, owin)
+    //                            | false -> owin |> NOT_FOUND(Response<unit>.WithError(IndexNotFound id))
+    //                        else 
     /// Default OWIN handler to transform C# function to F#
     let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
     
