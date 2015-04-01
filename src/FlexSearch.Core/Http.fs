@@ -272,52 +272,37 @@ module Http =
     let inline getIndexName (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[2]
     let inline subId (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[4]
     
-    type IHttpHandler<'T, 'U when 'T :> IValidate<'T>> = 
-        abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
-        abstract Properties : HttpHandlerProperties
-        abstract HasBody : bool
-        abstract DeSerialize : IOwinRequest -> Choice<'T, Error>
-        abstract SerializeSuccess : 'U -> HttpStatusCode -> IOwinContext -> unit
-        abstract SerializeFailure : Error -> HttpStatusCode -> IOwinContext -> unit
-        abstract Serialize : Choice<'U, Error> -> HttpStatusCode -> HttpStatusCode -> IOwinContext -> unit
-    
     /// Handler base class which exposes common Http Handler functionality
     [<AbstractClass>]
-    type HttpHandlerBase<'T, 'U when 'T :> IValidate<'T>>(?properties0 : HttpHandlerProperties) = 
-        let properties = defaultArg properties0 HttpHandlerProperties.OnlineIndex
+    type HttpHandlerBase<'T, 'U when 'T :> IValidate>(?properties0 : HttpHandlerProperties, ?defaultValueSetter : 'T -> 'T) = 
+        member __.Properties = defaultArg properties0 HttpHandlerProperties.OnlineIndex
         
-        let hasBody = 
+        member __.HasBody = 
             if typeof<'T> = typeof<unit> then false
             else true
         
-        let deSerialize (request : IOwinRequest) = getRequestBody<'T> (request)
+        member __.DeSerialize(request : IOwinRequest) = getRequestBody<'T> (request)
         
-        let serializeSuccess (response : 'U) (successStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        member __.SerializeSuccess (response : 'U) (successStatus : HttpStatusCode) (owinContext : IOwinContext) = 
             let instance = Response<'U>.WithData(response)
             owinContext |> writeResponse successStatus instance
         
-        let serializeFailure (response : Error) (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        member __.SerializeFailure (response : Error) (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
             let instance = Response<'U>.WithError(response)
             owinContext |> writeResponse failureStatus instance
         
-        let serialize (response : Choice<'U, Error>) (successStatus : HttpStatusCode) (failureStatus : HttpStatusCode) 
-            (owinContext : IOwinContext) = 
+        member this.Serialize (response : Choice<'U, Error>) (successStatus : HttpStatusCode) 
+               (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
             match response with
-            | Choice1Of2(r) -> owinContext |> serializeSuccess r successStatus
-            | Choice2Of2(r) -> owinContext |> serializeFailure r failureStatus
+            | Choice1Of2(r) -> owinContext |> this.SerializeSuccess r successStatus
+            | Choice2Of2(r) -> owinContext |> this.SerializeFailure r failureStatus
+        
+        member __.SetDefaults(value : 'T) = 
+            match defaultValueSetter with
+            | Some(func) -> func (value)
+            | none -> value
         
         abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
-        interface IHttpHandler<'T, 'U> with
-            member __.DeSerialize(request) = deSerialize (request)
-            member __.HasBody = hasBody
-            member this.Process(request, body) = this.Process(request, body)
-            member __.Properties = properties
-            member __.SerializeSuccess response successStatus owinContext = 
-                owinContext |> serializeSuccess response successStatus
-            member __.SerializeFailure error failureStatusCode owinContext = 
-                owinContext |> serializeFailure error failureStatusCode
-            member __.Serialize result successCode failureCode owinContext = 
-                owinContext |> serialize result successCode failureCode
     
     /// This is responsible for generating routing lookup table from the registerd http modules
     let generateRoutingTable (modules : Dictionary<string, HttpHandlerBase<_, _>>) = 
@@ -356,7 +341,7 @@ type IServer =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(indexExists : string -> Choice<unit, Error>, indexOnline : string -> Choice<unit, Error>, httpModule : Dictionary<string, IHttpHandler<_, Error>>, logger : ILogService, ?port0 : int) = 
+type OwinServer(indexExists : string -> Choice<unit, Error>, indexOnline : string -> Choice<unit, Error>, httpModule : Dictionary<string, HttpHandlerBase<_, Error>>, logger : ILogService, ?port0 : int) = 
     let port = defaultArg port0 9800
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
@@ -366,7 +351,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 ---------------------------------------------------------------------------
 """
     
-    let execute (request : RequestContext, handler : IHttpHandler<_, _>) = 
+    let execute (request : RequestContext, handler : HttpHandlerBase<_, _>) = 
         let validateRequest() = 
             maybe { 
                 /// Check if we are in processing indices based resource
@@ -382,7 +367,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                                 match handler.DeSerialize(request.OwinContext.Request) with
                                 | Choice1Of2 a -> 
                                     // Set the default value for the DTO
-                                    ok <| Some(a.SetDefaults())
+                                    ok <| Some(handler.SetDefaults(a))
                                 | Choice2Of2 b -> 
                                     if handler.Properties.FailOnMissingBody then fail <| b
                                     else ok <| None
