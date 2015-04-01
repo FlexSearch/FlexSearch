@@ -254,8 +254,10 @@ type FlexTermQuery() =
                 // with all the terms as sub clauses with And operator
                 // This behaviour will result in matching of both the terms in the results which may not be
                 // adjacent to each other. The adjacency case should be handled through phrase query
-                zeroOneOrManyQuery (getTerms (flexIndexField, values.[0])) (getTermQuery flexIndexField.SchemaName) 
-                    (getBooleanClause parameters)
+                zeroOneOrManyQuery 
+                <| getTerms (flexIndexField, values.[0])
+                <| getTermQuery flexIndexField.SchemaName
+                <| getBooleanClause parameters
 
 /// Fuzzy Query
 [<Name("fuzzy_match"); Sealed>]
@@ -265,8 +267,10 @@ type FlexFuzzyQuery() =
         member __.GetQuery(flexIndexField, values, parameters) = 
             let slop = parameters |> intFromOptDict "slop" 1
             let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-            zeroOneOrManyQuery (getTerms (flexIndexField, values.[0])) 
-                (getFuzzyQuery flexIndexField.SchemaName slop prefixLength) BooleanClause.Occur.MUST
+            zeroOneOrManyQuery 
+            <| getTerms (flexIndexField, values.[0])
+            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength 
+            <| BooleanClause.Occur.MUST
 
 /// Match all Query
 [<Name("match_all"); Sealed>]
@@ -297,8 +301,10 @@ type FlexWildcardQuery() =
         member __.GetQuery(flexIndexField, values, _) = 
             // Like query does not go through analysis phase as the analyzer would remove the
             // special character
-            zeroOneOrManyQuery (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
-                (getWildCardQuery flexIndexField.SchemaName) BooleanClause.Occur.MUST
+            zeroOneOrManyQuery 
+            <| (values |> Seq.map (fun x -> x.ToLowerInvariant()))
+            <| getWildCardQuery flexIndexField.SchemaName
+            <| BooleanClause.Occur.MUST
 
 /// Regex Query
 [<Name("regex"); Sealed>]
@@ -308,8 +314,10 @@ type RegexQuery() =
         member __.GetQuery(flexIndexField, values, _) = 
             // Regex query does not go through analysis phase as the analyzer would remove the
             // special character
-            zeroOneOrManyQuery (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
-                (getRegexpQuery flexIndexField.SchemaName) BooleanClause.Occur.MUST
+            zeroOneOrManyQuery 
+            <| (values |> Seq.map (fun x -> x.ToLowerInvariant()))
+            <| getRegexpQuery flexIndexField.SchemaName 
+            <| BooleanClause.Occur.MUST
 
 // ----------------------------------------------------------------------------
 // Range Queries
