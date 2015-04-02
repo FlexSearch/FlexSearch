@@ -99,7 +99,7 @@ module IndexSettingBuilder =
         let customScoringScripts = 
             new Dictionary<string, System.Dynamic.DynamicObject * double -> double>(StringComparer.OrdinalIgnoreCase)
         for s in scripts do
-            if s.ScriptType = ScriptType.ComputedField then 
+            if s.ScriptType = ScriptType.Dto.ComputedField then 
                 let a = returnOrFail (Script.compileComputedFieldScript (s.Source))
                 computedFieldScripts.Add(s.ScriptName, a)
         let sm = 
