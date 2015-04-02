@@ -71,10 +71,10 @@ type IFlexMetaData =
 /// Search service interface
 /// </summary>
 type ISearchService = 
-    abstract Search : SearchQuery.T -> Choice<SearchResults, Error>
-    abstract SearchAsDocmentSeq : SearchQuery.T -> Choice<seq<Document.T> * int * int, Error>
-    abstract SearchAsDictionarySeq : SearchQuery.T -> Choice<seq<Dictionary<string, string>> * int * int, Error>
-    abstract SearchUsingProfile : query:SearchQuery.T * inputFields:Dictionary<string, string>
+    abstract Search : SearchQuery.Dto -> Choice<SearchResults, Error>
+    abstract SearchAsDocmentSeq : SearchQuery.Dto -> Choice<seq<Document.Dto> * int * int, Error>
+    abstract SearchAsDictionarySeq : SearchQuery.Dto -> Choice<seq<Dictionary<string, string>> * int * int, Error>
+    abstract SearchUsingProfile : query:SearchQuery.Dto * inputFields:Dictionary<string, string>
      -> Choice<SearchResults, Error>
 
 
@@ -84,8 +84,8 @@ type ISearchService =
 /// Queuing related operations
 /// </summary>
 type IQueueService = 
-    abstract AddDocumentQueue : document:Document.T -> unit
-    abstract AddOrUpdateDocumentQueue : document:Document.T -> unit
+    abstract AddDocumentQueue : document:Document.Dto -> unit
+    abstract AddOrUpdateDocumentQueue : document:Document.Dto -> unit
 
 
 /// <summary>

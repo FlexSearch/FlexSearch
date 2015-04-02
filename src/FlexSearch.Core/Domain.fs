@@ -42,6 +42,19 @@ open System.Threading
 open java.io
 open java.util
 
+/// Implements the Freezable pattern
+[<InterfaceAttribute>]
+type IFreezable = 
+    abstract Freeze : unit -> unit
+
+/// To be used by all Dto's which are used in REST webservices
+[<AbstractClassAttribute>]
+type DtoBase() = 
+    let mutable isFrozen = false
+    abstract Validate : unit -> Choice<unit, Error>
+    interface IFreezable with
+        member __.Freeze() = isFrozen <- true
+
 //////////////////////////////////////////////////////////////////////////
 /// Enums Section
 //////////////////////////////////////////////////////////////////////////
@@ -462,188 +475,159 @@ type ScriptsManager =
 
 module ShardConfiguration = 
     /// Allows to control various Index Shards related settings.
-    [<CLIMutableAttribute>]
-    type T = 
-        { /// Total number of shards to be present in the given index.
-          ShardCount : int }
-        static member Default = { ShardCount = 1 }
-        interface IValidate<T> with
-            
-            member this.SetDefaults() = 
-                if this.ShardCount = 0 then T.Default
-                else this
-            
-            member this.Validate() = this.ShardCount |> gt ("ShardCount") 1
+    [<ToStringAttribute>]
+    type Dto() = 
+        inherit DtoBase()
+        
+        /// Total number of shards to be present in the given index.
+        member val ShardCount = 1 with get, set
+        
+        override this.Validate() = this.ShardCount |> gt ("ShardCount") 1
 
 [<RequireQualifiedAccessAttribute>]
 module IndexConfiguration = 
     /// Allows to control various Index related settings.
-    type T = 
-        { /// The amount of time in seconds that FlexSearch 
-          /// should wait before committing changes to the disk.
-          CommitTimeSeconds : int
-          /// A Directory is a flat list of files. Files may be 
-          /// written once, when they are created. Once a file 
-          /// is created it may only be opened for read, or 
-          /// deleted. Random access is permitted both when 
-          /// reading and writing.
-          DirectoryType : DirectoryType.T
-          /// The default maximum time to wait for a write 
-          /// lock (in milliseconds).
-          DefaultWriteLockTimeout : int
-          /// Determines the amount of RAM that may be used 
-          /// for buffering added documents and deletions 
-          /// before they are flushed to the Directory.
-          RamBufferSizeMb : int
-          /// The number of buffered added documents that will 
-          /// trigger a flush if enabled.
-          MaxBufferedDocs : int
-          /// The amount of time in milliseconds that FlexSearch 
-          /// should wait before reopening index reader. This 
-          /// helps in keeping writing and real time aspects of 
-          /// the engine separate.
-          RefreshTimeMilliseconds : int
-          /// Corresponds to Lucene Index version. There will
-          /// always be a default codec associated with each 
-          /// index version.
-          IndexVersion : IndexVersion.T
-          /// Signifies if bloom filter should be used for 
-          /// encoding Id field.
-          UseBloomFilterForId : Nullable<bool>
-          /// This will be computed at run time based on the 
-          /// index version
-          IdIndexPostingsFormat : FieldPostingsFormat.T
-          /// This will be computed at run time based on the index version
-          DefaultIndexPostingsFormat : FieldPostingsFormat.T
-          /// Similarity defines the components of Lucene scoring. Similarity
-          /// determines how Lucene weights terms and Lucene interacts with 
-          /// Similarity at both index-time and query-time.
-          DefaultFieldSimilarity : FieldSimilarity.T }
+    [<ToStringAttribute>]
+    type Dto() = 
+        inherit DtoBase()
         
-        static member Default = 
-            { CommitTimeSeconds = 300
-              DirectoryType = DirectoryType.T.MemoryMapped
-              DefaultWriteLockTimeout = 1000
-              RamBufferSizeMb = 100
-              MaxBufferedDocs = -1
-              RefreshTimeMilliseconds = 500
-              IndexVersion = IndexVersion.T.Lucene_5_0_0
-              UseBloomFilterForId = Nullable(true)
-              IdIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.T>
-              DefaultIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.T>
-              DefaultFieldSimilarity = FieldSimilarity.T.TFIDF }
+        /// The amount of time in seconds that FlexSearch 
+        /// should wait before committing changes to the disk.
+        member val CommitTimeSeconds = 300 with get, set
         
-        interface IValidate<T> with
-            
-            member this.SetDefaults() = 
-                { CommitTimeSeconds = this.CommitTimeSeconds |> Args.int T.Default.CommitTimeSeconds
-                  DirectoryType = this.DirectoryType |> Args.enum T.Default.DirectoryType
-                  DefaultWriteLockTimeout = this.DefaultWriteLockTimeout |> Args.int T.Default.DefaultWriteLockTimeout
-                  RamBufferSizeMb = this.RamBufferSizeMb |> Args.int T.Default.RamBufferSizeMb
-                  MaxBufferedDocs = this.MaxBufferedDocs |> Args.int T.Default.MaxBufferedDocs
-                  RefreshTimeMilliseconds = this.RefreshTimeMilliseconds |> Args.int T.Default.RefreshTimeMilliseconds
-                  IndexVersion = this.IndexVersion |> Args.enum T.Default.IndexVersion
-                  DefaultFieldSimilarity = this.DefaultFieldSimilarity |> Args.enum T.Default.DefaultFieldSimilarity
-                  UseBloomFilterForId = this.UseBloomFilterForId |> Args.bool T.Default.UseBloomFilterForId
-                  IdIndexPostingsFormat = this.IdIndexPostingsFormat
-                  DefaultIndexPostingsFormat = this.DefaultIndexPostingsFormat }
-            
-            member this.Validate() = this.CommitTimeSeconds
-                                     |> gte "CommitTimeSeconds" 30
-                                     >>= (fun _ -> this.MaxBufferedDocs |> gte "MaxBufferedDocs" 2)
-                                     >>= (fun _ -> this.RamBufferSizeMb |> gte "RamBufferSizeMb" 20)
-                                     >>= (fun _ -> this.RefreshTimeMilliseconds |> gte "RefreshTimeMilliseconds" 25)
+        /// A Directory is a flat list of files. Files may be 
+        /// written once, when they are created. Once a file 
+        /// is created it may only be opened for read, or 
+        /// deleted. Random access is permitted both when 
+        /// reading and writing.
+        member val DirectoryType = DirectoryType.T.MemoryMapped with get, set
+        
+        /// The default maximum time to wait for a write 
+        /// lock (in milliseconds).
+        member val DefaultWriteLockTimeout = 1000 with get, set
+        
+        /// Determines the amount of RAM that may be used 
+        /// for buffering added documents and deletions 
+        /// before they are flushed to the Directory.
+        member val RamBufferSizeMb = 100 with get, set
+        
+        /// The number of buffered added documents that will 
+        /// trigger a flush if enabled.
+        member val MaxBufferedDocs = -1 with get, set
+        
+        /// The amount of time in milliseconds that FlexSearch 
+        /// should wait before reopening index reader. This 
+        /// helps in keeping writing and real time aspects of 
+        /// the engine separate.
+        member val RefreshTimeMilliseconds = 500 with get, set
+        
+        /// Corresponds to Lucene Index version. There will
+        /// always be a default codec associated with each 
+        /// index version.
+        member val IndexVersion = IndexVersion.T.Lucene_5_0_0 with get, set
+        
+        /// Signifies if bloom filter should be used for 
+        /// encoding Id field.
+        member val UseBloomFilterForId = true with get, set
+        
+        /// This will be computed at run time based on the 
+        /// index version
+        member val IdIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.T> with get, set
+        
+        /// This will be computed at run time based on the index version
+        member val DefaultIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.T> with get, set
+        
+        /// Similarity defines the components of Lucene scoring. Similarity
+        /// determines how Lucene weights terms and Lucene interacts with 
+        /// Similarity at both index-time and query-time.
+        member val DefaultFieldSimilarity = FieldSimilarity.T.TFIDF with get, set
+        
+        override this.Validate() = this.CommitTimeSeconds
+                                   |> gte "CommitTimeSeconds" 30
+                                   >>= (fun _ -> this.MaxBufferedDocs |> gte "MaxBufferedDocs" 2)
+                                   >>= (fun _ -> this.RamBufferSizeMb |> gte "RamBufferSizeMb" 20)
+                                   >>= (fun _ -> this.RefreshTimeMilliseconds |> gte "RefreshTimeMilliseconds" 25)
     
     let inline getIndexWriterConfiguration (codec : Codec) (similarity : Similarity) (indexAnalyzer : Analyzer) 
-               (configuration : T) = 
+               (configuration : Dto) = 
         let iwc = new IndexWriterConfig(indexAnalyzer)
         iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
         iwc.SetRAMBufferSizeMB(float configuration.RamBufferSizeMb) |> ignore
         iwc.SetCodec(codec).SetSimilarity(similarity) |> ignore
         iwc
 
-module Analyzer = 
+module TokenFilter = 
     /// Filters consume input and produce a stream of tokens. In most cases a filter looks 
     /// at each token in the stream sequentially and decides whether to pass it along, 
     /// replace it or discard it. A filter may also do more complex analysis by looking 
     /// ahead to consider multiple tokens at once, although this is less common. 
-    type TokenFilter = 
-        { /// The name of the filter. Some pre-defined filters are the following-
-          /// + Ascii Folding Filter
-          /// + Standard Filter
-          /// + Beider Morse Filter
-          /// + Double Metaphone Filter
-          /// + Caverphone2 Filter
-          /// + Metaphone Filter
-          /// + Refined Soundex Filter
-          /// + Soundex Filter
-          /// For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
-          FilterName : string
-          /// Parameters required by the filter.
-          mutable Parameters : Dictionary<string, string> }
+    [<ToStringAttribute; Sealed>]
+    type Dto() = 
+        inherit DtoBase()
         
-        static member Default = 
-            { FilterName = Unchecked.defaultof<_>
-              Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) }
+        /// The name of the filter. Some pre-defined filters are the following-
+        /// + Ascii Folding Filter
+        /// + Standard Filter
+        /// + Beider Morse Filter
+        /// + Double Metaphone Filter
+        /// + Caverphone2 Filter
+        /// + Metaphone Filter
+        /// + Refined Soundex Filter
+        /// + Soundex Filter
+        /// For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
+        member val FilterName = Unchecked.defaultof<string> with get, set
         
-        interface IValidate<TokenFilter> with
-            
-            member this.SetDefaults() = 
-                if isNull (this.Parameters) then this.Parameters <- TokenFilter.Default.Parameters
-                this
-            
-            member this.Validate() = this.FilterName |> propertyNameValidator "FilterName"
-    
+        /// Parameters required by the filter.
+        member val Parameters = strDict()
+        
+        override this.Validate() = this.FilterName |> propertyNameValidator "FilterName"
+
+module Tokenizer = 
     /// Tokenizer breaks up a stream of text into tokens, where each token is a sub-sequence
     /// of the characters in the text. An analyzer is aware of the field it is configured 
     /// for, but a tokenizer is not.
-    type Tokenizer = 
-        { /// The name of the tokenizer. Some pre-defined tokenizers are the following-
-          /// + Standard Tokenizer
-          /// + Classic Tokenizer
-          /// + Keyword Tokenizer
-          /// + Letter Tokenizer
-          /// + Lower Case Tokenizer
-          /// + UAX29 URL Email Tokenizer
-          /// + White Space Tokenizer
-          /// For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
-          TokenizerName : string
-          /// Parameters required by the tokenizer.
-          mutable Parameters : Dictionary<string, string> }
+    [<ToStringAttribute; Sealed>]
+    type Dto() = 
+        inherit DtoBase()
         
-        static member Default = 
-            { TokenizerName = Unchecked.defaultof<_>
-              Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) }
+        /// The name of the tokenizer. Some pre-defined tokenizers are the following-
+        /// + Standard Tokenizer
+        /// + Classic Tokenizer
+        /// + Keyword Tokenizer
+        /// + Letter Tokenizer
+        /// + Lower Case Tokenizer
+        /// + UAX29 URL Email Tokenizer
+        /// + White Space Tokenizer
+        /// For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
+        member val TokenizerName = Unchecked.defaultof<string> with get, set
         
-        interface IValidate<Tokenizer> with
-            
-            member this.SetDefaults() = 
-                if isNull (this.Parameters) then this.Parameters <- Tokenizer.Default.Parameters
-                this
-            
-            member this.Validate() = this.TokenizerName |> propertyNameValidator "TokenizerName"
-    
+        /// Parameters required by the tokenizer.
+        member val Parameters = strDict()
+        
+        override this.Validate() = this.TokenizerName |> propertyNameValidator "TokenizerName"
+
+module Analyzer = 
     /// An analyzer examines the text of fields and generates a token stream.
-    type T = 
-        { /// Name of the analyzer
-          AnalyzerName : string
-          // AUTO
-          Tokenizer : Tokenizer
-          /// Filters to be used by the analyzer.
-          Filters : List<TokenFilter> }
-        interface IValidate<T> with
-            
-            member this.SetDefaults() = 
-                if isNull this.Filters then { this with Filters = new List<TokenFilter>() }
-                else this
-            
-            member this.Validate() = this.AnalyzerName
-                                     |> propertyNameValidator "AnalyzerName"
-                                     >>= (this.Tokenizer :> IValidate<Tokenizer>).Validate
-                                     >>= fun _ -> seqValidator (this.Filters.Cast<IValidate>())
+    [<ToStringAttribute; Sealed>]
+    type Dto() = 
+        inherit DtoBase()
+        
+        /// Name of the analyzer
+        member val AnalyzerName = Unchecked.defaultof<string> with get, set
+        
+        // AUTO
+        member val Tokenizer = Unchecked.defaultof<Tokenizer.Dto> with get, set
+        
+        /// Filters to be used by the analyzer.
+        member val Filters = new List<TokenFilter.Dto>() with get, set
+        
+        override this.Validate() = this.AnalyzerName
+                                   |> propertyNameValidator "AnalyzerName"
+                                   >>= this.Tokenizer.Validate
+                                   >>= fun _ -> seqValidator (this.Filters.Cast<IValidate>())
     
     /// Build a Lucene Analyzer from FlexSearch Analyzer DTO
-    let build (def : T) = 
+    let build (def : Dto) = 
         let builder = CustomAnalyzer.Builder()
         try 
             builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
@@ -659,22 +643,22 @@ module Script =
     /// Script is used to add scripting capability to the index. These can be used to generate dynamic
     /// field values based upon other indexed values or to modify scores of the returned results.
     /// Any valid C# expression can be used as a script.
-    type T = 
-        { /// Name of the script.
-          ScriptName : string
-          /// Source code of the script. 
-          Source : string
-          /// AUTO
-          ScriptType : ScriptType }
-        interface IValidate<T> with
-            
-            member this.SetDefaults() = 
-                if (int) this.ScriptType = 0 then { this with ScriptType = ScriptType.ComputedField }
-                else this
-            
-            member this.Validate() = this.ScriptName
-                                     |> propertyNameValidator "ScriptName"
-                                     >>= fun _ -> this.Source |> notBlank "Source"
+    [<ToStringAttribute; Sealed>]
+    type Dto() = 
+        inherit DtoBase()
+        
+        /// Name of the script.
+        member val ScriptName = Unchecked.defaultof<string> with get, set
+        
+        /// Source code of the script. 
+        member val Source = Unchecked.defaultof<string> with get, set
+        
+        /// AUTO
+        member val ScriptType = ScriptType.ComputedField with get, set
+        
+        override this.Validate() = this.ScriptName
+                                   |> propertyNameValidator "ScriptName"
+                                   >>= fun _ -> this.Source |> notBlank "Source"
     
     /// Template method code for computed field script
     let private computedFieldScriptTemplate = """
@@ -724,79 +708,64 @@ module Field =
     /// the document’s fields and adds that information to an index. When you perform a 
     /// query, FlexSearch can quickly consult the index and return the matching documents.
     /// </para>
-    type Dto = 
-        { /// Name of the field.
-          FieldName : string
-          /// Signifies if the field should be analyzed using an analyzer. 
-          /// TODO: See if this is still needed post Lucene 5.0?
-          Analyze : Nullable<bool>
-          /// Signifies if a field should be indexed. A field can only be 
-          /// stored without indexing.
-          Index : Nullable<bool>
-          /// Signifies if a field should be stored so that it can retrieved
-          /// while searching.
-          Store : Nullable<bool>
-          /// Analyzer to be used while indexing.
-          IndexAnalyzer : string
-          /// Analyzer to be used while searching.
-          SearchAnalyzer : string
-          /// AUTO
-          FieldType : FieldType.Dto
-          /// AUTO
-          Similarity : FieldSimilarity.T
-          /// AUTO
-          IndexOptions : FieldIndexOptions
-          /// AUTO
-          TermVector : FieldTermVector
-          /// If true, omits the norms associated with this field (this disables length 
-          /// normalization and index-time boosting for the field, and saves some memory). 
-          /// Defaults to true for all primitive (non-analyzed) field types, such as int, 
-          /// float, data, bool, and string. Only full-text fields or fields that need an 
-          /// index-time boost need norms.
-          OmitNorms : Nullable<bool>
-          /// Fields can get their content dynamically through scripts. This is the name of 
-          /// the script to be used for getting field data at index time.
-          ScriptName : string }
+    [<ToString; Sealed>]
+    type Dto(fieldName : string, fieldType : FieldType.Dto) as self = 
+        inherit DtoBase()
         
-        static member Default = 
-            { FieldName = Unchecked.defaultof<string>
-              Analyze = Nullable(true)
-              Index = Nullable(true)
-              Store = Nullable(true)
-              IndexAnalyzer = StandardAnalyzer
-              SearchAnalyzer = StandardAnalyzer
-              FieldType = FieldType.Dto.Text
-              Similarity = FieldSimilarity.T.TFIDF
-              IndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions
-              TermVector = FieldTermVector.DoNotStoreTermVector
-              OmitNorms = Nullable(true)
-              ScriptName = Unchecked.defaultof<string> }
+        /// Name of the field.
+        member val FieldName = fieldName with get, set
         
-        interface IValidate<Dto> with
-            
-            member this.SetDefaults() = 
-                { FieldName = this.FieldName
-                  Analyze = this.Analyze |> Args.bool Dto.Default.Analyze
-                  Index = this.Index |> Args.bool Dto.Default.Index
-                  Store = this.Store |> Args.bool Dto.Default.Store
-                  IndexAnalyzer = this.IndexAnalyzer |> Args.string Dto.Default.IndexAnalyzer
-                  SearchAnalyzer = this.IndexAnalyzer |> Args.string Dto.Default.IndexAnalyzer
-                  FieldType = this.FieldType |> Args.enum Dto.Default.FieldType
-                  Similarity = this.Similarity |> Args.enum Dto.Default.Similarity
-                  IndexOptions = this.IndexOptions |> Args.enum Dto.Default.IndexOptions
-                  TermVector = this.TermVector |> Args.enum Dto.Default.TermVector
-                  OmitNorms = this.OmitNorms |> Args.bool Dto.Default.OmitNorms
-                  ScriptName = this.ScriptName }
-            
-            member this.Validate() = 
-                this.FieldName
-                |> propertyNameValidator "FieldName"
-                >>= (fun _ -> 
-                if (this.FieldType = FieldType.Dto.Text || this.FieldType = FieldType.Dto.Highlight 
-                    || this.FieldType = FieldType.Dto.Custom) 
-                   && (String.IsNullOrWhiteSpace(this.SearchAnalyzer) || String.IsNullOrWhiteSpace(this.IndexAnalyzer)) then 
-                    fail (AnalyzerIsMandatory(this.FieldName))
-                else ok())
+        /// Signifies if the field should be analyzed using an analyzer. 
+        member val Analyze = true with get, set
+        
+        /// Signifies if a field should be indexed. A field can only be 
+        /// stored without indexing.
+        member val Index = true with get, set
+        
+        /// Signifies if a field should be stored so that it can retrieved
+        /// while searching.
+        member val Store = true with get, set
+        
+        /// Analyzer to be used while indexing.
+        member val IndexAnalyzer = StandardAnalyzer with get, set
+        
+        /// Analyzer to be used while searching.
+        member val SearchAnalyzer = StandardAnalyzer with get, set
+        
+        /// AUTO
+        member val FieldType = fieldType with get, set
+        
+        /// AUTO
+        member val Similarity = FieldSimilarity.T.TFIDF with get, set
+        
+        /// AUTO
+        member val IndexOptions = FieldIndexOptions.DocsAndFreqsAndPositions with get, set
+        
+        /// AUTO
+        member val TermVector = FieldTermVector.DoNotStoreTermVector with get, set
+        
+        /// If true, omits the norms associated with this field (this disables length 
+        /// normalization and index-time boosting for the field, and saves some memory). 
+        /// Defaults to true for all primitive (non-analyzed) field types, such as int, 
+        /// float, data, bool, and string. Only full-text fields or fields that need an 
+        /// index-time boost need norms.
+        member val OmitNorms = true with get, set
+        
+        /// Fields can get their content dynamically through scripts. This is the name of 
+        /// the script to be used for getting field data at index time.
+        member val ScriptName = "" with get, set
+        
+        new(fieldName : string) = Dto(fieldName, FieldType.Dto.Text)
+        new() = Dto(Unchecked.defaultof<string>, FieldType.Dto.Text)
+        override this.Validate() = 
+            this.FieldName
+            |> propertyNameValidator "FieldName"
+            >>= (fun _ -> 
+            if (this.FieldType = FieldType.Dto.Text || this.FieldType = FieldType.Dto.Highlight 
+                || this.FieldType = FieldType.Dto.Custom) 
+               && (String.IsNullOrWhiteSpace(this.SearchAnalyzer) || String.IsNullOrWhiteSpace(this.IndexAnalyzer)) then 
+                fail (AnalyzerIsMandatory(this.FieldName))
+            else ok())
     
     /// General Field which represents the basic properties for the field to be indexed
     type T = 
@@ -943,8 +912,8 @@ module Field =
         create (Constants.LastModifiedField, postingsFormat, FieldType.DateTime)
     
     /// Build FlexField from field
-    let build (field : Dto, indexConfiguration : IndexConfiguration.T, 
-               analyzerFactory : LazyFactory.T<Analyzer, Analyzer.T, _>, scriptsManager : ScriptsManager) = 
+    let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
+               analyzerFactory : LazyFactory.T<Analyzer, Analyzer.Dto, _>, scriptsManager : ScriptsManager) = 
         let getSource (field : Dto) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok (None)
             else 
@@ -971,8 +940,8 @@ module Field =
                     | FieldType.Dto.Highlight -> return FieldType.Highlight(searchAnalyzer, indexAnalyzer)
                     | FieldType.Dto.Custom -> 
                         let indexingInformation = 
-                            { Index = field.Index |> Args.getBool
-                              Tokenize = field.Analyze |> Args.getBool
+                            { Index = field.Index
+                              Tokenize = field.Analyze
                               FieldTermVector = field.TermVector
                               FieldIndexOptions = field.IndexOptions }
                         return FieldType.Custom(searchAnalyzer, indexAnalyzer, indexingInformation)
@@ -988,250 +957,214 @@ module Field =
                      FieldType = fieldType
                      Source = source
                      Similarity = field.Similarity
-                     IsStored = Args.getBool (field.Store)
+                     IsStored = field.Store
                      Searchable = FieldType.searchable (fieldType)
                      RequiresAnalyzer = FieldType.requiresAnalyzer (fieldType) }
         }
 
-module SearchQuery = 
+module HighlightOption = 
     /// Used for configuring the settings for text highlighting in the search results
-    type HighlightOption = 
-        { /// Total number of fragments to return per document
-          mutable FragmentsToReturn : int
-          /// The fields to be used for text highlighting
-          HighlightedFields : string array
-          /// Post tag to represent the ending of the highlighted word
-          mutable PostTag : string
-          /// Pre tag to represent the ending of the highlighted word
-          mutable PreTag : string }
+    [<ToString; Sealed>]
+    type Dto(fields : string[]) = 
+        inherit DtoBase()
         
-        static member Default = 
-            { FragmentsToReturn = 2
-              HighlightedFields = Unchecked.defaultof<_>
-              PostTag = "</B>"
-              PreTag = "<B>" }
+        /// Total number of fragments to return per document
+        member val FragmentsToReturn = 2 with get, set
         
-        interface IValidate<HighlightOption> with
-            
-            member this.SetDefaults() = 
-                this.FragmentsToReturn <- this.FragmentsToReturn |> Args.int HighlightOption.Default.FragmentsToReturn
-                this.PostTag <- this.PostTag |> Args.string "</B>"
-                this.PreTag <- this.PreTag |> Args.string "<B>"
-                this
-            
-            member __.Validate() = ok()
-    
+        /// The fields to be used for text highlighting
+        member val HighlightedFields = fields with get, set
+        
+        /// Post tag to represent the ending of the highlighted word
+        member val PostTag = "</B>" with get, set
+        
+        /// Pre tag to represent the ending of the highlighted word
+        member val PreTag = "<B>" with get, set
+        
+        new() = Dto(Unchecked.defaultof<string[]>)
+        override __.Validate() = ok()
+
+module SearchQuery = 
     /// Search query is used for searching over a FlexSearch index. This provides
     /// a consistent syntax to execute various types of queries. The syntax is similar
     /// to the SQL syntax. This was done on purpose to reduce the learning curve.
-    type T = 
-        { /// Unique name of the query. This is only required if you are setting up a 
-          /// search profile.
-          QueryName : string
-          /// Columns to be returned as part of results.
-          /// + *  - return all columns
-          /// + [] - return no columns
-          /// + ["columnName"] -  return specific column
-          mutable Columns : string array
-          /// Count of results to be returned
-          mutable Count : int
-          /// AUTO
-          Highlights : HighlightOption
-          /// Name of the index
-          IndexName : string
-          /// Can be used to order the results by score or specific field.
-          mutable OrderBy : string
-          /// Used to enable paging and skip certain pre-fetched results.
-          Skip : int //= 0 with get, set
-          /// Query string to be used for searching
-          QueryString : string
-          /// AUTO
-          MissingValueConfiguration : Dictionary<string, MissingValueOption>
-          /// Universal configuration for the missing field values. Only applicable
-          /// for search profiles.
-          GlobalMissingValue : MissingValueOption
-          /// If true will return collapsed search results which are in tabular form.
-          /// Flat results enable easy binding to a grid but grouping results is tougher
-          /// with Flat result.
-          ReturnFlatResult : bool
-          /// If true then scores are returned as a part of search result.
-          ReturnScore : bool
-          /// Profile Name to be used for profile based searching.
-          SearchProfile : string
-          /// Script which can be used to select a search profile. This can help in
-          /// dynamic selection of search profile based on the incoming data.
-          SearchProfileSelector : string }
+    [<ToString; Sealed>]
+    type Dto(index : string, query : string) = 
+        inherit DtoBase()
         
-        static member Default = 
-            { QueryName = Unchecked.defaultof<_>
-              Columns = [||]
-              Count = 10
-              Highlights = Unchecked.defaultof<_>
-              IndexName = Unchecked.defaultof<_>
-              OrderBy = "score"
-              Skip = 0
-              QueryString = Unchecked.defaultof<_>
-              MissingValueConfiguration = Unchecked.defaultof<_>
-              GlobalMissingValue = MissingValueOption.Default
-              ReturnFlatResult = false
-              ReturnScore = false
-              SearchProfile = Unchecked.defaultof<string>
-              SearchProfileSelector = Unchecked.defaultof<string> }
+        /// Unique name of the query. This is only required if you are setting up a 
+        /// search profile.
+        member val QueryName = Unchecked.defaultof<string> with get, set
         
-        interface IValidate<T> with
-            
-            member this.SetDefaults() = 
-                if isNull this.Columns then this.Columns <- T.Default.Columns
-                this.Count <- this.Count |> Args.int T.Default.Count
-                this.OrderBy <- this.OrderBy |> Args.string T.Default.OrderBy
-                this
-            
-            member this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
+        /// Columns to be returned as part of results.
+        /// + *  - return all columns
+        /// + [] - return no columns
+        /// + ["columnName"] -  return specific column
+        member val Columns = new List<string>() with get, set
+        
+        /// Count of results to be returned
+        member val Count = 10 with get, set
+        
+        /// AUTO
+        member val Highlights = Unchecked.defaultof<HighlightOption.Dto> with get, set
+        
+        /// Name of the index
+        member val IndexName = index with get, set
+        
+        /// Can be used to order the results by score or specific field.
+        member val OrderBy = "score" with get, set
+        
+        /// Used to enable paging and skip certain pre-fetched results.
+        member val Skip = 0 with get, set
+        
+        /// Query string to be used for searching
+        member val QueryString = query with get, set
+        
+        /// AUTO
+        member val MissingValueConfiguration = new Dictionary<string, MissingValueOption>(StringComparer.OrdinalIgnoreCase) with get, set
+        
+        /// Universal configuration for the missing field values. Only applicable
+        /// for search profiles.
+        member val GlobalMissingValue = MissingValueOption.Default with get, set
+        
+        /// If true will return collapsed search results which are in tabular form.
+        /// Flat results enable easy binding to a grid but grouping results is tougher
+        /// with Flat result.
+        member val ReturnFlatResult = false with get, set
+        
+        /// If true then scores are returned as a part of search result.
+        member val ReturnScore = true with get, set
+        
+        /// Profile Name to be used for profile based searching.
+        member val SearchProfile = Unchecked.defaultof<string> with get, set
+        
+        /// Script which can be used to select a search profile. This can help in
+        /// dynamic selection of search profile based on the incoming data.
+        member val SearchProfileSelector = Unchecked.defaultof<string> with get, set
+        
+        new() = Dto(Unchecked.defaultof<_>, Unchecked.defaultof<_>)
+        override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
 [<RequireQualifiedAccessAttribute>]
 module Document = 
-    /// Represents the meta data associated with a document. Some of these might
-    /// only be relevant for returned documents.
-    type Meta = 
-        { /// Any matched text highlighted snippets. Note: Only used for results
-          Highlights : List<string>
-          /// Score of the returned document. Note: Only used for results
-          Score : double }
-    
     /// A document represents the basic unit of information which can be added or retrieved from the index. 
     /// A document consists of several fields. A field represents the actual data to be indexed. In database 
     /// analogy an index can be considered as a table while a document is a row of that table. Like a table a 
     /// FlexSearch document requires a fix schema and all fields should have a field type.
-    [<CLIMutableAttribute>]
-    type T = 
-        { /// Fields to be added to the document for indexing.
-          Fields : Dictionary<string, string>
-          /// Unique Id of the document
-          Id : string
-          /// Timestamp of the last modification of the document. This field is interpreted differently
-          /// during a create and update operation. It also dictates whether and unique Id check is to be performed
-          ///  or not. 
-          /// Version number semantics
-          /// + 0 - Don't care about the version and proceed with the operation normally.
-          /// + -1 - Ensure that the document does not exist (Performs unique Id check).
-          /// + 1 - Ensure that the document does exist. This is not relevant for create operation.
-          /// > 1 - Ensure that the version matches exactly. This is not relevant for create operation.
-          mutable TimeStamp : Int64
-          /// mutable ModifyIndex : Int64
-          /// Name of the index
-          IndexName : string
-          /// Any matched text highlighted snippets. Note: Only used for results
-          mutable Highlights : List<string>
-          /// Score of the returned document. Note: Only used for results
-          mutable Score : double }
+    [<ToString; Sealed>]
+    type Dto() = 
+        inherit DtoBase()
         
-        static member Default = 
-            { Fields = Unchecked.defaultof<_>
-              Id = Unchecked.defaultof<_>
-              TimeStamp = Unchecked.defaultof<_>
-              IndexName = Unchecked.defaultof<_>
-              Highlights = Unchecked.defaultof<_>
-              Score = Unchecked.defaultof<_> }
+        /// Fields to be added to the document for indexing.
+        member val Fields = defStringDict with get, set
         
-        interface IValidate<T> with
-            member this.SetDefaults() = this
-            member this.Validate() = this.IndexName
-                                     |> notBlank "IndexName"
-                                     >>= fun _ -> this.Id |> notBlank "Id"
+        /// Unique Id of the document
+        member val Id = defString with get, set
+        
+        /// Timestamp of the last modification of the document. This field is interpreted differently
+        /// during a create and update operation. It also dictates whether and unique Id check is to be performed
+        ///  or not. 
+        /// Version number semantics
+        /// + 0 - Don't care about the version and proceed with the operation normally.
+        /// + -1 - Ensure that the document does not exist (Performs unique Id check).
+        /// + 1 - Ensure that the document does exist. This is not relevant for create operation.
+        /// > 1 - Ensure that the version matches exactly. This is not relevant for create operation.
+        member val TimeStamp = defInt64 with get, set
+        
+        /// mutable ModifyIndex : Int64
+        /// Name of the index
+        member val IndexName = defString with get, set
+        
+        /// Any matched text highlighted snippets. Note: Only used for results
+        member val Highlights = defStringList with get, set
+        
+        /// Score of the returned document. Note: Only used for results
+        member val Score = defDouble with get, set
+        
+        override this.Validate() = this.IndexName
+                                   |> notBlank "IndexName"
+                                   >>= fun _ -> this.Id |> notBlank "Id"
 
-/// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
-/// to support features like schema and sharding. So in this sense a FlexSearch 
-/// index consists of multiple Lucene’s index. Also, each FlexSearch shard is a valid 
-/// Lucene index.
-///
-/// In case of a database analogy an index represents a table in a database where 
-/// one has to define a schema upfront before performing any kind of operation on 
-/// the table. There are various properties that can be defined at the index creation 
-/// time. Only IndexName is a mandatory property, though one should always define 
-/// Fields in an index to make any use of it.
-///
-/// By default a newly created index stays off-line. This is by design to force the 
-/// user to enable an index before using it.
 module Index = 
-    type T = 
-        { /// Name of the index
-          IndexName : string
-          /// Fields to be used in index.
-          Fields : Field.Dto array
-          /// Scripts to be used in index.
-          Scripts : Script.T array
-          /// Search Profiles
-          SearchProfiles : SearchQuery.T array
-          /// AUTO
-          ShardConfiguration : ShardConfiguration.T
-          /// AUTO
-          IndexConfiguration : IndexConfiguration.T
-          /// Signifies if the index is on-line or not? An index has to be 
-          /// on-line in order to enable searching over it.
-          Online : Nullable<bool> }
+    /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
+    /// to support features like schema and sharding. So in this sense a FlexSearch 
+    /// index consists of multiple Lucene’s index. Also, each FlexSearch shard is a valid 
+    /// Lucene index.
+    ///
+    /// In case of a database analogy an index represents a table in a database where 
+    /// one has to define a schema upfront before performing any kind of operation on 
+    /// the table. There are various properties that can be defined at the index creation 
+    /// time. Only IndexName is a mandatory property, though one should always define 
+    /// Fields in an index to make any use of it.
+    ///
+    /// By default a newly created index stays off-line. This is by design to force the 
+    /// user to enable an index before using it.
+    [<ToString; Sealed>]
+    type Dto() = 
+        inherit DtoBase()
         
-        static member Default = 
-            { IndexName = Unchecked.defaultof<_>
-              Fields = Unchecked.defaultof<_>
-              Scripts = Unchecked.defaultof<_>
-              SearchProfiles = Unchecked.defaultof<_>
-              ShardConfiguration = ShardConfiguration.T.Default
-              IndexConfiguration = IndexConfiguration.T.Default
-              Online = Nullable(true) }
+        /// Name of the index
+        member val IndexName = defString with get, set
         
-        interface IValidate<T> with
+        /// Fields to be used in index.
+        member val Fields = defOf<Field.Dto []> with get, set
+        
+        /// Scripts to be used in index.
+        member val Scripts = defOf<Script.Dto []> with get, set
+        
+        /// Search Profiles
+        member val SearchProfiles = defOf<SearchQuery.Dto []> with get, set
+        
+        /// AUTO
+        member val ShardConfiguration = new ShardConfiguration.Dto() with get, set
+        
+        /// AUTO
+        member val IndexConfiguration = new IndexConfiguration.Dto() with get, set
+        
+        /// Signifies if the index is on-line or not? An index has to be 
+        /// on-line in order to enable searching over it.
+        member val Online = true with get, set
+        
+        override this.Validate() = 
+            let checkDuplicateFieldName() = 
+                this.Fields.Select(fun x -> x.FieldName).ToArray() |> hasDuplicates "Fields" "FieldName"
+            let checkDuplicateScriptNames() = 
+                this.Scripts.Select(fun x -> x.ScriptName).ToArray() |> hasDuplicates "Scripts" "ScriptName"
+            let checkDuplicateQueries() = 
+                this.SearchProfiles.Select(fun x -> x.QueryName).ToArray() |> hasDuplicates "SearchProfiles" "QueryName"
             
-            member this.SetDefaults() = 
-                { IndexName = this.IndexName
-                  Fields = this.Fields |> Args.isNull Array.empty
-                  Scripts = this.Scripts |> Args.isNull Array.empty
-                  SearchProfiles = this.SearchProfiles |> Args.isNull Array.empty
-                  ShardConfiguration = this.ShardConfiguration |> Args.isNull T.Default.ShardConfiguration
-                  IndexConfiguration = this.IndexConfiguration |> Args.isNull T.Default.IndexConfiguration
-                  Online = this.Online |> Args.bool T.Default.Online }
+            // Check if the script specified against a fields exists
+            let checkScriptExists() = 
+                let result = 
+                    this.Fields
+                    |> Seq.map (fun field -> 
+                           if String.IsNullOrWhiteSpace(field.ScriptName) = false then 
+                               if this.Scripts.FirstOrDefault(fun x -> x.ScriptName = field.ScriptName) = Unchecked.defaultof<Script.Dto> then 
+                                   fail (ScriptNotFound(field.ScriptName, field.FieldName))
+                               else ok()
+                           else ok())
+                    |> Seq.filter (fun x -> failed x)
+                    |> Seq.toArray
+                if result.Count() = 0 then ok()
+                else result.[0]
             
-            member this.Validate() = 
-                let checkDuplicateFieldName() = 
-                    this.Fields.Select(fun x -> x.FieldName).ToArray() |> hasDuplicates "Fields" "FieldName"
-                let checkDuplicateScriptNames() = 
-                    this.Scripts.Select(fun x -> x.ScriptName).ToArray() |> hasDuplicates "Scripts" "ScriptName"
-                let checkDuplicateQueries() = 
-                    this.SearchProfiles.Select(fun x -> x.QueryName).ToArray() 
-                    |> hasDuplicates "SearchProfiles" "QueryName"
-                
-                // Check if the script specified against a fields exists
-                let checkScriptExists() = 
-                    let result = 
-                        this.Fields
-                        |> Seq.map (fun field -> 
-                               if String.IsNullOrWhiteSpace(field.ScriptName) = false then 
-                                   if this.Scripts.FirstOrDefault(fun x -> x.ScriptName = field.ScriptName) = Unchecked.defaultof<Script.T> then 
-                                       fail (ScriptNotFound(field.ScriptName, field.FieldName))
-                                   else ok()
-                               else ok())
-                        |> Seq.filter (fun x -> failed x)
-                        |> Seq.toArray
-                    if result.Count() = 0 then ok()
-                    else result.[0]
-                
-                let validateSearchQuery() = 
-                    // Check if any query name is missing in search profiles. Cannot do this through annotation as the
-                    // Query Name is not mandatory for normal Search Queries
-                    let missingQueryNames = 
-                        this.SearchProfiles |> Seq.filter (fun x -> String.IsNullOrWhiteSpace(x.QueryName))
-                    if missingQueryNames.Count() <> 0 then fail (NotBlank("QueryName"))
-                    else ok()
-                
-                this.IndexName
-                |> propertyNameValidator "IndexName"
-                >>= fun _ -> seqValidator (this.Fields.Cast<IValidate>())
-                >>= fun _ -> seqValidator (this.Scripts.Cast<IValidate>())
-                >>= fun _ -> seqValidator (this.SearchProfiles.Cast<IValidate>())
-                >>= checkDuplicateFieldName
-                >>= checkDuplicateScriptNames
-                >>= validateSearchQuery
-                >>= checkDuplicateQueries
-                >>= checkScriptExists
+            let validateSearchQuery() = 
+                // Check if any query name is missing in search profiles. Cannot do this through annotation as the
+                // Query Name is not mandatory for normal Search Queries
+                let missingQueryNames = 
+                    this.SearchProfiles |> Seq.filter (fun x -> String.IsNullOrWhiteSpace(x.QueryName))
+                if missingQueryNames.Count() <> 0 then fail (NotBlank("QueryName"))
+                else ok()
+            
+            this.IndexName
+            |> propertyNameValidator "IndexName"
+            >>= fun _ -> seqValidator (this.Fields.Cast<IValidate>())
+            >>= fun _ -> seqValidator (this.Scripts.Cast<IValidate>())
+            >>= fun _ -> seqValidator (this.SearchProfiles.Cast<IValidate>())
+            >>= checkDuplicateFieldName
+            >>= checkDuplicateScriptNames
+            >>= validateSearchQuery
+            >>= checkDuplicateQueries
+            >>= checkScriptExists
 
 //////////////////////////////////////////////////////////////////////////
 /// Helper DTOs
@@ -1241,7 +1174,7 @@ module Index =
 type SearchResults() = 
     
     /// Documents which are returned as a part of search response.
-    member val Documents = new List<Document.T>() with get, set
+    member val Documents = new List<Document.Dto>() with get, set
     
     /// Total number of records returned.
     member val RecordsReturned = 0 with get, set

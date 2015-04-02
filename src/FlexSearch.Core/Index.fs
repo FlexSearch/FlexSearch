@@ -42,11 +42,11 @@ module IndexSetting =
           SearchAnalyzer : PerFieldAnalyzerWrapper
           Fields : Field.T []
           FieldsLookup : IReadOnlyDictionary<string, Field.T>
-          SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery.T>
+          SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery.Dto>
           ScriptsManager : ScriptsManager
-          IndexConfiguration : IndexConfiguration.T
+          IndexConfiguration : IndexConfiguration.Dto
           BaseFolder : string
-          ShardConfiguration : ShardConfiguration.T }
+          ShardConfiguration : ShardConfiguration.Dto }
 
 /// Builder related to creating Index Settings    
 [<AutoOpenAttribute>]
@@ -75,7 +75,7 @@ module IndexSettingBuilder =
     let withShardConfiguration (conf) (build) = 
         { build with Setting = { build.Setting with ShardConfiguration = conf } }
     
-    let withIndexConfiguration (c : IndexConfiguration.T) (build) = 
+    let withIndexConfiguration (c : IndexConfiguration.Dto) (build) = 
         let defaultIndexPostingsFormat = 
             c.IndexVersion
             |> IndexVersion.getDefaultPostingsFormat
@@ -83,17 +83,15 @@ module IndexSettingBuilder =
         
         let idIndexPostingsFormat = 
             c.IndexVersion
-            |> IndexVersion.getIdFieldPostingsFormat (Args.getBool c.UseBloomFilterForId)
+            |> IndexVersion.getIdFieldPostingsFormat c.UseBloomFilterForId
             |> extract
         
-        let indexConf = 
-            { c with DefaultIndexPostingsFormat = defaultIndexPostingsFormat
-                     IdIndexPostingsFormat = idIndexPostingsFormat }
-        
-        { build with Setting = { build.Setting with IndexConfiguration = indexConf } }
+        c.DefaultIndexPostingsFormat <- defaultIndexPostingsFormat
+        c.IdIndexPostingsFormat <- idIndexPostingsFormat
+        { build with Setting = { build.Setting with IndexConfiguration = c } }
     
     /// Compile all the scripts and initialize the script manager
-    let withScripts (scripts : seq<Script.T>) (build) = 
+    let withScripts (scripts : seq<Script.Dto>) (build) = 
         let profileSelectorScripts = 
             new Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>(StringComparer.OrdinalIgnoreCase)
         let computedFieldScripts = 
@@ -140,7 +138,7 @@ module IndexSettingBuilder =
                        ())
         new PerFieldAnalyzerWrapper(new FlexLucene.Analysis.Standard.StandardAnalyzer(), analyzerMap)
     
-    let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.T, _>) (build) = 
+    let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.Dto, _>) (build) = 
         if isNull (build.Setting.ScriptsManager) then 
             failwithf "Internal Error: Script manager should be initialized before creating IndexFields."
         let ic = build.Setting.IndexConfiguration
@@ -161,8 +159,8 @@ module IndexSettingBuilder =
                                               IndexAnalyzer = buildAnalyzer (fieldArr, true) } }
     
     /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : SearchQuery.T array, parser : IFlexParser) (build) = 
-        let result = new Dictionary<string, Predicate * SearchQuery.T>(StringComparer.OrdinalIgnoreCase)
+    let withSearchProfiles (profiles : SearchQuery.Dto array, parser : IFlexParser) (build) = 
+        let result = new Dictionary<string, Predicate * SearchQuery.Dto>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
             let predicate = returnOrFail <| parser.Parse profile.QueryString
             result.Add(profile.QueryName, (predicate, profile))
@@ -250,7 +248,7 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let inline updateTempate (document : Document.T) (template : T) = 
+    let inline updateTempate (document : Document.Dto) (template : T) = 
         // Update meta fields
         // Id Field
         template.TemplateFields.[0].SetStringValue(document.Id)
@@ -323,7 +321,7 @@ module TransacationLog =
     type T = 
         { TransactionId : int64
           Operation : Operation
-          Document : Document.T
+          Document : Document.Dto
           /// This will be used for delete operation as we
           /// don't require a document
           Id : string
@@ -342,7 +340,7 @@ module TransacationLog =
         static member Create(txId, id) = 
             { TransactionId = txId
               Operation = Operation.Delete
-              Document = Document.T.Default
+              Document = defOf<Document.Dto>
               Id = id
               Query = String.Empty }
     
@@ -633,7 +631,7 @@ module VersionCache =
                 value
     
     /// Check and update the current version number of the document for concurrency control
-    let inline versionCheck (doc : Document.T) (cache : T) = 
+    let inline versionCheck (doc : Document.Dto) (cache : T) = 
         let newVersion = GetCurrentTimeAsLong()
         doc.TimeStamp <- match doc.TimeStamp with
                          | 0L -> 
@@ -686,13 +684,13 @@ module IndexWriter =
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
     and IndexCommand = 
-        | Create of document : Document.T * shard : int * state : T
-        | Update of document : Document.T * shard : int * state : T
+        | Create of document : Document.Dto * shard : int * state : T
+        | Update of document : Document.Dto * shard : int * state : T
         | Delete of query : string * shard : int * state : T
         | Commit of generation : int64
     
     /// Create index settings from the Index Dto
-    let createIndexSetting (index : Index.T, analyzerService) = 
+    let createIndexSetting (index : Index.Dto, analyzerService) = 
         withIndexName (index.IndexName, "")
         |> withShardConfiguration (index.ShardConfiguration)
         |> withIndexConfiguration (index.IndexConfiguration)
@@ -737,7 +735,7 @@ module IndexWriter =
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
     /// Add or update a document
-    let inline private addOrUpdateDocument (document : Document.T, create : bool) (s : T) = 
+    let inline private addOrUpdateDocument (document : Document.Dto, create : bool) (s : T) = 
         let shardNo = document.Id |> mapToShard s.ShardWriters.Length
         s.Caches.[shardNo] |> VersionCache.versionCheck document
         let doc = s.Template.Value |> DocumentTemplate.updateTempate document
@@ -756,10 +754,10 @@ module IndexWriter =
                                     else ShardWriter.updateDocument (document.Id, doc)
     
     /// Add a document to the index
-    let addDocument (document : Document.T) (s : T) = s |> addOrUpdateDocument (document, true)
+    let addDocument (document : Document.Dto) (s : T) = s |> addOrUpdateDocument (document, true)
     
     /// Add a document to the index
-    let updateDocument (document : Document.T) (s : T) = s |> addOrUpdateDocument (document, false)
+    let updateDocument (document : Document.Dto) (s : T) = s |> addOrUpdateDocument (document, false)
     
     /// Delete all documents in the index
     let deleteAllDocuments (s : T) = s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))

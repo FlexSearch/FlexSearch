@@ -41,7 +41,7 @@ module SearchDsl =
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
     
-    let generateQuery (fields : Dictionary<string, Field.T>, predicate : Predicate, searchQuery : SearchQuery.T, 
+    let generateQuery (fields : Dictionary<string, Field.T>, predicate : Predicate, searchQuery : SearchQuery.Dto, 
                        isProfileBased : Dictionary<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
@@ -105,7 +105,7 @@ module SearchDsl =
         
         generateQuery predicate
     
-    let inline search (indexWriter : IndexWriter.T, query : Query, search : SearchQuery.T) = 
+    let inline search (indexWriter : IndexWriter.T, query : Query, search : SearchQuery.Dto) = 
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
         // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
@@ -150,11 +150,11 @@ module SearchDsl =
         (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers)
     
     /// Returns a document from the index
-    let getDocument (indexWriter : IndexWriter.T, search : SearchQuery.T, document : Document) = 
+    let getDocument (indexWriter : IndexWriter.T, search : SearchQuery.Dto, document : Document) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         match search.Columns with
         // Return no other columns when nothing is passed
-        | _ when search.Columns.Length = 0 -> ()
+        | _ when search.Columns.Count = 0 -> ()
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
@@ -176,7 +176,7 @@ module SearchDsl =
     let emptyList = Enumerable.Empty<string>().ToList()
     
     /// Searches for documents over the index using the query and returns the documents as a sequence
-    let searchDocumentSeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.T) = 
+    let searchDocumentSeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
         let (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers) = 
             search (indexWriter, query, searchQuery)
         
@@ -204,14 +204,13 @@ module SearchDsl =
                     let hit = hits.[i]
                     let document = indexSearchers.[hit.ShardIndex].IndexSearcher.Doc(hit.Doc)
                     let fields = getDocument (indexWriter, searchQuery, document)
-                    
-                    let resultDoc : Document.T = 
-                        { Id = document.Get(indexWriter.GetSchemaName(Constants.IdField))
-                          IndexName = indexWriter.Settings.IndexName
-                          TimeStamp = int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
-                          Fields = fields
-                          Score = float (hit.Score)
-                          Highlights = getHighlighter (document, hit.ShardIndex, hit.Doc) }
+                    let resultDoc = new Document.Dto()
+                    resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
+                    resultDoc.IndexName <- indexWriter.Settings.IndexName
+                    resultDoc.TimeStamp <- int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
+                    resultDoc.Fields <- fields
+                    resultDoc.Score <- float (hit.Score)
+                    resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
                     yield resultDoc
             }
         
@@ -221,7 +220,7 @@ module SearchDsl =
     
     /// Searches for documents over the index using the query and returns the documents as a sequence of 
     /// dictionary    
-    let searchDictionarySeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.T) = 
+    let searchDictionarySeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
         let (hits, _, recordsReturned, totalAvailable, indexSearchers) = search (indexWriter, query, searchQuery)
         
         let results = 
@@ -254,9 +253,7 @@ type FlexTermQuery() =
                 // with all the terms as sub clauses with And operator
                 // This behaviour will result in matching of both the terms in the results which may not be
                 // adjacent to each other. The adjacency case should be handled through phrase query
-                zeroOneOrManyQuery 
-                <| getTerms (flexIndexField, values.[0])
-                <| getTermQuery flexIndexField.SchemaName
+                zeroOneOrManyQuery <| getTerms (flexIndexField, values.[0]) <| getTermQuery flexIndexField.SchemaName 
                 <| getBooleanClause parameters
 
 /// Fuzzy Query
@@ -267,10 +264,8 @@ type FlexFuzzyQuery() =
         member __.GetQuery(flexIndexField, values, parameters) = 
             let slop = parameters |> intFromOptDict "slop" 1
             let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-            zeroOneOrManyQuery 
-            <| getTerms (flexIndexField, values.[0])
-            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength 
-            <| BooleanClause.Occur.MUST
+            zeroOneOrManyQuery <| getTerms (flexIndexField, values.[0]) 
+            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClause.Occur.MUST
 
 /// Match all Query
 [<Name("match_all"); Sealed>]
@@ -301,10 +296,8 @@ type FlexWildcardQuery() =
         member __.GetQuery(flexIndexField, values, _) = 
             // Like query does not go through analysis phase as the analyzer would remove the
             // special character
-            zeroOneOrManyQuery 
-            <| (values |> Seq.map (fun x -> x.ToLowerInvariant()))
-            <| getWildCardQuery flexIndexField.SchemaName
-            <| BooleanClause.Occur.MUST
+            zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
+            <| getWildCardQuery flexIndexField.SchemaName <| BooleanClause.Occur.MUST
 
 /// Regex Query
 [<Name("regex"); Sealed>]
@@ -314,10 +307,8 @@ type RegexQuery() =
         member __.GetQuery(flexIndexField, values, _) = 
             // Regex query does not go through analysis phase as the analyzer would remove the
             // special character
-            zeroOneOrManyQuery 
-            <| (values |> Seq.map (fun x -> x.ToLowerInvariant()))
-            <| getRegexpQuery flexIndexField.SchemaName 
-            <| BooleanClause.Occur.MUST
+            zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
+            <| getRegexpQuery flexIndexField.SchemaName <| BooleanClause.Occur.MUST
 
 // ----------------------------------------------------------------------------
 // Range Queries
