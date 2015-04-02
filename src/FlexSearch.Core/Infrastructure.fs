@@ -550,6 +550,16 @@ module Validators =
         else res.[0]
 
 [<AutoOpenAttribute>]
+module DataDefaults =
+
+    let defString = Unchecked.defaultof<string>
+    let defStringDict = Unchecked.defaultof<Dictionary<string, string>>
+    let defStringList = Unchecked.defaultof<List<string>>
+    let defInt64 = Unchecked.defaultof<Int64>
+    let defDouble = Unchecked.defaultof<double>
+    let defOf<'T> = Unchecked.defaultof<'T>
+
+[<AutoOpenAttribute>]
 module DictionaryHelpers = 
     /// Convert a .net dictionary to java based hash map
     [<CompiledNameAttribute("DictToMap")>]
@@ -570,6 +580,8 @@ module DictionaryHelpers =
     
     let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
     let inline conDict<'T>() = new ConcurrentDictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
+    let inline dict<'T>() = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
+    let inline strDict() = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     let inline tryAdd<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value)
     let inline add<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value) |> ignore
     
