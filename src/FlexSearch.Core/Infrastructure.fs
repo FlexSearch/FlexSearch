@@ -130,6 +130,7 @@ type Error =
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string
     // Indexing related errrors
+    | IndexShouldBeOnline of indexName : string
     | IndexInOpenState of indexName : string
     | IndexInInvalidState of indexName : string
     | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>

@@ -110,7 +110,8 @@ module FactoryService =
                             let pluginValue = plugin.Value.Value
                             modules.Add(pluginName, pluginValue)
                             logger.ComponentLoaded(pluginName, typeof<'T>.FullName)
-                        with e -> logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, exceptionPrinter e)
+                        with e -> 
+                            logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, exceptionPrinter e)
                 modules
     
     let registerSingleFactoryInstance<'T> (builder : ContainerBuilder) = 
@@ -134,11 +135,11 @@ module Main =
         builder.RegisterInstance(logService).As<ILogService>() |> ignore
         // Interface scanning
         builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
-        builder |> FactoryService.registerInterfaceAssemblies<IHttpResource>
+        //builder |> FactoryService.registerInterfaceAssemblies<IHttpResource>
         // Abstract class scanning
         builder |> FactoryService.registerAbstractClassAssemblies<HttpHandlerBase<_, _>>
         // Factory registration
-        builder |> FactoryService.registerSingleFactoryInstance<IHttpResource>
+        //builder |> FactoryService.registerSingleFactoryInstance<IHttpResource>
         builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
         //        builder |> FactoryService.registerSingleInstance<SettingsBuilder, ISettingsBuilder>
         builder |> FactoryService.registerSingleInstance<YamlFormatter, IFormatter>
@@ -171,10 +172,18 @@ module Main =
         //            if testServer <> true then MaximizeThreads() |> ignore
         member __.Start() = 
             try 
-                let indexExists = container.Resolve<IIndexService>().IndexExists
-                let httpModules = container.Resolve<IFlexFactory<IHttpResource>>().GetAllModules()
+                let indexExists (indexName) = 
+                    boolToResult 
+                    <| (IndexNotFound(indexName)) 
+                    <| (container.Resolve<IIndexService>().IndexExists indexName)
+                let indexOnline (indexName) = 
+                    boolToResult 
+                    <| (IndexShouldBeOnline(indexName)) 
+                    <| (container.Resolve<IIndexService>().IndexOnline indexName)
+                let httpModules = container.Resolve<IFlexFactory<HttpHandlerBase<_, _>>>().GetAllModules()
                 let loggerService = container.Resolve<ILogService>()
-                httpServer <- new OwinServer(indexExists, httpModules, loggerService, serverSettings.HttpPort)
+                httpServer <- new OwinServer(indexExists, indexOnline, httpModules, loggerService, 
+                                             serverSettings.HttpPort)
                 httpServer.Start()
             with e -> printfn "%A" e
         

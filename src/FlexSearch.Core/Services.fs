@@ -68,6 +68,7 @@ type IIndexService =
     abstract AddIndex : Index.T -> Choice<CreateResponse, Error>
     abstract GetAllIndex : unit -> Index.T array
     abstract IndexExists : string -> bool
+    abstract IndexOnline : string -> bool
     abstract GetIndexStatus : string -> Choice<IndexState, Error>
     abstract OpenIndex : string -> Choice<unit, Error>
     abstract CloseIndex : string -> Choice<unit, Error>
@@ -158,6 +159,7 @@ module IndexService =
     type Service(state) = 
         do state |> loadAllIndex
         interface IIndexService with
+            member __.IndexOnline(indexName : string) = failwith "Not implemented yet"
             member __.GetIndex(indexName) = state |> getIndex (indexName)
             member __.UpdateIndex(index) = state |> updateIndex (index)
             member __.DeleteIndex(indexName) = state |> deleteIndex (indexName)
@@ -198,10 +200,10 @@ type IDocumentService =
 
 module DocumentService = 
     /// Get a document by Id
-    let getDocument (indexName) (id)  (state : State.T) = ()
+    let getDocument (indexName) (id) (state : State.T) = ()
     
     /// Get top 10 document from the index
-    let getDocuments (indexName)  (state : State.T) = ()
+    let getDocuments (indexName) (state : State.T) = ()
     
     /// Add or update an existing document
     let addOrUpdateDocument (document : Document.T) (state : State.T) = 
@@ -224,16 +226,11 @@ module DocumentService =
         }
     
     /// Delete a document by Id
-    let deleteDocument (indexName) (id)  (state : State.T) = 
-        maybe { 
-            let! writer = state.IndexFactory |> LazyFactory.getInstance indexName
-            writer |> IndexWriter.deleteDocument id
-        }
-
+    let deleteDocument (indexName) (id) (state : State.T) = maybe { let! writer = state.IndexFactory 
+                                                                                  |> LazyFactory.getInstance indexName
+                                                                    writer |> IndexWriter.deleteDocument id }
+    
     /// Delete all documents of an index
-    let deleteAllDocument (indexName)  (state : State.T) = 
-        maybe { 
-            let! writer = state.IndexFactory |> LazyFactory.getInstance indexName
-            writer |> IndexWriter.deleteAllDocuments
-        }
-
+    let deleteAllDocument (indexName) (state : State.T) = maybe { let! writer = state.IndexFactory 
+                                                                                |> LazyFactory.getInstance indexName
+                                                                  writer |> IndexWriter.deleteAllDocuments }
