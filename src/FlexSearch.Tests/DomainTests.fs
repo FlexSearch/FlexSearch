@@ -5,19 +5,13 @@ open System.Collections.Generic
 open Swensen.Unquote
 
 module AnalyzerTests = 
-    open Analyzer
     
     type BuilderTests() = 
-        member __.``Should build successfully``() = 
-            let sut = 
-                { Tokenizer = { Tokenizer.Default with TokenizerName = "standard" }
-                  Filters = new List<TokenFilter>()
-                  AnalyzerName = "test" }
+        member __.``Should build successfully for a known tokenizer``(sut : Analyzer.Dto) = 
+            sut.Filters.Clear()
+            sut.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
             test <@ succeeded <| Analyzer.build sut = true @>
         
-        member __.``Should not build successfully``() = 
-            let sut = 
-                { Tokenizer = { Tokenizer.Default with TokenizerName = "unknown" }
-                  Filters = new List<TokenFilter>()
-                  AnalyzerName = "test" }
+        member __.``Should not build successfully for an unknown tokenizer``(sut : Analyzer.Dto) = 
+            sut.Filters.Clear()
             test <@ failed <| Analyzer.build sut = true @>
