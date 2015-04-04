@@ -46,11 +46,11 @@ type ValidatorTests() =
 type SeqValidatorTests() = 
     
     let implValid = 
-        { new IValidate with
+        { new DtoBase() with
               member this.Validate() = ok() }
     
     let implInvaid = 
-        { new IValidate with
+        { new DtoBase() with
               member this.Validate() = fail (InvalidPropertyName("test", "test")) }
     
     member __.``Test will only succeed when all elements are valid.``() = 
