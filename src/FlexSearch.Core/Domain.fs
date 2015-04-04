@@ -30,19 +30,6 @@ open System.Collections.Generic
 open System.IO
 open System.Linq
 
-/// Implements the Freezable pattern
-[<InterfaceAttribute>]
-type IFreezable = 
-    abstract Freeze : unit -> unit
-
-/// To be used by all Dto's which are used in REST webservices
-[<AbstractClassAttribute>]
-type DtoBase() = 
-    let mutable isFrozen = false
-    abstract Validate : unit -> Choice<unit, Error>
-    interface IFreezable with
-        member __.Freeze() = isFrozen <- true
-
 //////////////////////////////////////////////////////////////////////////
 /// Enums Section
 //////////////////////////////////////////////////////////////////////////
@@ -615,7 +602,7 @@ module Analyzer =
         override this.Validate() = this.AnalyzerName
                                    |> propertyNameValidator "AnalyzerName"
                                    >>= this.Tokenizer.Validate
-                                   >>= fun _ -> seqValidator (this.Filters.Cast<IValidate>())
+                                   >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
     
     /// Build a Lucene Analyzer from FlexSearch Analyzer DTO
     let build (def : Dto) = 
@@ -1148,9 +1135,9 @@ module Index =
             
             this.IndexName
             |> propertyNameValidator "IndexName"
-            >>= fun _ -> seqValidator (this.Fields.Cast<IValidate>())
-            >>= fun _ -> seqValidator (this.Scripts.Cast<IValidate>())
-            >>= fun _ -> seqValidator (this.SearchProfiles.Cast<IValidate>())
+            >>= fun _ -> seqValidator (this.Fields.Cast<DtoBase>())
+            >>= fun _ -> seqValidator (this.Scripts.Cast<DtoBase>())
+            >>= fun _ -> seqValidator (this.SearchProfiles.Cast<DtoBase>())
             >>= checkDuplicateFieldName
             >>= checkDuplicateScriptNames
             >>= validateSearchQuery

@@ -285,12 +285,18 @@ type NameAttribute(name : string) =
     inherit Attribute()
     member this.Name = name
 
-type IValidate = 
-    abstract Validate : unit -> Choice<unit, Error>
+/// Implements the Freezable pattern
+[<InterfaceAttribute>]
+type IFreezable = 
+    abstract Freeze : unit -> unit
 
-type IValidate<'T> = 
-    inherit IValidate
-    abstract SetDefaults : unit -> 'T
+/// To be used by all Dto's which are used in REST webservices
+[<AbstractClassAttribute>]
+type DtoBase() = 
+    let mutable isFrozen = false
+    abstract Validate : unit -> Choice<unit, Error>
+    interface IFreezable with
+        member __.Freeze() = isFrozen <- true
 
 [<AutoOpen>]
 module Operators = 
@@ -540,7 +546,7 @@ module Validators =
         >>= fun _ -> invalidPropertyName fieldName input
     
     /// Validates a given sequence in which each element implements IValidate    
-    let seqValidator (input : seq<IValidate>) = 
+    let seqValidator (input : seq<DtoBase>) = 
         let res = 
             input
             |> Seq.map (fun x -> x.Validate())
@@ -550,8 +556,7 @@ module Validators =
         else res.[0]
 
 [<AutoOpenAttribute>]
-module DataDefaults =
-
+module DataDefaults = 
     let defString = Unchecked.defaultof<string>
     let defStringDict = Unchecked.defaultof<Dictionary<string, string>>
     let defStringList = Unchecked.defaultof<List<string>>

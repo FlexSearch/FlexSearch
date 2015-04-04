@@ -274,7 +274,7 @@ module Http =
     
     /// Handler base class which exposes common Http Handler functionality
     [<AbstractClass>]
-    type HttpHandlerBase<'T, 'U when 'T :> IValidate>(?properties0 : HttpHandlerProperties, ?defaultValueSetter : 'T -> 'T) = 
+    type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?properties0 : HttpHandlerProperties, ?defaultValueSetter : 'T -> 'T) = 
         member __.Properties = defaultArg properties0 HttpHandlerProperties.OnlineIndex
         
         member __.HasBody = 
@@ -300,7 +300,7 @@ module Http =
         member __.SetDefaults(value : 'T) = 
             match defaultValueSetter with
             | Some(func) -> func (value)
-            | none -> value
+            | _ -> value
         
         abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
     
@@ -355,13 +355,13 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         let validateRequest() = 
             maybe { 
                 /// Check if we are in processing indices based resource
-                let! checks = if String.Equals(request.ResName, "indices", StringComparison.OrdinalIgnoreCase) 
-                                 && request.ResId.IsSome then 
-                                  match handler.Properties.CheckIndexIsOnline, handler.Properties.CheckIndexExists with
-                                  | true, _ -> indexOnline request.ResId.Value
-                                  | false, true -> indexExists request.ResId.Value
-                                  | _ -> ok()
-                              else ok()
+                do! if String.Equals(request.ResName, "indices", StringComparison.OrdinalIgnoreCase) 
+                       && request.ResId.IsSome then 
+                        match handler.Properties.CheckIndexIsOnline, handler.Properties.CheckIndexExists with
+                        | true, _ -> indexOnline request.ResId.Value
+                        | false, true -> indexExists request.ResId.Value
+                        | _ -> ok()
+                    else ok()
                 let! body = match handler.HasBody with
                             | true -> 
                                 match handler.DeSerialize(request.OwinContext.Request) with
