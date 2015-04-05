@@ -557,12 +557,15 @@ module Validators =
 
 [<AutoOpenAttribute>]
 module DataDefaults = 
-    let defString = Unchecked.defaultof<string>
-    let defStringDict = Unchecked.defaultof<Dictionary<string, string>>
-    let defStringList = Unchecked.defaultof<List<string>>
-    let defInt64 = Unchecked.defaultof<Int64>
-    let defDouble = Unchecked.defaultof<double>
-    let defOf<'T> = Unchecked.defaultof<'T>
+    open System.Collections.ObjectModel
+
+    let defString = String.Empty
+    let defStringDict = new Dictionary<string, string>()
+    let defStringList = Enumerable.Empty<String>()
+    let defArray<'T> = Array.empty<'T> 
+    let defInt64 = 0L
+    let defDouble = 0.0
+    //let defOf<'T> = Unchecked.defaultof<'T>
 
 [<AutoOpenAttribute>]
 module DictionaryHelpers = 

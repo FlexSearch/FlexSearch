@@ -3,4 +3,5 @@
   <Janitor />
   <ToString />
   <Freezable />
+  <NullGuard />
 </Weavers>

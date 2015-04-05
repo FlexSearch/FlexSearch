@@ -1084,13 +1084,13 @@ module Index =
         member val IndexName = defString with get, set
         
         /// Fields to be used in index.
-        member val Fields = defOf<Field.Dto []> with get, set
+        member val Fields = defArray<Field.Dto> with get, set
         
         /// Scripts to be used in index.
-        member val Scripts = defOf<Script.Dto []> with get, set
+        member val Scripts = defArray<Script.Dto> with get, set
         
         /// Search Profiles
-        member val SearchProfiles = defOf<SearchQuery.Dto []> with get, set
+        member val SearchProfiles = defArray<SearchQuery.Dto> with get, set
         
         /// AUTO
         member val ShardConfiguration = new ShardConfiguration.Dto() with get, set
