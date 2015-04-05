@@ -20,9 +20,49 @@ namespace FlexSearch.Core
 open FlexLucene.Analysis
 open System
 open System.Collections.Concurrent
+open System.Collections.Generic
 open System.IO
 open System.Linq
 open System.Threading.Tasks
+
+/// Index related operations
+type IIndexService = 
+    abstract GetIndex : string -> Choice<Index.Dto, Error>
+    abstract UpdateIndex : Index.Dto -> Choice<unit, Error>
+    abstract DeleteIndex : string -> Choice<unit, Error>
+    abstract AddIndex : Index.Dto -> Choice<CreateResponse, Error>
+    abstract GetAllIndex : unit -> Index.Dto array
+    abstract IndexExists : string -> bool
+    abstract IndexOnline : string -> bool
+    abstract GetIndexStatus : string -> Choice<IndexState, Error>
+    abstract OpenIndex : string -> Choice<unit, Error>
+    abstract CloseIndex : string -> Choice<unit, Error>
+    abstract Commit : string -> Choice<unit, Error>
+    abstract Refresh : string -> Choice<unit, Error>
+    abstract GetRealtimeSearchers : string -> Choice<array<RealTimeSearcher>, Error>
+    abstract GetRealtimeSearcher : string * int -> Choice<RealTimeSearcher, Error>
+
+/// Document related operations
+type IDocumentService = 
+    abstract GetDocument : indexName:string * id:string -> Choice<Document.Dto, Error>
+    abstract GetDocuments : indexName:string * count:int -> Choice<Document.Dto, Error>
+    abstract AddOrUpdateDocument : document:Document.Dto -> Choice<unit, Error>
+    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
+    abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, Error>
+    abstract DeleteAllDocuments : indexName:string -> Choice<unit, Error>
+
+/// Search related operations
+type ISearchService = 
+    abstract Search : SearchQuery.Dto -> Choice<SearchResults, Error>
+    abstract SearchAsDocmentSeq : query:SearchQuery.Dto -> Choice<seq<Document.Dto> * int * int, Error>
+    abstract SearchAsDictionarySeq : query:SearchQuery.Dto -> Choice<seq<Dictionary<string, string>> * int * int, Error>
+    abstract SearchUsingProfile : query:SearchQuery.Dto * inputFields:Dictionary<string, string>
+     -> Choice<SearchResults, Error>
+
+/// Queuing related operations
+type IQueueService = 
+    abstract AddDocumentQueue : document:Document.Dto -> unit
+    abstract AddOrUpdateDocumentQueue : document:Document.Dto -> unit
 
 module State = 
     /// Default state to be used by items in the 
@@ -59,23 +99,6 @@ module State =
     
     /// Check if a given index exists
     let indexExists (indexName) (state : T) = state.IndexFactory |> LazyFactory.exists indexName indexNotFound
-
-/// Index related operations
-type IIndexService = 
-    abstract GetIndex : string -> Choice<Index.Dto, Error>
-    abstract UpdateIndex : Index.Dto -> Choice<unit, Error>
-    abstract DeleteIndex : string -> Choice<unit, Error>
-    abstract AddIndex : Index.Dto -> Choice<CreateResponse, Error>
-    abstract GetAllIndex : unit -> Index.Dto array
-    abstract IndexExists : string -> bool
-    abstract IndexOnline : string -> bool
-    abstract GetIndexStatus : string -> Choice<IndexState, Error>
-    abstract OpenIndex : string -> Choice<unit, Error>
-    abstract CloseIndex : string -> Choice<unit, Error>
-    abstract Commit : string -> Choice<unit, Error>
-    abstract Refresh : string -> Choice<unit, Error>
-    abstract GetRealtimeSearchers : string -> Choice<array<RealTimeSearcher>, Error>
-    abstract GetRealtimeSearcher : string * int -> Choice<RealTimeSearcher, Error>
 
 module IndexService = 
     /// Returns IndexNotFound error
@@ -189,14 +212,85 @@ module IndexService =
                                                       |> LazyFactory.getAsTuple indexName indexNotFound
                         return writer |> IndexWriter.getRealTimeSearcher shardNo }
 
-/// Document related operations
-type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<Document.Dto, Error>
-    abstract GetDocuments : indexName:string * count:int -> Choice<Document.Dto, Error>
-    abstract AddOrUpdateDocument : document:Document.Dto -> Choice<unit, Error>
-    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
-    abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, Error>
-    abstract DeleteAllDocuments : indexName:string -> Choice<unit, Error>
+module SearchService = 
+    let parser = new FlexParser() :> IFlexParser
+    
+    let getSearchPredicate (writers : IndexWriter.T, search : SearchQuery.Dto, 
+                            inputValues : Dictionary<string, string> option) = 
+        maybe { 
+            if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
+                // Search profile based
+                match writers.Settings.SearchProfiles.TryGetValue(search.SearchProfile) with
+                | true, p -> 
+                    let (p', sq) = p
+                    search.MissingValueConfiguration <- sq.MissingValueConfiguration
+                    let! values = match inputValues with
+                                  | Some(values) -> Choice1Of2(values)
+                                  | None -> Parsers.ParseQueryString(search.QueryString, false)
+                    return (p', Some(values))
+                | _ -> return! fail <| UnknownSearchProfile(search.IndexName, search.SearchProfile)
+            else let! predicate = parser.Parse(search.QueryString)
+                 return (predicate, None)
+        }
+    
+    let generateSearchQuery (writers : IndexWriter.T, searchQuery : SearchQuery.Dto, 
+                             inputValues : Dictionary<string, string> option, queryTypes) = 
+        maybe { 
+            let! (predicate, searchProfile) = getSearchPredicate (writers, searchQuery, inputValues)
+            match predicate with
+            | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
+            | _ -> 
+                return! SearchDsl.generateQuery 
+                            (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, queryTypes)
+        }
+    
+    let search (searchQuery : SearchQuery.Dto, queryTypes) (state : State.T) = 
+        maybe { 
+            let! (index, state, writers) = state.IndexFactory 
+                                           |> LazyFactory.getAsTuple searchQuery.IndexName IndexService.indexNotFound
+            let! query = generateSearchQuery (writers, searchQuery, None, queryTypes)
+            let! (results, recordsReturned, totalAvailable) = SearchDsl.searchDocumentSeq (writers, query, searchQuery)
+            let searchResults = new SearchResults()
+            searchResults.Documents <- results.ToList()
+            searchResults.TotalAvailable <- totalAvailable
+            searchResults.RecordsReturned <- recordsReturned
+            return! Choice1Of2(searchResults)
+        }
+    
+    [<Sealed>]
+    type Service(state : State.T, queryFactory : IFlexFactory<IFlexQuery>) = 
+        
+        // Generate query types from query factory. This is necessary as a single query can support multiple
+        // query names
+        let queryTypes = 
+            let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
+            for pair in queryFactory.GetAllModules() do
+                for queryName in pair.Value.QueryName() do
+                    result.Add(queryName, pair.Value)
+            result
+        
+        interface ISearchService with
+            member __.Search(query) = state |> search (query, queryTypes)
+            member __.SearchAsDocmentSeq(searchQuery) = 
+                maybe { let! writers = state.IndexFactory |> LazyFactory.getInstance searchQuery.IndexName
+                        let! query = generateSearchQuery (writers, searchQuery, None, queryTypes)
+                        return! SearchDsl.searchDocumentSeq (writers, query, searchQuery) }
+            member __.SearchAsDictionarySeq(searchQuery : SearchQuery.Dto) = 
+                maybe { let! writers = state.IndexFactory |> LazyFactory.getInstance searchQuery.IndexName
+                        let! query = generateSearchQuery (writers, searchQuery, None, queryTypes)
+                        return! SearchDsl.searchDictionarySeq (writers, query, searchQuery) }
+            member __.SearchUsingProfile(searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string>) = 
+                maybe { 
+                    let! writers = state.IndexFactory |> LazyFactory.getInstance searchQuery.IndexName
+                    let! query = generateSearchQuery (writers, searchQuery, Some(inputFields), queryTypes)
+                    let! (results, recordsReturned, totalAvailable) = SearchDsl.searchDocumentSeq 
+                                                                          (writers, query, searchQuery)
+                    let searchResults = new SearchResults()
+                    searchResults.Documents <- results.ToList()
+                    searchResults.TotalAvailable <- totalAvailable
+                    searchResults.RecordsReturned <- recordsReturned
+                    return! Choice1Of2(searchResults)
+                }
 
 module DocumentService = 
     /// Get a document by Id

@@ -41,7 +41,7 @@ module SearchDsl =
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
     
-    let generateQuery (fields : Dictionary<string, Field.T>, predicate : Predicate, searchQuery : SearchQuery.Dto, 
+    let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, searchQuery : SearchQuery.Dto, 
                        isProfileBased : Dictionary<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
@@ -71,7 +71,7 @@ module SearchDsl =
         /// Generate the query from the condition
         let getCondition (fieldName, operator, v : Value, p) = 
             maybe { 
-                let! field = fields |> keyExists (fieldName, fieldNotFound)
+                let! field = fields |> keyExists2 (fieldName, fieldNotFound)
                 do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
                 let! query = queryTypes |> keyExists (operator, queryNotFound)
                 let! value = getValue (fieldName, operator, v, p)

@@ -129,6 +129,8 @@ type Error =
     | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string
+    | UnknownSearchProfile of indexName : string * profileName : string
+    | PurelyNegativeQueryNotSupported
     // Indexing related errrors
     | IndexShouldBeOnline of indexName : string
     | IndexInOpenState of indexName : string
@@ -581,6 +583,11 @@ module DictionaryHelpers =
         | true, v -> Choice1Of2(v)
         | _ -> Choice2Of2(error (value))
     
+    let inline keyExists2 (value, error) (dict : IReadOnlyDictionary<string, _>) = 
+        match dict.TryGetValue(value) with
+        | true, v -> Choice1Of2(v)
+        | _ -> Choice2Of2(error (value))
+
     let inline tryGet (key) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(key) with
         | true, v -> Choice1Of2(v)
