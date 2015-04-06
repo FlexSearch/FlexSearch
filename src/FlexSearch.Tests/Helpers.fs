@@ -9,8 +9,12 @@ open System
 open System.Collections.Generic
 open System.Linq
 open System.Reflection
+
 [<AutoOpenAttribute>]
 module DataHelpers = 
+    open Autofac
+    open Autofac.Extras.Attributed
+    
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index.Dto()
@@ -38,16 +42,31 @@ module DataHelpers =
         index.SearchProfiles <- [| searchProfileQuery |]
         index
     
+    let container = 
+        let builder = new ContainerBuilder()
+        builder.RegisterModule<AttributedMetadataModule>() |> ignore
+        builder.RegisterInstance(Log.logger).As<ILogService>() |> ignore
+        builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
+        builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
+        builder.Build()
+    
+    let flexQueryFactory = container.Resolve<IFlexFactory<IFlexQuery>>()
+    
     /// Autofixture customizations
-    let fixtureCustomization(fixture : Ploeh.AutoFixture.Fixture) =
+    let fixtureCustomization (fixture : Ploeh.AutoFixture.Fixture) = 
         // We override Auto fixture's string generation mechanism to return this string which will be
         // used as index name
         fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
-        let state = State.create(true)
+        let state = State.create (true)
         fixture.Inject<State.T>(state) |> ignore
         fixture.Inject<Index.Dto>(getTestIndex()) |> ignore
-        fixture.Inject<IIndexService>(new IndexService.Service(state)) |> ignore
-        
+        let indexService = new IndexService.Service(state)
+        let searchService = new SearchService.Service(state, flexQueryFactory)
+        let documentService = new DocumentService.Service(searchService, state)
+        fixture.Inject<IIndexService>(indexService) |> ignore
+        fixture.Inject<ISearchService>(searchService) |> ignore
+        fixture.Inject<IDocumentService>(documentService) |> ignore
+
 // ----------------------------------------------------------------------------
 // Convention Section for Fixie
 // ----------------------------------------------------------------------------
@@ -78,4 +97,3 @@ type SingleInstancePerClassConvention() as self =
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         self.ClassExecution.CreateInstancePerClass() |> ignore
         self.Parameters.Add<InputParameterSource>() |> ignore
-
