@@ -32,3 +32,15 @@ module IndexServiceTests =
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.AddIndex(index) = Choice2Of2(IndexAlreadyExists(index.IndexName)) @>
+        
+        member __.``Offline index can be made online`` (indexService : IIndexService, index : Index.Dto) = 
+            index.Online <- false
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
+            test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.OnlineMaster) @>
+        
+        member __.``Online index can be made offline`` (indexService : IIndexService, index : Index.Dto) = 
+            index.Online <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
+            test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.Offline) @>
