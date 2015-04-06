@@ -58,7 +58,7 @@ module Constants =
     let DotNetFrameWork = "4.5.1"
     
     [<Literal>]
-    let StandardAnalyzer = "standardanalyzer"
+    let StandardAnalyzer = "standard"
     
     // Default value to be used for string data type
     [<Literal>]
@@ -132,6 +132,7 @@ type Error =
     | UnknownSearchProfile of indexName : string * profileName : string
     | PurelyNegativeQueryNotSupported
     // Indexing related errrors
+    | IndexAlreadyExists of indexName : string
     | IndexShouldBeOnline of indexName : string
     | IndexInOpenState of indexName : string
     | IndexInInvalidState of indexName : string
@@ -358,6 +359,12 @@ module Operators =
         | true -> ok()
         | false -> fail (err)
     
+    /// Take a Choice result and return true for Choice1 and false for Choice2
+    let inline resultToBool result =
+        match result with
+        | Choice1Of2(_) -> true
+        | _ -> false
+
     //    /// If the given result is a Success the wrapped value will be returned. 
     //    ///Otherwise the function throws an exception with Failure message of the result.
     //    let inline returnOrFail result = 
