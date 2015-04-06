@@ -185,6 +185,10 @@ module Http =
               SubResId = subResId
               OwinContext = owinContext }
     
+    type NoBody() = 
+        inherit DtoBase()
+        override __.Validate() = ok()
+    
     type ResponseContext<'T> = 
         | SomeResponse of responseBody : Choice<'T, Error> * successCode : HttpStatusCode * failureCode : HttpStatusCode
         | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode
@@ -274,13 +278,10 @@ module Http =
     
     /// Handler base class which exposes common Http Handler functionality
     [<AbstractClass>]
-    type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?properties0 : HttpHandlerProperties, ?defaultValueSetter : 'T -> 'T) = 
-        member __.Properties = defaultArg properties0 HttpHandlerProperties.OnlineIndex
-        
-        member __.HasBody = 
-            if typeof<'T> = typeof<unit> then false
-            else true
-        
+    type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?failOnMissingBody : bool, ?validateBody : bool) = 
+        member __.HasBody = typeof<'T> = typeof<NoBody>
+        member this.FailOnMissingBody = defaultArg failOnMissingBody this.HasBody
+        member this.ValidateBody = defaultArg validateBody false
         member __.DeSerialize(request : IOwinRequest) = getRequestBody<'T> (request)
         
         member __.SerializeSuccess (response : 'U) (successStatus : HttpStatusCode) (owinContext : IOwinContext) = 
@@ -296,11 +297,6 @@ module Http =
             match response with
             | Choice1Of2(r) -> owinContext |> this.SerializeSuccess r successStatus
             | Choice2Of2(r) -> owinContext |> this.SerializeFailure r failureStatus
-        
-        member __.SetDefaults(value : 'T) = 
-            match defaultValueSetter with
-            | Some(func) -> func (value)
-            | _ -> value
         
         abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
     
@@ -354,26 +350,16 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     let execute (request : RequestContext, handler : HttpHandlerBase<_, _>) = 
         let validateRequest() = 
             maybe { 
-                /// Check if we are in processing indices based resource
-                do! if String.Equals(request.ResName, "indices", StringComparison.OrdinalIgnoreCase) 
-                       && request.ResId.IsSome then 
-                        match handler.Properties.CheckIndexIsOnline, handler.Properties.CheckIndexExists with
-                        | true, _ -> indexOnline request.ResId.Value
-                        | false, true -> indexExists request.ResId.Value
-                        | _ -> ok()
-                    else ok()
                 let! body = match handler.HasBody with
                             | true -> 
                                 match handler.DeSerialize(request.OwinContext.Request) with
-                                | Choice1Of2 a -> 
-                                    // Set the default value for the DTO
-                                    ok <| Some(handler.SetDefaults(a))
+                                | Choice1Of2 a -> ok <| Some(a)
                                 | Choice2Of2 b -> 
-                                    if handler.Properties.FailOnMissingBody then fail <| b
+                                    if handler.FailOnMissingBody then fail <| b
                                     else ok <| None
                             | false -> ok <| None
                 /// Validate the DTO
-                if body.IsSome && handler.Properties.ValidateDto then do! body.Value.Validate()
+                if body.IsSome && handler.ValidateBody then do! body.Value.Validate()
                 return body
             }
         
