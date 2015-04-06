@@ -1034,14 +1034,14 @@ module Document =
     /// analogy an index can be considered as a table while a document is a row of that table. Like a table a 
     /// FlexSearch document requires a fix schema and all fields should have a field type.
     [<ToString; Sealed>]
-    type Dto() = 
+    type Dto(indexName : string, id : string) = 
         inherit DtoBase()
         
         /// Fields to be added to the document for indexing.
         member val Fields = defStringDict with get, set
         
         /// Unique Id of the document
-        member val Id = defString with get, set
+        member val Id = id with get, set
         
         /// Timestamp of the last modification of the document. This field is interpreted differently
         /// during a create and update operation. It also dictates whether and unique Id check is to be performed
@@ -1055,7 +1055,7 @@ module Document =
         
         /// mutable ModifyIndex : Int64
         /// Name of the index
-        member val IndexName = defString with get, set
+        member val IndexName = indexName with get, set
         
         /// Any matched text highlighted snippets. Note: Only used for results
         member val Highlights = defStringList with get, set
@@ -1066,6 +1066,8 @@ module Document =
         override this.Validate() = this.IndexName
                                    |> notBlank "IndexName"
                                    >>= fun _ -> this.Id |> notBlank "Id"
+        new(indexName, id) = Dto(indexName, id)
+        new() = Dto(defString, defString)
 
 module Index = 
     /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
