@@ -64,7 +64,7 @@ module JavaHelpers =
     
     /// Put an item in the hashmap and continue
     let putC (key, value) (hashMap : HashMap) = 
-        hashMap.put (key, value) |> ignore
+        hashMap.put (key, value.ToString()) |> ignore
         hashMap
     
     /// Put an item in the hashmap
