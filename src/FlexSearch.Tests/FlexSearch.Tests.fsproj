@@ -61,6 +61,7 @@
     <Compile Include="Helpers.fs" />
     <Compile Include="InfrastructureTests.fs" />
     <Compile Include="DomainTests.fs" />
+    <Compile Include="ServiceTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
