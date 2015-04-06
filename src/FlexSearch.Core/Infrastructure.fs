@@ -140,6 +140,8 @@ type Error =
     // Indexing related errrors
     | IndexAlreadyExists of indexName : string
     | IndexShouldBeOnline of indexName : string
+    | IndexIsAlreadyOnline of indexName : string
+    | IndexIsAlreadyOffline of indexName : string
     | IndexInOpenState of indexName : string
     | IndexInInvalidState of indexName : string
     | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>
@@ -640,23 +642,23 @@ module LazyFactory =
             | false -> new PersistentDictionary<string, StoreItem>("Conf") :> IDictionary<string, StoreItem>
         
         member __.GetItem<'T>(key : string) = 
-            let key = String.Concat(typeof<'T>.Name, key)
+            let key = String.Concat(typeof<'T>.FullName, key)
             match db.TryGetValue(key) with
             | true, v -> ok <| JsonConvert.DeserializeObject<'T>(v.Data)
             | _ -> fail <| KeyNotFound key
         
         member __.GetItems<'T>() = 
-            db.Values.Where(fun x -> x.Type = typeof<'T>.Name)
+            db.Values.Where(fun x -> x.Type = typeof<'T>.FullName)
               .Select(fun x -> JsonConvert.DeserializeObject<'T>(x.Data))
         
         /// Add or Update an item in the store by key 
         member __.UpdateItem<'T>(key : string, item : 'T) = 
             assert (not (isNull key))
-            let key = String.Concat(typeof<'T>.Name, key)
+            let key = String.Concat(typeof<'T>.FullName, key)
             
             let item = 
                 { Key = key
-                  Type = typeof<'T>.Name
+                  Type = typeof<'T>.FullName
                   Data = JsonConvert.SerializeObject(item) }
             match db.TryGetValue(key) with
             | true, v -> db.[key] <- item
@@ -664,7 +666,7 @@ module LazyFactory =
         
         member __.DeleteItem<'T>(key : string) = 
             assert (not (isNull key))
-            let key = String.Concat(typeof<'T>.Name, key)
+            let key = String.Concat(typeof<'T>.FullName, key)
             db.Remove(key) |> ignore
     
     type FactoryItem<'LuceneObject, 'FlexMeta, 'FlexState> = 
