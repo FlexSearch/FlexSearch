@@ -72,10 +72,16 @@ module Constants =
     
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-    let private confFolder = Path.Combine(rootFolder, "Conf")
-    let private pluginFolder = Path.Combine(rootFolder, "Plugins")
-    let private logsFolder = Path.Combine(rootFolder, "Logs")
+    let private confFolder = rootFolder +/ "Conf"
+    let private dataFolder = rootFolder +/ "Data"
+    let private pluginFolder = rootFolder +/ "Plugins"
+    let private logsFolder = rootFolder +/ "Logs"
     
+    /// Flex index folder
+    let DataFolder = 
+        Directory.CreateDirectory(dataFolder) |> ignore
+        dataFolder
+
     /// Flex index folder
     let ConfFolder = 
         Directory.CreateDirectory(confFolder) |> ignore
@@ -753,6 +759,31 @@ module LazyFactory =
         store.ObjectStore.TryRemove(key) |> ignore
         store.PersistenceStore.DeleteItem(key) |> ignore
     
+    /// Add a new item to the store
+    let inline addItem(key, state: 'FlexState, metaData : 'FlexMeta) (store : T<_, _, _>) =
+        let value = 
+            { MetaData = metaData
+              State = state
+              Value = None }
+        // Remove the older item if it exists. In case other objects have reference to the 
+        // value they can keep on using it. Once those objects are disposed the value should
+        // get garbage collected.
+        store.ObjectStore.TryAdd(key, value) |> ignore
+        store.PersistenceStore.UpdateItem(key, metaData)
+
+    /// Add or update an instance of an item
+    let inline addInstance (key, state, metaData : 'FlexMeta, instance : 'LuceneObject) (store : T<_, _, _>) =
+        let value = 
+            { MetaData = metaData
+              State = state
+              Value = Some(instance) }
+        // Remove the older item if it exists. In case other objects have reference to the 
+        // value they can keep on using it. Once those objects are disposed the value should
+        // get garbage collected.
+        store.ObjectStore.TryRemove(key) |> ignore
+        store.ObjectStore.TryAdd(key, value) |> ignore
+        store.PersistenceStore.UpdateItem(key, metaData)
+
     ///  Add or update an item
     let inline updateMetaData (key, state, metaData : 'FlexMeta) (store : T<_, _, _>) = 
         let value = 
