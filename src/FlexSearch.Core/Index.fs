@@ -691,14 +691,18 @@ module IndexWriter =
     
     /// Create index settings from the Index Dto
     let createIndexSetting (index : Index.Dto, analyzerService) = 
-        withIndexName (index.IndexName, "")
-        |> withShardConfiguration (index.ShardConfiguration)
-        |> withIndexConfiguration (index.IndexConfiguration)
-        |> withScripts (index.Scripts)
-        |> withFields (index.Fields, analyzerService)
-        |> withSearchProfiles (index.SearchProfiles, new FlexParser())
-        |> build
-    
+        try
+            withIndexName (index.IndexName, "")
+            |> withShardConfiguration (index.ShardConfiguration)
+            |> withIndexConfiguration (index.IndexConfiguration)
+            |> withScripts (index.Scripts)
+            |> withFields (index.Fields, analyzerService)
+            |> withSearchProfiles (index.SearchProfiles, new FlexParser())
+            |> build
+            |> ok
+        with :? ValidationException as e ->
+            fail <| e.Data0
+
     let processIndexRequest (command : IndexCommand) = ()
     
     let create (settings : IndexSetting.T) = 
