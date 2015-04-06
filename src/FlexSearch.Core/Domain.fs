@@ -732,9 +732,11 @@ module Field =
         /// Fields can get their content dynamically through scripts. This is the name of 
         /// the script to be used for getting field data at index time.
         member val ScriptName = "" with get, set
-        
+
+        new(fieldName, fieldType) = Dto(fieldName, fieldType)
         new(fieldName : string) = Dto(fieldName, FieldType.Dto.Text)
         new() = Dto(Unchecked.defaultof<string>, FieldType.Dto.Text)
+        
         override this.Validate() = 
             this.FieldName
             |> propertyNameValidator "FieldName"
@@ -1226,8 +1228,7 @@ type SearchResults() =
 type CreateResponse(id : string) = 
     member val Id = id with get, set
 
-//type IndexStatusResponse() = 
-//    member val Status = Unchecked.defaultof<IndexState> with get, set
+
 type IndexExistsResponse() = 
     member val Exists = Unchecked.defaultof<bool> with get, set
 
