@@ -81,7 +81,7 @@ module Constants =
     let DataFolder = 
         Directory.CreateDirectory(dataFolder) |> ignore
         dataFolder
-
+    
     /// Flex index folder
     let ConfFolder = 
         Directory.CreateDirectory(confFolder) |> ignore
@@ -368,11 +368,11 @@ module Operators =
         | false -> fail (err)
     
     /// Take a Choice result and return true for Choice1 and false for Choice2
-    let inline resultToBool result =
+    let inline resultToBool result = 
         match result with
         | Choice1Of2(_) -> true
         | _ -> false
-
+    
     //    /// If the given result is a Success the wrapped value will be returned. 
     //    ///Otherwise the function throws an exception with Failure message of the result.
     //    let inline returnOrFail result = 
@@ -575,15 +575,15 @@ module Validators =
 [<AutoOpenAttribute>]
 module DataDefaults = 
     open System.Collections.ObjectModel
-
+    
     let defString = String.Empty
     let defStringDict = new Dictionary<string, string>()
     let defStringList = Enumerable.Empty<String>()
-    let defArray<'T> = Array.empty<'T> 
+    let defArray<'T> = Array.empty<'T>
     let defInt64 = 0L
     let defDouble = 0.0
-    //let defOf<'T> = Unchecked.defaultof<'T>
 
+//let defOf<'T> = Unchecked.defaultof<'T>
 [<AutoOpenAttribute>]
 module DictionaryHelpers = 
     /// Convert a .net dictionary to java based hash map
@@ -602,7 +602,7 @@ module DictionaryHelpers =
         match dict.TryGetValue(value) with
         | true, v -> Choice1Of2(v)
         | _ -> Choice2Of2(error (value))
-
+    
     let inline tryGet (key) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(key) with
         | true, v -> Choice1Of2(v)
@@ -762,7 +762,7 @@ module LazyFactory =
         store.PersistenceStore.DeleteItem(key) |> ignore
     
     /// Add a new item to the store
-    let inline addItem(key, state: 'FlexState, metaData : 'FlexMeta) (store : T<_, _, _>) =
+    let inline addItem (key, state : 'FlexState, metaData : 'FlexMeta) (store : T<_, _, _>) = 
         let value = 
             { MetaData = metaData
               State = state
@@ -772,9 +772,9 @@ module LazyFactory =
         // get garbage collected.
         store.ObjectStore.TryAdd(key, value) |> ignore
         store.PersistenceStore.UpdateItem(key, metaData)
-
+    
     /// Add or update an instance of an item
-    let inline addInstance (key, state, metaData : 'FlexMeta, instance : 'LuceneObject) (store : T<_, _, _>) =
+    let inline addInstance (key, state, metaData : 'FlexMeta, instance : 'LuceneObject) (store : T<_, _, _>) = 
         let value = 
             { MetaData = metaData
               State = state
@@ -785,7 +785,7 @@ module LazyFactory =
         store.ObjectStore.TryRemove(key) |> ignore
         store.ObjectStore.TryAdd(key, value) |> ignore
         store.PersistenceStore.UpdateItem(key, metaData)
-
+    
     ///  Add or update an item
     let inline updateMetaData (key, state, metaData : 'FlexMeta) (store : T<_, _, _>) = 
         let value = 
@@ -833,15 +833,15 @@ module Tasks =
     let WebRequest : EventTask = enum 1
 
 /// Simple enum wrapper for possible Keyword values
-module Keywords = 
-    [<Literal>]
-    let IndexManagement : EventKeywords = EnumOfValue<int64, EventKeywords> 1L
-    
-    [<Literal>]
-    let Node : EventKeywords = EnumOfValue<int64, EventKeywords> 2L
-    
-    [<Literal>]
-    let Components : EventKeywords = EnumOfValue<int64, EventKeywords> 3L
+//module Keywords = 
+//    [<Literal>]
+//    let IndexManagement : EventKeywords = EnumOfValue<int64, EventKeywords> 1L
+//    
+//    [<Literal>]
+//    let Node : EventKeywords = EnumOfValue<int64, EventKeywords> 2L
+//    
+//    [<Literal>]
+//    let Components : EventKeywords = EnumOfValue<int64, EventKeywords> 3L
 
 /// Generic logger interface
 [<EventSourceImplementation(Name = "FlexSearch")>]
@@ -849,51 +849,47 @@ module Keywords =
 type ILogService = 
     
     [<EventAttribute(1, Message = "Adding new index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+                     Channel = EventChannel.Admin)>]
     abstract AddIndex : indexName:string * indexDetails:string -> unit
     
     [<EventAttribute(2, Message = "Updating index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+                     Channel = EventChannel.Admin)>]
     abstract UpdateIndex : indexName:string * indexDetails:string -> unit
     
-    [<EventAttribute(3, Message = "Deleting index {0}", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
-                     Keywords = Keywords.IndexManagement)>]
+    [<EventAttribute(3, Message = "Deleting index {0}", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
     abstract DeleteIndex : indexName:string -> unit
     
-    [<EventAttribute(4, Message = "Closing index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
-                     Keywords = Keywords.IndexManagement)>]
+    [<EventAttribute(4, Message = "Closing index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
     abstract CloseIndex : indexName:string -> unit
     
-    [<EventAttribute(5, Message = "Opening index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
-                     Keywords = Keywords.IndexManagement)>]
+    [<EventAttribute(5, Message = "Opening index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
     abstract OpenIndex : indexName:string -> unit
     
     [<EventAttribute(6, Message = "Loading index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+                     Channel = EventChannel.Admin)>]
     abstract LoadingIndex : indexName:string * indexDetails:string -> unit
     
     [<EventAttribute(7, Message = "Failed to load index {0}. \nIndexDetails: \n{1} \nError details: \n{2}", 
-                     Level = EventLevel.Error, Channel = EventChannel.Admin, Keywords = Keywords.IndexManagement)>]
+                     Level = EventLevel.Error, Channel = EventChannel.Admin)>]
     abstract IndexLoadingFailed : indexName:string * indexDetails:string * validationObject:string -> unit
     
     [<EventAttribute(8, Message = "Loading Component of type: {0} \nLoaded component details:\n{1}", 
-                     Level = EventLevel.Informational, Channel = EventChannel.Admin, Keywords = Keywords.Components)>]
+                     Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
     abstract ComponentLoaded : componentType:string * componentNames:string -> unit
     
     [<EventAttribute(9, Message = "Component initialization failed: {0}. Component type: {1} \nError details: \n{2}", 
-                     Level = EventLevel.Error, Channel = EventChannel.Admin, Keywords = Keywords.Components)>]
+                     Level = EventLevel.Error, Channel = EventChannel.Admin)>]
     abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
     
     [<EventAttribute(10, Message = "Staring FlexSearch.\nDetails: \n{0}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin, Keywords = Keywords.Node)>]
+                     Channel = EventChannel.Admin)>]
     abstract StartSession : details:string -> unit
     
-    [<EventAttribute(11, Message = "Quiting FlexSearch.", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
-                     Keywords = Keywords.Node)>]
+    [<EventAttribute(11, Message = "Quiting FlexSearch.", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
     abstract EndSession : unit -> unit
     
     [<EventAttribute(12, Message = "FlexSearch termination request received.", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin, Keywords = Keywords.Node)>]
+                     Channel = EventChannel.Admin)>]
     abstract Shutdown : unit -> unit
     
     [<EventAttribute(13, Message = "{0}", Level = EventLevel.Critical, Channel = EventChannel.Admin, 
