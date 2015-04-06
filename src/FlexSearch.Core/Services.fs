@@ -45,7 +45,7 @@ type IIndexService =
 /// Document related operations
 type IDocumentService = 
     abstract GetDocument : indexName:string * id:string -> Choice<Document.Dto, Error>
-    abstract GetDocuments : indexName:string * count:int -> Choice<Document.Dto, Error>
+    abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, Error>
     abstract AddOrUpdateDocument : document:Document.Dto -> Choice<unit, Error>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
     abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, Error>
@@ -99,6 +99,20 @@ module State =
     
     /// Check if a given index exists
     let indexExists (indexName) (state : T) = state.IndexFactory |> LazyFactory.exists indexName indexNotFound
+    
+    /// Checks if a given index exists and returns the state of the index if it exists
+    let indexExists2 (indexName) (state : T) = 
+        match state.IndexFactory |> LazyFactory.getState indexName with
+        | Choice1Of2(state) -> ok <| state
+        | Choice2Of2(_) -> fail <| IndexNotFound indexName
+    
+    /// Checks if a given index is online or not. If it is online then return the index writer    
+    let indexOnline (indexName) (state : T) = 
+        match state |> indexExists2 indexName with
+        | Choice1Of2(indexState) -> 
+            if indexState = IndexState.OnlineMaster then ok <| (state.IndexFactory.ObjectStore.[indexName].Value.Value)
+            else fail <| IndexShouldBeOnline(indexName)
+        | Choice2Of2(error) -> fail <| error
 
 module IndexService = 
     /// Returns IndexNotFound error
@@ -107,7 +121,7 @@ module IndexService =
     /// Load a index
     let loadIndex (index : Index.Dto) (state : State.T) = 
         maybe { 
-            let setting = IndexWriter.createIndexSetting (index, state.AnalyzerFactory)
+            let! setting = IndexWriter.createIndexSetting (index, state.AnalyzerFactory)
             if index.Online then 
                 do! state.IndexFactory |> LazyFactory.updateState (index.IndexName, IndexState.Opening)
                 do! state.IndexFactory |> LazyFactory.updateInstance (index.IndexName, IndexWriter.create (setting))
@@ -142,9 +156,11 @@ module IndexService =
     let addIndex (index : Index.Dto) (state : State.T) = 
         maybe { 
             do! index.Validate()
-            do! state |> State.indexExists index.IndexName
-            do! state |> loadIndex index
-            return CreateResponse(index.IndexName)
+            match state |> State.indexExists index.IndexName with
+            | Choice1Of2(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
+            | _ -> 
+                do! state |> loadIndex index
+                return CreateResponse(index.IndexName)
         }
     
     /// Get index by name
@@ -182,14 +198,23 @@ module IndexService =
     type Service(state) = 
         do state |> loadAllIndex
         interface IIndexService with
-            member __.IndexOnline(indexName : string) = failwith "Not implemented yet"
+            
+            member __.IndexOnline(indexName) = 
+                state
+                |> State.indexOnline indexName
+                |> resultToBool
+            
             member __.GetIndex(indexName) = state |> getIndex (indexName)
             member __.UpdateIndex(index) = state |> updateIndex (index)
             member __.DeleteIndex(indexName) = state |> deleteIndex (indexName)
             member __.AddIndex(index) = state |> addIndex (index)
             member __.GetAllIndex() = state |> getAllIndices
+            
             member __.IndexExists(indexName) = 
-                succeeded <| (state.IndexFactory |> LazyFactory.exists indexName indexNotFound)
+                state
+                |> State.indexExists indexName
+                |> resultToBool
+            
             member __.GetIndexStatus(indexName) = state.IndexFactory |> LazyFactory.getState indexName
             member __.OpenIndex(indexName) = state |> openIndex indexName
             member __.CloseIndex(indexName) = state |> closeIndex indexName
@@ -294,10 +319,30 @@ module SearchService =
 
 module DocumentService = 
     /// Get a document by Id
-    let getDocument (indexName) (id) (state : State.T) = ()
+    let getDocument (indexName) (id) (searchService : ISearchService) = 
+        maybe { 
+            let q = new SearchQuery.Dto(indexName, (sprintf "%s = '%s'" Constants.IdField id))
+            q.ReturnScore <- false
+            q.ReturnFlatResult <- false
+            q.Columns.Add("*")
+            match searchService.Search(q) with
+            | Choice1Of2(v') -> 
+                if v'.Documents.Count <> 0 then return! Choice1Of2(v'.Documents.First())
+                else return! fail <| DocumentIdNotFound(indexName, id)
+            | Choice2Of2(e) -> return! Choice2Of2(e)
+        }
     
     /// Get top 10 document from the index
-    let getDocuments (indexName) (state : State.T) = ()
+    let getDocuments (indexName) (count) (searchService : ISearchService) = 
+        maybe { 
+            let q = new SearchQuery.Dto(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
+            q.ReturnScore <- false
+            q.ReturnFlatResult <- false
+            q.Columns.Add("*")
+            q.Count <- count
+            q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
+            return! searchService.Search(q)
+        }
     
     /// Add or update an existing document
     let addOrUpdateDocument (document : Document.Dto) (state : State.T) = 
@@ -325,6 +370,15 @@ module DocumentService =
                                                                     writer |> IndexWriter.deleteDocument id }
     
     /// Delete all documents of an index
-    let deleteAllDocument (indexName) (state : State.T) = maybe { let! writer = state.IndexFactory 
-                                                                                |> LazyFactory.getInstance indexName
-                                                                  writer |> IndexWriter.deleteAllDocuments }
+    let deleteAllDocuments (indexName) (state : State.T) = maybe { let! writer = state.IndexFactory 
+                                                                                 |> LazyFactory.getInstance indexName
+                                                                   writer |> IndexWriter.deleteAllDocuments }
+    
+    type Service(searchService : ISearchService, state : State.T) = 
+        interface IDocumentService with
+            member __.GetDocument(indexName, documentId) = searchService |> getDocument indexName documentId
+            member __.GetDocuments(indexName, count) = searchService |> getDocuments indexName count
+            member __.AddOrUpdateDocument(document) = state |> addOrUpdateDocument document
+            member __.AddDocument(document) = state |> addDocument document
+            member __.DeleteDocument(indexName, documentId) = state |> deleteDocument indexName documentId
+            member __.DeleteAllDocuments indexName = state |> deleteAllDocuments indexName
