@@ -16,7 +16,7 @@ module DataHelpers =
         let index = new Index.Dto()
         index.IndexName <- Guid.NewGuid().ToString("N")
         index.Online <- true
-        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
         index.Fields <- [| new Field.Dto("b1", FieldType.Dto.Bool)
                            new Field.Dto("b2", FieldType.Dto.Bool)
                            new Field.Dto("d1", FieldType.Dto.Date)

@@ -35,9 +35,9 @@ module AnalyzerTests =
 type ``Field Dto Default value tests``() = 
     let sut = new Field.Dto()
     member __.``'standardanalyzer' should be the default 'SearchAnalyzer'``() = 
-        test <@ "standardanalyzer" = sut.SearchAnalyzer @>
+        test <@ Constants.StandardAnalyzer = sut.SearchAnalyzer @>
     member __.``'standardanalyzer' should be the default 'IndexAnalyzer'``() = 
-        test <@ "standardanalyzer" = sut.IndexAnalyzer @>
+        test <@ Constants.StandardAnalyzer = sut.IndexAnalyzer @>
     member __.``'Analyze' should default to 'true'``() = test <@ sut.Analyze = true @>
     member __.``'Store' should default to 'true'``() = test <@ sut.Store = true @>
     member __.``'Index' should default to 'true'``() = test <@ sut.Index = true @>

@@ -78,7 +78,12 @@ module State =
     /// Factory used for analyzer creation
     type AnalyzerFactory = LazyFactory.T<Analyzer, Analyzer.Dto, ItemState>
     
-    let getAnalyzerFactory (store) = LazyFactory.create<Analyzer, Analyzer.Dto, ItemState> (Some(Analyzer.build)) store
+    let getAnalyzerFactory (store) = 
+        let factory = LazyFactory.create<Analyzer, Analyzer.Dto, ItemState> (Some(Analyzer.build)) store
+        let standardAnalyzer = new Analyzer.Dto(AnalyzerName = "standard")
+        let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> Analyzer
+        factory |> LazyFactory.addInstance ("standard", ItemState.Active, standardAnalyzer, instance)
+        factory
     
     /// Represents the node state. All the state related data should be part 
     /// of this.
@@ -123,32 +128,42 @@ module IndexService =
         maybe { 
             let! setting = IndexWriter.createIndexSetting (index, state.AnalyzerFactory)
             if index.Online then 
-                do! state.IndexFactory |> LazyFactory.updateState (index.IndexName, IndexState.Opening)
+                state.IndexFactory |> LazyFactory.addItem (index.IndexName, IndexState.Opening, index)
                 do! state.IndexFactory |> LazyFactory.updateInstance (index.IndexName, IndexWriter.create (setting))
-            else do! state.IndexFactory |> LazyFactory.updateState (index.IndexName, IndexState.Offline)
+                do! state.IndexFactory |> LazyFactory.updateState (index.IndexName, IndexState.OnlineMaster)
+            else state.IndexFactory |> LazyFactory.addItem (index.IndexName, IndexState.Offline, index)
         }
     
     let openIndex (indexName) (state : State.T) = 
         maybe { 
-            let! item = state.IndexFactory |> LazyFactory.getItemOrError indexName indexNotFound
-            item.MetaData.Online <- true
-            state.Store.UpdateItem(indexName, item.MetaData)
-            do! state |> loadIndex item.MetaData
+            let! indexState = state |> State.indexExists2 indexName
+            match indexState with
+            | IndexState.OnlineMaster | IndexState.Opening | IndexState.Recovering -> 
+                return! fail <| IndexIsAlreadyOnline(indexName)
+            | _ -> 
+                let! item = state.IndexFactory |> LazyFactory.getMetaData indexName
+                item.Online <- true
+                state.Store.UpdateItem(indexName, item)
+                do! state |> loadIndex item
         }
     
     let closeIndex (indexName) (state : State.T) = 
         maybe { 
-            let! item = state.IndexFactory |> LazyFactory.getItemOrError indexName indexNotFound
-            item.MetaData.Online <- false
-            state.Store.UpdateItem(indexName, item.MetaData)
-            item.Value.Value |> IndexWriter.close
-            do! state.IndexFactory |> LazyFactory.updateState (indexName, IndexState.Offline)
+            let! indexState = state |> State.indexExists2 indexName
+            match indexState with
+            | IndexState.Closing | IndexState.Offline -> return! fail <| IndexIsAlreadyOffline(indexName)
+            | _ -> 
+                let! item = state.IndexFactory |> LazyFactory.getItemOrError indexName indexNotFound
+                item.MetaData.Online <- false
+                state.Store.UpdateItem(indexName, item.MetaData)
+                item.Value.Value |> IndexWriter.close
+                do! state.IndexFactory |> LazyFactory.updateState (indexName, IndexState.Offline)
         }
     
     /// Load all index from the store
     let loadAllIndex (state : State.T) = 
         state.Store.GetItems<Index.Dto>()
-        |> Seq.map (fun i -> new Task(fun _ -> loadIndex i state |> ignore))
+        |> Seq.map (fun i -> Task.Run(fun _ -> loadIndex i state |> ignore))
         |> Seq.toArray
         |> Task.WaitAll
     
@@ -324,7 +339,7 @@ module DocumentService =
             let q = new SearchQuery.Dto(indexName, (sprintf "%s = '%s'" Constants.IdField id))
             q.ReturnScore <- false
             q.ReturnFlatResult <- false
-            q.Columns.Add("*")
+            q.Columns <- [| "*" |]
             match searchService.Search(q) with
             | Choice1Of2(v') -> 
                 if v'.Documents.Count <> 0 then return! Choice1Of2(v'.Documents.First())
@@ -338,7 +353,7 @@ module DocumentService =
             let q = new SearchQuery.Dto(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
             q.ReturnScore <- false
             q.ReturnFlatResult <- false
-            q.Columns.Add("*")
+            q.Columns <- [| "*" |]
             q.Count <- count
             q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
             return! searchService.Search(q)
