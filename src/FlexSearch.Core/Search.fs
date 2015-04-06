@@ -154,7 +154,7 @@ module SearchDsl =
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         match search.Columns with
         // Return no other columns when nothing is passed
-        | _ when search.Columns.Count = 0 -> ()
+        | _ when search.Columns.Length = 0 -> ()
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
