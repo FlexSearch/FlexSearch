@@ -59,6 +59,7 @@ module IndexSettingBuilder =
         { Setting : IndexSetting.T }
     
     let withIndexName (indexName, path) = 
+        Directory.CreateDirectory(path) |> ignore
         let setting = 
             { IndexName = indexName
               IndexAnalyzer = Unchecked.defaultof<_>
@@ -398,24 +399,31 @@ module ShardWriter =
         /// are flushed to the Directory. This gives us the best place to
         /// automate things around Lucene flush logic. 
         override this.doBeforeFlush() = 
-            // Save the current generation in the commit data so that
-            // it can be used for shard recovery 
-            this.SetCommitData(getCommitData (state.Generation))
-            // Increment the current generation so that the log file 
-            // can be switched
-            state.GetNextGen() |> ignore
+            /// State can be null when the index writer is opened for the
+            /// very first time
+            if not (isNull state) then 
+                // Save the current generation in the commit data so that
+                // it can be used for shard recovery 
+                this.SetCommitData(getCommitData (state.Generation))
+                // Increment the current generation so that the log file 
+                // can be switched
+                state.GetNextGen() |> ignore
         
         /// A hook for extending classes to execute operations after pending 
         /// added and deleted documents have been flushed to the Directory but 
         /// before the change is committed (new segments_N file written).
         override this.doAfterFlush() = 
-            let current = state.LastCommitTime
-            let commitTime = DateTime.Now.Ticks
-            // We don't care if something else has changed the time as this is a
-            // fallback mechanism
-            Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
-            // Auto commit after flush
-            this.Commit()
+            /// State can be null when the index writer is opened for the
+            /// very first time
+            if not (isNull state) then 
+                let current = state.LastCommitTime
+                
+                let commitTime = DateTime.Now.Ticks
+                // We don't care if something else has changed the time as this is a
+                // fallback mechanism
+                Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
+                // Auto commit after flush
+                this.Commit()
     
     /// An IndexWriter creates and maintains an index. This is a wrapper around
     /// Lucene IndexWriter to expose the functionality in a controlled and functional 
@@ -448,7 +456,7 @@ module ShardWriter =
     /// Get the highest modified index value from the shard   
     let getMaxModifyIndex (r : IndexReader) = 
         let mutable max = 0L
-        for i = 0 to r.Leaves().size() do
+        for i = 0 to r.Leaves().size() - 1 do
             let ctx = r.Leaves().get(i) :?> LeafReaderContext
             let reader = ctx.Reader()
             let nDocs = reader.getNumericDocValues ("modifyindex")
@@ -461,14 +469,23 @@ module ShardWriter =
                 directory : FlexLucene.Store.Directory) = 
         let iw = new FileWriter(directory, config)
         let commitData = iw.GetCommitData()
-        let generation = (commitData.getOrDefault (Constants.generationLabel, 0L)) :?> int64
+        let generation = (commitData.getOrDefault (Constants.generationLabel, 1L)) :?> int64
+        // It is a newly created index. 
+        if generation = 1L then 
+            // Add a dummy commit so that seacher Manager could be initialized
+            generation
+            |> getCommitData
+            |> iw.SetCommitData
+            |> iw.Commit
+        let trackingWriter = new TrackingIndexWriter(iw)
+        let searcherManager = new SearcherManager(directory, new SearcherFactory())
         let modifyIndex = DirectoryReader.Open(iw, true) |> getMaxModifyIndex
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         
         let state = 
             { IndexWriter = iw
-              TrackingIndexWriter = new TrackingIndexWriter(iw)
-              SearcherManager = new SearcherManager(directory, new SearcherFactory())
+              TrackingIndexWriter = trackingWriter
+              SearcherManager = searcherManager
               Generation = generation
               CommitDuration = int64 commitDuration
               LastCommitTime = 0L
@@ -691,8 +708,8 @@ module IndexWriter =
     
     /// Create index settings from the Index Dto
     let createIndexSetting (index : Index.Dto, analyzerService) = 
-        try
-            withIndexName (index.IndexName, "")
+        try 
+            withIndexName (index.IndexName, Constants.DataFolder +/ index.IndexName)
             |> withShardConfiguration (index.ShardConfiguration)
             |> withIndexConfiguration (index.IndexConfiguration)
             |> withScripts (index.Scripts)
@@ -700,9 +717,8 @@ module IndexWriter =
             |> withSearchProfiles (index.SearchProfiles, new FlexParser())
             |> build
             |> ok
-        with :? ValidationException as e ->
-            fail <| e.Data0
-
+        with :? ValidationException as e -> fail <| e.Data0
+    
     let processIndexRequest (command : IndexCommand) = ()
     
     let create (settings : IndexSetting.T) = 
