@@ -113,7 +113,6 @@ module FieldPostingsFormat =
 
 [<RequireQualifiedAccessAttribute>]
 module DirectoryType = 
-    
     /// A Directory is a flat list of files. Files may be written once, when they are created. 
     /// Once a file is created it may only be opened for read, or deleted. Random access is 
     /// permitted both when reading and writing.
@@ -174,7 +173,7 @@ module DirectoryType =
         with e -> fail (ErrorOpeningIndexWriter(path, exceptionPrinter (e), new ResizeArray<_>()))
 
 [<RequireQualifiedAccess>]
-module FieldTermVector =
+module FieldTermVector = 
     /// These options instruct FlexSearch to maintain full term vectors for each document, 
     /// optionally including the position and offset information for each term occurrence 
     /// in those vectors. These can be used to accelerate highlighting and other ancillary 
@@ -192,7 +191,7 @@ module FieldTermVector =
         /// Store the term vector, Token position and offset information
         | StoreTermVectorsWithPositionsandOffsets = 4
 
-module FieldIndexOptions =
+module FieldIndexOptions = 
     /// Controls how much information is stored in the postings lists.
     type Dto = 
         | Undefined = 0
@@ -264,7 +263,7 @@ module IndexVersion =
         | Dto.Lucene_5_0_0, false -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
-module ScriptType =
+module ScriptType = 
     /// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
     /// the type of operation that the current script can perform. These can vary from scripts
     /// used for computing fields dynamically at index time or scripts which can be used to alter
@@ -553,7 +552,7 @@ module TokenFilter =
         /// + Refined Soundex Filter
         /// + Soundex Filter
         /// For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
-        member val FilterName = Unchecked.defaultof<string> with get, set
+        member val FilterName = defString with get, set
         
         /// Parameters required by the filter.
         member val Parameters = strDict()
@@ -577,7 +576,7 @@ module Tokenizer =
         /// + UAX29 URL Email Tokenizer
         /// + White Space Tokenizer
         /// For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
-        member val TokenizerName = Unchecked.defaultof<string> with get, set
+        member val TokenizerName = "standard" with get, set
         
         /// Parameters required by the tokenizer.
         member val Parameters = strDict()
@@ -591,10 +590,10 @@ module Analyzer =
         inherit DtoBase()
         
         /// Name of the analyzer
-        member val AnalyzerName = Unchecked.defaultof<string> with get, set
+        member val AnalyzerName = defString with get, set
         
         // AUTO
-        member val Tokenizer = Unchecked.defaultof<Tokenizer.Dto> with get, set
+        member val Tokenizer = new Tokenizer.Dto() with get, set
         
         /// Filters to be used by the analyzer.
         member val Filters = new List<TokenFilter.Dto>() with get, set
@@ -626,10 +625,10 @@ module Script =
         inherit DtoBase()
         
         /// Name of the script.
-        member val ScriptName = Unchecked.defaultof<string> with get, set
+        member val ScriptName = defString with get, set
         
         /// Source code of the script. 
-        member val Source = Unchecked.defaultof<string> with get, set
+        member val Source = defString with get, set
         
         /// AUTO
         member val ScriptType = ScriptType.Dto.ComputedField with get, set
@@ -732,11 +731,10 @@ module Field =
         /// Fields can get their content dynamically through scripts. This is the name of 
         /// the script to be used for getting field data at index time.
         member val ScriptName = "" with get, set
-
+        
         new(fieldName, fieldType) = Dto(fieldName, fieldType)
         new(fieldName : string) = Dto(fieldName, FieldType.Dto.Text)
-        new() = Dto(Unchecked.defaultof<string>, FieldType.Dto.Text)
-        
+        new() = Dto(defString, FieldType.Dto.Text)
         override this.Validate() = 
             this.FieldName
             |> propertyNameValidator "FieldName"
@@ -945,7 +943,7 @@ module Field =
 module HighlightOption = 
     /// Used for configuring the settings for text highlighting in the search results
     [<ToString; Sealed>]
-    type Dto(fields : string[]) = 
+    type Dto(fields : string []) = 
         inherit DtoBase()
         
         /// Total number of fragments to return per document
@@ -960,8 +958,13 @@ module HighlightOption =
         /// Pre tag to represent the ending of the highlighted word
         member val PreTag = "<B>" with get, set
         
-        new() = Dto(Unchecked.defaultof<string[]>)
+        new() = Dto(Unchecked.defaultof<string []>)
         override __.Validate() = ok()
+        /// Implements a default object which can be used to avoid null assignment
+        static member Default = 
+            let defaultValue = new Dto(Array.empty)
+            (defaultValue :> IFreezable).Freeze()
+            defaultValue
 
 module SearchQuery = 
     /// Search query is used for searching over a FlexSearch index. This provides
@@ -973,19 +976,19 @@ module SearchQuery =
         
         /// Unique name of the query. This is only required if you are setting up a 
         /// search profile.
-        member val QueryName = Unchecked.defaultof<string> with get, set
+        member val QueryName = defString with get, set
         
         /// Columns to be returned as part of results.
         /// + *  - return all columns
         /// + [] - return no columns
         /// + ["columnName"] -  return specific column
-        member val Columns = new List<string>() with get, set
+        member val Columns = Array.empty<string> with get, set
         
         /// Count of results to be returned
         member val Count = 10 with get, set
         
         /// AUTO
-        member val Highlights = Unchecked.defaultof<HighlightOption.Dto> with get, set
+        member val Highlights = HighlightOption.Dto.Default with get, set
         
         /// Name of the index
         member val IndexName = index with get, set
@@ -1015,13 +1018,13 @@ module SearchQuery =
         member val ReturnScore = true with get, set
         
         /// Profile Name to be used for profile based searching.
-        member val SearchProfile = Unchecked.defaultof<string> with get, set
+        member val SearchProfile = defString with get, set
         
         /// Script which can be used to select a search profile. This can help in
         /// dynamic selection of search profile based on the incoming data.
-        member val SearchProfileSelector = Unchecked.defaultof<string> with get, set
+        member val SearchProfileSelector = defString with get, set
         
-        new() = Dto(Unchecked.defaultof<_>, Unchecked.defaultof<_>)
+        new() = Dto(defString, defString)
         override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
 [<RequireQualifiedAccessAttribute>]
@@ -1223,11 +1226,10 @@ type SearchResults() =
 //[<ToString; Sealed>]
 //type AnalysisRequest() = 
 //    inherit ValidatableBase()
-//    member val Text = Unchecked.defaultof<string> with get, set
+//    member val Text = defString with get, set
 //    override this.Validate() = this.Text |> notEmpty "Text"
 type CreateResponse(id : string) = 
     member val Id = id with get, set
-
 
 type IndexExistsResponse() = 
     member val Exists = Unchecked.defaultof<bool> with get, set
