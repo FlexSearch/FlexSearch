@@ -817,7 +817,7 @@ module LazyFactory =
         match factory.ObjectStore.TryGetValue(key) with
         | true, value -> 
             let newItem = { value with Value = Some(instance) }
-            factory |> updateItemInObjectStore key value
+            factory |> updateItemInObjectStore key newItem
             ok()
         | _ -> fail (KeyNotFound(key))
 
