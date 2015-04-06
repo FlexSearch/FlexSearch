@@ -249,7 +249,7 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let inline updateTempate (document : Document.Dto) (template : T) = 
+    let updateTempate (document : Document.Dto) (template : T) = 
         // Update meta fields
         // Id Field
         template.TemplateFields.[0].SetStringValue(document.Id)
@@ -259,7 +259,7 @@ module DocumentTemplate =
         // Create a dynamic dictionary which will be used during scripting
         let dynamicFields = new DynamicDictionary(document.Fields)
         // Performance of F# iter is very slow here.
-        let mutable i = 0
+        let mutable i = 2
         for field in template.Setting.Fields do
             i <- i + 1
             // Ignore these 3 fields here.
@@ -309,7 +309,9 @@ type IndexState =
     | Faulted = 7
 
 module TransacationLog = 
-    open ProtoBuf
+    //open ProtoBuf
+    open MsgPack
+    open MsgPack.Serialization
     open System.Text
     
     type Operation = 
@@ -345,7 +347,8 @@ module TransacationLog =
               Id = id
               Query = String.Empty }
     
-    let serializer (stream, entry : T) = Serializer.Serialize(stream, entry)
+    let msgPackSerializer = SerializationContext.Default.GetSerializer<T>()
+    let serializer (stream, entry : T) = msgPackSerializer.Pack(stream, entry)
     
     type TxWriter(path : string, gen : int64) = 
         let newline = Encoding.ASCII.GetBytes(Environment.NewLine)
@@ -368,6 +371,7 @@ module TransacationLog =
                         fileStream.Write(newline, 0, newline.Length)
                         return! loop()
                     }
+                populateFS()
                 loop())
         
         /// Append a new entry to TxLog        
@@ -481,7 +485,8 @@ module ShardWriter =
         let searcherManager = new SearcherManager(directory, new SearcherFactory())
         let modifyIndex = DirectoryReader.Open(iw, true) |> getMaxModifyIndex
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
-        
+        Directory.CreateDirectory(logPath) |> ignore
+
         let state = 
             { IndexWriter = iw
               TrackingIndexWriter = trackingWriter
