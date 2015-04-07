@@ -486,7 +486,6 @@ module ShardWriter =
         let modifyIndex = DirectoryReader.Open(iw, true) |> getMaxModifyIndex
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         Directory.CreateDirectory(logPath) |> ignore
-
         let state = 
             { IndexWriter = iw
               TrackingIndexWriter = trackingWriter
@@ -548,6 +547,9 @@ module ShardWriter =
     /// Remove a listener added with AddRefreshListener.
     let removeRefreshListener (item : ReferenceManager.RefreshListener) (sw : T) = 
         sw.SearcherManager.RemoveListener(item)
+    
+    /// Returns the total number of docs present in the index
+    let getDocumentCount (sw : T) = sw.IndexWriter.NumDocs()
 
 /// Version cache store used across the system. This helps in resolving 
 /// conflicts arising out of concurrent threads trying to update a Lucene document.
@@ -760,7 +762,7 @@ module IndexWriter =
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
     /// Add or update a document
-    let inline private addOrUpdateDocument (document : Document.Dto, create : bool) (s : T) = 
+    let addOrUpdateDocument (document : Document.Dto, create : bool) (s : T) = 
         let shardNo = document.Id |> mapToShard s.ShardWriters.Length
         s.Caches.[shardNo] |> VersionCache.versionCheck document
         let doc = s.Template.Value |> DocumentTemplate.updateTempate document
@@ -808,3 +810,7 @@ module IndexWriter =
     let getRealTimeSearcher (shardNo : int) (s : T) = 
         assert (s.ShardWriters.Length <= shardNo)
         ShardWriter.getRealTimeSearcher <| s.ShardWriters.[shardNo]
+    
+    /// Returns the total number of docs present in the index
+    let getDocumentCount (s : T) = 
+        s.ShardWriters |> Array.fold (fun count shard -> ShardWriter.getDocumentCount (shard) + count) 0

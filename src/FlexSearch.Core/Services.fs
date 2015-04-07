@@ -50,6 +50,7 @@ type IDocumentService =
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
     abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, Error>
     abstract DeleteAllDocuments : indexName:string -> Choice<unit, Error>
+    abstract TotalDocumentCount : indexName:string -> Choice<int, Error>
 
 /// Search related operations
 type ISearchService = 
@@ -391,6 +392,10 @@ module DocumentService =
     
     type Service(searchService : ISearchService, state : State.T) = 
         interface IDocumentService with
+            member __.TotalDocumentCount(indexName : string) = maybe { let! writer = state.IndexFactory 
+                                                                                     |> LazyFactory.getInstance 
+                                                                                            indexName
+                                                                       return writer |> IndexWriter.getDocumentCount }
             member __.GetDocument(indexName, documentId) = searchService |> getDocument indexName documentId
             member __.GetDocuments(indexName, count) = searchService |> getDocuments indexName count
             member __.AddOrUpdateDocument(document) = state |> addOrUpdateDocument document
