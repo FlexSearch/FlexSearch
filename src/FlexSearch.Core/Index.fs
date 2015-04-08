@@ -26,6 +26,7 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
+open FlexLucene.Analysis.Standard
 
 type FieldsMeta = 
     { IdField : Field.T
@@ -34,12 +35,51 @@ type FieldsMeta =
       Fields : Field.T []
       Lookup : IReadOnlyDictionary<string, Field.T> }
 
+type AnalyzerWrapper(?defaultAnalyzer0 : Analyzer) = 
+    inherit DelegatingAnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY)
+    let mutable map = conDict<Analyzer>()
+    let defaultAnalyzer = defaultArg defaultAnalyzer0 (new StandardAnalyzer() :> Analyzer)
+    
+    /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
+    /// indexing rather than the individual field analyzer           
+    member __.BuildAnalyzer(fields : Field.T [], isIndexAnalyzer : bool) = 
+        let analyzerMap = conDict<Analyzer>()
+        analyzerMap.[Constants.IdField] <- CaseInsensitiveKeywordAnalyzer
+        analyzerMap.[Constants.LastModifiedField] <- CaseInsensitiveKeywordAnalyzer
+        fields 
+        |> Array.iter 
+               (fun x -> 
+               if isIndexAnalyzer then 
+                   match x.FieldType with
+                   | FieldType.Custom(a, b, c) -> analyzerMap |> add (x.SchemaName, b)
+                   | FieldType.Highlight(a, b) -> analyzerMap |> add (x.SchemaName, b)
+                   | FieldType.Text(a, b) -> analyzerMap |> add (x.SchemaName, b)
+                   | FieldType.ExactText(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.Bool(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
+                       ()
+               else 
+                   match x.FieldType with
+                   | FieldType.Custom(a, b, c) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.Highlight(a, _) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.Text(a, _) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.ExactText(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.Bool(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
+                       ())
+        map <- analyzerMap
+    
+    override this.getWrappedAnalyzer (fieldName) = 
+        match map.TryGetValue(fieldName) with
+        | true, analyzer -> analyzer
+        | _ -> defaultAnalyzer
+
 module IndexSetting = 
     /// General index settings
     type T = 
         { IndexName : string
-          IndexAnalyzer : PerFieldAnalyzerWrapper
-          SearchAnalyzer : PerFieldAnalyzerWrapper
+          IndexAnalyzer : AnalyzerWrapper
+          SearchAnalyzer : AnalyzerWrapper
           Fields : Field.T []
           FieldsLookup : IReadOnlyDictionary<string, Field.T>
           SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery.Dto>
@@ -112,32 +152,9 @@ module IndexSettingBuilder =
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer           
     let buildAnalyzer (fields : Field.T [], isIndexAnalyzer : bool) = 
-        let analyzerMap = 
-            hashMap()
-            |> putC (Constants.IdField, CaseInsensitiveKeywordAnalyzer)
-            |> putC (Constants.LastModifiedField, CaseInsensitiveKeywordAnalyzer)
-        fields 
-        |> Array.iter 
-               (fun x -> 
-               if isIndexAnalyzer then 
-                   match x.FieldType with
-                   | FieldType.Custom(a, b, c) -> analyzerMap |> put (x.SchemaName, b)
-                   | FieldType.Highlight(a, b) -> analyzerMap |> put (x.SchemaName, b)
-                   | FieldType.Text(a, b) -> analyzerMap |> put (x.SchemaName, b)
-                   | FieldType.ExactText(a) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.Bool(a) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
-                       ()
-               else 
-                   match x.FieldType with
-                   | FieldType.Custom(a, b, c) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.Highlight(a, _) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.Text(a, _) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.ExactText(a) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.Bool(a) -> analyzerMap |> put (x.SchemaName, a)
-                   | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
-                       ())
-        new PerFieldAnalyzerWrapper(new FlexLucene.Analysis.Standard.StandardAnalyzer(), analyzerMap)
+        let analyzer = new AnalyzerWrapper()
+        analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
+        analyzer
     
     let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.Dto, _>) (build) = 
         if isNull (build.Setting.ScriptsManager) then 
@@ -426,9 +443,9 @@ module ShardWriter =
                 // We don't care if something else has changed the time as this is a
                 // fallback mechanism
                 Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
-                // Auto commit after flush
-                //this.Commit()
     
+    // Auto commit after flush
+    //this.Commit()
     /// An IndexWriter creates and maintains an index. This is a wrapper around
     /// Lucene IndexWriter to expose the functionality in a controlled and functional 
     /// manner.
