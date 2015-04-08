@@ -46,14 +46,17 @@ module IndexServiceTests =
             test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.Offline) @>
 
 module DocumentServiceTests = 
+    open System.Threading
+
     type DocumentManagementTests() = 
         member __.``Should be able to add and retrieve simple document`` (index : Index.Dto, documentId : string, 
                                                                           indexService : IIndexService, 
-                                                                          documentService : IDocumentService) = 
+                                                                          documentService : IDocumentService,
+                                                                          searchService : ISearchService) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document.Dto(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
             indexService.Refresh(index.IndexName) |> ignore
-            //indexService.Commit(index.IndexName) |> ignore
-            test <@ succeeded <| documentService.GetDocument(index.IndexName, documentId) @>
+            test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>

@@ -427,7 +427,7 @@ module ShardWriter =
                 // fallback mechanism
                 Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
                 // Auto commit after flush
-                this.Commit()
+                //this.Commit()
     
     /// An IndexWriter creates and maintains an index. This is a wrapper around
     /// Lucene IndexWriter to expose the functionality in a controlled and functional 
@@ -482,7 +482,7 @@ module ShardWriter =
             |> iw.SetCommitData
             |> iw.Commit
         let trackingWriter = new TrackingIndexWriter(iw)
-        let searcherManager = new SearcherManager(directory, new SearcherFactory())
+        let searcherManager = new SearcherManager(iw, true, new SearcherFactory())
         let modifyIndex = DirectoryReader.Open(iw, true) |> getMaxModifyIndex
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         Directory.CreateDirectory(logPath) |> ignore
