@@ -294,7 +294,7 @@ type IServer =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(indexExists : string -> Choice<unit, Error>, indexOnline : string -> Choice<unit, Error>, httpModule : Dictionary<string, HttpHandlerBase<_, Error>>, logger : ILogService, ?port0 : int) = 
+type OwinServer(httpModule : Dictionary<string, HttpHandlerBase<_, Error>>, logger : ILogService, ?port0 : int) = 
     let port = defaultArg port0 9800
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 

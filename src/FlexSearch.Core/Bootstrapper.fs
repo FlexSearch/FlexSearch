@@ -172,18 +172,9 @@ module Main =
         //            if testServer <> true then MaximizeThreads() |> ignore
         member __.Start() = 
             try 
-                let indexExists (indexName) = 
-                    boolToResult 
-                    <| (IndexNotFound(indexName)) 
-                    <| (container.Resolve<IIndexService>().IndexExists indexName)
-                let indexOnline (indexName) = 
-                    boolToResult 
-                    <| (IndexShouldBeOnline(indexName)) 
-                    <| (container.Resolve<IIndexService>().IndexOnline indexName)
                 let httpModules = container.Resolve<IFlexFactory<HttpHandlerBase<_, _>>>().GetAllModules()
                 let loggerService = container.Resolve<ILogService>()
-                httpServer <- new OwinServer(indexExists, indexOnline, httpModules, loggerService, 
-                                             serverSettings.HttpPort)
+                httpServer <- new OwinServer(httpModules, loggerService, serverSettings.HttpPort)
                 httpServer.Start()
             with e -> printfn "%A" e
         
