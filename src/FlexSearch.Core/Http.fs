@@ -26,7 +26,6 @@ open Owin
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
-open System.ComponentModel.Composition
 open System.IO
 open System.Net
 open System.Threading
@@ -38,9 +37,8 @@ open System.Threading.Tasks
 // ----------------------------------------------------------------------------
 /// Formatter interface for supporting multiple formats in the HTTP engine
 type IFormatter = 
-    abstract SupportedHeaders : unit -> string []
+    abstract SupportedHeaders : string []
     abstract Serialize : body:obj * stream:Stream -> unit
-    abstract Serialize : body:obj * context:IOwinContext -> unit
     abstract SerializeToString : body:obj -> string
     abstract DeSerialize<'T> : stream:Stream -> 'T
 
@@ -58,11 +56,7 @@ type JilJsonFormatter() =
             use writer = new StreamWriter(stream)
             Jil.JSON.Serialize(body, writer, options)
         
-        member __.Serialize(body : obj, context : IOwinContext) = 
-            use writer = new StreamWriter(context.Response.Body)
-            Jil.JSON.Serialize(body, writer, options)
-        
-        member __.SupportedHeaders() : string [] = 
+        member __.SupportedHeaders = 
             [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
 
 [<Sealed>]
@@ -81,18 +75,7 @@ type NewtonsoftJsonFormatter() =
             let body = JsonConvert.SerializeObject(body, options)
             writer.Write(body)
         
-        member __.Serialize(body : obj, context : IOwinContext) = 
-            use writer = new StreamWriter(context.Response.Body)
-            let body = JsonConvert.SerializeObject(body, options)
-            match context.Request.Query.Get("callback") with
-            | null -> writer.Write(body)
-            | value -> 
-                context.Response.ContentType <- "application/javascript"
-                writer.Write(value + "(")
-                writer.Write(body)
-                writer.Write(")")
-        
-        member __.SupportedHeaders() : string [] = 
+        member __.SupportedHeaders = 
             [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8"; 
                "application/javascript" |]
 
@@ -103,8 +86,7 @@ type ProtoBufferFormatter() =
         member __.SerializeToString(_ : obj) = failwith "Not implemented yet"
         member __.DeSerialize<'T>(stream : Stream) = ProtoBuf.Serializer.Deserialize<'T>(stream)
         member __.Serialize(body : obj, stream : Stream) : unit = serialize (body, stream)
-        member __.Serialize(body : obj, context : IOwinContext) : unit = serialize (body, context.Response.Body)
-        member __.SupportedHeaders() : string [] = [| "application/x-protobuf"; "application/octet-stream" |]
+        member __.SupportedHeaders = [| "application/x-protobuf"; "application/octet-stream" |]
 
 [<Sealed>]
 type YamlFormatter() = 
@@ -128,50 +110,13 @@ type YamlFormatter() =
             deserializer.Deserialize<'T>(textReader)
         
         member __.Serialize(body : obj, stream : Stream) : unit = serialize (body, stream)
-        member __.Serialize(body : obj, context : IOwinContext) : unit = serialize (body, context.Response.Body)
-        member __.SupportedHeaders() : string [] = [| "application/yaml" |]
+        member __.SupportedHeaders = [| "application/yaml" |]
 
 [<AutoOpenAttribute>]
 module Http = 
     // ----------------------------------------------------------------------------
     // Http related types and helpers
-    // ----------------------------------------------------------------------------     
-    /// Http Handler properties to define the behaviour of
-    /// Http Rest web service
-    type HttpHandlerProperties = 
-        { /// Throw error if the request is missing 
-          /// the body
-          FailOnMissingBody : bool
-          /// Validate if the given index is present
-          CheckIndexExists : bool
-          /// Check if the given index is online or not?
-          CheckIndexIsOnline : bool
-          /// Validate the request or not?
-          ValidateDto : bool
-          /// Set the request DTO values from the query string
-          SetValuesFromQueryString : bool }
-        
-        static member CompleteControl = 
-            { FailOnMissingBody = false
-              CheckIndexExists = false
-              CheckIndexIsOnline = false
-              ValidateDto = false
-              SetValuesFromQueryString = false }
-        
-        static member OnlineIndex = 
-            { FailOnMissingBody = true
-              CheckIndexExists = true
-              CheckIndexIsOnline = true
-              ValidateDto = true
-              SetValuesFromQueryString = true }
-        
-        static member IndexExists = 
-            { FailOnMissingBody = true
-              CheckIndexExists = true
-              CheckIndexIsOnline = false
-              ValidateDto = true
-              SetValuesFromQueryString = true }
-    
+    // ----------------------------------------------------------------------------         
     type RequestContext = 
         { ResName : string
           ResId : string option
@@ -214,8 +159,8 @@ module Http =
     let protoFormatter = new ProtoBufferFormatter() :> IFormatter
     let jsonFormatter = new NewtonsoftJsonFormatter() :> IFormatter
     
-    protoFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, protoFormatter) |> ignore)
-    jsonFormatter.SupportedHeaders() |> Array.iter (fun x -> Formatters.TryAdd(x, jsonFormatter) |> ignore)
+    protoFormatter.SupportedHeaders |> Array.iter (fun x -> Formatters.TryAdd(x, protoFormatter) |> ignore)
+    jsonFormatter.SupportedHeaders |> Array.iter (fun x -> Formatters.TryAdd(x, jsonFormatter) |> ignore)
     
     /// Get request format from the request object
     /// Defaults to JSON
@@ -226,11 +171,13 @@ module Http =
     /// Get response format from the OWIN context
     /// Defaults to JSON
     let private getResponseFormat (owin : IOwinContext) = 
-        if owin.Request.Accept = null then "application/json"
-        else if owin.Request.Accept = "*/*" then "application/json"
-        else if owin.Request.Accept.Contains(",") then 
-            owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
-        else owin.Request.Accept
+        match owin.Request.Accept with
+        | null | "*/*" -> 
+            match owin.Request.Query.Get("callback") with
+            | null -> "application/json"
+            | _ -> "application/javascript"
+        | x when x.Contains(",") -> owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
+        | _ -> owin.Request.Accept
     
     /// Write HTTP response
     let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
@@ -239,7 +186,17 @@ module Http =
         owin.Response.ContentType <- format
         if response <> Unchecked.defaultof<_> then 
             match Formatters.TryGetValue(format) with
-            | true, formatter -> formatter.Serialize(response, owin)
+            | true, formatter -> 
+                match format with
+                // Handle the special jsonp case
+                | "application/javascript" -> 
+                    use streamWriter = new StreamWriter(owin.Response.Body)
+                    streamWriter.Write(owin.Request.Query.Get("callback"))
+                    streamWriter.Write("(")
+                    jsonFormatter.Serialize(response, owin.Response.Body)
+                    streamWriter.Write(");")
+                | _ -> formatter.Serialize(response, owin.Response.Body)
+                owin.Response.Body.Flush()
             | _ -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
     
     /// Write HTTP response
@@ -281,7 +238,7 @@ module Http =
     type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?failOnMissingBody : bool, ?validateBody : bool) = 
         member __.HasBody = typeof<'T> = typeof<NoBody>
         member this.FailOnMissingBody = defaultArg failOnMissingBody this.HasBody
-        member this.ValidateBody = defaultArg validateBody false
+        member __.ValidateBody = defaultArg validateBody false
         member __.DeSerialize(request : IOwinRequest) = getRequestBody<'T> (request)
         
         member __.SerializeSuccess (response : 'U) (successStatus : HttpStatusCode) (owinContext : IOwinContext) = 
