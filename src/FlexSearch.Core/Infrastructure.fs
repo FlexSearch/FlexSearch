@@ -160,6 +160,10 @@ type Error =
     | HttpUriIdNotSupplied
     // Configuration related
     | UnableToParseConfig of error : string
+    // File related error
+    | FileNotFound of filePath : string
+    | FileReadError of filePath : string * error : string
+    | FileWriteError of filePath : string * error : string
     // Generic error to be used by plugins
     | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
 
@@ -917,3 +921,52 @@ module Log =
     let fatal message = logger.Fatal(message)
     let fatalEx (ex : Exception) = logger.Fatal(exceptionPrinter ex)
     let fatalWithMsg msg (ex : Exception) = logger.Fatal(sprintf "%s \n%s" msg (exceptionPrinter ex))
+
+type IThreadSafeWriter = 
+    abstract WriteFile<'T> : filePath:string * content:'T -> Choice<unit, Error>
+    abstract ReadFile<'T> : filePath:string -> Choice<'T, Error>
+    abstract DeleteFile : filePath:string -> Choice<unit, Error>
+
+/// Thread safe file writer.
+/// Note : This is not meant to be used for huge files and should 
+/// be used for writing configuration files.
+[<Sealed>]
+type ThreadSafeFileWiter(formatter : FlexSearch.Core.IFormatter) = 
+    
+    let getPathWithExtension (path) = 
+        if Path.GetExtension(path) <> Constants.SettingsFileExtension then path + Constants.SettingsFileExtension
+        else path
+    
+    interface IThreadSafeWriter with
+        
+        member __.DeleteFile(filePath) = 
+            let path = getPathWithExtension (filePath)
+            if File.Exists(path) then 
+                use mutex = new Mutex(false, path.Replace("\\", ""))
+                File.Delete(path)
+            ok()
+        
+        member __.ReadFile(filePath) = 
+            let path = getPathWithExtension (filePath)
+            if File.Exists(path) then 
+                try 
+                    use stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    let response = formatter.DeSerialize<'T>(stream)
+                    ok <| response
+                with e -> fail <| FileReadError(filePath, exceptionPrinter e)
+            else fail <| FileNotFound(filePath)
+        
+        member __.WriteFile<'T>(filePath, content : 'T) = 
+            let path = getPathWithExtension (filePath)
+            use mutex = new Mutex(true, path.Replace("\\", ""))
+            Directory.CreateDirectory(Path.GetDirectoryName(path)) |> ignore
+            try 
+                mutex.WaitOne(-1) |> ignore
+                use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
+                let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
+                file.Write(byteContent, 0, byteContent.Length)
+                mutex.ReleaseMutex()
+                ok()
+            with e -> 
+                mutex.ReleaseMutex()
+                fail <| FileWriteError(filePath, exceptionPrinter e)
