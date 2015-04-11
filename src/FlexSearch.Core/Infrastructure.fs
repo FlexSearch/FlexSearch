@@ -453,56 +453,46 @@ module Operators =
     [<Sealed>]
     type ErrorHandlingBuilder() = 
         
-        let bind v f = 
+        member inline __.Bind(v, f) = 
             match v with
             | Choice1Of2(x) -> f x
             | Choice2Of2(s) -> Choice2Of2(s)
         
-        let combine a b = 
+        member inline __.ReturnFrom v = v
+        member inline __.Return v = Choice1Of2(v)
+        member inline __.Zero() = Choice1Of2()
+        
+        member inline __.Combine(a, b) = 
             match a, b with
             | Choice1Of2 a', Choice1Of2 b' -> Choice1Of2 b'
             | Choice2Of2 a', Choice1Of2 b' -> Choice2Of2 a'
             | Choice1Of2 a', Choice2Of2 b' -> Choice2Of2 b'
             | Choice2Of2 a', Choice2Of2 b' -> Choice2Of2 a'
         
-        let zero = Choice1Of2()
-        let returnFrom v = v
-        let delay f = f()
+        member inline __.Delay(f) = f()
         
-        let tryFinally body compensation = 
+        member inline this.TryFinally(body, compensation) = 
             try 
-                returnFrom (body())
+                this.ReturnFrom(body())
             finally
                 compensation()
         
-        let using (disposable : #System.IDisposable) body = 
-            let body' = fun () -> body disposable
-            tryFinally body' (fun () -> disposable.Dispose())
-        
-        // The whileLoop operator
-        let rec whileLoop pred body = 
-            if pred() then bind (body()) (fun _ -> whileLoop pred body)
-            else zero
-        
-        let tryWith expr handler = 
+        member inline __.TryWith(expr, handler) = 
             try 
                 expr()
             with ex -> handler ex
         
-        // The forLoop operator
-        let forLoop (collection : seq<_>) func = 
+        member inline this.For(collection : seq<_>, func) = 
+            // The whileLoop operator
+            let rec whileLoop pred body = 
+                if pred() then this.Bind(body(), (fun _ -> whileLoop pred body))
+                else this.Zero()
             using (collection.GetEnumerator()) 
                 (fun it -> whileLoop (fun () -> it.MoveNext()) (fun () -> it.Current |> func))
-        member __.Bind(v, f) = bind v f
-        member __.ReturnFrom v = returnFrom v
-        member __.Return v = Choice1Of2(v)
-        member __.Zero() = zero
-        member __.Combine(a, b) = combine a b
-        member __.Delay(f) = delay f
-        member __.TryFinally(body, compensation) = tryFinally body compensation
-        member __.TryWith(expr, handler) = tryWith expr handler
-        member __.For(collection : seq<_>, func) = forLoop collection func
-        member __.Using(disposable : #System.IDisposable, body) = using disposable body
+        
+        member inline this.Using(disposable : #System.IDisposable, body) = 
+            let body' = fun () -> body disposable
+            this.TryFinally(body', (fun () -> disposable.Dispose()))
     
     /// Wraps computations in an error handling computation expression.
     let maybe = ErrorHandlingBuilder()
@@ -842,7 +832,6 @@ module Tasks =
 //    
 //    [<Literal>]
 //    let Components : EventKeywords = EnumOfValue<int64, EventKeywords> 3L
-
 /// Generic logger interface
 [<EventSourceImplementation(Name = "FlexSearch")>]
 [<Interface>]
