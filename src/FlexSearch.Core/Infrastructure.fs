@@ -101,7 +101,7 @@ module Constants =
     let SettingsFileExtension = ".yml"
     
     let CaseInsensitiveKeywordAnalyzer = 
-        CustomAnalyzer.Builder().withTokenizer("keyword").addTokenFilter("lowercase").build()
+        CustomAnalyzer.Builder().withTokenizer("keyword").addTokenFilter("lowercase").build() :> FlexLucene.Analysis.Analyzer
 
 type Error = 
     // Generic Validation Errors
@@ -119,6 +119,8 @@ type Error =
     | ScriptNotFound of scriptName : string * fieldName : string
     // Builder related errors
     | AnalyzerBuilder of analyzerName : string * message : string * exp : string
+    | AnalyzerNotFound of analyzerName : string
+    | ResourceNotFound of resourceName : string * resourceType : string
     | UnSupportedSimilarity of similarityName : string
     | UnSupportedIndexVersion of indexVersion : string
     | UnsupportedDirectoryType of directoryType : string
@@ -152,6 +154,8 @@ type Error =
     // Modules related
     | ModuleNotFound of moduleName : string * moduleType : string
     | ModuleInitializationError of moduleName : string * moduleType : string * error : string
+    // Concurrent Dictionary
+    | UnableToUpdateMemory
     // Http server related
     | HttpUnableToParse of error : string
     | HttpUnsupportedContentType
@@ -164,6 +168,7 @@ type Error =
     | FileNotFound of filePath : string
     | FileReadError of filePath : string * error : string
     | FileWriteError of filePath : string * error : string
+    | StoreUpdateError
     // Generic error to be used by plugins
     | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
 
@@ -609,6 +614,16 @@ module DictionaryHelpers =
     let inline tryAdd<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value)
     let inline add<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = dict.TryAdd(key, value) |> ignore
     
+    let inline tryRemove<'T> (key) (dict : ConcurrentDictionary<string, 'T>) = 
+        match dict.TryRemove(key) with
+        | true, _ -> true
+        | _ -> false
+    
+    let inline tryUpdate<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = 
+        match dict.TryGetValue(key) with
+        | true, value' -> dict.TryUpdate(key, value, value')
+        | _ -> dict.TryAdd(key, value)
+    
     let inline addOrUpdate<'T> (key, value : 'T) (dict : ConcurrentDictionary<string, 'T>) = 
         match dict.TryGetValue(key) with
         | true, v -> dict.TryUpdate(key, value, v) |> ignore
@@ -922,12 +937,8 @@ module Log =
     let fatalEx (ex : Exception) = logger.Fatal(exceptionPrinter ex)
     let fatalWithMsg msg (ex : Exception) = logger.Fatal(sprintf "%s \n%s" msg (exceptionPrinter ex))
 
-type IThreadSafeWriter = 
-    abstract WriteFile<'T> : filePath:string * content:'T -> Choice<unit, Error>
-    abstract ReadFile<'T> : filePath:string -> Choice<'T, Error>
-    abstract DeleteFile : filePath:string -> Choice<unit, Error>
-
-/// Thread safe file writer.
+/// Represents a thread-safe file writer that can be accessed by 
+/// multiple threads concurrently.
 /// Note : This is not meant to be used for huge files and should 
 /// be used for writing configuration files.
 [<Sealed>]
@@ -937,36 +948,70 @@ type ThreadSafeFileWiter(formatter : FlexSearch.Core.IFormatter) =
         if Path.GetExtension(path) <> Constants.SettingsFileExtension then path + Constants.SettingsFileExtension
         else path
     
-    interface IThreadSafeWriter with
-        
-        member __.DeleteFile(filePath) = 
-            let path = getPathWithExtension (filePath)
-            if File.Exists(path) then 
-                use mutex = new Mutex(false, path.Replace("\\", ""))
-                File.Delete(path)
-            ok()
-        
-        member __.ReadFile(filePath) = 
-            let path = getPathWithExtension (filePath)
-            if File.Exists(path) then 
-                try 
-                    use stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                    let response = formatter.DeSerialize<'T>(stream)
-                    ok <| response
-                with e -> fail <| FileReadError(filePath, exceptionPrinter e)
-            else fail <| FileNotFound(filePath)
-        
-        member __.WriteFile<'T>(filePath, content : 'T) = 
-            let path = getPathWithExtension (filePath)
-            use mutex = new Mutex(true, path.Replace("\\", ""))
-            Directory.CreateDirectory(Path.GetDirectoryName(path)) |> ignore
+    member __.DeleteFile(filePath) = 
+        let path = getPathWithExtension (filePath)
+        if File.Exists(path) then 
+            use mutex = new Mutex(false, path.Replace("\\", ""))
+            File.Delete(path)
+        ok()
+    
+    member __.ReadFile<'T>(filePath) = 
+        let path = getPathWithExtension (filePath)
+        if File.Exists(path) then 
             try 
-                mutex.WaitOne(-1) |> ignore
-                use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
-                let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
-                file.Write(byteContent, 0, byteContent.Length)
-                mutex.ReleaseMutex()
-                ok()
-            with e -> 
-                mutex.ReleaseMutex()
-                fail <| FileWriteError(filePath, exceptionPrinter e)
+                use stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                let response = formatter.DeSerialize<'T>(stream)
+                ok <| response
+            with e -> fail <| FileReadError(filePath, exceptionPrinter e)
+        else fail <| FileNotFound(filePath)
+    
+    member __.WriteFile<'T>(filePath, content : 'T) = 
+        let path = getPathWithExtension (filePath)
+        use mutex = new Mutex(true, path.Replace("\\", ""))
+        Directory.CreateDirectory(Path.GetDirectoryName(path)) |> ignore
+        try 
+            mutex.WaitOne(-1) |> ignore
+            use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
+            let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
+            file.Write(byteContent, 0, byteContent.Length)
+            mutex.ReleaseMutex()
+            ok()
+        with e -> 
+            mutex.ReleaseMutex()
+            fail <| FileWriteError(filePath, exceptionPrinter e)
+
+[<Sealed>]
+type DtoStore<'T>(fileWriter : ThreadSafeFileWiter) = 
+    let store = conDict<'T>()
+    
+    let getFolderName (typeName : string) = 
+        let parts = typeName.Split([| '.'; '+' |], StringSplitOptions.RemoveEmptyEntries)
+        if parts.Last() = "Dto" then parts.[parts.Length - 2]
+        else parts.Last()
+    
+    let folderPath = Constants.ConfFolder +/ (getFolderName (typeof<'T>.FullName))
+    
+    member __.UpdateItem<'T>(key : string, item : 'T) = 
+        let path = folderPath +/ key
+        match store |> tryUpdate (key, item) with
+        | true -> fileWriter.WriteFile(path, item)
+        | false -> fail <| StoreUpdateError
+    
+    member __.DeleteItem<'T>(key : string) = 
+        let path = folderPath +/ key
+        match store.TryRemove(key) with
+        | true, _ -> fileWriter.DeleteFile(path)
+        | _ -> fail <| StoreUpdateError
+    
+    member __.GetItem(key : string) = 
+        match store.TryGetValue(key) with
+        | true, value -> ok <| value
+        | _ -> fail <| KeyNotFound(key)
+    
+    member __.GetItems() = store.Values.ToArray()
+    member __.LoadItem<'T>(key : string) = 
+        match fileWriter.ReadFile<'T>(folderPath +/ key) with
+        | Choice1Of2(item) -> 
+            tryAdd (key, item) |> ignore
+            ok()
+        | Choice2Of2(error) -> fail <| error
