@@ -629,7 +629,7 @@ module VersionCache =
     let deletedValue = 0L
     
     /// An optimized key based lookup to get the version value using Lucene's DocValues
-    let inline primaryKeyLookup (id : string, r : IndexReader) (cache : T) = 
+    let primaryKeyLookup (id : string, r : IndexReader) (cache : T) = 
         let term = new Term(cache.IdFieldName, id)
         
         let rec loop counter = 
@@ -650,7 +650,7 @@ module VersionCache =
         else 0L
     
     /// Add or update a key in the cache store
-    let inline addOrUpdate (id : string, version : int64, comparison : int64) (cache : T) = 
+    let addOrUpdate (id : string, version : int64, comparison : int64) (cache : T) = 
         match cache.Current.TryGetValue(id) with
         | true, oldValue -> 
             if comparison = 0L then 
@@ -659,9 +659,9 @@ module VersionCache =
             else cache.Current.TryUpdate(id, version, comparison)
         | _ -> cache.Current.TryAdd(id, version)
     
-    let inline delete (id : string, version : Int64) (cache : T) = addOrUpdate (id, deletedValue, version) cache
+    let delete (id : string, version : Int64) (cache : T) = addOrUpdate (id, deletedValue, version) cache
     
-    let inline getValue (id : string) (cache : T) = 
+    let getValue (id : string) (cache : T) = 
         match cache.Current.TryGetValue(id) with
         | true, value -> value
         | _ -> 
@@ -675,36 +675,35 @@ module VersionCache =
                 cache.Current.TryAdd(id, value) |> ignore
                 value
     
-    /// Check and update the current version number of the document for concurrency control
-    let inline versionCheck (doc : Document.Dto) (cache : T) = 
-        let newVersion = GetCurrentTimeAsLong()
-        doc.TimeStamp <- match doc.TimeStamp with
-                         | 0L -> 
-                             // We don't care what the version is let's proceed with normal operation
-                             // and bypass id check.
-                             0L
-                         | -1L -> // Ensure that the document does not exists. Perform Id check
-                             let existingVersion = cache |> getValue (doc.Id)
-                             if existingVersion <> 0L then ex (DocumentIdAlreadyExists(doc.IndexName, doc.Id))
-                             else 0L
-                         | 1L -> 
-                             // Ensure that the document exists
-                             let existingVersion = cache |> getValue (doc.Id)
-                             if existingVersion <> 0L then existingVersion
-                             else ex (DocumentIdNotFound(doc.IndexName, doc.Id))
-                         | x when x > 1L -> 
-                             // Perform a version check and ensure that the provided version matches the version of 
-                             // the document
-                             let existingVersion = cache |> getValue (doc.Id)
-                             if existingVersion <> 0L then 
-                                 if existingVersion <> doc.TimeStamp || existingVersion > newVersion then 
-                                     ex (IndexingVersionConflict(doc.IndexName, doc.Id, existingVersion.ToString()))
-                                 else existingVersion
-                             else ex (DocumentIdNotFound(doc.IndexName, doc.Id))
-                         | _ -> 
-                             // This condition should never get executed unless the user has passed a negative version number
-                             // smaller than -1. In this case we will ignore version number.
-                             0L
+    /// Check and returns the current version number of the document
+    let versionCheck (doc : Document.Dto, newVersion) (cache : T) = 
+        match doc.TimeStamp with
+        | 0L -> 
+            // We don't care what the version is let's proceed with normal operation
+            // and bypass id check.
+            ok <| 0L
+        | -1L -> // Ensure that the document does not exists. Perform Id check
+            let existingVersion = cache |> getValue (doc.Id)
+            if existingVersion <> 0L then fail <| DocumentIdAlreadyExists(doc.IndexName, doc.Id)
+            else ok <| existingVersion
+        | 1L -> 
+            // Ensure that the document exists
+            let existingVersion = cache |> getValue (doc.Id)
+            if existingVersion <> 0L then ok <| existingVersion
+            else fail <| DocumentIdNotFound(doc.IndexName, doc.Id)
+        | x when x > 1L -> 
+            // Perform a version check and ensure that the provided version matches the version of 
+            // the document
+            let existingVersion = cache |> getValue (doc.Id)
+            if existingVersion <> 0L then 
+                if existingVersion <> doc.TimeStamp || existingVersion > newVersion then 
+                    fail <| IndexingVersionConflict(doc.IndexName, doc.Id, existingVersion.ToString())
+                else ok <| existingVersion
+            else fail <| DocumentIdNotFound(doc.IndexName, doc.Id)
+        | _ -> 
+            // This condition should never get executed unless the user has passed a negative version number
+            // smaller than -1. In this case we will ignore version number.
+            ok <| 0L
 
 module IndexWriter = 
     ///  Method to map a string based id to a Lucene shard 
@@ -786,23 +785,30 @@ module IndexWriter =
     
     /// Add or update a document
     let addOrUpdateDocument (document : Document.Dto, create : bool) (s : T) = 
-        let shardNo = document.Id |> mapToShard s.ShardWriters.Length
-        s.Caches.[shardNo] |> VersionCache.versionCheck document
-        let doc = s.Template.Value |> DocumentTemplate.updateTempate document
-        let txId = s.ShardWriters.[shardNo].GetNextIndex()
-        
-        let opCode = 
-            if create then TransacationLog.Operation.Create
-            else TransacationLog.Operation.Update
-        
-        //document.ModifyIndex <- txId
-        let txEntry = TransacationLog.T.Create(txId, opCode, document)
-        use stream = memoryManager.GetStream()
-        TransacationLog.serializer (stream, txEntry)
-        s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation)
-        s.ShardWriters.[shardNo] 
-        |> if create then ShardWriter.addDocument doc
-           else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
+        maybe { 
+            let shardNo = document.Id |> mapToShard s.ShardWriters.Length
+            let newVersion = GetCurrentTimeAsLong()
+            let! existingVersion = s.Caches.[shardNo] |> VersionCache.versionCheck (document, newVersion)
+            document.TimeStamp <- newVersion
+            do! s.Caches.[shardNo]
+                |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
+                |> boolToResult UnableToUpdateMemory
+            let doc = s.Template.Value |> DocumentTemplate.updateTempate document
+            let txId = s.ShardWriters.[shardNo].GetNextIndex()
+            
+            let opCode = 
+                if create then TransacationLog.Operation.Create
+                else TransacationLog.Operation.Update
+            
+            //document.ModifyIndex <- txId
+            let txEntry = TransacationLog.T.Create(txId, opCode, document)
+            use stream = memoryManager.GetStream()
+            TransacationLog.serializer (stream, txEntry)
+            s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation)
+            s.ShardWriters.[shardNo] 
+            |> if create then ShardWriter.addDocument doc
+               else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
+        }
     
     /// Add a document to the index
     let addDocument (document : Document.Dto) (s : T) = s |> addOrUpdateDocument (document, true)
@@ -815,12 +821,17 @@ module IndexWriter =
     
     /// Delete a document from index
     let deleteDocument (id : string) (s : T) = 
-        let shardNo = id |> mapToShard s.ShardWriters.Length
-        let txId = s.ShardWriters.[shardNo].GetNextIndex()
-        let txEntry = TransacationLog.T.Create(txId, id)
-        use stream = memoryManager.GetStream()
-        let data = TransacationLog.serializer (stream, txEntry)
-        s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
+        maybe { 
+            let shardNo = id |> mapToShard s.ShardWriters.Length
+            do! s.Caches.[shardNo]
+                |> VersionCache.delete (id, VersionCache.deletedValue)
+                |> boolToResult UnableToUpdateMemory
+            let txId = s.ShardWriters.[shardNo].GetNextIndex()
+            let txEntry = TransacationLog.T.Create(txId, id)
+            use stream = memoryManager.GetStream()
+            TransacationLog.serializer (stream, txEntry)
+            s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
+        }
     
     /// Refresh the index    
     let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.referesh)

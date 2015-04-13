@@ -400,7 +400,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
             maybe { 
                 do! document.Validate()
                 let! indexWriter = indexService.IsIndexOnline <| document.IndexName
-                indexWriter |> IndexWriter.updateDocument document
+                return! indexWriter |> IndexWriter.updateDocument document
             }
         
         /// Add a new document to the index
@@ -411,13 +411,14 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                     return! fail 
                             <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
                 let! writer = indexService.IsIndexOnline <| document.IndexName
-                writer |> IndexWriter.addDocument document
+                return! writer |> IndexWriter.addDocument document
                 return new CreateResponse(document.Id)
             }
         
         /// Delete a document by Id
-        member __.DeleteDocument(indexName, documentId) = maybe { let! writer = indexService.IsIndexOnline <| indexName
-                                                                  writer |> IndexWriter.deleteDocument documentId }
+        member __.DeleteDocument(indexName, documentId) = 
+            maybe { let! writer = indexService.IsIndexOnline <| indexName
+                    return! writer |> IndexWriter.deleteDocument documentId }
         
         /// Delete all the documents present in an index
         member __.DeleteAllDocuments indexName = maybe { let! writer = indexService.IsIndexOnline <| indexName
