@@ -156,7 +156,7 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field.Dto array, analyzerService : LazyFactory.T<Analyzer, Analyzer.Dto, _>) (build) = 
+    let withFields (fields : Field.Dto array, analyzerService) (build) = 
         if isNull (build.Setting.ScriptsManager) then 
             failwithf "Internal Error: Script manager should be initialized before creating IndexFields."
         let ic = build.Setting.IndexConfiguration
@@ -319,7 +319,7 @@ type RealTimeSearcher(searchManger : SearcherManager) =
 type IndexState = 
     | Opening = 1
     | Recovering = 2
-    | OnlineMaster = 3
+    | Online = 3
     | OnlineFollower = 4
     | Offline = 5
     | Closing = 6
@@ -721,6 +721,7 @@ module IndexWriter =
           Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
           Buffer : ActionBlock<IndexCommand>
+          State : IndexState
           Settings : IndexSetting.T }
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
@@ -768,6 +769,7 @@ module IndexWriter =
           Buffer = new ActionBlock<IndexCommand>(processIndexRequest)
           ShardWriters = shardWriters
           Caches = caches
+          State = IndexState.Online
           Settings = settings }
     
     /// Close the index    
