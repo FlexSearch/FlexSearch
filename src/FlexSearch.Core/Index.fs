@@ -544,7 +544,8 @@ module ShardWriter =
     let addDocument (document : Document) (sw : T) = sw.TrackingIndexWriter.AddDocument(document) |> ignore
     
     /// Deletes the document with the given id.
-    let deleteDocument (id : string) (sw : T) = sw.TrackingIndexWriter.DeleteDocuments(id.IdTerm()) |> ignore
+    let deleteDocument (id : string) (idFieldName : string) (sw : T) = 
+        sw.TrackingIndexWriter.DeleteDocuments(id.Term(idFieldName)) |> ignore
     
     /// Delete all documents in the index.
     let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll() |> ignore
@@ -818,7 +819,7 @@ module IndexWriter =
         let txEntry = TransacationLog.T.Create(txId, id)
         use stream = memoryManager.GetStream()
         let data = TransacationLog.serializer (stream, txEntry)
-        s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id
+        s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
     
     /// Refresh the index    
     let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.referesh)

@@ -72,3 +72,20 @@ module DocumentServiceTests =
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
+        
+        member __.``Should be able to add and delete a document`` (index : Index.Dto, documentId : string, 
+                                                                   indexService : IIndexService, 
+                                                                   documentService : IDocumentService) = 
+            index.Online <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, documentId)
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
+            test <@ succeeded <| documentService.DeleteDocument(document.IndexName, documentId) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
+            
+            test <@ failed <| documentService.GetDocument(index.IndexName, documentId) @>
+            
