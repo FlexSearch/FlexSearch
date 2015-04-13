@@ -891,7 +891,7 @@ module Field =
     
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
-               analyzerFactory : LazyFactory.T<Analyzer, Analyzer.Dto, _>, scriptsManager : ScriptsManager) = 
+               analyzerFactory : string -> Choice<Analyzer, Error>, scriptsManager : ScriptsManager) = 
         let getSource (field : Dto) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok (None)
             else 
@@ -911,8 +911,8 @@ module Field =
                 | FieldType.Dto.Stored -> return FieldType.Stored
                 | FieldType.Dto.ExactText -> return FieldType.ExactText(CaseInsensitiveKeywordAnalyzer)
                 | FieldType.Dto.Text | FieldType.Dto.Highlight | FieldType.Dto.Custom -> 
-                    let! searchAnalyzer = analyzerFactory |> LazyFactory.getInstance field.SearchAnalyzer
-                    let! indexAnalyzer = analyzerFactory |> LazyFactory.getInstance field.IndexAnalyzer
+                    let! searchAnalyzer = analyzerFactory <| field.SearchAnalyzer
+                    let! indexAnalyzer = analyzerFactory <| field.IndexAnalyzer
                     match field.FieldType with
                     | FieldType.Dto.Text -> return FieldType.Text(searchAnalyzer, indexAnalyzer)
                     | FieldType.Dto.Highlight -> return FieldType.Highlight(searchAnalyzer, indexAnalyzer)
