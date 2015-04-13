@@ -552,8 +552,8 @@ module ShardWriter =
     
     /// Updates a document by id by first deleting the document containing term and then 
     /// adding the new document.
-    let updateDocument (id : string, document : Document) (sw : T) = 
-        sw.TrackingIndexWriter.UpdateDocument(id.IdTerm(), document) |> ignore
+    let updateDocument (id : string, idFieldName : string, document : Document) (sw : T) = 
+        sw.TrackingIndexWriter.UpdateDocument(id.Term(idFieldName), document) |> ignore
     
     /// Returns real time searcher. 
     /// Note: Use it with 'use' keyword to automatically return the searcher to the pool
@@ -800,8 +800,9 @@ module IndexWriter =
         use stream = memoryManager.GetStream()
         TransacationLog.serializer (stream, txEntry)
         s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation)
-        s.ShardWriters.[shardNo] |> if create then ShardWriter.addDocument doc
-                                    else ShardWriter.updateDocument (document.Id, doc)
+        s.ShardWriters.[shardNo] 
+        |> if create then ShardWriter.addDocument doc
+           else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
     
     /// Add a document to the index
     let addDocument (document : Document.Dto) (s : T) = s |> addOrUpdateDocument (document, true)

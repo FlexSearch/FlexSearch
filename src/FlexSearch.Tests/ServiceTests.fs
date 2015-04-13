@@ -86,6 +86,21 @@ module DocumentServiceTests =
             test <@ succeeded <| documentService.DeleteDocument(document.IndexName, documentId) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
-            
             test <@ failed <| documentService.GetDocument(index.IndexName, documentId) @>
+
+        member __.``Should be able to update a document`` (index : Index.Dto, documentId : string, 
+                                                                   indexService : IIndexService, 
+                                                                   documentService : IDocumentService) = 
+            index.Online <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, documentId)
+            document.Fields.["t1"] <- "0"
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Fields.["t1"] = document.Fields.["t1"] @>
+            // Update the document
+            document.Fields.["t1"] <- "1"
+            test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Fields.["t1"] = document.Fields.["t1"] @>
             
