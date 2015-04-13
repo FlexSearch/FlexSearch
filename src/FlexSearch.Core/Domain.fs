@@ -1063,12 +1063,17 @@ module Document =
         /// Score of the returned document. Note: Only used for results
         member val Score = defDouble with get, set
         
+        static member Default = 
+            let def = new Dto()
+            (def :> IFreezable).Freeze()
+            def
+
         override this.Validate() = this.IndexName
                                    |> notBlank "IndexName"
                                    >>= fun _ -> this.Id |> notBlank "Id"
         new(indexName, id) = Dto(indexName, id)
         new() = Dto(defString, defString)
-
+        
 module Index = 
     /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
     /// to support features like schema and sharding. So in this sense a FlexSearch 

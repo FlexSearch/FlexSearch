@@ -360,7 +360,7 @@ module TransacationLog =
         static member Create(txId, id) = 
             { TransactionId = txId
               Operation = Operation.Delete
-              Document = Unchecked.defaultof<Document.Dto>
+              Document = Document.Dto.Default
               Id = id
               Query = String.Empty }
     
