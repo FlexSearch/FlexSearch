@@ -57,12 +57,12 @@ module DataHelpers =
         // We override Auto fixture's string generation mechanism to return this string which will be
         // used as index name
         fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
-        let state = State.create (true)
-        fixture.Inject<State.T>(state) |> ignore
         fixture.Inject<Index.Dto>(getTestIndex()) |> ignore
-        let indexService = new IndexService.Service(state)
-        let searchService = new SearchService.Service(state, flexQueryFactory)
-        let documentService = new DocumentService.Service(searchService, state)
+        let threadSafeFileWriter = new ThreadSafeFileWiter(new YamlFormatter())
+        let analyzerService = new AnalyzerService(threadSafeFileWriter)
+        let indexService = new IndexService(threadSafeFileWriter, analyzerService)
+        let searchService = new SearchService(new FlexParser(), flexQueryFactory, indexService)
+        let documentService = new DocumentService(searchService, indexService)
         fixture.Inject<IIndexService>(indexService) |> ignore
         fixture.Inject<ISearchService>(searchService) |> ignore
         fixture.Inject<IDocumentService>(documentService) |> ignore

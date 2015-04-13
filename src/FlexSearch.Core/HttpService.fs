@@ -50,15 +50,15 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
     inherit HttpHandlerBase<NoBody, unit>()
     override __.Process(request, body) = SomeResponse(indexService.DeleteIndex(request.ResId.Value), Ok, BadRequest)
 
-/// Update an index
-[<Name("PUT-/indices/:id")>]
-[<Sealed>]
-type PutIndexByIdHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<Index.Dto, unit>()
-    override __.Process(request, body) = 
-        // Index name passed in URL takes precedence
-        body.Value.IndexName <- request.ResId.Value
-        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
+///// Update an index
+//[<Name("PUT-/indices/:id")>]
+//[<Sealed>]
+//type PutIndexByIdHandler(indexService : IIndexService) = 
+//    inherit HttpHandlerBase<Index.Dto, unit>()
+//    override __.Process(request, body) = 
+//        // Index name passed in URL takes precedence
+//        body.Value.IndexName <- request.ResId.Value
+//        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
 
 type IndexStatusResponse() = 
     member val Status = Unchecked.defaultof<IndexState> with get, set
@@ -70,7 +70,7 @@ type GetStatusHandler(indexService : IIndexService) =
     inherit HttpHandlerBase<NoBody, IndexStatusResponse>()
     override __.Process(request, body) = 
         let response = 
-            match indexService.GetIndexStatus(request.ResId.Value) with
+            match indexService.GetIndexState(request.ResId.Value) with
             | Choice1Of2(state) -> Choice1Of2(new IndexStatusResponse(Status = state))
             | Choice2Of2(error) -> Choice2Of2(error)
         SomeResponse(response, Ok, BadRequest)

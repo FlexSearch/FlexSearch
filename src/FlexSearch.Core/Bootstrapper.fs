@@ -147,7 +147,7 @@ module Main =
         //builder |> FactoryService.registerSingleInstance<RegisterationManager, RegisterationManager>
         // Register services
         builder |> FactoryService.registerSingleInstance<FlexParser, IFlexParser>
-        builder |> FactoryService.registerSingleInstance<IndexService.Service, IIndexService>
+        builder |> FactoryService.registerSingleInstance<IndexService, IIndexService>
         //        builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
         //        builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
         //        builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>

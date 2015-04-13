@@ -11,12 +11,12 @@ module IndexServiceTests =
         member __.``Newly created index should be online`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.OnlineMaster) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Online) @>
         
         member __.``Newly created index should be offline`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.Offline) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Offline) @>
         
         member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
@@ -37,22 +37,20 @@ module IndexServiceTests =
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
-            test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.OnlineMaster) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Online) @>
         
         member __.``Online index can be made offline`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
-            test <@ indexService.GetIndexStatus(index.IndexName) = Choice1Of2(IndexState.Offline) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Offline) @>
 
 module DocumentServiceTests = 
-    open System.Threading
 
     type DocumentManagementTests() = 
         member __.``Should be able to add and retrieve simple document`` (index : Index.Dto, documentId : string, 
                                                                           indexService : IIndexService, 
-                                                                          documentService : IDocumentService,
-                                                                          searchService : ISearchService) = 
+                                                                          documentService : IDocumentService) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document.Dto(index.IndexName, documentId)
