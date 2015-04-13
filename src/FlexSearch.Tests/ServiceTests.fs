@@ -46,8 +46,8 @@ module IndexServiceTests =
             test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Offline) @>
 
 module DocumentServiceTests = 
-
     type DocumentManagementTests() = 
+        
         member __.``Should be able to add and retrieve simple document`` (index : Index.Dto, documentId : string, 
                                                                           indexService : IIndexService, 
                                                                           documentService : IDocumentService) = 
@@ -55,6 +55,20 @@ module DocumentServiceTests =
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document.Dto(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
-            indexService.Refresh(index.IndexName) |> ignore
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
+        
+        member __.``Should be able to add and retrieve document after closing the index`` (index : Index.Dto, 
+                                                                                           documentId : string, 
+                                                                                           indexService : IIndexService, 
+                                                                                           documentService : IDocumentService) = 
+            index.Online <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, documentId)
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Commit(index.IndexName) @>
+            test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
+            test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>

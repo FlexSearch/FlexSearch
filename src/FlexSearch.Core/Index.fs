@@ -3,6 +3,7 @@
 open FlexLucene.Analysis
 open FlexLucene.Analysis.Core
 open FlexLucene.Analysis.Miscellaneous
+open FlexLucene.Analysis.Standard
 open FlexLucene.Analysis.Util
 open FlexLucene.Codecs
 open FlexLucene.Codecs.Bloom
@@ -26,7 +27,6 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
-open FlexLucene.Analysis.Standard
 
 type FieldsMeta = 
     { IdField : Field.T
@@ -409,7 +409,10 @@ module ShardWriter =
         | Faulted
     
     /// Returns the user commit data to be stored with the index
-    let getCommitData (gen : int64) = hashMap() |> putC (Constants.generationLabel, gen)
+    let getCommitData (gen : int64) (modifyIndex : int64) = 
+        hashMap()
+        |> putC (Constants.generationLabel, gen)
+        |> putC (Constants.modifyIndex, modifyIndex)
     
     type FileWriter(directory, config) = 
         inherit IndexWriter(directory, config)
@@ -425,7 +428,7 @@ module ShardWriter =
             if not (isNull state) then 
                 // Save the current generation in the commit data so that
                 // it can be used for shard recovery 
-                this.SetCommitData(getCommitData (state.Generation))
+                this.SetCommitData(getCommitData state.Generation state.ModifyIndex)
                 // Increment the current generation so that the log file 
                 // can be switched
                 state.GetNextGen() |> ignore
@@ -490,17 +493,17 @@ module ShardWriter =
                 directory : FlexLucene.Store.Directory) = 
         let iw = new FileWriter(directory, config)
         let commitData = iw.GetCommitData()
-        let generation = (commitData.getOrDefault (Constants.generationLabel, 1L)) :?> int64
+        let generation = pLong 1L (commitData.getOrDefault (Constants.generationLabel, "1") :?> string)
         // It is a newly created index. 
         if generation = 1L then 
             // Add a dummy commit so that seacher Manager could be initialized
             generation
-            |> getCommitData
+            |> getCommitData 0L
             |> iw.SetCommitData
             |> iw.Commit
         let trackingWriter = new TrackingIndexWriter(iw)
         let searcherManager = new SearcherManager(iw, true, new SearcherFactory())
-        let modifyIndex = DirectoryReader.Open(iw, true) |> getMaxModifyIndex
+        let modifyIndex = pLong 1L (commitData.getOrDefault (Constants.modifyIndex, "1") :?> string) //DirectoryReader.Open(iw, true) |> getMaxModifyIndex
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         Directory.CreateDirectory(logPath) |> ignore
         let state = 

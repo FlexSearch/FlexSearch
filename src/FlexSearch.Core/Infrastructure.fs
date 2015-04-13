@@ -38,6 +38,9 @@ module Constants =
     let generationLabel = "generation"
     
     [<Literal>]
+    let modifyIndex = "modifyIndex"
+    
+    [<Literal>]
     let IdField = "_id"
     
     [<Literal>]
