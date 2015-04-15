@@ -110,7 +110,7 @@ module SearchDsl =
         // Each thread only works on a separate part of the array and as no parts are shared across
         // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
         // array per search is high
-        let topDocsCollection : TopDocs array = Array.zeroCreate indexSearchers.Length
+        let topDocsCollection : TopFieldDocs array = Array.zeroCreate indexSearchers.Length
         
         let sort = 
             match search.OrderBy with
