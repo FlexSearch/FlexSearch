@@ -115,76 +115,69 @@ module DocumentServiceTests =
             test <@ succeeded <| documentService.AddDocument(document) @>
             document.TimeStamp <- -1L
             test <@ documentService.AddDocument(document) = Choice2Of2(DocumentIdAlreadyExists(index.IndexName, "1")) @>
-            
         
-//        member __.``Cannot create a duplicate document with a timestamp of -1 even after cache is cleared`` (indexService : IIndexService, 
-//                                                                                                             documentService : IDocumentService, 
-//                                                                                                             index : Index) = 
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1")
-//            documentService.AddDocument(document) |> ExpectSuccess
-//            indexService.Refresh(index.IndexName) |> ExpectSuccess
-//            document.TimeStamp <- -1L
-//            documentService.AddDocument(document) 
-//            |> ExpectErrorCode(Errors.INDEXING_DOCUMENT_ID_ALREADY_EXISTS |> GenerateOperationMessage)
-//        
-//        member __.``Cannot create a document with timestamp of 1`` (indexService : IIndexService, 
-//                                                                    documentService : IDocumentService, index : Index) = 
-//            // TimeStamp of 1 implies that we want to ensure that the document exists which is against the logic of basic create operation
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1", TimeStamp = 1L)
-//            documentService.AddDocument(document) 
-//            |> ExpectErrorCode(Errors.INDEXING_VERSION_CONFLICT_CREATE |> GenerateOperationMessage)
-//        
-//        member __.``Duplicate document can be created with a timestamp of 0`` (indexService : IIndexService, 
-//                                                                               documentService : IDocumentService, 
-//                                                                               index : Index) = 
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1")
-//            documentService.AddDocument(document) |> ExpectSuccess
-//            document.TimeStamp <- 0L
-//            documentService.AddDocument(document) |> ExpectSuccess
-//        
-//        member __.``For optimistic update the timestamp should match`` (indexService : IIndexService, 
-//                                                                        documentService : IDocumentService, 
-//                                                                        index : Index) = 
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1")
-//            let response = documentService.AddDocument(document) |> GetSuccessChoice
-//            indexService.Refresh(index.IndexName) |> ExpectSuccess
-//            let timeStamp = (documentService.GetDocument(index.IndexName, "1") |> GetSuccessChoice).TimeStamp
-//            document.TimeStamp <- timeStamp
-//            documentService.AddOrUpdateDocument(document) |> ExpectSuccess
-//            document.TimeStamp <- 1000L
-//            documentService.AddOrUpdateDocument(document) 
-//            |> ExpectErrorCode(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
-//        
-//        member __.``Cannot update a document with wrong timestamp`` (indexService : IIndexService, 
-//                                                                     documentService : IDocumentService, index : Index) = 
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1")
-//            let response = documentService.AddDocument(document) |> GetSuccessChoice
-//            indexService.Refresh(index.IndexName) |> ExpectSuccess
-//            let timeStamp = (documentService.GetDocument(index.IndexName, "1") |> GetSuccessChoice).TimeStamp
-//            document.TimeStamp <- 2L
-//            documentService.AddOrUpdateDocument(document) 
-//            |> ExpectErrorCode(Errors.INDEXING_VERSION_CONFLICT |> GenerateOperationMessage)
-//        
-//        member __.``Document should exist when updating with a timestamp of 1`` (indexService : IIndexService, 
-//                                                                                 documentService : IDocumentService, 
-//                                                                                 index : Index) = 
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1")
-//            documentService.AddDocument(document) |> ExpectSuccess
-//            indexService.Refresh(index.IndexName) |> ExpectSuccess
-//            document.TimeStamp <- 1L
-//            documentService.AddOrUpdateDocument(document) |> ExpectSuccess
-//        
-//        member __.``Cannot create a document using update operation with a timestamp of 1`` (indexService : IIndexService, 
-//                                                                                             documentService : IDocumentService, 
-//                                                                                             index : Index) = 
-//            indexService.AddIndex(index) |> ExpectSuccess
-//            let document = new FlexDocument(index.IndexName, "1")
-//            document.TimeStamp <- 1L
-//            documentService.AddOrUpdateDocument(document) 
-//            |> ExpectErrorCode(Errors.INDEXING_DOCUMENT_ID_NOT_FOUND |> GenerateOperationMessage)
+        member __.``Cannot create a duplicate document with a timestamp of -1 even after cache is cleared`` (indexService : IIndexService, 
+                                                                                                             documentService : IDocumentService, 
+                                                                                                             index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            document.TimeStamp <- -1L
+            test <@ documentService.AddDocument(document) = Choice2Of2(DocumentIdAlreadyExists(index.IndexName, "1")) @>
+        
+        member __.``Cannot create a document with timestamp of 1`` (indexService : IIndexService, 
+                                                                    documentService : IDocumentService, 
+                                                                    index : Index.Dto) = 
+            // TimeStamp of 1 implies that we want to ensure that the document exists which is against the logic of basic create operation
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1", TimeStamp = 1L)
+            test <@ failed <| documentService.AddDocument(document) @>
+        
+        member __.``Duplicate document can be created with a timestamp of 0`` (indexService : IIndexService, 
+                                                                               documentService : IDocumentService, 
+                                                                               index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1", TimeStamp = 0L)
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            document.TimeStamp <- 0L
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 2 @>
+        
+        member __.``For optimistic update the timestamp should match`` (indexService : IIndexService, 
+                                                                        documentService : IDocumentService, 
+                                                                        index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
+            document.TimeStamp <- 1000L
+            test <@ failed <| documentService.AddOrUpdateDocument(document) @>
+        
+        member __.``Cannot update a document with wrong timestamp`` (indexService : IIndexService, 
+                                                                     documentService : IDocumentService, 
+                                                                     index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            document.TimeStamp <- 1000L
+            test <@ failed <| documentService.AddOrUpdateDocument(document) @>
+        
+        member __.``Document should exist when updating with a timestamp of 1`` (indexService : IIndexService, 
+                                                                                 documentService : IDocumentService, 
+                                                                                 index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            document.TimeStamp <- 1L
+            test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
+        
+        member __.``Cannot create a document using update operation with a timestamp of 1`` (indexService : IIndexService, 
+                                                                                             documentService : IDocumentService, 
+                                                                                             index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1", TimeStamp = 1L)
+            test 
+                <@ documentService.AddOrUpdateDocument(document) = Choice2Of2
+                                                                       (DocumentIdNotFound(index.IndexName, document.Id)) @>
