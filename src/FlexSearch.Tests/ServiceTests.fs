@@ -181,3 +181,59 @@ module DocumentServiceTests =
             test 
                 <@ documentService.AddOrUpdateDocument(document) = Choice2Of2
                                                                        (DocumentIdNotFound(index.IndexName, document.Id)) @>
+        
+        member __.``A newly created document should have version number greater than 1`` (indexService : IIndexService, 
+                                                                                          documentService : IDocumentService, 
+                                                                                          index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, document.Id)).TimeStamp > 1L @>
+        
+        member __.``Timestamp field can be correctly retieved from the physical medium`` (indexService : IIndexService, 
+                                                                                          documentService : IDocumentService, 
+                                                                                          index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Commit(index.IndexName) @>
+            test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
+            test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, document.Id)).TimeStamp > 1L @>
+        
+        member __.``Fields returned by the document service should match the total number of fields in the index`` (indexService : IIndexService, 
+                                                                                                                    documentService : IDocumentService, 
+                                                                                                                    index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
+            test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
+            test 
+                <@ (extract <| documentService.GetDocument(index.IndexName, document.Id)).Fields.Count = index.Fields.Length @>
+        
+        member __.``Version Cache gets cleared after a refresh is called`` (indexService : IIndexService, 
+                                                                            documentService : IDocumentService, 
+                                                                            index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            let indexWriter = extract <| indexService.IsIndexOnline(index.IndexName)
+            test <@ indexWriter.Caches.[0].Current.Count = 0 @>
+        
+        member __.``Document version can be reterieved even after all caches are cleared`` (indexService : IIndexService, 
+                                                                                            documentService : IDocumentService, 
+                                                                                            index : Index.Dto) = 
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            let document = new Document.Dto(index.IndexName, "1")
+            test <@ succeeded <| documentService.AddDocument(document) @>
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            let indexWriter = extract <| indexService.IsIndexOnline(index.IndexName)
+            indexWriter.Caches.[0].Current.Clear()
+            indexWriter.Caches.[0].Old.Clear()
+            // As all the caches are cleared the index has to load the documment version from the
+            // docvalues. For optimistic update to work the timestamp has to match 
+            test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
