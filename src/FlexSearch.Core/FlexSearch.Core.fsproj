@@ -94,6 +94,7 @@
     <Compile Include="Search.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="HttpService.fs" />
+    <Compile Include="Connectors.fs" />
     <Compile Include="Bootstrapper.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
@@ -112,6 +113,10 @@
     </Reference>
     <Reference Include="Autofac.Integration.Mef">
       <HintPath>..\packages\Autofac.Mef.3.0.3\lib\net40\Autofac.Integration.Mef.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="CsvHelper">
+      <HintPath>..\packages\CsvHelper.2.13.0.0\lib\net40-client\CsvHelper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Esent.Collections">

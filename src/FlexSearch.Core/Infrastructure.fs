@@ -171,9 +171,14 @@ type Error =
     | FileNotFound of filePath : string
     | FileReadError of filePath : string * error : string
     | FileWriteError of filePath : string * error : string
+    | PathDoesNotExist of path : string
     | StoreUpdateError
     // Generic error to be used by plugins
     | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
+    // CSV file header does not exist or could not be generated
+    | HeaderRowIsEmpty
+    | JobNotFound of jobId : string
+    | NotImplemented
 
 exception ValidationException of Error
 

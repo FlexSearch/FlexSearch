@@ -63,9 +63,23 @@ module DataHelpers =
         let indexService = new IndexService(threadSafeFileWriter, analyzerService)
         let searchService = new SearchService(new FlexParser(), flexQueryFactory, indexService)
         let documentService = new DocumentService(searchService, indexService)
+        let queueService = new QueueService(documentService)
+        let jobService = new JobService()
         fixture.Inject<IIndexService>(indexService) |> ignore
         fixture.Inject<ISearchService>(searchService) |> ignore
         fixture.Inject<IDocumentService>(documentService) |> ignore
+        fixture.Inject<IJobService>(jobService) |> ignore
+        fixture.Inject<IQueueService>(queueService) |> ignore
+
+
+[<AutoOpenAttribute>]
+module ResponseHelpers =
+    let rSucceeded (r : ResponseContext<_>) =
+        match r with
+        | SuccessResponse(_) -> true
+        | SomeResponse(Choice1Of2(_),_,_) -> true
+        | _ -> false
+
 
 // ----------------------------------------------------------------------------
 // Convention Section for Fixie

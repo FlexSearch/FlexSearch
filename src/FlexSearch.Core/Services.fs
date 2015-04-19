@@ -25,6 +25,8 @@ open System.Collections.Generic
 open System.IO
 open System.Linq
 open System.Threading.Tasks
+open System.Runtime.Caching
+open System.Threading.Tasks.Dataflow
 
 /// Index related operations
 type IIndexService = 
@@ -66,6 +68,11 @@ type ISearchService =
 type IQueueService = 
     abstract AddDocumentQueue : document:Document.Dto -> unit
     abstract AddOrUpdateDocumentQueue : document:Document.Dto -> unit
+
+type IJobService =
+    abstract GetJob : string -> Choice<Job, Error>
+    abstract DeleteAllJobs : unit -> Choice<unit, Error>
+    abstract UpdateJob : Job -> Choice<unit, Error>
 
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
@@ -423,3 +430,80 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Delete all the documents present in an index
         member __.DeleteAllDocuments indexName = maybe { let! writer = indexService.IsIndexOnline <| indexName
                                                          writer |> IndexWriter.deleteAllDocuments }
+
+
+/// <summary>
+/// Job service class which will be dynamically injected using IOC.
+/// </summary>
+[<Sealed>]
+type JobService() = 
+    let cache = MemoryCache.Default
+    interface IJobService with
+        
+        member __.UpdateJob(job : Job) : Choice<unit, Error> = 
+            let item = new CacheItem(job.JobId, job)
+            let policy = new CacheItemPolicy()
+            policy.AbsoluteExpiration <- DateTimeOffset.Now.AddHours(5.00)
+            cache.Set(item, new CacheItemPolicy())
+            ok()
+        
+        member __.GetJob(jobId : string) = 
+            assert (jobId <> null)
+            let item = cache.GetCacheItem(jobId)
+            if item <> null then Choice1Of2(item.Value :?> Job)
+            else fail <| Error.JobNotFound jobId
+        
+        member __.DeleteAllJobs() = 
+            // Not implemented
+            fail <| Error.NotImplemented
+
+/// <summary>
+/// Service wrapper around all document queuing services
+/// Exposes high level operations that can performed across the system.
+/// Most of the services basically act as a wrapper around the functions 
+/// here. Care should be taken to not introduce any mutable state in the
+/// module but to only pass mutable state as an instance of NodeState
+/// </summary>
+/// <param name="state"></param>
+[<Sealed>]
+type QueueService(documentService : IDocumentService) = 
+    
+    let executionBlockOptions() = 
+        let executionBlockOption = new ExecutionDataflowBlockOptions()
+        executionBlockOption.MaxDegreeOfParallelism <- -1
+        executionBlockOption.BoundedCapacity <- 100
+        executionBlockOption
+    
+    /// <summary>
+    /// Add queue processing method
+    /// </summary>
+    let processAddQueueItems (document) = documentService.AddDocument(document) |> ignore
+    
+    /// <summary>
+    /// Add or update processing queue method
+    /// </summary>
+    let processAddOrUpdateQueueItems (document) = documentService.AddOrUpdateDocument(document) |> ignore
+    
+    /// <summary>
+    /// Queue for add operation 
+    /// </summary>
+    let addQueue : ActionBlock<Document.Dto> = 
+        new ActionBlock<Document.Dto>(processAddQueueItems, executionBlockOptions())
+    
+    /// <summary>
+    /// Queue for add or update operation 
+    /// </summary>
+    let addOrUpdateQueue : ActionBlock<Document.Dto> = 
+        new ActionBlock<Document.Dto>(processAddOrUpdateQueueItems, executionBlockOptions())
+    
+    interface IQueueService with
+        
+        member this.AddDocumentQueue(document) = 
+            Async.AwaitTask(addQueue.SendAsync(document))
+            |> Async.RunSynchronously
+            |> ignore
+        
+        member this.AddOrUpdateDocumentQueue(document) = 
+            Async.AwaitTask(addOrUpdateQueue.SendAsync(document))
+            |> Async.RunSynchronously
+            |> ignore

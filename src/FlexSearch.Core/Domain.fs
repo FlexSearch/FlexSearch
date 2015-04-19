@@ -1173,6 +1173,35 @@ type SearchResults() =
     /// greater than the returned results depending upon the requested 
     /// document count. 
     member val TotalAvailable = 0 with get, set
+    
+/// Used by long running processes. All long running FlexSearch operations create
+/// an instance of Job and return the Id to the caller. This Id can be used by the
+/// caller to check the status of the job.
+///
+/// NOTE: Job information is not persistent
+[<ToString; Sealed>]
+type Job() = 
+    inherit DtoBase()
+    
+    /// Unique Id of the Job
+    member val JobId = defString with get, set
+    
+    /// Total items to be processed as a part of the current job.
+    member val TotalItems = 0 with get, set
+    
+    /// Items already processed.
+    member val ProcessedItems = 0 with get, set
+    
+    /// Items which have failed processing.
+    member val FailedItems = 0 with get, set
+    
+    /// Overall status of the job.
+    member val Status = JobStatus.Initializing with get, set
+    
+    /// Any message that is associated with the job.
+    member val Message = defString with get, set
+    
+    override __.Validate() = ok()
 
 ///// Represents a list of words which can be used for filtering by an analyzer.
 ///// These can contain stop words or keep words etc.
@@ -1197,34 +1226,7 @@ type SearchResults() =
 //    new() = MapList(new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase))
 //    override __.Validate() = ok()
 //
-/// Used by long running processes. All long running FlexSearch operations create
-/// an instance of Job and return the Id to the caller. This Id can be used by the
-/// caller to check the status of the job.
-///
-/// NOTE: Job information is not persistent
-//[<ToString; Sealed>]
-//type Job() = 
-//    inherit ValidatableBase()
-//    
-//    /// Unique Id of the Job
-//    member val JobId = "" with get, set
-//    
-//    /// Total items to be processed as a part of the current job.
-//    member val TotalItems = 0 with get, set
-//    
-//    /// Items already processed.
-//    member val ProcessedItems = 0 with get, set
-//    
-//    /// Items which have failed processing.
-//    member val FailedItems = 0 with get, set
-//    
-//    /// Overall status of the job.
-//    member val Status = JobStatus.Initializing with get, set
-//    
-//    /// Any message that is associated with the job.
-//    member val Message = "" with get, set
-//    
-//    override __.Validate() = ok()
+
 //
 ///// Request to analyze a text against an analyzer. The reason to force
 ///// this parameter to request body is to avoid escaping of restricted characters

@@ -63,8 +63,10 @@
     <Compile Include="DomainTests.fs" />
     <Compile Include="ServiceTests.fs" />
     <Compile Include="ParserTests.fs" />
+    <Compile Include="HandlerTests.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
+    <None Include="test.csv" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">
@@ -263,8 +265,6 @@
       <HintPath>..\packages\Unquote.2.2.2\lib\net40\Unquote.dll</HintPath>
       <Private>True</Private>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
