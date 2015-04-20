@@ -58,6 +58,9 @@ module Constants =
     let DocumentField = "_document"
     
     [<Literal>]
+    let Score = "_score"
+
+    [<Literal>]
     let DotNetFrameWork = "4.5.1"
     
     [<Literal>]
