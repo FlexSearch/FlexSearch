@@ -68,19 +68,17 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
         match headers with
         | [||] -> fail <| Error.HeaderRowIsEmpty
         | _ ->
-            let addDoc (cr : CsvReader) =
-                let document = new Document.Dto(body.IndexName, cr.CurrentRecord.[0])
-                // The first column is always id so skip it
-                headers
-                |> Seq.skip 1
-                |> Seq.iteri (fun i header -> document.Fields.Add(header, cr.CurrentRecord.[i+1])) 
-                queueService.AddDocumentQueue(document)
-
             let rec generateDoc (cr : CsvReader) =
                 match cr.Read() with
                 | false -> ok()
                 | true -> 
-                    addDoc cr
+                    let document = new Document.Dto(body.IndexName, cr.CurrentRecord.[0])
+                    // The first column is always id so skip it
+                    headers
+                    |> Seq.skip 1
+                    |> Seq.iteri (fun i header -> document.Fields.Add(header, cr.CurrentRecord.[i+1])) 
+                    queueService.AddDocumentQueue(document)
+
                     generateDoc cr
                 
             generateDoc reader
