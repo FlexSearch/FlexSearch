@@ -209,7 +209,7 @@ module SearchDsl =
                     resultDoc.IndexName <- indexWriter.Settings.IndexName
                     resultDoc.TimeStamp <- int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
                     resultDoc.Fields <- fields
-                    resultDoc.Score <- float (hit.Score)
+                    resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score) else 0.0
                     resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
                     yield resultDoc
             }
