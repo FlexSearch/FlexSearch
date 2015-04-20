@@ -1038,7 +1038,7 @@ module Document =
         inherit DtoBase()
         
         /// Fields to be added to the document for indexing.
-        member val Fields = defStringDict with get, set
+        member val Fields = defStringDict() with get, set
         
         /// Unique Id of the document
         member val Id = id with get, set

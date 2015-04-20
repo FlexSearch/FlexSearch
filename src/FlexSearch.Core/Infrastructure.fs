@@ -584,7 +584,7 @@ module DataDefaults =
     open System.Collections.ObjectModel
     
     let defString = String.Empty
-    let defStringDict = new Dictionary<string, string>()
+    let defStringDict() = new Dictionary<string, string>()
     let defStringList = Enumerable.Empty<String>()
     let defArray<'T> = Array.empty<'T>
     let defInt64 = 0L
