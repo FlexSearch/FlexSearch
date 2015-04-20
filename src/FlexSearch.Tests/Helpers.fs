@@ -9,6 +9,7 @@ open System
 open System.Collections.Generic
 open System.Linq
 open System.Reflection
+open Swensen.Unquote
 
 [<AutoOpenAttribute>]
 module DataHelpers = 
@@ -42,6 +43,24 @@ module DataHelpers =
         index.SearchProfiles <- [| searchProfileQuery |]
         index
     
+    /// Utility method to add data to an index
+    let indexTestData (testData : string, index : Index.Dto, indexService : IIndexService, 
+                       documentService : IDocumentService) = 
+        test <@ succeeded <| indexService.AddIndex(index) @>
+        let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
+        if lines.Count() < 2 then failwithf "No data to index"
+        let headers = lines.[0].Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
+        let linesToLoop = lines.Skip(1).ToArray()
+        for line in linesToLoop do
+            let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
+            let document = new Document.Dto()
+            document.Id <- items.[0].Trim()
+            document.IndexName <- index.IndexName
+            for i in 1..items.Length - 1 do
+                document.Fields.Add(headers.[i].Trim(), items.[i].Trim())
+            test <@ succeeded <| documentService.AddDocument(document) @>
+        test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+    
     let container = 
         let builder = new ContainerBuilder()
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
@@ -53,7 +72,8 @@ module DataHelpers =
     let flexQueryFactory = container.Resolve<IFlexFactory<IFlexQuery>>()
     
     /// Autofixture customizations
-    let fixtureCustomization (fixture : Ploeh.AutoFixture.Fixture) = 
+    let fixtureCustomization() = 
+        let fixture = new Ploeh.AutoFixture.Fixture()
         // We override Auto fixture's string generation mechanism to return this string which will be
         // used as index name
         fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
@@ -70,16 +90,15 @@ module DataHelpers =
         fixture.Inject<IDocumentService>(documentService) |> ignore
         fixture.Inject<IJobService>(jobService) |> ignore
         fixture.Inject<IQueueService>(queueService) |> ignore
-
+        fixture
 
 [<AutoOpenAttribute>]
-module ResponseHelpers =
-    let rSucceeded (r : ResponseContext<_>) =
+module ResponseHelpers = 
+    let rSucceeded (r : ResponseContext<_>) = 
         match r with
         | SuccessResponse(_) -> true
-        | SomeResponse(Choice1Of2(_),_,_) -> true
+        | SomeResponse(Choice1Of2(_), _, _) -> true
         | _ -> false
-
 
 // ----------------------------------------------------------------------------
 // Convention Section for Fixie
@@ -98,8 +117,7 @@ type InputParameterSource() =
             let customAttribute = methodInfo.GetCustomAttributes<InlineDataAttribute>(true)
             if customAttribute.Any() then customAttribute.Select(fun input -> input.Parameters)
             else 
-                let fixture = new Ploeh.AutoFixture.Fixture()
-                fixture |> fixtureCustomization
+                let fixture = fixtureCustomization()
                 let create (builder : ISpecimenBuilder, typ : Type) = (new SpecimenContext(builder)).Resolve(typ)
                 let parameterTypes = methodInfo.GetParameters().Select(fun x -> x.ParameterType)
                 let parameterValues = parameterTypes.Select(fun x -> create (fixture, x)).ToArray()
@@ -107,7 +125,9 @@ type InputParameterSource() =
 
 type SingleInstancePerClassConvention() as self = 
     inherit Convention()
+    let fixture = fixtureCustomization()
+    let fixtureFactory (typ : Type) = (new SpecimenContext(fixture)).Resolve(typ)
     do 
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
-        self.ClassExecution.CreateInstancePerClass() |> ignore
+        self.ClassExecution.CreateInstancePerClass().UsingFactory(fun typ -> fixtureFactory (typ)) |> ignore
         self.Parameters.Add<InputParameterSource>() |> ignore
