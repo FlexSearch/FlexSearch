@@ -15,6 +15,14 @@ let withNoScore (query : SearchQuery.Dto) =
     query.ReturnScore <- false
     query
 
+let withCount (count : int) (query : SearchQuery.Dto) = 
+    query.Count <- count
+    query
+
+let withSkip (skip : int) (query : SearchQuery.Dto) = 
+    query.Skip <- skip
+    query
+
 let searchAndExtract (searchService : ISearchService) (query) = 
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
@@ -124,3 +132,39 @@ id,et1,t1,i1,s1
             |> withColumns [| "s1" |]
             |> searchAndExtract searchService
         result |> assertFieldPresent "s1"
+
+type ``Paging Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,t1,t2,i1
+1,Aaron,jhonson,1
+2,aron,hewitt,1
+3,Airon,Garner,1
+4,aroon,Garner,1
+5,aronn,jhonson,1
+6,aroonn,jhonson,1"""
+    do indexTestData (testData, index, indexService, documentService)
+    
+    member __.``Searching for 'i1 = 1' with Count = 2 will return 2 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withCount 2
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 2
+        test <@ result.Documents.[0].Id = "1" @>
+        test <@ result.Documents.[1].Id = "2" @>
+    
+    [<InlineData(1, "2", "3")>]
+    [<InlineData(2, "3", "4")>]
+    [<InlineData(3, "4", "5")>]
+    [<InlineData(4, "5", "6")>]
+    member __.``Searching for 'i1 = 1' with records to return = 2 and skip = x will return 2 records`` (skip : int, 
+                                                                                                        expected1 : string, 
+                                                                                                        expected2 : string) = 
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withCount 2
+            |> withSkip skip
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 2
+        test <@ result.Documents.[0].Id = expected1 @>
+        test <@ result.Documents.[1].Id = expected2 @>

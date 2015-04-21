@@ -125,8 +125,11 @@ type InputParameterSource() =
 
 type SingleInstancePerClassConvention() as self = 
     inherit Convention()
-    let fixture = fixtureCustomization()
-    let fixtureFactory (typ : Type) = (new SpecimenContext(fixture)).Resolve(typ)
+    
+    let fixtureFactory (typ : Type) = 
+        let fixture = fixtureCustomization()
+        (new SpecimenContext(fixture)).Resolve(typ)
+    
     do 
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         self.ClassExecution.CreateInstancePerClass().UsingFactory(fun typ -> fixtureFactory (typ)) |> ignore
