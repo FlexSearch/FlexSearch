@@ -104,6 +104,13 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
                         Directory.EnumerateFiles(path) |> Seq.iter execFileJob
                     else 
                         execFileJob path
+
+                    // Mark the Job as Completed with/without errors
+                    if job.FailedItems > 0
+                    then job.Status <- JobStatus.CompletedWithErrors
+                    else job.Status <- JobStatus.Completed
+                    jobService.UpdateJob(job) |> ignore
+
                     return! loop()
                 }
             loop())
