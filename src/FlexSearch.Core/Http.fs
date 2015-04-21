@@ -57,6 +57,7 @@ module Http =
         | SomeResponse of responseBody : Choice<'T, Error> * successCode : HttpStatusCode * failureCode : HttpStatusCode
         | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode
         | FailureResponse of responseBody : Error * failureCode : HttpStatusCode
+        | FailureOpMsgResponse of responseBody : OperationMessage
         | NoResponse
     
     /// Standard FlexSearch response to all web requests 
