@@ -69,6 +69,12 @@ let assertAvailableDocsCount (expected : int) (result : SearchResults) = test <@
 let assertFieldPresent (expected : string) (result : SearchResults) = 
     test <@ result.Documents.[0].Fields.ContainsKey(expected) @>
 
+/// This is a helper method to combine searching and asserting on returned document count 
+let verifyReturnedDocsCount (indexName : string) (expectedCount : int) (queryString : string) 
+    (searchService : ISearchService) = 
+    let result = getQuery (indexName, queryString) |> searchAndExtract searchService
+    result |> assertReturnedDocsCount expectedCount
+
 type ``Column Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
@@ -318,3 +324,50 @@ id,et1,t1
         getQuery (index.IndexName, "t1 match 'comprehensive process leads' {slop:'1'}")
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
+
+type ``Term Match Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,t1,t2,i1
+1,Aaron,jhonson,23
+2,aaron,hewitt,32
+3,Fred,Garner,44
+4,aaron,Garner,43
+5,fred,jhonson,332"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Searching for 'id eq 1' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id eq '1'"
+    member __.``Searching for int field 'i1 eq 44' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "i1 eq '44'"
+    member __.``Searching for 'aaron' should return 3 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "t1 eq 'aaron'"
+    member __.``Searching for 'aaron' & 'jhonson' should return 1 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 eq 'aaron' and t2 eq 'jhonson'"
+    member __.``Searching for t1 eq 'aaron' and (t2 eq 'jhonson' or t2 eq 'Garner') should return 2 record``() = 
+        searchService 
+        |> verifyReturnedDocsCount index.IndexName 2 "t1 eq 'aaron' and (t2 eq 'jhonson' or t2 eq 'Garner')"
+    member __.``Searching for 'id = 1' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = '1'"
+    member __.``Searching for int field 'i1 = 44' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "i1 = '44'"
+    member __.``Searching for t1 = 'aaron' should return 3 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "t1 = 'aaron'"
+    member __.``Searching for t1 = 'aaron' and t2 = 'jhonson' should return 1 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 = 'aaron' and t2 = 'jhonson'"
+    member this.``Searching for t1 'aaron' & t2 'jhonson or Garner' should return 2 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 = 'aaron' and (t2 = 'jhonson' or t2 = 'Garner')"
+
+type ``Term Match Complex Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,et1,t1
+1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
+2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artifacts such as machine code of computer programs.
+"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Searching for multiple words will create a new query which will search all the words but not in specific order``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 eq 'CompSci abbreviated approach'"
+    member __.``Searching for multiple words will create a new query which will search all the words using AND style construct but not in specific order``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 0 "t1 eq 'CompSci abbreviated approach undefinedword'"
+    member __.``Setting 'clausetype' in condition properties can override the default clause construction from AND style to OR``() = 
+        searchService 
+        |> verifyReturnedDocsCount index.IndexName 1 
+               "t1 eq 'CompSci abbreviated approach undefinedword' {clausetype:'or'}"
