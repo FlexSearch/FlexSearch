@@ -282,3 +282,39 @@ id,et1,t2,i1,t1
             |> withSearchProfile "profile1"
             |> searchService.Search
         test <@ result = Choice2Of2(MissingFieldValue("t2")) @>
+
+// ----------------------------------------------------------------------------
+// Query type tests
+// ----------------------------------------------------------------------------
+type ``Phrase Match Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,et1,t1
+1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
+2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artifacts such as machine code of computer programs.
+"""
+    do indexTestData (testData, index, indexService, documentService)
+    
+    member __.``Searching for 'practical approach' with a slop of 1 will return 1 result``() = 
+        getQuery (index.IndexName, "t1 match 'practical approach' {slop:'1'}")
+        |> searchAndExtract searchService
+        |> assertReturnedDocsCount 1
+    
+    member __.``Searching for 'practical approach' with a default slop of 1 will return 1 result``() = 
+        getQuery (index.IndexName, "t1 match 'practical approach'")
+        |> searchAndExtract searchService
+        |> assertReturnedDocsCount 1
+    
+    member __.``Searching for 'approach practical' will not return anything as the order matters``() = 
+        getQuery (index.IndexName, "t1 match 'approach practical'")
+        |> searchAndExtract searchService
+        |> assertReturnedDocsCount 0
+    
+    member __.``Searching for 'approach computation' with a slop of 2 will return 1 result``() = 
+        getQuery (index.IndexName, "t1 match 'approach computation' {slop:'2'}")
+        |> searchAndExtract searchService
+        |> assertReturnedDocsCount 1
+    
+    member __.``Searching for 'comprehensive process leads' with a slop of 1 will return 1 result``() = 
+        getQuery (index.IndexName, "t1 match 'comprehensive process leads' {slop:'1'}")
+        |> searchAndExtract searchService
+        |> assertReturnedDocsCount 1
