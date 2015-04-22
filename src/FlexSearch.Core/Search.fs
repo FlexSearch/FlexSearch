@@ -41,10 +41,20 @@ module SearchDsl =
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
     
-    let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, searchQuery : SearchQuery.Dto, 
-                       isProfileBased : Dictionary<string, string> option, queryTypes : Dictionary<string, IFlexQuery>) = 
+    let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
+                       searchQuery : SearchQuery.Dto, isProfileBased : Dictionary<string, string> option, 
+                       queryTypes : Dictionary<string, IFlexQuery>) = 
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
+        
+        let getFieldValueAsArray (fieldName : string) (v : Value) = 
+            match v with
+            | SingleValue(v) -> 
+                if String.IsNullOrWhiteSpace(v) then fail <| MissingFieldValue(fieldName)
+                else ok <| [| v |]
+            | ValueList(v) -> 
+                if v.Length = 0 then fail <| MissingFieldValue(fieldName)
+                else ok <| v.ToArray()
         
         let getValue (fieldName, operator, v : Value, p) = 
             maybe { 
@@ -56,7 +66,7 @@ module SearchDsl =
                         match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
                         | true, configuration -> 
                             match configuration with
-                            | MissingValueOption.Default -> return! v.GetValueAsArray()
+                            | MissingValueOption.Default -> return! v |> getFieldValueAsArray fieldName
                             | MissingValueOption.ThrowError -> return! fail (MissingFieldValue(fieldName))
                             | MissingValueOption.Ignore -> 
                                 generateMatchAllQuery := true
@@ -64,8 +74,8 @@ module SearchDsl =
                             | _ -> return! fail (UnknownMissingVauleOption(fieldName))
                         | _ -> 
                             // Check if a non blank value is provided as a part of the query
-                            return! v.GetValueAsArray()
-                | None -> return! v.GetValueAsArray()
+                            return! v |> getFieldValueAsArray fieldName
+                | None -> return! v |> getFieldValueAsArray fieldName
             }
         
         /// Generate the query from the condition
@@ -171,29 +181,28 @@ module SearchDsl =
                     if value <> null then fields.Add(field.FieldName, value)
                 | _ -> ()
         fields
-        
+    
     /// Searches for documents over the index using the query and returns the documents as a sequence
     let searchDocumentSeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
         let (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers) = 
             search (indexWriter, query, searchQuery)
         
         let inline getHighlighter (document : Document, shardIndex, doc) = 
-            if highlighterOptions.IsSome then
+            if highlighterOptions.IsSome then 
                 let (field, highlighter) = highlighterOptions.Value
                 let text = document.Get(field.SchemaName)
                 if text <> null then 
                     let tokenStream = 
                         TokenSources.GetAnyTokenStream
                             (indexSearchers.[shardIndex].IndexReader, doc, field.SchemaName, 
-                                indexWriter.Settings.SearchAnalyzer)
+                             indexWriter.Settings.SearchAnalyzer)
                     let frags = 
                         highlighter.GetBestTextFragments
                             (tokenStream, text, false, searchQuery.Highlights.FragmentsToReturn)
-                    frags 
-                    |> Array.filter(fun frag -> notNull(frag) && frag.GetScore() > float32 (0.0))
-                    |> Array.map(fun frag -> frag.ToString()) 
-                else
-                    Array.empty<string>
+                    frags
+                    |> Array.filter (fun frag -> notNull (frag) && frag.GetScore() > float32 (0.0))
+                    |> Array.map (fun frag -> frag.ToString())
+                else Array.empty<string>
             else Array.empty<string>
         
         let results = 
@@ -207,7 +216,8 @@ module SearchDsl =
                     resultDoc.IndexName <- indexWriter.Settings.IndexName
                     resultDoc.TimeStamp <- int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
                     resultDoc.Fields <- fields
-                    resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score) else 0.0
+                    resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
+                                       else 0.0
                     resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
                     yield resultDoc
             }
