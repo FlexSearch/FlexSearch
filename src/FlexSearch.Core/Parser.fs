@@ -20,20 +20,6 @@ open System.Linq
 type Value = 
     | SingleValue of string
     | ValueList of string list
-    
-    member this.GetValueAsList() = 
-        match this with
-        | SingleValue(v) -> [ v ]
-        | ValueList(v) -> v
-    
-    member this.GetValueAsArray() = 
-        match this with
-        | SingleValue(v) -> 
-            if String.IsNullOrWhiteSpace(v) then fail (MissingFieldValue("TODO"))
-            else ok ([| v |])
-        | ValueList(v) -> 
-            if v.Length = 0 then fail (MissingFieldValue("TODO"))
-            else ok (v.ToArray())
 
 /// <summary>
 /// Acceptable Predicates for a query
