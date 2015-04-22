@@ -105,7 +105,7 @@ module SearchDsl =
         
         generateQuery predicate
     
-    let inline search (indexWriter : IndexWriter.T, query : Query, search : SearchQuery.Dto) = 
+    let search (indexWriter : IndexWriter.T, query : Query, search : SearchQuery.Dto) = 
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
         // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
@@ -171,32 +171,30 @@ module SearchDsl =
                     if value <> null then fields.Add(field.FieldName, value)
                 | _ -> ()
         fields
-    
-    /// Represents an empty list
-    let emptyList = Enumerable.Empty<string>().ToList()
-    
+        
     /// Searches for documents over the index using the query and returns the documents as a sequence
     let searchDocumentSeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
         let (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers) = 
             search (indexWriter, query, searchQuery)
         
         let inline getHighlighter (document : Document, shardIndex, doc) = 
-            if highlighterOptions.IsSome then 
-                let highlights = new List<string>()
+            if highlighterOptions.IsSome then
                 let (field, highlighter) = highlighterOptions.Value
                 let text = document.Get(field.SchemaName)
                 if text <> null then 
                     let tokenStream = 
                         TokenSources.GetAnyTokenStream
                             (indexSearchers.[shardIndex].IndexReader, doc, field.SchemaName, 
-                             indexWriter.Settings.SearchAnalyzer)
+                                indexWriter.Settings.SearchAnalyzer)
                     let frags = 
                         highlighter.GetBestTextFragments
                             (tokenStream, text, false, searchQuery.Highlights.FragmentsToReturn)
-                    for frag in frags do
-                        if frag <> null && frag.GetScore() > float32 (0) then highlights.Add(frag.ToString())
-                highlights
-            else emptyList
+                    frags 
+                    |> Array.filter(fun frag -> notNull(frag) && frag.GetScore() > float32 (0.0))
+                    |> Array.map(fun frag -> frag.ToString()) 
+                else
+                    Array.empty<string>
+            else Array.empty<string>
         
         let results = 
             seq { 

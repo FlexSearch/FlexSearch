@@ -588,7 +588,7 @@ module DataDefaults =
     
     let defString = String.Empty
     let defStringDict() = new Dictionary<string, string>()
-    let defStringList = Enumerable.Empty<String>()
+    let defStringList = Array.empty<string>
     let defArray<'T> = Array.empty<'T>
     let defInt64 = 0L
     let defDouble = 0.0
