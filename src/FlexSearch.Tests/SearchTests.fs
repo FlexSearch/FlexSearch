@@ -413,3 +413,30 @@ id,t1,t2,i1
         searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'AR?N'"
     member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 regex '[mb]oat'"
+
+type ``Range Query Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,i1
+1,1
+2,5
+3,10
+4,15
+5,20
+"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Searching for records with i1 in range 1 to 20 inclusive upper & lower bound should return 5 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 >= '1' and i1 <= '20'"
+    member __.``Searching for records with cvv in range 1 to 20 exclusive upper & lower bound should return 3 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "i1 > '1' and i1 < '20'"
+    member __.``Searching for records with cvv in range 1 to 20 inclusive upper & exclusive lower bound should return 4 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 >= '1' and i1 < '20'"
+    member __.``Searching for records with cvv in range 1 to 20 excluding upper & including lower bound should return 4 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 > '1' and i1 <= '20'"
+    member __.``Searching for records with i1 > '1' should return 4"``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 > '1'"
+    member __.``Searching for records with i1 >= '1' should return 5``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 >= '1'"
+    member __.``Searching for records with i1 < '20' should return 4``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 < '20'"
+    member __.``Searching for records with i1 <= '20' should return 5``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 <= '20'"
