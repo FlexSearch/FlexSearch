@@ -11,6 +11,18 @@ let withColumns (columns : string []) (query : SearchQuery.Dto) =
     query.Columns <- columns
     query
 
+let withSearchProfile (profileName : string) (query : SearchQuery.Dto) = 
+    query.SearchProfile <- profileName
+    query
+
+let withHighlighting (option : HighlightOption.Dto) (query : SearchQuery.Dto) = 
+    query.Highlights <- option
+    query
+
+let withOrderBy (column : string) (query : SearchQuery.Dto) = 
+    query.OrderBy <- column
+    query
+
 let withNoScore (query : SearchQuery.Dto) = 
     query.ReturnScore <- false
     query
@@ -44,6 +56,10 @@ let assertFieldCount (expected : int) (result : SearchResults) = test <@ result.
 let assertReturnedDocsCount (expected : int) (result : SearchResults) = 
     test <@ result.Documents.Count = expected @>
     test <@ result.RecordsReturned = expected @>
+
+let assertFieldValue (documentNo : int) (fieldName : string) (expectedFieldValue : string) (result : SearchResults) = 
+    test <@ result.Documents.Count >= documentNo @>
+    test <@ result.Documents.[documentNo].Fields.[fieldName] = expectedFieldValue @>
 
 /// Check if the total number of available document returned by the query matched the expected
 /// count
@@ -168,3 +184,101 @@ id,t1,t2,i1
         result |> assertReturnedDocsCount 2
         test <@ result.Documents.[0].Id = expected1 @>
         test <@ result.Documents.[1].Id = expected2 @>
+
+type ``Sorting Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,et1,t2,i1
+1,a,jhonson,1
+2,c,hewitt,1
+3,b,Garner,1
+4,e,Garner,1
+5,d,jhonson,1"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Searching for 'i1 = 1' with orderby et1 should return 5 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "et1" |]
+            |> withOrderBy "et1"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 5
+        result |> assertFieldValue 0 "et1" "a"
+        result |> assertFieldValue 1 "et1" "b"
+        result |> assertFieldValue 2 "et1" "c"
+        result |> assertFieldValue 3 "et1" "d"
+        result |> assertFieldValue 4 "et1" "e"
+
+type ``Highlighting Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,et1,h1
+1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
+2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artefacts such as machine code of computer programs.
+"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Searching for abstract match 'practical approach' with orderby topic should return 1 records``() = 
+        let hlighlightOptions = new HighlightOption.Dto([| "h1" |])
+        hlighlightOptions.FragmentsToReturn <- 1
+        hlighlightOptions.PreTag <- "<imp>"
+        hlighlightOptions.PostTag <- "</imp>"
+        let result = 
+            getQuery (index.IndexName, "h1 match 'practical approach'")
+            |> withColumns [| "*" |]
+            |> withHighlighting hlighlightOptions
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        test <@ result.Documents.[0].Highlights.Count() = 1 @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("practical") @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("approach") @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>") @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") @>
+
+type ``Search profile Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,et1,t2,i1,t1
+1,a,jhonson,1,aron
+2,c,hewitt,1,jhon
+3,c,hewitt,1,jhon
+4,d,hewitt,1,jhon
+5,d,hewitt,1,jhon
+6,b,Garner,1,joe
+7,e,Garner,1,sam
+8,d,jhonson,1,andrew"""
+    do indexTestData (testData, index, indexService, documentService)
+    
+    member __.``There are 8 records in the index``() = 
+        let result = getQuery (index.IndexName, "_id matchall '*'") |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 8
+    
+    member __.``Searching with searchprofile 'profile1' will return 2 record``() = 
+        let result = 
+            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',i1:'1',et1:'c'")
+            |> withSearchProfile "profile1"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 2
+    
+    member __.``If no value for i1 is passed then the default configured value of 1 will be used``() = 
+        let result = 
+            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',et1:'c'")
+            |> withSearchProfile "profile1"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 2
+    
+    member __.``If no value for i1 is passed and no value for et1 is passed then et1 will be ignored``() = 
+        let result = 
+            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt'")
+            |> withSearchProfile "profile1"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 4
+    
+    member __.``If no value for t1 is passed then the profile will throw error as that option is set``() = 
+        let result = 
+            getQuery (index.IndexName, "t2:'hewitt'")
+            |> withSearchProfile "profile1"
+            |> searchService.Search
+        test <@ result = Choice2Of2(MissingFieldValue("t1")) @>
+    
+    member __.``If no value for t2 is passed then the profile will throw error as the value is missing``() = 
+        let result = 
+            getQuery (index.IndexName, "t1:'jhon'")
+            |> withSearchProfile "profile1"
+            |> searchService.Search
+        test <@ result = Choice2Of2(MissingFieldValue("t2")) @>
