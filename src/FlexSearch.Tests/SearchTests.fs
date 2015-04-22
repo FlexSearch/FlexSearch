@@ -371,3 +371,45 @@ id,et1,t1
         searchService 
         |> verifyReturnedDocsCount index.IndexName 1 
                "t1 eq 'CompSci abbreviated approach undefinedword' {clausetype:'or'}"
+
+type ``Fuzzy WildCard Match Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,t1,t2,i1
+1,Aaron,jhonson,23
+2,aron,hewitt,32
+3,Airon,Garner,44
+4,aroon,Garner,43
+5,aronn,jhonson,332
+6,aroonn,jhonson,332
+7,boat,,jhonson,332
+8,moat,jhonson,332
+"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Searching for 't1 = aron' with default slop of 1 should return 5 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 fuzzy 'aron'"
+    member __.``Searching for 't1 = aron' with specified slop of 1 should return 5 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 fuzzy 'aron' {slop:'1'}"
+    member __.``Searching for 't1 = aron' with slop of 2 should return 6 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 6 "t1 fuzzy 'aron'  {slop:'2'}"
+    member __.``Searching for 't1 ~= aron' with default slop of 1 should return 5 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 ~= 'aron'"
+    member __.``Searching for 't1 ~= aron' with specified slop of 1 should return 5 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 ~= 'aron' {slop:'1'}"
+    member __.``Searching for 't1 ~= aron' with slop of 2 should return 6 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 6 "t1 ~= 'aron'  {slop:'2'}"
+    member __.``Searching for 't1 = aron?' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 like 'aron?'"
+    member __.``Searching for 't1 = aron*' should return 2 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 like 'aron*'"
+    member __.``Searching for 't1 = ar?n' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 like 'ar?n'"
+    member __.``Searching for 't1 %= aron?' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'aron?'"
+    member __.``Searching for 't1 %= aron*' should return 2 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 %= 'aron*'"
+    member __.``Searching for 't1 %= ar?n' should return 1 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'ar?n'"
+    member __.``Searching for 't1 = AR?N' should return 1 records as matching is case in-sensitive even though like bypasses analysis``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'AR?N'"
+    member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 regex '[mb]oat'"
