@@ -309,6 +309,35 @@ module Helpers =
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore
 
+
+// ----------------------------------------------------------------------------
+// Contains various helpers for HTTP service processing
+// ----------------------------------------------------------------------------
+[<AutoOpen>]
+module HttpHelpers =
+    open Microsoft.Owin
+
+    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Int32.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue    
+
+    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> value
+
+    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Boolean.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue
+
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------

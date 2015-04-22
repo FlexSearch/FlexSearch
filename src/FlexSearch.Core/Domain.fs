@@ -1227,16 +1227,21 @@ type Job() =
 //    override __.Validate() = ok()
 //
 
-//
-///// Request to analyze a text against an analyzer. The reason to force
-///// this parameter to request body is to avoid escaping of restricted characters
-///// in the uri.
-///// This is helpful during analyzer testing.
-//[<ToString; Sealed>]
-//type AnalysisRequest() = 
-//    inherit ValidatableBase()
-//    member val Text = defString with get, set
-//    override this.Validate() = this.Text |> notEmpty "Text"
+/// <summary>
+/// Request to analyze a text against an analyzer. The reason to force
+/// this parameter to request body is to avoid escaping of restricted characters
+/// in the uri.
+/// This is helpful during analyzer testing.
+/// </summary>
+[<ToString; Sealed>]
+type AnalysisRequest() = 
+    inherit DtoBase()
+    member val Text = defString with get, set
+    override this.Validate() = 
+        if this.Text |> isBlank 
+        then Error.MissingFieldValue "Text" |> fail 
+        else ok()
+
 type CreateResponse(id : string) = 
     member val Id = id with get, set
 
