@@ -139,7 +139,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWiter, ?testMode : bool) =
         member __.Analyze(analyzerName : string, input : string) = failwith "Not implemented yet"
         member __.GetAllAnalyzers() = 
             store.Values.ToArray() 
-            |> Array.fold (fun acc (x : Analyzer.Dto * Analyzer) -> Array.append [| (fst x) |] acc) Array.empty
+            |> Array.map fst
         
         member __.GetAnalyzer(analyzerName : string) = 
             match store.TryGetValue(analyzerName) with
