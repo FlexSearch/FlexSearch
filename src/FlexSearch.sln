@@ -17,8 +17,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Tests", "FlexSea
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Server", "FlexSearch.Server\FlexSearch.Server.fsproj", "{0ABE2F45-CF90-40EC-98CD-144EB0AE9BDD}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.DuplicateDetection", "FlexSearch.DuplicateDetection\FlexSearch.DuplicateDetection.fsproj", "{8F7CC328-7741-4B8C-B500-FB8FC61F713C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,16 +58,6 @@ Global
 		{0ABE2F45-CF90-40EC-98CD-144EB0AE9BDD}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{0ABE2F45-CF90-40EC-98CD-144EB0AE9BDD}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{0ABE2F45-CF90-40EC-98CD-144EB0AE9BDD}.Release|x64.ActiveCfg = Release|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{8F7CC328-7741-4B8C-B500-FB8FC61F713C}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

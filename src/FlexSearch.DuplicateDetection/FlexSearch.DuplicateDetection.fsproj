@@ -9,12 +9,11 @@
     <OutputType>Library</OutputType>
     <RootNamespace>FlexSearch.DuplicateDetection</RootNamespace>
     <AssemblyName>FlexSearch.DuplicateDetection</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>FlexSearch.DuplicateDetection</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -75,7 +74,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">
-      <HintPath>..\packages\FlexLucene.5.1.0.0\lib\net40\FlexLucene.dll</HintPath>
+      <HintPath>..\packages\FlexLucene.5.0.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms">
@@ -215,6 +214,11 @@
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Http\FlexSearch.Http.fsproj">
+      <Name>FlexSearch.Http</Name>
+      <Project>{0634b15c-b81e-44c8-b46d-cb6197988fa6}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
