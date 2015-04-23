@@ -164,7 +164,7 @@ module Main =
             try 
                 let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
                 let loggerService = container.Resolve<ILogService>()
-                httpServer <- new OwinServer(handlerModules, loggerService, serverSettings.HttpPort)
+                httpServer <- new OwinServer(generateRoutingTable handlerModules, loggerService, serverSettings.HttpPort)
                 httpServer.Start()
             with e -> printfn "%A" e
         
