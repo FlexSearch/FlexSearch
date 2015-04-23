@@ -311,34 +311,6 @@ module Helpers =
 
 
 // ----------------------------------------------------------------------------
-// Contains various helpers for HTTP service processing
-// ----------------------------------------------------------------------------
-[<AutoOpen>]
-module HttpHelpers =
-    open Microsoft.Owin
-
-    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
-        match owin.Request.Query.Get(key) with
-        | null -> defaultValue
-        | value -> 
-            match Int32.TryParse(value) with
-            | true, v' -> v'
-            | _ -> defaultValue    
-
-    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
-        match owin.Request.Query.Get(key) with
-        | null -> defaultValue
-        | value -> value
-
-    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
-        match owin.Request.Query.Get(key) with
-        | null -> defaultValue
-        | value -> 
-            match Boolean.TryParse(value) with
-            | true, v' -> v'
-            | _ -> defaultValue
-
-// ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
@@ -483,6 +455,39 @@ module DataType =
     /// Get integer from string collection
     let inline boolFromCollection key defaultValue (dict : IReadableStringCollection) = 
         dict |> getFromCollection key pBool defaultValue
+
+
+
+// ----------------------------------------------------------------------------
+// Contains various helpers for HTTP service processing
+// ----------------------------------------------------------------------------
+[<AutoOpen>]
+module HttpHelpers =
+    open Microsoft.Owin
+
+    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Int32.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue    
+
+    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> value
+
+    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
+        match owin.Request.Query.Get(key) with
+        | null -> defaultValue
+        | value -> 
+            match Boolean.TryParse(value) with
+            | true, v' -> v'
+            | _ -> defaultValue
+
+    
+
 
 // ----------------------------------------------------------------------------
 // Formatter section : All the various media formatter to be used in 

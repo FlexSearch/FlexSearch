@@ -10,8 +10,6 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.DuplicateDetection
 
-open FlexSearch.Api
-open FlexSearch.Common
 open FlexSearch.Core
 open Microsoft.Owin
 open System
@@ -111,11 +109,11 @@ type DataContext(connectionString : string) =
 
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
-type SqlHandler(regManager : RegisterationManager, searchService : ISearchService) = 
-    inherit HttpHandlerBase<unit, Guid>()
+type SqlHandler(indexService : IIndexService, searchService : ISearchService) = 
+    inherit HttpHandlerBase<NoBody, Guid>()
     let connectionString = "Data Source=(localdb)\\v11.0;Integrated Security=True"
     
-    let DuplicateRecordCheck(record : Dictionary<string, string>, query : SearchQuery, session : Session) = 
+    let DuplicateRecordCheck(record : Dictionary<string, string>, query : SearchQuery.Dto, session : Session) = 
         match searchService.SearchUsingProfile(query, record) with
         | Choice1Of2(results) -> 
             if results.RecordsReturned > 1 then 
@@ -140,20 +138,21 @@ type SqlHandler(regManager : RegisterationManager, searchService : ISearchServic
         | _ -> ()
     
     let PerformDuplicateDetection(jobId, session : Session) = 
-        maybe { 
-            let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
-            let mainQuery = "_lastmodified > '20130101'"
+        let addToColumns item (query : SearchQuery.Dto) = query.Columns <- query.Columns |> Array.append [|item|]
+        let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
+        let mainQuery = "_lastmodified > '20130101'"
 //                sprintf "%s > '%s' AND %s < '%s'" session.DateTimeField 
 //                    (session.RangeStartTime.ToString("yyyyMMddHHmmssfff")) session.DateTimeField 
 //                    (session.RangeEndTime.ToString("yyyyMMddHHmmssfff"))
-            let mainQuery = new SearchQuery(session.IndexName, mainQuery, Count = (int32) System.Int16.MaxValue)
-            // TODO: Future optimization: bring only the required columns
-            mainQuery.Columns.Add("*")
-            let! (records, recordsReturned, totalAvailable) = searchService.SearchAsDictionarySeq(mainQuery)
-            let secondaryQuery = new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
+        let mainQuery = new SearchQuery.Dto(session.IndexName, mainQuery, Count = (int32) System.Int16.MaxValue)
+        // TODO: Future optimization: bring only the required columns
+        mainQuery |> addToColumns "*"
+        match searchService.SearchAsDictionarySeq(mainQuery) with
+        | Choice1Of2(records, recordsReturned, totalAvailable) -> 
+            let secondaryQuery = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
             session.RecordsReturned <- recordsReturned
             session.RecordsAvailable <- totalAvailable
-            secondaryQuery.Columns.Add(session.DisplayFieldName)
+            secondaryQuery |> addToColumns session.DisplayFieldName
             use context = new DataContext(connectionString)
             let session = context.Sessions.Add(session)
             context.SaveChanges() |> ignore
@@ -162,27 +161,36 @@ type SqlHandler(regManager : RegisterationManager, searchService : ISearchServic
             |> ignore
             session.JobEndTime <- DateTime.Now
             context.SaveChanges() |> ignore
-        }
+        | _ -> ()
+        
     
     let requestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
-            let rec loop = 
+            let rec loop() = 
                 async { 
                     let! (jobId, session) = inbox.Receive()
                     PerformDuplicateDetection(jobId, session) |> ignore
-                    return! loop
+                    return! loop()
                 }
-            loop)
+            loop())
     
-    let ProcessRequest(indexName : string, searchProfile : string, context : IOwinContext) = 
+    let processRequest(indexName : string, searchProfile : string, context : IOwinContext) = 
+        let getDateTimeValueFromQueryString key (owin : IOwinContext) = 
+            match owin.Request.Query.Get(key) with
+            | null -> fail <| Error.MissingFieldValue(key)
+            | value -> 
+                match Int64.TryParse(value) with
+                | true, v' -> ok(v')
+                | _ -> fail <| Error.DataCannotBeParsed(key,"int64")
         maybe { 
-            let! startDate = GetDateTimeValueFromQueryString "startdate" context
-            let! endDate = GetDateTimeValueFromQueryString "enddate" context
-            let dateTimeField = GetValueFromQueryString "datetimefield" Constants.LastModifiedField context
-            let displayName = GetValueFromQueryString "displayname" Constants.IdField context
-            let threadCount = GetIntValueFromQueryString "threadcount" 1 context
-            let! registeration = regManager.IsOpen(indexName)
-            match registeration.Index.Value.IndexSetting.SearchProfiles.TryGetValue(searchProfile) with
+            let! startDate = getDateTimeValueFromQueryString "startdate" context
+            let! endDate = getDateTimeValueFromQueryString "enddate" context
+            let dateTimeField = getValueFromQueryString "datetimefield" Constants.LastModifiedField context
+            let displayName = getValueFromQueryString "displayname" Constants.IdField context
+            let threadCount = getIntValueFromQueryString "threadcount" 1 context
+            let! indexWriter = indexService.IsIndexOnline indexName
+            
+            match indexWriter.Settings.SearchProfiles.TryGetValue(searchProfile) with
             | true, profile -> 
                 let session = new Session()
                 session.IndexName <- indexName
@@ -199,12 +207,10 @@ type SqlHandler(regManager : RegisterationManager, searchService : ISearchServic
                 session.ThreadCount <- threadCount
                 let jobId = Guid.NewGuid()
                 requestProcessor.Post(jobId, session)
-                return! Choice1Of2(jobId)
+                return! ok(jobId)
             | _ -> 
-                return! Choice2Of2(Errors.SEARCH_PROFILE_NOT_FOUND
-                                   |> GenerateOperationMessage
-                                   |> Append("ProfileName", searchProfile))
+                return! fail <| Error.UnknownSearchProfile(indexName,searchProfile)
         }
     
-    override this.Process(index, connectionName, body, context) = 
-        ((ProcessRequest(index.Value, connectionName.Value, context)), Ok, BadRequest)
+    override this.Process(request, body) = 
+        SomeResponse(processRequest(request.ResId.Value, request.SubResId.Value, request.OwinContext), Ok, BadRequest)
