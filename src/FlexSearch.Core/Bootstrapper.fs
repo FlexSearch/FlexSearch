@@ -40,11 +40,6 @@ module FactoryService =
                .Where(fun t -> t.GetInterfaces().Any(fun i -> i.IsAssignableFrom(typeof<'T>))).AsImplementedInterfaces() 
         |> ignore
     
-    /// Register all the abstract class assemblies
-    let registerAbstractClassAssemblies<'T> (builder : ContainerBuilder) = 
-        builder.RegisterAssemblyTypes(AppDomain.CurrentDomain.GetAssemblies()).Where(fun t -> t.BaseType = typeof<'T>).As<'T>
-            () |> ignore
-    
     /// Register an instance as single instance in the builder
     let registerSingleInstance<'T, 'U> (builder : ContainerBuilder) = 
         builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore
@@ -122,6 +117,7 @@ module Main =
     open Autofac
     open Autofac.Extras.Attributed
     open FlexSearch.Core
+    open System.Reflection
     
     /// Get a container with all dependencies setup
     let getContainer (serverSettings : ServerSettings.T, logService : ILogService, testServer : bool) = 
@@ -135,32 +131,26 @@ module Main =
         builder.RegisterInstance(logService).As<ILogService>() |> ignore
         // Interface scanning
         builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
-        //builder |> FactoryService.registerInterfaceAssemblies<IHttpResource>
-        // Abstract class scanning
-        builder |> FactoryService.registerAbstractClassAssemblies<HttpHandlerBase<_, _>>
+        builder |> FactoryService.registerInterfaceAssemblies<IHttpHandler>
         // Factory registration
-        //builder |> FactoryService.registerSingleFactoryInstance<IHttpResource>
         builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
-        //        builder |> FactoryService.registerSingleInstance<SettingsBuilder, ISettingsBuilder>
+        builder |> FactoryService.registerSingleFactoryInstance<IHttpHandler>
         builder |> FactoryService.registerSingleInstance<YamlFormatter, IFormatter>
-        //builder |> FactoryService.registerSingleInstance<ThreadSafeFileWiter, IThreadSafeWriter>
-        //builder |> FactoryService.registerSingleInstance<RegisterationManager, RegisterationManager>
-        // Register services
+        builder |> FactoryService.registerSingleInstance<ThreadSafeFileWiter, ThreadSafeFileWiter>
         builder |> FactoryService.registerSingleInstance<FlexParser, IFlexParser>
-        builder |> FactoryService.registerSingleInstance<IndexService, IIndexService>
-        //        builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
+        // Register services
+        builder.RegisterType<AnalyzerService>().As<IAnalyzerService>().SingleInstance()
+            .WithParameter("testMode", Some(false)) |> ignore
+        builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance().WithParameter("testMode", Some(false)) 
+        |> ignore
+        builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
         builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
-        //        builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>
+        builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.registerSingleInstance<JobService, IJobService>
-        //        builder |> FactoryService.registerSingleInstance<AnalyzerService, IAnalyzerService>
-        //        builder |> FactoryService.registerSingleInstance<DemoIndexService, DemoIndexService>
-        //        builder |> FactoryService.registerSingleInstance<ResourceService, IResourceService>
-        //        builder |> FactoryService.registerSingleInstance<FactoryService.FactoryCollection, IFactoryCollection>
+        //builder |> FactoryService.registerSingleInstance<DemoIndexService, DemoIndexService>
         builder.Build()
     
-    /// <summary>
     /// Used by windows service (top shelf) to start and stop windows service.
-    /// </summary>
     [<Sealed>]
     type NodeService(serverSettings : ServerSettings.T, logService : ILogService, testServer : bool) = 
         let container = getContainer (serverSettings, logService, testServer)
@@ -172,9 +162,9 @@ module Main =
         //            if testServer <> true then MaximizeThreads() |> ignore
         member __.Start() = 
             try 
-                let httpModules = container.Resolve<IFlexFactory<HttpHandlerBase<_, _>>>().GetAllModules()
+                let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
                 let loggerService = container.Resolve<ILogService>()
-                httpServer <- new OwinServer(httpModules, loggerService, serverSettings.HttpPort)
+                httpServer <- new OwinServer(handlerModules, loggerService, serverSettings.HttpPort)
                 httpServer.Start()
             with e -> printfn "%A" e
         
