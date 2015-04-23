@@ -640,7 +640,7 @@ module VersionCache =
             let termsEnum = terms.iterator (null)
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
-                let docsEnums = termsEnum.docs (null, null, 0)
+                let docsEnums = termsEnum.Docs (null, null, 0)
                 let nDocs = reader.getNumericDocValues (cache.LastModifiedFieldName)
                 nDocs.get (docsEnums.nextDoc())
             | false -> 
