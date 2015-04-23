@@ -162,7 +162,7 @@ module Http =
     /// Handler base class which exposes common Http Handler functionality
     [<AbstractClass>]
     type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?failOnMissingBody : bool, ?validateBody : bool) = 
-        member __.HasBody = typeof<'T> = typeof<NoBody>
+        member __.HasBody = typeof<'T> <> typeof<NoBody>
         member this.FailOnMissingBody = defaultArg failOnMissingBody this.HasBody
         member __.ValidateBody = defaultArg validateBody false
         member __.DeSerialize(request : IOwinRequest) = getRequestBody<'T> (request)
