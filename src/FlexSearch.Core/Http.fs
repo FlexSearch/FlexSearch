@@ -153,6 +153,9 @@ module Http =
     let inline getIndexName (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[2]
     let inline subId (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[4]
     
+    type IHttpHandler = 
+        abstract Execute : RequestContext -> unit
+    
     /// Handler base class which exposes common Http Handler functionality
     [<AbstractClass>]
     type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?failOnMissingBody : bool, ?validateBody : bool) = 
@@ -176,8 +179,40 @@ module Http =
             | Choice2Of2(r) -> owinContext |> this.SerializeFailure r failureStatus
         
         abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
+        interface IHttpHandler with
+            member handler.Execute(request : RequestContext) : unit = 
+                let validateRequest() = 
+                    maybe { 
+                        let! body = match handler.HasBody with
+                                    | true -> 
+                                        match handler.DeSerialize(request.OwinContext.Request) with
+                                        | Choice1Of2 a -> ok <| Some(a)
+                                        | Choice2Of2 b -> 
+                                            if handler.FailOnMissingBody then fail <| b
+                                            else ok <| None
+                                    | false -> ok <| None
+                        /// Validate the DTO
+                        if body.IsSome && handler.ValidateBody then do! body.Value.Validate()
+                        return body
+                    }
+                
+                let processFailure (error) = 
+                    request.OwinContext |> handler.SerializeFailure error HttpStatusCode.BadRequest
+                
+                let processHandler (body) = 
+                    match handler.Process(request, body) with
+                    | SomeResponse(body, successCode, failureCode) -> 
+                        request.OwinContext |> handler.Serialize body successCode failureCode
+                    | SuccessResponse(body, successCode) -> 
+                        request.OwinContext |> handler.SerializeSuccess body successCode
+                    | FailureResponse(body, failureCode) -> 
+                        request.OwinContext |> handler.SerializeFailure body failureCode
+                    | NoResponse -> ()
+                
+                match validateRequest() with
+                | Choice1Of2 body -> processHandler body
+                | Choice2Of2 error -> processFailure error
     
-    /// This is responsible for generating routing lookup table from the registerd http modules
     let generateRoutingTable (modules : Dictionary<string, HttpHandlerBase<_, _>>) = 
         let result = new Dictionary<string, HttpHandlerBase<_, _>>(StringComparer.OrdinalIgnoreCase)
         for m in modules do
@@ -214,7 +249,7 @@ type IServer =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(httpModule : Dictionary<string, HttpHandlerBase<_, Error>>, logger : ILogService, ?port0 : int) = 
+type OwinServer(httpModule : Dictionary<string, IHttpHandler>, logger : ILogService, ?port0 : int) = 
     let port = defaultArg port0 9800
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
@@ -223,36 +258,6 @@ Use the below command to add URL reservation.
 netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 ---------------------------------------------------------------------------
 """
-    
-    let execute (request : RequestContext, handler : HttpHandlerBase<_, _>) = 
-        let validateRequest() = 
-            maybe { 
-                let! body = match handler.HasBody with
-                            | true -> 
-                                match handler.DeSerialize(request.OwinContext.Request) with
-                                | Choice1Of2 a -> ok <| Some(a)
-                                | Choice2Of2 b -> 
-                                    if handler.FailOnMissingBody then fail <| b
-                                    else ok <| None
-                            | false -> ok <| None
-                /// Validate the DTO
-                if body.IsSome && handler.ValidateBody then do! body.Value.Validate()
-                return body
-            }
-        
-        let processFailure (error) = request.OwinContext |> handler.SerializeFailure error HttpStatusCode.BadRequest
-        
-        let processHandler (body) = 
-            match handler.Process(request, body) with
-            | SomeResponse(body, successCode, failureCode) -> 
-                request.OwinContext |> handler.Serialize body successCode failureCode
-            | SuccessResponse(body, successCode) -> request.OwinContext |> handler.SerializeSuccess body successCode
-            | FailureResponse(body, failureCode) -> request.OwinContext |> handler.SerializeFailure body failureCode
-            | NoResponse -> ()
-        
-        match validateRequest() with
-        | Choice1Of2 body -> processHandler body
-        | Choice2Of2 error -> processFailure error
     
     /// Default OWIN method to process request
     let exec (owin : IOwinContext) = 
@@ -271,7 +276,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                     | 5 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id/" + owin.Segment(3) + ":id") // /Resource/:Id/SubResouce/:Id
                     | _ -> None
                 match httpHandler with
-                | Some(handler) -> execute (owin.RequestContext, handler) |> ignore
+                | Some(handler) -> handler.Execute(owin.RequestContext)
                 | None -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
             with __ -> ()
         }
