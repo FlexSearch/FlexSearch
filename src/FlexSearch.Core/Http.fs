@@ -62,7 +62,9 @@ module Http =
     
     /// Standard FlexSearch response to all web requests 
     type Response<'T> = 
-        { Data : 'T
+        { [<NullGuard.AllowNullAttribute>]
+          Data : 'T
+          [<NullGuard.AllowNullAttribute>]
           Error : OperationMessage }
         
         /// Populate response with data part populated
@@ -153,6 +155,7 @@ module Http =
     let inline getIndexName (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[2]
     let inline subId (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[4]
     
+    /// A helper interface to dynamically find all the HttpHandlerBase classes
     type IHttpHandler = 
         abstract Execute : RequestContext -> unit
     
@@ -213,8 +216,8 @@ module Http =
                 | Choice1Of2 body -> processHandler body
                 | Choice2Of2 error -> processFailure error
     
-    let generateRoutingTable (modules : Dictionary<string, HttpHandlerBase<_, _>>) = 
-        let result = new Dictionary<string, HttpHandlerBase<_, _>>(StringComparer.OrdinalIgnoreCase)
+    let generateRoutingTable (modules : Dictionary<string, IHttpHandler>) = 
+        let result = new Dictionary<string, IHttpHandler>(StringComparer.OrdinalIgnoreCase)
         for m in modules do
             let valueWithSlash, valueWithoutSlash = 
                 let intermediate = m.Key.Substring(m.Key.IndexOf("-") + 1)
