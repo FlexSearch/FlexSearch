@@ -28,6 +28,13 @@ open System.Threading.Tasks
 open System.Runtime.Caching
 open System.Threading.Tasks.Dataflow
 
+/// General factory Interface for all MEF based factories
+type IFlexFactory<'T> = 
+    abstract GetModuleByName : string -> Choice<'T, Error>
+    abstract ModuleExists : string -> bool
+    abstract GetAllModules : unit -> Dictionary<string, 'T>
+    abstract GetMetaData : string -> Choice<IDictionary<string, obj>, Error>
+
 /// Index related operations
 type IIndexService = 
     abstract GetIndex : indexName:string -> Choice<Index.Dto, Error>
