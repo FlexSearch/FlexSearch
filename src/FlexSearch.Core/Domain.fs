@@ -470,8 +470,17 @@ module IndexConfiguration =
         
         /// The amount of time in seconds that FlexSearch 
         /// should wait before committing changes to the disk.
+        /// This is only used if no commits have happended in the
+        /// set time period otherwise CommitEveryNFlushes takes care
+        /// of commits
         member val CommitTimeSeconds = 300 with get, set
         
+        /// Determines how often the data be committed to the
+        /// physical medium. Commits are more expensive then
+        /// flushes so keep the setting as high as possilbe. Making
+        /// this setting too high will result in excessive ram usage.  
+        member val CommitEveryNFlushes = 3 with get, set
+
         /// A Directory is a flat list of files. Files may be 
         /// written once, when they are created. Once a file 
         /// is created it may only be opened for read, or 
