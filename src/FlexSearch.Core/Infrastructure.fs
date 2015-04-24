@@ -59,7 +59,7 @@ module Constants =
     
     [<Literal>]
     let Score = "_score"
-
+    
     [<Literal>]
     let DotNetFrameWork = "4.5.1"
     
@@ -78,31 +78,23 @@ module Constants =
     
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-    let private confFolder = rootFolder +/ "Conf"
-    let private dataFolder = rootFolder +/ "Data"
-    let private pluginFolder = rootFolder +/ "Plugins"
-    let private logsFolder = rootFolder +/ "Logs"
+    let createDir (directoryPath) = Directory.CreateDirectory(directoryPath).ToString()
     
     /// Flex index folder
-    let DataFolder = 
-        Directory.CreateDirectory(dataFolder) |> ignore
-        dataFolder
+    let DataFolder = rootFolder +/ "Data" |> createDir
     
     /// Flex index folder
-    let ConfFolder = 
-        Directory.CreateDirectory(confFolder) |> ignore
-        confFolder
-    
+    let ConfFolder = rootFolder +/ "Conf" |> createDir
+        
     /// Flex plug-in folder
-    let PluginFolder = 
-        Directory.CreateDirectory(pluginFolder) |> ignore
-        pluginFolder
+    let PluginFolder = rootFolder +/ "Plugins" |> createDir 
     
     /// Flex logs folder
-    let LogsFolder = 
-        Directory.CreateDirectory(logsFolder) |> ignore
-        logsFolder
+    let LogsFolder = rootFolder +/ "Logs" |> createDir
     
+    /// Flex web files folder
+    let WebFolder = rootFolder +/ "Web" |> createDir
+        
     /// Extension to be used by settings file
     let SettingsFileExtension = ".yml"
     
