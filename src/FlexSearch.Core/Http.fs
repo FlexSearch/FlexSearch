@@ -30,6 +30,8 @@ open System.IO
 open System.Net
 open System.Threading
 open System.Threading.Tasks
+open Microsoft.Owin.StaticFiles
+open Microsoft.Owin.FileSystems
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -285,11 +287,22 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         }
     
     /// Default OWIN handler to transform C# function to F#
-    let handler = Func<IOwinContext, Tasks.Task>(fun owin -> Async.StartAsTask(exec (owin)) :> Task)
+    let handler = Func<IOwinContext, Func<Task>, Tasks.Task>(fun owin _ -> Async.StartAsTask(exec (owin)) :> Task)
     
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-    member __.Configuration(app : IAppBuilder) = app.Run(handler)
+    member __.Configuration(app : IAppBuilder) = 
+        let fileServerOptions = new FileServerOptions()
+        fileServerOptions.EnableDirectoryBrowsing <- true
+        fileServerOptions.EnableDefaultFiles <- true
+        fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder)
+        fileServerOptions.RequestPath <- new PathString(@"/static")
+        app.UseFileServer(fileServerOptions) |>  ignore
+        
+        // This should always be the last middleware in the pipeline as this is
+        // resposible for handling our REST requests
+        app.Use(handler) |> ignore
+
     interface IServer with
         
         member this.Start() = 
