@@ -1282,4 +1282,4 @@ module ServerSettings =
                   ConfFolder = Constants.ConfFolder
                   NodeName = parsedResult.NodeName }
             ok setting
-        else fail <| UnableToParseConfig ""
+        else fail <| FileNotFound path
