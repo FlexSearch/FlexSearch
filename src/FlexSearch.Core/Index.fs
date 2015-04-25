@@ -341,11 +341,14 @@ module TransacationLog =
     type T = 
         { TransactionId : int64
           Operation : Operation
+          [<NullGuard.AllowNullAttribute>]
           Document : Document.Dto
           /// This will be used for delete operation as we
           /// don't require a document
+          [<NullGuard.AllowNullAttribute>]
           Id : string
           /// This will be used for delete operation
+          [<NullGuard.AllowNullAttribute>]
           Query : string }
         
         static member Create(tranxId, operation, document, ?id : string, ?query : string) = 
@@ -366,15 +369,15 @@ module TransacationLog =
     
     let msgPackSerializer = SerializationContext.Default.GetSerializer<T>()
     let serializer (stream, entry : T) = msgPackSerializer.Pack(stream, entry)
+    let deSerializer (stream) = msgPackSerializer.Unpack(stream)
     
     type TxWriter(path : string, gen : int64) = 
-        let newline = Encoding.ASCII.GetBytes(Environment.NewLine)
         let mutable currentGen = gen
         let mutable fileStream = Unchecked.defaultof<_>
         let populateFS() = 
             fileStream <- new FileStream(path +/ gen.ToString(), FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
-        
-        let processor = 
+       
+        let processor =
             MailboxProcessor.Start(fun inbox -> 
                 let rec loop() = 
                     async { 
@@ -385,12 +388,24 @@ module TransacationLog =
                             populateFS()
                         // TODO: Test writing async
                         fileStream.Write(data, 0, data.Length)
-                        fileStream.Write(newline, 0, newline.Length)
+                        fileStream.Flush()
+                        //fileStream.Write(newline, 0, newline.Length)
                         return! loop()
                     }
                 populateFS()
                 loop())
         
+        /// Reads exitisting Tx Log and returns all the entries
+        member __.ReadLog(gen : int64) = 
+            try
+                seq { 
+                    if File.Exists(path +/ gen.ToString()) then 
+                        use fileStream = new FileStream(path +/ gen.ToString(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                        while fileStream.Position <> fileStream.Length do
+                            yield msgPackSerializer.Unpack(fileStream)
+                }
+            with _ -> Seq.empty
+
         /// Append a new entry to TxLog        
         member __.Append(data, gen) = processor.Post(data, gen)
         
@@ -418,37 +433,33 @@ module ShardWriter =
         inherit IndexWriter(directory, config)
         let mutable state = Unchecked.defaultof<T>
         member __.SetState(s : T) = state <- s
-        
-        /// This will be executed before pending added and deleted documents 
-        /// are flushed to the Directory. This gives us the best place to
-        /// automate things around Lucene flush logic. 
-        override this.doBeforeFlush() = 
-            /// State can be null when the index writer is opened for the
-            /// very first time
-            if not (isNull state) then 
-                // Save the current generation in the commit data so that
-                // it can be used for shard recovery 
-                this.SetCommitData(getCommitData state.Generation state.ModifyIndex)
-                // Increment the current generation so that the log file 
-                // can be switched
-                state.GetNextGen() |> ignore
-        
+        //        /// This will be executed before pending added and deleted documents 
+        //        /// are flushed to the Directory. This gives us the best place to
+        //        /// automate things around Lucene flush logic. 
+        //        override this.doBeforeFlush() = 
+        //            /// State can be null when the index writer is opened for the
+        //            /// very first time
+        //            if not (isNull state) then 
+        //                // Save the current generation in the commit data so that
+        //                // it can be used for shard recovery 
+        //                this.SetCommitData(getCommitData state.Generation state.ModifyIndex)
+        //                // Increment the current generation so that the log file 
+        //                // can be switched
+        //                state.GetNextGen() |> ignore
         /// A hook for extending classes to execute operations after pending 
         /// added and deleted documents have been flushed to the Directory but 
         /// before the change is committed (new segments_N file written).
         override this.doAfterFlush() = 
             /// State can be null when the index writer is opened for the
             /// very first time
-            if not (isNull state) then 
-                let current = state.LastCommitTime
-                
-                let commitTime = DateTime.Now.Ticks
-                // We don't care if something else has changed the time as this is a
-                // fallback mechanism
-                Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
+            if not (isNull state) then state.IncrementFlushCount() |> ignore
     
-    // Auto commit after flush
-    //this.Commit()
+    //                let current = state.LastCommitTime
+    //                
+    //                let commitTime = DateTime.Now.Ticks
+    //                // We don't care if something else has changed the time as this is a
+    //                // fallback mechanism
+    //                Interlocked.CompareExchange(ref state.LastCommitTime, commitTime, current) |> ignore
     /// An IndexWriter creates and maintains an index. This is a wrapper around
     /// Lucene IndexWriter to expose the functionality in a controlled and functional 
     /// manner.
@@ -468,6 +479,9 @@ module ShardWriter =
           /// timebased commit to check if auto-commit should take
           /// place or not.
           LastCommitTime : int64
+          /// Represents the total outstanding flushes that have occured
+          /// since the last commit
+          mutable OutstandingFlushes : int32
           /// Represents the current modify index. This is used by for
           /// recovery and shard sync from transaction logs.
           ModifyIndex : int64
@@ -476,6 +490,8 @@ module ShardWriter =
           ShardNo : int }
         member this.GetNextIndex() = Interlocked.Increment(ref this.ModifyIndex)
         member this.GetNextGen() = Interlocked.Increment(ref this.Generation)
+        member this.IncrementFlushCount() = Interlocked.Increment(ref this.OutstandingFlushes)
+        member this.ResetFlushCount() = this.OutstandingFlushes <- new Int32()
     
     /// Get the highest modified index value from the shard   
     let getMaxModifyIndex (r : IndexReader) = 
@@ -513,6 +529,7 @@ module ShardWriter =
               Generation = generation
               CommitDuration = int64 commitDuration
               LastCommitTime = 0L
+              OutstandingFlushes = 0
               Status = Opening
               ModifyIndex = modifyIndex
               TxWriter = new TransacationLog.TxWriter(logPath, generation)
@@ -640,7 +657,7 @@ module VersionCache =
             let termsEnum = terms.iterator (null)
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
-                let docsEnums = termsEnum.Docs (null, null, 0)
+                let docsEnums = termsEnum.Docs(null, null, 0)
                 let nDocs = reader.getNumericDocValues (cache.LastModifiedFieldName)
                 nDocs.get (docsEnums.nextDoc())
             | false -> 

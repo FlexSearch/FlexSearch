@@ -16,6 +16,8 @@ module DataHelpers =
     open Autofac
     open Autofac.Extras.Attributed
     
+    let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
+    
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index.Dto()
