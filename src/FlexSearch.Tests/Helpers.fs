@@ -71,6 +71,20 @@ module DataHelpers =
     
     let flexQueryFactory = container.Resolve<IFlexFactory<IFlexQuery>>()
     
+    let buildServer logger (container : IContainer) = 
+        let serverSettings = ServerSettings.T.GetDefault()
+        let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
+        new OwinServer(generateRoutingTable handlerModules, logger, serverSettings.HttpPort) :> IServer
+    
+    let lockObject = new Object()
+    let mutable serverRunning = false
+    
+    let ensureServerIsRunning (server : IServer) = 
+        lock lockObject (fun () -> 
+            if serverRunning |> not then 
+                server.Start()
+                serverRunning <- true)
+    
     /// Autofixture customizations
     let fixtureCustomization() = 
         let fixture = new Ploeh.AutoFixture.Fixture()
@@ -85,11 +99,13 @@ module DataHelpers =
         let documentService = new DocumentService(searchService, indexService)
         let queueService = new QueueService(documentService)
         let jobService = new JobService()
+        let owinServer = buildServer logger container
         fixture.Inject<IIndexService>(indexService) |> ignore
         fixture.Inject<ISearchService>(searchService) |> ignore
         fixture.Inject<IDocumentService>(documentService) |> ignore
         fixture.Inject<IJobService>(jobService) |> ignore
         fixture.Inject<IQueueService>(queueService) |> ignore
+        fixture.Inject<IServer>(owinServer) |> ignore
         fixture
 
 [<AutoOpenAttribute>]

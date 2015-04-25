@@ -65,6 +65,7 @@
     <Compile Include="SearchTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="HandlerTests.fs" />
+    <Compile Include="HttpTests.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
     <None Include="test.csv" />
