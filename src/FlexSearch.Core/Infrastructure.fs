@@ -912,7 +912,7 @@ module Log =
 /// Note : This is not meant to be used for huge files and should 
 /// be used for writing configuration files.
 [<Sealed>]
-type ThreadSafeFileWiter(formatter : FlexSearch.Core.IFormatter) = 
+type ThreadSafeFileWriter(formatter : FlexSearch.Core.IFormatter) = 
     
     let getPathWithExtension (path) = 
         if Path.GetExtension(path) <> Constants.SettingsFileExtension then path + Constants.SettingsFileExtension
@@ -951,7 +951,7 @@ type ThreadSafeFileWiter(formatter : FlexSearch.Core.IFormatter) =
             fail <| FileWriteError(filePath, exceptionPrinter e)
 
 [<Sealed>]
-type DtoStore<'T>(fileWriter : ThreadSafeFileWiter) = 
+type DtoStore<'T>(fileWriter : ThreadSafeFileWriter) = 
     let store = conDict<'T>()
     
     let getFolderName (typeName : string) = 

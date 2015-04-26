@@ -91,7 +91,7 @@ type IAnalyzerService =
     abstract Analyze : analyzerName:string * input:string -> Choice<string, Error>
 
 [<Sealed>]
-type AnalyzerService(threadSafeWriter : ThreadSafeFileWiter, ?testMode : bool) = 
+type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     
     let path = 
@@ -159,7 +159,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWiter, ?testMode : bool) =
             | _ -> fail <| AnalyzerNotFound(analyzerName)
 
 [<Sealed>]
-type IndexService(threadSafeWriter : ThreadSafeFileWiter, analyzerService : IAnalyzerService, ?testMode : bool) = 
+type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     
     /// State information related to all the indices present in the
