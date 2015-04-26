@@ -15,12 +15,17 @@ open Swensen.Unquote
 module DataHelpers = 
     open Autofac
     open Autofac.Extras.Attributed
+    open System.Diagnostics
     
+    let writer = new TextWriterTraceListener(System.Console.Out)
+    Debug.Listeners.Add(writer) |> ignore
+
     let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index.Dto()
+        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false)
         index.IndexName <- Guid.NewGuid().ToString("N")
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
@@ -63,7 +68,7 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
     
-    let container = 
+    let container =  
         let builder = new ContainerBuilder()
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
         builder.RegisterInstance(Log.logger).As<ILogService>() |> ignore
@@ -101,13 +106,13 @@ module DataHelpers =
         let documentService = new DocumentService(searchService, indexService)
         let queueService = new QueueService(documentService)
         let jobService = new JobService()
-        let owinServer = buildServer logger container
+        //let owinServer = buildServer logger container
         fixture.Inject<IIndexService>(indexService) |> ignore
         fixture.Inject<ISearchService>(searchService) |> ignore
         fixture.Inject<IDocumentService>(documentService) |> ignore
         fixture.Inject<IJobService>(jobService) |> ignore
         fixture.Inject<IQueueService>(queueService) |> ignore
-        fixture.Inject<IServer>(owinServer) |> ignore
+        //fixture.Inject<IServer>(owinServer) |> ignore
         fixture
 
 [<AutoOpenAttribute>]

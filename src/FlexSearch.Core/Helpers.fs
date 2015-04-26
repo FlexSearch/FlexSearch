@@ -18,6 +18,8 @@
 namespace FlexSearch.Core
 
 open Microsoft.FSharp.Core.Printf
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -30,8 +32,6 @@ open System.Security.AccessControl
 open System.Security.Principal
 open System.Text
 open System.Threading
-open Newtonsoft.Json.Converters
-open Newtonsoft.Json
 
 /// Abstract base class to be implemented by all pool able object
 [<AbstractClass>]
@@ -309,27 +309,26 @@ module Helpers =
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore
 
-
 // ----------------------------------------------------------------------------
 // Contains various helpers for HTTP service processing
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
-module HttpHelpers =
+module HttpHelpers = 
     open Microsoft.Owin
-
+    
     let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
         | value -> 
             match Int32.TryParse(value) with
             | true, v' -> v'
-            | _ -> defaultValue    
-
+            | _ -> defaultValue
+    
     let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
         | value -> value
-
+    
     let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
         match owin.Request.Query.Get(key) with
         | null -> defaultValue
@@ -564,3 +563,10 @@ type YamlFormatter() =
         
         member __.Serialize(body : obj, stream : Stream) : unit = serialize (body, stream)
         member __.SupportedHeaders = [| "application/yaml" |]
+
+[<AutoOpenAttribute>]
+module Debug = 
+    open System.Diagnostics
+    
+    /// Write debug output
+    let (!>) fmt = Printf.ksprintf Debug.WriteLine fmt
