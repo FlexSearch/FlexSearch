@@ -140,8 +140,8 @@ module Main =
         builder |> FactoryService.registerSingleInstance<FlexParser, IFlexParser>
         // Register services
         builder.RegisterType<AnalyzerService>().As<IAnalyzerService>().SingleInstance()
-            .WithParameter("testMode", Some(false)) |> ignore
-        builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance().WithParameter("testMode", Some(false)) 
+            .WithParameter("testMode", Some(testServer)) |> ignore
+        builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance().WithParameter("testMode", Some(testServer)) 
         |> ignore
         builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
         builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
