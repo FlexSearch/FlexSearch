@@ -481,6 +481,9 @@ module IndexConfiguration =
         /// this setting too high will result in excessive ram usage.  
         member val CommitEveryNFlushes = 3 with get, set
 
+        /// Determines whether to commit first before closing an index
+        member val CommitOnClose = true with get, set
+
         /// A Directory is a flat list of files. Files may be 
         /// written once, when they are created. Once a file 
         /// is created it may only be opened for read, or 
