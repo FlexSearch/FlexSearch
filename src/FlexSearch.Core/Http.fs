@@ -256,6 +256,7 @@ type IServer =
 [<Sealed>]
 type OwinServer(httpModule : Dictionary<string, IHttpHandler>, logger : ILogService, ?port0 : int) = 
     let port = defaultArg port0 9800
+    let _httpModule = httpModule
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
 Use the below command to add URL reservation.
@@ -268,7 +269,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     let exec (owin : IOwinContext) = 
         async { 
             let findHandler lookupValue = 
-                match httpModule.TryGetValue(lookupValue) with
+                match _httpModule.TryGetValue(lookupValue) with
                 | (true, x) -> Some x
                 | _ -> None
             try 
