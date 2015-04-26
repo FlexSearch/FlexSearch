@@ -17,7 +17,7 @@ module DataHelpers =
     open Autofac.Extras.Attributed
     
     let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-    
+
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index.Dto()
@@ -62,31 +62,25 @@ module DataHelpers =
                 document.Fields.Add(headers.[i].Trim(), items.[i].Trim())
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-    
+
     let container = 
-        let builder = new ContainerBuilder()
-        builder.RegisterModule<AttributedMetadataModule>() |> ignore
-        builder.RegisterInstance(Log.logger).As<ILogService>() |> ignore
-        builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
-        builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
-        builder.Build()
-    
-    let flexQueryFactory = container.Resolve<IFlexFactory<IFlexQuery>>()
-    
-    let buildServer logger (container : IContainer) = 
-        let serverSettings = ServerSettings.T.GetDefault()
+        Main.getContainer (ServerSettings.T.GetDefault(), Log.logger, true)
+
+    // Create a single instance of the OWIN server that will be shared across all tests
+    let owinServer = 
+        let logger = container.Resolve<ILogService>()
+        let serverSettings = container.Resolve<ServerSettings.T>()
         let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
         new OwinServer(generateRoutingTable handlerModules, logger, serverSettings.HttpPort) :> IServer
-    
+
     let lockObject = new Object()
     let mutable serverRunning = false
-    
     let ensureServerIsRunning (server : IServer) = 
         lock lockObject (fun () -> 
             if serverRunning |> not then 
                 server.Start()
                 serverRunning <- true)
-    
+
     /// Autofixture customizations
     let fixtureCustomization() = 
         let fixture = new Ploeh.AutoFixture.Fixture()
@@ -94,20 +88,13 @@ module DataHelpers =
         // used as index name
         fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
         fixture.Inject<Index.Dto>(getTestIndex()) |> ignore
-        let threadSafeFileWriter = new ThreadSafeFileWiter(new YamlFormatter())
-        let analyzerService = new AnalyzerService(threadSafeFileWriter)
-        let indexService = new IndexService(threadSafeFileWriter, analyzerService)
-        let searchService = new SearchService(new FlexParser(), flexQueryFactory, indexService)
-        let documentService = new DocumentService(searchService, indexService)
-        let queueService = new QueueService(documentService)
-        let jobService = new JobService()
-        let owinServer = buildServer logger container
-        fixture.Inject<IIndexService>(indexService) |> ignore
-        fixture.Inject<ISearchService>(searchService) |> ignore
-        fixture.Inject<IDocumentService>(documentService) |> ignore
-        fixture.Inject<IJobService>(jobService) |> ignore
-        fixture.Inject<IQueueService>(queueService) |> ignore
-        fixture.Inject<IServer>(owinServer) |> ignore
+        //let owinServer = buildServer logger container
+        fixture.Inject<IIndexService>(container.Resolve<IIndexService>()) |> ignore
+        fixture.Inject<ISearchService>(container.Resolve<ISearchService>()) |> ignore
+        fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
+        fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
+        fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
+        //fixture.Inject<IServer>(owinServer) |> ignore
         fixture
 
 [<AutoOpenAttribute>]

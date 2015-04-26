@@ -80,14 +80,14 @@
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Fields <- 
-         [| new Field.Dto("firstname", FieldType.Text)
-            new Field.Dto("lastname", FieldType.Text)
-            new Field.Dto("email", FieldType.ExactText)
-            new Field.Dto("country", FieldType.Text)
-            new Field.Dto("ipaddress", FieldType.ExactText)
-            new Field.Dto("cvv2", FieldType.Int)
-            new Field.Dto("description", FieldType.Highlight)
-            new Field.Dto("fullname", FieldType.Text, ScriptName = "fullname") |]
+         [| new Field.Dto("firstname", FieldType.Dto.Text)
+            new Field.Dto("lastname", FieldType.Dto.Text)
+            new Field.Dto("email", FieldType.Dto.ExactText)
+            new Field.Dto("country", FieldType.Dto.Text)
+            new Field.Dto("ipaddress", FieldType.Dto.ExactText)
+            new Field.Dto("cvv2", FieldType.Dto.Int)
+            new Field.Dto("description", FieldType.Dto.Highlight)
+            new Field.Dto("fullname", FieldType.Dto.Text, ScriptName = "fullname") |]
         index.Scripts <- 
             [| new Script.Dto( ScriptName = "fullname", Source = """return fields.firstname + " " + fields.lastname;""", ScriptType = ScriptType.Dto.ComputedField) |]
         let searchProfileQuery = 
@@ -193,11 +193,11 @@
             File.WriteAllLines(examplePath, result.OutputResponse)
         result
     
-    type ``REST Service Tests``(server : IServer) = 
-        do ensureServerIsRunning server
+    type ``REST Service Tests``() = 
+        do ensureServerIsRunning owinServer
         
         //[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let ``Index creation test 1``() = 
+        member __.``Index creation test 1``() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "post-index-1" "Create index without any field"
             |> ofResource "Index"
@@ -211,7 +211,7 @@ The newly created index will be offline as the Online parameter is set to false 
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let ``Index creation test 2``() = 
+        member __.``Index creation test 2``() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "post-index-1" "Create index without any field"
             |> ofResource "Index"
@@ -235,7 +235,7 @@ The newly created index will be offline as the Online parameter is set to false 
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let ``Index creation test 3``() = 
+        member __.``Index creation test 3``() = 
             example "post-index-3" "Create index with two field 'firstname' & 'lastname'"
             |> ofResource "Index"
             |> withDescription """
@@ -257,7 +257,7 @@ other configurable properties but Field Type is the only mandatory parameter. Re
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let ``Create update and delete an index``() = 
+        member __.``Create update and delete an index``() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "post-index-4" "Create index with computed field"
             |> ofResource "Index"
@@ -327,7 +327,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexCreationTest5() = 
+        member __.IndexCreationTest5() = 
             example "post-index-5" "Create index by setting all properties"
             |> ofResource "Index"
             |> withDescription """
@@ -340,35 +340,36 @@ There are a number of parameters which can be set for a given index. For more in
             |> responseBodyIsNull
             |> document
         
-        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexUpdateTest2() = 
-            example "put-index-2" "Index update request with wrong index name returns error"
-            |> ofResource "Index"
-            |> withDescription ""
-            |> request "PUT" "/indices/indexdoesnotexist"
-            |> withBody """
-        {
-            "Fields" : {
-                "firstname" : { FieldType : "Text" },
-                "lastname" : { FieldType : "Text" },
-                "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
-                "desc" : { FieldType : "Stored" },
-            },
-            "Scripts" : {
-                fullnamescript : {
-                    ScriptType : "ComputedField",
-                    Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
-                }
-            }
-        }
-        """
-            |> execute
-            |> responseStatusEquals HttpStatusCode.BadRequest
-            |> responseMatches "ErrorCode" "1000"
-            |> document
+// Index update is not supported anymore
+//        ////[<Fact>][<TraitAttribute("Category", "Rest")>]
+//        member __.IndexUpdateTest2() = 
+//            example "put-index-2" "Index update request with wrong index name returns error"
+//            |> ofResource "Index"
+//            |> withDescription ""
+//            |> request "PUT" "/indices/indexdoesnotexist"
+//            |> withBody """
+//        {
+//            "Fields" : {
+//                "firstname" : { FieldType : "Text" },
+//                "lastname" : { FieldType : "Text" },
+//                "fullname" : {FieldType : "Text", ScriptName : "fullnamescript"},
+//                "desc" : { FieldType : "Stored" },
+//            },
+//            "Scripts" : {
+//                fullnamescript : {
+//                    ScriptType : "ComputedField",
+//                    Source : "return fields[\"firstname\"] + \" \" + fields[\"lastname\"];"
+//                }
+//            }
+//        }
+//        """
+//            |> execute
+//            |> responseStatusEquals HttpStatusCode.BadRequest
+//            |> responseMatches "ErrorCode" "1000"
+//            |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexDeleteTest2() = 
+        member __.IndexDeleteTest2() = 
             example "delete-index-2" "Deleting an non-existing index will return an error"
             |> ofResource "Index"
             |> withDescription ""
@@ -379,7 +380,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexGetTest1() = 
+        member __.IndexGetTest1() = 
             example "get-index-1" "Getting an index detail by name"
             |> ofResource "Index"
             |> withDescription ""
@@ -390,7 +391,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexGetTest2() = 
+        member __.IndexGetTest2() = 
             example "get-index-2" "Getting an index detail by name (non existing index)"
             |> ofResource "Index"
             |> withDescription ""
@@ -401,7 +402,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexExistsTest1() = 
+        member __.IndexExistsTest1() = 
             example "get-index-exists-1" "Checking if an index exists (true case)"
             |> ofResource "Exists"
             |> withDescription ""
@@ -412,7 +413,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexExistsTest2() = 
+        member __.IndexExistsTest2() = 
             example "get-index-exists-2" "Checking if an index exists (false case)"
             |> ofResource "Exists"
             |> withDescription ""
@@ -423,7 +424,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexStatusTest() = 
+        member __.IndexStatusTest() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "" ""
             |> request "POST" ("/indices/" + indexName)
@@ -468,7 +469,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexDocumentsTest() = 
+        member __.IndexDocumentsTest() = 
             let indexName = Guid.NewGuid().ToString("N")
             example "" ""
             |> request "POST" ("/indices/" + indexName)
@@ -535,7 +536,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let IndexDocumentsTest5() = 
+        member __.IndexDocumentsTest5() = 
             example "get-index-document-1" "Get top 10 documents from an index"
             |> ofResource "Documents"
             |> withDescription ""
@@ -547,7 +548,7 @@ There are a number of parameters which can be set for a given index. For more in
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchTermQueryTest1() = 
+        member __.SearchTermQueryTest1() = 
             example "post-index-search-termquery-1" "Term search using ``=`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -571,7 +572,7 @@ The below is the query to match all documents where firstname = 'Kathy' and last
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchTermQueryTest2() = 
+        member __.SearchTermQueryTest2() = 
             example "post-index-search-termquery-2" "Term search using ``eq`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -596,7 +597,7 @@ The below is the query to match all documents where firstname eq 'Kathy' and las
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchFuzzyQueryTest1() = 
+        member __.SearchFuzzyQueryTest1() = 
             example "post-index-search-fuzzyquery-1" "Fuzzy search using ``fuzzy`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -620,7 +621,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchFuzzyQueryTest2() = 
+        member __.SearchFuzzyQueryTest2() = 
             example "post-index-search-fuzzyquery-2" "Fuzzy search using ``~=`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -645,7 +646,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy'
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchFuzzyQueryTest3() = 
+        member __.SearchFuzzyQueryTest3() = 
             example "post-index-search-fuzzyquery-3" "Fuzzy search using slop parameter"
             |> ofResource "Search"
             |> withDescription """
@@ -669,7 +670,7 @@ The below is the query to fuzzy match all documents where firstname is 'Kathy' a
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchPhraseQueryTest1() = 
+        member __.SearchPhraseQueryTest1() = 
             example "post-index-search-phrasequery-1" "Phrase search using ``match`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -693,7 +694,7 @@ The below is the query to fuzzy match all documents where description is 'Nunc p
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchWildCardQueryTest1() = 
+        member __.SearchWildCardQueryTest1() = 
             example "post-index-search-wildcardquery-1" "Wildcard search using ``like`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -717,7 +718,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchWildCardQueryTest2() = 
+        member __.SearchWildCardQueryTest2() = 
             example "post-index-search-wildcardquery-2" "Wildcard search using ``%=`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -741,7 +742,7 @@ The below is the query to fuzzy match all documents where firstname is like 'Ca*
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchWildCardQueryTest3() = 
+        member __.SearchWildCardQueryTest3() = 
             example "post-index-search-wildcardquery-3" "Wildcard search using ``%=`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -766,7 +767,7 @@ be used to match one character.
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchRegexQueryTest1() = 
+        member __.SearchRegexQueryTest1() = 
             example "post-index-search-regexquery-1" "Regex search using ``regex`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -791,7 +792,7 @@ be used to match one character.
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchMatchallQueryTest1() = 
+        member __.SearchMatchallQueryTest1() = 
             example "post-index-search-matchallquery-1" "Match all search using ``matchall`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -816,7 +817,7 @@ The below is the query to to match all documents in the index.
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchNumericRangeQueryTest1() = 
+        member __.SearchNumericRangeQueryTest1() = 
             example "post-index-search-numericrangequery-1" "Range search using ``>`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -841,7 +842,7 @@ The below is the query to to match all documents with cvv2 greater than 100 in t
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchNumericRangeQueryTest2() = 
+        member __.SearchNumericRangeQueryTest2() = 
             example "post-index-search-numericrangequery-2" "Range search using ``>=`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -866,7 +867,7 @@ The below is the query to to match all documents with cvv2 greater than or equal
             |> document
         
         ////[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchNumericRangeQueryTest3() = 
+        member __.SearchNumericRangeQueryTest3() = 
             example "post-index-search-numericrangequery-3" "Range search using ``<`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -891,7 +892,7 @@ The below is the query to to match all documents with cvv2 less than 150 in the 
             |> document
         
         //[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchNumericRangeQueryTest4() = 
+        member __.SearchNumericRangeQueryTest4() = 
             example "post-index-search-numericrangequery-4" "Range search using ``<=`` operator"
             |> ofResource "Search"
             |> withDescription """
@@ -916,7 +917,7 @@ The below is the query to to match all documents with cvv2 less than or equal to
             |> document
         
         //[<Fact>][<TraitAttribute("Category", "Rest")>]
-        let SearchHighlightFeatureTest1() = 
+        member __.SearchHighlightFeatureTest1() = 
             let query = new SearchQuery.Dto("contact", " description = 'Nullam'")
             let highlight = new List<string>()
             highlight.Add("description")
