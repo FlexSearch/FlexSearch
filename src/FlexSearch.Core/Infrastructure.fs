@@ -78,11 +78,11 @@ module Constants =
     
     // Flex root folder path
     let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-    let createDir (directoryPath) = Directory.CreateDirectory(directoryPath).ToString()
+    let createDir (directoryPath) = Directory.CreateDirectory(directoryPath).FullName
     
     /// Flex index folder
     let DataFolder = rootFolder +/ "Data" |> createDir
-    
+
     /// Flex index folder
     let ConfFolder = rootFolder +/ "Conf" |> createDir
         

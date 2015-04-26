@@ -13,13 +13,13 @@ type TransactionWriterTests() =
         let fixture = new Ploeh.AutoFixture.Fixture()
         use stream = new MemoryStream()
         let context = new SpecimenContext(fixture)
-        let txEntry = context.Create<TransacationLog.T>()
-        TransacationLog.serializer (stream, txEntry)
+        let txEntry = context.Create<TransactionLog.T>()
+        TransactionLog.serializer (stream, txEntry)
         (txEntry, stream.ToArray())
     
     member __.``Transaction can be added and retrieved``() = 
         if File.Exists(DataHelpers.rootFolder +/ "0") then File.Delete(DataHelpers.rootFolder +/ "0")
-        let writer = new TransacationLog.TxWriter(DataHelpers.rootFolder, 0L)
+        let writer = new TransactionLog.TxWriter(DataHelpers.rootFolder, 0L)
         let entries = Array.create 5 (getTransactionLogEntry())
         entries |> Array.iter (fun entry -> writer.Append(snd entry, 10L))
         let txEntries = entries |> Array.map (fun entry -> fst entry)
@@ -34,4 +34,18 @@ type TransactionWriterTests() =
         test <@ result.[3].Id = txEntries.[3].Id @>
         test <@ result.[4].Id = txEntries.[4].Id @>
 
-
+type CommitTests() = 
+    member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index.Dto, 
+                                                                                      indexService : IIndexService, 
+                                                                                      documentService : IDocumentService) = 
+        test <@ succeeded <| indexService.AddIndex(index) @>
+        // Add test document
+        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "2")) @>
+        // Close the index without any commit
+        test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
+        // Document should get recovered from TxLogs after index is reopened
+        test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
+        test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 2 @>
+        test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
+        test <@ succeeded <| documentService.GetDocument(index.IndexName, "2") @>

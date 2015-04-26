@@ -15,12 +15,17 @@ open Swensen.Unquote
 module DataHelpers = 
     open Autofac
     open Autofac.Extras.Attributed
+    open System.Diagnostics
     
+    let writer = new TextWriterTraceListener(System.Console.Out)
+    Debug.Listeners.Add(writer) |> ignore
+
     let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
 
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index.Dto()
+        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false)
         index.IndexName <- Guid.NewGuid().ToString("N")
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
