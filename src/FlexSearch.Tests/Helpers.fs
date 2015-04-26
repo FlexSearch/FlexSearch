@@ -99,7 +99,7 @@ module DataHelpers =
         // used as index name
         fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
         fixture.Inject<Index.Dto>(getTestIndex()) |> ignore
-        let threadSafeFileWriter = new ThreadSafeFileWiter(new YamlFormatter())
+        let threadSafeFileWriter = new ThreadSafeFileWriter(new YamlFormatter())
         let analyzerService = new AnalyzerService(threadSafeFileWriter)
         let indexService = new IndexService(threadSafeFileWriter, analyzerService)
         let searchService = new SearchService(new FlexParser(), flexQueryFactory, indexService)
