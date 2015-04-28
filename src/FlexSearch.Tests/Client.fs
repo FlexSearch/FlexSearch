@@ -158,19 +158,6 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
             return (obj, response.StatusCode)
         }
 
-//    member this.Post<'T , 'U when 'T :> HttpHandlerBase<DtoBase, 'U>>(body : DtoBase) = 
-//        let uri = typeof<'IHandler> |> getName
-//        async { return! this.RequestProcessor<'U>(fun () -> client.PostAsync(uri, body, mediaTypeFormatter)) }
-//    member this.Put<'THandler,'TResponse>(body : 'TBody) = 
-//        let uri = typeof<'IHandler> |> getName
-//        async { return! this.RequestProcessor<'TResponse>(fun () -> client.PutAsync(uri, body, mediaTypeFormatter)) }
-//    member this.Get<'THandler,'TResponse>() = 
-//        let uri = typeof<'IHandler> |> getName
-//        async { return! this.RequestProcessor<'TResponse>(fun () -> client.GetAsync(uri)) }
-//    member this.Delete<'THandler,'TResponse>() = 
-//        let uri = typeof<'IHandler> |> getName
-//        async { return! this.RequestProcessor<'TResponse>(fun () -> client.DeleteAsync(uri)) }
-
     member this.PostHelper<'T, 'U>(uri : string, body : 'T) = 
         task { return! this.RequestProcessor<'U>(fun () -> client.PostAsync(uri, body, mediaTypeFormatter)) }
     member this.PutHelper<'T, 'U>(uri : string, body : 'T) = 
@@ -179,7 +166,6 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
         task { return! this.RequestProcessor<'U>(fun () -> client.GetAsync(uri)) }
     member this.DeleteHelper<'U>(uri : string) = 
         task { return! this.RequestProcessor<'U>(fun () -> client.DeleteAsync(uri)) }
-
 
 
     // --------------------
