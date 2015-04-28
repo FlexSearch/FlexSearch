@@ -246,8 +246,8 @@ module Http =
             | 1 -> RequestContext.Create(this, "/")
             | 2 -> RequestContext.Create(this, this.Segment(1))
             | 3 -> RequestContext.Create(this, this.SegmentWithOutSlash(1), this.Segment(2))
-            | 4 -> RequestContext.Create(this, this.Segment(1), this.Segment(2), this.Segment(3))
-            | 5 -> RequestContext.Create(this, this.Segment(1), this.Segment(2), this.Segment(3), this.Segment(4))
+            | 4 -> RequestContext.Create(this, this.Segment(1), this.SegmentWithOutSlash(2), this.Segment(3))
+            | 5 -> RequestContext.Create(this, this.Segment(1), this.SegmentWithOutSlash(2), this.Segment(3), this.Segment(4))
             | _ -> failwithf "Internal Error: FlexSearch does not support URI more than 5 segments."
 
 type IServer = 
