@@ -14,6 +14,7 @@ open System.Net.Http
 open System.Text
 open System.Threading
 open Microsoft.Owin.Testing
+open Swensen.Unquote
 
 [<AutoOpenAttribute>]
 module Helpers =
@@ -27,7 +28,6 @@ module Helpers =
     open System.Net
     open System.Text
     open System.Threading
-    open Swensen.Unquote
     
     // ----------------------------------------------------------------------------
     // Test request pattern
@@ -73,6 +73,8 @@ module Helpers =
     
     let newIndex indexName = new Index.Dto(IndexName = indexName)
     
+    let addField (index : Index.Dto) (fieldName : string) =
+        index.Fields <- index.Fields |> Array.append [|new Field.Dto(fieldName)|]
     
 //    // ----------------------------------------------------------------------------
 //    // Global configuration
@@ -211,7 +213,11 @@ module Helpers =
 
     let isSuccessful response = response |> snd =? HttpStatusCode.OK
 
+    let isCreated response = response |> snd =? HttpStatusCode.Created
+
     let responseStatusEquals status result = result.Response.StatusCode =? status
+
+    let data (response : Response<_> * HttpStatusCode) = (response |> fst).Data
 
 //    // ----------------------------------------------------------------------------
 //    // Test logic
@@ -286,61 +292,49 @@ type ``Index Creation Tests``() =
         |> responseStatusEquals HttpStatusCode.OK
     
     [<Example("post-indices-id-1", "Creating an index without any data")>]
-    member __.``Creating an index without any parameters should return 200`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
+    member __.``Creating an index without any parameters should return 200`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        let actual = client.AddIndex(newIndex indexName).Result
+        actual |> isCreated
+        client.DeleteIndex(indexName).Result |> isSuccessful
+    
+    [<Example("post-indices-id-2", "Duplicate index cannot be created")>]
+    member __.``Duplicate index cannot be created`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
+        client.AddIndex(index).Result |> isCreated
+        let actual = client.AddIndex(index).Result
+        actual |> hasErrorCode "INDEX_ALREADY_EXISTS"
+        actual |> hasHttpStatusCode HttpStatusCode.Conflict
+        client.DeleteIndex(index.IndexName).Result |> isSuccessful
+    
+    member __.``Create response contains the id of the created index`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
+        let actual = client.AddIndex(index).Result
+        actual |> isCreated
+        (actual |> data).Id =? index.IndexName
+        client.DeleteIndex(index.IndexName).Result |> isSuccessful
+    
+    member __.``Index cannot be created without IndexName`` (client : FlexClient, handler : LoggingHandler) = 
+        let actual = client.AddIndex(newIndex "").Result
+        actual |> hasHttpStatusCode HttpStatusCode.BadRequest
+        
+    [<Example("post-indices-id-3", "")>]
+    member __.``Create index with two field 'firstname' & 'lastname'`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        let index = newIndex indexName
+        index.Fields <- [| new Field.Dto("firstname"); new Field.Dto("lastname")|]
+        client.AddIndex(index).Result |> isCreated
+        client.DeleteIndex(indexName).Result |> isSuccessful
+    
+    [<Example("post-indices-id-4", "")>]
+    member __.``Create an index with dynamic fields`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
+        // The dynamic field are already constructed in the Index.Dto injected parameter
+        // See fullname field
+        client.AddIndex(index).Result |> isCreated
+        client.DeleteIndex(index.IndexName).Result |> isSuccessful
+    
+    [<Example("post-indices-id-5", "")>]
+    member __.``Create an index by setting all properties`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
         let actual = client.AddIndex(index).Result
         actual |> hasHttpStatusCode HttpStatusCode.Created
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
-    
-    [<Example("post-indices-id-2", "Duplicate index cannot be created")>]
-    member __.``Duplicate index cannot be created`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
-        client.AddIndex(newIndex indexName).Result |> hasHttpStatusCode HttpStatusCode.Created
-        let actual = client.AddIndex(newIndex indexName).Result
-        actual |> hasErrorCode "INDEX_ALREADY_EXISTS"
-        actual |> hasHttpStatusCode HttpStatusCode.Conflict
-        client.DeleteIndex(indexName).Result |> isSuccessful
-    
-//    member __.``Create response contains the id of the created index`` (client : FlexClient, indexName : string, 
-//                                                                  handler : LoggingHandler) = 
-//        let actual = client.AddIndex(newIndex indexName).Result
-//        actual |> isSuccessful
-//        actual |> hasHttpStatusCode HttpStatusCode.Created
-//        Assert.Equal<string>(indexName, actual.Data.Id)
-//        client.DeleteIndex(indexName).Result |> isSuccessful
-//    
-//    member __.``Index cannot be created without IndexName`` (client : FlexClient, indexName : string, 
-//                                                       handler : LoggingHandler) = 
-//        let actual = client.AddIndex(newIndex "").Result
-//        actual |> hasHttpStatusCode HttpStatusCode.BadRequest
-//        
-//    [<Example("post-indices-id-3", "")>]
-//    member __.``Create index with two field 'firstname' & 'lastname'`` (client : FlexClient, indexName : string, 
-//                                                                  handler : LoggingHandler) = 
-//        let index = newIndex indexName
-//        index.AddField("firstname")
-//        index.AddField("lastname")
-//        let actual = client.AddIndex(index).Result
-//        actual |> hasHttpStatusCode HttpStatusCode.Created
-//        client.DeleteIndex(indexName).Result |> isSuccessful
-//    
-//    [<Example("post-indices-id-4", "")>]
-//    member __.``Create an index with dynamic fields`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
-//        let index = newIndex indexName
-//        index.AddField("firstname")
-//        index.AddField("lastname")
-//        index.Fields.Add(new Field("fullname", ScriptName = "fullnamescript"))
-//        index.Scripts.Add
-//            (new Script("fullnamescript", "return fields.firstname + \" \" + fields.lastname;", ScriptType.ComputedField))
-//        let actual = client.AddIndex(index).Result
-//        actual |> hasHttpStatusCode HttpStatusCode.Created
-//        client.DeleteIndex(indexName).Result |> isSuccessful
-//    
-//    [<Example("post-indices-id-5", "")>]
-//    member __.``Create an index by setting all properties`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
-//        index.IndexName <- Guid.NewGuid().ToString("N")
-//        let actual = client.AddIndex(index).Result
-//        actual |> hasHttpStatusCode HttpStatusCode.Created
-//        client.DeleteIndex(index.IndexName).Result |> isSuccessful
-//
+
 //module ``Index Update Tests`` = 
 //    [<Example("put-indices-id-1", "")>]
 //    member __.``Update an index`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
