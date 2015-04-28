@@ -335,24 +335,13 @@ type ``Index Creation Tests``() =
         actual |> hasHttpStatusCode HttpStatusCode.Created
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
 
-//module ``Index Update Tests`` = 
-//    [<Example("put-indices-id-1", "")>]
-//    member __.``Update an index`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
-//        let index = newIndex indexName
-//        client.AddIndex(index).Result |> isSuccessful
-//        index.Fields.Add(new Field("firstname", FieldType.Text))
-//        index.Fields.Add(new Field("lastname", FieldType.Text))
-//        let actual = client.UpdateIndex(index).Result
-//        actual |> hasHttpStatusCode HttpStatusCode.OK
-//        client.DeleteIndex(indexName).Result |> isSuccessful
-//    
-//    [<Example("put-indices-id-2", "")>]
-//    member __.``Trying to update an non existing index will return error`` (client : FlexClient, indexName : string, 
-//                                                                      handler : LoggingHandler) = 
-//        let actual = client.UpdateIndex(newIndex indexName).Result
-//        actual |> VerifyErrorCode Errors.INDEX_NOT_FOUND
-//        actual |> hasHttpStatusCode HttpStatusCode.NotFound
-//
+type ``Index Update Tests``() = 
+    [<Example("put-indices-id-1", "")>]
+    member __.``Trying to update an index is not supported`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
+        let actual = client.UpdateIndex(index).Result
+        actual |> hasErrorCode "HTTP_NOT_SUPPORTED"
+        actual |> hasHttpStatusCode HttpStatusCode.BadRequest
+
 //module ``Delete Index`` = 
 //    [<Example("delete-indices-id-1", "")>]
 //    member __.``Delete an index by id`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
