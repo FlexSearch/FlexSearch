@@ -61,7 +61,7 @@ module DataHelpers =
         searchProfileQuery.MissingValueConfiguration.Add("et1", MissingValueOption.Ignore)
         index.SearchProfiles <- [| searchProfileQuery |]
         index
-    
+
     /// Utility method to add data to an index
     let indexTestData (testData : string, index : Index.Dto, indexService : IIndexService, 
                        documentService : IDocumentService) = 
@@ -92,14 +92,39 @@ module DataHelpers =
                             let owinServer = 
                                 new OwinServer(generateRoutingTable handlerModules, logger, serverSettings.HttpPort)
                             owinServer.Configuration(app))
-//
-//    let lockObject = new Object()
-//    let mutable serverRunning = false
-//    let ensureServerIsRunning (server : TestServer) = 
-//        lock lockObject (fun () -> 
-//            if serverRunning |> not then 
-//                server.
-//                serverRunning <- true)
+
+    /// <summary>
+    /// Basic index configuration
+    /// </summary>
+    let mockIndexSettings = 
+        let index = new Index.Dto()
+        index.IndexName <- "contact"
+        index.Online <- true
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
+        index.Fields <- 
+         [| new Field.Dto("firstname", FieldType.Dto.Text)
+            new Field.Dto("lastname", FieldType.Dto.Text)
+            new Field.Dto("email", FieldType.Dto.ExactText)
+            new Field.Dto("country", FieldType.Dto.Text)
+            new Field.Dto("ipaddress", FieldType.Dto.ExactText)
+            new Field.Dto("cvv2", FieldType.Dto.Int)
+            new Field.Dto("description", FieldType.Dto.Highlight)
+            new Field.Dto("fullname", FieldType.Dto.Text, ScriptName = "fullname") |]
+        index.Scripts <- 
+            [| new Script.Dto( ScriptName = "fullname", Source = """return fields.firstname + " " + fields.lastname;""", ScriptType = ScriptType.Dto.ComputedField) |]
+        let searchProfileQuery = 
+            new SearchQuery.Dto(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''", 
+                            QueryName = "test1")
+        searchProfileQuery.MissingValueConfiguration.Add("firstname", MissingValueOption.ThrowError)
+        searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
+        searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
+        index.SearchProfiles <- [| searchProfileQuery |]
+
+        let client = new FlexClient(owinServer.HttpClient)
+        client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
+
+        index
+
 
     /// Autofixture customizations
     let fixtureCustomization() = 
@@ -108,7 +133,6 @@ module DataHelpers =
         // used as index name
         fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
         fixture.Inject<Index.Dto>(getTestIndex()) |> ignore
-        //let owinServer = buildServer logger container
         fixture.Inject<IIndexService>(container.Resolve<IIndexService>()) |> ignore
         fixture.Inject<ISearchService>(container.Resolve<ISearchService>()) |> ignore
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
@@ -116,9 +140,8 @@ module DataHelpers =
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
         fixture.Inject<FlexClient>(new FlexClient(owinServer.HttpClient))
         fixture.Inject<LoggingHandler>(new LoggingHandler(owinServer.Handler))
-        //fixture.Inject<IServer>(owinServer) |> ignore
         fixture
-
+     
 [<AutoOpenAttribute>]
 module ResponseHelpers = 
     let rSucceeded (r : ResponseContext<_>) = 
