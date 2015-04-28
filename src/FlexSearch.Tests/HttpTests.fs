@@ -342,21 +342,18 @@ type ``Index Update Tests``() =
         actual |> hasErrorCode "HTTP_NOT_SUPPORTED"
         actual |> hasHttpStatusCode HttpStatusCode.BadRequest
 
-//module ``Delete Index`` = 
-//    [<Example("delete-indices-id-1", "")>]
-//    member __.``Delete an index by id`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
-//        client.AddIndex(newIndex indexName).Result |> isSuccessful
-//        let actual = client.DeleteIndex(indexName).Result
-//        actual |> isSuccessful
-//        actual |> hasHttpStatusCode HttpStatusCode.OK
-//    
-//    [<Example("delete-indices-id-2", "")>]
-//    member __.``Trying to delete an non existing index will return error`` (client : FlexClient, indexName : string, 
-//                                                                      handler : LoggingHandler) = 
-//        let actual = client.DeleteIndex(indexName).Result
-//        actual |> VerifyErrorCode Errors.INDEX_NOT_FOUND
-//        actual |> hasHttpStatusCode HttpStatusCode.NotFound
-//
+type ``Delete Index Tests``() = 
+    [<Example("delete-indices-id-1", "")>]
+    member __.``Delete an index by id`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
+        client.AddIndex(index).Result |> isCreated
+        client.DeleteIndex(index.IndexName).Result |> isSuccessful
+    
+    [<Example("delete-indices-id-2", "")>]
+    member __.``Trying to delete an non existing index will return error`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        let actual = client.DeleteIndex(indexName).Result
+        actual |> hasErrorCode "INDEX_NOT_FOUND"
+        actual |> hasHttpStatusCode HttpStatusCode.BadRequest
+
 //module ``Get Index Tests`` = 
 //    [<Example("get-indices-id-1", "")>]
 //    member __.``Getting an index detail by name`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
