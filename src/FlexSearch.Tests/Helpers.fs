@@ -9,14 +9,27 @@ open System
 open System.Collections.Generic
 open System.Linq
 open System.Reflection
+open Microsoft.Owin.Testing
 open Swensen.Unquote
+
+/// <summary>
+/// Represents the lookup name for the plug-in
+/// </summary>
+[<Sealed>]
+[<System.AttributeUsage(System.AttributeTargets.Method)>]
+type ExampleAttribute(fileName : string, title : string) = 
+    inherit Attribute()
+    member this.FileName = fileName
+    member this.Title = title
 
 [<AutoOpenAttribute>]
 module DataHelpers = 
     open Autofac
     open Autofac.Extras.Attributed
     open System.Diagnostics
+    open Client
     
+
     let writer = new TextWriterTraceListener(System.Console.Out)
     Debug.Listeners.Add(writer) |> ignore
 
@@ -24,9 +37,8 @@ module DataHelpers =
 
     /// Basic test index with all field types
     let getTestIndex() = 
-        let index = new Index.Dto()
+        let index = new Index.Dto(IndexName = Guid.NewGuid().ToString("N"))
         index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false)
-        index.IndexName <- Guid.NewGuid().ToString("N")
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
         index.Fields <- [| new Field.Dto("b1", FieldType.Dto.Bool)
@@ -76,15 +88,18 @@ module DataHelpers =
         let logger = container.Resolve<ILogService>()
         let serverSettings = container.Resolve<ServerSettings.T>()
         let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
-        new OwinServer(generateRoutingTable handlerModules, logger, serverSettings.HttpPort) :> IServer
-
-    let lockObject = new Object()
-    let mutable serverRunning = false
-    let ensureServerIsRunning (server : IServer) = 
-        lock lockObject (fun () -> 
-            if serverRunning |> not then 
-                server.Start()
-                serverRunning <- true)
+        TestServer.Create(fun app -> 
+                            let owinServer = 
+                                new OwinServer(generateRoutingTable handlerModules, logger, serverSettings.HttpPort)
+                            owinServer.Configuration(app))
+//
+//    let lockObject = new Object()
+//    let mutable serverRunning = false
+//    let ensureServerIsRunning (server : TestServer) = 
+//        lock lockObject (fun () -> 
+//            if serverRunning |> not then 
+//                server.
+//                serverRunning <- true)
 
     /// Autofixture customizations
     let fixtureCustomization() = 
@@ -99,6 +114,8 @@ module DataHelpers =
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
+        fixture.Inject<FlexClient>(new FlexClient(owinServer.HttpClient))
+        fixture.Inject<LoggingHandler>(new LoggingHandler(owinServer.Handler))
         //fixture.Inject<IServer>(owinServer) |> ignore
         fixture
 
