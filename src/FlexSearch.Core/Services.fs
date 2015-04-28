@@ -276,7 +276,10 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                     return writer |> IndexWriter.getRealTimeSearcher shardNo }
         member __.GetRealtimeSearchers(indexName : string) = maybe { let! writer = indexOnline indexName
                                                                      return writer |> IndexWriter.getRealTimeSearchers }
-        member __.GetIndex(indexName : string) = dtoStore.GetItem(indexName)
+        member __.GetIndex(indexName : string) = 
+            match dtoStore.GetItem(indexName) with
+            | Choice1Of2(_) as success -> success
+            | Choice2Of2(_) -> fail <| Error.IndexNotFound indexName
         member __.IndexExists(indexName : string) = dtoStore.GetItem(indexName) |> resultToBool
         member __.IndexOnline(indexName : string) = indexOnline indexName |> resultToBool
         
