@@ -120,7 +120,9 @@ module Http =
                     jsonFormatter.Serialize(response, owin.Response.Body)
                     streamWriter.Write(");")
                 | _ -> formatter.Serialize(response, owin.Response.Body)
-                owin.Response.Body.Flush()
+                // *Try* flushing the stream as opposed to always doing it because
+                // the stream might have already been closed by the serializer.
+                try owin.Response.Body.Flush() with _ -> ()
             | _ -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
     
     /// Write HTTP response
