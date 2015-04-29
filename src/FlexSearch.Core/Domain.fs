@@ -744,7 +744,6 @@ module Field =
         /// the script to be used for getting field data at index time.
         member val ScriptName = "" with get, set
         
-        new(fieldName, fieldType) = Dto(fieldName, fieldType)
         new(fieldName : string) = Dto(fieldName, FieldType.Dto.Text)
         new() = Dto(defString, FieldType.Dto.Text)
         override this.Validate() = 
