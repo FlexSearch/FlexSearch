@@ -8,6 +8,7 @@ open Ploeh.AutoFixture.Kernel
 open System
 open System.Collections.Generic
 open System.Linq
+open System.IO
 open System.Reflection
 open Microsoft.Owin.Testing
 open Swensen.Unquote
@@ -80,8 +81,7 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = 
-        Main.getContainer (ServerSettings.T.GetDefault(), Log.logger, true)
+    let container = Main.getContainer (ServerSettings.T.GetDefault(), Log.logger, true)
 
     // Create a single instance of the OWIN server that will be shared across all tests
     let owinServer = 
@@ -126,8 +126,14 @@ module DataHelpers =
         index
 
     let createDemoIndex = 
+        // Make sure the demo index folder is empty
+        let folder = ServerSettings.T.GetDefault().DataFolder + "/country"
+        if Directory.Exists(folder) then Directory.Delete(folder, true)
+        // Create the demo index
         let client = new FlexClient(owinServer.HttpClient)
         client.SetupDemo().Result |> snd =? System.Net.HttpStatusCode.OK
+
+    let demoIndexData = container.Resolve<DemoIndexService>().DemoData().Value 
 
     /// Autofixture customizations
     let fixtureCustomization() = 
@@ -143,6 +149,7 @@ module DataHelpers =
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
         fixture.Inject<FlexClient>(new FlexClient(owinServer.HttpClient))
         fixture.Inject<LoggingHandler>(new LoggingHandler(owinServer.Handler))
+        fixture.Inject<Country list>(demoIndexData)
         fixture
      
 [<AutoOpenAttribute>]
