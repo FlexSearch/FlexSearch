@@ -226,7 +226,7 @@ module Http =
             let valueWithSlash, valueWithoutSlash = 
                 let intermediate = m.Key.Substring(m.Key.IndexOf("-") + 1)
                 let valueWithoutSlash = removeTrailingSlash intermediate
-                let valueWithSlash = intermediate + "/"
+                let valueWithSlash = if intermediate = "/" then "/" else intermediate + "/"
                 (valueWithSlash, valueWithoutSlash)
             
             let verb = m.Key.Substring(0, m.Key.IndexOf("-"))
