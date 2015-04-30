@@ -295,3 +295,129 @@ type ``Demo index Test``() =
     member __.``Setting up the demo index creates the country index``(client : FlexClient, handler : LoggingHandler) =
         client.SetupDemo().Result |> isSuccessful
         client.GetIndex("country").Result |> isSuccessful
+
+type ``Search Tests``() = 
+    
+    //let indexData = Container.Resolve<FlexSearch.Core.Services.DemoIndexService>().DemoData().Value
+    
+    let Query (queryString : string) (recordsReturned : int) (available : int) (client : FlexClient) = 
+        let searchQuery = new SearchQuery.Dto("country", queryString)
+        searchQuery.Count <- 300
+        searchQuery.Columns <- [|"countryname"; "agriproducts"; "governmenttype"; "population" |]
+        let response = client.Search(searchQuery).Result
+        response |> isSuccessful
+        (response |> data).Documents
+        |> Seq.iter 
+               (fun x -> 
+               printfn "Country Name:%s Agri products:%s Government type:%s" x.Fields.["countryname"] 
+                   x.Fields.["agriproducts"] x.Fields.["governmenttype"])
+        (response |> data).RecordsReturned =? recordsReturned
+    
+    [<Example("post-indices-search-term-1", "Term search using '=' operator")>]
+    member __.``Term Query Test 1`` (client : FlexClient, indexData : Country list) = 
+        let expected = 
+            indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
+        client |> Query "agriproducts = 'rice' and agriproducts = 'wheat'" expected 1
+    
+    [<Example("post-indices-search-term-2", "Term search using multiple words")>]
+    member __.``Term Query Test 2`` (client : FlexClient, indexData : Country list) = 
+        let expected = 
+            indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
+        client |> Query "agriproducts = 'rice wheat'" expected 1
+    
+    [<Example("post-indices-search-term-3", "Term search using '=' operator")>]
+    member __.``Term Query Test 3`` (client : FlexClient, indexData : Country list) = 
+        let expected = 
+            indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
+        client |> Query "agriproducts eq 'rice' or agriproducts eq 'wheat'" expected 1
+    
+    [<Example("post-indices-search-term-4", "Term search using '=' operator")>]
+    member __.``Term Query Test 4`` (client : FlexClient, indexData : Country list) = 
+        let expected = 
+            indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
+        client |> Query "agriproducts eq 'rice wheat' {clausetype : 'or'}" expected 1
+    
+    [<Example("post-indices-search-fuzzy-1", "Fuzzy search using 'fuzzy' operator")>]
+    member __.``Fuzzy Query Test 1`` (client : FlexClient) = client |> Query "countryname fuzzy 'Iran'" 2 3
+    
+    [<Example("post-indices-search-fuzzy-2", "Fuzzy search using '~=' operator")>]
+    member __.``Fuzzy Query Test 2`` (client : FlexClient) = client |> Query "countryname ~= 'Iran'" 2 3
+    
+    [<Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
+    member __.``Fuzzy Query Test 3`` (client : FlexClient) = client |> Query "countryname ~= 'China' {slop : '2'}" 3 3
+    
+    [<Example("post-indices-search-phrase-1", "Phrase search using match operator")>]
+    member __.``Phrase Query Test 1`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.GovernmentType.Contains("federal parliamentary democracy")).Count()
+        client |> Query "governmenttype match 'federal parliamentary democracy'" expected 4
+    
+    [<Example("post-indices-search-phrase-2", "Phrase search with slop of 4")>]
+    member __.``Phrase Query Test 2`` (client : FlexClient) = 
+        client |> Query "governmenttype match 'parliamentary monarchy' {slop : '4'}" 6 4
+    
+    [<Example("post-indices-search-phrase-3", "Phrase search with slop of 4")>]
+    member __.``Phrase Query Test 3`` (client : FlexClient) = 
+        client |> Query "governmenttype match 'monarchy parliamentary' {slop : '4'}" 3 4
+    
+    [<Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
+    member __.``Wildcard Query Test 1`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni"))
+        client |> Query "countryname like '*uni*'" (expected.Count()) 3
+    
+    [<Example("post-indices-search-wildcard-2", "Wildcard search using '%=' operator")>]
+    member __.``Wildcard Query Test 2`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni")).Count()
+        client |> Query "countryname %= '*uni*'" expected 3
+    
+    [<Example("post-indices-search-wildcard-3", "Wildcard search with single character operator")>]
+    member __.``Wildcard Query Test 3`` (client : FlexClient, indexData : Country list) = 
+        let expected = 
+            indexData.Where(fun x -> 
+                     System.Text.RegularExpressions.Regex.Match(x.CountryName.ToLowerInvariant(), "unit[a-z]?d").Success)
+                     .Count()
+        client |> Query "countryname %= 'Unit?d'" expected 1
+    
+    [<Example("post-indices-search-regex-1", "Regex search using regex operator")>]
+    member __.``Regex Query Test 1`` (client : FlexClient, indexData : Country list) = 
+        let expected = 
+            indexData.Where(fun x -> 
+                     System.Text.RegularExpressions.Regex.Match(x.AgriProducts.ToLowerInvariant(), "[ms]ilk").Success)
+                     .Count()
+        client |> Query "agriproducts regex '[ms]ilk'" expected 3
+    
+    [<Example("post-indices-search-matchall-1", "Match all search using 'matchall' operator")>]
+    member __.``Matchall Query Test 1`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Count()
+        client |> Query "countryname matchall '*'" expected 50
+    
+    [<Example("post-indices-search-range-1", "Greater than '>' operator")>]
+    member __.``NumericRange Query Test 1`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.Population > 1000000L).Count()
+        client |> Query "population > '1000000'" expected 48
+    
+    [<Example("post-indices-search-range-2", "Greater than or equal to '>=' operator")>]
+    member __.``NumericRange Query Test 2`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.Population >= 1000000L).Count()
+        client |> Query "population >= '1000000'" expected 48
+    
+    [<Example("post-indices-search-range-3", "Smaller than '<' operator")>]
+    member __.``NumericRange Query Test 3`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.Population < 1000000L).Count()
+        client |> Query "population < '1000000'" expected 48
+    
+    [<Example("post-indices-search-range-4", "Smaller than or equal to '<=' operator")>]
+    member __.``NumericRange Query Test 4`` (client : FlexClient, indexData : Country list) = 
+        let expected = indexData.Where(fun x -> x.Population <= 1000000L).Count()
+        client |> Query "population <= '1000000'" expected 48
+    
+    [<Example("post-indices-search-highlighting-1", "Text highlighting example")>]
+    member __.``Search Highlight Feature Test1`` (client : FlexClient) = 
+        let query = new SearchQuery.Dto("country", "background = 'most prosperous countries'")
+        let highlight = new List<string>()
+        highlight.Add("background")
+        query.Highlights <- new HighlightOption.Dto(highlight |> Seq.toArray)
+        query.Highlights.FragmentsToReturn <- 2
+        query.Columns <- [|"country"; "background"|]
+        let result = client.Search(query).Result
+        result |> isSuccessful
+        (result |> data).Documents.Count >=? 0
