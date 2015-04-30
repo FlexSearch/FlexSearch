@@ -125,6 +125,9 @@ module DataHelpers =
 
         index
 
+    let createDemoIndex = 
+        let client = new FlexClient(owinServer.HttpClient)
+        client.SetupDemo().Result |> snd =? System.Net.HttpStatusCode.OK
 
     /// Autofixture customizations
     let fixtureCustomization() = 
