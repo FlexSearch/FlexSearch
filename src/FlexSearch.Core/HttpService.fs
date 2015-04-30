@@ -18,6 +18,34 @@
 namespace FlexSearch.Core
 
 open Microsoft.Owin
+open System.Net
+
+/// Returns OK status
+[<Sealed>]
+[<Name("GET-/ping")>]
+type PingHandler() = 
+    inherit HttpHandlerBase<NoBody, unit>()
+    override this.Process(request,context) = SuccessResponse((), Ok)
+
+/// Returns the homepage
+[<Name("GET-/")>]
+[<Sealed>]
+type GetRootHandler() = 
+    inherit HttpHandlerBase<NoBody, unit>()
+    
+    let htmlPage = 
+        let filePath = System.IO.Path.Combine(Constants.WebFolder, "WelcomePage.html")
+        if System.IO.File.Exists(filePath) then 
+            let pageText = System.IO.File.ReadAllText(filePath)
+            pageText.Replace
+                ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+        else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+    
+    override this.Process(request, _) = 
+        request.OwinContext.Response.ContentType <- "text/html"
+        request.OwinContext.Response.StatusCode <- 200
+        SuccessResponse (await (request.OwinContext.Response.WriteAsync htmlPage), HttpStatusCode.OK)
+
 
 ///  Get all indices
 [<Name("GET-/indices")>]
