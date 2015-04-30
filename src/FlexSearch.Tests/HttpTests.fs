@@ -80,17 +80,21 @@ module Helpers =
     // ----------------------------------------------------------------------------
     // Test assertions for FlexClient based tests
     // ----------------------------------------------------------------------------
-    let hasHttpStatusCode expected response = response |> snd =? expected
-
+    let hasHttpStatusCode expected (result, httpCode) = 
+        if httpCode <> expected then printfn "%A" result.Error
+        httpCode =? expected
     let hasErrorCode expected (response : Response<_> * HttpStatusCode) = (response |> fst).Error.ErrorCode =? expected
-
-    let isSuccessful response = response |> snd =? HttpStatusCode.OK
-
-    let isCreated response = response |> snd =? HttpStatusCode.Created
-
+    let isSuccessful response = response |> hasHttpStatusCode HttpStatusCode.OK
+    let isCreated response = response |> hasHttpStatusCode HttpStatusCode.Created
     let responseStatusEquals status result = result.Response.StatusCode =? status
-
     let data (response : Response<_> * HttpStatusCode) = (response |> fst).Data
+    let isSuccessChoice choice = 
+        match choice with
+        | Choice1Of2(_) -> true
+        | Choice2Of2(error) -> 
+            printfn "Error: %A" error
+            false
+        =? true
 
 
 type ``Index Creation Tests``() = 
@@ -223,3 +227,71 @@ type ``Index Other Services Tests``() =
         let actual = client.GetAllIndex().Result
         // Should have at least contact index
         (actual |> data).Count() >=? 1
+
+
+type ``Document Tests``() = 
+    let testIndex indexName = 
+        let index = new Index.Dto(IndexName = indexName, Online = true)
+        index.Fields <- [| new Field.Dto("firstname", FieldType.Dto.Text)
+                           new Field.Dto("lastname") |]
+        index
+    
+    let createDocument (client : FlexClient) indexName =
+        client.AddIndex(testIndex indexName).Result |> isCreated
+        let document = new Document.Dto(indexName, "1")
+        document.Fields.Add("firstname", "Seemant")
+        document.Fields.Add("lastname", "Rajvanshi")
+        let result = client.AddDocument(indexName, document).Result
+        (result, document)
+
+
+    [<Example("get-indices-id-documents-1", "")>]
+    member __.``Get top 10 documents from an index`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        let actual = client.GetTopDocuments("country", 10).Result
+        actual |> isSuccessful
+        (actual |> data).RecordsReturned =? 10
+    
+    [<Example("post-indices-id-documents-id-2", "")>]
+    member __.``Add a document to an index`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        let actual = createDocument client indexName
+        actual |> fst |> isCreated
+        (actual |> fst |> data).Id =? "1"
+
+    member __.``Cannot add a document without an id`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        client.AddIndex(testIndex indexName).Result |> isCreated
+        let document = new Document.Dto(indexName, " ")
+        client.AddDocument(indexName, document).Result |> hasHttpStatusCode HttpStatusCode.BadRequest
+        printfn "%s" (handler.Log().ToString())
+
+    [<Example("put-indices-id-documents-id-1", "")>]
+    member __.``Update a document to an index`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        // Create the document
+        let (result, document) = createDocument client indexName 
+        result |> isCreated
+
+        // Update the document
+        document.Fields.["lastname"] <- "Rajvanshi1"
+        let actual = client.UpdateDocument(indexName, document).Result
+        actual |> isSuccessful
+        
+    [<Example("get-indices-id-documents-id-1", "")>]
+    member __.``Get a document from an index`` (client : FlexClient, indexService : IIndexService, indexName : string, handler : LoggingHandler, documentService : IDocumentService) = 
+        createDocument client indexName |> fst |> isCreated
+        indexService.Refresh(indexName) |> isSuccessChoice
+
+        let actual = client.GetDocument(indexName, "1").Result
+
+        actual |> isSuccessful
+        (actual |> data).Id =? "1"
+        (actual |> data).Fields.["firstname"] =? "Seemant"
+
+    [<Example("get-indices-id-documents-id-2", "")>]
+    member __.``Non existing document should return Not found`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+        createDocument client indexName |> fst |> isCreated
+        let actual = client.GetDocument(indexName, "2").Result
+        actual |> hasHttpStatusCode HttpStatusCode.NotFound
+
+type ``Demo index Test``() =
+    member __.``Setting up the demo index creates the country index``(client : FlexClient, handler : LoggingHandler) =
+        client.SetupDemo().Result |> isSuccessful
+        client.GetIndex("country").Result |> isSuccessful
