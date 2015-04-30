@@ -59,7 +59,7 @@ module Http =
         | SomeResponse of responseBody : Choice<'T, Error> * successCode : HttpStatusCode * failureCode : HttpStatusCode
         | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode
         | FailureResponse of responseBody : Error * failureCode : HttpStatusCode
-        | FailureOpMsgResponse of responseBody : OperationMessage
+        | FailureOpMsgResponse of responseBody : OperationMessage * failureCode : HttpStatusCode
         | NoResponse
     
     /// Standard FlexSearch response to all web requests 
@@ -214,6 +214,8 @@ module Http =
                         request.OwinContext |> handler.SerializeSuccess body successCode
                     | FailureResponse(body, failureCode) -> 
                         request.OwinContext |> handler.SerializeFailure body failureCode
+                    | FailureOpMsgResponse(opMsg, failureCode) ->
+                        request.OwinContext |> writeResponse failureCode { Data = Unchecked.defaultof<'U>; Error = opMsg }
                     | NoResponse -> ()
                 
                 match validateRequest() with
