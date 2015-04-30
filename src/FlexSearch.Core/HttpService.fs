@@ -292,11 +292,11 @@ type PutDocumentByIdHandler(documentService : IDocumentService) =
 /// <uri>/setupdemo</uri>
 /// <resource>setup</resource>
 /// <id>put-setup-demo</id>
-//[<Name("PUT-/setupdemo")>]
-//[<Sealed>]
-//type SetupDemoHandler(service : DemoIndexService) = 
-//    inherit HttpHandlerBase<NoBody, unit>()
-//    override this.Process(request, body) = SomeService(service.Setup(), Ok, BadRequest)
+[<Name("PUT-/setupdemo")>]
+[<Sealed>]
+type SetupDemoHandler(service : DemoIndexService) = 
+    inherit HttpHandlerBase<NoBody, unit>()
+    override this.Process(request, body) = SomeResponse(service.Setup(), Ok, BadRequest)
 
 [<Name("GET-/jobs/:id")>]
 [<Sealed>]

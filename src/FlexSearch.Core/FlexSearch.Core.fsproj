@@ -92,6 +92,7 @@
     <Compile Include="Index.fs" />
     <Compile Include="Search.fs" />
     <Compile Include="Services.fs" />
+    <Compile Include="Demo.fs" />
     <Compile Include="HttpService.fs" />
     <Compile Include="Connectors.fs" />
     <Compile Include="Bootstrapper.fs" />

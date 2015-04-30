@@ -147,7 +147,7 @@ module Main =
         builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
         builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>
         builder |> FactoryService.registerSingleInstance<JobService, IJobService>
-        //builder |> FactoryService.registerSingleInstance<DemoIndexService, DemoIndexService>
+        builder |> FactoryService.registerSingleInstance<DemoIndexService, DemoIndexService>
         builder.Build()
     
     /// Used by windows service (top shelf) to start and stop windows service.
