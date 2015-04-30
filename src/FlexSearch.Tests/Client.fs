@@ -215,3 +215,7 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
         document.IndexName <- indexName
         this.PutHelper<Document.Dto, unit>(sprintf "/indices/%s/documents/%s" indexName document.Id, document)
 
+    // --------------------
+    // Demo index related
+    // --------------------
+    member this.SetupDemo() = this.PutHelper<unit,unit>(sprintf "/setupdemo", ())
