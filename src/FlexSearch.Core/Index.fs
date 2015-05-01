@@ -444,11 +444,9 @@ module ShardWriter =
             /// very first time
             if not (isNull state) then state.IncrementFlushCount() |> ignore
     
-    /// An IndexWriter creates and maintains an index. This is a wrapper around
-    /// Lucene IndexWriter to expose the functionality in a controlled and functional 
-    /// manner.
+    /// A SharWriter creates and maintains a shard of an index.
     /// Note: This encapsulates the functionality of IndexWriter, TrackingIndexWriter and
-    /// SearcherManger through an easy to manage abstraction.
+    /// SearcherManager through an easy to manage abstraction.
     and T = 
         { IndexWriter : FileWriter
           TrackingIndexWriter : TrackingIndexWriter
@@ -538,7 +536,7 @@ module ShardWriter =
     let getRealTimeSearcher (sw : T) = new RealTimeSearcher(sw.SearcherManager)
     
     /// You must call this periodically, if you want that GetRealTimeSearcher() will return refreshed instances.
-    let referesh (sw : T) = sw.SearcherManager.MaybeRefresh() |> ignore
+    let refresh (sw : T) = sw.SearcherManager.MaybeRefresh() |> ignore
     
     /// Adds a listener, to be notified when a reference is refreshed/swapped.
     let addRefreshListener (item : ReferenceManager.RefreshListener) (sw : T) = sw.SearcherManager.AddListener(item)
@@ -731,10 +729,8 @@ module IndexWriter =
             let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
             MurmurHash2.Hash32(byteArray, 0, byteArray.Length) % shardCount
     
-    /// An IndexWriter creates and maintains an index. This is a wrapper around
-    /// Lucene IndexWriter to expose the functionality in a controlled and functional 
-    /// manner.
-    /// Note: This encapsulates the functionality of IndexWriter, TrackingIndexWriter and
+    /// An IndexWriter creates and maintains an index. It contains a list of ShardWriters,
+    /// each of which encapsulating the functionality of IndexWriter, TrackingIndexWriter and
     /// SearcherManger through an easy to manage abstraction.    
     type T = 
         { Template : ThreadLocal<DocumentTemplate.T>
@@ -812,7 +808,7 @@ module IndexWriter =
         }
     
     /// Refresh the index    
-    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.referesh)
+    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
     
     /// Commit unsaved data to the index
     let commit (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit)
@@ -846,7 +842,7 @@ module IndexWriter =
             // Just refresh the index so that the changes are picked up
             // in subsequent searches. We can also commit here but it will
             // introduce blank commits in case there are no logs to replay.
-            shardWriter |> ShardWriter.referesh
+            shardWriter |> ShardWriter.refresh
             shardWriter.Status <- ShardWriter.Status.Online
         indexWriter.ShardWriters |> Array.Parallel.iter (fun shard -> replayShardTransaction (shard))
     
