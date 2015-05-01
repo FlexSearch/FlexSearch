@@ -737,7 +737,8 @@ module IndexWriter =
           Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
           State : IndexState
-          Settings : IndexSetting.T }
+          Settings : IndexSetting.T 
+          Token : CancellationTokenSource}
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
     /// Create index settings from the Index Dto
@@ -754,7 +755,9 @@ module IndexWriter =
         with :? ValidationException as e -> fail <| e.Data0
     
     /// Close the index    
-    let close (writer : T) = writer.ShardWriters |> Array.iter (fun s -> ShardWriter.close (s))
+    let close (writer : T) = 
+        writer.Token.Cancel()
+        writer.ShardWriters |> Array.iter (fun s -> ShardWriter.close (s))
     
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
@@ -824,6 +827,26 @@ module IndexWriter =
     let getDocumentCount (s : T) = 
         s.ShardWriters |> Array.fold (fun count shard -> ShardWriter.getDocumentCount (shard) + count) 0
     
+    /// <summary>
+    /// Creates a async timer which can be used to execute a function at specified
+    /// period of time. This is used to schedule all recurring indexing tasks
+    /// </summary>
+    /// <param name="delay">Delay to be applied</param>
+    /// <param name="work">Method to perform the work</param>
+    /// <param name="indexWriter">Index on which the job is to be scheduled</param>
+    let scheduleIndexJob delay (work : T -> unit) indexWriter = 
+        let rec loop time (cts : CancellationTokenSource) = 
+            async { 
+                do! Async.Sleep(time)
+                if (cts.IsCancellationRequested) then cts.Dispose()
+                else 
+                    try 
+                        work indexWriter
+                    with e -> cts.Dispose()
+                return! loop delay cts
+            }
+        loop delay indexWriter.Token
+
     /// Replay all the uncommitted transactions from the logs
     let replayTransactionLogs (indexWriter : T) = 
         let replayShardTransaction (shardWriter : ShardWriter.T) = 
@@ -865,6 +888,16 @@ module IndexWriter =
               ShardWriters = shardWriters
               Caches = caches
               State = IndexState.Online
-              Settings = settings }
+              Settings = settings 
+              Token = new System.Threading.CancellationTokenSource()}
         indexWriter |> replayTransactionLogs
+
+        // Add the scheduler for the index
+        // Commit Scheduler
+        Async.Start
+            (indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) commit)
+        // NRT Scheduler
+        Async.Start
+            (indexWriter |> scheduleIndexJob settings.IndexConfiguration.RefreshTimeMilliseconds refresh)
+
         indexWriter
