@@ -39,7 +39,7 @@ module DataHelpers =
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index.Dto(IndexName = Guid.NewGuid().ToString("N"))
-        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false)
+        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
         index.Fields <- [| new Field.Dto("b1", FieldType.Dto.Bool)
