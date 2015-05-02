@@ -117,7 +117,8 @@ module Http =
                     use streamWriter = new StreamWriter(owin.Response.Body)
                     streamWriter.Write(owin.Request.Query.Get("callback"))
                     streamWriter.Write("(")
-                    jsonFormatter.Serialize(response, owin.Response.Body)
+                    streamWriter.Flush()
+                    jsonFormatter.Serialize(response, streamWriter.BaseStream)
                     streamWriter.Write(");")
                 | _ -> formatter.Serialize(response, owin.Response.Body)
                 // *Try* flushing the stream as opposed to always doing it because
