@@ -25,7 +25,7 @@ open System.Net
 [<Name("GET-/ping")>]
 type PingHandler() = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override this.Process(request,context) = SuccessResponse((), Ok)
+    override __.Process(_,_) = SuccessResponse((), Ok)
 
 /// Returns the homepage
 [<Name("GET-/")>]
@@ -41,7 +41,7 @@ type GetRootHandler() =
                 ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
         else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
     
-    override this.Process(request, _) = 
+    override __.Process(request, _) = 
         request.OwinContext.Response.ContentType <- "text/html"
         request.OwinContext.Response.StatusCode <- 200
         SuccessResponse (await (request.OwinContext.Response.WriteAsync htmlPage), HttpStatusCode.OK)
@@ -66,7 +66,7 @@ type GetIndexByIdHandler(indexService : IIndexService) =
 [<Sealed>]
 type PostIndexByIdHandler(indexService : IIndexService) = 
     inherit HttpHandlerBase<Index.Dto, CreateResponse>()
-    override __.Process(request, body) = 
+    override __.Process(_, body) = 
         match indexService.AddIndex(body.Value) with
         | Choice1Of2(response) -> SuccessResponse(response, Created)
         | Choice2Of2(error) -> 
@@ -78,7 +78,7 @@ type PostIndexByIdHandler(indexService : IIndexService) =
 [<Sealed>]
 type DeleteIndexByIdHandler(indexService : IIndexService) = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override __.Process(request, body) = SomeResponse(indexService.DeleteIndex(request.ResId.Value), Ok, BadRequest)
+    override __.Process(request, _) = SomeResponse(indexService.DeleteIndex(request.ResId.Value), Ok, BadRequest)
 
 ///// Update an index
 //[<Name("PUT-/indices/:id")>]
@@ -98,7 +98,7 @@ type IndexStatusResponse() =
 [<Sealed>]
 type GetStatusHandler(indexService : IIndexService) = 
     inherit HttpHandlerBase<NoBody, IndexStatusResponse>()
-    override __.Process(request, body) = 
+    override __.Process(request, _) = 
         let response = 
             match indexService.GetIndexState(request.ResId.Value) with
             | Choice1Of2(state) -> Choice1Of2(new IndexStatusResponse(Status = state))
@@ -110,7 +110,7 @@ type GetStatusHandler(indexService : IIndexService) =
 [<Sealed>]
 type PutStatusHandler(indexService : IIndexService) = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override this.Process(request, body) = 
+    override __.Process(request, _) = 
         match request.SubResId.Value with
         | InvariantEqual "online" -> SomeResponse(indexService.OpenIndex(request.ResId.Value), Ok, BadRequest)
         | InvariantEqual "offline" -> SomeResponse(indexService.CloseIndex(request.ResId.Value), Ok, BadRequest)
@@ -121,7 +121,7 @@ type PutStatusHandler(indexService : IIndexService) =
 [<Sealed>]
 type GetExistsHandler(indexService : IIndexService) = 
     inherit HttpHandlerBase<NoBody, IndexExistsResponse>()
-    override this.Process(request, body) = 
+    override __.Process(request, _) = 
         match indexService.IndexExists(request.ResId.Value) with
         | true -> SuccessResponse(new IndexExistsResponse(Exists = true), Ok)
         | false -> FailureResponse(IndexNotFound(request.ResName), NotFound)
@@ -144,7 +144,7 @@ type GetExistsHandler(indexService : IIndexService) =
 [<Sealed>]
 type GetAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
     inherit HttpHandlerBase<NoBody, Analyzer.Dto>()
-    override this.Process(request, body) = SomeResponse(analyzerService.GetAnalyzerInfo(request.ResId.Value), Ok, NotFound)
+    override __.Process(request, _) = SomeResponse(analyzerService.GetAnalyzerInfo(request.ResId.Value), Ok, NotFound)
 
 /// <summary>
 ///  Get all analyzer
@@ -157,7 +157,7 @@ type GetAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 [<Sealed>]
 type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) = 
     inherit HttpHandlerBase<NoBody, Analyzer.Dto []>()
-    override this.Process(request, body) = SomeResponse(analyzerService.GetAllAnalyzers() |> Choice1Of2, Ok, BadRequest)
+    override __.Process(_, _) = SomeResponse(analyzerService.GetAllAnalyzers() |> Choice1Of2, Ok, BadRequest)
 
 /// <summary>
 ///  Analyze a text string using the passed analyzer.
@@ -170,7 +170,7 @@ type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) =
 [<Sealed>]
 type AnalyzeTextHandler(analyzerService : IAnalyzerService) = 
     inherit HttpHandlerBase<AnalysisRequest, string>()
-    override this.Process(request, body) = 
+    override __.Process(request, body) = 
         SomeResponse(analyzerService.Analyze(request.ResId.Value, body.Value.Text), Ok, BadRequest)
 
 /// <summary>
@@ -184,7 +184,7 @@ type AnalyzeTextHandler(analyzerService : IAnalyzerService) =
 [<Sealed>]
 type DeleteAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override this.Process(request, body) = SomeResponse(analyzerService.DeleteAnalyzer(request.ResId.Value), Ok, BadRequest)
+    override __.Process(request, _) = SomeResponse(analyzerService.DeleteAnalyzer(request.ResId.Value), Ok, BadRequest)
 
 /// <summary>
 ///  Create or update an analyzer
@@ -197,7 +197,7 @@ type DeleteAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 [<Sealed>]
 type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
     inherit HttpHandlerBase<Analyzer.Dto, unit>()
-    override this.Process(request, body) = 
+    override __.Process(request, body) = 
         body.Value.AnalyzerName <- request.ResId.Value
         SomeResponse(analyzerService.UpdateAnalyzer(body.Value), Ok, BadRequest)
 
@@ -225,7 +225,7 @@ type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 [<Sealed>]
 type GetDocumentsHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, SearchResults>()
-    override this.Process(request, body) = 
+    override __.Process(request, _) = 
         let count = request.OwinContext |> intFromQueryString "count" 10 
         SomeResponse(documentService.GetDocuments(request.ResId.Value, count), Ok, BadRequest)
 
@@ -245,7 +245,7 @@ type GetDocumentsHandler(documentService : IDocumentService) =
 [<Sealed>]
 type GetDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, Document.Dto>()
-    override this.Process(request, body) = SomeResponse(documentService.GetDocument(request.ResId.Value, request.SubResId.Value), Ok, NotFound)
+    override __.Process(request, _) = SomeResponse(documentService.GetDocument(request.ResId.Value, request.SubResId.Value), Ok, NotFound)
 
 /// <summary>
 ///  Create a new document
@@ -263,7 +263,7 @@ type GetDocumentByIdHandler(documentService : IDocumentService) =
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<Document.Dto, CreateResponse>()
-    override this.Process(request, body) = 
+    override __.Process(_, body) = 
         match documentService.AddDocument(body.Value) with
         | Choice1Of2(response) -> SuccessResponse(response, Created)
         | Choice2Of2(Error.DocumentIdAlreadyExists(_) as error) -> FailureResponse(error, Conflict)
@@ -284,7 +284,7 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
 [<Sealed>]
 type DeleteDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override this.Process(request, body) = 
+    override __.Process(request, _) = 
         SomeResponse(documentService.DeleteDocument(request.ResId.Value, request.SubResId.Value), Ok, BadRequest)
 
 /// <summary>
@@ -303,7 +303,7 @@ type DeleteDocumentByIdHandler(documentService : IDocumentService) =
 [<Sealed>]
 type PutDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<Document.Dto, unit>()
-    override this.Process(request, body) = SomeResponse(documentService.AddOrUpdateDocument(body.Value), Ok, BadRequest)
+    override __.Process(_, body) = SomeResponse(documentService.AddOrUpdateDocument(body.Value), Ok, BadRequest)
 
 
 // -------------------------- //
@@ -324,13 +324,13 @@ type PutDocumentByIdHandler(documentService : IDocumentService) =
 [<Sealed>]
 type SetupDemoHandler(service : DemoIndexService) = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override this.Process(request, body) = SomeResponse(service.Setup(), Ok, BadRequest)
+    override __.Process(_, _) = SomeResponse(service.Setup(), Ok, BadRequest)
 
 [<Name("GET-/jobs/:id")>]
 [<Sealed>]
 type GetJobByIdHandler(jobService : IJobService) = 
     inherit HttpHandlerBase<NoBody, Job>()
-        override this.Process(request, body) = SomeResponse(jobService.GetJob(request.ResId.Value), Ok, NotFound)
+        override __.Process(request, _) = SomeResponse(jobService.GetJob(request.ResId.Value), Ok, NotFound)
 
 
 // -------------------------- //
@@ -362,7 +362,7 @@ type GetJobByIdHandler(jobService : IJobService) =
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 
     inherit HttpHandlerBase<SearchQuery.Dto, obj>(false)
-    override this.Process(request, body) = 
+    override __.Process(request, body) = 
         let processRequest (indexName, owin : IOwinContext) = 
             let query = 
                 match body with
@@ -385,7 +385,7 @@ type GetSearchHandler(searchService : ISearchService) =
                     owin.Response.Headers.Add("RecordsReturned", [| recordsReturned.ToString() |])
                     owin.Response.Headers.Add("TotalAvailable", [| totalAvailable.ToString() |])
                     ok(results |> Seq.toList :> obj)
-                | Choice2Of2(e) as error -> fail(e)
+                | Choice2Of2(e) -> fail(e)
             else 
                 match searchService.Search(query) with
                 | Choice1Of2(v') -> Choice1Of2(v' :> obj)
