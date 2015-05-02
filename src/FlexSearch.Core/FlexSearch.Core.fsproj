@@ -100,7 +100,6 @@
     <None Include="packages.config" />
     <None Include="App.config" />
     <Content Include="FodyWeavers.xml" />
-    <None Include="IFreezable.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">
