@@ -484,6 +484,9 @@ module IndexConfiguration =
         /// Determines whether to commit first before closing an index
         member val CommitOnClose = true with get, set
 
+        /// Determines whether to enable auto commit functionality or not
+        member val AutoCommit = true with get, set
+
         /// A Directory is a flat list of files. Files may be 
         /// written once, when they are created. Once a file 
         /// is created it may only be opened for read, or 
@@ -510,6 +513,9 @@ module IndexConfiguration =
         /// the engine separate.
         member val RefreshTimeMilliseconds = 500 with get, set
         
+        /// Determines whether to enable auto refresh or not
+        member val AutoRefresh = true with get, set
+
         /// Corresponds to Lucene Index version. There will
         /// always be a default codec associated with each 
         /// index version.

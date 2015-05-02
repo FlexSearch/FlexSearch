@@ -737,8 +737,8 @@ module IndexWriter =
           Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
           State : IndexState
-          Settings : IndexSetting.T 
-          Token : CancellationTokenSource}
+          Settings : IndexSetting.T
+          Token : CancellationTokenSource }
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
     /// Create index settings from the Index Dto
@@ -846,7 +846,7 @@ module IndexWriter =
                 return! loop delay cts
             }
         loop delay indexWriter.Token
-
+    
     /// Replay all the uncommitted transactions from the logs
     let replayTransactionLogs (indexWriter : T) = 
         let replayShardTransaction (shardWriter : ShardWriter.T) = 
@@ -888,16 +888,14 @@ module IndexWriter =
               ShardWriters = shardWriters
               Caches = caches
               State = IndexState.Online
-              Settings = settings 
-              Token = new System.Threading.CancellationTokenSource()}
+              Settings = settings
+              Token = new System.Threading.CancellationTokenSource() }
         indexWriter |> replayTransactionLogs
-
         // Add the scheduler for the index
         // Commit Scheduler
-        Async.Start
-            (indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) commit)
+        if settings.IndexConfiguration.AutoCommit then 
+            Async.Start(indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) commit)
         // NRT Scheduler
-        Async.Start
-            (indexWriter |> scheduleIndexJob settings.IndexConfiguration.RefreshTimeMilliseconds refresh)
-
+        if settings.IndexConfiguration.AutoRefresh then 
+            Async.Start(indexWriter |> scheduleIndexJob settings.IndexConfiguration.RefreshTimeMilliseconds refresh)
         indexWriter
