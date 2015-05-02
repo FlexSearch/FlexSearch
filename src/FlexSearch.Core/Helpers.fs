@@ -310,35 +310,7 @@ module Helpers =
     
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore
-
-// ----------------------------------------------------------------------------
-// Contains various helpers for HTTP service processing
-// ----------------------------------------------------------------------------
-[<AutoOpen>]
-module HttpHelpers = 
-    open Microsoft.Owin
-    
-    let getIntValueFromQueryString key defaultValue (owin : IOwinContext) = 
-        match owin.Request.Query.Get(key) with
-        | null -> defaultValue
-        | value -> 
-            match Int32.TryParse(value) with
-            | true, v' -> v'
-            | _ -> defaultValue
-    
-    let getValueFromQueryString key defaultValue (owin : IOwinContext) = 
-        match owin.Request.Query.Get(key) with
-        | null -> defaultValue
-        | value -> value
-    
-    let getBoolValueFromQueryString key defaultValue (owin : IOwinContext) = 
-        match owin.Request.Query.Get(key) with
-        | null -> defaultValue
-        | value -> 
-            match Boolean.TryParse(value) with
-            | true, v' -> v'
-            | _ -> defaultValue
-
+   
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------
@@ -437,6 +409,12 @@ module DataType =
         | null -> defaultValue
         | value -> value |> existsCase defaultValue
     
+    /// Get string from string collection
+    let inline stringFromQueryString key defaultValue (owin : IOwinContext) =
+        match owin.Request.Query.Get key with
+        | null -> defaultValue
+        | value -> value
+
     /// Get integer from dictionary
     let inline intFromDict key defaultValue (dict : Dictionary<string, string>) = 
         dict |> getFromDict key pInt defaultValue
@@ -446,8 +424,8 @@ module DataType =
         dict |> getFromOptDict key pInt defaultValue
     
     /// Get integer from string collection
-    let inline intFromCollection key defaultValue (dict : IReadableStringCollection) = 
-        dict |> getFromCollection key pInt defaultValue
+    let inline intFromQueryString key defaultValue (owin : IOwinContext) = 
+        owin.Request.Query |> getFromCollection key pInt defaultValue
     
     /// Get long from dictionary
     let inline longFromDict key defaultValue (dict : Dictionary<string, string>) = 
@@ -458,8 +436,8 @@ module DataType =
         dict |> getFromOptDict key pLong defaultValue
     
     /// Get long from string collection
-    let inline longFromCollection key defaultValue (dict : IReadableStringCollection) = 
-        dict |> getFromCollection key pLong defaultValue
+    let inline longFromQueryString key defaultValue (owin : IOwinContext) = 
+        owin.Request.Query |> getFromCollection key pLong defaultValue
     
     /// Get double from dictionary
     let inline doubleFromDict key defaultValue (dict : Dictionary<string, string>) = 
@@ -470,8 +448,8 @@ module DataType =
         dict |> getFromOptDict key pDouble defaultValue
     
     /// Get double from string collection
-    let inline doubleFromCollection key defaultValue (dict : IReadableStringCollection) = 
-        dict |> getFromCollection key pDouble defaultValue
+    let inline doubleFromQueryString key defaultValue (owin : IOwinContext) = 
+        owin.Request.Query |> getFromCollection key pDouble defaultValue
     
     /// Get bool from dictionary
     let inline boolFromDict key defaultValue (dict : Dictionary<string, string>) = 
@@ -482,8 +460,8 @@ module DataType =
         dict |> getFromOptDict key pBool defaultValue
     
     /// Get integer from string collection
-    let inline boolFromCollection key defaultValue (dict : IReadableStringCollection) = 
-        dict |> getFromCollection key pBool defaultValue
+    let inline boolFromQueryString key defaultValue (owin : IOwinContext) = 
+        owin.Request.Query |> getFromCollection key pBool defaultValue
 
 // ----------------------------------------------------------------------------
 // Formatter section : All the various media formatter to be used in 

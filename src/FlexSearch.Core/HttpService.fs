@@ -226,7 +226,7 @@ type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 type GetDocumentsHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, SearchResults>()
     override this.Process(request, body) = 
-        let count = getIntValueFromQueryString "count" 10 request.OwinContext
+        let count = request.OwinContext |> intFromQueryString "count" 10 
         SomeResponse(documentService.GetDocuments(request.ResId.Value, count), Ok, BadRequest)
 
 /// <summary>
@@ -368,15 +368,15 @@ type GetSearchHandler(searchService : ISearchService) =
                 match body with
                 | Some(q) -> q
                 | None -> new SearchQuery.Dto()
-            query.QueryString <- getValueFromQueryString "q" query.QueryString owin
+            query.QueryString <- stringFromQueryString "q" query.QueryString owin
             query.Columns <- match owin.Request.Query.Get("c") with
                                 | null -> query.Columns
                                 | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
-            query.Count <- getIntValueFromQueryString "count" query.Count owin
-            query.Skip <- getIntValueFromQueryString "skip" query.Skip owin
-            query.OrderBy <- getValueFromQueryString "orderby" query.OrderBy owin
-            query.ReturnFlatResult <- getBoolValueFromQueryString "returnflatresult" query.ReturnFlatResult owin
-            query.SearchProfile <- getValueFromQueryString "searchprofile" "" owin
+            query.Count <- intFromQueryString "count" query.Count owin
+            query.Skip <- intFromQueryString "skip" query.Skip owin
+            query.OrderBy <- stringFromQueryString "orderby" query.OrderBy owin
+            query.ReturnFlatResult <- boolFromQueryString "returnflatresult" query.ReturnFlatResult owin
+            query.SearchProfile <- stringFromQueryString "searchprofile" "" owin
             query.IndexName <- indexName
 
             if query.ReturnFlatResult then 
