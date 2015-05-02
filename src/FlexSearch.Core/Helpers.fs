@@ -32,6 +32,8 @@ open System.Security.AccessControl
 open System.Security.Principal
 open System.Text
 open System.Threading
+open Newtonsoft.Json
+open Newtonsoft.Json
 
 /// Abstract base class to be implemented by all pool able object
 [<AbstractClass>]
@@ -514,18 +516,22 @@ type JilJsonFormatter() =
 [<Sealed>]
 type NewtonsoftJsonFormatter() = 
     let options = new Newtonsoft.Json.JsonSerializerSettings()
-    do options.Converters.Add(new StringEnumConverter())
+    let serializer = JsonSerializer.Create()
+    do 
+        serializer.Converters.Add(new StringEnumConverter())
+        options.Converters.Add(new StringEnumConverter())
     interface IFormatter with
-        member __.SerializeToString(_ : obj) = failwith "Not implemented yet"
+        member __.SerializeToString(body : obj) = JsonConvert.SerializeObject(body, options)
         
         member __.DeSerialize<'T>(stream : Stream) = 
             use reader = new StreamReader(stream)
-            JsonConvert.DeserializeObject<'T>(reader.ReadToEnd(), options)
-        
+            use jsonTextReader = new JsonTextReader(reader)
+            serializer.Deserialize<'T>(jsonTextReader)
+            
         member __.Serialize(body : obj, stream : Stream) : unit = 
             use writer = new StreamWriter(stream)
-            let body = JsonConvert.SerializeObject(body, options)
-            writer.Write(body)
+            use jsonWriter = new JsonTextWriter(writer)
+            serializer.Serialize(writer, body)
         
         member __.SupportedHeaders = 
             [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8"; 
