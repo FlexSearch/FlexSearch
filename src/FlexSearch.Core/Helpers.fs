@@ -235,9 +235,6 @@ module Helpers =
     let inline throwIfNull (name) (x) = 
         if isNull (x) then failwithf "Internal Error: %s object cannot be null." name
     
-    /// Returns current date time in Flex compatible format
-    let inline GetCurrentTimeAsLong() = Int64.Parse(System.DateTime.Now.ToString("yyyyMMddHHmmssfff"))
-    
     /// <summary>
     /// Simple exception formatter
     /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/

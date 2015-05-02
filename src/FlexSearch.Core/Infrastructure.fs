@@ -101,6 +101,36 @@ module Constants =
     let CaseInsensitiveKeywordAnalyzer = 
         CustomAnalyzer.Builder().withTokenizer("keyword").addTokenFilter("lowercase").build() :> FlexLucene.Analysis.Analyzer
 
+[<AutoOpen>]
+module DateTimeHelpers =
+    open System.Globalization
+    
+    /// Internal format used to represent dates 
+    let DateTimeFormat = "yyyyMMddHHmmssfff"
+    
+    /// Represents all the date time format supported by FlexSearch
+    let SupportedDateFormat = [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |]
+
+    /// Coverts a date to FlexSearch date format
+    let inline dateToFlexFormat(dt : DateTime) = int64 <| dt.ToString(DateTimeFormat)
+
+    /// Returns current date time in Flex compatible format
+    let inline GetCurrentTimeAsLong() = int64 <| dateToFlexFormat(DateTime.Now)
+    
+    /// Parses a given date according to supported date styles
+    let inline parseDate(dt: string) =
+        DateTime.ParseExact(dt, SupportedDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None)
+
+    /// Parses a given date according to supported date styles
+    let inline tryParseDate(dt: string) =
+        DateTime.TryParseExact(dt, SupportedDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None)
+    
+    /// Parses a given date and returns it in FlexSearch format wrapped in an option type.    
+    let inline parseDateFlexFormat (dt: string) =
+        match tryParseDate dt with
+        | true, date -> date |> dateToFlexFormat |> Some
+        | _ -> None
+           
 type Error = 
     // Generic Validation Errors
     | GreaterThan of fieldName : string * lowerLimit : string * value : string
