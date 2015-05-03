@@ -31,6 +31,71 @@ type IFlexQuery =
     abstract QueryName : unit -> string []
     abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Choice<Query, Error>
 
+[<AutoOpenAttribute>]
+module SearchResultComponents = 
+    /// Represents the search result format supported
+    /// by the engine
+    type T = 
+        | StructuredResult of Document.Dto
+        | FlatResult of Dictionary<string, string>
+    
+    /// Represents the search related meta data that can
+    /// be exposed through a search result. This can be
+    /// easily extended in future to include more things.
+    type ResultMeta = 
+        { RecordsReturned : int
+          TotalAvailable : int }
+    
+    /// Wrapper around the search result. This is also used
+    /// to transform one result type to another
+    type SearchResults<'T> = 
+        { Meta : ResultMeta
+          Documents : seq<'T> }
+    
+    /// Transforms a SearchResult to StructuredResult 
+    let toStructuredResult (result : T) = 
+        match result with
+        | StructuredResult(doc) -> doc
+        | _ -> failwithf "Internal error: Expecting Structured result."
+    
+    /// Transforms a SearchResult to FlatResult
+    let toFlatResult (result : T) = 
+        match result with
+        | FlatResult(doc) -> doc
+        | _ -> failwithf "Internal error: Expecting Flat result."
+    
+    /// Transforms a result seq to a Document seq
+    let toStructuredResults (result : SearchResults<T>) = 
+        let docs = 
+            seq { 
+                for doc in result.Documents do
+                    match doc with
+                    | StructuredResult(d) -> yield d
+                    | FlatResult(_) -> failwithf "Internal error: Should have never returned a Flat Document."
+            }
+        { Meta = result.Meta
+          Documents = docs }
+    
+    /// Transforms a result seq to a Flat Document seq
+    let toFlatResults (result : SearchResults<T>) = 
+        let docs = 
+            seq { 
+                for doc in result.Documents do
+                    match doc with
+                    | StructuredResult(_) -> failwithf "Internal error: Should have never returned a Result Document."
+                    | FlatResult(d) -> yield d
+            }
+        { Meta = result.Meta
+          Documents = docs }
+    
+    /// Transforms a result seq to Search results
+    let toSearchResults (result : SearchResults<T>) = 
+        let searchResults = new SearchResults()
+        searchResults.RecordsReturned <- result.Meta.RecordsReturned
+        searchResults.TotalAvailable <- result.Meta.TotalAvailable
+        searchResults.Documents <- toStructuredResults(result).Documents.ToList()
+        searchResults
+
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
 // The order of this file does not matter as
@@ -115,50 +180,6 @@ module SearchDsl =
         
         generateQuery predicate
     
-    let search (indexWriter : IndexWriter.T, query : Query, search : SearchQuery.Dto) = 
-        let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
-        // Each thread only works on a separate part of the array and as no parts are shared across
-        // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
-        // array per search is high
-        let topDocsCollection : TopFieldDocs array = Array.zeroCreate indexSearchers.Length
-        
-        let sort = 
-            match search.OrderBy with
-            | null -> Sort.RELEVANCE
-            | _ -> 
-                match indexWriter.Settings.FieldsLookup.TryGetValue(search.OrderBy) with
-                | (true, field) -> new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType))
-                | _ -> Sort.RELEVANCE
-        
-        let count = 
-            match search.Count with
-            | 0 -> 10 + search.Skip
-            | _ -> search.Count + search.Skip
-        
-        indexWriter.ShardWriters |> Array.Parallel.iter (fun x -> 
-                                        // This is to enable proper sorting
-                                        let topFieldCollector = 
-                                            TopFieldCollector.Create(sort, count, null, true, true, true)
-                                        indexSearchers.[x.ShardNo].IndexSearcher.Search(query, topFieldCollector)
-                                        topDocsCollection.[x.ShardNo] <- topFieldCollector.TopDocs())
-        let totalDocs = TopDocs.Merge(sort, count, topDocsCollection)
-        let hits = totalDocs.ScoreDocs
-        let recordsReturned = totalDocs.ScoreDocs.Count() - search.Skip
-        let totalAvailable = totalDocs.TotalHits
-        
-        let highlighterOptions = 
-            if search.Highlights <> Unchecked.defaultof<_> then 
-                match search.Highlights.HighlightedFields with
-                | x when x.Length = 1 -> 
-                    match indexWriter.Settings.FieldsLookup.TryGetValue(x.First()) with
-                    | (true, field) -> 
-                        let htmlFormatter = new SimpleHTMLFormatter(search.Highlights.PreTag, search.Highlights.PostTag)
-                        Some(field, new Highlighter(htmlFormatter, new QueryScorer(query)))
-                    | _ -> None
-                | _ -> None
-            else None
-        (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers)
-    
     /// Returns a document from the index
     let getDocument (indexWriter : IndexWriter.T, search : SearchQuery.Dto, document : Document) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -171,21 +192,60 @@ module SearchDsl =
                 if field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField then ()
                 else 
                     let value = document.Get(field.SchemaName)
-                    if value <> null then fields.Add(field.FieldName, value)
+                    if notNull value then fields.Add(field.FieldName, value)
         // Return only the requested columns
         | _ -> 
             for fieldName in search.Columns do
                 match indexWriter.Settings.FieldsLookup.TryGetValue(fieldName) with
                 | (true, field) -> 
                     let value = document.Get(field.SchemaName)
-                    if value <> null then fields.Add(field.FieldName, value)
+                    if notNull value then fields.Add(field.FieldName, value)
                 | _ -> ()
         fields
     
-    /// Searches for documents over the index using the query and returns the documents as a sequence
-    let searchDocumentSeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
-        let (hits, highlighterOptions, recordsReturned, totalAvailable, indexSearchers) = 
-            search (indexWriter, query, searchQuery)
+    let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
+        let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
+        // Each thread only works on a separate part of the array and as no parts are shared across
+        // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
+        // array per search is high
+        let topDocsCollection : TopFieldDocs array = Array.zeroCreate indexSearchers.Length
+        
+        let sort = 
+            match searchQuery.OrderBy with
+            | null -> Sort.RELEVANCE
+            | _ -> 
+                match indexWriter.Settings.FieldsLookup.TryGetValue(searchQuery.OrderBy) with
+                | (true, field) -> new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType))
+                | _ -> Sort.RELEVANCE
+        
+        let count = 
+            match searchQuery.Count with
+            | 0 -> 10 + searchQuery.Skip
+            | _ -> searchQuery.Count + searchQuery.Skip
+        
+        indexWriter.ShardWriters |> Array.Parallel.iter (fun x -> 
+                                        // This is to enable proper sorting
+                                        let topFieldCollector = 
+                                            TopFieldCollector.Create(sort, count, null, true, true, true)
+                                        indexSearchers.[x.ShardNo].IndexSearcher.Search(query, topFieldCollector)
+                                        topDocsCollection.[x.ShardNo] <- topFieldCollector.TopDocs())
+        let totalDocs = TopDocs.Merge(sort, count, topDocsCollection)
+        let hits = totalDocs.ScoreDocs
+        let recordsReturned = totalDocs.ScoreDocs.Count() - searchQuery.Skip
+        let totalAvailable = totalDocs.TotalHits
+        
+        let highlighterOptions = 
+            if notNull searchQuery.Highlights then 
+                match searchQuery.Highlights.HighlightedFields with
+                | x when x.Length = 1 -> 
+                    match indexWriter.Settings.FieldsLookup.TryGetValue(x.First()) with
+                    | (true, field) -> 
+                        let htmlFormatter = 
+                            new SimpleHTMLFormatter(searchQuery.Highlights.PreTag, searchQuery.Highlights.PostTag)
+                        Some(field, new Highlighter(htmlFormatter, new QueryScorer(query)))
+                    | _ -> None
+                | _ -> None
+            else None
         
         let inline getHighlighter (document : Document, shardIndex, doc) = 
             if highlighterOptions.IsSome then 
@@ -205,48 +265,40 @@ module SearchDsl =
                 else Array.empty<string>
             else Array.empty<string>
         
+        // Start composing the seach results
         let results = 
             seq { 
                 for i = searchQuery.Skip to hits.Length - 1 do
                     let hit = hits.[i]
                     let document = indexSearchers.[hit.ShardIndex].IndexSearcher.Doc(hit.Doc)
+                    let timeStamp = int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
                     let fields = getDocument (indexWriter, searchQuery, document)
-                    let resultDoc = new Document.Dto()
-                    resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
-                    resultDoc.IndexName <- indexWriter.Settings.IndexName
-                    resultDoc.TimeStamp <- int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
-                    resultDoc.Fields <- fields
-                    resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
-                                       else 0.0
-                    resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
-                    yield resultDoc
+                    if searchQuery.ReturnFlatResult then 
+                        fields.Add(Constants.IdField, document.Get(indexWriter.GetSchemaName(Constants.IdField)))
+                        fields.Add
+                            (Constants.LastModifiedField, 
+                             document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
+                        if searchQuery.ReturnScore then fields.Add("_score", hit.Score.ToString())
+                        yield SearchResultComponents.FlatResult(fields)
+                    else 
+                        let resultDoc = new Document.Dto()
+                        resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
+                        resultDoc.IndexName <- indexWriter.Settings.IndexName
+                        resultDoc.TimeStamp <- timeStamp
+                        resultDoc.Fields <- fields
+                        resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
+                                           else 0.0
+                        resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
+                        yield SearchResultComponents.StructuredResult(resultDoc)
+                // Dispose the searchers
+                for i in 0..indexSearchers.Length - 1 do
+                    (indexSearchers.[i] :> IDisposable).Dispose()
             }
         
-        for i in 0..indexSearchers.Length - 1 do
-            (indexSearchers.[i] :> IDisposable).Dispose()
-        ok (results, recordsReturned, totalAvailable)
-    
-    /// Searches for documents over the index using the query and returns the documents as a sequence of 
-    /// dictionary    
-    let searchDictionarySeq (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
-        let (hits, _, recordsReturned, totalAvailable, indexSearchers) = search (indexWriter, query, searchQuery)
-        
-        let results = 
-            seq { 
-                for i = searchQuery.Skip to hits.Length - 1 do
-                    let hit = hits.[i]
-                    let document = indexSearchers.[hit.ShardIndex].IndexSearcher.Doc(hit.Doc)
-                    let fields = getDocument (indexWriter, searchQuery, document)
-                    fields.Add(Constants.IdField, document.Get(indexWriter.GetSchemaName(Constants.IdField)))
-                    fields.Add
-                        (Constants.LastModifiedField, 
-                         document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
-                    if searchQuery.ReturnScore then fields.Add("_score", hit.Score.ToString())
-                    yield fields
-            }
-        for i in 0..indexSearchers.Length - 1 do
-            (indexSearchers.[i] :> IDisposable).Dispose()
-        ok (results, recordsReturned, totalAvailable)
+        { Meta = 
+              { RecordsReturned = recordsReturned
+                TotalAvailable = totalAvailable }
+          Documents = results }
 
 /// Term Query
 [<Name("term_match"); Sealed>]

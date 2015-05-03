@@ -24,8 +24,8 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
 open System.Linq
-open System.Threading.Tasks
 open System.Runtime.Caching
+open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 
 /// General factory Interface for all MEF based factories
@@ -65,18 +65,16 @@ type IDocumentService =
 
 /// Search related operations
 type ISearchService = 
-    abstract Search : SearchQuery.Dto -> Choice<SearchResults, Error>
-    abstract SearchAsDocmentSeq : query:SearchQuery.Dto -> Choice<seq<Document.Dto> * int * int, Error>
-    abstract SearchAsDictionarySeq : query:SearchQuery.Dto -> Choice<seq<Dictionary<string, string>> * int * int, Error>
-    abstract SearchUsingProfile : query:SearchQuery.Dto * inputFields:Dictionary<string, string>
-     -> Choice<SearchResults, Error>
+    abstract Search : searchQuery:SearchQuery.Dto * inputFields:Dictionary<string, string>
+     -> Choice<SearchResults<SearchResultComponents.T>, Error>
+    abstract Search : searchQuery:SearchQuery.Dto -> Choice<SearchResults<SearchResultComponents.T>, Error>
 
 /// Queuing related operations
 type IQueueService = 
     abstract AddDocumentQueue : document:Document.Dto -> unit
     abstract AddOrUpdateDocumentQueue : document:Document.Dto -> unit
 
-type IJobService =
+type IJobService = 
     abstract GetJob : string -> Choice<Job, Error>
     abstract DeleteAllJobs : unit -> Choice<unit, Error>
     abstract UpdateJob : Job -> Choice<unit, Error>
@@ -144,9 +142,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
             }
         
         member __.Analyze(analyzerName : string, input : string) = failwith "Not implemented yet"
-        member __.GetAllAnalyzers() = 
-            store.Values.ToArray() 
-            |> Array.map fst
+        member __.GetAllAnalyzers() = store.Values.ToArray() |> Array.map fst
         
         member __.GetAnalyzer(analyzerName : string) = 
             match store.TryGetValue(analyzerName) with
@@ -276,10 +272,12 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                     return writer |> IndexWriter.getRealTimeSearcher shardNo }
         member __.GetRealtimeSearchers(indexName : string) = maybe { let! writer = indexOnline indexName
                                                                      return writer |> IndexWriter.getRealTimeSearchers }
+        
         member __.GetIndex(indexName : string) = 
             match dtoStore.GetItem(indexName) with
             | Choice1Of2(_) as success -> success
             | Choice2Of2(_) -> fail <| Error.IndexNotFound indexName
+        
         member __.IndexExists(indexName : string) = dtoStore.GetItem(indexName) |> resultToBool
         member __.IndexOnline(indexName : string) = indexOnline indexName |> resultToBool
         
@@ -304,6 +302,15 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
 
 [<Sealed>]
 type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>, indexService : IIndexService) = 
+    
+    // Generate query types from query factory. This is necessary as a single query can support multiple
+    // query names
+    let queryTypes = 
+        let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
+        for pair in queryFactory.GetAllModules() do
+            for queryName in pair.Value.QueryName() do
+                result.Add(queryName, pair.Value)
+        result
     
     let getSearchPredicate (writers : IndexWriter.T, search : SearchQuery.Dto, 
                             inputValues : Dictionary<string, string> option) = 
@@ -334,49 +341,14 @@ type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>
                             (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, queryTypes)
         }
     
-    let search (searchQuery : SearchQuery.Dto, queryTypes) = 
-        maybe { 
-            let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-            let! query = generateSearchQuery (writers, searchQuery, None, queryTypes)
-            let! (results, recordsReturned, totalAvailable) = SearchDsl.searchDocumentSeq (writers, query, searchQuery)
-            let searchResults = new SearchResults()
-            searchResults.Documents <- results.ToList()
-            searchResults.TotalAvailable <- totalAvailable
-            searchResults.RecordsReturned <- recordsReturned
-            return! Choice1Of2(searchResults)
-        }
-    
-    // Generate query types from query factory. This is necessary as a single query can support multiple
-    // query names
-    let queryTypes = 
-        let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
-        for pair in queryFactory.GetAllModules() do
-            for queryName in pair.Value.QueryName() do
-                result.Add(queryName, pair.Value)
-        result
-    
+    let search (searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string> option) = 
+        maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+                let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
+                return SearchDsl.search (writers, query, searchQuery) }
     interface ISearchService with
-        member __.Search(query) = search (query, queryTypes)
-        member __.SearchAsDocmentSeq(searchQuery) = 
-            maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                    let! query = generateSearchQuery (writers, searchQuery, None, queryTypes)
-                    return! SearchDsl.searchDocumentSeq (writers, query, searchQuery) }
-        member __.SearchAsDictionarySeq(searchQuery : SearchQuery.Dto) = 
-            maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                    let! query = generateSearchQuery (writers, searchQuery, None, queryTypes)
-                    return! SearchDsl.searchDictionarySeq (writers, query, searchQuery) }
-        member __.SearchUsingProfile(searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string>) = 
-            maybe { 
-                let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                let! query = generateSearchQuery (writers, searchQuery, Some(inputFields), queryTypes)
-                let! (results, recordsReturned, totalAvailable) = SearchDsl.searchDocumentSeq 
-                                                                      (writers, query, searchQuery)
-                let searchResults = new SearchResults()
-                searchResults.Documents <- results.ToList()
-                searchResults.TotalAvailable <- totalAvailable
-                searchResults.RecordsReturned <- recordsReturned
-                return! Choice1Of2(searchResults)
-            }
+        member __.Search(searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string>) = 
+            search (searchQuery, Some <| inputFields)
+        member this.Search(searchQuery : SearchQuery.Dto) = search (searchQuery, None)
 
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 
@@ -395,9 +367,9 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 q.Columns <- [| "*" |]
                 match searchService.Search(q) with
                 | Choice1Of2(v') -> 
-                    if v'.Documents.Count <> 0 then return! Choice1Of2(v'.Documents.First())
+                    if v'.Meta.RecordsReturned <> 0 then return (v'.Documents.First() |> toStructuredResult)
                     else return! fail <| DocumentIdNotFound(indexName, documentId)
-                | Choice2Of2(e) -> return! Choice2Of2(e)
+                | Choice2Of2(e) -> return! fail <| e
             }
         
         /// Get top 10 document from the index
@@ -409,7 +381,8 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 q.Columns <- [| "*" |]
                 q.Count <- count
                 q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
-                return! searchService.Search(q)
+                let! result = searchService.Search(q)
+                return result |> toSearchResults
             }
         
         /// Add or update an existing document
@@ -440,7 +413,6 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Delete all the documents present in an index
         member __.DeleteAllDocuments indexName = maybe { let! writer = indexService.IsIndexOnline <| indexName
                                                          writer |> IndexWriter.deleteAllDocuments }
-
 
 /// <summary>
 /// Job service class which will be dynamically injected using IOC.

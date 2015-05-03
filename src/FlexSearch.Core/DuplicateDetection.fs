@@ -118,9 +118,9 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
     let connectionString = "Data Source=(localdb)\\v11.0;Integrated Security=True"
     
     let DuplicateRecordCheck(record : Dictionary<string, string>, query : SearchQuery.Dto, session : Session) = 
-        match searchService.SearchUsingProfile(query, record) with
+        match searchService.Search(query, record) with
         | Choice1Of2(results) -> 
-            if results.RecordsReturned > 1 then 
+            if results.Meta.RecordsReturned > 1 then 
                 use context = new DataContext(connectionString)
                 let header = 
                     context.headers.Add
@@ -129,15 +129,15 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
                 for result in results.Documents do
                     // The returned record is same as the passed record. Save the score for relative
                     // scoring later
-                    if result.Id = header.PrimaryRecordId then header.Score <- result.Score
-                    else 
-                        let score = 
-                            if header.Score >= result.Score then result.Score / header.Score * 100.0
-                            else -1.0
-                        context.LineItems.Add
-                            (new LineItem(SecondaryRecordId = result.Id, 
-                                          DisplayName = result.Fields.[session.DisplayFieldName], Score = score, 
-                                          HeaderId = header.HeaderId)) |> ignore
+//                    if result.Id = header.PrimaryRecordId then header.Score <- result.Score
+//                    else 
+//                        let score = 
+//                            if header.Score >= result.Score then result.Score / header.Score * 100.0
+//                            else -1.0
+//                        context.LineItems.Add
+//                            (new LineItem(SecondaryRecordId = result.Id, 
+//                                          DisplayName = result.Fields.[session.DisplayFieldName], Score = score, 
+//                                          HeaderId = header.HeaderId)) |> ignore
                 context.SaveChanges() |> ignore
         | _ -> ()
     
@@ -150,18 +150,19 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
             let mainQuery = new SearchQuery.Dto(session.IndexName, mainQuery, Count = (int32) System.Int16.MaxValue)
             // TODO: Future optimization: bring only the required columns
             mainQuery.Columns <- [| "*" |]
-            let! (records, recordsReturned, totalAvailable) = searchService.SearchAsDictionarySeq(mainQuery)
+            let! result = searchService.Search(mainQuery)
+            let records = result |> toStructuredResults
             let secondaryQuery = 
                 new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
-            session.RecordsReturned <- recordsReturned
-            session.RecordsAvailable <- totalAvailable
+            session.RecordsReturned <- result.Meta.RecordsReturned
+            session.RecordsAvailable <- result.Meta.TotalAvailable
             secondaryQuery.Columns <- [| session.DisplayFieldName |]
             use context = new DataContext(connectionString)
             let session = context.Sessions.Add(session)
             context.SaveChanges() |> ignore
-            Parallel.ForEach
-                (records, parallelOptions, fun record -> DuplicateRecordCheck(record, secondaryQuery, session)) 
-            |> ignore
+//            Parallel.ForEach
+//                (records.Documents, parallelOptions, fun record -> DuplicateRecordCheck(record, secondaryQuery, session)) 
+//            |> ignore
             session.JobEndTime <- DateTime.Now
             context.SaveChanges() |> ignore
         }

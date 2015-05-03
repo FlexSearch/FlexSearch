@@ -363,31 +363,26 @@ type GetJobByIdHandler(jobService : IJobService) =
 type GetSearchHandler(searchService : ISearchService) = 
     inherit HttpHandlerBase<SearchQuery.Dto, obj>(false)
     override __.Process(request, body) = 
-        let processRequest (indexName, owin : IOwinContext) = 
-            let query = 
-                match body with
-                | Some(q) -> q
-                | None -> new SearchQuery.Dto()
-            query.QueryString <- stringFromQueryString "q" query.QueryString owin
-            query.Columns <- match owin.Request.Query.Get("c") with
-                                | null -> query.Columns
-                                | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
-            query.Count <- intFromQueryString "count" query.Count owin
-            query.Skip <- intFromQueryString "skip" query.Skip owin
-            query.OrderBy <- stringFromQueryString "orderby" query.OrderBy owin
-            query.ReturnFlatResult <- boolFromQueryString "returnflatresult" query.ReturnFlatResult owin
-            query.SearchProfile <- stringFromQueryString "searchprofile" "" owin
-            query.IndexName <- indexName
-
-            if query.ReturnFlatResult then 
-                match searchService.SearchAsDictionarySeq(query) with
-                | Choice1Of2(results, recordsReturned, totalAvailable) -> 
-                    owin.Response.Headers.Add("RecordsReturned", [| recordsReturned.ToString() |])
-                    owin.Response.Headers.Add("TotalAvailable", [| totalAvailable.ToString() |])
-                    ok(results |> Seq.toList :> obj)
-                | Choice2Of2(e) -> fail(e)
-            else 
-                match searchService.Search(query) with
-                | Choice1Of2(v') -> Choice1Of2(v' :> obj)
-                | Choice2Of2(e) -> fail(e)
-        SomeResponse(processRequest (request.ResId.Value, request.OwinContext), Ok, BadRequest)
+        let query = 
+            match body with
+            | Some(q) -> q
+            | None -> new SearchQuery.Dto()
+        query.QueryString <- request.OwinContext |> stringFromQueryString "q" query.QueryString
+        query.Columns <- match request.OwinContext.Request.Query.Get("c") with
+                            | null -> query.Columns
+                            | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
+        query.Count <- request.OwinContext |> intFromQueryString "count" query.Count
+        query.Skip <- request.OwinContext |> intFromQueryString "skip" query.Skip
+        query.OrderBy <- request.OwinContext |> stringFromQueryString "orderby" query.OrderBy
+        query.ReturnFlatResult <- request.OwinContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
+        query.SearchProfile <- request.OwinContext |> stringFromQueryString "searchprofile" ""
+        query.IndexName <- request.ResId.Value
+        match searchService.Search(query) with
+        | Choice1Of2(result) -> 
+            if query.ReturnFlatResult then
+                request.OwinContext.Response.Headers.Add("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
+                request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                SuccessResponse(toFlatResults(result).Documents :> obj, Ok)
+            else
+                SuccessResponse(toSearchResults(result) :> obj, Ok)
+        | Choice2Of2(error) -> FailureResponse(error, BadRequest)

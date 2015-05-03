@@ -36,15 +36,16 @@ let withSkip (skip : int) (query : SearchQuery.Dto) =
     query
 
 let searchAndExtract (searchService : ISearchService) (query) = 
+    let result = searchService.Search(query) 
+    test <@ succeeded <| result @>
+    (extract <| result) |> toSearchResults
+
+let searchForFlatAndExtract (searchService : ISearchService) (query : SearchQuery.Dto) = 
+    query.ReturnFlatResult <- true
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
-    extract <| result
-
-let searchForFlatAndExtract (searchService : ISearchService) (query) = 
-    let result = searchService.SearchAsDictionarySeq(query)
-    test <@ succeeded <| result @>
-    let (docs, _, _) = extract <| result
-    docs.ToList()
+    ((extract <| result) |> toFlatResults).Documents.ToList()
+    
 
 /// Assertions
 /// Checks if the total number of fields returned by the query matched the expected
