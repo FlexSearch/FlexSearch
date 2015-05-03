@@ -60,7 +60,12 @@ module DataHelpers =
         searchProfileQuery.MissingValueConfiguration.Add("t1", MissingValueOption.ThrowError)
         searchProfileQuery.MissingValueConfiguration.Add("i1", MissingValueOption.Default)
         searchProfileQuery.MissingValueConfiguration.Add("et1", MissingValueOption.Ignore)
-        index.SearchProfiles <- [| searchProfileQuery |]
+        
+        // Cross matching profile
+        let searchProfileQuery2 = 
+            new SearchQuery.Dto(index.IndexName, "t1 = '<t2>'", QueryName = "profile2")
+        searchProfileQuery2.MissingValueConfiguration.Add("t1", MissingValueOption.ThrowError)
+        index.SearchProfiles <- [| searchProfileQuery ; searchProfileQuery2 |]
         index
 
     /// Utility method to add data to an index

@@ -254,6 +254,15 @@ id,et1,t2,i1,t1
 8,d,jhonson,1,andrew"""
     do indexTestData (testData, index, indexService, documentService)
     
+    member __.``Cross matching can be used to match different fields``() =
+        let result = 
+            getQuery (index.IndexName, "t1:'jhon',t2:'sam'")
+            |> withSearchProfile "profile2" //t1 = '<t2>'
+            |> searchAndExtract searchService
+        // t1 should get its value from t2. We are using t2 = sam which 
+        // should only match a single record
+        result |> assertReturnedDocsCount 1
+
     member __.``There are 8 records in the index``() = 
         let result = getQuery (index.IndexName, "_id matchall '*'") |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8

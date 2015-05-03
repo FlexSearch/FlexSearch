@@ -121,27 +121,32 @@ module SearchDsl =
                 if v.Length = 0 then fail <| MissingFieldValue(fieldName)
                 else ok <| v.ToArray()
         
-        let getValue (fieldName, operator, v : Value, p) = 
-            maybe { 
-                match isProfileBased with
-                | Some(source) -> 
-                    match source.TryGetValue(fieldName) with
-                    | true, v' -> return [| v' |]
+        let getValue (fieldName, v : Value) = 
+            match isProfileBased with
+            | Some(source) -> 
+                // Check if cross matching is setup
+                let fName = 
+                    match v with
+                    | SingleValue(v1) -> 
+                        if v1.StartsWith("<") && v1.EndsWith(">") then v1.Substring(1, v1.Length - 2)
+                        else fieldName
+                    | _ -> fieldName
+                match source.TryGetValue(fName) with
+                | true, v' -> ok <| [| v' |]
+                | _ -> 
+                    match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
+                    | true, configuration -> 
+                        match configuration with
+                        | MissingValueOption.Default -> v |> getFieldValueAsArray fieldName
+                        | MissingValueOption.ThrowError -> fail <| MissingFieldValue(fieldName)
+                        | MissingValueOption.Ignore -> 
+                            generateMatchAllQuery := true
+                            ok <| [| "" |]
+                        | _ -> fail <| UnknownMissingVauleOption(fieldName)
                     | _ -> 
-                        match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
-                        | true, configuration -> 
-                            match configuration with
-                            | MissingValueOption.Default -> return! v |> getFieldValueAsArray fieldName
-                            | MissingValueOption.ThrowError -> return! fail (MissingFieldValue(fieldName))
-                            | MissingValueOption.Ignore -> 
-                                generateMatchAllQuery := true
-                                return [| "" |]
-                            | _ -> return! fail (UnknownMissingVauleOption(fieldName))
-                        | _ -> 
-                            // Check if a non blank value is provided as a part of the query
-                            return! v |> getFieldValueAsArray fieldName
-                | None -> return! v |> getFieldValueAsArray fieldName
-            }
+                        // Check if a non blank value is provided as a part of the query
+                        v |> getFieldValueAsArray fieldName
+            | None -> v |> getFieldValueAsArray fieldName
         
         /// Generate the query from the condition
         let getCondition (fieldName, operator, v : Value, p) = 
@@ -149,7 +154,7 @@ module SearchDsl =
                 let! field = fields |> keyExists2 (fieldName, fieldNotFound)
                 do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
                 let! query = queryTypes |> keyExists (operator, queryNotFound)
-                let! value = getValue (fieldName, operator, v, p)
+                let! value = getValue (fieldName, v)
                 if generateMatchAllQuery.Value = true then return! ok <| getMatchAllDocsQuery()
                 else 
                     let! q = query.GetQuery(field, value.ToArray(), p)
