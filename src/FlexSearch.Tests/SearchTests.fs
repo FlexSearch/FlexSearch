@@ -23,6 +23,10 @@ let withOrderBy (column : string) (query : SearchQuery.Dto) =
     query.OrderBy <- column
     query
 
+let withDistinctBy (column : string) (query : SearchQuery.Dto) = 
+    query.DistinctBy <- column
+    query
+
 let withNoScore (query : SearchQuery.Dto) = 
     query.ReturnScore <- false
     query
@@ -36,7 +40,7 @@ let withSkip (skip : int) (query : SearchQuery.Dto) =
     query
 
 let searchAndExtract (searchService : ISearchService) (query) = 
-    let result = searchService.Search(query) 
+    let result = searchService.Search(query)
     test <@ succeeded <| result @>
     (extract <| result) |> toSearchResults
 
@@ -45,7 +49,6 @@ let searchForFlatAndExtract (searchService : ISearchService) (query : SearchQuer
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
     ((extract <| result) |> toFlatResults).Documents.ToList()
-    
 
 /// Assertions
 /// Checks if the total number of fields returned by the query matched the expected
@@ -289,6 +292,32 @@ id,et1,t2,i1,t1
             |> withSearchProfile "profile1"
             |> searchService.Search
         test <@ result = Choice2Of2(MissingFieldValue("t2")) @>
+
+type ``DistinctBy Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,et1,t1,i1,s1
+1,a,jhonson,1,test1
+2,a,hewitt,1,test2
+3,b,Garner,1,test3
+4,b,Garner,1,test4
+5,c,jhonson,1,test5"""
+    do indexTestData (testData, index, indexService, documentService)
+    member __.``Setting distinctby removes duplicates from the serach results``() = 
+        let result = 
+            getQuery (index.IndexName, "_id matchall '*'")
+            |> withDistinctBy "et1"
+            |> searchAndExtract searchService
+        // The document returned count will still be 5 as we are filtering records
+        test <@ result.Documents.Count = 3 @>
+        test <@ result.RecordsReturned = 5 @>
+
+    member __.``Distinctby only works with ExactText fields``() = 
+        let result = 
+            getQuery (index.IndexName, "_id matchall '*'")
+            |> withDistinctBy "t1"
+            |> searchAndExtract searchService
+        test <@ result.Documents.Count = 5 @>
+        test <@ result.RecordsReturned = 5 @>
 
 // ----------------------------------------------------------------------------
 // Query type tests

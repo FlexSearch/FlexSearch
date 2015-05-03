@@ -218,6 +218,16 @@ module SearchDsl =
                 | (true, field) -> new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType))
                 | _ -> Sort.RELEVANCE
         
+        let distinctBy = 
+            if not <| String.IsNullOrWhiteSpace(searchQuery.DistinctBy) then 
+                match indexWriter.Settings.FieldsLookup.TryGetValue(searchQuery.DistinctBy) with
+                | true, field -> 
+                    match field.FieldType with
+                    | FieldType.ExactText(_) -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
+                    | _ -> None
+                | _ -> None
+            else None
+        
         let count = 
             match searchQuery.Count with
             | 0 -> 10 + searchQuery.Skip
@@ -265,31 +275,41 @@ module SearchDsl =
                 else Array.empty<string>
             else Array.empty<string>
         
+        let processDocument (hit : ScoreDoc, document : Document) = 
+            let timeStamp = int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
+            let fields = getDocument (indexWriter, searchQuery, document)
+            if searchQuery.ReturnFlatResult then 
+                fields.Add(Constants.IdField, document.Get(indexWriter.GetSchemaName(Constants.IdField)))
+                fields.Add
+                    (Constants.LastModifiedField, document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
+                if searchQuery.ReturnScore then fields.Add("_score", hit.Score.ToString())
+                SearchResultComponents.FlatResult(fields)
+            else 
+                let resultDoc = new Document.Dto()
+                resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
+                resultDoc.IndexName <- indexWriter.Settings.IndexName
+                resultDoc.TimeStamp <- timeStamp
+                resultDoc.Fields <- fields
+                resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
+                                   else 0.0
+                resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
+                SearchResultComponents.StructuredResult(resultDoc)
+        
         // Start composing the seach results
         let results = 
             seq { 
                 for i = searchQuery.Skip to hits.Length - 1 do
                     let hit = hits.[i]
                     let document = indexSearchers.[hit.ShardIndex].IndexSearcher.Doc(hit.Doc)
-                    let timeStamp = int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
-                    let fields = getDocument (indexWriter, searchQuery, document)
-                    if searchQuery.ReturnFlatResult then 
-                        fields.Add(Constants.IdField, document.Get(indexWriter.GetSchemaName(Constants.IdField)))
-                        fields.Add
-                            (Constants.LastModifiedField, 
-                             document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
-                        if searchQuery.ReturnScore then fields.Add("_score", hit.Score.ToString())
-                        yield SearchResultComponents.FlatResult(fields)
-                    else 
-                        let resultDoc = new Document.Dto()
-                        resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
-                        resultDoc.IndexName <- indexWriter.Settings.IndexName
-                        resultDoc.TimeStamp <- timeStamp
-                        resultDoc.Fields <- fields
-                        resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
-                                           else 0.0
-                        resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
-                        yield SearchResultComponents.StructuredResult(resultDoc)
+                    match distinctBy with
+                    | Some(field, hashSet) -> 
+                        let distinctByValue = document.Get(indexWriter.GetSchemaName(field.FieldName))
+                        if notNull distinctByValue then 
+                            if not <| hashSet.Contains(distinctByValue) then 
+                                // The field is not in the hasSet so it is a valid result
+                                hashSet.Add(distinctByValue) |> ignore
+                                yield processDocument (hit, document)
+                    | None -> yield processDocument (hit, document)
                 // Dispose the searchers
                 for i in 0..indexSearchers.Length - 1 do
                     (indexSearchers.[i] :> IDisposable).Dispose()

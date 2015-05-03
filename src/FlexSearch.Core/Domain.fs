@@ -1019,6 +1019,10 @@ module SearchQuery =
         /// Can be used to order the results by score or specific field.
         member val OrderBy = "score" with get, set
         
+        /// Can be used to return records with distinct values for 
+        /// the given field. Works in a manner similar to Sql distinct by clause.
+        member val DistinctBy = defString with get, set
+
         /// Used to enable paging and skip certain pre-fetched results.
         member val Skip = 0 with get, set
         
