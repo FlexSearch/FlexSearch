@@ -20,7 +20,6 @@ namespace FlexSearch.Core
 open FlexLucene.Analysis
 open FlexSearch.Core
 open System
-open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
 open System.Linq
@@ -93,7 +92,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     let testMode = defaultArg testMode true
     
     let path = 
-        Constants.ConfFolder +/ "Analyzer"
+        Constants.ConfFolder +/ "Analyzers"
         |> Directory.CreateDirectory
         |> fun x -> x.FullName
     
@@ -158,14 +157,15 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
 type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     
+    let path = 
+        Constants.ConfFolder +/ "Indices"
+        |> Directory.CreateDirectory
+        |> fun x -> x.FullName
+    
     /// State information related to all the indices present in the
     /// system. An index can exist but be offline. In that case there
     /// won't be any associated index writer
     let state = conDict<Index.Dto * IndexWriter.T option>()
-    
-    /// Store to save all the index related information to the physical
-    /// medium
-    let dtoStore = new DtoStore<Index.Dto>(threadSafeWriter)
     
     /// Returns IndexNotFound error
     let indexNotFound (indexName) = IndexNotFound <| indexName
@@ -214,8 +214,13 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
     
     /// Load all index from the store
     let loadAllIndex() = 
-        dtoStore.GetItems()
-        |> Seq.map (fun i -> Task.Run(fun _ -> loadIndex i |> ignore))
+        Directory.EnumerateFiles(path)
+        |> Seq.map (fun x -> 
+               match threadSafeWriter.ReadFile<Index.Dto>(x) with
+               | Choice1Of2(dto) -> Some(dto)
+               | Choice2Of2(error) -> None)
+        |> Seq.filter (fun x -> x.IsSome)
+        |> Seq.map (fun i -> Task.Run(fun _ -> loadIndex i.Value |> ignore))
         |> Seq.toArray
         |> Task.WaitAll
     
@@ -231,7 +236,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                 match indexExists index.IndexName with
                 | Choice1Of2(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
                 | _ -> 
-                    do! dtoStore.UpdateItem(index.IndexName, index)
+                    do! threadSafeWriter.WriteFile(path +/ index.IndexName, index)
                     do! loadIndex <| index
                     return CreateResponse(index.IndexName)
             }
@@ -244,7 +249,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                 | _ -> 
                     let item = fst state.[indexName]
                     item.Online <- false
-                    do! dtoStore.UpdateItem(indexName, item)
+                    do! threadSafeWriter.WriteFile(path +/ indexName, item)
                     indexWriter.Value |> IndexWriter.close
                     state
                     |> tryUpdate (indexName, (item, None))
@@ -259,7 +264,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                 | _ -> 
                     let item = fst state.[indexName]
                     item.Online <- true
-                    do! dtoStore.UpdateItem(indexName, item)
+                    do! threadSafeWriter.WriteFile(path +/ indexName, item)
                     do! loadIndex item
             }
         
@@ -274,11 +279,15 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                                                                      return writer |> IndexWriter.getRealTimeSearchers }
         
         member __.GetIndex(indexName : string) = 
-            match dtoStore.GetItem(indexName) with
-            | Choice1Of2(_) as success -> success
-            | Choice2Of2(_) -> fail <| Error.IndexNotFound indexName
+            match state.TryGetValue(indexName) with
+            | true, (index, _) -> ok <| index
+            | _ -> fail <| Error.IndexNotFound indexName
         
-        member __.IndexExists(indexName : string) = dtoStore.GetItem(indexName) |> resultToBool
+        member __.IndexExists(indexName : string) = 
+            match state.TryGetValue(indexName) with
+            | true, _ -> true
+            | _ -> false
+        
         member __.IndexOnline(indexName : string) = indexOnline indexName |> resultToBool
         
         member __.GetIndexState(indexName : string) = 
@@ -293,11 +302,11 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                 | Some(writer) -> writer |> IndexWriter.close
                 | None -> ()
                 state.TryRemove(indexName) |> ignore
-                do! dtoStore.DeleteItem(indexName)
+                do! threadSafeWriter.DeleteFile(path +/ indexName)
                 delDir (DataFolder +/ indexName)
             }
         
-        member __.GetAllIndex() = dtoStore.GetItems()
+        member __.GetAllIndex() = state.Values.ToArray() |> Array.map fst
         member __.UpdateIndexFields(fields : Field.Dto []) = failwith "Not implemented yet"
 
 [<Sealed>]
