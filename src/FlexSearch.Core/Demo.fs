@@ -17,12 +17,12 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open System
-open System.Linq
-open Newtonsoft.Json
 open FlexLucene.Analysis.Synonym
 open FlexLucene.Util
+open Newtonsoft.Json
+open System
 open System.IO
+open System.Linq
 
 type Country() = 
     member val Id = Unchecked.defaultof<string> with get, set
@@ -96,47 +96,47 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             indexDocument.Fields.Add("coordinates", record.Coordinates)
             match documentService.AddDocument(indexDocument) with
             | Choice1Of2(_) -> ()
-            | Choice2Of2(e) -> 
-                failwithf "%A" e
+            | Choice2Of2(e) -> failwithf "%A" e
         indexService.Refresh(indexName) |> ignore
     
     let GetDemoIndexInfo() = 
         let index = new Index.Dto(IndexName = indexName)
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Online <- true
-        index.Fields <-  [| new Field.Dto("countryname")
-                            new Field.Dto("exports", FieldType.Dto.Long, ScriptName = "striptonumbers")
-                            new Field.Dto("imports", FieldType.Dto.Text, IndexAnalyzer = "striptonumbersanalyzer")
-                            new Field.Dto("independence", FieldType.Dto.Date)
-                            new Field.Dto("militaryexpenditure", FieldType.Dto.Double)
-                            new Field.Dto("netmigration", FieldType.Dto.Double)
-                            new Field.Dto("area", FieldType.Dto.Int)
-                            new Field.Dto("internetusers", FieldType.Dto.Long)
-                            new Field.Dto("labourforce", FieldType.Dto.Long)
-                            new Field.Dto("population", FieldType.Dto.Long)
-                            new Field.Dto("agriproducts", FieldType.Dto.Text, IndexAnalyzer = "foodsynonymsanalyzer")
-                            new Field.Dto("areacomparative")
-                            new Field.Dto("background", FieldType.Dto.Highlight)
-                            new Field.Dto("capital")
-                            new Field.Dto("climate")
-                            new Field.Dto("economy")
-                            new Field.Dto("governmenttype")
-                            new Field.Dto("memberof")
-                            new Field.Dto("countrycode", FieldType.Dto.ExactText)
-                            new Field.Dto("nationality")
-                            new Field.Dto("coordinates", FieldType.Dto.ExactText) |]
+        index.Fields <- [| new Field.Dto("countryname")
+                           new Field.Dto("exports", FieldType.Dto.Long, ScriptName = "striptonumbers")
+                           new Field.Dto("imports", FieldType.Dto.Text, IndexAnalyzer = "striptonumbersanalyzer")
+                           new Field.Dto("independence", FieldType.Dto.Date)
+                           new Field.Dto("militaryexpenditure", FieldType.Dto.Double)
+                           new Field.Dto("netmigration", FieldType.Dto.Double)
+                           new Field.Dto("area", FieldType.Dto.Int)
+                           new Field.Dto("internetusers", FieldType.Dto.Long)
+                           new Field.Dto("labourforce", FieldType.Dto.Long)
+                           new Field.Dto("population", FieldType.Dto.Long)
+                           new Field.Dto("agriproducts", FieldType.Dto.Text, IndexAnalyzer = "foodsynonymsanalyzer")
+                           new Field.Dto("areacomparative")
+                           new Field.Dto("background", FieldType.Dto.Highlight)
+                           new Field.Dto("capital")
+                           new Field.Dto("climate")
+                           new Field.Dto("economy")
+                           new Field.Dto("governmenttype")
+                           new Field.Dto("memberof")
+                           new Field.Dto("countrycode", FieldType.Dto.ExactText)
+                           new Field.Dto("nationality")
+                           new Field.Dto("coordinates", FieldType.Dto.ExactText) |]
         // Custom Script
         let source = 
             """return !System.String.IsNullOrWhiteSpace(fields.exports) ? fields.exports.Replace(" ", "").Replace("$",""): "0";"""
-        let stripNumbersScript = new Script.Dto(ScriptName = "striptonumbers", Source = source, ScriptType = ScriptType.Dto.ComputedField)
+        let stripNumbersScript = 
+            new Script.Dto(ScriptName = "striptonumbers", Source = source, ScriptType = ScriptType.Dto.ComputedField)
         index.Scripts <- [| stripNumbersScript |]
         index
-
-    let buildSynonymFile fileName =
-        let synonymDirectory = ServerSettings.T.GetDefault().ConfFolder + "/Analyzer/"
+    
+    let buildSynonymFile fileName = 
+        let synonymDirectory = ServerSettings.T.GetDefault().ConfFolder + "/Resources/"
         Directory.CreateDirectory(synonymDirectory) |> ignore
         File.WriteAllText(synonymDirectory + fileName, "grape => fruit")
-
+    
     let CreateIndex() = 
         maybe { 
             let index = GetDemoIndexInfo()
@@ -145,18 +145,11 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             foodsynonymsanalyzer.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
             foodsynonymsanalyzer.Filters.Add(new TokenFilter.Dto(FilterName = "standard"))
             foodsynonymsanalyzer.Filters.Add(new TokenFilter.Dto(FilterName = "lowercase"))
-
             let synonymfilter = new TokenFilter.Dto(FilterName = "synonym")
             let synonymFileName = "foodsynonyms.txt"
             buildSynonymFile synonymFileName
             synonymfilter.Parameters.Add("synonyms", synonymFileName)
-            
-            // TODO
-            // This filter fails with the following exception:
-            // Cannot load class: FlexLucene.Analysis.Synonym.SolrSynonymParser; 
-            //foodsynonymsanalyzer.Filters.Add(synonymfilter)
-
-
+            foodsynonymsanalyzer.Filters.Add(synonymfilter)
             do! analyzerService.UpdateAnalyzer(foodsynonymsanalyzer)
             // Custom analyzer for strip to numbers
             let striptonumbersanalyzer = new Analyzer.Dto(AnalyzerName = "striptonumbersanalyzer")
@@ -183,4 +176,3 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             match CreateIndex() with
             | Choice1Of2(_) -> Choice1Of2()
             | Choice2Of2(e) -> Choice2Of2(e)
-
