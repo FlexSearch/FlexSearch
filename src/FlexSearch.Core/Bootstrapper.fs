@@ -120,7 +120,7 @@ module Main =
     open System.Reflection
     
     /// Get a container with all dependencies setup
-    let getContainer (serverSettings : ServerSettings.T, logService : ILogService, testServer : bool) = 
+    let getContainer (serverSettings : ServerSettings.T, testServer : bool) = 
         let builder = new ContainerBuilder()
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
@@ -128,7 +128,6 @@ module Main =
         // so the meta-data attributes get read.
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings.T>() |> ignore
-        builder.RegisterInstance(logService).As<ILogService>() |> ignore
         // Interface scanning
         builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
         builder |> FactoryService.registerInterfaceAssemblies<IHttpHandler>
@@ -152,8 +151,8 @@ module Main =
     
     /// Used by windows service (top shelf) to start and stop windows service.
     [<Sealed>]
-    type NodeService(serverSettings : ServerSettings.T, logService : ILogService, testServer : bool) = 
-        let container = getContainer (serverSettings, logService, testServer)
+    type NodeService(serverSettings : ServerSettings.T, testServer : bool) = 
+        let container = getContainer (serverSettings, testServer)
         let mutable httpServer = Unchecked.defaultof<IServer>
         
         //        do 

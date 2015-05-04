@@ -731,20 +731,31 @@ type ILogService =
 
 [<AutoOpen>]
 module Log = 
+    open System.Diagnostics
+
+    let sourceName = "FlexSearch"
+    let logName = "Application"
+    let infomation = EventLogEntryType.Information
+    let warning = EventLogEntryType.Warning
+    let critical = EventLogEntryType.Error
+ 
     /// Default logger for FlexSearch
-    let logger = EventSourceImplementer.GetEventSourceAs<ILogService>()
+    let logger = 
+        if not (EventLog.SourceExists(sourceName)) then
+            EventLog.CreateEventSource(sourceName, logName)
+    let writeEntry (message, logLevel) = EventLog.WriteEntry(sourceName, message, logLevel)
     
-    let debug message = logger.Debug(message)
-    let debugEx (ex : Exception) = logger.Debug(exceptionPrinter ex)
-    let warn message = logger.Warn(message)
-    let warnEx (ex : Exception) = logger.Warn(exceptionPrinter ex)
-    let info message = logger.Info(message)
-    let infoEx (ex : Exception) = logger.Info(exceptionPrinter ex)
-    let error message = logger.Error(message)
-    let errorEx (ex : Exception) = logger.Error(exceptionPrinter ex)
-    let fatal message = logger.Fatal(message)
-    let fatalEx (ex : Exception) = logger.Fatal(exceptionPrinter ex)
-    let fatalWithMsg msg (ex : Exception) = logger.Fatal(sprintf "%s \n%s" msg (exceptionPrinter ex))
+    let debug message = writeEntry(message, infomation)
+    let debugEx (ex : Exception) = writeEntry(exceptionPrinter ex, infomation)
+    let warn message = writeEntry(message, warning)
+    let warnEx (ex : Exception) = writeEntry(exceptionPrinter ex, warning)
+    let info message = writeEntry(message, infomation)
+    let infoEx (ex : Exception) = writeEntry(exceptionPrinter ex, infomation)
+    let error message = writeEntry(message, critical)
+    let errorEx (ex : Exception) = writeEntry(exceptionPrinter ex, critical)
+    let fatal message = writeEntry(message, critical)
+    let fatalEx (ex : Exception) = writeEntry(exceptionPrinter ex, critical)
+    let fatalWithMsg msg (ex : Exception) = writeEntry(sprintf "%s \n%s" msg (exceptionPrinter ex), critical)
 
 /// Represents a thread-safe file writer that can be accessed by 
 /// multiple threads concurrently.

@@ -86,7 +86,7 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = Main.getContainer (ServerSettings.T.GetDefault(), Log.logger, true)
+    let container = Main.getContainer (ServerSettings.T.GetDefault(), true)
 
     // Create a single instance of the OWIN server that will be shared across all tests
     let owinServer = 

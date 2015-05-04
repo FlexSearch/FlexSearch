@@ -33,7 +33,7 @@ let main argv =
             conf.EnableServiceRecovery(fun rc -> rc.RestartService(1) |> ignore) |> ignore
             conf.Service<NodeService>(fun factory -> 
                 ServiceConfiguratorExtensions.ConstructUsing
-                    (factory, fun () -> new NodeService(settings, Log.logger, false)) |> ignore
+                    (factory, fun () -> new NodeService(settings, false)) |> ignore
                 ServiceConfiguratorExtensions.WhenStarted(factory, fun tc -> tc.Start()) |> ignore
                 ServiceConfiguratorExtensions.WhenStopped(factory, fun tc -> tc.Stop()) |> ignore)
             |> ignore)
