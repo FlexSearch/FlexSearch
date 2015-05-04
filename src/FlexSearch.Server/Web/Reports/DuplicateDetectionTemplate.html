@@ -1,0 +1,49 @@
+﻿<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexSearch Duplicate Detection Report</title>
+    <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="starter-template">
+            <h1>FlexSearch Duplicate Detection Report</h1>
+        </div>
+    </div>
+    <div class="well">
+        <table class="table">
+            <thead>
+                <tr></tr>
+            </thead>
+            <tbody>
+                <tr data-pg-collapsed>
+                    <td>Index Name</td>
+                    <td>{{IndexName}}</td>
+                </tr>
+                <tr>
+                    <td>Search Profile Name</td>
+                    <td>{{ProfileName}}</td>
+                </tr>
+                <tr data-pg-collapsed>
+                    <td>Start Range Date</td>
+                    <td>{{StartRange}}</td>
+                </tr>
+                <tr>
+                    <td>End Range Date</td>
+                    <td>{{EndRange}}</td>
+                </tr>
+                <tr>
+                    <td>Total Records Checked</td>
+                    <td>{{TotalChecked}}</td>
+                </tr>
+                <tr>
+                    <td>Total Duplicates</td>
+                    <td>{{TotalDuplicates}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {{Results}}
+</body>
+

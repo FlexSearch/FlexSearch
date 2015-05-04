@@ -22,7 +22,10 @@ open System
 open System.Collections.Generic
 open System.ComponentModel.DataAnnotations.Schema
 open System.Data.Entity
+open System.IO
+open System.Text
 open System.Threading.Tasks
+open System.Web.UI
 
 type LineItem() = 
     let mutable header = Unchecked.defaultof<Header>
@@ -111,94 +114,178 @@ type DataContext(connectionString : string) =
         with get () = x.sessions
         and set v = x.sessions <- v
 
+type DuplicateDetectionRequest() = 
+    inherit DtoBase()
+    member val StartDate = 0L with get, set
+    member val EndDate = 0L with get, set
+    member val DateTimeField = defString with get, set
+    member val DisplayName = defString with get, set
+    member val ThreadCount = 1 with get, set
+    member val GenerateReport = false with get, set
+    member val ReportName = defString with get, set
+    member val ConnectionString = defString with get, set
+    member val IndexName = defString with get, set
+    member val ProfileName = defString with get, set
+    override this.Validate() = ok()
+
+type FileWriterCommands = 
+    | BeginTable of record : Dictionary<string, string>
+    | AddRecord of record : Dictionary<string, string>
+    | EndTable
+
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
 type SqlHandler(indexService : IIndexService, searchService : ISearchService) = 
-    inherit HttpHandlerBase<NoBody, Guid>()
-    let connectionString = "Data Source=(localdb)\\v11.0;Integrated Security=True"
+    inherit HttpHandlerBase<DuplicateDetectionRequest, Guid>()
     
-    let DuplicateRecordCheck(record : Dictionary<string, string>, query : SearchQuery.Dto, session : Session) = 
+    let writeSessionBeginInfo (req : DuplicateDetectionRequest, session) = 
+        use context = new DataContext(req.ConnectionString)
+        let session = context.Sessions.Add(session)
+        context.SaveChanges() |> ignore
+        session
+    
+    /// Compile the complete report
+    let generateReport (session : Session, req : DuplicateDetectionRequest) = 
+        let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
+        let body = File.ReadAllText(req.ReportName)
+        template <- template.Replace("{{IndexName}}", req.IndexName)
+        template <- template.Replace("{{ProfileName}}", req.ProfileName)
+        template <- template.Replace("{{StartRange}}", req.StartDate.ToString())
+        template <- template.Replace("{{EndRange}}", req.EndDate.ToString())
+        template <- template.Replace("{{TotalChecked}}", session.RecordsReturned.ToString())
+        template <- template.Replace("{{TotalDuplicates}}", "")
+        template <- template.Replace("{{Results}}", body)
+        File.WriteAllText(sprintf "%s.html" req.ReportName, template)
+        File.Delete(req.ReportName)
+    
+    let writeSessionEndInfo (req : DuplicateDetectionRequest, session : Session) = 
+        use context = new DataContext(req.ConnectionString)
+        context.SaveChanges() |> ignore
+        if req.GenerateReport then generateReport (session, req)
+    
+    let fileWriter = 
+        MailboxProcessor.Start(fun inbox -> 
+            let rec loop() = 
+                async { 
+                    let builder = new StringBuilder()
+                    let! (command : FileWriterCommands, filePath) = inbox.Receive()
+                    builder.Clear() |> ignore
+                    match command with
+                    | BeginTable(record) -> 
+                        builder.Append("""<table class="table"><thead><tr>""") |> ignore
+                        for pair in record do
+                            builder.Append(sprintf "<th>%s</th>" pair.Value) |> ignore
+                        builder.Append("""</tr></thead><tbody>""") |> ignore
+                    | AddRecord(record) -> 
+                        builder.Append("<tr>") |> ignore
+                        for pair in record do
+                            builder.Append(sprintf "<td>%s</td>" pair.Value) |> ignore
+                        builder.Append("</tr>") |> ignore
+                    | EndTable -> builder.Append("</tbody></table>") |> ignore
+                    File.AppendAllText(filePath, builder.ToString())
+                    return! loop()
+                }
+            loop())
+    
+    let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
+        let query = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
+        if req.GenerateReport then query.Columns <- [| "*" |]
+        else query.Columns <- [| session.DisplayFieldName |]
+        query.ReturnFlatResult <- true
+        query.ReturnScore <- true
         match searchService.Search(query, record) with
         | Choice1Of2(results) -> 
             if results.Meta.RecordsReturned > 1 then 
-                use context = new DataContext(connectionString)
+                use context = new DataContext(req.ConnectionString)
                 let header = 
                     context.headers.Add
                         (new Header(PrimaryRecordId = record.[Constants.IdField], SessionId = session.SessionId, 
                                     DisplayName = record.[session.DisplayFieldName]))
-                for result in results.Documents do
+                if req.GenerateReport then 
+                    fileWriter.Post(BeginTable record, req.ReportName)
+                    fileWriter.Post(AddRecord record, req.ReportName)
+                let docs = results |> toFlatResults
+                for result in docs.Documents do
                     // The returned record is same as the passed record. Save the score for relative
                     // scoring later
-//                    if result.Id = header.PrimaryRecordId then header.Score <- result.Score
-//                    else 
-//                        let score = 
-//                            if header.Score >= result.Score then result.Score / header.Score * 100.0
-//                            else -1.0
-//                        context.LineItems.Add
-//                            (new LineItem(SecondaryRecordId = result.Id, 
-//                                          DisplayName = result.Fields.[session.DisplayFieldName], Score = score, 
-//                                          HeaderId = header.HeaderId)) |> ignore
+                    let score = float result.[Constants.Score]
+                    if result.[Constants.IdField] = header.PrimaryRecordId then header.Score <- score
+                    else 
+                        let score = 
+                            if header.Score >= score then score / header.Score * 100.0
+                            else 0.0
+                        context.LineItems.Add
+                            (new LineItem(SecondaryRecordId = result.[Constants.IdField], 
+                                          DisplayName = result.[session.DisplayFieldName], Score = score, 
+                                          HeaderId = header.HeaderId)) |> ignore
+                        if req.GenerateReport then fileWriter.Post(AddRecord result, req.ReportName)
+                if req.GenerateReport then fileWriter.Post(EndTable, req.ReportName)
                 context.SaveChanges() |> ignore
         | _ -> ()
     
-    let PerformDuplicateDetection(jobId, session : Session) = 
+    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest) = 
         maybe { 
+            let session = new Session()
+            session.IndexName <- req.IndexName
+            session.ProfileName <- req.ProfileName
+            session.RangeStartTime <- parseDate <| req.StartDate.ToString()
+            session.RangeEndTime <- parseDate <| req.EndDate.ToString()
+            session.DisplayFieldName <- req.DisplayName
+            session.DateTimeField <- req.DateTimeField
+            session.JobStartTime <- DateTime.Now
+            session.ThreadCount <- req.ThreadCount
             let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
+            let dateTimeField = indexWriter.GetSchemaName(session.DateTimeField)
             let mainQuery = 
-                sprintf "%s > '%i' AND %s < '%i'" session.DateTimeField (session.RangeStartTime |> dateToFlexFormat) 
-                    session.DateTimeField (session.RangeEndTime |> dateToFlexFormat)
+                sprintf "%s > '%i' AND %s < '%i'" dateTimeField (session.RangeStartTime |> dateToFlexFormat) 
+                    dateTimeField (session.RangeEndTime |> dateToFlexFormat)
             let mainQuery = new SearchQuery.Dto(session.IndexName, mainQuery, Count = (int32) System.Int16.MaxValue)
             // TODO: Future optimization: bring only the required columns
             mainQuery.Columns <- [| "*" |]
             let! result = searchService.Search(mainQuery)
-            let records = result |> toStructuredResults
-            let secondaryQuery = 
-                new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
+            let records = result |> toFlatResults
             session.RecordsReturned <- result.Meta.RecordsReturned
             session.RecordsAvailable <- result.Meta.TotalAvailable
-            secondaryQuery.Columns <- [| session.DisplayFieldName |]
-            use context = new DataContext(connectionString)
-            let session = context.Sessions.Add(session)
-            context.SaveChanges() |> ignore
-//            Parallel.ForEach
-//                (records.Documents, parallelOptions, fun record -> DuplicateRecordCheck(record, secondaryQuery, session)) 
-//            |> ignore
+            let session = writeSessionBeginInfo (req, session)
+            Parallel.ForEach
+                (records.Documents, parallelOptions, fun record -> duplicateRecordCheck (req, record, session)) 
+            |> ignore
             session.JobEndTime <- DateTime.Now
-            context.SaveChanges() |> ignore
+            writeSessionEndInfo (req, session)
         }
     
     let requestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
             let rec loop() = 
                 async { 
-                    let! (jobId, session) = inbox.Receive()
-                    PerformDuplicateDetection(jobId, session) |> ignore
+                    let! (jobId, indexWriter, request) = inbox.Receive()
+                    performDuplicateDetection (jobId, indexWriter, request) |> ignore
                     return! loop()
                 }
             loop())
     
-    override __.Process(request, _) = 
+    override __.Process(request, body) = 
+        body.Value.IndexName <- request.ResId.Value
+        body.Value.ProfileName <- request.SubResId.Value
         match indexService.IsIndexOnline(request.ResId.Value) with
         | Choice1Of2(writer) -> 
-            let startDate = request.OwinContext |> longFromQueryString "startdate" (DateTime.Now |> dateToFlexFormat)
-            let endDate = 
-                request.OwinContext |> longFromQueryString "enddate" (DateTime.Now.AddDays(-1.0) |> dateToFlexFormat)
-            let dateTimeField = request.OwinContext |> stringFromQueryString "datetimefield" Constants.LastModifiedField
-            let displayName = request.OwinContext |> stringFromQueryString "displayname" Constants.IdField
-            let threadCount = request.OwinContext |> intFromQueryString "threadcount" 1
+            body.Value.StartDate <- request.OwinContext 
+                                    |> longFromQueryString "startdate" (DateTime.Now |> dateToFlexFormat)
+            body.Value.EndDate <- request.OwinContext 
+                                  |> longFromQueryString "enddate" (DateTime.Now.AddDays(-1.0) |> dateToFlexFormat)
+            body.Value.DateTimeField <- request.OwinContext 
+                                        |> stringFromQueryString "datetimefield" Constants.LastModifiedField
+            body.Value.DisplayName <- request.OwinContext |> stringFromQueryString "displayname" Constants.IdField
+            body.Value.ThreadCount <- request.OwinContext |> intFromQueryString "threadcount" 1
+            if body.Value.GenerateReport && isBlank (body.Value.ReportName) then 
+                let dir = createDir (Constants.WebFolder +/ "Reports")
+                body.Value.ReportName <- dir 
+                                         +/ (sprintf "%s-%s-%i" body.Value.IndexName body.Value.ProfileName 
+                                                 body.Value.StartDate)
             match writer.Settings.SearchProfiles.TryGetValue(request.SubResId.Value) with
             | true, _ -> 
-                let session = new Session()
-                session.IndexName <- request.ResId.Value
-                session.ProfileName <- request.SubResId.Value
-                session.RangeStartTime <- parseDate <| startDate.ToString()
-                session.RangeEndTime <- parseDate <| endDate.ToString()
-                session.DisplayFieldName <- displayName
-                session.DateTimeField <- dateTimeField
-                session.JobStartTime <- DateTime.Now
-                session.ThreadCount <- threadCount
                 let jobId = Guid.NewGuid()
-                requestProcessor.Post(jobId, session)
+                requestProcessor.Post(jobId, writer, body.Value)
                 SuccessResponse(jobId, Ok)
             | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
