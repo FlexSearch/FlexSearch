@@ -137,9 +137,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="EventSourceProxy.NuGet">
-      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.4\lib\EventSourceProxy.NuGet.dll</HintPath>
+      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.6\lib\EventSourceProxy.NuGet.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="EventSourceProxy.NuGet" />
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.5.1.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>

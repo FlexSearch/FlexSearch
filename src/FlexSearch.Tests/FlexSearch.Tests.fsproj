@@ -87,7 +87,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="EventSourceProxy.NuGet">
-      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.4\lib\EventSourceProxy.NuGet.dll</HintPath>
+      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.6\lib\EventSourceProxy.NuGet.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Fixie">
@@ -238,10 +238,6 @@
       <HintPath>..\packages\IKVM.8.0.5449.1\lib\IKVM.Runtime.JNI.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Jil">
-      <HintPath>..\packages\Jil.2.9.0\lib\net45\Jil.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.Owin">
       <HintPath>..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
       <Private>True</Private>
@@ -276,11 +272,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Ploeh.AutoFixture">
-      <HintPath>..\packages\AutoFixture.3.24.4\lib\net40\Ploeh.AutoFixture.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Sigil">
-      <HintPath>..\packages\Sigil.4.4.0\lib\net45\Sigil.dll</HintPath>
+      <HintPath>..\packages\AutoFixture.3.30.4\lib\net40\Ploeh.AutoFixture.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

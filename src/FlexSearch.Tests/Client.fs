@@ -116,7 +116,6 @@ type LoggingHandler(innerHandler : HttpMessageHandler) =
         log (work)
 
 open Newtonsoft.Json.Serialization
-open Jil
 
 type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : int) = 
     let mutable client = httpClient
