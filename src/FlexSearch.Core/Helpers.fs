@@ -477,23 +477,6 @@ type IFormatter =
     abstract DeSerialize<'T> : stream:Stream -> 'T
 
 [<Sealed>]
-type JilJsonFormatter() = 
-    let options = new Jil.Options(false, false, false, Jil.DateTimeFormat.ISO8601, false)
-    interface IFormatter with
-        member __.SerializeToString(_ : obj) = failwith "Not implemented yet"
-        
-        member __.DeSerialize<'T>(stream : Stream) = 
-            use reader = new StreamReader(stream) :> TextReader
-            Jil.JSON.Deserialize<'T>(reader, options)
-        
-        member __.Serialize(body : obj, stream : Stream) : unit = 
-            use writer = new StreamWriter(stream)
-            Jil.JSON.Serialize(body, writer, options)
-        
-        member __.SupportedHeaders = 
-            [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8" |]
-
-[<Sealed>]
 type NewtonsoftJsonFormatter() = 
     let options = new Newtonsoft.Json.JsonSerializerSettings()
     let serializer = JsonSerializer.Create()
