@@ -94,7 +94,10 @@ module Constants =
     
     /// Flex web files folder
     let WebFolder = rootFolder +/ "Web" |> createDir
-        
+    
+    /// Resources folder to be used for saving analyzer resource files
+    let ResourcesFolder = ConfFolder +/ "Resources" |> createDir
+       
     /// Extension to be used by settings file
     let SettingsFileExtension = ".yml"
     
