@@ -79,12 +79,12 @@ module Constants =
     
     /// Flex index folder
     let DataFolder = rootFolder +/ "Data" |> createDir
-
+    
     /// Flex index folder
     let ConfFolder = rootFolder +/ "Conf" |> createDir
-        
+    
     /// Flex plug-in folder
-    let PluginFolder = rootFolder +/ "Plugins" |> createDir 
+    let PluginFolder = rootFolder +/ "Plugins" |> createDir
     
     /// Flex logs folder
     let LogsFolder = rootFolder +/ "Logs" |> createDir
@@ -94,7 +94,7 @@ module Constants =
     
     /// Resources folder to be used for saving analyzer resource files
     let ResourcesFolder = ConfFolder +/ "Resources" |> createDir
-       
+    
     /// Extension to be used by settings file
     let SettingsFileExtension = ".yml"
     
@@ -102,7 +102,7 @@ module Constants =
         CustomAnalyzer.Builder().withTokenizer("keyword").addTokenFilter("lowercase").build() :> FlexLucene.Analysis.Analyzer
 
 [<AutoOpen>]
-module DateTimeHelpers =
+module DateTimeHelpers = 
     open System.Globalization
     
     /// Internal format used to represent dates 
@@ -110,27 +110,30 @@ module DateTimeHelpers =
     
     /// Represents all the date time format supported by FlexSearch
     let SupportedDateFormat = [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |]
-
+    
     /// Coverts a date to FlexSearch date format
-    let inline dateToFlexFormat(dt : DateTime) = int64 <| dt.ToString(DateTimeFormat)
-
+    let inline dateToFlexFormat (dt : DateTime) = int64 <| dt.ToString(DateTimeFormat)
+    
     /// Returns current date time in Flex compatible format
-    let inline GetCurrentTimeAsLong() = int64 <| dateToFlexFormat(DateTime.Now)
+    let inline GetCurrentTimeAsLong() = int64 <| dateToFlexFormat (DateTime.Now)
     
     /// Parses a given date according to supported date styles
-    let inline parseDate(dt: string) =
+    let inline parseDate (dt : string) = 
         DateTime.ParseExact(dt, SupportedDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None)
-
+    
     /// Parses a given date according to supported date styles
-    let inline tryParseDate(dt: string) =
+    let inline tryParseDate (dt : string) = 
         DateTime.TryParseExact(dt, SupportedDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None)
     
     /// Parses a given date and returns it in FlexSearch format wrapped in an option type.    
-    let inline parseDateFlexFormat (dt: string) =
+    let inline parseDateFlexFormat (dt : string) = 
         match tryParseDate dt with
-        | true, date -> date |> dateToFlexFormat |> Some
+        | true, date -> 
+            date
+            |> dateToFlexFormat
+            |> Some
         | _ -> None
-           
+
 type Error = 
     // Generic Validation Errors
     | GreaterThan of fieldName : string * lowerLimit : string * value : string
@@ -141,10 +144,10 @@ type Error =
     | RegexMatch of fieldName : string * regexExpr : string
     | KeyNotFound of key : string
     // Analysis related 
-    | TokenizerNotFound of analyzerName: string * tokenizerName : string
-    | UnableToInitializeTokenizer of analyzerName: string * tokenizerName : string * message : string * exp : string
-    | FilterNotFound of analyzerName: string * filterName : string
-    | UnableToInitializeFilter of analyzerName: string * filterName : string * message : string * exp : string
+    | TokenizerNotFound of analyzerName : string * tokenizerName : string
+    | UnableToInitializeTokenizer of analyzerName : string * tokenizerName : string * message : string * exp : string
+    | FilterNotFound of analyzerName : string * filterName : string
+    | UnableToInitializeFilter of analyzerName : string * filterName : string * message : string * exp : string
     | AnalyzerBuilder of analyzerName : string * message : string * exp : string
     | AnalyzerNotFound of analyzerName : string
     // Domain related
@@ -221,86 +224,162 @@ type OperationMessage =
 [<AutoOpen>]
 module Errors = 
     let inline toMessage (error : Error) = 
-        let msg err usrMsg devMsg  =
+        let msg err usrMsg devMsg = 
             { UserMessage = usrMsg
               DeveloperMessage = devMsg
               ErrorCode = err }
         match error with
         // Generic Validation Errors
-        | GreaterThan(fn,ll,v) -> msg "GREATER_THAN" "Greater than" <| sprintf "Field '%s' must be greater than %s, but found %s" fn ll v
-        | LessThan(fn,ul,v) -> msg "LESS_THAN" "Less than" <| sprintf "Field '%s' must be less than %s, but found %s" fn ul v
-        | GreaterThanEqual (fn,ll,v) -> msg "GREATER_OR_EQUAL" "Greater than or equal" <| sprintf "Field '%s' must be greater than or equal to %s, but found %s" fn ll v
-        | LessThanEqual(fn,ul,v) -> msg "LESS_OR_EQUAL" "Less than or equal" <| sprintf "Field '%s' must be less than or equal to %s, but found %s" fn ul v
+        | GreaterThan(fn, ll, v) -> 
+            msg "GREATER_THAN" "Greater than" <| sprintf "Field '%s' must be greater than %s, but found %s" fn ll v
+        | LessThan(fn, ul, v) -> 
+            msg "LESS_THAN" "Less than" <| sprintf "Field '%s' must be less than %s, but found %s" fn ul v
+        | GreaterThanEqual(fn, ll, v) -> 
+            msg "GREATER_OR_EQUAL" "Greater than or equal" 
+            <| sprintf "Field '%s' must be greater than or equal to %s, but found %s" fn ll v
+        | LessThanEqual(fn, ul, v) -> 
+            msg "LESS_OR_EQUAL" "Less than or equal" 
+            <| sprintf "Field '%s' must be less than or equal to %s, but found %s" fn ul v
         | NotBlank(fn) -> msg "NOT_BLANK" "Not blank" <| sprintf "Field '%s' must not be blank" fn
-        | RegexMatch(fn,re) -> msg "REGEX_MATCH" "Regex match" <| sprintf "Field '%s' must match Regex expression: %s" fn re
+        | RegexMatch(fn, re) -> 
+            msg "REGEX_MATCH" "Regex match" <| sprintf "Field '%s' must match Regex expression: %s" fn re
         | KeyNotFound(key) -> msg "KEY_NOT_FOUND" "Key not found" <| sprintf "Key not found: %s" key
         // Domain related
-        | InvalidPropertyName(fn,v) -> msg "INVALID_PROPERTY_NAME" "Invalid property name" <| sprintf "Property name is invalid. Expected '%s' but found '%s'" fn v
-        | AnalyzerIsMandatory(fn) -> msg "ANALYZER_IS_MANDATORY" "Analyzer is mandatory" <| sprintf "Analyzer is mandatory for field '%s'" fn
-        | DuplicateFieldValue(gn,fn) -> msg "DUPLICATE_FIELD_VALUE" "Duplicate field value" <| sprintf "A duplicate entry (%s) has been found in the group '%s'" fn gn
-        | ScriptNotFound(sn, fn) -> msg "SCRIPT_NOT_FOUND" "Script not found" <| sprintf "The script '%s' was not found against the field '%s'" sn fn
+        | InvalidPropertyName(fn, v) -> 
+            msg "INVALID_PROPERTY_NAME" "Invalid property name" 
+            <| sprintf "Property name is invalid. Expected '%s' but found '%s'" fn v
+        | AnalyzerIsMandatory(fn) -> 
+            msg "ANALYZER_IS_MANDATORY" "Analyzer is mandatory" <| sprintf "Analyzer is mandatory for field '%s'" fn
+        | DuplicateFieldValue(gn, fn) -> 
+            msg "DUPLICATE_FIELD_VALUE" "Duplicate field value" 
+            <| sprintf "A duplicate entry (%s) has been found in the group '%s'" fn gn
+        | ScriptNotFound(sn, fn) -> 
+            msg "SCRIPT_NOT_FOUND" "Script not found" 
+            <| sprintf "The script '%s' was not found against the field '%s'" sn fn
         // Analysis related 
-        | TokenizerNotFound(an, tn) -> msg "TOKENIZER_NOT_FOUND" "Tokenizer not found" <| sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
-        | UnableToInitializeTokenizer(an, tn, m, exp) -> msg "UNABLE_TO_INITIALIZE_TOKENIZER" "Unable to initialize tokenizer" <| sprintf "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" tn an m exp
-        | FilterNotFound(an, fn) -> msg "FILTER_NOT_FOUND" "Filter not found" <| sprintf "Filter with the name %s does not exist. Analyzer Name: %s" fn an
-        | UnableToInitializeFilter(an, fn, m, exp) -> msg "UNABLE_TO_INITIALIZE_FILTER" "Unable to initialize filter" <| sprintf "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" fn an m exp
+        | TokenizerNotFound(an, tn) -> 
+            msg "TOKENIZER_NOT_FOUND" "Tokenizer not found" 
+            <| sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
+        | UnableToInitializeTokenizer(an, tn, m, exp) -> 
+            msg "UNABLE_TO_INITIALIZE_TOKENIZER" "Unable to initialize tokenizer" 
+            <| sprintf "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" 
+                   tn an m exp
+        | FilterNotFound(an, fn) -> 
+            msg "FILTER_NOT_FOUND" "Filter not found" 
+            <| sprintf "Filter with the name %s does not exist. Analyzer Name: %s" fn an
+        | UnableToInitializeFilter(an, fn, m, exp) -> 
+            msg "UNABLE_TO_INITIALIZE_FILTER" "Unable to initialize filter" 
+            <| sprintf "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" fn 
+                   an m exp
         // Builder related errors
-        | AnalyzerBuilder(an,m,e) -> msg "ANALYZER_BUILDER" "Analyzer builder error" <| sprintf "The analyzer '%s' threw an exception while building: %s; \n%s" an m e
-        | AnalyzerNotFound(a) -> msg "ANALYZER_NOT_FOUND" "Analyzer not found" <| sprintf "The analyzer '%s' was not found" a
-        | ResourceNotFound(rn, rt) -> msg "RESOURCE_NOT_FOUND" "Resource not found" <| sprintf "The resource '%s' of type %s was not found" rn rt
-        | UnSupportedSimilarity(s) -> msg "UNSUPPORTED_SIMILARITY" "Unsupported similarity" <| sprintf "Unsupported similarity: %s" s
-        | UnSupportedIndexVersion(i) -> msg "UNSUPPORTED_INDEX_VERSION" "Unsupported index version" <| sprintf "Unsupported index version: %s" i
-        | UnsupportedDirectoryType(d) -> msg "UNSUPPORTED_DIRECTORY_TYPE" "Unsupported directory type" <| sprintf "Unsupported directory type: %s" d
-        | UnSupportedFieldType(fn,ft) -> msg "UNSUPPORTED_FIELD_TYPE" "Unsupported field type" <| sprintf "Unsupported field type '%s' for field '%s'" fn ft
-        | ScriptCannotBeCompiled(e) -> msg "SCRIPT_CANNOT_BE_COMPILED" "Script cannot be compiled" <| sprintf "Script cannot be compiled: \n%s" e
-        | AnalyzerNotSupportedForFieldType(f,a) -> msg "ANALYZER_NOT_SUPPORTED" "Analyzer not supported for field" <| sprintf "Analyzer '%s' not supported for field '%s'" f a
+        | AnalyzerBuilder(an, m, e) -> 
+            msg "ANALYZER_BUILDER" "Analyzer builder error" 
+            <| sprintf "The analyzer '%s' threw an exception while building: %s; \n%s" an m e
+        | AnalyzerNotFound(a) -> 
+            msg "ANALYZER_NOT_FOUND" "Analyzer not found" <| sprintf "The analyzer '%s' was not found" a
+        | ResourceNotFound(rn, rt) -> 
+            msg "RESOURCE_NOT_FOUND" "Resource not found" <| sprintf "The resource '%s' of type %s was not found" rn rt
+        | UnSupportedSimilarity(s) -> 
+            msg "UNSUPPORTED_SIMILARITY" "Unsupported similarity" <| sprintf "Unsupported similarity: %s" s
+        | UnSupportedIndexVersion(i) -> 
+            msg "UNSUPPORTED_INDEX_VERSION" "Unsupported index version" <| sprintf "Unsupported index version: %s" i
+        | UnsupportedDirectoryType(d) -> 
+            msg "UNSUPPORTED_DIRECTORY_TYPE" "Unsupported directory type" <| sprintf "Unsupported directory type: %s" d
+        | UnSupportedFieldType(fn, ft) -> 
+            msg "UNSUPPORTED_FIELD_TYPE" "Unsupported field type" 
+            <| sprintf "Unsupported field type '%s' for field '%s'" fn ft
+        | ScriptCannotBeCompiled(e) -> 
+            msg "SCRIPT_CANNOT_BE_COMPILED" "Script cannot be compiled" <| sprintf "Script cannot be compiled: \n%s" e
+        | AnalyzerNotSupportedForFieldType(f, a) -> 
+            msg "ANALYZER_NOT_SUPPORTED" "Analyzer not supported for field" 
+            <| sprintf "Analyzer '%s' not supported for field '%s'" f a
         // Search Realted
         | QueryNotFound(q) -> msg "QUERY_NOT_FOUND" "Query not found" <| sprintf "Query not found: %s" q
         | InvalidFieldName(f) -> msg "INVALID_FIELD_NAME" "Invalid field name" <| sprintf "Invalid field name: %s" f
-        | StoredFieldCannotBeSearched(f) -> msg "STORED_FIELD_CANNOT_BE_SEARCHED" "Stored field cannot be searched" <| sprintf "Stored field cannot be searched: %s" f
+        | StoredFieldCannotBeSearched(f) -> 
+            msg "STORED_FIELD_CANNOT_BE_SEARCHED" "Stored field cannot be searched" 
+            <| sprintf "Stored field cannot be searched: %s" f
         | MissingFieldValue(f) -> msg "MISSING_FIELD_VALUE" "Missing field value" <| sprintf "Missing field value: %s" f
-        | UnknownMissingVauleOption(f) -> msg "UNKNOWN_MISSING_VALUE_OPTION" "Unknown missing value option" <| sprintf "Unknown missing field value option: %s" f
-        | DataCannotBeParsed(f,e) -> msg "DATA_CANNOT_BE_PARSED" "Data cannot be parsed" <| sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
-        | ExpectingNumericData(f) -> msg "EXPECTING_NUMERIC_DATA" "Expecting numeric data" <| sprintf "Expecting numeric data: %s" f
-        | QueryOperatorFieldTypeNotSupported(f) -> msg "QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED" "Query operator field type not supported" <| sprintf "Query operator field type not supported for field '%s'" f
-        | QueryStringParsingError(e) -> msg "QUERY_STRING_PARSING_ERROR" "Query string parsing error" <| sprintf "Query string parsing error: \n%s" e
-        | UnknownSearchProfile(i,p) -> msg "UNKNOWN_SEARCH_PROFILE" "Unknown search profile" <| sprintf "Unknown search profile '%s' for index '%s'" p i
-        | PurelyNegativeQueryNotSupported -> msg "NEGATIVE_QUERY_NOT_SUPPORTED" "Purely negative queries (not top query) not supported" ""
+        | UnknownMissingVauleOption(f) -> 
+            msg "UNKNOWN_MISSING_VALUE_OPTION" "Unknown missing value option" 
+            <| sprintf "Unknown missing field value option: %s" f
+        | DataCannotBeParsed(f, e) -> 
+            msg "DATA_CANNOT_BE_PARSED" "Data cannot be parsed" 
+            <| sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
+        | ExpectingNumericData(f) -> 
+            msg "EXPECTING_NUMERIC_DATA" "Expecting numeric data" <| sprintf "Expecting numeric data: %s" f
+        | QueryOperatorFieldTypeNotSupported(f) -> 
+            msg "QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED" "Query operator field type not supported" 
+            <| sprintf "Query operator field type not supported for field '%s'" f
+        | QueryStringParsingError(e) -> 
+            msg "QUERY_STRING_PARSING_ERROR" "Query string parsing error" 
+            <| sprintf "Query string parsing error: \n%s" e
+        | UnknownSearchProfile(i, p) -> 
+            msg "UNKNOWN_SEARCH_PROFILE" "Unknown search profile" 
+            <| sprintf "Unknown search profile '%s' for index '%s'" p i
+        | PurelyNegativeQueryNotSupported -> 
+            msg "NEGATIVE_QUERY_NOT_SUPPORTED" "Purely negative queries (not top query) not supported" ""
         // Indexing related errors
-        | IndexAlreadyExists(i) -> msg "INDEX_ALREADY_EXISTS" "Index already exists" <| sprintf "Index '%s' already exists" i
-        | IndexShouldBeOnline(i) -> msg "INDEX_SHOULD_BE_ONLINE" "Index should be online" <| sprintf "Index '%s' should be online" i
-        | IndexIsAlreadyOnline(i) -> msg "INDEX_IS_ALREADY_ONLINE" "Index is already online" <| sprintf "Index '%s' is already online" i
-        | IndexIsAlreadyOffline(i) -> msg "INDEX_IS_ALREADY_OFFLINE" "Index is already offline" <| sprintf "Index '%s' is already offline" i
-        | IndexInOpenState(i) -> msg "INDEX_IN_OPEN_STATE" "Index is in an open state" <| sprintf "Index '%s' is in an open state" i
-        | IndexInInvalidState(i) -> msg "INDEX_IN_INVALID_STATE" "Index is in an invalid state" <| sprintf "Index '%s' is in an invalid state" i
-        | ErrorOpeningIndexWriter(ip,e,d) -> msg "ERROR_OPENING_INDEX_WRITER" "Error opening index writer" <| sprintf "Error opening index writer at path '%s': \nException: %s\n%A" ip e d
+        | IndexAlreadyExists(i) -> 
+            msg "INDEX_ALREADY_EXISTS" "Index already exists" <| sprintf "Index '%s' already exists" i
+        | IndexShouldBeOnline(i) -> 
+            msg "INDEX_SHOULD_BE_ONLINE" "Index should be online" <| sprintf "Index '%s' should be online" i
+        | IndexIsAlreadyOnline(i) -> 
+            msg "INDEX_IS_ALREADY_ONLINE" "Index is already online" <| sprintf "Index '%s' is already online" i
+        | IndexIsAlreadyOffline(i) -> 
+            msg "INDEX_IS_ALREADY_OFFLINE" "Index is already offline" <| sprintf "Index '%s' is already offline" i
+        | IndexInOpenState(i) -> 
+            msg "INDEX_IN_OPEN_STATE" "Index is in an open state" <| sprintf "Index '%s' is in an open state" i
+        | IndexInInvalidState(i) -> 
+            msg "INDEX_IN_INVALID_STATE" "Index is in an invalid state" <| sprintf "Index '%s' is in an invalid state" i
+        | ErrorOpeningIndexWriter(ip, e, d) -> 
+            msg "ERROR_OPENING_INDEX_WRITER" "Error opening index writer" 
+            <| sprintf "Error opening index writer at path '%s': \nException: %s\n%A" ip e d
         | IndexNotFound(i) -> msg "INDEX_NOT_FOUND" "Index not found" <| sprintf "Index '%s' was not found" i
-        | DocumentIdAlreadyExists(idx,id) -> msg "DOCUMENT_ID_ALREADY_EXISTS" "Document ID already exists" <| sprintf "Document ID '%s' already exists for index '%s'" id idx
-        | DocumentIdNotFound(idx,id) -> msg "DOCUMENT_ID_NOT_FOUND" "Document ID not found" <| sprintf "Document ID '%s' not found on index '%s'" id idx
-        | IndexingVersionConflict(idx,id,v) -> 
-            msg "INDEXING_VERSION_CONFLICT" "Indexing version conflict" <| sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id v
+        | DocumentIdAlreadyExists(idx, id) -> 
+            msg "DOCUMENT_ID_ALREADY_EXISTS" "Document ID already exists" 
+            <| sprintf "Document ID '%s' already exists for index '%s'" id idx
+        | DocumentIdNotFound(idx, id) -> 
+            msg "DOCUMENT_ID_NOT_FOUND" "Document ID not found" 
+            <| sprintf "Document ID '%s' not found on index '%s'" id idx
+        | IndexingVersionConflict(idx, id, v) -> 
+            msg "INDEXING_VERSION_CONFLICT" "Indexing version conflict" 
+            <| sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
+                   v
         // Modules related
-        | ModuleNotFound(mn,mt) -> msg "MODULE_NOT_FOUND" "Module not found" <| sprintf "Module '%s' of type '%s' was not found" mn mt
-        | ModuleInitializationError(mn,mt,e) -> 
-            msg "MODULE_INITIALIZATION_ERROR" "Module initialization error" <| sprintf "An error occurred while initializing the module '%s' of type '%s': \n%s" mn mt e
+        | ModuleNotFound(mn, mt) -> 
+            msg "MODULE_NOT_FOUND" "Module not found" <| sprintf "Module '%s' of type '%s' was not found" mn mt
+        | ModuleInitializationError(mn, mt, e) -> 
+            msg "MODULE_INITIALIZATION_ERROR" "Module initialization error" 
+            <| sprintf "An error occurred while initializing the module '%s' of type '%s': \n%s" mn mt e
         // Concurrent Dictionary
         | UnableToUpdateMemory -> msg "UNABLE_TO_UPDATE_MEMORY" "Unable to update memory" ""
         // Http server related
-        | HttpUnableToParse(e) -> msg "HTTP_UNABLE_TO_PARSE" "Unable to parse HTTP message" <| sprintf "Unable to deserialize the HTTP body: \n%s" e
-        | HttpUnsupportedContentType -> msg "HTTP_UNSUPPORTED_CONTENT_TYPE" "Unsupported content type for the HTTP message" ""
+        | HttpUnableToParse(e) -> 
+            msg "HTTP_UNABLE_TO_PARSE" "Unable to parse HTTP message" 
+            <| sprintf "Unable to deserialize the HTTP body: \n%s" e
+        | HttpUnsupportedContentType -> 
+            msg "HTTP_UNSUPPORTED_CONTENT_TYPE" "Unsupported content type for the HTTP message" ""
         | HttpNoBodyDefined -> msg "HTTP_NO_BODY_DEFINED" "No body defined for the HTTP message" ""
         | HttpNotSupported -> msg "HTTP_NOT_SUPPORTED" "" ""
         | HttpUriIdNotSupplied -> msg "HTTP_URI_ID_NOT_SUPPLIED" "" ""
         // Configuration related
-        | UnableToParseConfig(p,e) -> msg "UNABLE_TO_PARSE_CONFIG" "Unable to parse configuration file" <| sprintf "Unable to parse configuration file from address '%s': \n%s" p e
+        | UnableToParseConfig(p, e) -> 
+            msg "UNABLE_TO_PARSE_CONFIG" "Unable to parse configuration file" 
+            <| sprintf "Unable to parse configuration file from address '%s': \n%s" p e
         // File related error
         | FileNotFound(p) -> msg "FILE_NOT_FOUND" "File not found" <| sprintf "File not found at address: %s" p
-        | FileReadError(f,e) -> msg "FILE_READ_ERROR" "File read error" <| sprintf "There was an error reading the file at path '%s': \n%s" f e
-        | FileWriteError(f,e) -> msg "FILE_WRITE_ERROR" "File write error" <| sprintf "There was an error writing to the file at path '%s': \n%s" f e
+        | FileReadError(f, e) -> 
+            msg "FILE_READ_ERROR" "File read error" 
+            <| sprintf "There was an error reading the file at path '%s': \n%s" f e
+        | FileWriteError(f, e) -> 
+            msg "FILE_WRITE_ERROR" "File write error" 
+            <| sprintf "There was an error writing to the file at path '%s': \n%s" f e
         | PathDoesNotExist(p) -> msg "PATH_DOES_NOT_EXIST" "Path does not exist" <| sprintf "Path does not exist: %s" p
         | StoreUpdateError -> msg "STORE_UPDATE_ERROR" "" ""
         // Generic error to be used by plugins
-        | GenericError(u,d) -> msg "GENERIC_ERROR" "Generic error in plugin" <| sprintf "Generic error in plugin: %s \nData: %A" u d
+        | GenericError(u, d) -> 
+            msg "GENERIC_ERROR" "Generic error in plugin" <| sprintf "Generic error in plugin: %s \nData: %A" u d
         // CSV file header does not exist or could not be generated
         | HeaderRowIsEmpty -> msg "HEADER_ROW_IS_EMPTY" "" ""
         | JobNotFound(j) -> msg "JOB_ID_NOT_FOUND" "Job ID not found" <| sprintf "Job ID '%s' not found" j
@@ -583,7 +662,6 @@ module Validators =
 
 [<AutoOpenAttribute>]
 module DataDefaults = 
-    open System.Collections.ObjectModel
     
     let defString = String.Empty
     let defStringDict() = new Dictionary<string, string>()
@@ -642,120 +720,69 @@ module DictionaryHelpers =
 // ----------------------------------------------------------------------------
 // Logging Section
 // ----------------------------------------------------------------------------
-open Microsoft.Diagnostics.Tracing
-open Microsoft.FSharp.Core.LanguagePrimitives
-
-/// Simple enum wrapper for possible Task values
-module Tasks = 
-    [<Literal>]
-    let WebRequest : EventTask = enum 1
-
-/// Simple enum wrapper for possible Keyword values
-//module Keywords = 
-//    [<Literal>]
-//    let IndexManagement : EventKeywords = EnumOfValue<int64, EventKeywords> 1L
-//    
-//    [<Literal>]
-//    let Node : EventKeywords = EnumOfValue<int64, EventKeywords> 2L
-//    
-//    [<Literal>]
-//    let Components : EventKeywords = EnumOfValue<int64, EventKeywords> 3L
-/// Generic logger interface
-[<EventSourceImplementation(Name = "FlexSearch")>]
-[<Interface>]
-type ILogService = 
-    
-    [<EventAttribute(1, Message = "Adding new index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin)>]
-    abstract AddIndex : indexName:string * indexDetails:string -> unit
-    
-    [<EventAttribute(2, Message = "Updating index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin)>]
-    abstract UpdateIndex : indexName:string * indexDetails:string -> unit
-    
-    [<EventAttribute(3, Message = "Deleting index {0}", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
-    abstract DeleteIndex : indexName:string -> unit
-    
-    [<EventAttribute(4, Message = "Closing index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
-    abstract CloseIndex : indexName:string -> unit
-    
-    [<EventAttribute(5, Message = "Opening index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
-    abstract OpenIndex : indexName:string -> unit
-    
-    [<EventAttribute(6, Message = "Loading index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin)>]
-    abstract LoadingIndex : indexName:string * indexDetails:string -> unit
-    
-    [<EventAttribute(7, Message = "Failed to load index {0}. \nIndexDetails: \n{1} \nError details: \n{2}", 
-                     Level = EventLevel.Error, Channel = EventChannel.Admin)>]
-    abstract IndexLoadingFailed : indexName:string * indexDetails:string * validationObject:string -> unit
-    
-    [<EventAttribute(8, Message = "Loading Component of type: {0} \nLoaded component details:\n{1}", 
-                     Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
-    abstract ComponentLoaded : componentType:string * componentNames:string -> unit
-    
-    [<EventAttribute(9, Message = "Component initialization failed: {0}. Component type: {1} \nError details: \n{2}", 
-                     Level = EventLevel.Error, Channel = EventChannel.Admin)>]
-    abstract ComponentInitializationFailed : name:string * componentType:string * message:string -> unit
-    
-    [<EventAttribute(10, Message = "Staring FlexSearch.\nDetails: \n{0}", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin)>]
-    abstract StartSession : details:string -> unit
-    
-    [<EventAttribute(11, Message = "Quiting FlexSearch.", Level = EventLevel.Informational, Channel = EventChannel.Admin)>]
-    abstract EndSession : unit -> unit
-    
-    [<EventAttribute(12, Message = "FlexSearch termination request received.", Level = EventLevel.Informational, 
-                     Channel = EventChannel.Admin)>]
-    abstract Shutdown : unit -> unit
-    
-    [<EventAttribute(13, Message = "{0}", Level = EventLevel.Critical, Channel = EventChannel.Admin, 
-                     Keywords = EventKeywords.None)>]
-    abstract Fatal : message:string -> unit
-    
-    [<EventAttribute(14, Message = "{0}", Level = EventLevel.Verbose, Channel = EventChannel.Admin, 
-                     Keywords = EventKeywords.None)>]
-    abstract Debug : message:string -> unit
-    
-    [<EventAttribute(15, Message = "{0}", Level = EventLevel.Informational, Channel = EventChannel.Admin, 
-                     Keywords = EventKeywords.None)>]
-    abstract Info : message:string -> unit
-    
-    [<EventAttribute(16, Message = "{0}", Level = EventLevel.Warning, Channel = EventChannel.Admin, 
-                     Keywords = EventKeywords.None)>]
-    abstract Warn : message:string -> unit
-    
-    [<EventAttribute(17, Message = "{0}", Level = EventLevel.Error, Channel = EventChannel.Admin, 
-                     Keywords = EventKeywords.None)>]
-    abstract Error : message:string -> unit
-
-[<AutoOpen>]
+[<AutoOpen; RequireQualifiedAccess>]
 module Log = 
     open System.Diagnostics
-
+    
     let sourceName = "FlexSearch"
-    let logName = "Application"
+    let logName = "FlexSearch"
     let infomation = EventLogEntryType.Information
     let warning = EventLogEntryType.Warning
     let critical = EventLogEntryType.Error
- 
-    /// Default logger for FlexSearch
-    let logger = 
-        if not (EventLog.SourceExists(sourceName)) then
-            EventLog.CreateEventSource(sourceName, logName)
-    let writeEntry (message, logLevel) = EventLog.WriteEntry(sourceName, message, logLevel)
     
-    let debug message = writeEntry(message, infomation)
-    let debugEx (ex : Exception) = writeEntry(exceptionPrinter ex, infomation)
-    let warn message = writeEntry(message, warning)
-    let warnEx (ex : Exception) = writeEntry(exceptionPrinter ex, warning)
-    let info message = writeEntry(message, infomation)
-    let infoEx (ex : Exception) = writeEntry(exceptionPrinter ex, infomation)
-    let error message = writeEntry(message, critical)
-    let errorEx (ex : Exception) = writeEntry(exceptionPrinter ex, critical)
-    let fatal message = writeEntry(message, critical)
-    let fatalEx (ex : Exception) = writeEntry(exceptionPrinter ex, critical)
-    let fatalWithMsg msg (ex : Exception) = writeEntry(sprintf "%s \n%s" msg (exceptionPrinter ex), critical)
+    /// Default logger for FlexSearch
+    let loggerInitError = 
+        try 
+            if EventLog.SourceExists(sourceName) then 
+                if EventLog.LogNameFromSourceName(sourceName, ".") <> logName then
+                    EventLog.DeleteEventSource(sourceName)
+                    EventLog.CreateEventSource(sourceName, logName)
+            else
+                EventLog.CreateEventSource(sourceName, logName)
+            true
+
+        with _ -> false
+    
+    let writeEntry (message, logLevel) = 
+        if not loggerInitError then EventLog.WriteEntry(sourceName, message, logLevel)
+    
+    let writeEntryId (id, message, logLevel) = EventLog.WriteEntry(sourceName, message, logLevel, id)
+    let debug message = writeEntry (message, infomation)
+    let debugEx (ex : Exception) = writeEntry (exceptionPrinter ex, infomation)
+    let warn message = writeEntry (message, warning)
+    let warnEx (ex : Exception) = writeEntry (exceptionPrinter ex, warning)
+    let info message = writeEntry (message, infomation)
+    let infoEx (ex : Exception) = writeEntry (exceptionPrinter ex, infomation)
+    let error message = writeEntry (message, critical)
+    let errorEx (ex : Exception) = writeEntry (exceptionPrinter ex, critical)
+    let fatal message = writeEntry (message, critical)
+    let fatalEx (ex : Exception) = writeEntry (exceptionPrinter ex, critical)
+    let fatalWithMsg msg (ex : Exception) = writeEntry (sprintf "%s \n%s" msg (exceptionPrinter ex), critical)
+    let addIndex (indexName : string, indexDetails : string) = 
+        writeEntryId (1, sprintf "Adding new index %s. \nIndexDetails: %s" indexName indexDetails, infomation)
+    let updateIndex (indexName : string, indexDetails : string) = 
+        writeEntryId (2, sprintf "Updating index %s. \nIndexDetails: %s" indexName indexDetails, infomation)
+    let deleteIndex (indexName : string) = writeEntryId (3, sprintf "Deleting index %s." indexName, infomation)
+    let closeIndex (indexName) = writeEntryId (4, sprintf "Closing index %s." indexName, infomation)
+    let openIndex (indexName) = writeEntryId (5, sprintf "Opening index %s." indexName, infomation)
+    let loadingIndex (indexName, indexDetails) = 
+        writeEntryId (6, sprintf "Loading index %s. \nIndexDetails: %s" indexName indexDetails, infomation)
+    let indexLoadingFailed (indexName, indexDetails, ex) = 
+        writeEntryId 
+            (7, sprintf "Failed to load index %s. \nIndexDetails: \n%s \nError details: \n%s" indexName indexDetails ex, 
+             critical)
+    let componentLoaded (componentType, componentNames) = 
+        writeEntryId 
+            (8, sprintf "Loading Component of type: %s \nLoaded component details:\n%s" componentType componentNames, 
+             infomation)
+    let componentInitializationFailed (name, componentType, message) = 
+        writeEntryId 
+            (9, 
+             sprintf "Component initialization failed: %s. Component type: %s \nError details: \n%s" name componentType 
+                 message, critical)
+    let startSession (details) = writeEntryId (10, sprintf "Staring FlexSearch.\nDetails: \n%s" details, infomation)
+    let endSession() = writeEntryId (11, "Quiting FlexSearch.", infomation)
+    let shutdown() = writeEntryId (12, "FlexSearch termination request received.", infomation)
 
 /// Represents a thread-safe file writer that can be accessed by 
 /// multiple threads concurrently.

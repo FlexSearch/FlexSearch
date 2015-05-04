@@ -1,5 +1,6 @@
 ﻿namespace System
 open System.Reflection
+open NullGuard
 
 [<assembly: AssemblyTitleAttribute("FlexSearch Core Library")>]
 [<assembly: AssemblyDescriptionAttribute("FlexSearch Core Library")>]
@@ -7,6 +8,7 @@ open System.Reflection
 [<assembly: AssemblyCopyrightAttribute("(c) Seemant Rajvanshi, 2012 - 2014")>]
 [<assembly: AssemblyFileVersionAttribute("0.23.2")>]
 [<assembly: AssemblyVersionAttribute("0.23.2")>]
+[<assembly: NullGuardAttribute(ValidationFlags.Properties)>]
 do ()
 
 module internal AssemblyVersionInformation =

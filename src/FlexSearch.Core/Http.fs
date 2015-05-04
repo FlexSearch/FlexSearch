@@ -259,7 +259,7 @@ type IServer =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(httpModule : Dictionary<string, IHttpHandler>, logger : ILogService, ?port0 : int) = 
+type OwinServer(httpModule : Dictionary<string, IHttpHandler>, ?port0 : int) = 
     let port = defaultArg port0 9800
     let _httpModule = httpModule
     let accessDenied = """

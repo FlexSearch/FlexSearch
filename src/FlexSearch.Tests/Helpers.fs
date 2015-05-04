@@ -90,12 +90,11 @@ module DataHelpers =
 
     // Create a single instance of the OWIN server that will be shared across all tests
     let owinServer = 
-        let logger = container.Resolve<ILogService>()
         let serverSettings = container.Resolve<ServerSettings.T>()
         let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
         TestServer.Create(fun app -> 
                             let owinServer = 
-                                new OwinServer(generateRoutingTable handlerModules, logger, serverSettings.HttpPort)
+                                new OwinServer(generateRoutingTable handlerModules, serverSettings.HttpPort)
                             owinServer.Configuration(app))
 
     /// <summary>

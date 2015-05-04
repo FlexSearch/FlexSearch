@@ -46,7 +46,7 @@ module FactoryService =
     
     /// Factory implementation
     [<Sealed>]
-    type FlexFactory<'T>(container : ILifetimeScope, logger : ILogService) = 
+    type FlexFactory<'T>(container : ILifetimeScope) = 
         let moduleTypeName = typeof<'T>.Name
         
         /// Returns a module by name.
@@ -72,10 +72,10 @@ module FactoryService =
                     else 
                         try 
                             let pluginValue = injectMeta.Value.Value
-                            logger.ComponentLoaded(moduleName, typeof<'T>.FullName)
+                            Log.componentLoaded (moduleName, typeof<'T>.FullName)
                             Choice1Of3(pluginValue)
                         with e -> 
-                            logger.ComponentInitializationFailed(moduleName, typeof<'T>.FullName, exceptionPrinter e)
+                            Log.componentInitializationFailed (moduleName, typeof<'T>.FullName, exceptionPrinter e)
                             Choice3Of3 <| ModuleInitializationError(moduleName, moduleTypeName, e.Message)
         
         interface IFlexFactory<'T> with
@@ -104,9 +104,9 @@ module FactoryService =
                         try 
                             let pluginValue = plugin.Value.Value
                             modules.Add(pluginName, pluginValue)
-                            logger.ComponentLoaded(pluginName, typeof<'T>.FullName)
+                            Log.componentLoaded (pluginName, typeof<'T>.FullName)
                         with e -> 
-                            logger.ComponentInitializationFailed(pluginName, typeof<'T>.FullName, exceptionPrinter e)
+                            Log.componentInitializationFailed (pluginName, typeof<'T>.FullName, exceptionPrinter e)
                 modules
     
     let registerSingleFactoryInstance<'T> (builder : ContainerBuilder) = 
@@ -140,8 +140,8 @@ module Main =
         // Register services
         builder.RegisterType<AnalyzerService>().As<IAnalyzerService>().SingleInstance()
             .WithParameter("testMode", Some(testServer)) |> ignore
-        builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance().WithParameter("testMode", Some(testServer)) 
-        |> ignore
+        builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance()
+            .WithParameter("testMode", Some(testServer)) |> ignore
         builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
         builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
         builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>
@@ -162,8 +162,7 @@ module Main =
         member __.Start() = 
             try 
                 let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
-                let loggerService = container.Resolve<ILogService>()
-                httpServer <- new OwinServer(generateRoutingTable handlerModules, loggerService, serverSettings.HttpPort)
+                httpServer <- new OwinServer(generateRoutingTable handlerModules, serverSettings.HttpPort)
                 httpServer.Start()
             with e -> printfn "%A" e
         
