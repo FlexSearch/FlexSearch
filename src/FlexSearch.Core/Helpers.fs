@@ -226,6 +226,11 @@ module Helpers =
     /// Check for null
     let inline isNull (x : ^a when ^a : not struct) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
     
+    let castAs<'T when 'T : null> (o : obj) = 
+        match o with
+        | :? 'T as res -> res
+        | _ -> null
+
     /// Check if not null
     let inline notNull (x : ^a when ^a : not struct) = not (obj.ReferenceEquals(x, Unchecked.defaultof<_>))
     

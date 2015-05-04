@@ -4,34 +4,6 @@ open FlexSearch.Core
 open Swensen.Unquote
 open System.Collections.Generic
 
-module AnalyzerTests = 
-    type BuilderTests() = 
-        
-        member __.``Should build successfully for a known tokenizer`` (sut : Analyzer.Dto) = 
-            sut.Filters.Clear()
-            sut.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
-            test <@ succeeded <| Analyzer.build sut = true @>
-        
-        member __.``Should not build successfully for an unknown tokenizer`` (sut : Analyzer.Dto) = 
-            sut.Filters.Clear()
-            test <@ failed <| Analyzer.build sut = true @>
-        
-        member __.``Should build successfully for a known filter`` (sut : Analyzer.Dto, filter : TokenFilter.Dto) = 
-            sut.Filters.Clear()
-            filter.FilterName <- "lowercase"
-            filter.Parameters.Clear()
-            sut.Filters.Add(filter)
-            sut.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
-            test <@ succeeded <| Analyzer.build sut = true @>
-        
-        member __.``Should not build successfully for an unknown filter`` (sut : Analyzer.Dto, filter : TokenFilter.Dto) = 
-            sut.Filters.Clear()
-            filter.FilterName <- "unknown"
-            filter.Parameters.Clear()
-            sut.Filters.Add(filter)
-            sut.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
-            test <@ failed <| Analyzer.build sut = true @>
-
 type ``Field Dto Default value tests``() = 
     let sut = new Field.Dto()
     member __.``'standardanalyzer' should be the default 'SearchAnalyzer'``() = 

@@ -621,17 +621,6 @@ module Analyzer =
                                    >>= this.Tokenizer.Validate
                                    >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
     
-    /// Build a Lucene Analyzer from FlexSearch Analyzer DTO
-    let build (def : Dto) = 
-        // Load all required resources from the Resource folder
-        let file = new java.io.File(ResourcesFolder +/ "tmp")
-        let builder = CustomAnalyzer.Builder(file.toPath().getParent())
-        try 
-            builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
-            def.Filters |> Seq.iter (fun f -> builder.addTokenFilter(f.FilterName, dictToMap (f.Parameters)) |> ignore)
-            ok (builder.build() :> Analyzer)
-        with ex -> fail (AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex)))
-
 [<RequireQualifiedAccessAttribute>]
 module Script = 
     open Microsoft.CSharp

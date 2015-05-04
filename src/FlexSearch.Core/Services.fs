@@ -102,7 +102,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     let updateAnalyzer (analyzer : Analyzer.Dto) = 
         maybe { 
             do! analyzer.Validate()
-            let! instance = Analyzer.build (analyzer)
+            let! instance = Analysis.buildFromAnalyzerDto (analyzer)
             do! threadSafeWriter.WriteFile(path +/ analyzer.AnalyzerName, analyzer)
             do! store
                 |> tryUpdate (analyzer.AnalyzerName, (analyzer, instance))

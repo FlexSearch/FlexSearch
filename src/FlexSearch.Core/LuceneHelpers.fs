@@ -102,31 +102,7 @@ module QueryHelpers =
     
     /// Get term for the given fieldname and value
     let inline getTerm (fieldName : string) (text : string) = new Term(fieldName, text)
-    
-    let flexCharTermAttribute = 
-        lazy java.lang.Class.forName 
-                 (typeof<FlexLucene.Analysis.Tokenattributes.CharTermAttribute>.AssemblyQualifiedName)
-    
-    /// Utility function to get tokens from the search string based upon the passed analyzer
-    /// This will enable us to avoid using the Lucene query parser
-    /// We cannot use simple white space based token generation as it really depends 
-    /// upon the analyzer used
-    let inline parseTextUsingAnalyzer (analyzer : FlexLucene.Analysis.Analyzer, fieldName, queryText) = 
-        let tokens = new List<string>()
-        let source : TokenStream = analyzer.TokenStream(fieldName, new StringReader(queryText))
-        // Get the CharTermAttribute from the TokenStream
-        let termAtt = source.AddAttribute(flexCharTermAttribute.Value)
-        try 
-            try 
-                source.Reset()
-                while source.incrementToken() do
-                    tokens.Add(termAtt.ToString())
-                source.End()
-            with ex -> ()
-        finally
-            source.Close()
-        tokens
-    
+        
     // Find terms associated with the search string
     let inline getTerms (flexField : Field.T, value) = 
         match Field.getSearchAnalyzer (flexField) with

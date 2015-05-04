@@ -71,6 +71,7 @@
     <Content Include="packages.config" />
     <Content Include="app.config" />
     <None Include="test.csv" />
+    <Compile Include="AnalysisTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">

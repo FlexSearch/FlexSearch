@@ -143,14 +143,19 @@ type Error =
     | NotBlank of fieldName : string
     | RegexMatch of fieldName : string * regexExpr : string
     | KeyNotFound of key : string
+    // Analysis related 
+    | TokenizerNotFound of analyzerName: string * tokenizerName : string
+    | UnableToInitializeTokenizer of analyzerName: string * tokenizerName : string * message : string * exp : string
+    | FilterNotFound of analyzerName: string * filterName : string
+    | UnableToInitializeFilter of analyzerName: string * filterName : string * message : string * exp : string
+    | AnalyzerBuilder of analyzerName : string * message : string * exp : string
+    | AnalyzerNotFound of analyzerName : string
     // Domain related
     | InvalidPropertyName of fieldName : string * value : string
     | AnalyzerIsMandatory of fieldName : string
     | DuplicateFieldValue of groupName : string * fieldName : string
     | ScriptNotFound of scriptName : string * fieldName : string
     // Builder related errors
-    | AnalyzerBuilder of analyzerName : string * message : string * exp : string
-    | AnalyzerNotFound of analyzerName : string
     | ResourceNotFound of resourceName : string * resourceType : string
     | UnSupportedSimilarity of similarityName : string
     | UnSupportedIndexVersion of indexVersion : string
@@ -237,6 +242,11 @@ module Errors =
         | AnalyzerIsMandatory(fn) -> msg "ANALYZER_IS_MANDATORY" "Analyzer is mandatory" <| sprintf "Analyzer is mandatory for field '%s'" fn
         | DuplicateFieldValue(gn,fn) -> msg "DUPLICATE_FIELD_VALUE" "Duplicate field value" <| sprintf "A duplicate entry (%s) has been found in the group '%s'" fn gn
         | ScriptNotFound(sn, fn) -> msg "SCRIPT_NOT_FOUND" "Script not found" <| sprintf "The script '%s' was not found against the field '%s'" sn fn
+        // Analysis related 
+        | TokenizerNotFound(an, tn) -> msg "TOKENIZER_NOT_FOUND" "Tokenizer not found" <| sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
+        | UnableToInitializeTokenizer(an, tn, m, exp) -> msg "UNABLE_TO_INITIALIZE_TOKENIZER" "Unable to initialize tokenizer" <| sprintf "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" tn an m exp
+        | FilterNotFound(an, fn) -> msg "FILTER_NOT_FOUND" "Filter not found" <| sprintf "Filter with the name %s does not exist. Analyzer Name: %s" fn an
+        | UnableToInitializeFilter(an, fn, m, exp) -> msg "UNABLE_TO_INITIALIZE_FILTER" "Unable to initialize filter" <| sprintf "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" fn an m exp
         // Builder related errors
         | AnalyzerBuilder(an,m,e) -> msg "ANALYZER_BUILDER" "Analyzer builder error" <| sprintf "The analyzer '%s' threw an exception while building: %s; \n%s" an m e
         | AnalyzerNotFound(a) -> msg "ANALYZER_NOT_FOUND" "Analyzer not found" <| sprintf "The analyzer '%s' was not found" a
