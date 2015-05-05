@@ -662,7 +662,6 @@ module Validators =
 
 [<AutoOpenAttribute>]
 module DataDefaults = 
-    
     let defString = String.Empty
     let defStringDict() = new Dictionary<string, string>()
     let defStringList = Array.empty<string>
@@ -734,13 +733,11 @@ module Log =
     let loggerInitError = 
         try 
             if EventLog.SourceExists(sourceName) then 
-                if EventLog.LogNameFromSourceName(sourceName, ".") <> logName then
+                if EventLog.LogNameFromSourceName(sourceName, ".") <> logName then 
                     EventLog.DeleteEventSource(sourceName)
                     EventLog.CreateEventSource(sourceName, logName)
-            else
-                EventLog.CreateEventSource(sourceName, logName)
+            else EventLog.CreateEventSource(sourceName, logName)
             true
-
         with _ -> false
     
     let writeEntry (message, logLevel) = 
@@ -755,6 +752,17 @@ module Log =
     let infoEx (ex : Exception) = writeEntry (exceptionPrinter ex, infomation)
     let error message = writeEntry (message, critical)
     let errorEx (ex : Exception) = writeEntry (exceptionPrinter ex, critical)
+    
+    let inline errorMsg (message : Error) = 
+        writeEntry (sprintf "%A" message, critical)
+        message
+    
+    let inline logErrorChoice (message : Choice<_, Error>) = 
+        match message with
+        | Choice2Of2(error) -> errorMsg (error) |> ignore
+        | _ -> ()
+        message
+    
     let fatal message = writeEntry (message, critical)
     let fatalEx (ex : Exception) = writeEntry (exceptionPrinter ex, critical)
     let fatalWithMsg msg (ex : Exception) = writeEntry (sprintf "%s \n%s" msg (exceptionPrinter ex), critical)
