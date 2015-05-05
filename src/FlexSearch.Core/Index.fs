@@ -752,8 +752,10 @@ module IndexWriter =
             |> withSearchProfiles (index.SearchProfiles, new FlexParser())
             |> build
             |> ok
-        with :? ValidationException as e -> fail <| e.Data0
-    
+        with :? ValidationException as e -> 
+            Log.indexLoadingFailed(index.IndexName, index.ToString(), exceptionPrinter e)
+            fail <| e.Data0
+            
     /// Close the index    
     let close (writer : T) = 
         writer.Token.Cancel()

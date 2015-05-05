@@ -111,8 +111,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     let loadAllAnalyzers() = 
         Directory.EnumerateFiles(path) |> Seq.iter (fun x -> 
                                               match threadSafeWriter.ReadFile<Analyzer.Dto>(x) with
-                                              | Choice1Of2(dto) -> updateAnalyzer (dto) |> ignore
-                                              | Choice2Of2(error) -> ())
+                                              | Choice1Of2(dto) ->
+                                                  updateAnalyzer (dto)
+                                                  |> logErrorChoice
+                                                  |> ignore
+                                              | Choice2Of2(error) -> Log.errorMsg (error) |> ignore)
     
     do 
         // Add prebuilt analyzers

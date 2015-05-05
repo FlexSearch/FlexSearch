@@ -76,9 +76,14 @@ module Analysis =
         | true -> 
             try 
                 ok <| TokenizerFactory.ForName(dto.TokenizerName, dictToMap dto.Parameters)
-            with e -> 
-                fail <| UnableToInitializeTokenizer(analyzerName, dto.TokenizerName, e.Message, exceptionPrinter e)
-        | false -> fail <| TokenizerNotFound(analyzerName, dto.TokenizerName)
+            with e ->
+                UnableToInitializeTokenizer(analyzerName, dto.TokenizerName, e.Message, exceptionPrinter e)
+                |> Log.errorMsg
+                |> fail
+        | false -> 
+            TokenizerNotFound(analyzerName, dto.TokenizerName)
+            |> Log.errorMsg
+            |> fail 
         
     /// Builds a Tokenizer Factory for a given Tokenizer
     let buildTokenFilterFactory (analyzerName, dto : TokenFilter.Dto) = 
@@ -90,8 +95,14 @@ module Analysis =
                 | InvariantEqual "synonym" -> 
                     ok <| (new FlexSynonymFilterFactory(dictToMap dto.Parameters) :> TokenFilterFactory)
                 | _ -> ok <| TokenFilterFactory.ForName(dto.FilterName, dictToMap dto.Parameters)
-            with e -> fail <| UnableToInitializeFilter(analyzerName, dto.FilterName, e.Message, exceptionPrinter e)
-        | false -> fail <| FilterNotFound(analyzerName, dto.FilterName)
+            with e -> 
+                UnableToInitializeFilter(analyzerName, dto.FilterName, e.Message, exceptionPrinter e)
+                |> Log.errorMsg
+                |> fail 
+        | false -> 
+            FilterNotFound(analyzerName, dto.FilterName)
+            |> Log.errorMsg
+            |> fail 
     
     let applyResourceLoader (loader : ResourceLoader, factory : obj) = 
         let instance = castAs<ResourceLoaderAware> (factory)
@@ -121,7 +132,10 @@ module Analysis =
             builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
             def.Filters |> Seq.iter (fun f -> builder.addTokenFilter (f.FilterName, dictToMap (f.Parameters)) |> ignore)
             ok (builder.build() :> Analyzer)
-        with ex -> fail (AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex)))
+        with ex -> 
+            AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex))
+            |> Log.errorMsg
+            |> fail 
     
     let flexCharTermAttribute = 
         lazy java.lang.Class.forName 
