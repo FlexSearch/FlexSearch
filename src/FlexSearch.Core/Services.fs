@@ -111,7 +111,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     let loadAllAnalyzers() = 
         Directory.EnumerateFiles(path) |> Seq.iter (fun x -> 
                                               match threadSafeWriter.ReadFile<Analyzer.Dto>(x) with
-                                              | Choice1Of2(dto) ->
+                                              | Choice1Of2(dto) -> 
                                                   updateAnalyzer (dto)
                                                   |> logErrorChoice
                                                   |> ignore
@@ -221,9 +221,15 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         |> Seq.map (fun x -> 
                match threadSafeWriter.ReadFile<Index.Dto>(x) with
                | Choice1Of2(dto) -> Some(dto)
-               | Choice2Of2(error) -> None)
+               | Choice2Of2(error) -> 
+                   Log.errorMsg (error) |> ignore
+                   None)
         |> Seq.filter (fun x -> x.IsSome)
-        |> Seq.map (fun i -> Task.Run(fun _ -> loadIndex i.Value |> ignore))
+        |> Seq.map (fun i -> 
+               Task.Run(fun _ -> 
+                   loadIndex i.Value
+                   |> logErrorChoice
+                   |> ignore))
         |> Seq.toArray
         |> Task.WaitAll
     
