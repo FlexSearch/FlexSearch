@@ -22,6 +22,7 @@ open System
 open System.Collections.Generic
 open System.ComponentModel.DataAnnotations.Schema
 open System.Data.Entity
+open System.Diagnostics
 open System.IO
 open System.Text
 open System.Threading.Tasks
@@ -130,7 +131,7 @@ type DuplicateDetectionRequest() =
 
 type FileWriterCommands = 
     | BeginTable of record : Dictionary<string, string>
-    | AddRecord of record : Dictionary<string, string>
+    | AddRecord of mainRecord : bool * record : Dictionary<string, string>
     | EndTable
 
 [<Sealed>]
@@ -172,16 +173,17 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
                     builder.Clear() |> ignore
                     match command with
                     | BeginTable(record) -> 
-                        builder.Append("""<table class="table"><thead><tr>""") |> ignore
+                        builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
                         for pair in record do
-                            builder.Append(sprintf "<th>%s</th>" pair.Value) |> ignore
+                            builder.Append(sprintf "<th>%s</th>" pair.Key) |> ignore
                         builder.Append("""</tr></thead><tbody>""") |> ignore
-                    | AddRecord(record) -> 
-                        builder.Append("<tr>") |> ignore
+                    | AddRecord(mainRecord, record) -> 
+                        if mainRecord then builder.Append("""<tr class="active">""") |> ignore
+                        else builder.Append("<tr>") |> ignore
                         for pair in record do
                             builder.Append(sprintf "<td>%s</td>" pair.Value) |> ignore
                         builder.Append("</tr>") |> ignore
-                    | EndTable -> builder.Append("</tbody></table>") |> ignore
+                    | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
                     File.AppendAllText(filePath, builder.ToString())
                     return! loop()
                 }
@@ -196,20 +198,24 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
         match searchService.Search(query, record) with
         | Choice1Of2(results) -> 
             if results.Meta.RecordsReturned > 1 then 
+                Debug.WriteLine("Duplicate Found")
                 use context = new DataContext(req.ConnectionString)
                 let header = 
                     context.headers.Add
                         (new Header(PrimaryRecordId = record.[Constants.IdField], SessionId = session.SessionId, 
                                     DisplayName = record.[session.DisplayFieldName]))
-                if req.GenerateReport then 
-                    fileWriter.Post(BeginTable record, req.ReportName)
-                    fileWriter.Post(AddRecord record, req.ReportName)
                 let docs = results |> toFlatResults
                 for result in docs.Documents do
                     // The returned record is same as the passed record. Save the score for relative
                     // scoring later
                     let score = float result.[Constants.Score]
-                    if result.[Constants.IdField] = header.PrimaryRecordId then header.Score <- score
+                    if result.[Constants.IdField] = header.PrimaryRecordId then 
+                        header.Score <- score
+                        if req.GenerateReport then 
+                            // Write header record for the report
+                            record.[Constants.Score] <- score.ToString()
+                            fileWriter.Post(BeginTable record, req.ReportName)
+                            fileWriter.Post(AddRecord(true, record), req.ReportName)
                     else 
                         let score = 
                             if header.Score >= score then score / header.Score * 100.0
@@ -218,13 +224,13 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
                             (new LineItem(SecondaryRecordId = result.[Constants.IdField], 
                                           DisplayName = result.[session.DisplayFieldName], Score = score, 
                                           HeaderId = header.HeaderId)) |> ignore
-                        if req.GenerateReport then fileWriter.Post(AddRecord result, req.ReportName)
+                        if req.GenerateReport then fileWriter.Post(AddRecord(false, result), req.ReportName)
                 if req.GenerateReport then fileWriter.Post(EndTable, req.ReportName)
                 context.SaveChanges() |> ignore
         | _ -> ()
     
     let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest) = 
-        maybe { 
+        try 
             let session = new Session()
             session.IndexName <- req.IndexName
             session.ProfileName <- req.ProfileName
@@ -235,24 +241,36 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
             session.JobStartTime <- DateTime.Now
             session.ThreadCount <- req.ThreadCount
             let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
-            let dateTimeField = indexWriter.GetSchemaName(session.DateTimeField)
-            let mainQuery = 
+            let dateTimeField = session.DateTimeField //indexWriter.GetSchemaName(session.DateTimeField)
+            let mainQueryString = 
                 sprintf "%s > '%i' AND %s < '%i'" dateTimeField (session.RangeStartTime |> dateToFlexFormat) 
                     dateTimeField (session.RangeEndTime |> dateToFlexFormat)
-            let mainQuery = new SearchQuery.Dto(session.IndexName, mainQuery, Count = (int32) System.Int16.MaxValue)
+            Debug.WriteLine("Main Query:" + mainQueryString)
+            let mainQuery = 
+                new SearchQuery.Dto(session.IndexName, mainQueryString, Count = (int32) System.Int16.MaxValue)
             // TODO: Future optimization: bring only the required columns
+            mainQuery.ReturnFlatResult <- true
             mainQuery.Columns <- [| "*" |]
-            let! result = searchService.Search(mainQuery)
-            let records = result |> toFlatResults
-            session.RecordsReturned <- result.Meta.RecordsReturned
-            session.RecordsAvailable <- result.Meta.TotalAvailable
-            let session = writeSessionBeginInfo (req, session)
-            Parallel.ForEach
-                (records.Documents, parallelOptions, fun record -> duplicateRecordCheck (req, record, session)) 
-            |> ignore
-            session.JobEndTime <- DateTime.Now
-            writeSessionEndInfo (req, session)
-        }
+            let resultC = searchService.Search(mainQuery)
+            match resultC with
+            | Choice1Of2(result) -> 
+                Debug.WriteLine("Main Query Records Returned:" + result.Meta.RecordsReturned.ToString())
+                let records = result |> toFlatResults
+                session.RecordsReturned <- result.Meta.RecordsReturned
+                session.RecordsAvailable <- result.Meta.TotalAvailable
+                let session = writeSessionBeginInfo (req, session)
+                try 
+                    let _ = 
+                        Parallel.ForEach
+                            (records.Documents, parallelOptions, 
+                             fun record -> duplicateRecordCheck (req, record, session))
+                    ()
+                with :? AggregateException as e -> Log.errorEx (e)
+                session.JobEndTime <- DateTime.Now
+                writeSessionEndInfo (req, session)
+            | Choice2Of2(err) -> Log.errorMsg (err) |> ignore
+        with e -> Log.errorEx (e)
+        Debug.WriteLine("Dedupe Session Finished.")
     
     let requestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
@@ -270,9 +288,9 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
         match indexService.IsIndexOnline(request.ResId.Value) with
         | Choice1Of2(writer) -> 
             body.Value.StartDate <- request.OwinContext 
-                                    |> longFromQueryString "startdate" (DateTime.Now |> dateToFlexFormat)
+                                    |> longFromQueryString "startdate" (DateTime.Now.AddDays(-1.0) |> dateToFlexFormat)
             body.Value.EndDate <- request.OwinContext 
-                                  |> longFromQueryString "enddate" (DateTime.Now.AddDays(-1.0) |> dateToFlexFormat)
+                                  |> longFromQueryString "enddate" (DateTime.Now |> dateToFlexFormat)
             body.Value.DateTimeField <- request.OwinContext 
                                         |> stringFromQueryString "datetimefield" Constants.LastModifiedField
             body.Value.DisplayName <- request.OwinContext |> stringFromQueryString "displayname" Constants.IdField
@@ -285,7 +303,17 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
             match writer.Settings.SearchProfiles.TryGetValue(request.SubResId.Value) with
             | true, _ -> 
                 let jobId = Guid.NewGuid()
-                requestProcessor.Post(jobId, writer, body.Value)
-                SuccessResponse(jobId, Ok)
+                // Try creating sql context to see if the target is available
+                try 
+                    let context = new DataContext(body.Value.ConnectionString)
+                    context.Database.Exists() |> ignore
+                    requestProcessor.Post(jobId, writer, body.Value)
+                    SuccessResponse(jobId, Ok)
+                with e -> 
+                    let om = 
+                        { UserMessage = "Unable to connect to the sql server using the provided connection string."
+                          ErrorCode = "SQL_CONNECTION_ERROR"
+                          DeveloperMessage = exceptionPrinter e }
+                    FailureOpMsgResponse(om, BadRequest)
             | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
