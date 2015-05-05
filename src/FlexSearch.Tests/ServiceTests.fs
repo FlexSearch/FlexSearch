@@ -237,3 +237,15 @@ module DocumentServiceTests =
             // As all the caches are cleared the index has to load the documment version from the
             // docvalues. For optimistic update to work the timestamp has to match 
             test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
+
+type QueueServiceTests() = 
+    member __.``Queue service can be used to add document to an index`` (indexService : IIndexService, 
+                                                                         queueService : IQueueService, 
+                                                                         documentService : IDocumentService, 
+                                                                         index : Index.Dto) = 
+        test <@ succeeded <| indexService.AddIndex(index) @>
+        let document = new Document.Dto(index.IndexName, "1")
+        queueService.AddDocumentQueue(document)
+        test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+        test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
+        
