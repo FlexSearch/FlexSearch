@@ -109,7 +109,7 @@ module DateTimeHelpers =
     let DateTimeFormat = "yyyyMMddHHmmssfff"
     
     /// Represents all the date time format supported by FlexSearch
-    let SupportedDateFormat = [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |]
+    let SupportedDateFormat = [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss"; DateTimeFormat |]
     
     /// Coverts a date to FlexSearch date format
     let inline dateToFlexFormat (dt : DateTime) = int64 <| dt.ToString(DateTimeFormat)
