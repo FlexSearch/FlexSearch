@@ -418,9 +418,10 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 if document.TimeStamp > 0L then 
                     return! fail 
                             <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
-                let! writer = indexService.IsIndexOnline <| document.IndexName
-                return! writer |> IndexWriter.addDocument document
-                return new CreateResponse(document.Id)
+                else
+                    let! writer = indexService.IsIndexOnline <| document.IndexName
+                    do! writer |> IndexWriter.addDocument document
+                    return new CreateResponse(document.Id)
             }
         
         /// Delete a document by Id
