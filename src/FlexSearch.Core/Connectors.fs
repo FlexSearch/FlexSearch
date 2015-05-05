@@ -79,7 +79,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
 //                ok()
     
     let processFile(body : CsvIndexingRequest, path : string) =
-        let reader = new TextFieldParser(path)
+        use reader = new TextFieldParser(path)
         reader.TextFieldType <- FieldType.Delimited
         reader.SetDelimiters([|","|])
         let headers = 
@@ -90,15 +90,17 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
         | [||] -> fail <| Error.HeaderRowIsEmpty
         | _ -> 
                 while not reader.EndOfData do
-                    let currentRow = reader.ReadFields()
-                    let document = new Document.Dto(body.IndexName, currentRow.[0])
-                    document.TimeStamp <- 0L
-                    // The first column is always id so skip it
-                    for i = 1 to currentRow.Length - 1 do
-                        document.Fields.Add(headers.[i], currentRow.[i])
-                    queueService.AddDocumentQueue(document)
+                    try
+                        let currentRow = reader.ReadFields()
+                        let document = new Document.Dto(body.IndexName, currentRow.[0])
+                        document.TimeStamp <- 0L
+                        // The first column is always id so skip it
+                        for i = 1 to currentRow.Length - 1 do
+                            document.Fields.Add(headers.[i], currentRow.[i])
+                        queueService.AddDocumentQueue(document)
+                    with e -> Log.warnEx(e)
                 ok()
-
+        
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
             let rec loop() = 
@@ -140,7 +142,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
         body.IndexName <- index
         body.Validate() >>= pathValidation >>= postBulkRequestMessage
     
-    override __.Process(request, body) = SomeResponse(processRequest request.ResName body.Value, Ok, BadRequest)
+    override __.Process(request, body) = SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
 
 /// Represents a request which can be sent to Sql connector to index SQL data
 [<Sealed>]
@@ -238,4 +240,4 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
         body.IndexName <- index
         body.Validate() >>= createJob
     
-    override __.Process(request, body) = SomeResponse(processRequest request.ResName body.Value, Ok, BadRequest)
+    override __.Process(request, body) = SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
