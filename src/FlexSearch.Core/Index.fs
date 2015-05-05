@@ -27,6 +27,7 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
+open System.Diagnostics
 
 type FieldsMeta = 
     { IdField : Field.T
@@ -452,29 +453,31 @@ module ShardWriter =
           TrackingIndexWriter : TrackingIndexWriter
           SearcherManager : SearcherManager
           TxWriter : TransactionLog.TxWriter
-          CommitDuration : int64
+          CommitDuration : int
           /// Shows the status of the current Shard
           mutable Status : Status
           /// Represents the generation of commit
-          Generation : int64
+          Generation : int64 ref
           /// Represents the last commit time. This is used by the
           /// timebased commit to check if auto-commit should take
           /// place or not.
-          LastCommitTime : int64
+          mutable LastCommitTime : DateTime
           /// Represents the total outstanding flushes that have occured
           /// since the last commit
-          mutable OutstandingFlushes : int32
+          mutable OutstandingFlushes : int32 ref
           /// Represents the current modify index. This is used by for
           /// recovery and shard sync from transaction logs.
-          ModifyIndex : int64
+          ModifyIndex : int64 ref
           Settings : IndexConfiguration.Dto
           /// Transaction log path to be used
           TxLogPath : string
-          ShardNo : int }
-        member this.GetNextIndex() = Interlocked.Increment(ref this.ModifyIndex)
-        member this.GetNextGen() = Interlocked.Increment(ref this.Generation)
-        member this.IncrementFlushCount() = Interlocked.Increment(ref this.OutstandingFlushes)
-        member this.ResetFlushCount() = this.OutstandingFlushes <- new Int32()
+          ShardNo : int
+          Lock : obj }
+        member this.GetNextIndex() = Interlocked.Increment(this.ModifyIndex)
+        member this.GetNextGen() = Interlocked.Increment(this.Generation)
+        member this.IncrementFlushCount() = Interlocked.Increment(this.OutstandingFlushes)
+        member this.ResetFlushCount() = 
+            lock this.Lock (fun _ -> this.OutstandingFlushes :=  0)
     
     /// Get the highest modified index value from the shard   
     let getMaxModifyIndex (r : IndexReader) = 
@@ -494,17 +497,22 @@ module ShardWriter =
     /// merges to finish. This may be a costly operation, so you should test the cost in your application and 
     /// do it only when really necessary.
     let commit (sw : T) = 
-        if sw.IndexWriter.HasUncommittedChanges() 
-           && (DateTime.Now.Ticks - sw.LastCommitTime > TimeSpan.TicksPerSecond * sw.CommitDuration 
-               || sw.OutstandingFlushes >= sw.Settings.CommitEveryNFlushes) then 
-            Interlocked.CompareExchange(ref sw.LastCommitTime, DateTime.Now.Ticks, sw.LastCommitTime) |> ignore
+        Debug.WriteLine("Checking Commit Condition")
+        Debug.WriteLine("Generation: " + sw.Generation.Value.ToString())
+        Debug.WriteLine("Outstanding Flushes: " + sw.OutstandingFlushes.Value.ToString())
+        
+        if sw.IndexWriter.HasUncommittedChanges() then
+//           && ((DateTime.Now - sw.LastCommitTime).Seconds >= sw.CommitDuration 
+//               || sw.OutstandingFlushes >= sw.Settings.CommitEveryNFlushes) then 
+            lock sw.Lock (fun _ -> sw.LastCommitTime <- DateTime.Now)
             sw.ResetFlushCount()
             let generation = sw.Generation
             // Increment the generation before committing so that the 
             // newly added items go to the next log file
             sw.GetNextGen() |> ignore
             // Set the new commit data
-            getCommitData generation sw.ModifyIndex
+            Debug.WriteLine("Performing Commit")
+            getCommitData generation.Value sw.ModifyIndex.Value
             |> sw.IndexWriter.SetCommitData
             |> sw.IndexWriter.Commit
     
@@ -574,15 +582,16 @@ module ShardWriter =
             { IndexWriter = iw
               TrackingIndexWriter = trackingWriter
               SearcherManager = searcherManager
-              Generation = generation
-              CommitDuration = int64 settings.CommitTimeSeconds
-              LastCommitTime = 0L
-              OutstandingFlushes = 0
+              Generation = ref generation
+              CommitDuration = settings.CommitTimeSeconds
+              LastCommitTime = DateTime.Now
+              OutstandingFlushes = ref 0
               Status = Opening
-              ModifyIndex = modifyIndex
+              ModifyIndex = ref modifyIndex
               TxWriter = new TransactionLog.TxWriter(logPath, generation)
               Settings = settings
               TxLogPath = logPath
+              Lock = new Object()
               ShardNo = shardNumber }
         iw.SetState(state)
         state
@@ -783,7 +792,7 @@ module IndexWriter =
                 let txEntry = TransactionLog.T.Create(txId, opCode, document)
                 use stream = memoryManager.GetStream()
                 TransactionLog.serializer (stream, txEntry)
-                s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation)
+                s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
                else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
@@ -855,7 +864,7 @@ module IndexWriter =
             shardWriter.Status <- ShardWriter.Status.Recovering
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
-            for entry in shardWriter.TxWriter.ReadLog(shardWriter.Generation) do
+            for entry in shardWriter.TxWriter.ReadLog(shardWriter.Generation.Value) do
                 match entry.Operation with
                 | TransactionLog.Operation.Create | TransactionLog.Operation.Update -> 
                     let doc = indexWriter.Template.Value |> DocumentTemplate.updateTempate entry.Document

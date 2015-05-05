@@ -473,7 +473,7 @@ module IndexConfiguration =
         /// This is only used if no commits have happended in the
         /// set time period otherwise CommitEveryNFlushes takes care
         /// of commits
-        member val CommitTimeSeconds = 300 with get, set
+        member val CommitTimeSeconds = 60 with get, set
         
         /// Determines how often the data be committed to the
         /// physical medium. Commits are more expensive then
