@@ -134,7 +134,7 @@ module Main =
         // Factory registration
         builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
         builder |> FactoryService.registerSingleFactoryInstance<IHttpHandler>
-        builder |> FactoryService.registerSingleInstance<YamlFormatter, IFormatter>
+        builder |> FactoryService.registerSingleInstance<NewtonsoftJsonFormatter, IFormatter>
         builder |> FactoryService.registerSingleInstance<ThreadSafeFileWriter, ThreadSafeFileWriter>
         builder |> FactoryService.registerSingleInstance<FlexParser, IFlexParser>
         // Register services

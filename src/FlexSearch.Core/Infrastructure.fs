@@ -96,7 +96,7 @@ module Constants =
     let ResourcesFolder = ConfFolder +/ "Resources" |> createDir
     
     /// Extension to be used by settings file
-    let SettingsFileExtension = ".yml"
+    let SettingsFileExtension = ".json"
     
     let CaseInsensitiveKeywordAnalyzer = 
         CustomAnalyzer.Builder().withTokenizer("keyword").addTokenFilter("lowercase").build() :> FlexLucene.Analysis.Analyzer
@@ -730,7 +730,7 @@ module Log =
     let critical = EventLogEntryType.Error
     
     /// Default logger for FlexSearch
-    let loggerInitError = 
+    let noLoggerInitError = 
         try 
             if EventLog.SourceExists(sourceName) then 
                 if EventLog.LogNameFromSourceName(sourceName, ".") <> logName then 
@@ -741,7 +741,7 @@ module Log =
         with _ -> false
     
     let writeEntry (message, logLevel) = 
-        if not loggerInitError then EventLog.WriteEntry(sourceName, message, logLevel)
+        if noLoggerInitError then EventLog.WriteEntry(sourceName, message, logLevel)
     
     let writeEntryId (id, message, logLevel) = EventLog.WriteEntry(sourceName, message, logLevel, id)
     let debug message = writeEntry (message, infomation)
@@ -753,11 +753,11 @@ module Log =
     let error message = writeEntry (message, critical)
     let errorEx (ex : Exception) = writeEntry (exceptionPrinter ex, critical)
     
-    let inline errorMsg (message : Error) = 
+    let errorMsg (message : Error) = 
         writeEntry (sprintf "%A" message, critical)
         message
     
-    let inline logErrorChoice (message : Choice<_, Error>) = 
+    let logErrorChoice (message : Choice<_, Error>) = 
         match message with
         | Choice2Of2(error) -> errorMsg (error) |> ignore
         | _ -> ()
