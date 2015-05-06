@@ -325,6 +325,7 @@ type DuplicateDetectionReportRequest() =
     member val SourceFileName = defString with get, set
     member val ProfileName = defString with get, set
     member val IndexName = defString with get, set
+    member val QueryString = defString with get, set
     override this.Validate() = this.IndexName
                                |> notBlank "IndexName"
                                >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
@@ -357,7 +358,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             for pair in record do
                 builder.Append(escapeHtml ("td", pair.Value)) |> ignore
             builder.Append("</tr>") |> ignore
-        | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
+        | EndTable -> builder.Append("</tbody></table>") |> ignore
     
     let performDedupe (record : string [], headers : string [], request : DuplicateDetectionReportRequest, stats : Stats) = 
         let primaryRecord = 
@@ -394,21 +395,23 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         reader.SetDelimiters([| "," |])
         reader.TrimWhiteSpace <- true
         let headers = reader.ReadFields()
-                
         let stats = new Stats()
         let builder = new StringBuilder()
         while not reader.EndOfData do
             let record = reader.ReadFields()
             stats.TotalRecords <- stats.TotalRecords + 1
             builder.AppendLine(performDedupe (record, headers, request, stats)) |> ignore
-
         let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
         template <- template.Replace("{{IndexName}}", request.IndexName)
         template <- template.Replace("{{ProfileName}}", request.ProfileName)
+        template <- template.Replace("{{QueryString}}", escapeHtml("code",request.QueryString))
         template <- template.Replace("{{TotalChecked}}", stats.TotalRecords.ToString())
         template <- template.Replace("{{TotalDuplicates}}", stats.MatchedRecords.ToString())
         template <- template.Replace("{{Results}}", builder.ToString())
-        File.WriteAllText(Constants.WebFolder +/ "Reports" +/ (sprintf "%s.html" (Guid.NewGuid().ToString())), template)
+        File.WriteAllText
+            (Constants.WebFolder +/ "Reports" 
+             +/ (sprintf "%s_%s_%i.html" request.ProfileName 
+                     (Path.GetFileNameWithoutExtension(request.SourceFileName)) (GetCurrentTimeAsLong())), template)
     
     let requestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
@@ -425,7 +428,8 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             do! body.Validate()
             let! writer = indexService.IsIndexOnline(indexName)
             match writer.Settings.SearchProfiles.TryGetValue(body.ProfileName) with
-            | true, _ -> 
+            | true, (_, profile) -> 
+                body.QueryString <- profile.QueryString
                 if File.Exists(body.SourceFileName) then 
                     let jobId = Guid.NewGuid()
                     requestProcessor.Post(jobId, body)
