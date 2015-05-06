@@ -826,9 +826,10 @@ type ThreadSafeFileWriter(formatter : FlexSearch.Core.IFormatter) =
         Directory.CreateDirectory(Path.GetDirectoryName(path)) |> ignore
         try 
             mutex.WaitOne(-1) |> ignore
-            use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
-            let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
-            file.Write(byteContent, 0, byteContent.Length)
+            File.WriteAllText(path, formatter.SerializeToString(content))
+//            use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
+//            let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
+//            file.Write(byteContent, 0, byteContent.Length)
             mutex.ReleaseMutex()
             ok()
         with e -> 
