@@ -23,6 +23,31 @@ open System.Data.SqlClient
 open System.IO
 open Microsoft.VisualBasic.FileIO
 
+module CsvHelpers = 
+    let readCsv (filePath : string, header : string [] option) = 
+        use reader = new TextFieldParser(filePath)
+        reader.TextFieldType <- FieldType.Delimited
+        reader.SetDelimiters([| "," |])
+        let headers = 
+            match header with
+            | Some(h) -> h
+            | None -> reader.ReadFields()
+        
+        // It will return on the first error encountered. We need a parser which can
+        // automatically surpress errors. 
+        let records = 
+            try 
+                seq { 
+                    while not reader.EndOfData do
+                        let record = reader.ReadFields()
+                        yield record
+                }
+            with e -> 
+                Log.warnEx (e)
+                Seq.empty
+        
+        (headers, records)
+
 /// Represents a request which can be sent to CSV connector to index CSV data.
 [<Sealed>]
 type CsvIndexingRequest() = 
@@ -54,53 +79,51 @@ type CsvIndexingRequest() =
 type CsvHandler(queueService : IQueueService, jobService : IJobService) = 
     inherit HttpHandlerBase<CsvIndexingRequest, string>()
     
-//    let ProcessFileUsingCsvHelper(body : CsvIndexingRequest, path : string) = 
-//        let configuration = new CsvConfiguration()
-//        configuration.HasHeaderRecord <- body.HasHeaderRecord
-//        use textReader = File.OpenText(path)
-//        let parser = new CsvParser(textReader, configuration)
-//        let reader = new CsvReader(parser)
-//        
-//        let headers = 
-//            if body.HasHeaderRecord then 
-//                if reader.Read() then reader.FieldHeaders
-//                else defArray
-//            else body.Headers
-//        match headers with
-//        | [||] -> fail <| Error.HeaderRowIsEmpty
-//        | _ -> 
-//                while reader.Read() do
-//                    let document = new Document.Dto(body.IndexName, reader.CurrentRecord.[0])
-//                    // The first column is always id so skip it
-//                    headers
-//                    |> Seq.skip 1
-//                    |> Seq.iteri (fun i header -> document.Fields.Add(header, reader.CurrentRecord.[i + 1]))
-//                    queueService.AddDocumentQueue(document)
-//                ok()
-    
-    let processFile(body : CsvIndexingRequest, path : string) =
+    //    let ProcessFileUsingCsvHelper(body : CsvIndexingRequest, path : string) = 
+    //        let configuration = new CsvConfiguration()
+    //        configuration.HasHeaderRecord <- body.HasHeaderRecord
+    //        use textReader = File.OpenText(path)
+    //        let parser = new CsvParser(textReader, configuration)
+    //        let reader = new CsvReader(parser)
+    //        
+    //        let headers = 
+    //            if body.HasHeaderRecord then 
+    //                if reader.Read() then reader.FieldHeaders
+    //                else defArray
+    //            else body.Headers
+    //        match headers with
+    //        | [||] -> fail <| Error.HeaderRowIsEmpty
+    //        | _ -> 
+    //                while reader.Read() do
+    //                    let document = new Document.Dto(body.IndexName, reader.CurrentRecord.[0])
+    //                    // The first column is always id so skip it
+    //                    headers
+    //                    |> Seq.skip 1
+    //                    |> Seq.iteri (fun i header -> document.Fields.Add(header, reader.CurrentRecord.[i + 1]))
+    //                    queueService.AddDocumentQueue(document)
+    //                ok()
+    let processFile (body : CsvIndexingRequest, path : string) = 
         use reader = new TextFieldParser(path)
         reader.TextFieldType <- FieldType.Delimited
-        reader.SetDelimiters([|","|])
+        reader.SetDelimiters([| "," |])
         let headers = 
-            if body.HasHeaderRecord then 
-                reader.ReadFields()
+            if body.HasHeaderRecord then reader.ReadFields()
             else body.Headers
         match headers with
         | [||] -> fail <| Error.HeaderRowIsEmpty
         | _ -> 
-                while not reader.EndOfData do
-                    try
-                        let currentRow = reader.ReadFields()
-                        let document = new Document.Dto(body.IndexName, currentRow.[0])
-                        document.TimeStamp <- 0L
-                        // The first column is always id so skip it
-                        for i = 1 to currentRow.Length - 1 do
-                            document.Fields.Add(headers.[i], currentRow.[i])
-                        queueService.AddDocumentQueue(document)
-                    with e -> Log.warnEx(e)
-                ok()
-        
+            while not reader.EndOfData do
+                try 
+                    let currentRow = reader.ReadFields()
+                    let document = new Document.Dto(body.IndexName, currentRow.[0])
+                    document.TimeStamp <- 0L
+                    // The first column is always id so skip it
+                    for i = 1 to currentRow.Length - 1 do
+                        document.Fields.Add(headers.[i], currentRow.[i])
+                    queueService.AddDocumentQueue(document)
+                with e -> Log.warnEx (e)
+            ok()
+    
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
             let rec loop() = 
@@ -109,7 +132,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
                     let job = new Job(JobId = jobId.ToString("N"), Status = JobStatus.InProgress)
                     jobService.UpdateJob(job) |> ignore
                     let execFileJob filePath = 
-                        match processFile(body, filePath) with
+                        match processFile (body, filePath) with
                         | Choice1Of2() -> 
                             job.ProcessedItems <- job.ProcessedItems + 1
                             jobService.UpdateJob(job) |> ignore

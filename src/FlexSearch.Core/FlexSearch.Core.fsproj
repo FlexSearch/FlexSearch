@@ -94,9 +94,9 @@
     <Compile Include="Search.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
-    <Compile Include="DuplicateDetection.fs" />
     <Compile Include="HttpService.fs" />
     <Compile Include="Connectors.fs" />
+    <Compile Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />

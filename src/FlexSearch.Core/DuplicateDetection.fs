@@ -27,6 +27,8 @@ open System.IO
 open System.Text
 open System.Threading.Tasks
 open System.Web.UI
+open System.Xml.Linq
+open Microsoft.VisualBasic.FileIO
 
 type LineItem() = 
     let mutable header = Unchecked.defaultof<Header>
@@ -136,7 +138,7 @@ type FileWriterCommands =
 
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
-type SqlHandler(indexService : IIndexService, searchService : ISearchService) = 
+type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISearchService) = 
     inherit HttpHandlerBase<DuplicateDetectionRequest, Guid>()
     
     let writeSessionBeginInfo (req : DuplicateDetectionRequest, session) = 
@@ -317,3 +319,121 @@ type SqlHandler(indexService : IIndexService, searchService : ISearchService) =
                     FailureOpMsgResponse(om, BadRequest)
             | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
+
+type DuplicateDetectionReportRequest() = 
+    inherit DtoBase()
+    member val SourceFileName = defString with get, set
+    member val ProfileName = defString with get, set
+    member val IndexName = defString with get, set
+    override this.Validate() = this.IndexName
+                               |> notBlank "IndexName"
+                               >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+                               >>= fun _ -> this.SourceFileName |> notBlank "SourceFileName"
+
+type Stats() = 
+    member val MatchedRecords = 0 with get, set
+    member val TotalRecords = 0 with get, set
+
+[<Sealed>]
+[<Name("POST-/indices/:id/duplicatedetectionreport")>]
+type DuplicateDetectionReportHandler(indexService : IIndexService, searchService : ISearchService) = 
+    inherit HttpHandlerBase<DuplicateDetectionReportRequest, Guid>()
+    let tableHeader = """<table class="table table-bordered table-condensed"><thead><tr>"""
+    
+    let escapeHtml (tag : string, data : string) = 
+        let element = new XElement(XName.Get(tag), data)
+        element.ToString()
+    
+    let addElement (command : FileWriterCommands) (builder : StringBuilder) = 
+        match command with
+        | BeginTable(record) -> 
+            builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
+            for pair in record do
+                builder.Append(escapeHtml ("th", pair.Key)) |> ignore
+            builder.Append("""</tr></thead><tbody>""") |> ignore
+        | AddRecord(mainRecord, record) -> 
+            if mainRecord then builder.Append("""<tr class="active">""") |> ignore
+            else builder.Append("<tr>") |> ignore
+            for pair in record do
+                builder.Append(escapeHtml ("td", pair.Value)) |> ignore
+            builder.Append("</tr>") |> ignore
+        | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
+    
+    let performDedupe (record : string [], headers : string [], request : DuplicateDetectionReportRequest, stats : Stats) = 
+        let primaryRecord = 
+            let p = dict<string>()
+            headers |> Array.iteri (fun i header -> p.Add(header, record.[i]))
+            p
+        
+        let query = new SearchQuery.Dto(request.IndexName, String.Empty, SearchProfile = request.ProfileName)
+        query.Columns <- headers
+        query.ReturnFlatResult <- true
+        query.ReturnScore <- true
+        let builder = new StringBuilder()
+        // Write input row
+        builder.Append(sprintf """<hr/><h4>Input Record: %i</h4>""" stats.TotalRecords) |> ignore
+        builder |> addElement (BeginTable(primaryRecord))
+        builder |> addElement (AddRecord(true, primaryRecord))
+        //Debug.WriteLine(sprintf "Query: %s" (query.ToString()))
+        match searchService.Search(query, primaryRecord) with
+        | Choice1Of2(results) -> 
+            if results.Meta.RecordsReturned > 0 then stats.MatchedRecords <- stats.MatchedRecords + 1
+            let docs = results |> toFlatResults
+            for doc in docs.Documents do
+                builder |> addElement (AddRecord(false, doc))
+            builder |> addElement (EndTable)
+        | Choice2Of2(error) -> 
+            builder.Append(sprintf """%A""" error) |> ignore
+            builder |> addElement (EndTable)
+        builder.ToString()
+    
+    let generateReport (jobId, request : DuplicateDetectionReportRequest) = 
+        //let (headers, records) = CsvHelpers.readCsv (request.SourceFileName, None)
+        use reader = new TextFieldParser(request.SourceFileName)
+        reader.TextFieldType <- FieldType.Delimited
+        reader.SetDelimiters([| "," |])
+        reader.TrimWhiteSpace <- true
+        let headers = reader.ReadFields()
+                
+        let stats = new Stats()
+        let builder = new StringBuilder()
+        while not reader.EndOfData do
+            let record = reader.ReadFields()
+            stats.TotalRecords <- stats.TotalRecords + 1
+            builder.AppendLine(performDedupe (record, headers, request, stats)) |> ignore
+
+        let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
+        template <- template.Replace("{{IndexName}}", request.IndexName)
+        template <- template.Replace("{{ProfileName}}", request.ProfileName)
+        template <- template.Replace("{{TotalChecked}}", stats.TotalRecords.ToString())
+        template <- template.Replace("{{TotalDuplicates}}", stats.MatchedRecords.ToString())
+        template <- template.Replace("{{Results}}", builder.ToString())
+        File.WriteAllText(Constants.WebFolder +/ "Reports" +/ (sprintf "%s.html" (Guid.NewGuid().ToString())), template)
+    
+    let requestProcessor = 
+        MailboxProcessor.Start(fun inbox -> 
+            let rec loop() = 
+                async { 
+                    let! (jobId, request) = inbox.Receive()
+                    generateReport (jobId, request) |> ignore
+                    return! loop()
+                }
+            loop())
+    
+    let processRequest indexName (body : DuplicateDetectionReportRequest) = 
+        maybe { 
+            do! body.Validate()
+            let! writer = indexService.IsIndexOnline(indexName)
+            match writer.Settings.SearchProfiles.TryGetValue(body.ProfileName) with
+            | true, _ -> 
+                if File.Exists(body.SourceFileName) then 
+                    let jobId = Guid.NewGuid()
+                    requestProcessor.Post(jobId, body)
+                    return jobId
+                else return! fail <| ResourceNotFound(body.SourceFileName, "File")
+            | _ -> return! fail <| UnknownSearchProfile(indexName, body.ProfileName)
+        }
+    
+    override __.Process(request, body) = 
+        body.Value.IndexName <- request.ResId.Value
+        SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
