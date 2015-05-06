@@ -26,6 +26,7 @@ open System.Linq
 open System.Runtime.Caching
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
+open FlexLucene.Queryparser.Classic
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
@@ -85,7 +86,7 @@ type IAnalyzerService =
     abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, Error>
     abstract UpdateAnalyzer : analyzer:Analyzer.Dto -> Choice<unit, Error>
     abstract GetAllAnalyzers : unit -> Analyzer.Dto []
-    abstract Analyze : analyzerName:string * input:string -> Choice<string, Error>
+    abstract Analyze : analyzerName:string * input:string -> Choice<string[], Error>
 
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
@@ -117,6 +118,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                                                   |> ignore
                                               | Choice2Of2(error) -> Log.errorMsg (error) |> ignore)
     
+    let getAnalyzer (analyzerName) = 
+        match store.TryGetValue(analyzerName) with
+        | true, (_, instance) -> ok <| instance
+        | _ -> fail <| AnalyzerNotFound(analyzerName)
+    
     do 
         // Add prebuilt analyzers
         let standardAnalyzer = new Analyzer.Dto(AnalyzerName = "standard")
@@ -143,18 +149,19 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                 | _ -> return! ok()
             }
         
-        member __.Analyze(analyzerName : string, input : string) = failwith "Not implemented yet"
         member __.GetAllAnalyzers() = store.Values.ToArray() |> Array.map fst
-        
-        member __.GetAnalyzer(analyzerName : string) = 
-            match store.TryGetValue(analyzerName) with
-            | true, (_, instance) -> ok <| instance
-            | _ -> fail <| AnalyzerNotFound(analyzerName)
+        member __.GetAnalyzer(analyzerName : string) = getAnalyzer (analyzerName)
         
         member __.GetAnalyzerInfo(analyzerName : string) = 
             match store.TryGetValue(analyzerName) with
             | true, (dto, _) -> ok <| dto
             | _ -> fail <| AnalyzerNotFound(analyzerName)
+        
+        member this.Analyze(analyzerName : string, input : string) = 
+            maybe { 
+                let! analyzer = getAnalyzer (analyzerName)
+                return parseTextUsingAnalyzer(analyzer, "", input).ToArray()         
+            }
 
 [<Sealed>]
 type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, ?testMode : bool) = 
@@ -418,7 +425,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 if document.TimeStamp > 0L then 
                     return! fail 
                             <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
-                else
+                else 
                     let! writer = indexService.IsIndexOnline <| document.IndexName
                     do! writer |> IndexWriter.addDocument document
                     return new CreateResponse(document.Id)
