@@ -53,10 +53,10 @@ type SeqValidatorTests() =
         { new DtoBase() with
               member this.Validate() = fail (InvalidPropertyName("test", "test")) }
     
-    member __.``Test will only succeed when all elements are valid.``() = 
+    member __.``Test will only succeed when all elements are valid``() = 
         let sut = [| implValid; implValid; implValid |]
         test <@ Validators.seqValidator sut = ok() @>
     
-    member __.``Test will fail for even a single invalid item in the seq.``() = 
+    member __.``Test will fail for even a single invalid item in the seq``() = 
         let sut = [| implValid; implValid; implInvaid |]
         test <@ Validators.seqValidator sut = fail (InvalidPropertyName("test", "test")) @>
