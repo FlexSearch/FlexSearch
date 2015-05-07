@@ -724,7 +724,7 @@ module Log =
     open System.Diagnostics
     
     let sourceName = "FlexSearch"
-    let logName = "FlexSearch"
+    let logName = "FlexSearch Events"
     let infomation = EventLogEntryType.Information
     let warning = EventLogEntryType.Warning
     let critical = EventLogEntryType.Error
@@ -741,9 +741,9 @@ module Log =
         with _ -> false
     
     let writeEntry (message, logLevel) = 
-        if noLoggerInitError then EventLog.WriteEntry(sourceName, message, logLevel)
+        if noLoggerInitError then EventLog.WriteEntry(logName, message, logLevel)
     
-    let writeEntryId (id, message, logLevel) = EventLog.WriteEntry(sourceName, message, logLevel, id)
+    let writeEntryId (id, message, logLevel) = EventLog.WriteEntry(logName, message, logLevel, id)
     let debug message = writeEntry (message, infomation)
     let debugEx (ex : Exception) = writeEntry (exceptionPrinter ex, infomation)
     let warn message = writeEntry (message, warning)
