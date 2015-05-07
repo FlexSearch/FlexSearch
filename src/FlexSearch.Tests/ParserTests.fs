@@ -51,6 +51,7 @@ type SearchParserTests() =
     [<InlineData("   f1           : 'v1'     ", 1)>]
     [<InlineData("        f1: 'v1',f2:'v2',f3 : 'v3'", 3)>]
     [<InlineData("f1 : 'v\\'1',f2 : 'v2'", 2)>]
+    [<InlineData("name:'X Fit Gym Ltd',address1_line1:'Friday Street',address1_line2:'',address1_line3:'',address1_city:'CHORLEY',address1_postalcode:'PR6 OAA',emailaddress1:'matt.grimshaw-xfitgymchorley@hotmail.co.uk'", 7)>]
     member __.``Search Profile QueryString should parse`` (sut : string, expected : int) = 
         match ParseQueryString(sut, false) with
         | Choice1Of2(result) -> <@ result.Count = expected @>
