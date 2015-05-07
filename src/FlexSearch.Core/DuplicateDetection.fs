@@ -332,8 +332,12 @@ type DuplicateDetectionReportRequest() =
                                >>= fun _ -> this.SourceFileName |> notBlank "SourceFileName"
 
 type Stats() = 
-    member val MatchedRecords = 0 with get, set
     member val TotalRecords = 0 with get, set
+    member val MatchedRecords = 0 with get, set
+    member val NoMatchRecords = 0 with get, set
+    member val OneMatchRecord = 0 with get, set
+    member val TwoMatchRecord = 0 with get, set
+    member val MoreThanTwoMatchRecord = 0 with get, set
 
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetectionreport")>]
@@ -378,7 +382,12 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         //Debug.WriteLine(sprintf "Query: %s" (query.ToString()))
         match searchService.Search(query, primaryRecord) with
         | Choice1Of2(results) -> 
-            if results.Meta.RecordsReturned > 0 then stats.MatchedRecords <- stats.MatchedRecords + 1
+            match results.Meta.RecordsReturned with
+            | 0 -> stats.NoMatchRecords <- stats.NoMatchRecords + 1
+            | 1 -> stats.OneMatchRecord <- stats.OneMatchRecord + 1
+            | 2 -> stats.TwoMatchRecord <- stats.TwoMatchRecord + 1
+            | x when x > 2 -> stats.MoreThanTwoMatchRecord <- stats.MoreThanTwoMatchRecord + 1
+            | _ -> ()
             let docs = results |> toFlatResults
             for doc in docs.Documents do
                 builder |> addElement (AddRecord(false, doc))
@@ -404,14 +413,21 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
         template <- template.Replace("{{IndexName}}", request.IndexName)
         template <- template.Replace("{{ProfileName}}", request.ProfileName)
-        template <- template.Replace("{{QueryString}}", escapeHtml("code",request.QueryString))
-        template <- template.Replace("{{TotalChecked}}", stats.TotalRecords.ToString())
-        template <- template.Replace("{{TotalDuplicates}}", stats.MatchedRecords.ToString())
+        template <- template.Replace("{{QueryString}}", escapeHtml ("code", request.QueryString))
+        template <- template.Replace("{{TotalRecords}}", stats.TotalRecords.ToString())
+        template <- template.Replace
+                        ("{{MatchedRecords}}", 
+                         (stats.MatchedRecords + stats.OneMatchRecord + stats.TwoMatchRecord + stats.MoreThanTwoMatchRecord)
+                             .ToString())
+        template <- template.Replace("{{NoMatchRecords}}", stats.NoMatchRecords.ToString())
+        template <- template.Replace("{{OneMatchRecord}}", stats.OneMatchRecord.ToString())
+        template <- template.Replace("{{TwoMatchRecord}}", stats.TwoMatchRecord.ToString())
+        template <- template.Replace("{{MoreThanTwoMatchRecord}}", stats.MoreThanTwoMatchRecord.ToString())
         template <- template.Replace("{{Results}}", builder.ToString())
         File.WriteAllText
             (Constants.WebFolder +/ "Reports" 
-             +/ (sprintf "%s_%s_%i.html" request.ProfileName 
-                     (Path.GetFileNameWithoutExtension(request.SourceFileName)) (GetCurrentTimeAsLong())), template)
+             +/ (sprintf "%s_%s_%i.html" request.ProfileName (Path.GetFileNameWithoutExtension(request.SourceFileName)) 
+                     (GetCurrentTimeAsLong())), template)
     
     let requestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
