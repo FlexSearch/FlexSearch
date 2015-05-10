@@ -415,7 +415,7 @@ module TransactionLog =
         member __.ReadLog(gen : int64) = 
             if File.Exists(path +/ gen.ToString()) then 
                 try 
-                    seq { 
+                    seq {
                         use fileStream = 
                             new FileStream(path +/ gen.ToString(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
                         while fileStream.Position <> fileStream.Length do
@@ -529,6 +529,20 @@ module ShardWriter =
             getCommitData generation.Value sw.ModifyIndex.Value
             |> sw.IndexWriter.SetCommitData
             |> sw.IndexWriter.Commit
+            !> "Deleting older commit files"
+            try
+                loopFiles(sw.TxLogPath) 
+                |> Seq.iter(fun filePath -> 
+                    let (success, gen) = Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
+                    // Delete files going back up to last 2 generations
+                    if success && (newGen - 2L) <= gen then
+                        File.Delete(filePath)
+                    else
+                        // File name does not follow our naming convention
+                        // so delete it as it should not be here anyhow.
+                        File.Delete(filePath)
+                )
+            with _ -> ()
 
         if forceCommit then
             internalCommit()
