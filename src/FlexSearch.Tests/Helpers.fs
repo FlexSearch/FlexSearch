@@ -103,6 +103,7 @@ module DataHelpers =
     let mockIndexSettings = 
         let index = new Index.Dto()
         index.IndexName <- "contact"
+        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Fields <- 
