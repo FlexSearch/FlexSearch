@@ -131,9 +131,14 @@ type DuplicateDetectionRequest() =
     member val ProfileName = defString with get, set
     override this.Validate() = ok()
 
+type RecordType =
+    | Main
+    | Result
+    | CutOff
+
 type FileWriterCommands = 
     | BeginTable of record : Dictionary<string, string>
-    | AddRecord of mainRecord : bool * record : Dictionary<string, string>
+    | AddRecord of recordType : RecordType * record : Dictionary<string, string>
     | EndTable
 
 [<Sealed>]
@@ -147,49 +152,51 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
         context.SaveChanges() |> ignore
         session
     
-    /// Compile the complete report
-    let generateReport (session : Session, req : DuplicateDetectionRequest) = 
-        let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
-        let body = File.ReadAllText(req.ReportName)
-        template <- template.Replace("{{IndexName}}", req.IndexName)
-        template <- template.Replace("{{ProfileName}}", req.ProfileName)
-        template <- template.Replace("{{StartRange}}", req.StartDate.ToString())
-        template <- template.Replace("{{EndRange}}", req.EndDate.ToString())
-        template <- template.Replace("{{TotalChecked}}", session.RecordsReturned.ToString())
-        template <- template.Replace("{{TotalDuplicates}}", "")
-        template <- template.Replace("{{Results}}", body)
-        File.WriteAllText(sprintf "%s.html" req.ReportName, template)
-        File.Delete(req.ReportName)
-    
+//    /// Compile the complete report
+//    let generateReport (session : Session, req : DuplicateDetectionRequest) = 
+//        let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
+//        let body = File.ReadAllText(req.ReportName)
+//        template <- template.Replace("{{IndexName}}", req.IndexName)
+//        template <- template.Replace("{{ProfileName}}", req.ProfileName)
+//        template <- template.Replace("{{StartRange}}", req.StartDate.ToString())
+//        template <- template.Replace("{{EndRange}}", req.EndDate.ToString())
+//        template <- template.Replace("{{TotalChecked}}", session.RecordsReturned.ToString())
+//        template <- template.Replace("{{TotalDuplicates}}", "")
+//        template <- template.Replace("{{Results}}", body)
+//        File.WriteAllText(sprintf "%s.html" req.ReportName, template)
+//        File.Delete(req.ReportName)
+//    
     let writeSessionEndInfo (req : DuplicateDetectionRequest, session : Session) = 
         use context = new DataContext(req.ConnectionString)
         context.SaveChanges() |> ignore
-        if req.GenerateReport then generateReport (session, req)
+//        if req.GenerateReport then generateReport (session, req)
     
-    let fileWriter = 
-        MailboxProcessor.Start(fun inbox -> 
-            let rec loop() = 
-                async { 
-                    let builder = new StringBuilder()
-                    let! (command : FileWriterCommands, filePath) = inbox.Receive()
-                    builder.Clear() |> ignore
-                    match command with
-                    | BeginTable(record) -> 
-                        builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
-                        for pair in record do
-                            builder.Append(sprintf "<th>%s</th>" pair.Key) |> ignore
-                        builder.Append("""</tr></thead><tbody>""") |> ignore
-                    | AddRecord(mainRecord, record) -> 
-                        if mainRecord then builder.Append("""<tr class="active">""") |> ignore
-                        else builder.Append("<tr>") |> ignore
-                        for pair in record do
-                            builder.Append(sprintf "<td>%s</td>" pair.Value) |> ignore
-                        builder.Append("</tr>") |> ignore
-                    | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
-                    File.AppendAllText(filePath, builder.ToString())
-                    return! loop()
-                }
-            loop())
+//    let fileWriter = 
+//        MailboxProcessor.Start(fun inbox -> 
+//            let rec loop() = 
+//                async { 
+//                    let builder = new StringBuilder()
+//                    let! (command : FileWriterCommands, filePath) = inbox.Receive()
+//                    builder.Clear() |> ignore
+//                    match command with
+//                    | BeginTable(record) -> 
+//                        builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
+//                        for pair in record do
+//                            builder.Append(sprintf "<th>%s</th>" pair.Key) |> ignore
+//                        builder.Append("""</tr></thead><tbody>""") |> ignore
+//                    | AddRecord(recordType, record) -> 
+//                        match recordType with
+//                        | N
+//                        if mainRecord then builder.Append("""<tr class="active">""") |> ignore
+//                        else builder.Append("<tr>") |> ignore
+//                        for pair in record do
+//                            builder.Append(sprintf "<td>%s</td>" pair.Value) |> ignore
+//                        builder.Append("</tr>") |> ignore
+//                    | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
+//                    File.AppendAllText(filePath, builder.ToString())
+//                    return! loop()
+//                }
+//            loop())
     
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
         let query = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
@@ -213,11 +220,6 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
                     let score = float result.[Constants.Score]
                     if result.[Constants.IdField] = header.PrimaryRecordId then 
                         header.Score <- score
-                        if req.GenerateReport then 
-                            // Write header record for the report
-                            record.[Constants.Score] <- score.ToString()
-                            fileWriter.Post(BeginTable record, req.ReportName)
-                            fileWriter.Post(AddRecord(true, record), req.ReportName)
                     else 
                         let score = 
                             if header.Score >= score then score / header.Score * 100.0
@@ -226,8 +228,6 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
                             (new LineItem(SecondaryRecordId = result.[Constants.IdField], 
                                           DisplayName = result.[session.DisplayFieldName], Score = score, 
                                           HeaderId = header.HeaderId)) |> ignore
-                        if req.GenerateReport then fileWriter.Post(AddRecord(false, result), req.ReportName)
-                if req.GenerateReport then fileWriter.Post(EndTable, req.ReportName)
                 context.SaveChanges() |> ignore
         | _ -> ()
     
@@ -326,6 +326,7 @@ type DuplicateDetectionReportRequest() =
     member val ProfileName = defString with get, set
     member val IndexName = defString with get, set
     member val QueryString = defString with get, set
+    member val CutOff = defDouble with get, set
     override this.Validate() = this.IndexName
                                |> notBlank "IndexName"
                                >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
@@ -356,9 +357,11 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             for pair in record do
                 builder.Append(escapeHtml ("th", pair.Key)) |> ignore
             builder.Append("""</tr></thead><tbody>""") |> ignore
-        | AddRecord(mainRecord, record) -> 
-            if mainRecord then builder.Append("""<tr class="active">""") |> ignore
-            else builder.Append("<tr>") |> ignore
+        | AddRecord(recordType, record) -> 
+            match recordType with
+            | Main -> builder.Append("""<tr class="active">""") |> ignore
+            | Result -> builder.Append("<tr>") |> ignore
+            | CutOff -> builder.Append("""<tr class="active">""") |> ignore
             for pair in record do
                 builder.Append(escapeHtml ("td", pair.Value)) |> ignore
             builder.Append("</tr>") |> ignore
@@ -374,12 +377,17 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         query.Columns <- headers
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
+
+        // Override the cutoff value if provided
+        if request.CutOff <> 0.0 then
+            query.OverrideProfileOptions <- true
+            query.CutOff <- request.CutOff
+
         let builder = new StringBuilder()
         // Write input row
         builder.Append(sprintf """<hr/><h4>Input Record: %i</h4>""" stats.TotalRecords) |> ignore
         builder |> addElement (BeginTable(primaryRecord))
-        builder |> addElement (AddRecord(true, primaryRecord))
-        //Debug.WriteLine(sprintf "Query: %s" (query.ToString()))
+        builder |> addElement (AddRecord(Main, primaryRecord))
         match searchService.Search(query, primaryRecord) with
         | Choice1Of2(results) -> 
             match results.Meta.RecordsReturned with
@@ -390,7 +398,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             | _ -> ()
             let docs = results |> toFlatResults
             for doc in docs.Documents do
-                builder |> addElement (AddRecord(false, doc))
+                builder |> addElement (AddRecord(Result, doc))
             builder |> addElement (EndTable)
         | Choice2Of2(error) -> 
             builder.Append(sprintf """%A""" error) |> ignore
@@ -414,6 +422,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         template <- template.Replace("{{IndexName}}", request.IndexName)
         template <- template.Replace("{{ProfileName}}", request.ProfileName)
         template <- template.Replace("{{QueryString}}", escapeHtml ("code", request.QueryString))
+        template <- template.Replace("{{CutOff}}", request.CutOff.ToString())
         template <- template.Replace("{{TotalRecords}}", stats.TotalRecords.ToString())
         template <- template.Replace
                         ("{{MatchedRecords}}", 
@@ -424,6 +433,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         template <- template.Replace("{{TwoMatchRecord}}", stats.TwoMatchRecord.ToString())
         template <- template.Replace("{{MoreThanTwoMatchRecord}}", stats.MoreThanTwoMatchRecord.ToString())
         template <- template.Replace("{{Results}}", builder.ToString())
+        
         File.WriteAllText
             (Constants.WebFolder +/ "Reports" 
              +/ (sprintf "%s_%s_%i.html" request.ProfileName (Path.GetFileNameWithoutExtension(request.SourceFileName)) 
