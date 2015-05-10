@@ -348,6 +348,15 @@ type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>
                 match writers.Settings.SearchProfiles.TryGetValue(search.SearchProfile) with
                 | true, p -> 
                     let (p', sq) = p
+                    // This is a search profile based query. So copy over essential
+                    // values from Search profile to query
+                    search.Columns <- sq.Columns
+                    search.DistinctBy <- sq.DistinctBy
+                    search.Skip <- sq.Skip
+                    search.OrderBy <- sq.OrderBy
+                    search.CutOff <- sq.CutOff
+                    search.Count <- sq.Count
+                    search.GlobalMissingValue <- sq.GlobalMissingValue
                     search.MissingValueConfiguration <- sq.MissingValueConfiguration
                     let! values = match inputValues with
                                   | Some(values) -> Choice1Of2(values)
