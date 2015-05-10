@@ -743,7 +743,8 @@ module Log =
     let writeEntry (message, logLevel) = 
         if noLoggerInitError then EventLog.WriteEntry(logName, message, logLevel)
     
-    let writeEntryId (id, message, logLevel) = EventLog.WriteEntry(logName, message, logLevel, id)
+    let writeEntryId (id, message, logLevel) = 
+        if noLoggerInitError then EventLog.WriteEntry(logName, message, logLevel, id)
     let debug message = writeEntry (message, infomation)
     let debugEx (ex : Exception) = writeEntry (exceptionPrinter ex, infomation)
     let warn message = writeEntry (message, warning)
