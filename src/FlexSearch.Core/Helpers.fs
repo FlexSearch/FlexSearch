@@ -537,5 +537,5 @@ type YamlFormatter() =
 module Debug = 
     open System.Diagnostics
     
-    /// Write debug output
-    let (!>) fmt = Printf.ksprintf Debug.WriteLine fmt
+    let inline (!>) msg = Printf.kprintf Debug.WriteLine msg
+    let inline fail msg = Printf.kprintf Debug.Fail msg
