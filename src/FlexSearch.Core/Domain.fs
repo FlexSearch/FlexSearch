@@ -971,13 +971,7 @@ module HighlightOption =
         /// Implements a default object which can be used to avoid null assignment
         static member Default = 
             let defaultValue = new Dto(Array.empty)
-            // VN : This approach is not applicable when deserializing an object that requires
-            // an instance of HighlightOption (i.e. SearchQuery). This is because the SearchQuery
-            // first uses the Default member to construct a HighlightOption (which is automatically
-            // frozen), then the deserializer tries to modify the HighlightOption (even if it uses
-            // the exact same values).
-            // Why not use the "new()" constructor?
-            //(defaultValue :> IFreezable).Freeze()
+            (defaultValue :> IFreezable).Freeze()
             defaultValue
 
 module SearchQuery = 
@@ -1048,6 +1042,10 @@ module SearchQuery =
         /// dynamic selection of search profile based on the incoming data.
         member val SearchProfileSelector = defString with get, set
         
+        /// Can be used to override the configuration saved in the search profile
+        /// with the one which is passed as the Search Query
+        member val OverrideProfileOptions = false with get, set
+                
         new() = Dto(defString, defString)
         override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
