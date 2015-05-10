@@ -101,6 +101,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     
     let GetDemoIndexInfo() = 
         let index = new Index.Dto(IndexName = indexName)
+        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Online <- true
         index.Fields <- [| new Field.Dto("countryname")
