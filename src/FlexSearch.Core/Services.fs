@@ -49,6 +49,7 @@ type IIndexService =
     abstract OpenIndex : indexName:string -> Choice<unit, Error>
     abstract CloseIndex : indexName:string -> Choice<unit, Error>
     abstract Commit : indexName:string -> Choice<unit, Error>
+    abstract ForceCommit : indexName:string -> Choice<unit, Error>
     abstract Refresh : indexName:string -> Choice<unit, Error>
     abstract GetRealtimeSearchers : indexName:string -> Choice<array<RealTimeSearcher>, Error>
     abstract GetRealtimeSearcher : indexName:string * int -> Choice<RealTimeSearcher, Error>
@@ -285,7 +286,9 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
             }
         
         member __.Commit(indexName : string) = maybe { let! writer = indexOnline indexName
-                                                       writer |> IndexWriter.commit }
+                                                       writer |> IndexWriter.commit false }
+        member __.ForceCommit(indexName : string) = maybe { let! writer = indexOnline indexName
+                                                       writer |> IndexWriter.commit true }
         member __.Refresh(indexName : string) = maybe { let! writer = indexOnline indexName
                                                         writer |> IndexWriter.refresh }
         member __.GetRealtimeSearcher(indexName : string, shardNo : int) = 
