@@ -248,7 +248,11 @@ module SearchDsl =
         let hits = totalDocs.ScoreDocs
         let recordsReturned = totalDocs.ScoreDocs.Count() - searchQuery.Skip
         let totalAvailable = totalDocs.TotalHits
-        
+        let cutOff =
+            match searchQuery.CutOff with
+            | 0.0 -> None
+            | cutOffValue -> Some(float32 <| cutOffValue, totalDocs.GetMaxScore())
+
         let highlighterOptions = 
             if notNull searchQuery.Highlights then 
                 match searchQuery.Highlights.HighlightedFields with
@@ -300,21 +304,39 @@ module SearchDsl =
                 resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
                 SearchResultComponents.StructuredResult(resultDoc)
         
+        let distinctByFilter (document : Document) =
+            match distinctBy with
+            | Some(field, hashSet) -> 
+                let distinctByValue = document.Get(indexWriter.GetSchemaName(field.FieldName))
+                if notNull distinctByValue && hashSet.Add(distinctByValue) then 
+                        Some(document)
+                else None
+            | None -> Some(document)
+        
+        let cutOffFilter (hit : ScoreDoc) (document : Document option) =
+            match cutOff with
+            | Some(cutOffValue, maxScore) ->
+                if (hit.Score/maxScore * 100.0f >= cutOffValue) then
+                    document
+                else
+                    None
+            | None -> document    
+
         // Start composing the seach results
         let results = 
             seq { 
                 for i = searchQuery.Skip to hits.Length - 1 do
                     let hit = hits.[i]
                     let document = indexSearchers.[hit.ShardIndex].IndexSearcher.Doc(hit.Doc)
-                    match distinctBy with
-                    | Some(field, hashSet) -> 
-                        let distinctByValue = document.Get(indexWriter.GetSchemaName(field.FieldName))
-                        if notNull distinctByValue then 
-                            if not <| hashSet.Contains(distinctByValue) then 
-                                // The field is not in the hasSet so it is a valid result
-                                hashSet.Add(distinctByValue) |> ignore
-                                yield processDocument (hit, document)
-                    | None -> yield processDocument (hit, document)
+                    let result =
+                        distinctByFilter document
+                        |> cutOffFilter hit
+                    
+                    match result with
+                    | Some(doc) -> 
+                        yield processDocument (hit, document)
+                    | None -> ()
+
                 // Dispose the searchers
                 for i in 0..indexSearchers.Length - 1 do
                     (indexSearchers.[i] :> IDisposable).Dispose()
