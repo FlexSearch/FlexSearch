@@ -49,3 +49,31 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 2 @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "2") @>
+
+    member __.``TxLog file is changed immediately after a commit``( index : Index.Dto, 
+                                                                    indexService : IIndexService, 
+                                                                    documentService : IDocumentService) = 
+        // Reduce max buffered docs count so that we can flush quicker
+        index.IndexConfiguration.MaxBufferedDocs <- 2
+        let random = new System.Random()
+        let commitCount = random.Next(5, 20)
+        let documentsPerCommit = random.Next(1, 10)
+         
+        test <@ succeeded <| indexService.AddIndex(index) @>
+        let writer = extract <| indexService.IsIndexOnline(index.IndexName)
+        
+        for i = 1 to commitCount do
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = (i - 1) * documentsPerCommit @>
+            let previousGen  = writer.ShardWriters.[0].Generation.Value
+            // Do a commit before hand so that we can see the tx file change
+            test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
+            // Commit should cause a flush
+            test <@ writer.ShardWriters.[0].OutstandingFlushes.Value = 1L @>
+            // New generation must be 1 higer than the last
+            test <@ writer.ShardWriters.[0].Generation.Value + 1L = previousGen @>
+            
+            for j = 1 to documentsPerCommit do 
+                test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+            let txFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
+            // Test if the TxLog file is present with the current generation
+            test <@ File.Exists(txFile) @>

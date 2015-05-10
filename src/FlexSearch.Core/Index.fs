@@ -29,6 +29,20 @@ open java.io
 open java.util
 open System.Diagnostics
 
+type AtomicLong(value: int64) = 
+    let refCell = ref value
+    member __.Value 
+        with get() = Interlocked.Read(refCell)
+        and set(value) = Interlocked.Exchange(refCell, value) |> ignore
+    /// Increments the ref cell and returns the incremented value
+    member __.Increment() = Interlocked.Increment(refCell)
+    /// Decrements the ref cell and returns the decremented value
+    member __.Decrement() = Interlocked.Decrement(refCell)    
+    /// Reset the ref cell to initial value
+    member __.Reset() = Interlocked.Exchange(refCell, value) |> ignore
+    static member Create() = new AtomicLong(0L)
+    static member Create(value) = new AtomicLong(value)
+
 type FieldsMeta = 
     { IdField : Field.T
       TimeStampField : Field.T
@@ -377,7 +391,7 @@ module TransactionLog =
         let mutable currentGen = gen
         let mutable fileStream = Unchecked.defaultof<_>
         let populateFS() = 
-            fileStream <- new FileStream(path +/ gen.ToString(), FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
+            fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
         
         let processor = 
             MailboxProcessor.Start(fun inbox -> 
@@ -457,27 +471,26 @@ module ShardWriter =
           /// Shows the status of the current Shard
           mutable Status : Status
           /// Represents the generation of commit
-          Generation : int64 ref
+          Generation : AtomicLong
           /// Represents the last commit time. This is used by the
           /// timebased commit to check if auto-commit should take
           /// place or not.
           mutable LastCommitTime : DateTime
           /// Represents the total outstanding flushes that have occured
           /// since the last commit
-          mutable OutstandingFlushes : int32 ref
+          mutable OutstandingFlushes : AtomicLong
           /// Represents the current modify index. This is used by for
           /// recovery and shard sync from transaction logs.
-          ModifyIndex : int64 ref
+          ModifyIndex : AtomicLong
           Settings : IndexConfiguration.Dto
           /// Transaction log path to be used
           TxLogPath : string
           ShardNo : int
           Lock : obj }
-        member this.GetNextIndex() = Interlocked.Increment(this.ModifyIndex)
-        member this.GetNextGen() = Interlocked.Increment(this.Generation)
-        member this.IncrementFlushCount() = Interlocked.Increment(this.OutstandingFlushes)
-        member this.ResetFlushCount() = 
-            lock this.Lock (fun _ -> this.OutstandingFlushes :=  0)
+        member this.GetNextIndex() = this.ModifyIndex.Increment()
+        member this.GetNextGen() = this.Generation.Increment()
+        member this.IncrementFlushCount() = this.OutstandingFlushes.Increment()
+        member this.ResetFlushCount() = this.OutstandingFlushes.Reset()
     
     /// Get the highest modified index value from the shard   
     let getMaxModifyIndex (r : IndexReader) = 
@@ -496,25 +509,33 @@ module ShardWriter =
     /// survive an OS or machine crash or power loss. Note that this does not wait for any running background 
     /// merges to finish. This may be a costly operation, so you should test the cost in your application and 
     /// do it only when really necessary.
-    let commit (sw : T) = 
-        Debug.WriteLine("Checking Commit Condition")
-        Debug.WriteLine("Generation: " + sw.Generation.Value.ToString())
-        Debug.WriteLine("Outstanding Flushes: " + sw.OutstandingFlushes.Value.ToString())
-        
-        if sw.IndexWriter.HasUncommittedChanges() then
-//           && ((DateTime.Now - sw.LastCommitTime).Seconds >= sw.CommitDuration 
-//               || sw.OutstandingFlushes >= sw.Settings.CommitEveryNFlushes) then 
+    let commit (forceCommit: bool) (sw : T) = 
+        !> "Checking Commit Condition"
+        !> "Generation: %i" sw.Generation.Value
+        !> "Outstanding Flushes: %i" sw.OutstandingFlushes.Value
+        !> "Force Commit: %b" forceCommit
+        let internalCommit() =
+            !> "Starting Commit"
             lock sw.Lock (fun _ -> sw.LastCommitTime <- DateTime.Now)
-            sw.ResetFlushCount()
+            sw.OutstandingFlushes.Reset()
+            !> "Outstanding Flushes: %i" sw.OutstandingFlushes.Value
             let generation = sw.Generation
             // Increment the generation before committing so that the 
             // newly added items go to the next log file
-            sw.GetNextGen() |> ignore
+            let newGen = sw.Generation.Increment()
+            !> "New Generation: %i" newGen
             // Set the new commit data
-            Debug.WriteLine("Performing Commit")
+            !> "Performing Commit"
             getCommitData generation.Value sw.ModifyIndex.Value
             |> sw.IndexWriter.SetCommitData
             |> sw.IndexWriter.Commit
+
+        if forceCommit then
+            internalCommit()
+        else if sw.IndexWriter.HasUncommittedChanges() 
+           && ((DateTime.Now - sw.LastCommitTime).Seconds >= sw.CommitDuration 
+               || sw.OutstandingFlushes.Value >= int64 sw.Settings.CommitEveryNFlushes) then 
+            internalCommit()
     
     /// Commits all changes to an index, waits for pending merges to complete, closes all 
     /// associated files and releases the write lock.
@@ -582,12 +603,12 @@ module ShardWriter =
             { IndexWriter = iw
               TrackingIndexWriter = trackingWriter
               SearcherManager = searcherManager
-              Generation = ref generation
+              Generation = AtomicLong.Create(generation)
               CommitDuration = settings.CommitTimeSeconds
               LastCommitTime = DateTime.Now
-              OutstandingFlushes = ref 0
+              OutstandingFlushes = AtomicLong.Create()
               Status = Opening
-              ModifyIndex = ref modifyIndex
+              ModifyIndex = AtomicLong.Create(modifyIndex)
               TxWriter = new TransactionLog.TxWriter(logPath, generation)
               Settings = settings
               TxLogPath = logPath
@@ -825,7 +846,7 @@ module IndexWriter =
     let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
     
     /// Commit unsaved data to the index
-    let commit (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit)
+    let commit (forceCommit: bool) (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
     
     let getRealTimeSearchers (s : T) = 
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
@@ -905,7 +926,7 @@ module IndexWriter =
         // Add the scheduler for the index
         // Commit Scheduler
         if settings.IndexConfiguration.AutoCommit then 
-            Async.Start(indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) commit)
+            Async.Start(indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) (commit false))
         // NRT Scheduler
         if settings.IndexConfiguration.AutoRefresh then 
             Async.Start(indexWriter |> scheduleIndexJob settings.IndexConfiguration.RefreshTimeMilliseconds refresh)
