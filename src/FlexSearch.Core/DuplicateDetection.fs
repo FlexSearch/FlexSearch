@@ -26,6 +26,7 @@ open System.Diagnostics
 open System.IO
 open System.Text
 open System.Threading.Tasks
+open System.Linq
 open System.Web.UI
 open System.Xml.Linq
 open Microsoft.VisualBasic.FileIO
@@ -390,13 +391,14 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         builder |> addElement (AddRecord(Main, primaryRecord))
         match searchService.Search(query, primaryRecord) with
         | Choice1Of2(results) -> 
-            match results.Meta.RecordsReturned with
+            let docs = results |> toFlatResults
+            match docs.Documents.Count() with
             | 0 -> stats.NoMatchRecords <- stats.NoMatchRecords + 1
             | 1 -> stats.OneMatchRecord <- stats.OneMatchRecord + 1
             | 2 -> stats.TwoMatchRecord <- stats.TwoMatchRecord + 1
             | x when x > 2 -> stats.MoreThanTwoMatchRecord <- stats.MoreThanTwoMatchRecord + 1
             | _ -> ()
-            let docs = results |> toFlatResults
+            
             for doc in docs.Documents do
                 builder |> addElement (AddRecord(Result, doc))
             builder |> addElement (EndTable)
