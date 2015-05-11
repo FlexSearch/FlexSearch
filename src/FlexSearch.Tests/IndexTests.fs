@@ -22,7 +22,7 @@ type TransactionWriterTests() =
         if File.Exists(DataHelpers.rootFolder +/ "0") then File.Delete(DataHelpers.rootFolder +/ "0")
         let writer = new TransactionLog.TxWriter(DataHelpers.rootFolder, 0L)
         let entries = Array.create 5 (getTransactionLogEntry())
-        entries |> Array.iter (fun entry -> writer.Append(snd entry, 10L))
+        entries |> Array.iter (fun entry -> writer.Append(snd entry, 0L))
         let txEntries = entries |> Array.map (fun entry -> fst entry)
         // TODO: Will have to find a cleaner way than using Thread.Sleep
         // Maybe convert from MailboxProcessor to ActionBlock
