@@ -136,9 +136,12 @@ type RecordType =
     | Main
     | Result
     | CutOff
+    | Pass of sno: int
+    | FailedMany of sno: int
+    | FailedZero of sno: int
 
 type FileWriterCommands = 
-    | BeginTable of record : Dictionary<string, string>
+    | BeginTable of aggrResultHeader : bool * record : Dictionary<string, string>
     | AddRecord of recordType : RecordType * record : Dictionary<string, string>
     | EndTable
 
@@ -353,8 +356,11 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
     
     let addElement (command : FileWriterCommands) (builder : StringBuilder) = 
         match command with
-        | BeginTable(record) -> 
-            builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
+        | BeginTable(aggrHeader, record) -> 
+            if aggrHeader then
+                builder.Append("""<table class="table table-bordered table-condensed"><thead><tr><th>SNo.</th><th>Status</th>""") |> ignore
+            else
+                builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
             for pair in record do
                 builder.Append(escapeHtml ("th", pair.Key)) |> ignore
             builder.Append("""</tr></thead><tbody>""") |> ignore
@@ -363,6 +369,9 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             | Main -> builder.Append("""<tr class="active">""") |> ignore
             | Result -> builder.Append("<tr>") |> ignore
             | CutOff -> builder.Append("""<tr class="active">""") |> ignore
+            | FailedZero(no) -> builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Zero</td>""" no) |> ignore
+            | FailedMany(no) -> builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Many</td>""" no) |> ignore
+            | Pass(no) -> builder.Append(sprintf """<tr class="success"><td>%i</td><td>Passed</td>""" no) |> ignore
             for pair in record do
                 builder.Append(escapeHtml ("td", pair.Value)) |> ignore
             builder.Append("</tr>") |> ignore
@@ -385,18 +394,27 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             query.CutOff <- request.CutOff
 
         let builder = new StringBuilder()
+        let aggrBuilder = new StringBuilder()
         // Write input row
         builder.Append(sprintf """<hr/><h4>Input Record: %i</h4>""" stats.TotalRecords) |> ignore
-        builder |> addElement (BeginTable(primaryRecord))
+        builder |> addElement (BeginTable(false, primaryRecord))
         builder |> addElement (AddRecord(Main, primaryRecord))
         match searchService.Search(query, primaryRecord) with
         | Choice1Of2(results) -> 
             let docs = results |> toFlatResults
             match docs.Documents.Count() with
-            | 0 -> stats.NoMatchRecords <- stats.NoMatchRecords + 1
-            | 1 -> stats.OneMatchRecord <- stats.OneMatchRecord + 1
-            | 2 -> stats.TwoMatchRecord <- stats.TwoMatchRecord + 1
-            | x when x > 2 -> stats.MoreThanTwoMatchRecord <- stats.MoreThanTwoMatchRecord + 1
+            | 0 -> 
+                stats.NoMatchRecords <- stats.NoMatchRecords + 1
+                aggrBuilder |> addElement(AddRecord(FailedZero(stats.TotalRecords), primaryRecord))    
+            | 1 -> 
+                stats.OneMatchRecord <- stats.OneMatchRecord + 1
+                aggrBuilder |> addElement(AddRecord(Pass(stats.TotalRecords), primaryRecord))
+            | 2 -> 
+                stats.TwoMatchRecord <- stats.TwoMatchRecord + 1
+                aggrBuilder |> addElement(AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
+            | x when x > 2 -> 
+                stats.MoreThanTwoMatchRecord <- stats.MoreThanTwoMatchRecord + 1
+                aggrBuilder |> addElement(AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
             | _ -> ()
             
             for doc in docs.Documents do
@@ -405,7 +423,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         | Choice2Of2(error) -> 
             builder.Append(sprintf """%A""" error) |> ignore
             builder |> addElement (EndTable)
-        builder.ToString()
+        (builder.ToString(), aggrBuilder.ToString())
     
     let generateReport (jobId, request : DuplicateDetectionReportRequest) = 
         //let (headers, records) = CsvHelpers.readCsv (request.SourceFileName, None)
@@ -416,10 +434,22 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         let headers = reader.ReadFields()
         let stats = new Stats()
         let builder = new StringBuilder()
+        let aggrBuilder = new StringBuilder()
+        let aggrHeader = 
+            let p = dict<string>()
+            headers |> Array.iteri (fun i header -> p.Add(header, ""))
+            p
+        aggrBuilder |> addElement(BeginTable(true, aggrHeader))
+
         while not reader.EndOfData do
             let record = reader.ReadFields()
             stats.TotalRecords <- stats.TotalRecords + 1
-            builder.AppendLine(performDedupe (record, headers, request, stats)) |> ignore
+            let (reportRes, aggrResult) = performDedupe (record, headers, request, stats)
+            builder.AppendLine(reportRes) |> ignore
+            aggrBuilder.AppendLine(aggrResult) |> ignore
+
+        aggrBuilder |> addElement(EndTable)
+
         let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
         template <- template.Replace("{{IndexName}}", request.IndexName)
         template <- template.Replace("{{ProfileName}}", request.ProfileName)
@@ -435,7 +465,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         template <- template.Replace("{{TwoMatchRecord}}", stats.TwoMatchRecord.ToString())
         template <- template.Replace("{{MoreThanTwoMatchRecord}}", stats.MoreThanTwoMatchRecord.ToString())
         template <- template.Replace("{{Results}}", builder.ToString())
-        
+        template <- template.Replace("{{AggregratedResults}}", aggrBuilder.ToString())
         File.WriteAllText
             (Constants.WebFolder +/ "Reports" 
              +/ (sprintf "%s_%s_%i.html" request.ProfileName (Path.GetFileNameWithoutExtension(request.SourceFileName)) 
