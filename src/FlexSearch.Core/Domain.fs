@@ -968,11 +968,6 @@ module HighlightOption =
         
         new() = Dto(Unchecked.defaultof<string []>)
         override __.Validate() = ok()
-        /// Implements a default object which can be used to avoid null assignment
-        static member Default = 
-            let defaultValue = new Dto(Array.empty)
-            (defaultValue :> IFreezable).Freeze()
-            defaultValue
 
 module SearchQuery = 
     /// Search query is used for searching over a FlexSearch index. This provides
@@ -996,7 +991,7 @@ module SearchQuery =
         member val Count = 10 with get, set
         
         /// AUTO
-        member val Highlights = HighlightOption.Dto.Default with get, set
+        member val Highlights = new HighlightOption.Dto(Array.empty) with get, set
         
         /// Name of the index
         member val IndexName = index with get, set
