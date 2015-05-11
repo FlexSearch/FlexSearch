@@ -421,7 +421,7 @@ module TransactionLog =
                         while fileStream.Position <> fileStream.Length do
                             yield msgPackSerializer.Unpack(fileStream)
                     }
-                with _ -> Seq.empty
+                with e -> errorEx e; Seq.empty
             else Seq.empty
         
         /// Append a new entry to TxLog        
@@ -853,6 +853,7 @@ module IndexWriter =
             let txEntry = TransactionLog.T.Create(txId, id)
             use stream = memoryManager.GetStream()
             TransactionLog.serializer (stream, txEntry)
+            s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
             s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
         }
     
@@ -899,7 +900,11 @@ module IndexWriter =
             shardWriter.Status <- ShardWriter.Status.Recovering
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
-            for entry in shardWriter.TxWriter.ReadLog(shardWriter.Generation.Value) do
+            let logEntries = 
+                shardWriter.TxWriter.ReadLog(shardWriter.Generation.Value) 
+                // TODO: Find a more memory efficient way of sorting the transaction log file
+                |> Seq.sortBy (fun l -> l.TransactionId)
+            for entry in logEntries do
                 match entry.Operation with
                 | TransactionLog.Operation.Create | TransactionLog.Operation.Update -> 
                     let doc = indexWriter.Template.Value |> DocumentTemplate.updateTempate entry.Document
@@ -913,7 +918,7 @@ module IndexWriter =
             // introduce blank commits in case there are no logs to replay.
             shardWriter |> ShardWriter.refresh
             shardWriter.Status <- ShardWriter.Status.Online
-        indexWriter.ShardWriters |> Array.Parallel.iter (fun shard -> replayShardTransaction (shard))
+        indexWriter.ShardWriters |> Array.Parallel.iter replayShardTransaction
     
     /// Create a new index instance
     let create (settings : IndexSetting.T) = 
