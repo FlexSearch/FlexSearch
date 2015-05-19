@@ -19,6 +19,8 @@ namespace FlexSearch.Core
 
 open EventSourceProxy.NuGet
 open FlexLucene.Analysis.Custom
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -561,8 +563,11 @@ module Log =
 /// Note : This is not meant to be used for huge files and should 
 /// be used for writing configuration files.
 [<Sealed>]
-type ThreadSafeFileWriter(formatter : FlexSearch.Core.IFormatter) = 
-    
+type ThreadSafeFileWriter() = 
+    let options = new JsonSerializerSettings()
+    do 
+        options.Converters.Add(new StringEnumConverter())
+
     let getPathWithExtension (path) = 
         if Path.GetExtension(path) <> Constants.SettingsFileExtension then path + Constants.SettingsFileExtension
         else path
@@ -578,8 +583,7 @@ type ThreadSafeFileWriter(formatter : FlexSearch.Core.IFormatter) =
         let path = getPathWithExtension (filePath)
         if File.Exists(path) then 
             try 
-                use stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                let response = formatter.DeSerialize<'T>(stream)
+                let response = JsonConvert.DeserializeObject(File.ReadAllText(path), options)
                 ok <| response
             with e -> fail <| FileReadError(filePath, exceptionPrinter e)
         else fail <| FileNotFound(filePath)
@@ -590,10 +594,7 @@ type ThreadSafeFileWriter(formatter : FlexSearch.Core.IFormatter) =
         Directory.CreateDirectory(Path.GetDirectoryName(path)) |> ignore
         try 
             mutex.WaitOne(-1) |> ignore
-            File.WriteAllText(path, formatter.SerializeToString(content))
-//            use file = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)
-//            let byteContent = System.Text.UTF8Encoding.UTF8.GetBytes(formatter.SerializeToString(content))
-//            file.Write(byteContent, 0, byteContent.Length)
+            File.WriteAllText(path, JsonConvert.SerializeObject(content, Formatting.Indented, options))
             mutex.ReleaseMutex()
             ok()
         with e -> 
