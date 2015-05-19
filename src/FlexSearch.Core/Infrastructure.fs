@@ -583,7 +583,7 @@ type ThreadSafeFileWriter() =
         let path = getPathWithExtension (filePath)
         if File.Exists(path) then 
             try 
-                let response = JsonConvert.DeserializeObject(File.ReadAllText(path), options)
+                let response = JsonConvert.DeserializeObject<'T>(File.ReadAllText(path), options)
                 ok <| response
             with e -> fail <| FileReadError(filePath, exceptionPrinter e)
         else fail <| FileNotFound(filePath)
