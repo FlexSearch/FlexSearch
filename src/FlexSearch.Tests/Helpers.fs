@@ -87,11 +87,11 @@ module DataHelpers =
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
     let container = Main.getContainer (ServerSettings.T.GetDefault(), true)
-
+    let serverSettings = container.Resolve<ServerSettings.T>()
+    let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
+        
     // Create a single instance of the OWIN server that will be shared across all tests
-    let owinServer = 
-        let serverSettings = container.Resolve<ServerSettings.T>()
-        let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
+    let owinServer() = 
         TestServer.Create(fun app -> 
                             let owinServer = 
                                 new OwinServer(generateRoutingTable handlerModules, serverSettings.HttpPort)
@@ -125,7 +125,7 @@ module DataHelpers =
         searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
         index.SearchProfiles <- [| searchProfileQuery |]
 
-        let client = new FlexClient(owinServer.HttpClient)
+        let client = new FlexClient(owinServer().HttpClient)
         client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
 
         index
@@ -135,7 +135,7 @@ module DataHelpers =
         let folder = ServerSettings.T.GetDefault().DataFolder + "/country"
         if Directory.Exists(folder) then Directory.Delete(folder, true)
         // Create the demo index
-        let client = new FlexClient(owinServer.HttpClient)
+        let client = new FlexClient(owinServer().HttpClient)
         client.SetupDemo().Result |> snd =? System.Net.HttpStatusCode.OK
 
     let demoIndexData = container.Resolve<DemoIndexService>().DemoData().Value 
@@ -145,15 +145,17 @@ module DataHelpers =
         let fixture = new Ploeh.AutoFixture.Fixture()
         // We override Auto fixture's string generation mechanism to return this string which will be
         // used as index name
-        fixture.Inject<string>(Guid.NewGuid().ToString("N")) |> ignore
-        fixture.Inject<Index.Dto>(getTestIndex()) |> ignore
+        fixture.Register<String>(fun _ -> Guid.NewGuid().ToString("N"))
+        fixture.Register<Index.Dto>(fun _ -> getTestIndex()) |> ignore
         fixture.Inject<IIndexService>(container.Resolve<IIndexService>()) |> ignore
         fixture.Inject<ISearchService>(container.Resolve<ISearchService>()) |> ignore
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
-        fixture.Inject<FlexClient>(new FlexClient(owinServer.HttpClient))
-        fixture.Inject<LoggingHandler>(new LoggingHandler(owinServer.Handler))
+        fixture.Register<FlexClient>(fun _ -> 
+            let server = owinServer()
+            fixture.Inject<LoggingHandler>(new LoggingHandler(server.Handler))
+            new FlexClient(server.HttpClient))
         fixture.Inject<Country list>(demoIndexData)
         fixture
      
