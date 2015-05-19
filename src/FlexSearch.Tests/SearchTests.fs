@@ -150,7 +150,7 @@ id,et1,t1,i1,s1
     
     member __.``Stored field cannot be searched``() = 
         let query = getQuery (index.IndexName, "s1 eq '1'")
-        test <@ searchService.Search(query) = Choice2Of2(StoredFieldCannotBeSearched("s1")) @>
+        test <@ searchService.Search(query) = fail (StoredFieldCannotBeSearched("s1")) @>
     
     member __.``Stored fields can be retrieved``() = 
         let result = 
@@ -293,14 +293,14 @@ id,et1,t2,i1,t1
             getQuery (index.IndexName, "t2:'hewitt'")
             |> withSearchProfile "profile1"
             |> searchService.Search
-        test <@ result = Choice2Of2(MissingFieldValue("t1")) @>
+        test <@ result = fail(MissingFieldValue("t1")) @>
     
     member __.``If no value for t2 is passed then the profile will throw error as the value is missing``() = 
         let result = 
             getQuery (index.IndexName, "t1:'jhon'")
             |> withSearchProfile "profile1"
             |> searchService.Search
-        test <@ result = Choice2Of2(MissingFieldValue("t2")) @>
+        test <@ result = fail(MissingFieldValue("t2")) @>
 
 type ``DistinctBy Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """

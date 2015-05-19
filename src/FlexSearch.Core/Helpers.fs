@@ -324,7 +324,7 @@ module DataType =
     let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
     
     /// Wraps a message in a Failure
-    let inline fail<'a, 'b> (msg : 'b) : Choice<'a, 'b> = Choice2Of2 msg
+    ///let inline fail<'a, 'b> (msg : 'b) : Choice<'a, 'b> = Choice2Of2 msg
     
     let (|InvariantEqual|_|) (str : string) arg = 
         if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some()
@@ -363,7 +363,7 @@ module DataType =
     let inline isBoolean (value : string) = 
         match Boolean.TryParse(value) with
         | true, a -> ok (a)
-        | _ -> fail()
+        | _ -> Choice2Of2()
     
     let inline pBool (failureDefault) (value : string) = 
         match Boolean.TryParse(value) with
@@ -538,4 +538,4 @@ module Debug =
     open System.Diagnostics
     
     let inline (!>) msg = Printf.kprintf Debug.WriteLine msg
-    let inline fail msg = Printf.kprintf Debug.Fail msg
+    //let inline fail msg = Printf.kprintf Debug.Fail msg

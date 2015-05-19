@@ -56,9 +56,9 @@ module Http =
         override __.Validate() = ok()
     
     type ResponseContext<'T> = 
-        | SomeResponse of responseBody : Choice<'T, Error> * successCode : HttpStatusCode * failureCode : HttpStatusCode
+        | SomeResponse of responseBody : Choice<'T, IMessage> * successCode : HttpStatusCode * failureCode : HttpStatusCode
         | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode
-        | FailureResponse of responseBody : Error * failureCode : HttpStatusCode
+        | FailureResponse of responseBody : IMessage * failureCode : HttpStatusCode
         | FailureOpMsgResponse of responseBody : OperationMessage * failureCode : HttpStatusCode
         | NoResponse
     
@@ -75,9 +75,9 @@ module Http =
               Error = Unchecked.defaultof<_> }
         
         /// Populate response with error part populated
-        static member WithError(error) = 
+        static member WithError(error : IMessage) = 
             { Data = Unchecked.defaultof<'T>
-              Error = error |> toMessage }
+              Error = error.OperationMessage() }
     
     let private Formatters = new ConcurrentDictionary<string, IFormatter>(StringComparer.OrdinalIgnoreCase)
     let protoFormatter = new ProtoBufferFormatter() :> IFormatter
@@ -176,11 +176,11 @@ module Http =
             let instance = Response<'U>.WithData(response)
             owinContext |> writeResponse successStatus instance
         
-        member __.SerializeFailure (response : Error) (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        member __.SerializeFailure (response : IMessage) (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
             let instance = Response<'U>.WithError(response)
             owinContext |> writeResponse failureStatus instance
         
-        member this.Serialize (response : Choice<'U, Error>) (successStatus : HttpStatusCode) 
+        member this.Serialize (response : Choice<'U, IMessage>) (successStatus : HttpStatusCode) 
                (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
             match response with
             | Choice1Of2(r) -> owinContext |> this.SerializeSuccess r successStatus

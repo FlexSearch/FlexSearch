@@ -25,7 +25,7 @@ open System.Net
 [<Name("GET-/ping")>]
 type PingHandler() = 
     inherit HttpHandlerBase<NoBody, unit>()
-    override __.Process(_,_) = SuccessResponse((), Ok)
+    override __.Process(_, _) = SuccessResponse((), Ok)
 
 /// Returns the homepage
 [<Name("GET-/")>]
@@ -44,8 +44,7 @@ type GetRootHandler() =
     override __.Process(request, _) = 
         request.OwinContext.Response.ContentType <- "text/html"
         request.OwinContext.Response.StatusCode <- 200
-        SuccessResponse (await (request.OwinContext.Response.WriteAsync htmlPage), HttpStatusCode.OK)
-
+        SuccessResponse(await (request.OwinContext.Response.WriteAsync htmlPage), HttpStatusCode.OK)
 
 ///  Get all indices
 [<Name("GET-/indices")>]
@@ -70,7 +69,7 @@ type PostIndexByIdHandler(indexService : IIndexService) =
         match indexService.AddIndex(body.Value) with
         | Choice1Of2(response) -> SuccessResponse(response, Created)
         | Choice2Of2(error) -> 
-            if error = IndexAlreadyExists(body.Value.IndexName) then FailureResponse(error, Conflict)
+            if error.OperationMessage().ErrorCode = "IndexAlreadyExists" then FailureResponse(error, Conflict)
             else FailureResponse(error, BadRequest)
 
 /// Delete an index
@@ -89,7 +88,6 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
 //        // Index name passed in URL takes precedence
 //        body.Value.IndexName <- request.ResId.Value
 //        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
-
 type IndexStatusResponse() = 
     member val Status = Unchecked.defaultof<IndexState> with get, set
 
@@ -126,13 +124,11 @@ type GetExistsHandler(indexService : IIndexService) =
         | true -> SuccessResponse(new IndexExistsResponse(Exists = true), Ok)
         | false -> FailureResponse(IndexNotFound(request.ResName), NotFound)
 
-
 // -------------------------- //
 // -------------------------- //
 // Analysis Handlers          //  
 // -------------------------- //
 // -------------------------- //
-
 /// <summary>
 ///  Get an analyzer by Id
 /// </summary>
@@ -169,7 +165,7 @@ type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) =
 [<Name("POST-/analyzers/:id/analyze")>]
 [<Sealed>]
 type AnalyzeTextHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<AnalysisRequest, string[]>()
+    inherit HttpHandlerBase<AnalysisRequest, string []>()
     override __.Process(request, body) = 
         SomeResponse(analyzerService.Analyze(request.ResId.Value, body.Value.Text), Ok, BadRequest)
 
@@ -201,14 +197,11 @@ type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
         body.Value.AnalyzerName <- request.ResId.Value
         SomeResponse(analyzerService.UpdateAnalyzer(body.Value), Ok, BadRequest)
 
-
 // -------------------------- //
 // -------------------------- //
 // Document Handlers          //  
 // -------------------------- //
 // -------------------------- //
-
-
 /// <summary>
 ///  Get top documents
 /// </summary>
@@ -226,7 +219,7 @@ type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 type GetDocumentsHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, SearchResults>()
     override __.Process(request, _) = 
-        let count = request.OwinContext |> intFromQueryString "count" 10 
+        let count = request.OwinContext |> intFromQueryString "count" 10
         SomeResponse(documentService.GetDocuments(request.ResId.Value, count), Ok, BadRequest)
 
 /// <summary>
@@ -245,7 +238,8 @@ type GetDocumentsHandler(documentService : IDocumentService) =
 [<Sealed>]
 type GetDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, Document.Dto>()
-    override __.Process(request, _) = SomeResponse(documentService.GetDocument(request.ResId.Value, request.SubResId.Value), Ok, NotFound)
+    override __.Process(request, _) = 
+        SomeResponse(documentService.GetDocument(request.ResId.Value, request.SubResId.Value), Ok, NotFound)
 
 /// <summary>
 ///  Create a new document
@@ -266,9 +260,9 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
     override __.Process(_, body) = 
         match documentService.AddDocument(body.Value) with
         | Choice1Of2(response) -> SuccessResponse(response, Created)
-        | Choice2Of2(Error.DocumentIdAlreadyExists(_) as error) -> FailureResponse(error, Conflict)
-        | Choice2Of2(error) -> FailureResponse(error, BadRequest)
-            
+        | Choice2Of2(error) -> 
+            if error.OperationMessage().ErrorCode = "DocumentIdAlreadyExists" then FailureResponse(error, Conflict)
+            else FailureResponse(error, BadRequest)
 
 /// <summary>
 ///  Delete a document
@@ -305,14 +299,11 @@ type PutDocumentByIdHandler(documentService : IDocumentService) =
     inherit HttpHandlerBase<Document.Dto, unit>()
     override __.Process(_, body) = SomeResponse(documentService.AddOrUpdateDocument(body.Value), Ok, BadRequest)
 
-
 // -------------------------- //
 // -------------------------- //
 // Demo & Job Handlers        //  
 // -------------------------- //
 // -------------------------- //
-
-
 /// <summary>
 ///  Sets up a demo index. The name of the index is `country`.
 /// </summary>
@@ -330,15 +321,13 @@ type SetupDemoHandler(service : DemoIndexService) =
 [<Sealed>]
 type GetJobByIdHandler(jobService : IJobService) = 
     inherit HttpHandlerBase<NoBody, Job>()
-        override __.Process(request, _) = SomeResponse(jobService.GetJob(request.ResId.Value), Ok, NotFound)
-
+    override __.Process(request, _) = SomeResponse(jobService.GetJob(request.ResId.Value), Ok, NotFound)
 
 // -------------------------- //
 // -------------------------- //
 // Search Handlers            //  
 // -------------------------- //
 // -------------------------- //
-
 /// <summary>
 ///  Search for documents
 /// </summary>
@@ -369,8 +358,8 @@ type GetSearchHandler(searchService : ISearchService) =
             | None -> new SearchQuery.Dto()
         query.QueryString <- request.OwinContext |> stringFromQueryString "q" query.QueryString
         query.Columns <- match request.OwinContext.Request.Query.Get("c") with
-                            | null -> query.Columns
-                            | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
+                         | null -> query.Columns
+                         | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
         query.Count <- request.OwinContext |> intFromQueryString "count" query.Count
         query.Skip <- request.OwinContext |> intFromQueryString "skip" query.Skip
         query.OrderBy <- request.OwinContext |> stringFromQueryString "orderby" query.OrderBy
@@ -379,10 +368,10 @@ type GetSearchHandler(searchService : ISearchService) =
         query.IndexName <- request.ResId.Value
         match searchService.Search(query) with
         | Choice1Of2(result) -> 
-            if query.ReturnFlatResult then
-                request.OwinContext.Response.Headers.Add("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
+            if query.ReturnFlatResult then 
+                request.OwinContext.Response.Headers.Add
+                    ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
                 request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
-                SuccessResponse(toFlatResults(result).Documents :> obj, Ok)
-            else
-                SuccessResponse(toSearchResults(result) :> obj, Ok)
+                SuccessResponse((toFlatResults result).Documents :> obj, Ok)
+            else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)

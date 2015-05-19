@@ -21,17 +21,17 @@ module IndexServiceTests =
         member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.OpenIndex(index.IndexName) = Choice2Of2(IndexIsAlreadyOnline(index.IndexName)) @>
+            test <@ indexService.OpenIndex(index.IndexName) = fail(IndexIsAlreadyOnline(index.IndexName)) @>
         
         member __.``It is not possible to close an closed index`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.CloseIndex(index.IndexName) = Choice2Of2(IndexIsAlreadyOffline(index.IndexName)) @>
+            test <@ indexService.CloseIndex(index.IndexName) = fail(IndexIsAlreadyOffline(index.IndexName)) @>
         
         member __.``Can not create the same index twice`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.AddIndex(index) = Choice2Of2(IndexAlreadyExists(index.IndexName)) @>
+            test <@ indexService.AddIndex(index) = fail(IndexAlreadyExists(index.IndexName)) @>
         
         member __.``Offline index can be made online`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- false
@@ -114,7 +114,7 @@ module DocumentServiceTests =
             let document = new Document.Dto(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             document.TimeStamp <- -1L
-            test <@ documentService.AddDocument(document) = Choice2Of2(DocumentIdAlreadyExists(index.IndexName, "1")) @>
+            test <@ documentService.AddDocument(document) = fail(DocumentIdAlreadyExists(index.IndexName, "1")) @>
         
         member __.``Cannot create a duplicate document with a timestamp of -1 even after cache is cleared`` (indexService : IIndexService, 
                                                                                                              documentService : IDocumentService, 
@@ -124,7 +124,7 @@ module DocumentServiceTests =
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             document.TimeStamp <- -1L
-            test <@ documentService.AddDocument(document) = Choice2Of2(DocumentIdAlreadyExists(index.IndexName, "1")) @>
+            test <@ documentService.AddDocument(document) = fail(DocumentIdAlreadyExists(index.IndexName, "1")) @>
         
         member __.``Cannot create a document with timestamp of 1`` (indexService : IIndexService, 
                                                                     documentService : IDocumentService, 
@@ -179,7 +179,7 @@ module DocumentServiceTests =
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document.Dto(index.IndexName, "1", TimeStamp = 1L)
             test 
-                <@ documentService.AddOrUpdateDocument(document) = Choice2Of2
+                <@ documentService.AddOrUpdateDocument(document) = fail
                                                                        (DocumentIdNotFound(index.IndexName, document.Id)) @>
         
         member __.``A newly created document should have version number greater than 1`` (indexService : IIndexService, 

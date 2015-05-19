@@ -899,7 +899,7 @@ module Field =
     
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
-               analyzerFactory : string -> Choice<Analyzer, Error>, scriptsManager : ScriptsManager) = 
+               analyzerFactory : string -> Choice<Analyzer, IMessage>, scriptsManager : ScriptsManager) = 
         let getSource (field : Dto) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok (None)
             else 
@@ -1256,7 +1256,7 @@ type AnalysisRequest() =
     member val Text = defString with get, set
     override this.Validate() = 
         if this.Text |> isBlank 
-        then Error.MissingFieldValue "Text" |> fail 
+        then MissingFieldValue "Text" |> fail 
         else ok()
 
 type CreateResponse(id : string) = 

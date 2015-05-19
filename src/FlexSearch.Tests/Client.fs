@@ -124,11 +124,11 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
     let mediaTypeFormatters = [ new JsonNetMediaTypeFormatter() :> MediaTypeFormatter ]
     let GenerateOperationMessage(input : string) = 
         assert (input.Contains(":"))
-        { DeveloperMessage = ""
-          UserMessage = input.Substring(input.IndexOf(":") + 1)
+        { Properties = Array.empty
+          Message = input.Substring(input.IndexOf(":") + 1)
           ErrorCode = input.Substring(0, input.IndexOf(":")) }
     let Append (key, value) (message : OperationMessage) = 
-        { message with DeveloperMessage = sprintf "%s; %s = '%s'" message.DeveloperMessage key value }
+        { message with Message = sprintf "%s; %s = '%s'" message.Message key value }
     let getName (typ : Type) =
         let att = Attribute.GetCustomAttribute(typ, typeof<NameAttribute>) :?> NameAttribute
         att.Name

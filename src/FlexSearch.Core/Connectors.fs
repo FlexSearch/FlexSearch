@@ -70,7 +70,7 @@ type CsvIndexingRequest() =
     
     override __.Validate() = 
         if __.HasHeaderRecord = false && (__.Headers |> Seq.isEmpty) then 
-            fail <| Error.MissingFieldValue("HasHeaderRecord, Headers")
+            fail <| MissingFieldValue("HasHeaderRecord, Headers")
         else ok()
 
 /// Connector for importing CSV file data into the system.
@@ -110,7 +110,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
             if body.HasHeaderRecord then reader.ReadFields()
             else body.Headers
         match headers with
-        | [||] -> fail <| Error.HeaderRowIsEmpty
+        | [||] -> fail <| HeaderRowIsEmpty
         | _ -> 
             while not reader.EndOfData do
                 try 
@@ -153,7 +153,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
         let pathValidation() = 
             if Directory.Exists(body.Path) then ok (body.Path, true)
             else if File.Exists(body.Path) then ok (body.Path, false)
-            else fail <| Error.PathDoesNotExist body.Path
+            else fail <| PathDoesNotExist body.Path
         
         let postBulkRequestMessage (path, isDirectory) = 
             let jobId = Guid.NewGuid()

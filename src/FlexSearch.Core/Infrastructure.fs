@@ -134,256 +134,249 @@ module DateTimeHelpers =
             |> Some
         | _ -> None
 
-type Error = 
-    // Generic Validation Errors
-    | GreaterThan of fieldName : string * lowerLimit : string * value : string
-    | LessThan of fieldName : string * upperLimit : string * value : string
-    | GreaterThanEqual of fieldName : string * lowerLimit : string * value : string
-    | LessThanEqual of fieldName : string * lowerLimit : string * value : string
-    | NotBlank of fieldName : string
-    | RegexMatch of fieldName : string * regexExpr : string
-    | KeyNotFound of key : string
-    // Analysis related 
-    | TokenizerNotFound of analyzerName : string * tokenizerName : string
-    | UnableToInitializeTokenizer of analyzerName : string * tokenizerName : string * message : string * exp : string
-    | FilterNotFound of analyzerName : string * filterName : string
-    | UnableToInitializeFilter of analyzerName : string * filterName : string * message : string * exp : string
-    | AnalyzerBuilder of analyzerName : string * message : string * exp : string
-    | AnalyzerNotFound of analyzerName : string
-    // Domain related
-    | InvalidPropertyName of fieldName : string * value : string
-    | AnalyzerIsMandatory of fieldName : string
-    | DuplicateFieldValue of groupName : string * fieldName : string
-    | ScriptNotFound of scriptName : string * fieldName : string
-    // Builder related errors
-    | ResourceNotFound of resourceName : string * resourceType : string
-    | UnSupportedSimilarity of similarityName : string
-    | UnSupportedIndexVersion of indexVersion : string
-    | UnsupportedDirectoryType of directoryType : string
-    | UnSupportedFieldType of fieldName : string * fieldType : string
-    | ScriptCannotBeCompiled of error : string
-    | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
-    // Search Realted
-    | QueryNotFound of queryName : string
-    | InvalidFieldName of fieldName : string
-    | StoredFieldCannotBeSearched of fieldName : string
-    | MissingFieldValue of fieldName : string
-    | UnknownMissingVauleOption of fieldName : string
-    | DataCannotBeParsed of fieldName : string * expectedDataType : string
-    | ExpectingNumericData of fieldName : string
-    | QueryOperatorFieldTypeNotSupported of fieldName : string
-    | QueryStringParsingError of error : string
-    | UnknownSearchProfile of indexName : string * profileName : string
-    | PurelyNegativeQueryNotSupported
-    // Indexing related errors
-    | IndexAlreadyExists of indexName : string
-    | IndexShouldBeOnline of indexName : string
-    | IndexIsAlreadyOnline of indexName : string
-    | IndexIsAlreadyOffline of indexName : string
-    | IndexInOpenState of indexName : string
-    | IndexInInvalidState of indexName : string
-    | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>
-    | IndexNotFound of indexName : string
-    | DocumentIdAlreadyExists of indexName : string * id : string
-    | DocumentIdNotFound of indexName : string * id : string
-    | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
-    // Modules related
-    | ModuleNotFound of moduleName : string * moduleType : string
-    | ModuleInitializationError of moduleName : string * moduleType : string * error : string
-    // Concurrent Dictionary
-    | UnableToUpdateMemory
-    // Http server related
-    | HttpUnableToParse of error : string
-    | HttpUnsupportedContentType
-    | HttpNoBodyDefined
-    | HttpNotSupported
-    | HttpUriIdNotSupplied
-    // Configuration related
-    | UnableToParseConfig of path : string * error : string
-    // File related error
-    | FileNotFound of filePath : string
-    | FileReadError of filePath : string * error : string
-    | FileWriteError of filePath : string * error : string
-    | PathDoesNotExist of path : string
-    | StoreUpdateError
-    // Generic error to be used by plugins
-    | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
-    // CSV file header does not exist or could not be generated
-    | HeaderRowIsEmpty
-    | JobNotFound of jobId : string
-    | NotImplemented
+//type Error = 
+//    // Generic Validation Errors
+//    | GreaterThan of fieldName : string * lowerLimit : string * value : string
+//    | LessThan of fieldName : string * upperLimit : string * value : string
+//    | GreaterThanEqual of fieldName : string * lowerLimit : string * value : string
+//    | LessThanEqual of fieldName : string * lowerLimit : string * value : string
+//    | NotBlank of fieldName : string
+//    | RegexMatch of fieldName : string * regexExpr : string
+//    | KeyNotFound of key : string
+//    // Analysis related 
+//    | TokenizerNotFound of analyzerName : string * tokenizerName : string
+//    | UnableToInitializeTokenizer of analyzerName : string * tokenizerName : string * message : string * exp : string
+//    | FilterNotFound of analyzerName : string * filterName : string
+//    | UnableToInitializeFilter of analyzerName : string * filterName : string * message : string * exp : string
+//    | AnalyzerBuilder of analyzerName : string * message : string * exp : string
+//    | AnalyzerNotFound of analyzerName : string
+//    // Domain related
+//    | InvalidPropertyName of fieldName : string * value : string
+//    | AnalyzerIsMandatory of fieldName : string
+//    | DuplicateFieldValue of groupName : string * fieldName : string
+//    | ScriptNotFound of scriptName : string * fieldName : string
+//    // Builder related errors
+//    | ResourceNotFound of resourceName : string * resourceType : string
+//    | UnSupportedSimilarity of similarityName : string
+//    | UnSupportedIndexVersion of indexVersion : string
+//    | UnsupportedDirectoryType of directoryType : string
+//    | UnSupportedFieldType of fieldName : string * fieldType : string
+//    | ScriptCannotBeCompiled of error : string
+//    | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
+//    // Search Realted
+//    | QueryNotFound of queryName : string
+//    | InvalidFieldName of fieldName : string
+//    | StoredFieldCannotBeSearched of fieldName : string
+//    | MissingFieldValue of fieldName : string
+//    | UnknownMissingVauleOption of fieldName : string
+//    | DataCannotBeParsed of fieldName : string * expectedDataType : string
+//    | ExpectingNumericData of fieldName : string
+//    | QueryOperatorFieldTypeNotSupported of fieldName : string
+//    | QueryStringParsingError of error : string
+//    | UnknownSearchProfile of indexName : string * profileName : string
+//    | PurelyNegativeQueryNotSupported
+//    // Indexing related errors
+//    | IndexAlreadyExists of indexName : string
+//    | IndexShouldBeOnline of indexName : string
+//    | IndexIsAlreadyOnline of indexName : string
+//    | IndexIsAlreadyOffline of indexName : string
+//    | IndexInOpenState of indexName : string
+//    | IndexInInvalidState of indexName : string
+//    | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>
+//    | IndexNotFound of indexName : string
+//    | DocumentIdAlreadyExists of indexName : string * id : string
+//    | DocumentIdNotFound of indexName : string * id : string
+//    | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
+//    // Modules related
+//    | ModuleNotFound of moduleName : string * moduleType : string
+//    | ModuleInitializationError of moduleName : string * moduleType : string * error : string
+//    // Concurrent Dictionary
+//    | UnableToUpdateMemory
+//    // Http server related
+//    | HttpUnableToParse of error : string
+//    | HttpUnsupportedContentType
+//    | HttpNoBodyDefined
+//    | HttpNotSupported
+//    | HttpUriIdNotSupplied
+//    // Configuration related
+//    | UnableToParseConfig of path : string * error : string
+//    // File related error
+//    | FileNotFound of filePath : string
+//    | FileReadError of filePath : string * error : string
+//    | FileWriteError of filePath : string * error : string
+//    | PathDoesNotExist of path : string
+//    | StoreUpdateError
+//    // Generic error to be used by plugins
+//    | GenericError of userMessage : string * data : ResizeArray<KeyValuePair<string, string>>
+//    // CSV file header does not exist or could not be generated
+//    | HeaderRowIsEmpty
+//    | JobNotFound of jobId : string
+//    | NotImplemented
 
-exception ValidationException of Error
 
-[<CLIMutableAttribute>]
-type OperationMessage = 
-    { DeveloperMessage : string
-      UserMessage : string
-      ErrorCode : string }
-
-[<AutoOpen>]
-module Errors = 
-    let inline toMessage (error : Error) = 
-        let msg err usrMsg devMsg = 
-            { UserMessage = usrMsg
-              DeveloperMessage = devMsg
-              ErrorCode = err }
-        match error with
-        // Generic Validation Errors
-        | GreaterThan(fn, ll, v) -> 
-            msg "GREATER_THAN" "Greater than" <| sprintf "Field '%s' must be greater than %s, but found %s" fn ll v
-        | LessThan(fn, ul, v) -> 
-            msg "LESS_THAN" "Less than" <| sprintf "Field '%s' must be less than %s, but found %s" fn ul v
-        | GreaterThanEqual(fn, ll, v) -> 
-            msg "GREATER_OR_EQUAL" "Greater than or equal" 
-            <| sprintf "Field '%s' must be greater than or equal to %s, but found %s" fn ll v
-        | LessThanEqual(fn, ul, v) -> 
-            msg "LESS_OR_EQUAL" "Less than or equal" 
-            <| sprintf "Field '%s' must be less than or equal to %s, but found %s" fn ul v
-        | NotBlank(fn) -> msg "NOT_BLANK" "Not blank" <| sprintf "Field '%s' must not be blank" fn
-        | RegexMatch(fn, re) -> 
-            msg "REGEX_MATCH" "Regex match" <| sprintf "Field '%s' must match Regex expression: %s" fn re
-        | KeyNotFound(key) -> msg "KEY_NOT_FOUND" "Key not found" <| sprintf "Key not found: %s" key
-        // Domain related
-        | InvalidPropertyName(fn, v) -> 
-            msg "INVALID_PROPERTY_NAME" "Invalid property name" 
-            <| sprintf "Property name is invalid. Expected '%s' but found '%s'" fn v
-        | AnalyzerIsMandatory(fn) -> 
-            msg "ANALYZER_IS_MANDATORY" "Analyzer is mandatory" <| sprintf "Analyzer is mandatory for field '%s'" fn
-        | DuplicateFieldValue(gn, fn) -> 
-            msg "DUPLICATE_FIELD_VALUE" "Duplicate field value" 
-            <| sprintf "A duplicate entry (%s) has been found in the group '%s'" fn gn
-        | ScriptNotFound(sn, fn) -> 
-            msg "SCRIPT_NOT_FOUND" "Script not found" 
-            <| sprintf "The script '%s' was not found against the field '%s'" sn fn
-        // Analysis related 
-        | TokenizerNotFound(an, tn) -> 
-            msg "TOKENIZER_NOT_FOUND" "Tokenizer not found" 
-            <| sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
-        | UnableToInitializeTokenizer(an, tn, m, exp) -> 
-            msg "UNABLE_TO_INITIALIZE_TOKENIZER" "Unable to initialize tokenizer" 
-            <| sprintf "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" 
-                   tn an m exp
-        | FilterNotFound(an, fn) -> 
-            msg "FILTER_NOT_FOUND" "Filter not found" 
-            <| sprintf "Filter with the name %s does not exist. Analyzer Name: %s" fn an
-        | UnableToInitializeFilter(an, fn, m, exp) -> 
-            msg "UNABLE_TO_INITIALIZE_FILTER" "Unable to initialize filter" 
-            <| sprintf "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" fn 
-                   an m exp
-        // Builder related errors
-        | AnalyzerBuilder(an, m, e) -> 
-            msg "ANALYZER_BUILDER" "Analyzer builder error" 
-            <| sprintf "The analyzer '%s' threw an exception while building: %s; \n%s" an m e
-        | AnalyzerNotFound(a) -> 
-            msg "ANALYZER_NOT_FOUND" "Analyzer not found" <| sprintf "The analyzer '%s' was not found" a
-        | ResourceNotFound(rn, rt) -> 
-            msg "RESOURCE_NOT_FOUND" "Resource not found" <| sprintf "The resource '%s' of type %s was not found" rn rt
-        | UnSupportedSimilarity(s) -> 
-            msg "UNSUPPORTED_SIMILARITY" "Unsupported similarity" <| sprintf "Unsupported similarity: %s" s
-        | UnSupportedIndexVersion(i) -> 
-            msg "UNSUPPORTED_INDEX_VERSION" "Unsupported index version" <| sprintf "Unsupported index version: %s" i
-        | UnsupportedDirectoryType(d) -> 
-            msg "UNSUPPORTED_DIRECTORY_TYPE" "Unsupported directory type" <| sprintf "Unsupported directory type: %s" d
-        | UnSupportedFieldType(fn, ft) -> 
-            msg "UNSUPPORTED_FIELD_TYPE" "Unsupported field type" 
-            <| sprintf "Unsupported field type '%s' for field '%s'" fn ft
-        | ScriptCannotBeCompiled(e) -> 
-            msg "SCRIPT_CANNOT_BE_COMPILED" "Script cannot be compiled" <| sprintf "Script cannot be compiled: \n%s" e
-        | AnalyzerNotSupportedForFieldType(f, a) -> 
-            msg "ANALYZER_NOT_SUPPORTED" "Analyzer not supported for field" 
-            <| sprintf "Analyzer '%s' not supported for field '%s'" f a
-        // Search Realted
-        | QueryNotFound(q) -> msg "QUERY_NOT_FOUND" "Query not found" <| sprintf "Query not found: %s" q
-        | InvalidFieldName(f) -> msg "INVALID_FIELD_NAME" "Invalid field name" <| sprintf "Invalid field name: %s" f
-        | StoredFieldCannotBeSearched(f) -> 
-            msg "STORED_FIELD_CANNOT_BE_SEARCHED" "Stored field cannot be searched" 
-            <| sprintf "Stored field cannot be searched: %s" f
-        | MissingFieldValue(f) -> msg "MISSING_FIELD_VALUE" "Missing field value" <| sprintf "Missing field value: %s" f
-        | UnknownMissingVauleOption(f) -> 
-            msg "UNKNOWN_MISSING_VALUE_OPTION" "Unknown missing value option" 
-            <| sprintf "Unknown missing field value option: %s" f
-        | DataCannotBeParsed(f, e) -> 
-            msg "DATA_CANNOT_BE_PARSED" "Data cannot be parsed" 
-            <| sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
-        | ExpectingNumericData(f) -> 
-            msg "EXPECTING_NUMERIC_DATA" "Expecting numeric data" <| sprintf "Expecting numeric data: %s" f
-        | QueryOperatorFieldTypeNotSupported(f) -> 
-            msg "QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED" "Query operator field type not supported" 
-            <| sprintf "Query operator field type not supported for field '%s'" f
-        | QueryStringParsingError(e) -> 
-            msg "QUERY_STRING_PARSING_ERROR" "Query string parsing error" 
-            <| sprintf "Query string parsing error: \n%s" e
-        | UnknownSearchProfile(i, p) -> 
-            msg "UNKNOWN_SEARCH_PROFILE" "Unknown search profile" 
-            <| sprintf "Unknown search profile '%s' for index '%s'" p i
-        | PurelyNegativeQueryNotSupported -> 
-            msg "NEGATIVE_QUERY_NOT_SUPPORTED" "Purely negative queries (not top query) not supported" ""
-        // Indexing related errors
-        | IndexAlreadyExists(i) -> 
-            msg "INDEX_ALREADY_EXISTS" "Index already exists" <| sprintf "Index '%s' already exists" i
-        | IndexShouldBeOnline(i) -> 
-            msg "INDEX_SHOULD_BE_ONLINE" "Index should be online" <| sprintf "Index '%s' should be online" i
-        | IndexIsAlreadyOnline(i) -> 
-            msg "INDEX_IS_ALREADY_ONLINE" "Index is already online" <| sprintf "Index '%s' is already online" i
-        | IndexIsAlreadyOffline(i) -> 
-            msg "INDEX_IS_ALREADY_OFFLINE" "Index is already offline" <| sprintf "Index '%s' is already offline" i
-        | IndexInOpenState(i) -> 
-            msg "INDEX_IN_OPEN_STATE" "Index is in an open state" <| sprintf "Index '%s' is in an open state" i
-        | IndexInInvalidState(i) -> 
-            msg "INDEX_IN_INVALID_STATE" "Index is in an invalid state" <| sprintf "Index '%s' is in an invalid state" i
-        | ErrorOpeningIndexWriter(ip, e, d) -> 
-            msg "ERROR_OPENING_INDEX_WRITER" "Error opening index writer" 
-            <| sprintf "Error opening index writer at path '%s': \nException: %s\n%A" ip e d
-        | IndexNotFound(i) -> msg "INDEX_NOT_FOUND" "Index not found" <| sprintf "Index '%s' was not found" i
-        | DocumentIdAlreadyExists(idx, id) -> 
-            msg "DOCUMENT_ID_ALREADY_EXISTS" "Document ID already exists" 
-            <| sprintf "Document ID '%s' already exists for index '%s'" id idx
-        | DocumentIdNotFound(idx, id) -> 
-            msg "DOCUMENT_ID_NOT_FOUND" "Document ID not found" 
-            <| sprintf "Document ID '%s' not found on index '%s'" id idx
-        | IndexingVersionConflict(idx, id, v) -> 
-            msg "INDEXING_VERSION_CONFLICT" "Indexing version conflict" 
-            <| sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
-                   v
-        // Modules related
-        | ModuleNotFound(mn, mt) -> 
-            msg "MODULE_NOT_FOUND" "Module not found" <| sprintf "Module '%s' of type '%s' was not found" mn mt
-        | ModuleInitializationError(mn, mt, e) -> 
-            msg "MODULE_INITIALIZATION_ERROR" "Module initialization error" 
-            <| sprintf "An error occurred while initializing the module '%s' of type '%s': \n%s" mn mt e
-        // Concurrent Dictionary
-        | UnableToUpdateMemory -> msg "UNABLE_TO_UPDATE_MEMORY" "Unable to update memory" ""
-        // Http server related
-        | HttpUnableToParse(e) -> 
-            msg "HTTP_UNABLE_TO_PARSE" "Unable to parse HTTP message" 
-            <| sprintf "Unable to deserialize the HTTP body: \n%s" e
-        | HttpUnsupportedContentType -> 
-            msg "HTTP_UNSUPPORTED_CONTENT_TYPE" "Unsupported content type for the HTTP message" ""
-        | HttpNoBodyDefined -> msg "HTTP_NO_BODY_DEFINED" "No body defined for the HTTP message" ""
-        | HttpNotSupported -> msg "HTTP_NOT_SUPPORTED" "" ""
-        | HttpUriIdNotSupplied -> msg "HTTP_URI_ID_NOT_SUPPLIED" "" ""
-        // Configuration related
-        | UnableToParseConfig(p, e) -> 
-            msg "UNABLE_TO_PARSE_CONFIG" "Unable to parse configuration file" 
-            <| sprintf "Unable to parse configuration file from address '%s': \n%s" p e
-        // File related error
-        | FileNotFound(p) -> msg "FILE_NOT_FOUND" "File not found" <| sprintf "File not found at address: %s" p
-        | FileReadError(f, e) -> 
-            msg "FILE_READ_ERROR" "File read error" 
-            <| sprintf "There was an error reading the file at path '%s': \n%s" f e
-        | FileWriteError(f, e) -> 
-            msg "FILE_WRITE_ERROR" "File write error" 
-            <| sprintf "There was an error writing to the file at path '%s': \n%s" f e
-        | PathDoesNotExist(p) -> msg "PATH_DOES_NOT_EXIST" "Path does not exist" <| sprintf "Path does not exist: %s" p
-        | StoreUpdateError -> msg "STORE_UPDATE_ERROR" "" ""
-        // Generic error to be used by plugins
-        | GenericError(u, d) -> 
-            msg "GENERIC_ERROR" "Generic error in plugin" <| sprintf "Generic error in plugin: %s \nData: %A" u d
-        // CSV file header does not exist or could not be generated
-        | HeaderRowIsEmpty -> msg "HEADER_ROW_IS_EMPTY" "" ""
-        | JobNotFound(j) -> msg "JOB_ID_NOT_FOUND" "Job ID not found" <| sprintf "Job ID '%s' not found" j
-        | NotImplemented -> msg "NOT_IMPLEMENTED" "Feature not implemented" ""
+//[<AutoOpen>]
+//module Errors = 
+//    let inline toMessage (error : Error) = 
+//        let msg err usrMsg devMsg = 
+//            { UserMessage = usrMsg
+//              DeveloperMessage = devMsg
+//              ErrorCode = err }
+//        match error with
+//        // Generic Validation Errors
+//        | GreaterThan(fn, ll, v) -> 
+//            msg "GREATER_THAN" "Greater than" <| sprintf "Field '%s' must be greater than %s, but found %s" fn ll v
+//        | LessThan(fn, ul, v) -> 
+//            msg "LESS_THAN" "Less than" <| sprintf "Field '%s' must be less than %s, but found %s" fn ul v
+//        | GreaterThanEqual(fn, ll, v) -> 
+//            msg "GREATER_OR_EQUAL" "Greater than or equal" 
+//            <| sprintf "Field '%s' must be greater than or equal to %s, but found %s" fn ll v
+//        | LessThanEqual(fn, ul, v) -> 
+//            msg "LESS_OR_EQUAL" "Less than or equal" 
+//            <| sprintf "Field '%s' must be less than or equal to %s, but found %s" fn ul v
+//        | NotBlank(fn) -> msg "NOT_BLANK" "Not blank" <| sprintf "Field '%s' must not be blank" fn
+//        | RegexMatch(fn, re) -> 
+//            msg "REGEX_MATCH" "Regex match" <| sprintf "Field '%s' must match Regex expression: %s" fn re
+//        | KeyNotFound(key) -> msg "KEY_NOT_FOUND" "Key not found" <| sprintf "Key not found: %s" key
+//        // Domain related
+//        | InvalidPropertyName(fn, v) -> 
+//            msg "INVALID_PROPERTY_NAME" "Invalid property name" 
+//            <| sprintf "Property name is invalid. Expected '%s' but found '%s'" fn v
+//        | AnalyzerIsMandatory(fn) -> 
+//            msg "ANALYZER_IS_MANDATORY" "Analyzer is mandatory" <| sprintf "Analyzer is mandatory for field '%s'" fn
+//        | DuplicateFieldValue(gn, fn) -> 
+//            msg "DUPLICATE_FIELD_VALUE" "Duplicate field value" 
+//            <| sprintf "A duplicate entry (%s) has been found in the group '%s'" fn gn
+//        | ScriptNotFound(sn, fn) -> 
+//            msg "SCRIPT_NOT_FOUND" "Script not found" 
+//            <| sprintf "The script '%s' was not found against the field '%s'" sn fn
+//        // Analysis related 
+//        | TokenizerNotFound(an, tn) -> 
+//            msg "TOKENIZER_NOT_FOUND" "Tokenizer not found" 
+//            <| sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
+//        | UnableToInitializeTokenizer(an, tn, m, exp) -> 
+//            msg "UNABLE_TO_INITIALIZE_TOKENIZER" "Unable to initialize tokenizer" 
+//            <| sprintf "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" 
+//                   tn an m exp
+//        | FilterNotFound(an, fn) -> 
+//            msg "FILTER_NOT_FOUND" "Filter not found" 
+//            <| sprintf "Filter with the name %s does not exist. Analyzer Name: %s" fn an
+//        | UnableToInitializeFilter(an, fn, m, exp) -> 
+//            msg "UNABLE_TO_INITIALIZE_FILTER" "Unable to initialize filter" 
+//            <| sprintf "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" fn 
+//                   an m exp
+//        // Builder related errors
+//        | AnalyzerBuilder(an, m, e) -> 
+//            msg "ANALYZER_BUILDER" "Analyzer builder error" 
+//            <| sprintf "The analyzer '%s' threw an exception while building: %s; \n%s" an m e
+//        | AnalyzerNotFound(a) -> 
+//            msg "ANALYZER_NOT_FOUND" "Analyzer not found" <| sprintf "The analyzer '%s' was not found" a
+//        | ResourceNotFound(rn, rt) -> 
+//            msg "RESOURCE_NOT_FOUND" "Resource not found" <| sprintf "The resource '%s' of type %s was not found" rn rt
+//        | UnSupportedSimilarity(s) -> 
+//            msg "UNSUPPORTED_SIMILARITY" "Unsupported similarity" <| sprintf "Unsupported similarity: %s" s
+//        | UnSupportedIndexVersion(i) -> 
+//            msg "UNSUPPORTED_INDEX_VERSION" "Unsupported index version" <| sprintf "Unsupported index version: %s" i
+//        | UnsupportedDirectoryType(d) -> 
+//            msg "UNSUPPORTED_DIRECTORY_TYPE" "Unsupported directory type" <| sprintf "Unsupported directory type: %s" d
+//        | UnSupportedFieldType(fn, ft) -> 
+//            msg "UNSUPPORTED_FIELD_TYPE" "Unsupported field type" 
+//            <| sprintf "Unsupported field type '%s' for field '%s'" fn ft
+//        | ScriptCannotBeCompiled(e) -> 
+//            msg "SCRIPT_CANNOT_BE_COMPILED" "Script cannot be compiled" <| sprintf "Script cannot be compiled: \n%s" e
+//        | AnalyzerNotSupportedForFieldType(f, a) -> 
+//            msg "ANALYZER_NOT_SUPPORTED" "Analyzer not supported for field" 
+//            <| sprintf "Analyzer '%s' not supported for field '%s'" f a
+//        // Search Realted
+//        | QueryNotFound(q) -> msg "QUERY_NOT_FOUND" "Query not found" <| sprintf "Query not found: %s" q
+//        | InvalidFieldName(f) -> msg "INVALID_FIELD_NAME" "Invalid field name" <| sprintf "Invalid field name: %s" f
+//        | StoredFieldCannotBeSearched(f) -> 
+//            msg "STORED_FIELD_CANNOT_BE_SEARCHED" "Stored field cannot be searched" 
+//            <| sprintf "Stored field cannot be searched: %s" f
+//        | MissingFieldValue(f) -> msg "MISSING_FIELD_VALUE" "Missing field value" <| sprintf "Missing field value: %s" f
+//        | UnknownMissingVauleOption(f) -> 
+//            msg "UNKNOWN_MISSING_VALUE_OPTION" "Unknown missing value option" 
+//            <| sprintf "Unknown missing field value option: %s" f
+//        | DataCannotBeParsed(f, e) -> 
+//            msg "DATA_CANNOT_BE_PARSED" "Data cannot be parsed" 
+//            <| sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
+//        | ExpectingNumericData(f) -> 
+//            msg "EXPECTING_NUMERIC_DATA" "Expecting numeric data" <| sprintf "Expecting numeric data: %s" f
+//        | QueryOperatorFieldTypeNotSupported(f) -> 
+//            msg "QUERY_OPERATOR_FIELD_TYPE_NOT_SUPPORTED" "Query operator field type not supported" 
+//            <| sprintf "Query operator field type not supported for field '%s'" f
+//        | QueryStringParsingError(e) -> 
+//            msg "QUERY_STRING_PARSING_ERROR" "Query string parsing error" 
+//            <| sprintf "Query string parsing error: \n%s" e
+//        | UnknownSearchProfile(i, p) -> 
+//            msg "UNKNOWN_SEARCH_PROFILE" "Unknown search profile" 
+//            <| sprintf "Unknown search profile '%s' for index '%s'" p i
+//        | PurelyNegativeQueryNotSupported -> 
+//            msg "NEGATIVE_QUERY_NOT_SUPPORTED" "Purely negative queries (not top query) not supported" ""
+//        // Indexing related errors
+//        | IndexAlreadyExists(i) -> 
+//            msg "INDEX_ALREADY_EXISTS" "Index already exists" <| sprintf "Index '%s' already exists" i
+//        | IndexShouldBeOnline(i) -> 
+//            msg "INDEX_SHOULD_BE_ONLINE" "Index should be online" <| sprintf "Index '%s' should be online" i
+//        | IndexIsAlreadyOnline(i) -> 
+//            msg "INDEX_IS_ALREADY_ONLINE" "Index is already online" <| sprintf "Index '%s' is already online" i
+//        | IndexIsAlreadyOffline(i) -> 
+//            msg "INDEX_IS_ALREADY_OFFLINE" "Index is already offline" <| sprintf "Index '%s' is already offline" i
+//        | IndexInOpenState(i) -> 
+//            msg "INDEX_IN_OPEN_STATE" "Index is in an open state" <| sprintf "Index '%s' is in an open state" i
+//        | IndexInInvalidState(i) -> 
+//            msg "INDEX_IN_INVALID_STATE" "Index is in an invalid state" <| sprintf "Index '%s' is in an invalid state" i
+//        | ErrorOpeningIndexWriter(ip, e, d) -> 
+//            msg "ERROR_OPENING_INDEX_WRITER" "Error opening index writer" 
+//            <| sprintf "Error opening index writer at path '%s': \nException: %s\n%A" ip e d
+//        | IndexNotFound(i) -> msg "INDEX_NOT_FOUND" "Index not found" <| sprintf "Index '%s' was not found" i
+//        | DocumentIdAlreadyExists(idx, id) -> 
+//            msg "DOCUMENT_ID_ALREADY_EXISTS" "Document ID already exists" 
+//            <| sprintf "Document ID '%s' already exists for index '%s'" id idx
+//        | DocumentIdNotFound(idx, id) -> 
+//            msg "DOCUMENT_ID_NOT_FOUND" "Document ID not found" 
+//            <| sprintf "Document ID '%s' not found on index '%s'" id idx
+//        | IndexingVersionConflict(idx, id, v) -> 
+//            msg "INDEXING_VERSION_CONFLICT" "Indexing version conflict" 
+//            <| sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
+//                   v
+//        // Modules related
+//        | ModuleNotFound(mn, mt) -> 
+//            msg "MODULE_NOT_FOUND" "Module not found" <| sprintf "Module '%s' of type '%s' was not found" mn mt
+//        | ModuleInitializationError(mn, mt, e) -> 
+//            msg "MODULE_INITIALIZATION_ERROR" "Module initialization error" 
+//            <| sprintf "An error occurred while initializing the module '%s' of type '%s': \n%s" mn mt e
+//        // Concurrent Dictionary
+//        | UnableToUpdateMemory -> msg "UNABLE_TO_UPDATE_MEMORY" "Unable to update memory" ""
+//        // Http server related
+//        | HttpUnableToParse(e) -> 
+//            msg "HTTP_UNABLE_TO_PARSE" "Unable to parse HTTP message" 
+//            <| sprintf "Unable to deserialize the HTTP body: \n%s" e
+//        | HttpUnsupportedContentType -> 
+//            msg "HTTP_UNSUPPORTED_CONTENT_TYPE" "Unsupported content type for the HTTP message" ""
+//        | HttpNoBodyDefined -> msg "HTTP_NO_BODY_DEFINED" "No body defined for the HTTP message" ""
+//        | HttpNotSupported -> msg "HTTP_NOT_SUPPORTED" "" ""
+//        | HttpUriIdNotSupplied -> msg "HTTP_URI_ID_NOT_SUPPLIED" "" ""
+//        // Configuration related
+//        | UnableToParseConfig(p, e) -> 
+//            msg "UNABLE_TO_PARSE_CONFIG" "Unable to parse configuration file" 
+//            <| sprintf "Unable to parse configuration file from address '%s': \n%s" p e
+//        // File related error
+//        | FileNotFound(p) -> msg "FILE_NOT_FOUND" "File not found" <| sprintf "File not found at address: %s" p
+//        | FileReadError(f, e) -> 
+//            msg "FILE_READ_ERROR" "File read error" 
+//            <| sprintf "There was an error reading the file at path '%s': \n%s" f e
+//        | FileWriteError(f, e) -> 
+//            msg "FILE_WRITE_ERROR" "File write error" 
+//            <| sprintf "There was an error writing to the file at path '%s': \n%s" f e
+//        | PathDoesNotExist(p) -> msg "PATH_DOES_NOT_EXIST" "Path does not exist" <| sprintf "Path does not exist: %s" p
+//        | StoreUpdateError -> msg "STORE_UPDATE_ERROR" "" ""
+//        // Generic error to be used by plugins
+//        | GenericError(u, d) -> 
+//            msg "GENERIC_ERROR" "Generic error in plugin" <| sprintf "Generic error in plugin: %s \nData: %A" u d
+//        // CSV file header does not exist or could not be generated
+//        | HeaderRowIsEmpty -> msg "HEADER_ROW_IS_EMPTY" "" ""
+//        | JobNotFound(j) -> msg "JOB_ID_NOT_FOUND" "Job ID not found" <| sprintf "Job ID '%s' not found" j
+//        | NotImplemented -> msg "NOT_IMPLEMENTED" "Feature not implemented" ""
 
 /// <summary>
 /// Represents the lookup name for the plug-in
@@ -403,7 +396,7 @@ type IFreezable =
 [<AbstractClassAttribute>]
 type DtoBase() = 
     let mutable isFrozen = false
-    abstract Validate : unit -> Choice<unit, Error>
+    abstract Validate : unit -> Choice<unit, IMessage>
     interface IFreezable with
         member __.Freeze() = isFrozen <- true
 
@@ -434,7 +427,8 @@ module Operators =
     let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
     
     /// Wraps a message in a Failure
-    let inline fail<'a, 'b> (msg : 'b) : Choice<'a, 'b> = Choice2Of2 msg
+    let inline fail<'a, 'b when 'b  :> IMessage> (msg : 'b) : Choice<'a, IMessage> =
+        Choice2Of2 (msg :> IMessage)
     
     /// Returns true if the result was not successful.
     let inline failed result = 
@@ -600,38 +594,38 @@ module Validators =
     /// Checks of the given input array has any duplicates    
     let hasDuplicates groupName fieldName (input : array<string>) = 
         if input.Count() = input.Distinct().Count() then ok()
-        else fail (DuplicateFieldValue(groupName, fieldName))
+        else fail <| DuplicateFieldValue(groupName, fieldName)
     
     /// Checks if a given value is greater than the lower limit
     let gt fieldName lowerLimit input = 
         if input > lowerLimit then ok()
-        else fail (GreaterThan(fieldName, lowerLimit.ToString(), input.ToString()))
+        else fail <| GreaterThan(fieldName, lowerLimit.ToString(), input.ToString())
     
     /// Checks if the passed value is greater than or equal to the lower limit
     let gte fieldName lowerLimit input = 
         if input >= lowerLimit then ok()
-        else fail (GreaterThanEqual(fieldName, lowerLimit.ToString(), input.ToString()))
+        else fail <| GreaterThanEqual(fieldName, lowerLimit.ToString(), input.ToString())
     
     /// Checks if a given value is less than the upper limit
     let lessThan fieldName upperLimit input = 
         if input < upperLimit then ok()
-        else fail (LessThan(fieldName, upperLimit.ToString(), input.ToString()))
+        else fail <| LessThan(fieldName, upperLimit.ToString(), input.ToString())
     
     /// Checks if the passed value is less than or equal to the upper limit
     let lessThanEqual fieldName upperLimit input = 
         if input <= upperLimit then ok()
-        else fail (LessThanEqual(fieldName, upperLimit.ToString(), input.ToString()))
+        else fail <| LessThanEqual(fieldName, upperLimit.ToString(), input.ToString())
     
     /// Checks if the given string is null or empty
     let notBlank fieldName input = 
         if not (String.IsNullOrWhiteSpace(input)) then ok()
-        else fail (NotBlank(fieldName))
+        else fail <| NotBlank(fieldName)
     
     /// Checks if a given value satisfies the provided regex expression 
     let regexMatch fieldName regexExpr input = 
         let m = System.Text.RegularExpressions.Regex.Match(input, regexExpr)
         if m.Success then ok()
-        else fail (RegexMatch(fieldName, regexExpr))
+        else fail <| RegexMatch(fieldName, regexExpr)
     
     /// Validates if the property name satisfies the naming rules
     let propertyNameRegex fieldName input = 
@@ -642,7 +636,7 @@ module Validators =
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 
         if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
-            fail (InvalidPropertyName(fieldName, input))
+            fail <| InvalidPropertyName(fieldName, input)
         else ok()
     
     /// Validates a given value against the property name rules
@@ -682,17 +676,17 @@ module DictionaryHelpers =
     let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(value) with
         | true, v -> Choice1Of2(v)
-        | _ -> Choice2Of2(error (value))
+        | _ -> fail <| error (value)
     
     let inline keyExists2 (value, error) (dict : IReadOnlyDictionary<string, _>) = 
         match dict.TryGetValue(value) with
         | true, v -> Choice1Of2(v)
-        | _ -> Choice2Of2(error (value))
+        | _ -> fail <| error (value)
     
     let inline tryGet (key) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(key) with
         | true, v -> Choice1Of2(v)
-        | _ -> Choice2Of2(KeyNotFound(key))
+        | _ -> fail <| KeyNotFound(key)
     
     let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
     let inline conDict<'T>() = new ConcurrentDictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
@@ -754,11 +748,11 @@ module Log =
     let error message = writeEntry (message, critical)
     let errorEx (ex : Exception) = writeEntry (exceptionPrinter ex, critical)
     
-    let errorMsg (message : Error) = 
-        writeEntry (sprintf "%A" message, critical)
+    let errorMsg (message : IMessage) = 
+        writeEntry (sprintf "%A" (message.OperationMessage()), critical)
         message
     
-    let logErrorChoice (message : Choice<_, Error>) = 
+    let logErrorChoice (message : Choice<_, IMessage>) = 
         match message with
         | Choice2Of2(error) -> errorMsg (error) |> ignore
         | _ -> ()

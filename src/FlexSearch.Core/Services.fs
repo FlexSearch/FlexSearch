@@ -30,45 +30,45 @@ open FlexLucene.Queryparser.Classic
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
-    abstract GetModuleByName : string -> Choice<'T, Error>
+    abstract GetModuleByName : string -> Choice<'T, IMessage>
     abstract ModuleExists : string -> bool
     abstract GetAllModules : unit -> Dictionary<string, 'T>
-    abstract GetMetaData : string -> Choice<IDictionary<string, obj>, Error>
+    abstract GetMetaData : string -> Choice<IDictionary<string, obj>, IMessage>
 
 /// Index related operations
 type IIndexService = 
-    abstract GetIndex : indexName:string -> Choice<Index.Dto, Error>
-    abstract UpdateIndexFields : fields:Field.Dto [] -> Choice<unit, Error>
-    abstract DeleteIndex : indexName:string -> Choice<unit, Error>
-    abstract AddIndex : index:Index.Dto -> Choice<CreateResponse, Error>
+    abstract GetIndex : indexName:string -> Choice<Index.Dto, IMessage>
+    abstract UpdateIndexFields : fields:Field.Dto [] -> Choice<unit, IMessage>
+    abstract DeleteIndex : indexName:string -> Choice<unit, IMessage>
+    abstract AddIndex : index:Index.Dto -> Choice<CreateResponse, IMessage>
     abstract GetAllIndex : unit -> Index.Dto array
     abstract IndexExists : indexName:string -> bool
     abstract IndexOnline : indexName:string -> bool
-    abstract IsIndexOnline : indexName:string -> Choice<IndexWriter.T, Error>
-    abstract GetIndexState : indexName:string -> Choice<IndexState, Error>
-    abstract OpenIndex : indexName:string -> Choice<unit, Error>
-    abstract CloseIndex : indexName:string -> Choice<unit, Error>
-    abstract Commit : indexName:string -> Choice<unit, Error>
-    abstract ForceCommit : indexName:string -> Choice<unit, Error>
-    abstract Refresh : indexName:string -> Choice<unit, Error>
-    abstract GetRealtimeSearchers : indexName:string -> Choice<array<RealTimeSearcher>, Error>
-    abstract GetRealtimeSearcher : indexName:string * int -> Choice<RealTimeSearcher, Error>
+    abstract IsIndexOnline : indexName:string -> Choice<IndexWriter.T, IMessage>
+    abstract GetIndexState : indexName:string -> Choice<IndexState, IMessage>
+    abstract OpenIndex : indexName:string -> Choice<unit, IMessage>
+    abstract CloseIndex : indexName:string -> Choice<unit, IMessage>
+    abstract Commit : indexName:string -> Choice<unit, IMessage>
+    abstract ForceCommit : indexName:string -> Choice<unit, IMessage>
+    abstract Refresh : indexName:string -> Choice<unit, IMessage>
+    abstract GetRealtimeSearchers : indexName:string -> Choice<array<RealTimeSearcher>, IMessage>
+    abstract GetRealtimeSearcher : indexName:string * int -> Choice<RealTimeSearcher, IMessage>
 
 /// Document related operations
 type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<Document.Dto, Error>
-    abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, Error>
-    abstract AddOrUpdateDocument : document:Document.Dto -> Choice<unit, Error>
-    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, Error>
-    abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, Error>
-    abstract DeleteAllDocuments : indexName:string -> Choice<unit, Error>
-    abstract TotalDocumentCount : indexName:string -> Choice<int, Error>
+    abstract GetDocument : indexName:string * id:string -> Choice<Document.Dto, IMessage>
+    abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, IMessage>
+    abstract AddOrUpdateDocument : document:Document.Dto -> Choice<unit, IMessage>
+    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, IMessage>
+    abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, IMessage>
+    abstract DeleteAllDocuments : indexName:string -> Choice<unit, IMessage>
+    abstract TotalDocumentCount : indexName:string -> Choice<int, IMessage>
 
 /// Search related operations
 type ISearchService = 
     abstract Search : searchQuery:SearchQuery.Dto * inputFields:Dictionary<string, string>
-     -> Choice<SearchResults<SearchResultComponents.T>, Error>
-    abstract Search : searchQuery:SearchQuery.Dto -> Choice<SearchResults<SearchResultComponents.T>, Error>
+     -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
+    abstract Search : searchQuery:SearchQuery.Dto -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
 
 /// Queuing related operations
 type IQueueService = 
@@ -76,18 +76,18 @@ type IQueueService =
     abstract AddOrUpdateDocumentQueue : document:Document.Dto -> unit
 
 type IJobService = 
-    abstract GetJob : string -> Choice<Job, Error>
-    abstract DeleteAllJobs : unit -> Choice<unit, Error>
-    abstract UpdateJob : Job -> Choice<unit, Error>
+    abstract GetJob : string -> Choice<Job, IMessage>
+    abstract DeleteAllJobs : unit -> Choice<unit, IMessage>
+    abstract UpdateJob : Job -> Choice<unit, IMessage>
 
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
-    abstract GetAnalyzer : analyzerName:string -> Choice<Analyzer, Error>
-    abstract GetAnalyzerInfo : analyzerName:string -> Choice<Analyzer.Dto, Error>
-    abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, Error>
-    abstract UpdateAnalyzer : analyzer:Analyzer.Dto -> Choice<unit, Error>
+    abstract GetAnalyzer : analyzerName:string -> Choice<Analyzer, IMessage>
+    abstract GetAnalyzerInfo : analyzerName:string -> Choice<Analyzer.Dto, IMessage>
+    abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, IMessage>
+    abstract UpdateAnalyzer : analyzer:Analyzer.Dto -> Choice<unit, IMessage>
     abstract GetAllAnalyzers : unit -> Analyzer.Dto []
-    abstract Analyze : analyzerName:string * input:string -> Choice<string[], Error>
+    abstract Analyze : analyzerName:string * input:string -> Choice<string[], IMessage>
 
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
@@ -300,7 +300,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         member __.GetIndex(indexName : string) = 
             match state.TryGetValue(indexName) with
             | true, (index, _) -> ok <| index
-            | _ -> fail <| Error.IndexNotFound indexName
+            | _ -> fail <| IndexNotFound indexName
         
         member __.IndexExists(indexName : string) = 
             match state.TryGetValue(indexName) with
@@ -462,7 +462,7 @@ type JobService() =
     let cache = MemoryCache.Default
     interface IJobService with
         
-        member __.UpdateJob(job : Job) : Choice<unit, Error> = 
+        member __.UpdateJob(job : Job) : Choice<unit, IMessage> = 
             let item = new CacheItem(job.JobId, job)
             let policy = new CacheItemPolicy()
             policy.AbsoluteExpiration <- DateTimeOffset.Now.AddHours(5.00)
@@ -473,11 +473,11 @@ type JobService() =
             assert (jobId <> null)
             let item = cache.GetCacheItem(jobId)
             if item <> null then Choice1Of2(item.Value :?> Job)
-            else fail <| Error.JobNotFound jobId
+            else fail <| JobNotFound jobId
         
         member __.DeleteAllJobs() = 
             // Not implemented
-            fail <| Error.NotImplemented
+            fail <| NotImplemented
 
 /// <summary>
 /// Service wrapper around all document queuing services

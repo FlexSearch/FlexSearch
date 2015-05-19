@@ -132,13 +132,13 @@ type DuplicateDetectionRequest() =
     member val ProfileName = defString with get, set
     override this.Validate() = ok()
 
-type RecordType =
+type RecordType = 
     | Main
     | Result
     | CutOff
-    | Pass of sno: int
-    | FailedMany of sno: int
-    | FailedZero of sno: int
+    | Pass of sno : int
+    | FailedMany of sno : int
+    | FailedZero of sno : int
 
 type FileWriterCommands = 
     | BeginTable of aggrResultHeader : bool * record : Dictionary<string, string>
@@ -156,52 +156,51 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
         context.SaveChanges() |> ignore
         session
     
-//    /// Compile the complete report
-//    let generateReport (session : Session, req : DuplicateDetectionRequest) = 
-//        let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
-//        let body = File.ReadAllText(req.ReportName)
-//        template <- template.Replace("{{IndexName}}", req.IndexName)
-//        template <- template.Replace("{{ProfileName}}", req.ProfileName)
-//        template <- template.Replace("{{StartRange}}", req.StartDate.ToString())
-//        template <- template.Replace("{{EndRange}}", req.EndDate.ToString())
-//        template <- template.Replace("{{TotalChecked}}", session.RecordsReturned.ToString())
-//        template <- template.Replace("{{TotalDuplicates}}", "")
-//        template <- template.Replace("{{Results}}", body)
-//        File.WriteAllText(sprintf "%s.html" req.ReportName, template)
-//        File.Delete(req.ReportName)
-//    
+    //    /// Compile the complete report
+    //    let generateReport (session : Session, req : DuplicateDetectionRequest) = 
+    //        let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
+    //        let body = File.ReadAllText(req.ReportName)
+    //        template <- template.Replace("{{IndexName}}", req.IndexName)
+    //        template <- template.Replace("{{ProfileName}}", req.ProfileName)
+    //        template <- template.Replace("{{StartRange}}", req.StartDate.ToString())
+    //        template <- template.Replace("{{EndRange}}", req.EndDate.ToString())
+    //        template <- template.Replace("{{TotalChecked}}", session.RecordsReturned.ToString())
+    //        template <- template.Replace("{{TotalDuplicates}}", "")
+    //        template <- template.Replace("{{Results}}", body)
+    //        File.WriteAllText(sprintf "%s.html" req.ReportName, template)
+    //        File.Delete(req.ReportName)
+    //    
     let writeSessionEndInfo (req : DuplicateDetectionRequest, session : Session) = 
         use context = new DataContext(req.ConnectionString)
         context.SaveChanges() |> ignore
-//        if req.GenerateReport then generateReport (session, req)
     
-//    let fileWriter = 
-//        MailboxProcessor.Start(fun inbox -> 
-//            let rec loop() = 
-//                async { 
-//                    let builder = new StringBuilder()
-//                    let! (command : FileWriterCommands, filePath) = inbox.Receive()
-//                    builder.Clear() |> ignore
-//                    match command with
-//                    | BeginTable(record) -> 
-//                        builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
-//                        for pair in record do
-//                            builder.Append(sprintf "<th>%s</th>" pair.Key) |> ignore
-//                        builder.Append("""</tr></thead><tbody>""") |> ignore
-//                    | AddRecord(recordType, record) -> 
-//                        match recordType with
-//                        | N
-//                        if mainRecord then builder.Append("""<tr class="active">""") |> ignore
-//                        else builder.Append("<tr>") |> ignore
-//                        for pair in record do
-//                            builder.Append(sprintf "<td>%s</td>" pair.Value) |> ignore
-//                        builder.Append("</tr>") |> ignore
-//                    | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
-//                    File.AppendAllText(filePath, builder.ToString())
-//                    return! loop()
-//                }
-//            loop())
-    
+    //        if req.GenerateReport then generateReport (session, req)
+    //    let fileWriter = 
+    //        MailboxProcessor.Start(fun inbox -> 
+    //            let rec loop() = 
+    //                async { 
+    //                    let builder = new StringBuilder()
+    //                    let! (command : FileWriterCommands, filePath) = inbox.Receive()
+    //                    builder.Clear() |> ignore
+    //                    match command with
+    //                    | BeginTable(record) -> 
+    //                        builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
+    //                        for pair in record do
+    //                            builder.Append(sprintf "<th>%s</th>" pair.Key) |> ignore
+    //                        builder.Append("""</tr></thead><tbody>""") |> ignore
+    //                    | AddRecord(recordType, record) -> 
+    //                        match recordType with
+    //                        | N
+    //                        if mainRecord then builder.Append("""<tr class="active">""") |> ignore
+    //                        else builder.Append("<tr>") |> ignore
+    //                        for pair in record do
+    //                            builder.Append(sprintf "<td>%s</td>" pair.Value) |> ignore
+    //                        builder.Append("</tr>") |> ignore
+    //                    | EndTable -> builder.Append("</tbody></table><hr/>") |> ignore
+    //                    File.AppendAllText(filePath, builder.ToString())
+    //                    return! loop()
+    //                }
+    //            loop())
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
         let query = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
         if req.GenerateReport then query.Columns <- [| "*" |]
@@ -222,8 +221,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
                     // The returned record is same as the passed record. Save the score for relative
                     // scoring later
                     let score = float result.[Constants.Score]
-                    if result.[Constants.IdField] = header.PrimaryRecordId then 
-                        header.Score <- score
+                    if result.[Constants.IdField] = header.PrimaryRecordId then header.Score <- score
                     else 
                         let score = 
                             if header.Score >= score then score / header.Score * 100.0
@@ -317,9 +315,9 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
                     SuccessResponse(jobId, Ok)
                 with e -> 
                     let om = 
-                        { UserMessage = "Unable to connect to the sql server using the provided connection string."
-                          ErrorCode = "SQL_CONNECTION_ERROR"
-                          DeveloperMessage = exceptionPrinter e }
+                        { Message = "Unable to connect to the sql server using the provided connection string."
+                          ErrorCode = "SQLConnectionError"
+                          Properties = [| ("exception", exceptionPrinter e) |] }
                     FailureOpMsgResponse(om, BadRequest)
             | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
@@ -357,10 +355,11 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
     let addElement (command : FileWriterCommands) (builder : StringBuilder) = 
         match command with
         | BeginTable(aggrHeader, record) -> 
-            if aggrHeader then
-                builder.Append("""<table class="table table-bordered table-condensed"><thead><tr><th>SNo.</th><th>Status</th>""") |> ignore
-            else
-                builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
+            if aggrHeader then 
+                builder.Append
+                    ("""<table class="table table-bordered table-condensed"><thead><tr><th>SNo.</th><th>Status</th>""") 
+                |> ignore
+            else builder.Append("""<table class="table table-bordered table-condensed"><thead><tr>""") |> ignore
             for pair in record do
                 builder.Append(escapeHtml ("th", pair.Key)) |> ignore
             builder.Append("""</tr></thead><tbody>""") |> ignore
@@ -369,8 +368,10 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             | Main -> builder.Append("""<tr class="active">""") |> ignore
             | Result -> builder.Append("<tr>") |> ignore
             | CutOff -> builder.Append("""<tr class="active">""") |> ignore
-            | FailedZero(no) -> builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Zero</td>""" no) |> ignore
-            | FailedMany(no) -> builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Many</td>""" no) |> ignore
+            | FailedZero(no) -> 
+                builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Zero</td>""" no) |> ignore
+            | FailedMany(no) -> 
+                builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Many</td>""" no) |> ignore
             | Pass(no) -> builder.Append(sprintf """<tr class="success"><td>%i</td><td>Passed</td>""" no) |> ignore
             for pair in record do
                 builder.Append(escapeHtml ("td", pair.Value)) |> ignore
@@ -387,12 +388,10 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         query.Columns <- headers
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
-
         // Override the cutoff value if provided
-        if request.CutOff <> 0.0 then
+        if request.CutOff <> 0.0 then 
             query.OverrideProfileOptions <- true
             query.CutOff <- request.CutOff
-
         let builder = new StringBuilder()
         let aggrBuilder = new StringBuilder()
         // Write input row
@@ -405,18 +404,17 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             match docs.Documents.Count() with
             | 0 -> 
                 stats.NoMatchRecords <- stats.NoMatchRecords + 1
-                aggrBuilder |> addElement(AddRecord(FailedZero(stats.TotalRecords), primaryRecord))    
+                aggrBuilder |> addElement (AddRecord(FailedZero(stats.TotalRecords), primaryRecord))
             | 1 -> 
                 stats.OneMatchRecord <- stats.OneMatchRecord + 1
-                aggrBuilder |> addElement(AddRecord(Pass(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(Pass(stats.TotalRecords), primaryRecord))
             | 2 -> 
                 stats.TwoMatchRecord <- stats.TwoMatchRecord + 1
-                aggrBuilder |> addElement(AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
             | x when x > 2 -> 
                 stats.MoreThanTwoMatchRecord <- stats.MoreThanTwoMatchRecord + 1
-                aggrBuilder |> addElement(AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
             | _ -> ()
-            
             for doc in docs.Documents do
                 builder |> addElement (AddRecord(Result, doc))
             builder |> addElement (EndTable)
@@ -435,21 +433,19 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         let stats = new Stats()
         let builder = new StringBuilder()
         let aggrBuilder = new StringBuilder()
+        
         let aggrHeader = 
             let p = dict<string>()
             headers |> Array.iteri (fun i header -> p.Add(header, ""))
             p
-        aggrBuilder |> addElement(BeginTable(true, aggrHeader))
-
+        aggrBuilder |> addElement (BeginTable(true, aggrHeader))
         while not reader.EndOfData do
             let record = reader.ReadFields()
             stats.TotalRecords <- stats.TotalRecords + 1
             let (reportRes, aggrResult) = performDedupe (record, headers, request, stats)
             builder.AppendLine(reportRes) |> ignore
             aggrBuilder.AppendLine(aggrResult) |> ignore
-
-        aggrBuilder |> addElement(EndTable)
-
+        aggrBuilder |> addElement (EndTable)
         let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
         template <- template.Replace("{{IndexName}}", request.IndexName)
         template <- template.Replace("{{ProfileName}}", request.ProfileName)

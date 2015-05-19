@@ -81,9 +81,13 @@ module Helpers =
     // Test assertions for FlexClient based tests
     // ----------------------------------------------------------------------------
     let hasHttpStatusCode expected (result, httpCode) = 
-        if httpCode <> expected then printfn "%A" result.Error
+        if httpCode <> expected then printfn "%A" result
         httpCode =? expected
-    let hasErrorCode expected (response : Response<_> * HttpStatusCode) = (response |> fst).Error.ErrorCode =? expected
+    let hasErrorCode expected (response : Response<_>) = 
+        if isNull response || isNull response.Error then
+            failwithf "Was expecting an error but received: %A" response
+        else
+            response.Error.ErrorCode =? expected
     let isSuccessful response = response |> hasHttpStatusCode HttpStatusCode.OK
     let isCreated response = response |> hasHttpStatusCode HttpStatusCode.Created
     let responseStatusEquals status result = result.Response.StatusCode =? status
@@ -100,7 +104,7 @@ module Helpers =
 type ``Index Creation Tests``() = 
 
     member __.``Accessing server root should return 200`` () = 
-        owinServer
+        owinServer()
         |> request "GET" "/"
         |> execute
         |> responseStatusEquals HttpStatusCode.OK
@@ -115,7 +119,7 @@ type ``Index Creation Tests``() =
     member __.``Duplicate index cannot be created`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
         client.AddIndex(index).Result |> isCreated
         let actual = client.AddIndex(index).Result
-        actual |> hasErrorCode "INDEX_ALREADY_EXISTS"
+        actual |> fst |> hasErrorCode "IndexAlreadyExists"
         actual |> hasHttpStatusCode HttpStatusCode.Conflict
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
@@ -157,19 +161,20 @@ type ``Index Update Tests``() =
     [<Example("put-indices-id-1", "")>]
     member __.``Trying to update an index is not supported`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
         let actual = client.UpdateIndex(index).Result
-        actual |> hasErrorCode "HTTP_NOT_SUPPORTED"
+        actual  |> fst |> hasErrorCode "HttpNotSupported"
         actual |> hasHttpStatusCode HttpStatusCode.BadRequest
 
-type ``Delete Index Tests``() = 
+type ``Delete Index Test 1``() = 
     [<Example("delete-indices-id-1", "")>]
     member __.``Delete an index by id`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 
         client.AddIndex(index).Result |> isCreated
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
-    
+
+type ``Delete Index Test 2``() =     
     [<Example("delete-indices-id-2", "")>]
     member __.``Trying to delete an non existing index will return error`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
         let actual = client.DeleteIndex(indexName).Result
-        actual |> hasErrorCode "INDEX_NOT_FOUND"
+        actual  |> fst |> hasErrorCode "IndexNotFound"
         actual |> hasHttpStatusCode HttpStatusCode.BadRequest
 
 type ``Get Index Tests``() = 
@@ -179,11 +184,12 @@ type ``Get Index Tests``() =
         actual |> isSuccessful
         (actual |> data).IndexName =? "contact"
         actual |> hasHttpStatusCode HttpStatusCode.OK
-    
+
+type ``Get Non existing Index Tests``() =     
     [<Example("get-indices-id-2", "")>]
     member __.``Getting an non existing index will return error`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
         let actual = client.GetIndex(indexName).Result
-        actual |> hasErrorCode "INDEX_NOT_FOUND"
+        actual  |> fst |> hasErrorCode "IndexNotFound"
         actual |> hasHttpStatusCode HttpStatusCode.NotFound
 
 type ``Index Other Services Tests``() = 

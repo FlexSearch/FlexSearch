@@ -12,7 +12,7 @@ type FlexAnalyzerBuilderTests() =
         
     member __.``Should not build successfully for an unknown tokenizer`` (sut : Analyzer.Dto) = 
         sut.Filters.Clear()
-        test <@ failed <| Analysis.buildFromAnalyzerDto sut = true @>
+        test <@ Analysis.buildFromAnalyzerDto sut = fail (TokenizerNotFound(sut.AnalyzerName, sut.Tokenizer.TokenizerName)) @>
         
     member __.``Should build successfully for a known filter`` (sut : Analyzer.Dto, filter : TokenFilter.Dto) = 
         sut.Filters.Clear()
@@ -28,7 +28,7 @@ type FlexAnalyzerBuilderTests() =
         filter.Parameters.Clear()
         sut.Filters.Add(filter)
         sut.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
-        test <@ failed <| Analysis.buildFromAnalyzerDto sut = true @>
+        test <@ Analysis.buildFromAnalyzerDto sut = fail (FilterNotFound(sut.AnalyzerName, filter.FilterName)) @>
     
     member __.``Should build a analyzer using synonym filter`` (sut : Analyzer.Dto, filter : TokenFilter.Dto) =
         sut.Filters.Clear()

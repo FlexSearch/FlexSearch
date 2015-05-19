@@ -84,6 +84,7 @@
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="Helpers.fs" />
+    <Compile Include="Message.fs" />
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="Domain.fs" />
