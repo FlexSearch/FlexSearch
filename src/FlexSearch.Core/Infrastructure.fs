@@ -23,6 +23,7 @@ open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.ComponentModel.Composition
+open System.Diagnostics
 open System.IO
 open System.Linq
 open System.Threading
@@ -301,15 +302,22 @@ module Operators =
     [<Sealed>]
     type ErrorHandlingBuilder() = 
         
+        [<DebuggerStepThrough>]
         member inline __.Bind(v, f) = 
             match v with
             | Choice1Of2(x) -> f x
             | Choice2Of2(s) -> Choice2Of2(s)
         
+        [<DebuggerStepThrough>]
         member inline __.ReturnFrom v = v
+        
+        [<DebuggerStepThrough>]
         member inline __.Return v = Choice1Of2(v)
+        
+        [<DebuggerStepThrough>]
         member inline __.Zero() = Choice1Of2()
         
+        [<DebuggerStepThrough>]
         member inline __.Combine(a, b) = 
             match a, b with
             | Choice1Of2 a', Choice1Of2 b' -> Choice1Of2 b'
@@ -317,19 +325,23 @@ module Operators =
             | Choice1Of2 a', Choice2Of2 b' -> Choice2Of2 b'
             | Choice2Of2 a', Choice2Of2 b' -> Choice2Of2 a'
         
+        [<DebuggerStepThrough>]
         member inline __.Delay(f) = f()
         
+        [<DebuggerStepThrough>]
         member inline this.TryFinally(body, compensation) = 
             try 
                 this.ReturnFrom(body())
             finally
                 compensation()
         
+        [<DebuggerStepThrough>]
         member inline __.TryWith(expr, handler) = 
             try 
                 expr()
             with ex -> handler ex
         
+        [<DebuggerStepThrough>]
         member inline this.For(collection : seq<_>, func) = 
             // The whileLoop operator
             let rec whileLoop pred body = 
@@ -338,6 +350,7 @@ module Operators =
             using (collection.GetEnumerator()) 
                 (fun it -> whileLoop (fun () -> it.MoveNext()) (fun () -> it.Current |> func))
         
+        [<DebuggerStepThrough>]
         member inline this.Using(disposable : #System.IDisposable, body) = 
             let body' = fun () -> body disposable
             this.TryFinally(body', (fun () -> disposable.Dispose()))
