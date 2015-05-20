@@ -42,18 +42,19 @@ exception ValidationException of IMessage
 //    abstract UserMessage : unit -> string
 //    abstract LogMessage : unit -> string
 module MessageHelpers = 
-    let private cases = new ConcurrentDictionary<System.Type, string * PropertyInfo []>()
+    let private cases = new ConcurrentDictionary<System.Type * string, PropertyInfo []>()
     
     /// Get the label associated with a DU pattern and also returns the field info. 
     /// This uses a cache to avoid reflection.
     let getCaseInfo (x : 'a) = 
-        match cases.TryGetValue(typeof<'a>) with
-        | true, case -> case
+        let union = (FSharpValue.GetUnionFields(x, typeof<'a>) |> fst)
+
+        match cases.TryGetValue((typeof<'a>, union.Name)) with
+        | true, properties -> (union.Name, properties)
         | _ -> 
-            let union = (FSharpValue.GetUnionFields(x, typeof<'a>) |> fst)
             assert (notNull union.Name)
             let case = (union.Name, union.GetFields())
-            cases.TryAdd(typeof<'a>, case) |> ignore
+            cases.TryAdd((typeof<'a>, union.Name), case |> snd) |> ignore
             case
     
     /// Converts a case to operation message
