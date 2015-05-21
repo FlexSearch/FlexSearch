@@ -1,0 +1,1 @@
+fsi Install.fsx %*
