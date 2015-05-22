@@ -3,12 +3,16 @@
 open Nessos.UnionArgParser
 open System.IO
 
-let basePath = @"C:\git\FlexSearch\build-debug"//"..\"
-let (+/) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
-
 [<AutoOpen>]
 module Helpers =
     open System.Diagnostics
+
+    let basePath = __SOURCE_DIRECTORY__ + "\\..\\"
+    let (+/) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
+    let toQuotedString (s : string) = if System.String.IsNullOrEmpty s then s
+                                      elif s.Chars 0 = '"' then s
+                                      else "\"" + s + "\""
+    let out s = printfn "[FlexSearch.Install] %s" s
 
     // Executes a given exe along with the passed argument 
     let exec path argument = 
@@ -27,18 +31,23 @@ module Helpers =
 /// --------------------------------------
 
 let install() =
-    // Register the FlexSearch service
+    "Registering the FlexSearch service..." |> out
     exec (basePath +/ "FlexSearch Server.exe") "install"
 
-    // Install ETW manifest
-    // TODO
+    "Installing the ETW manifest..." |> out
+    exec "wevtutil.exe" <| "im " + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.man" |> toQuotedString) 
+                            + " /rf:" + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.dll" |> toQuotedString)
+                            + " /mf:" + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.dll" |> toQuotedString)
+
+let upgrade() =
+    "Upgrade not supported at the moment" |> out
 
 let uninstall() =
-    // Unregister the FlexSearch service
+    "Unregistering the FlexSearch service..." |> out
     exec (basePath +/ "FlexSearch Server.exe") "uninstall"
     
-    // Uninstall ETW manifest
-    // TODO
+    "Uninstalling the ETW manifest..." |> out
+    exec "wevtutil.exe" <| "um " + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.man" |> toQuotedString) 
 
 
 /// --------------------------------------
@@ -65,12 +74,10 @@ else
     try 
         // Parse the command
         let command = parser.Parse(fsi.CommandLineArgs |> Array.tail)
-        
 
         // Execute the appropriate command
         match command.GetAllResults().Head with
         | Install -> install()
-        | Upgrade -> printfn "Upgrade not supported at the moment."
+        | Upgrade -> upgrade()
         | Uninstall -> uninstall()
     with e -> printfn "%s" e.Message
-
