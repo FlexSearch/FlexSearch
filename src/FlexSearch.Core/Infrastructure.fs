@@ -17,7 +17,6 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open EventSourceProxy.NuGet
 open FlexLucene.Analysis.Custom
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
