@@ -72,10 +72,10 @@ module FactoryService =
                     else 
                         try 
                             let pluginValue = injectMeta.Value.Value
-                            Log.componentLoaded (moduleName, typeof<'T>.FullName)
+                            //Log.componentLoaded (moduleName, typeof<'T>.FullName)
                             Choice1Of3(pluginValue)
                         with e -> 
-                            Log.componentInitializationFailed (moduleName, typeof<'T>.FullName, exceptionPrinter e)
+                            //Log.componentInitializationFailed (moduleName, typeof<'T>.FullName, exceptionPrinter e)
                             Choice3Of3 <| ModuleInitializationError(moduleName, moduleTypeName, e.Message)
         
         interface IFlexFactory<'T> with
@@ -98,15 +98,17 @@ module FactoryService =
             member __.GetAllModules() = 
                 let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
                 let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
+                let moduleNames = new ResizeArray<string>()
                 for plugin in factory do
                     if plugin.Metadata.ContainsKey("Name") then 
                         let pluginName = plugin.Metadata.["Name"].ToString()
                         try 
                             let pluginValue = plugin.Value.Value
                             modules.Add(pluginName, pluginValue)
-                            Log.componentLoaded (pluginName, typeof<'T>.FullName)
+                            moduleNames.Add(pluginName)
                         with e -> 
-                            Log.componentInitializationFailed (pluginName, typeof<'T>.FullName, exceptionPrinter e)
+                            Logger.Log <| PluginLoadFailure(pluginName, typeof<'T>.FullName, exceptionPrinter e)
+                Logger.Log <| PluginsLoaded(typeof<'T>.FullName, moduleNames)
                 modules
     
     let registerSingleFactoryInstance<'T> (builder : ContainerBuilder) = 

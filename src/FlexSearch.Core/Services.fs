@@ -117,7 +117,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                                                   updateAnalyzer (dto)
                                                   |> logErrorChoice
                                                   |> ignore
-                                              | Choice2Of2(error) -> Log.errorMsg (error) |> ignore)
+                                              | Choice2Of2(error) -> Logger.Log (error))
     
     let getAnalyzer (analyzerName) = 
         match store.TryGetValue(analyzerName) with
@@ -230,7 +230,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                match threadSafeWriter.ReadFile<Index.Dto>(x) with
                | Choice1Of2(dto) -> Some(dto)
                | Choice2Of2(error) -> 
-                   Log.errorMsg (error) |> ignore
+                   Logger.Log (error)
                    None)
         |> Seq.filter (fun x -> x.IsSome)
         |> Seq.map (fun i -> 

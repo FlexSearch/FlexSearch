@@ -43,7 +43,7 @@ module CsvHelpers =
                         yield record
                 }
             with e -> 
-                Log.warnEx (e)
+                Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
                 Seq.empty
         
         (headers, records)
@@ -121,7 +121,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
                     for i = 1 to currentRow.Length - 1 do
                         document.Fields.Add(headers.[i], currentRow.[i])
                     queueService.AddDocumentQueue(document)
-                with e -> Log.warnEx (e)
+                with e -> Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
             ok()
     
     let bulkRequestProcessor = 
@@ -226,19 +226,19 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
                         new Job(JobId = jobId, Status = JobStatus.Completed, Message = "Completed", 
                                 ProcessedItems = rows)
                     jobService.UpdateJob(job) |> ignore
-                    Log.info <| sprintf "SQL connector: %A" job
+                    Logger.Log (sprintf "SQL connector: %A" job, MessageKeyword.Plugin, MessageLevel.Info)
             else 
                 if jobId |> isNotBlank then 
                     let job = 
                         new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = "No rows returned.", 
                                 ProcessedItems = rows)
                     jobService.UpdateJob(job) |> ignore
-                Log.error <| sprintf "SQL connector error. No rows returned. Query:{%s}" request.Query
+                Logger.Log (sprintf "SQL connector error. No rows returned. Query:{%s}" request.Query, MessageKeyword.Plugin, MessageLevel.Error)
         with e -> 
             if jobId |> isNotBlank then 
                 let job = new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = e.Message)
                 jobService.UpdateJob(job) |> ignore
-            Log.error <| sprintf "SQL connector error: %s" (e |> exceptionPrinter)
+            Logger.Log (sprintf "SQL connector error: %s" (e |> exceptionPrinter), MessageKeyword.Plugin, MessageLevel.Error)
     
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 

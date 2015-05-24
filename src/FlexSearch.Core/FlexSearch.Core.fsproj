@@ -133,10 +133,6 @@
       <HintPath>..\packages\ManagedEsent.1.9.2.0\lib\net40\Esent.Interop.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EventSourceProxy.NuGet">
-      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.6\lib\EventSourceProxy.NuGet.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="EventSourceProxy.NuGet" />
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.5.1.0.0\lib\net40\FlexLucene.dll</HintPath>
@@ -292,7 +288,7 @@
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Diagnostics.Tracing.EventSource">
-      <HintPath>..\packages\Microsoft.Diagnostics.Tracing.EventSource.Redist.1.0.26\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Diagnostics.Tracing.EventSource.Redist.1.1.24\lib\net40\Microsoft.Diagnostics.Tracing.EventSource.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.IO.RecyclableMemoryStream">
@@ -375,6 +371,13 @@
       <HintPath>..\packages\YamlDotNet.3.5.1\lib\net35\YamlDotNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.Logging\FlexSearch.Logging.csproj">
+      <Name>FlexSearch.Logging</Name>
+      <Project>{b43636f8-d809-4b73-a1da-c5f17df05992}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

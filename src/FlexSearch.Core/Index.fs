@@ -421,7 +421,9 @@ module TransactionLog =
                         while fileStream.Position <> fileStream.Length do
                             yield msgPackSerializer.Unpack(fileStream)
                     }
-                with e -> errorEx e; Seq.empty
+                with e -> 
+                    Logger.Log <| TransactionLogReadFailure(path +/ gen.ToString(), exceptionPrinter e)
+                    Seq.empty
             else Seq.empty
         
         /// Append a new entry to TxLog        
@@ -797,7 +799,7 @@ module IndexWriter =
             |> build
             |> ok
         with :? ValidationException as e -> 
-            Log.indexLoadingFailed(index.IndexName, index.ToString(), exceptionPrinter e)
+            Logger.Log <|IndexLoadingFailure(index.IndexName, index.ToString(), exceptionPrinter e)
             fail <| e.Data0
             
     /// Close the index    

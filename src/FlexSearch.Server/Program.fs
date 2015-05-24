@@ -1,5 +1,4 @@
-﻿open EventSourceProxy.NuGet
-open FlexSearch.Core
+﻿open FlexSearch.Core
 open System
 open System.IO
 open Topshelf

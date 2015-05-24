@@ -86,10 +86,6 @@
       <HintPath>..\packages\Autofac.Mef.3.0.3\lib\net40\Autofac.Integration.Mef.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EventSourceProxy.NuGet">
-      <HintPath>..\packages\EventSourceProxy.NuGet.3.0.6\lib\EventSourceProxy.NuGet.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Fixie">
       <HintPath>..\packages\Fixie.1.0.0.15\lib\net45\Fixie.dll</HintPath>
       <Private>True</Private>

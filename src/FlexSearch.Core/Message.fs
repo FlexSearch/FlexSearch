@@ -305,3 +305,112 @@ type FileMessage =
             | PathDoesNotExist(p) -> sprintf "Path does not exist: %s" p
             | StoreUpdateError -> ""
             |> caseToMsg this
+
+type NodeMessage =
+    | PluginsLoaded of pluginType: string * plugins : ResizeArray<string>
+    | PluginLoadFailure of pluginName : string * pluginType: string * ``exception`` : string
+    interface IMessage with
+        member this.LogProperty() = 
+            match this with
+            | PluginsLoaded(_) -> (MessageKeyword.Node, MessageLevel.Info) 
+            | PluginLoadFailure(_) -> (MessageKeyword.Node, MessageLevel.Error)
+
+        member this.OperationMessage() = 
+            match this with
+            | PluginsLoaded(pt, p) -> sprintf "The following Plugins of type: {%s} are loaded successfully. %A" pt p
+            | PluginLoadFailure(pn, pt, e) -> sprintf "The Plugin of type: {%s} with name: {%s} was not loaded due to an error. Please refer to the log for more information." pt pn
+            |> caseToMsg this
+
+type IndexMessage =
+    | IndexLoadingFailure of indexName: string * indexDetails : string * ``exception`` : string
+    | TransactionLogReadFailure of path: string * ``exception`` : string
+    interface IMessage with
+        member this.LogProperty() = 
+            match this with
+            | IndexLoadingFailure(_) -> (MessageKeyword.Index, MessageLevel.Error) 
+            | TransactionLogReadFailure(_) -> (MessageKeyword.Index, MessageLevel.Error)
+
+        member this.OperationMessage() = 
+            match this with
+            | IndexLoadingFailure(i, id, e) -> sprintf "Unable to load the index: %s" i 
+            | TransactionLogReadFailure(p, _) -> sprintf "Unable to read the transaction logs from the path: %s" p
+            |> caseToMsg this
+
+
+// ----------------------------------------------------------------------------
+// Logging Section
+// ----------------------------------------------------------------------------
+
+[<AutoOpen; RequireQualifiedAccess>]
+module Log = 
+    open System.Diagnostics
+    let private logger = FlexSearch.Logging.LogService.GetLogger(false)
+    
+    let logNothing(a, b, c) = ()
+    let logMethod (keyword, level) =
+        match (keyword, level) with
+        | Node, Critical -> logger.NodeCritical
+        | Node, Error -> logger.NodeError
+        | Node, Warning -> logger.NodeWarning      
+        | Node, Info -> logger.NodeInfo
+        | Node, Verbose -> logger.NodeVerbose
+        | Index, Critical -> logger.IndexCritical
+        | Index, Error -> logger.IndexError
+        | Index, Warning -> logger.IndexWarning      
+        | Index, Info -> logger.IndexInfo
+        | Index, Verbose -> logger.IndexVerbose
+        | Search, Critical -> logger.SearchCritical
+        | Search, Error -> logger.SearchError
+        | Search, Warning -> logger.SearchWarning      
+        | Search, Info -> logger.SearchInfo
+        | Search, Verbose -> logger.SearchVerbose
+        | Document, Critical -> logger.DocumentCritical
+        | Document, Error -> logger.DocumentError
+        | Document, Warning -> logger.DocumentWarning      
+        | Document, Info -> logger.DocumentInfo
+        | Document, Verbose -> logger.DocumentVerbose
+        | Default, Critical -> logger.DefaultCritical
+        | Default, Error -> logger.DefaultError
+        | Default, Warning -> logger.DefaultWarning      
+        | Default, Info -> logger.DefaultInfo
+        | Default, Verbose -> logger.DefaultVerbose
+        | Plugin, Critical -> logger.PluginCritical
+        | Plugin, Error -> logger.PluginError
+        | Plugin, Warning -> logger.PluginWarning      
+        | Plugin, Info -> logger.PluginInfo
+        | Plugin, Verbose -> logger.PluginVerbose
+        | _, Nothing -> logNothing 
+       
+    let log (message: IMessage) =
+        match message.LogProperty() with
+        | _, Nothing -> ()
+        | keyword, level ->
+            let om = message.OperationMessage()
+            let properties = sprintf "%A" om.Properties
+            logMethod(keyword, level)(om.ErrorCode, om.Message, properties)
+
+    let logErrorChoice (message : Choice<_, IMessage>) = 
+        match message with
+        | Choice2Of2(error) -> log (error)
+        | _ -> ()
+        message
+       
+type Logger() =
+    static member Log(msg : IMessage) =
+        log(msg)
+
+    static member Log(message : Choice<_, IMessage>) =
+        logErrorChoice(message)
+    
+    static member Log(msg: string, keyword : MessageKeyword, level: MessageLevel) =
+        logMethod(keyword, level)(String.Empty, msg, String.Empty)
+    
+    /// This is an general exception logging method. This should only be used in limited cases
+    /// where there is no specific message available to log the error.    
+    static member Log(ex: Exception, keyword : MessageKeyword, level: MessageLevel) =
+        logMethod(keyword, level)("Generic", sprintf "%s \n%s" ex.Message (exceptionPrinter ex), String.Empty)
+
+    /// This is an general exception logging method. This should only be used in limited cases
+    /// where there is no specific message available to log the error.    
+    static member Log(msg: string, ex: Exception, keyword : MessageKeyword, level: MessageLevel) =
+        logMethod(keyword, level)("Generic", sprintf "%s \n%s" ex.Message (exceptionPrinter ex), String.Empty)

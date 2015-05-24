@@ -78,12 +78,13 @@ module Analysis =
                 ok <| TokenizerFactory.ForName(dto.TokenizerName, dictToMap dto.Parameters)
             with e ->
                 UnableToInitializeTokenizer(analyzerName, dto.TokenizerName, e.Message, exceptionPrinter e)
-                |> Log.errorMsg
                 |> fail
+                |> Logger.Log
+
         | false -> 
             TokenizerNotFound(analyzerName, dto.TokenizerName)
-            |> Log.errorMsg
-            |> fail 
+            |> fail
+            |> Logger.Log
         
     /// Builds a Tokenizer Factory for a given Tokenizer
     let buildTokenFilterFactory (analyzerName, dto : TokenFilter.Dto) = 
@@ -97,13 +98,13 @@ module Analysis =
                 | _ -> ok <| TokenFilterFactory.ForName(dto.FilterName, dictToMap dto.Parameters)
             with e -> 
                 UnableToInitializeFilter(analyzerName, dto.FilterName, e.Message, exceptionPrinter e)
-                |> Log.errorMsg
-                |> fail 
+                |> fail
+                |> Logger.Log
         | false -> 
             FilterNotFound(analyzerName, dto.FilterName)
-            |> Log.errorMsg
-            |> fail 
-    
+            |> fail
+            |> Logger.Log
+             
     let applyResourceLoader (loader : ResourceLoader, factory : obj) = 
         let instance = castAs<ResourceLoaderAware> (factory)
         if notNull instance then instance.inform (loader)
@@ -134,8 +135,8 @@ module Analysis =
             ok (builder.build() :> Analyzer)
         with ex -> 
             AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex))
-            |> Log.errorMsg
             |> fail 
+            |> Logger.Log
     
     let flexCharTermAttribute = 
         lazy java.lang.Class.forName 

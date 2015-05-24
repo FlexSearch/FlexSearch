@@ -322,11 +322,11 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                         let innerException = e.InnerException :?> System.Net.HttpListenerException
                         if innerException.ErrorCode = 5 then 
                             // Access denied error
-                            e |> Log.fatalWithMsg accessDenied
-                        else Log.fatalEx e
-                    else Log.fatalEx e
+                            Logger.Log(accessDenied, e, MessageKeyword.Node, MessageLevel.Critical)
+                        else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
+                    else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
             try 
                 thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
-            with e -> Log.fatalEx e
+            with e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
         
         member __.Stop() = server.Dispose()

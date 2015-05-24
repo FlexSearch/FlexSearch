@@ -269,11 +269,11 @@ type DuplicateDetectionHandler(indexService : IIndexService, searchService : ISe
                             (records.Documents, parallelOptions, 
                              fun record -> duplicateRecordCheck (req, record, session))
                     ()
-                with :? AggregateException as e -> Log.errorEx (e)
+                with :? AggregateException as e -> Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
                 session.JobEndTime <- DateTime.Now
                 writeSessionEndInfo (req, session)
-            | Choice2Of2(err) -> Log.errorMsg (err) |> ignore
-        with e -> Log.errorEx (e)
+            | Choice2Of2(err) -> Logger.Log (err)
+        with e -> Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
         Debug.WriteLine("Dedupe Session Finished.")
     
     let requestProcessor = 
