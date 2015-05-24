@@ -31,9 +31,26 @@ type OperationMessage =
       Message : string
       ErrorCode : string }
 
+type MessageKeyword =
+    | Node 
+    | Index 
+    | Search 
+    | Document 
+    | Default
+    | Plugin
+
+type MessageLevel =
+    | Critical
+    | Error
+    | Warning
+    | Info
+    | Verbose
+    | Nothing
+
 /// Interface to expose internal message format
 type IMessage = 
     abstract OperationMessage : unit -> OperationMessage
+    abstract LogProperty : unit -> MessageKeyword * MessageLevel
 
 /// General purpose exception to be used. It is better to use
 /// DU based error than this exception.
@@ -92,6 +109,8 @@ type ValidationError =
     | KeyNotFound of key : string
     override this.ToString() = sprintf "%A" this
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Default, MessageLevel.Nothing)
+            
         member this.OperationMessage() = 
             match this with
             | GreaterThan(fn, ll, v) -> sprintf "Field '%s' must be greater than %s, but found %s" fn ll v
@@ -112,6 +131,8 @@ type AnalysisMessage =
     | AnalyzerBuilder of analyzerName : string * message : string * ``exception`` : string
     | AnalyzerNotFound of analyzerName : string
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Verbose)
+        
         member this.OperationMessage() = 
             match this with
             | TokenizerNotFound(an, tn) -> sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
@@ -140,6 +161,8 @@ type BuilderError =
     | ScriptCannotBeCompiled of error : string
     | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Error)
+        
         member this.OperationMessage() = 
             match this with
             | InvalidPropertyName(fn, v) -> sprintf "Property name is invalid. Expected '%s' but found '%s'" fn v
@@ -168,6 +191,8 @@ type SearchMessage =
     | UnknownSearchProfile of indexName : string * profileName : string
     | PurelyNegativeQueryNotSupported
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Nothing)
+        
         member this.OperationMessage() = 
             match this with
             | QueryNotFound(q) -> sprintf "Query not found: %s" q
@@ -197,6 +222,7 @@ type IndexingMessage =
     | DocumentIdNotFound of indexName : string * id : string
     | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Info)
         member this.OperationMessage() = 
             match this with
             | IndexAlreadyExists(i) -> sprintf "Index '%s' already exists" i
@@ -218,6 +244,7 @@ type ModuleInitMessage =
     | ModuleNotFound of moduleName : string * moduleType : string
     | ModuleInitializationError of moduleName : string * moduleType : string * error : string
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Error)
         member this.OperationMessage() = 
             match this with
             | ModuleNotFound(mn, mt) -> sprintf "Module '%s' of type '%s' was not found" mn mt
@@ -234,6 +261,7 @@ type GeneralMessage =
     | NotImplemented
     | HeaderRowIsEmpty
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Info)
         member this.OperationMessage() = 
             match this with
             | UnableToUpdateMemory -> "Unable to update memory"
@@ -251,6 +279,7 @@ type HttpServerMessage =
     | HttpNotSupported
     | HttpUriIdNotSupplied
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Info)
         member this.OperationMessage() = 
             match this with
             | HttpUnableToParse(e) -> sprintf "Unable to deserialize the HTTP body: \n%s" e
@@ -267,6 +296,7 @@ type FileMessage =
     | PathDoesNotExist of path : string
     | StoreUpdateError
     interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Error)
         member this.OperationMessage() = 
             match this with
             | FileNotFound(p) -> sprintf "File not found at address: %s" p
