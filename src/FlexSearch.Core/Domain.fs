@@ -625,7 +625,9 @@ module Analyzer =
 module Script = 
     open Microsoft.CSharp
     open System.CodeDom.Compiler
-    
+    open Microsoft.CodeAnalysis.Scripting.CSharp
+    open Microsoft.CodeAnalysis.Scripting
+
     /// Script is used to add scripting capability to the index. These can be used to generate dynamic
     /// field values based upon other indexed values or to modify scores of the returned results.
     /// Any valid C# expression can be used as a script.
@@ -648,27 +650,15 @@ module Script =
     
     /// Template method code for computed field script
     let private computedFieldScriptTemplate = """
-class Foo {
-    static public string Execute(dynamic fields) { [SourceCode] }
-}
+string Execute(dynamic fields) { [SourceCode] }
 """
     
     /// Compiles the given string to a function
     let compileScript (sourceCode : string) = 
         try 
-            let ccp = new CSharpCodeProvider()
-            let cp = new CompilerParameters()
-            cp.ReferencedAssemblies.Add("Microsoft.CSharp.dll") |> ignore
-            cp.ReferencedAssemblies.Add("System.dll") |> ignore
-            cp.ReferencedAssemblies.Add("System.Core.dll") |> ignore
-            cp.GenerateExecutable <- false
-            cp.IncludeDebugInformation <- false
-            cp.GenerateInMemory <- true
-            let cr = ccp.CompileAssemblyFromSource(cp, sourceCode)
-            let foo = cr.CompiledAssembly.GetType("Foo")
-            let meth = foo.GetMethod("Execute")
-            let compiledScript = 
-                Delegate.CreateDelegate(typeof<System.Func<System.Dynamic.DynamicObject, string>>, meth) :?> System.Func<System.Dynamic.DynamicObject, string>
+            let options = ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll").AddNamespaces("System.Dynamic")
+            let state = CSharpScript.Run(sourceCode, options)
+            let compiledScript = state.CreateDelegate<System.Func<System.Dynamic.DynamicObject, string>>("Execute")
             ok (compiledScript)
         with e -> fail (ScriptCannotBeCompiled(exceptionPrinter e))
     
