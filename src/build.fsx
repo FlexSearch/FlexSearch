@@ -53,7 +53,8 @@ let packageFiles() =
         let fileName = Path.GetFileName(file).ToLowerInvariant()
         if fileName.Contains("test") then File.Delete(file)
         else 
-            if fileName.StartsWith("flex") = false && fileName.StartsWith("install") = false 
+            if fileName.StartsWith("flex") = false && fileName.StartsWith("install") = false
+               && fileName.StartsWith("setup") = false
                && fileName.StartsWith("uninstall") = false && fileName.StartsWith("license") = false 
                && fileName.StartsWith("benchmark") = false then File.Move(file, Path.Combine(dest, fileName))
     let filesToDelete = 
