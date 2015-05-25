@@ -6,13 +6,15 @@ open System.IO
 [<AutoOpen>]
 module Helpers =
     open System.Diagnostics
+    let mutable failed = false
 
     let basePath = __SOURCE_DIRECTORY__ + "\\..\\"
     let (+/) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
     let toQuotedString (s : string) = if System.String.IsNullOrEmpty s then s
                                       elif s.Chars 0 = '"' then s
                                       else "\"" + s + "\""
-    let out s = printfn "[FlexSearch.Install] %s" s
+    let out (s: string) = 
+        printfn "[FlexSearch.Install] %s" s
 
     // Executes a given exe along with the passed argument 
     let exec path argument = 
@@ -24,7 +26,8 @@ module Helpers =
         psi.UseShellExecute <- false
         use p = Process.Start(psi)
         p.WaitForExit()
-
+        if p.ExitCode <> 0 && failed <> true && (psi.FileName <> "netsh.exe" && p.ExitCode <> 183) then
+            failed <- true
 
 /// --------------------------------------
 /// Command logic
@@ -38,6 +41,17 @@ let install() =
     exec "wevtutil.exe" <| "im " + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.man" |> toQuotedString) 
                             + " /rf:" + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.dll" |> toQuotedString)
                             + " /mf:" + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.dll" |> toQuotedString)
+    
+    "Registering Http ACL at port 9800" |> out
+    exec "netsh.exe" "http add urlacl url=http://+:9800/ user=everyone listen=yes"
+
+    printfn "---------------------------------------------"
+    if failed then
+        printfn "[Failed]"
+    else
+        printfn "[Success]"
+    printfn "---------------------------------------------"
+        
 
 let upgrade() =
     "Upgrade not supported at the moment" |> out
@@ -48,7 +62,6 @@ let uninstall() =
     
     "Uninstalling the ETW manifest..." |> out
     exec "wevtutil.exe" <| "um " + (basePath +/ "FlexSearch.Logging.FlexSearch.etwManifest.man" |> toQuotedString) 
-
 
 /// --------------------------------------
 /// Command parsing and execution
