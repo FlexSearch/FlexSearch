@@ -439,12 +439,19 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             headers |> Array.iteri (fun i header -> p.Add(header, ""))
             p
         aggrBuilder |> addElement (BeginTable(true, aggrHeader))
+        !> "Starting Duplicate detection report generation using file %s" request.SourceFileName
+        let mutable count = 0
         while not reader.EndOfData do
             let record = reader.ReadFields()
             stats.TotalRecords <- stats.TotalRecords + 1
             let (reportRes, aggrResult) = performDedupe (record, headers, request, stats)
             builder.AppendLine(reportRes) |> ignore
             aggrBuilder.AppendLine(aggrResult) |> ignore
+            count <- count + 1
+            if count % 1000 = 0 then
+                !> "Dedupe report: Completed %i" count
+        !> "Dedupe report: Completed %i" count
+        !> "Generating report"
         aggrBuilder |> addElement (EndTable)
         let mutable template = File.ReadAllText(WebFolder +/ "Reports//DuplicateDetectionTemplate.html")
         template <- template.Replace("{{IndexName}}", request.IndexName)
