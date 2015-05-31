@@ -235,7 +235,7 @@ module Helpers =
     let inline notNull (x : ^a when ^a : not struct) = not (obj.ReferenceEquals(x, Unchecked.defaultof<_>))
     
     let inline isBlank (x : string) = String.IsNullOrWhiteSpace x
-    let inline notBlank (x : string) = not (isBlank x)
+    let inline isNotBlank (x : string) = not (isBlank x)
     
     let inline throwIfNull (name) (x) = 
         if isNull (x) then failwithf "Internal Error: %s object cannot be null." name

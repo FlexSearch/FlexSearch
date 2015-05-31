@@ -215,30 +215,16 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
                     if request.ForceCreate then queueService.AddDocumentQueue(document)
                     else queueService.AddOrUpdateDocumentQueue(document)
                     rows <- rows + 1
-                    if jobId
-                       |> isNotBlank
-                       && rows % 5000 = 0 then 
-                        let job = 
-                            new Job(JobId = jobId, Status = JobStatus.InProgress, Message = "", ProcessedItems = rows)
-                        jobService.UpdateJob(job) |> ignore
-                if jobId |> isNotBlank then 
-                    let job = 
-                        new Job(JobId = jobId, Status = JobStatus.Completed, Message = "Completed", 
-                                ProcessedItems = rows)
-                    jobService.UpdateJob(job) |> ignore
-                    Logger.Log (sprintf "SQL connector: %A" job, MessageKeyword.Plugin, MessageLevel.Info)
-            else 
-                if jobId |> isNotBlank then 
-                    let job = 
-                        new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = "No rows returned.", 
-                                ProcessedItems = rows)
-                    jobService.UpdateJob(job) |> ignore
+                    if rows % 5000 = 0 then 
+                        jobService.UpdateJob(jobId, JobStatus.InProgress, rows)
+                jobService.UpdateJob(jobId, JobStatus.Completed, rows)
+                Logger.Log (sprintf "SQL connector: Job Finished. Query:{%s}. Index:{%s}" request.Query request.IndexName, MessageKeyword.Plugin, MessageLevel.Info)
+            else
+                jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, rows, "No rows returned.") 
                 Logger.Log (sprintf "SQL connector error. No rows returned. Query:{%s}" request.Query, MessageKeyword.Plugin, MessageLevel.Error)
         with e -> 
-            if jobId |> isNotBlank then 
-                let job = new Job(JobId = jobId, Status = JobStatus.CompletedWithErrors, Message = e.Message)
-                jobService.UpdateJob(job) |> ignore
-            Logger.Log (sprintf "SQL connector error: %s" (e |> exceptionPrinter), MessageKeyword.Plugin, MessageLevel.Error)
+                jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, 0, (e |> exceptionPrinter))
+                Logger.Log (sprintf "SQL connector error: %s" (e |> exceptionPrinter), MessageKeyword.Plugin, MessageLevel.Error)
     
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 

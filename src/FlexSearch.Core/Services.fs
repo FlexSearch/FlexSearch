@@ -79,6 +79,8 @@ type IJobService =
     abstract GetJob : string -> Choice<Job, IMessage>
     abstract DeleteAllJobs : unit -> Choice<unit, IMessage>
     abstract UpdateJob : Job -> Choice<unit, IMessage>
+    abstract UpdateJob : jobId : string * JobStatus * count : int -> unit
+    abstract UpdateJob : jobId: string * JobStatus * count : int * msg : string -> unit
 
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
@@ -460,13 +462,28 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
 [<Sealed>]
 type JobService() = 
     let cache = MemoryCache.Default
+    let getCachePolicy () =
+        let policy = new CacheItemPolicy()
+        policy.AbsoluteExpiration <- DateTimeOffset.Now.AddHours(5.00)
+        policy
+                
     interface IJobService with
         
+        member __.UpdateJob (jobId, jobStatus, itemCount) =
+            if isNotBlank jobId then
+                let job = new Job(JobId = jobId, Status = jobStatus, Message = "", ProcessedItems = itemCount)
+                let item = new CacheItem(jobId, job)
+                cache.Set(item, getCachePolicy())
+            
+        member __.UpdateJob (jobId, jobStatus, itemCount, message) =
+            if isNotBlank jobId then
+                let job = new Job(JobId = jobId, Status = jobStatus, Message = message, ProcessedItems = itemCount)
+                let item = new CacheItem(jobId, job)
+                cache.Set(item, getCachePolicy())
+                
         member __.UpdateJob(job : Job) : Choice<unit, IMessage> = 
             let item = new CacheItem(job.JobId, job)
-            let policy = new CacheItemPolicy()
-            policy.AbsoluteExpiration <- DateTimeOffset.Now.AddHours(5.00)
-            cache.Set(item, new CacheItemPolicy())
+            cache.Set(item, getCachePolicy())
             ok()
         
         member __.GetJob(jobId : string) = 
