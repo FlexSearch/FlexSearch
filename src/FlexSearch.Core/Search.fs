@@ -134,6 +134,7 @@ module SearchDsl =
                 match source.TryGetValue(fName) with
                 | true, v' -> ok <| [| v' |]
                 | _ -> 
+                    generateMatchAllQuery := false
                     match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
                     | true, configuration -> 
                         match configuration with
@@ -209,6 +210,7 @@ module SearchDsl =
         fields
     
     let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
+        !> "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
         // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
