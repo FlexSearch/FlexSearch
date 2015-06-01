@@ -142,7 +142,7 @@ type RecordType =
 
 type FileWriterCommands = 
     | BeginTable of aggrResultHeader : bool * record : Dictionary<string, string>
-    | AddRecord of recordType : RecordType * record : Dictionary<string, string>
+    | AddRecord of recordType : RecordType * primaryRecord: Dictionary<string, string> * record : Dictionary<string, string>
     | EndTable
 
 [<Sealed>]
@@ -363,7 +363,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             for pair in record do
                 builder.Append(escapeHtml ("th", pair.Key)) |> ignore
             builder.Append("""</tr></thead><tbody>""") |> ignore
-        | AddRecord(recordType, record) -> 
+        | AddRecord(recordType, primaryRecord, record) -> 
             match recordType with
             | Main -> builder.Append("""<tr class="active">""") |> ignore
             | Result -> builder.Append("<tr>") |> ignore
@@ -373,8 +373,15 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             | FailedMany(no) -> 
                 builder.Append(sprintf """<tr class="warning"><td>%i</td><td>Failed Many</td>""" no) |> ignore
             | Pass(no) -> builder.Append(sprintf """<tr class="success"><td>%i</td><td>Passed</td>""" no) |> ignore
-            for pair in record do
-                builder.Append(escapeHtml ("td", pair.Value)) |> ignore
+            for pair in primaryRecord do
+                // This is necessary to match column names
+                match record.TryGetValue(pair.Key) with
+                | true, value -> 
+                    builder.Append(escapeHtml ("td", value)) |> ignore
+                | _ -> builder.Append(escapeHtml ("td", "")) |> ignore
+            // Add score if present
+            if record.ContainsKey(Constants.Score) then
+                builder.Append(escapeHtml ("td", record.[Constants.Score])) |> ignore
             builder.Append("</tr>") |> ignore
         | EndTable -> builder.Append("</tbody></table>") |> ignore
     
@@ -397,26 +404,26 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         // Write input row
         builder.Append(sprintf """<hr/><h4>Input Record: %i</h4>""" stats.TotalRecords) |> ignore
         builder |> addElement (BeginTable(false, primaryRecord))
-        builder |> addElement (AddRecord(Main, primaryRecord))
+        builder |> addElement (AddRecord(Main, primaryRecord, primaryRecord))
         match searchService.Search(query, primaryRecord) with
         | Choice1Of2(results) -> 
             let docs = results |> toFlatResults
             match docs.Documents.Count() with
             | 0 -> 
                 stats.NoMatchRecords <- stats.NoMatchRecords + 1
-                aggrBuilder |> addElement (AddRecord(FailedZero(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(FailedZero(stats.TotalRecords),primaryRecord, primaryRecord))
             | 1 -> 
                 stats.OneMatchRecord <- stats.OneMatchRecord + 1
-                aggrBuilder |> addElement (AddRecord(Pass(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(Pass(stats.TotalRecords),primaryRecord, primaryRecord))
             | 2 -> 
                 stats.TwoMatchRecord <- stats.TwoMatchRecord + 1
-                aggrBuilder |> addElement (AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(FailedMany(stats.TotalRecords),primaryRecord, primaryRecord))
             | x when x > 2 -> 
                 stats.MoreThanTwoMatchRecord <- stats.MoreThanTwoMatchRecord + 1
-                aggrBuilder |> addElement (AddRecord(FailedMany(stats.TotalRecords), primaryRecord))
+                aggrBuilder |> addElement (AddRecord(FailedMany(stats.TotalRecords),primaryRecord, primaryRecord))
             | _ -> ()
             for doc in docs.Documents do
-                builder |> addElement (AddRecord(Result, doc))
+                builder |> addElement (AddRecord(Result, primaryRecord, doc))
             builder |> addElement (EndTable)
         | Choice2Of2(error) -> 
             builder.Append(sprintf """%A""" error) |> ignore
