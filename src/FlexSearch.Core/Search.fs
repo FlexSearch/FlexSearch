@@ -121,6 +121,21 @@ module SearchDsl =
                 if v.Length = 0 then fail <| MissingFieldValue(fieldName)
                 else ok <| v.ToArray()
         
+        let getFromMissingValueConfiguration(fieldName, v : Value) =
+            generateMatchAllQuery := false
+            match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
+            | true, configuration -> 
+                match configuration with
+                | MissingValueOption.Default -> v |> getFieldValueAsArray fieldName
+                | MissingValueOption.ThrowError -> fail <| MissingFieldValue(fieldName)
+                | MissingValueOption.Ignore -> 
+                    generateMatchAllQuery := true
+                    ok <| [| "" |]
+                | _ -> fail <| UnknownMissingVauleOption(fieldName)
+            | _ -> 
+                // Check if a non blank value is provided as a part of the query
+                v |> getFieldValueAsArray fieldName
+
         let getValue (fieldName, v : Value) = 
             match isProfileBased with
             | Some(source) -> 
@@ -132,21 +147,11 @@ module SearchDsl =
                         else fieldName
                     | _ -> fieldName
                 match source.TryGetValue(fName) with
-                | true, v' -> ok <| [| v' |]
-                | _ -> 
-                    generateMatchAllQuery := false
-                    match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
-                    | true, configuration -> 
-                        match configuration with
-                        | MissingValueOption.Default -> v |> getFieldValueAsArray fieldName
-                        | MissingValueOption.ThrowError -> fail <| MissingFieldValue(fieldName)
-                        | MissingValueOption.Ignore -> 
-                            generateMatchAllQuery := true
-                            ok <| [| "" |]
-                        | _ -> fail <| UnknownMissingVauleOption(fieldName)
-                    | _ -> 
-                        // Check if a non blank value is provided as a part of the query
-                        v |> getFieldValueAsArray fieldName
+                | true, v' -> 
+                    if isBlank v' then
+                        getFromMissingValueConfiguration(fName, v)
+                    else ok <| [| v' |]
+                | _ -> getFromMissingValueConfiguration(fName, v)         
             | None -> v |> getFieldValueAsArray fieldName
         
         /// Generate the query from the condition
