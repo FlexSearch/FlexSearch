@@ -794,26 +794,44 @@ module Field =
     let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> Field
     let getField (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
         new Field(fieldName, value, template)
-    
+
+    /// Set the value of index field to the default value
+    let inline updateLuceneFieldToDefault flexField (luceneField : Field) = 
+        match flexField.FieldType with
+        | FieldType.Custom(_, _, _) -> luceneField.SetStringValue("null")
+        | FieldType.Stored -> luceneField.SetStringValue("null")
+        | FieldType.Text(_) -> luceneField.SetStringValue("null")
+        | FieldType.Bool(_) -> luceneField.SetStringValue("false")
+        | FieldType.ExactText(_) -> luceneField.SetStringValue("null")
+        | FieldType.Highlight(_) -> luceneField.SetStringValue("null")
+        | FieldType.Date -> luceneField.SetLongValue(DateDefaultValue)
+        | FieldType.DateTime -> luceneField.SetLongValue(DateTimeDefaultValue)
+        | FieldType.Int -> luceneField.SetIntValue(0)
+        | FieldType.Double -> luceneField.SetDoubleValue(0.0)
+        | FieldType.Long -> luceneField.SetLongValue(int64 0)
+
     /// Set the value of index field using the passed value
     let inline updateLuceneField flexField (lucenceField : Field) (value : string) = 
-        match flexField.FieldType with
-        | FieldType.Custom(_, _, _) -> lucenceField.SetStringValue(value)
-        | FieldType.Stored -> lucenceField.SetStringValue(value)
-        | FieldType.Text(_) -> lucenceField.SetStringValue(value)
-        | FieldType.Highlight(_) -> lucenceField.SetStringValue(value)
-        | FieldType.ExactText(_) -> lucenceField.SetStringValue(value)
-        | FieldType.Bool(_) -> (value |> pBool false).ToString() |> lucenceField.SetStringValue
-        | FieldType.Date -> (value |> pLong DateDefaultValue) |> lucenceField.SetLongValue
-        | FieldType.DateTime -> (value |> pLong DateTimeDefaultValue) |> lucenceField.SetLongValue
-        | FieldType.Int -> (value |> pInt 0) |> lucenceField.SetIntValue
-        | FieldType.Double -> (value |> pDouble 0.0) |> lucenceField.SetDoubleValue
-        | FieldType.Long -> (value |> pLong (int64 0)) |> lucenceField.SetLongValue
+        if isBlank value then
+            lucenceField |> updateLuceneFieldToDefault flexField
+        else
+            match flexField.FieldType with
+            | FieldType.Custom(_, _, _) -> lucenceField.SetStringValue(value)
+            | FieldType.Stored -> lucenceField.SetStringValue(value)
+            | FieldType.Text(_) -> lucenceField.SetStringValue(value)
+            | FieldType.Highlight(_) -> lucenceField.SetStringValue(value)
+            | FieldType.ExactText(_) -> lucenceField.SetStringValue(value)
+            | FieldType.Bool(_) -> (value |> pBool false).ToString() |> lucenceField.SetStringValue
+            | FieldType.Date -> (value |> pLong DateDefaultValue) |> lucenceField.SetLongValue
+            | FieldType.DateTime -> (value |> pLong DateTimeDefaultValue) |> lucenceField.SetLongValue
+            | FieldType.Int -> (value |> pInt 0) |> lucenceField.SetIntValue
+            | FieldType.Double -> (value |> pDouble 0.0) |> lucenceField.SetDoubleValue
+            | FieldType.Long -> (value |> pLong (int64 0)) |> lucenceField.SetLongValue
     
     let inline storeInfoMap (isStored) = 
         if isStored then Field.Store.YES
         else Field.Store.NO
-    
+
     /// Creates a default Lucene index field for the passed flex field.
     let inline createDefaultLuceneField flexField = 
         let storeInfo = storeInfoMap (flexField.IsStored)
@@ -843,21 +861,6 @@ module Field =
         | FieldType.Bool(a) -> Some(a)
         | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
             None
-    
-    /// Set the value of index field to the default value
-    let inline updateLuceneFieldToDefault flexField (luceneField : Field) = 
-        match flexField.FieldType with
-        | FieldType.Custom(_, _, _) -> luceneField.SetStringValue("null")
-        | FieldType.Stored -> luceneField.SetStringValue("null")
-        | FieldType.Text(_) -> luceneField.SetStringValue("null")
-        | FieldType.Bool(_) -> luceneField.SetStringValue("false")
-        | FieldType.ExactText(_) -> luceneField.SetStringValue("null")
-        | FieldType.Highlight(_) -> luceneField.SetStringValue("null")
-        | FieldType.Date -> luceneField.SetLongValue(DateDefaultValue)
-        | FieldType.DateTime -> luceneField.SetLongValue(DateTimeDefaultValue)
-        | FieldType.Int -> luceneField.SetIntValue(0)
-        | FieldType.Double -> luceneField.SetDoubleValue(0.0)
-        | FieldType.Long -> luceneField.SetLongValue(int64 0)
     
     /// Get the schema name for a field from the name and postings format
     let schemaName (fieldName, postingsFormat : string) = sprintf "%s<%s>" fieldName (postingsFormat.ToLowerInvariant())
