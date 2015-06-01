@@ -104,16 +104,21 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
     //                ok()
     let processFile (body : CsvIndexingRequest, path : string) = 
         use reader = new TextFieldParser(path)
+        !> "Parsing CSV file at: %s" path
         reader.TextFieldType <- FieldType.Delimited
         reader.SetDelimiters([| "," |])
         let headers = 
             if body.HasHeaderRecord then reader.ReadFields()
             else body.Headers
         match headers with
-        | [||] -> fail <| HeaderRowIsEmpty
+        | [||] -> 
+            !> "CSV Parsing failed. No header row. File: %s" path
+            fail <| HeaderRowIsEmpty
         | _ -> 
+            let mutable rows = 0L
             while not reader.EndOfData do
                 try 
+                    rows <- rows + 1L
                     let currentRow = reader.ReadFields()
                     let document = new Document.Dto(body.IndexName, currentRow.[0])
                     document.TimeStamp <- 0L
@@ -121,7 +126,10 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
                     for i = 1 to currentRow.Length - 1 do
                         document.Fields.Add(headers.[i], currentRow.[i])
                     queueService.AddDocumentQueue(document)
-                with e -> Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
+                with e -> 
+                    !> "CSV Parsing error: %A" e
+                    Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
+            !> "CSV Parsing finished. Processed Rows:%i File: %s" rows path
             ok()
     
     let bulkRequestProcessor = 
