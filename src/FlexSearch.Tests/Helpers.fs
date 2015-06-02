@@ -54,18 +54,6 @@ module DataHelpers =
                            new Field.Dto("t1", FieldType.Dto.Text)
                            new Field.Dto("t2", FieldType.Dto.Text)
                            new Field.Dto("s1", FieldType.Dto.Stored) |]
-        // Search profile setup
-        let searchProfileQuery = 
-            new SearchQuery.Dto(index.IndexName, "t1 = '' AND t2 = '' AND i1 = '1' AND et1 = ''", QueryName = "profile1")
-        searchProfileQuery.MissingValueConfiguration.Add("t1", MissingValueOption.ThrowError)
-        searchProfileQuery.MissingValueConfiguration.Add("i1", MissingValueOption.Default)
-        searchProfileQuery.MissingValueConfiguration.Add("et1", MissingValueOption.Ignore)
-        
-        // Cross matching profile
-        let searchProfileQuery2 = 
-            new SearchQuery.Dto(index.IndexName, "t1 = '<t2>'", QueryName = "profile2")
-        searchProfileQuery2.MissingValueConfiguration.Add("t1", MissingValueOption.ThrowError)
-        index.SearchProfiles <- [| searchProfileQuery ; searchProfileQuery2 |]
         index
 
     /// Utility method to add data to an index
@@ -117,14 +105,7 @@ module DataHelpers =
             new Field.Dto("fullname", FieldType.Dto.Text, ScriptName = "fullname") |]
         index.Scripts <- 
             [| new Script.Dto( ScriptName = "fullname", Source = """return fields.firstname + " " + fields.lastname;""", ScriptType = ScriptType.Dto.ComputedField) |]
-        let searchProfileQuery = 
-            new SearchQuery.Dto(index.IndexName, "firstname = '' AND lastname = '' AND cvv2 = '116' AND country = ''", 
-                            QueryName = "test1")
-        searchProfileQuery.MissingValueConfiguration.Add("firstname", MissingValueOption.ThrowError)
-        searchProfileQuery.MissingValueConfiguration.Add("cvv2", MissingValueOption.Default)
-        searchProfileQuery.MissingValueConfiguration.Add("topic", MissingValueOption.Ignore)
-        index.SearchProfiles <- [| searchProfileQuery |]
-
+        
         let client = new FlexClient(owinServer().HttpClient)
         client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
 

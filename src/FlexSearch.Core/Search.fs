@@ -121,37 +121,69 @@ module SearchDsl =
                 if v.Length = 0 then fail <| MissingFieldValue(fieldName)
                 else ok <| v.ToArray()
         
-        let getFromMissingValueConfiguration(fieldName, v : Value) =
-            generateMatchAllQuery := false
-            match searchQuery.MissingValueConfiguration.TryGetValue(fieldName) with
-            | true, configuration -> 
-                match configuration with
-                | MissingValueOption.Default -> v |> getFieldValueAsArray fieldName
-                | MissingValueOption.ThrowError -> fail <| MissingFieldValue(fieldName)
-                | MissingValueOption.Ignore -> 
-                    generateMatchAllQuery := true
-                    ok <| [| "" |]
-                | _ -> fail <| UnknownMissingVauleOption(fieldName)
-            | _ -> 
-                // Check if a non blank value is provided as a part of the query
-                v |> getFieldValueAsArray fieldName
-
+        let getValueForSearchProfile (fieldName, v : string, source : Dictionary<string, string>) = 
+            generateMatchAllQuery.Value <- false
+            match v.Trim() with
+            // Match self but fail if value is not found
+            | "" | "[!]" -> 
+                match source.TryGetValue(fieldName) with
+                | true, v1 -> 
+                    if isNotBlank v1 then ok <| [| v1 |]
+                    else fail <| MissingFieldValue fieldName
+                | _ -> fail <| MissingFieldValue fieldName
+            // Match self but ignore clause if value is not found
+            | "[*]" -> 
+                match source.TryGetValue(fieldName) with
+                | true, v1 -> 
+                    if isNotBlank v1 then ok <| [| v1 |]
+                    else 
+                        generateMatchAllQuery.Value <- true
+                        ok <| Array.empty
+                | _ -> 
+                    generateMatchAllQuery.Value <- true
+                    ok <| Array.empty
+            // Match self but use a default value if value is not found
+            | x when x.StartsWith("[") && x.EndsWith("]") -> 
+                match source.TryGetValue(fieldName) with
+                | true, v1 -> 
+                    if isNotBlank v1 then ok <| [| v1 |]
+                    else ok <| [| x.Substring(1, x.Length - 2) |]
+                | _ -> ok <| [| x.Substring(1, x.Length - 2) |]
+            // Cross matching cases
+            // Default cross matching case
+            | x when x.StartsWith("<") && (x.EndsWith(">") || x.EndsWith(">[!]")) -> 
+                match source.TryGetValue(x.Substring(1, x.LastIndexOf('>') - 1)) with
+                | true, v1 -> 
+                    if isNotBlank v1 then ok <| [| v1 |]
+                    else fail <| MissingFieldValue fieldName
+                | _ -> fail <| MissingFieldValue fieldName
+            // Cross matching and ignore clause if value is not found
+            | x when x.StartsWith("<") && x.EndsWith(">[*]") -> 
+                match source.TryGetValue(x.Substring(1, x.LastIndexOf('>') - 1)) with
+                | true, v1 -> 
+                    if isNotBlank v1 then ok <| [| v1 |]
+                    else 
+                        generateMatchAllQuery.Value <- true
+                        ok <| Array.empty
+                | _ -> 
+                    generateMatchAllQuery.Value <- true
+                    ok <| Array.empty
+            // Cross matching and use default if value is not found
+            | x when x.StartsWith("<") && x.EndsWith("]") -> 
+                match source.TryGetValue(x.Substring(1, x.LastIndexOf('>') - 1)) with
+                | true, v1 -> 
+                    if isNotBlank v1 then ok <| [| v1 |]
+                    else ok <| [| x.Substring(x.IndexOf('[') + 1, x.LastIndexOf(']') - x.IndexOf('[') - 1) |]
+                | _ -> ok <| [| x.Substring(x.IndexOf('[') + 1, x.LastIndexOf(']') - x.IndexOf('[') - 1) |]
+            // Constant value
+            | v1 -> ok <| [| v1 |]
+        
         let getValue (fieldName, v : Value) = 
             match isProfileBased with
             | Some(source) -> 
-                // Check if cross matching is setup
-                let fName = 
-                    match v with
-                    | SingleValue(v1) -> 
-                        if v1.StartsWith("<") && v1.EndsWith(">") then v1.Substring(1, v1.Length - 2)
-                        else fieldName
-                    | _ -> fieldName
-                match source.TryGetValue(fName) with
-                | true, v' -> 
-                    if isBlank v' then
-                        getFromMissingValueConfiguration(fName, v)
-                    else ok <| [| v' |]
-                | _ -> getFromMissingValueConfiguration(fName, v)         
+                match v with
+                | SingleValue(v1) -> getValueForSearchProfile (fieldName, v1, source)
+                | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
             | None -> v |> getFieldValueAsArray fieldName
         
         /// Generate the query from the condition
@@ -215,7 +247,7 @@ module SearchDsl =
         fields
     
     let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
-        !> "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
+        (!>) "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
         // multiple threads the below variables are thread safe. The cost of using blocking collection vs. 
@@ -255,11 +287,12 @@ module SearchDsl =
         let hits = totalDocs.ScoreDocs
         let recordsReturned = totalDocs.ScoreDocs.Count() - searchQuery.Skip
         let totalAvailable = totalDocs.TotalHits
-        let cutOff =
+        
+        let cutOff = 
             match searchQuery.CutOff with
             | 0.0 -> None
             | cutOffValue -> Some(float32 <| cutOffValue, totalDocs.GetMaxScore())
-
+        
         let highlighterOptions = 
             if notNull searchQuery.Highlights then 
                 match searchQuery.Highlights.HighlightedFields with
@@ -311,39 +344,31 @@ module SearchDsl =
                 resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
                 SearchResultComponents.StructuredResult(resultDoc)
         
-        let distinctByFilter (document : Document) =
+        let distinctByFilter (document : Document) = 
             match distinctBy with
             | Some(field, hashSet) -> 
                 let distinctByValue = document.Get(indexWriter.GetSchemaName(field.FieldName))
-                if notNull distinctByValue && hashSet.Add(distinctByValue) then 
-                        Some(document)
+                if notNull distinctByValue && hashSet.Add(distinctByValue) then Some(document)
                 else None
             | None -> Some(document)
         
-        let cutOffFilter (hit : ScoreDoc) (document : Document option) =
+        let cutOffFilter (hit : ScoreDoc) (document : Document option) = 
             match cutOff with
-            | Some(cutOffValue, maxScore) ->
-                if (hit.Score/maxScore * 100.0f >= cutOffValue) then
-                    document
-                else
-                    None
-            | None -> document    
-
+            | Some(cutOffValue, maxScore) -> 
+                if (hit.Score / maxScore * 100.0f >= cutOffValue) then document
+                else None
+            | None -> document
+        
         // Start composing the seach results
         let results = 
             seq { 
                 for i = searchQuery.Skip to hits.Length - 1 do
                     let hit = hits.[i]
                     let document = indexSearchers.[hit.ShardIndex].IndexSearcher.Doc(hit.Doc)
-                    let result =
-                        distinctByFilter document
-                        |> cutOffFilter hit
-                    
+                    let result = distinctByFilter document |> cutOffFilter hit
                     match result with
-                    | Some(doc) -> 
-                        yield processDocument (hit, document)
+                    | Some(doc) -> yield processDocument (hit, document)
                     | None -> ()
-
                 // Dispose the searchers
                 for i in 0..indexSearchers.Length - 1 do
                     (indexSearchers.[i] :> IDisposable).Dispose()

@@ -360,8 +360,6 @@ type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>
                         search.OrderBy <- sq.OrderBy
                         search.CutOff <- sq.CutOff
                         search.Count <- sq.Count
-                    search.GlobalMissingValue <- sq.GlobalMissingValue
-                    search.MissingValueConfiguration <- sq.MissingValueConfiguration
                     let! values = match inputValues with
                                   | Some(values) -> Choice1Of2(values)
                                   | None -> Parsers.ParseQueryString(search.QueryString, false)
@@ -421,7 +419,6 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
                 q.Count <- count
-                q.MissingValueConfiguration.Add(Constants.IdField, MissingValueOption.Ignore)
                 let! result = searchService.Search(q)
                 return result |> toSearchResults
             }

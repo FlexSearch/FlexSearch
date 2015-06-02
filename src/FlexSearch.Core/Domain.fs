@@ -311,20 +311,6 @@ type JobStatus =
     /// the engine's logging service so they could potentially write more error information to the logs.
     | CompletedWithErrors = 5
 
-/// Missing Value option is used by FlexSearch in conjunction with Search profile based query. This tells the
-/// engine about how to resolve an error if a field which is used in the search profile is not supplied by the 
-/// caller. For example, if the profile requires `firstname` and it is not supplied by the caller then the
-/// missing value option can be used to configure the engine's behaviour.
-type MissingValueOption = 
-    | Undefined = 0
-    /// Throw an error with the information about the missing field.
-    | ThrowError = 1
-    /// Use the default value supplied by the user as a part of search profile configuration.
-    | Default = 2
-    /// Ignore the missing field related conditions. This is essentially replacing the condition with
-    /// a match all condition.
-    | Ignore = 3
-
 ///  Advance field properties to be used by custom field
 type FieldIndexingInformation = 
     { Index : bool
@@ -1007,14 +993,7 @@ module SearchQuery =
         
         /// Query string to be used for searching
         member val QueryString = query with get, set
-        
-        /// AUTO
-        member val MissingValueConfiguration = new Dictionary<string, MissingValueOption>(StringComparer.OrdinalIgnoreCase) with get, set
-        
-        /// Universal configuration for the missing field values. Only applicable
-        /// for search profiles.
-        member val GlobalMissingValue = MissingValueOption.Default with get, set
-        
+                
         /// If true will return collapsed search results which are in tabular form.
         /// Flat results enable easy binding to a grid but grouping results is tougher
         /// with Flat result.

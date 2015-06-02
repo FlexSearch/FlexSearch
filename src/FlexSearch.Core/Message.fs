@@ -184,6 +184,7 @@ type SearchMessage =
     | StoredFieldCannotBeSearched of fieldName : string
     | MissingFieldValue of fieldName : string
     | UnknownMissingVauleOption of fieldName : string
+    | SearchProfileUnsupportedFieldValue of fieldName : string
     | DataCannotBeParsed of fieldName : string * expectedDataType : string
     | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
@@ -207,6 +208,7 @@ type SearchMessage =
             | QueryStringParsingError(e) -> sprintf "Query string parsing error: \n%s" e
             | UnknownSearchProfile(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
             | PurelyNegativeQueryNotSupported -> "Purely negative queries (not top query) not supported"
+            | SearchProfileUnsupportedFieldValue(fn) -> sprintf "Search Profile does not support array values as an input for field '%s'." fn
             |> caseToMsg this
 
 type IndexingMessage = 

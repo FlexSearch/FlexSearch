@@ -7,12 +7,20 @@ open System.Linq
 /// General search related helpers
 let getQuery (indexName, queryString) = new SearchQuery.Dto(indexName, queryString)
 
+let withName(name) (query : SearchQuery.Dto) =
+    query.QueryName <- name
+    query
+
 let withColumns (columns : string []) (query : SearchQuery.Dto) = 
     query.Columns <- columns
     query
 
 let withSearchProfile (profileName : string) (query : SearchQuery.Dto) = 
     query.SearchProfile <- profileName
+    query
+
+let withProfileOverride (query : SearchQuery.Dto) =
+    query.OverrideProfileOptions <- true
     query
 
 let withHighlighting (option : HighlightOption.Dto) (query : SearchQuery.Dto) = 
@@ -243,64 +251,233 @@ id,et1,h1
 
 type ``Search profile Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
-id,et1,t2,i1,t1
-1,a,jhonson,1,aron
-2,c,hewitt,1,jhon
-3,c,hewitt,1,jhon
-4,d,hewitt,1,jhon
-5,d,hewitt,1,jhon
-6,b,Garner,1,joe
-7,e,Garner,1,sam
-8,d,jhonson,1,andrew"""
-    do indexTestData (testData, index, indexService, documentService)
+id,et1,et2
+1,a,h
+2,b,g
+3,c,f
+4,d,e
+5,e,d
+6,f,c
+7,g,b
+8,h,a"""
+    do 
+        // Add test profiles
+        index.SearchProfiles <- 
+            [| 
+                getQuery(index.IndexName, "et1 = ''") |> withName "matchself"
+                getQuery(index.IndexName, "et1 = '[!]'") |> withName "matchselferror"
+                getQuery(index.IndexName, "et1 = '[*]'") |> withName "matchselfignore"
+                getQuery(index.IndexName, "et1 = '[d]'") |> withName "matchselfdefault"
+                getQuery(index.IndexName, "et1 = '<et2>'") |> withName "crossmatch"
+                getQuery(index.IndexName, "et1 = '<et2>[!]'") |> withName "crossmatcherror"
+                getQuery(index.IndexName, "et1 = '<et2>[*]'") |> withName "crossmatchignore"
+                getQuery(index.IndexName, "et1 = '<et2>[d]'") |> withName "crossmatchdefault"
+                getQuery(index.IndexName, "et1 = 'h'") |> withName "constantmatch"
+            |]
+        indexTestData (testData, index, indexService, documentService)
     
-    member __.``Cross matching can be used to match different fields``() =
+    member __.``When no value is passed in search profile then the field should match against itself``() =
         let result = 
-            getQuery (index.IndexName, "t1:'jhon',t2:'sam'")
-            |> withSearchProfile "profile2" //t1 = '<t2>'
+            getQuery (index.IndexName, "et1:'a'")
+            |> withSearchProfile "matchself"
             |> searchAndExtract searchService
-        // t1 should get its value from t2. We are using t2 = sam which 
-        // should only match a single record
         result |> assertReturnedDocsCount 1
 
-    member __.``There are 8 records in the index``() = 
-        let result = getQuery (index.IndexName, "_id matchall '*'") |> searchAndExtract searchService
+    member __.``When the passed value is blank then the search will fail as the default behaviour is to throw error``() =
+        let result = 
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "matchself"
+            |> searchService.Search
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the required field value is not passed then the search will fail as the default behaviour is to throw error``() =
+        let result = 
+            // Can't use blank query string other wise the query validation will fail
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "matchself"
+            |> searchService.Search
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the passed value is blank then the search will fail for self match configuration of [!]``() =
+        let result = 
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "matchselferror"
+            |> searchService.Search
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the required field value is not passed then the search will fail for self match configuration of [!]``() =
+        let result = 
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "matchselferror"
+            |> searchService.Search
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the passed value is blank then the search will ignore the clause for self match configuration of [*]``() =
+        let result = 
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "matchselfignore"
+            |> searchAndExtract searchService
+        // We should get all the records back as the query will be short circuited to match all query
         result |> assertReturnedDocsCount 8
-    
-    member __.``Searching with searchprofile 'profile1' will return 2 record``() = 
+
+    member __.``When the required field value is not passed then the search will ignore the clause for self match configuration of [*]``() =
         let result = 
-            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',i1:'1',et1:'c'")
-            |> withSearchProfile "profile1"
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "matchselfignore"
             |> searchAndExtract searchService
-        result |> assertReturnedDocsCount 2
-    
-    member __.``If no value for i1 is passed then the default configured value of 1 will be used``() = 
+        result |> assertReturnedDocsCount 8
+
+    member __.``When the required field value is blank then the search will use the default value for self match configuration of []``() =
         let result = 
-            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',et1:'c'")
-            |> withSearchProfile "profile1"
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "matchselfdefault"
+            |> withColumns [| "*" |]
+            |> withProfileOverride
             |> searchAndExtract searchService
-        result |> assertReturnedDocsCount 2
-    
-    member __.``If no value for i1 is passed and no value for et1 is passed then et1 will be ignored``() = 
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "d"
+
+    member __.``When the required field value is not passed then the search will use the default value for self match configuration of []``() =
         let result = 
-            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt'")
-            |> withSearchProfile "profile1"
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "matchselfdefault"
+            |> withColumns [| "*" |]
+            |> withProfileOverride
             |> searchAndExtract searchService
-        result |> assertReturnedDocsCount 4
-    
-    member __.``If no value for t1 is passed then the profile will throw error as that option is set``() = 
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "d"
+
+    member __.``Cross matching can be done by specifying the target field inside <> brackets``() =
         let result = 
-            getQuery (index.IndexName, "t2:'hewitt'")
-            |> withSearchProfile "profile1"
+            getQuery (index.IndexName, "et2:'a'")
+            |> withSearchProfile "crossmatch"
+            |> withColumns [| "*" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "a"
+
+    member __.``When the cross matched field value is blank then the search will fail as the default behaviour is to throw error``() =
+        let result = 
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "crossmatch"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("t1")) @>
-    
-    member __.``If no value for t2 is passed then the profile will throw error as the value is missing``() = 
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the cross matched field is not passed then the search will fail as the default behaviour is to throw error``() =
         let result = 
-            getQuery (index.IndexName, "t1:'jhon'")
-            |> withSearchProfile "profile1"
+            // Can't use blank query string other wise the query validation will fail
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "crossmatch"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("t2")) @>
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the cross matched field value is blank then the search will fail for cross match configuration of [!]``() =
+        let result = 
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "crossmatcherror"
+            |> searchService.Search
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the required field value is not passed then the search will fail for cross match configuration of [!]``() =
+        let result = 
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "crossmatcherror"
+            |> searchService.Search
+        test <@ result = fail(MissingFieldValue("et1")) @>
+
+    member __.``When the cross matched field value is blank then the search will ignore the clause for cross match configuration of [*]``() =
+        let result = 
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "crossmatchignore"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 8
+
+    member __.``When the required field value is not passed then the search will ignore the clasue for cross match configuration of [*]``() =
+        let result = 
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "crossmatchignore"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 8
+
+    member __.``When the cross matched field value is blank then the search will use the default value for cross match configuration of []``() =
+        let result = 
+            getQuery (index.IndexName, "et2:''")
+            |> withSearchProfile "crossmatchdefault"
+            |> withColumns [| "*" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "d"
+
+    member __.``When the required field value is not passed then the search will use the default value for cross match configuration of []``() =
+        let result = 
+            getQuery (index.IndexName, "et1:''")
+            |> withSearchProfile "crossmatchdefault"
+            |> withColumns [| "*" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "d"
+
+    member __.``Constant field value matching is possible by passing the constant value between two quotes``() =
+        let result = 
+            getQuery (index.IndexName, "any:'any'")
+            |> withSearchProfile "constantmatch"
+            |> withColumns [| "*" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "h"
+
+//
+//    member __.``Cross matching can be used to match different fields``() =
+//        let result = 
+//            getQuery (index.IndexName, "et1:'a'")
+//            |> withSearchProfile "matchself"
+//            |> searchAndExtract searchService
+//        // t1 should get its value from t2. We are using t2 = sam which 
+//        // should only match a single record
+//        result |> assertReturnedDocsCount 1
+//
+//    member __.``There are 8 records in the index``() = 
+//        let result = getQuery (index.IndexName, "_id matchall '*'") |> searchAndExtract searchService
+//        result |> assertReturnedDocsCount 8
+//    
+//    member __.``Searching with searchprofile 'profile1' will return 2 record``() = 
+//        let result = 
+//            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',i1:'1',et1:'c'")
+//            |> withSearchProfile "profile1"
+//            |> searchAndExtract searchService
+//        result |> assertReturnedDocsCount 2
+//    
+//    member __.``If no value for i1 is passed then the default configured value of 1 will be used``() = 
+//        let result = 
+//            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',et1:'c'")
+//            |> withSearchProfile "profile1"
+//            |> searchAndExtract searchService
+//        result |> assertReturnedDocsCount 2
+//    
+//    member __.``If no value for i1 is passed and no value for et1 is passed then et1 will be ignored``() = 
+//        let result = 
+//            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt'")
+//            |> withSearchProfile "profile1"
+//            |> searchAndExtract searchService
+//        result |> assertReturnedDocsCount 4
+//    
+//    member __.``If no value for t1 is passed then the profile will throw error as that option is set``() = 
+//        let result = 
+//            getQuery (index.IndexName, "t2:'hewitt'")
+//            |> withSearchProfile "profile1"
+//            |> searchService.Search
+//        test <@ result = fail(MissingFieldValue("t1")) @>
+//    
+//    member __.``If no value for t2 is passed then the profile will throw error as the value is missing``() = 
+//        let result = 
+//            getQuery (index.IndexName, "t1:'jhon'")
+//            |> withSearchProfile "profile1"
+//            |> searchService.Search
+//        test <@ result = fail(MissingFieldValue("t2")) @>
 
 type ``DistinctBy Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
