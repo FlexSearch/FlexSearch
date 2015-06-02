@@ -1,1 +1,0 @@
-wevtutil.exe im FlexSearch.Logging.FlexSearch.etwManifest.man /rf:"%~dp0FlexSearch.Logging.FlexSearch.etwManifest.dll" /mf:"%~dp0FlexSearch.Logging.FlexSearch.etwManifest.dll"

@@ -1,1 +1,0 @@
-wevtutil.exe um FlexSearch.Logging.FlexSearch.etwManifest.man

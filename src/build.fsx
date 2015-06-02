@@ -7,7 +7,15 @@ open System.IO
 open System.Linq
 
 TraceEnvironmentVariables()
-RestorePackages()
+//RestorePackages()
+Target "RestorePackages" (fun _ ->
+    !! "./**/packages.config"
+        |> Seq.iter (RestorePackage (fun p ->
+            { p with
+                OutputPath = "./packages"
+                Sources = [@"https://nuget.org/api/v2/"; @"https://www.myget.org/F/roslyn-nightly/"]}))
+)
+
 if buildServer = BuildServer.AppVeyor then 
     MSBuildLoggers <- @"""C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll""" :: MSBuildLoggers
 
@@ -45,7 +53,8 @@ let packageFiles() =
         let fileName = Path.GetFileName(file).ToLowerInvariant()
         if fileName.Contains("test") then File.Delete(file)
         else 
-            if fileName.StartsWith("flex") = false && fileName.StartsWith("install") = false 
+            if fileName.StartsWith("flex") = false && fileName.StartsWith("install") = false
+               && fileName.StartsWith("setup") = false
                && fileName.StartsWith("uninstall") = false && fileName.StartsWith("license") = false 
                && fileName.StartsWith("benchmark") = false then File.Move(file, Path.Combine(dest, fileName))
     let filesToDelete = 
@@ -91,10 +100,6 @@ Target "BuildWeaver" (fun _ ->
 Target "BuildApp" (fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
-    AssemblyInfo "FlexSearch.Api" "FlexSearch Api"
-    AssemblyInfo "FlexSearch.Common" "FlexSearch Common Utilities"
-    AssemblyInfo "FlexSearch.Connectors" "FlexSearch Coneectors"
-    AssemblyInfo "FlexSearch.Client" "FlexSearch Client"
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
     MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: ")
 Target "Test" (fun _ -> 
@@ -110,7 +115,13 @@ Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
     (fun _ -> !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir + "FlexSearch." + version + ".zip"))
 // Dependencies
-"Clean" ==> "BuildWeaver" ==> "BuildApp" // ==> "Test"
-                                         ==> "Default" ==> "MoveFiles" ==> "Zip"
+"Clean" 
+==> "RestorePackages" 
+==> "BuildWeaver" 
+==> "BuildApp" 
+// ==> "Test"
+==> "Default" 
+==> "MoveFiles" 
+==> "Zip"
 // start build
 RunTargetOrDefault "Zip"

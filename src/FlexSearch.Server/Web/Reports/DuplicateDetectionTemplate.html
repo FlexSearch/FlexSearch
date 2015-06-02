@@ -1,0 +1,68 @@
+﻿<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlexSearch Duplicate Detection Report</title>
+    <link href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="starter-template">
+            <h1>FlexSearch Duplicate Detection Report</h1>
+        </div>
+    </div>
+    <div class="well">
+        <table class="table">
+            <thead>
+                <tr></tr>
+            </thead>
+            <tbody>
+                <tr data-pg-collapsed>
+                    <td>Index Name</td>
+                    <td>{{IndexName}}</td>
+                </tr>
+                <tr>
+                    <td>Search Profile Name</td>
+                    <td>{{ProfileName}}</td>
+                </tr>
+                <tr>
+                    <td>Query String</td>
+                    <td>{{QueryString}}</td>
+                </tr>
+                <tr>
+                    <td>Overridden Cut Off</td>
+                    <td>{{CutOff}}</td>
+                </tr>
+                <tr>
+                    <td>Total Records Checked</td>
+                    <td>{{TotalRecords}}</td>
+                </tr>
+                <tr>
+                    <td>Records with Matches</td>
+                    <td>{{MatchedRecords}}</td>
+                </tr>
+                <tr>
+                    <td>Records with No Match</td>
+                    <td>{{NoMatchRecords}}</td>
+                </tr>
+                <tr>
+                    <td>Records with 1 match only</td>
+                    <td>{{OneMatchRecord}}</td>
+                </tr>
+                <tr>
+                    <td>Records with 2 match only</td>
+                    <td>{{TwoMatchRecord}}</td>
+                </tr>
+                <tr>
+                    <td>Records with more than 2 matches</td>
+                    <td>{{MoreThanTwoMatchRecord}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {{Results}}
+    <hr />
+    <h3>Consolidated Results</h3>
+    {{AggregratedResults}}
+</body>
+

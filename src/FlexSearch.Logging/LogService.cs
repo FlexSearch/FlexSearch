@@ -1,20 +1,25 @@
 ﻿// ----------------------------------------------------------------------------
-// (c) Seemant Rajvanshi, 2013
+//  Licensed to FlexSearch under one or more contributor license 
+//  agreements. See the NOTICE file distributed with this work 
+//  for additional information regarding copyright ownership. 
 //
-// This source code is subject to terms and conditions of the Apache License, Version 2.0. A 
-// copy of the license can be found in the License.txt file at the root of this distribution. 
-// By using this source code in any fashion, you are agreeing to be bound 
-// by the terms of the Apache License, Version 2.0.
+//  This source code is subject to terms and conditions of the 
+//  Apache License, Version 2.0. A copy of the license can be 
+//  found in the License.txt file at the root of this distribution. 
+//  You may also obtain a copy of the License at:
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+//  By using this source code in any fashion, you are agreeing
+//  to be bound by the terms of the Apache License, Version 2.0.
 //
-// You must not remove this notice, or any other, from this software.
+//  You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
 
 using System;
 using System.Reflection;
 using System.Text;
 using Microsoft.Diagnostics.Tracing;
-using FlexSearch.Core;
-using FlexSearch.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -25,11 +30,16 @@ namespace FlexSearch.Logging
     /// Event tracing for windows and is extremely fast.
     /// </summary>
     [EventSource(Name = "FlexSearch")]
-    public sealed class LogService : EventSource, ILogService
+    public sealed class LogService : EventSource
     {
         private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings();
         private static readonly LogService Log = new LogService();
         private static ConsoleEventListener consoleEventListener = null;
+
+        /// <summary>
+        /// Default Log message format
+        /// </summary>
+        private const string Message = "Code: {0} \n{1}";
 
         private LogService()
         {
@@ -37,7 +47,7 @@ namespace FlexSearch.Logging
             JsonSerializerSettings.Formatting = Formatting.Indented;
         }
 
-        public static ILogService GetLogger(bool testLogger)
+        public static LogService GetLogger(bool testLogger)
         {
             if (!testLogger || consoleEventListener != null) return Log;
             consoleEventListener = new ConsoleEventListener();
@@ -45,264 +55,247 @@ namespace FlexSearch.Logging
             return Log;
         }
 
-        [Event(1, Message = "Adding index {0}. \nIndexDetails: {1}", Level = EventLevel.Informational,
-            Channel = EventChannel.Admin, Keywords = Keywords.Index)]
-        private void AddIndex(string indexName, string indexInfo)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(1, indexName, indexInfo);
-            }
-        }
-
-        [Event(2, Message = "Updating index {0}. \nIndex Details: {1}", Level = EventLevel.Informational,
-            Channel = EventChannel.Admin, Keywords = Keywords.Index)]
-        private void UpdateIndex(string indexName, string indexInfo)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(2, indexName, indexInfo);
-            }
-        }
-
-        [Event(3, Message = "Deleting index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin,
-            Keywords = Keywords.Index)]
-        private void DeleteIndex(string indexName)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(3, indexName);
-            }
-        }
-
-        [Event(4, Message = "Opening index {0}", Level = EventLevel.Informational, Channel = EventChannel.Admin,
-            Keywords = Keywords.Index)]
-        private void OpenIndex(string indexName)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(4, indexName);
-            }
-        }
-
-        [Event(5, Message = "Closing index {0}.", Level = EventLevel.Informational, Channel = EventChannel.Admin)]
-        private void CloseIndex(string indexName)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(5, indexName);
-            }
-        }
-
-        [Event(6, Message = "Failed to validate index details {0}. \nIndexDetails: {1}. \nMessage: {2}",
-            Level = EventLevel.Informational, Channel = EventChannel.Admin, Keywords = Keywords.Index)]
-        private void IndexValidationFailed(string indexName, string indexInfo, string validationError)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(6, indexName, indexInfo, validationError);
-            }
-        }
-
-        [Event(7, Message = "Staring FlexSearch", Level = EventLevel.Informational, Channel = EventChannel.Admin,
-            Keywords = Keywords.Node)]
-        private void StartSession()
-        {
-            if (!IsEnabled()) return;
-            var sb = new StringBuilder();
-            sb.AppendLine(
-                String.Format(
-                    "Version: {0}", Assembly.GetExecutingAssembly().GetName().Version));
-            sb.AppendLine(string.Format("ETW GUID: {0}", Guid));
-            sb.AppendLine(string.Format("ETW Logger Name: {0}", Name));
-            WriteEvent(7, sb.ToString());
-        }
-
-        [Event(8, Message = "Stopping FlexSearch", Level = EventLevel.Informational, Channel = EventChannel.Admin,
-            Keywords = Keywords.Node)]
-        private void EndSession()
-        {
-            if (IsEnabled()
-                )
-            {
-                WriteEvent(8);
-            }
-        }
-
-        [Event(9, Message = "Shutdown request received", Level = EventLevel.Informational, Channel = EventChannel.Admin,
-            Keywords = Keywords.Node)]
-        private void Shutdown()
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(9);
-            }
-        }
-
-        [Event(10, Message = "Component Loaded: {0}. \nComponent Type: {1}", Level = EventLevel.Informational,
-            Channel = EventChannel.Admin, Keywords = Keywords.Node)]
-        private void ComponentLoaded(string componentName, string componentType)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(10, componentName, componentType);
-            }
-        }
-
-        [Event(11, Message = "Critical application failure occurred. \n{0}", Level = EventLevel.Critical,
-            Channel = EventChannel.Admin)]
-        private void TraceCritical(string ex)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(11, ex);
-            }
-        }
-
-        [Event(12, Message = "Application error occurred: {0}. \n{1}", Level = EventLevel.Error,
-            Channel = EventChannel.Admin,
-            Keywords = Keywords.Error)]
-        private void TraceError2(string error, string ex)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(12, error, ex);
-            }
-        }
-
-        [Event(13, Message = "Application error occurred: \n{0}.", Level = EventLevel.Error,
-            Channel = EventChannel.Admin,
-            Keywords = Keywords.Error)]
-        private void TraceError(string error)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(13, error);
-            }
-        }
-
-        [Event(14, Message = "Application information message: {0}. \nMessage details: {1}",
-            Level = EventLevel.Informational,
-            Channel = EventChannel.Admin, Keywords = Keywords.General)]
-        private void TraceInfomation(string infoMessage, string message)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(14, infoMessage, message);
-            }
-        }
-
-        [Event(15, Message = "Component Initialization Failed: {0}. \nComponent Type: {1} \nException: {2}",
-            Level = EventLevel.Informational,
-            Channel = EventChannel.Admin, Keywords = Keywords.Node)]
-        private void ComponentInitializationFailed(string componentName, string componentType, string exception)
-        {
-            if (IsEnabled())
-            {
-                WriteEvent(15, componentName, componentType, exception);
-            }
-        }
-
         public class Keywords
         {
-            public const EventKeywords Node = (EventKeywords) 0x0001;
-            public const EventKeywords Index = (EventKeywords) 0x0002;
-            public const EventKeywords Search = (EventKeywords) 0x0004;
-            public const EventKeywords Error = (EventKeywords) 0x00008;
-            public const EventKeywords General = (EventKeywords) 0x0010;
+            public const EventKeywords Node = (EventKeywords)1;
+            public const EventKeywords Index = (EventKeywords)2;
+            public const EventKeywords Search = (EventKeywords)4;
+            public const EventKeywords Document = (EventKeywords)8;
+            public const EventKeywords Default = (EventKeywords)16;
+            public const EventKeywords Plugin = (EventKeywords)32;
         }
 
-        void ILogService.AddIndex(string indexName, Api.Index indexDetails)
+        /// <summary>
+        /// Returns if the logger is enabled or not
+        /// </summary>
+        public new bool IsEnabled { get { return IsEnabled(); } }
+
+        #region Node events
+        [Event(1000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Node, Channel = EventChannel.Admin)]
+        public void NodeCritical(string errorCode, string msg, string data)
         {
-            AddIndex(indexName, JsonConvert.SerializeObject(indexDetails, JsonSerializerSettings));
+            WriteEvent(1000, errorCode, msg, data);
         }
 
-        void ILogService.CloseIndex(string indexName)
+        [Event(1001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Node, Channel = EventChannel.Admin)]
+        public void NodeError(string errorCode, string msg, string data)
         {
-            CloseIndex(indexName);
+            WriteEvent(1001, errorCode, msg, data);
         }
 
-        void ILogService.ComponentLoaded(string name, string componentType)
+        [Event(1002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Node, Channel = EventChannel.Admin)]
+        public void NodeWarning(string errorCode, string msg, string data)
         {
-            ComponentLoaded(name, componentType);
+            WriteEvent(1002, errorCode, msg, data);
         }
-
-        void ILogService.DeleteIndex(string indexName)
+        
+        [Event(1003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Node, Channel = EventChannel.Admin)]
+        public void NodeInfo(string errorCode, string msg, string data)
         {
-            DeleteIndex(indexName);
+            WriteEvent(1003, errorCode, msg, data);
         }
 
-        void ILogService.EndSession()
+        [Event(1004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Node, Channel = EventChannel.Operational)]
+        public void NodeVerbose(string errorCode, string msg, string data)
         {
-            EndSession();
+            WriteEvent(1004, errorCode, msg, data);
         }
-
-        void ILogService.IndexValidationFailed(string indexName, Api.Index indexDetails,
-            Api.OperationMessage validationObject)
+        
+        [Event(1005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Node, Channel = EventChannel.Operational)]
+        public void NodeLogAlways(string errorCode, string msg, string data)
         {
-            IndexValidationFailed(indexName, JsonConvert.SerializeObject(indexDetails, JsonSerializerSettings),
-                JsonConvert.SerializeObject(validationObject, JsonSerializerSettings));
+            WriteEvent(1005, errorCode, msg, data);
         }
+        #endregion
 
-        void ILogService.OpenIndex(string indexName)
+        #region Index events
+        [Event(2000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Index, Channel = EventChannel.Admin)]
+        public void IndexCritical(string errorCode, string msg, string data)
         {
-            OpenIndex(indexName);
+            WriteEvent(2000, errorCode, msg, data);
         }
 
-        void ILogService.Shutdown()
+        [Event(2001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Index, Channel = EventChannel.Admin)]
+        public void IndexError(string errorCode, string msg, string data)
         {
-            Shutdown();
+            WriteEvent(2001, errorCode, msg, data);
         }
 
-        void ILogService.StartSession()
+        [Event(2002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Index, Channel = EventChannel.Admin)]
+        public void IndexWarning(string errorCode, string msg, string data)
         {
-            StartSession();
+            WriteEvent(2002, errorCode, msg, data);
         }
 
-        void ILogService.TraceCritical(Exception ex)
+        [Event(2003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Index, Channel = EventChannel.Admin)]
+        public void IndexInfo(string errorCode, string msg, string data)
         {
-            TraceCritical(Helpers.ExceptionPrinter(ex));
+            WriteEvent(2003, errorCode, msg, data);
         }
 
-        void ILogService.TraceCritical(String message, Exception ex)
+        [Event(2004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Index, Channel = EventChannel.Operational)]
+        public void IndexVerbose(string errorCode, string msg, string data)
         {
-            TraceCritical(String.Format("{0} {1}", message, Helpers.ExceptionPrinter(ex)));
+            WriteEvent(2004, errorCode, msg, data);
         }
 
-        void ILogService.TraceError(string error, Api.OperationMessage ex)
+        [Event(2005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Index, Channel = EventChannel.Operational)]
+        public void IndexLogAlways(string errorCode, string msg, string data)
         {
-            TraceError2(error, JsonConvert.SerializeObject(ex, JsonSerializerSettings));
+            WriteEvent(2005, errorCode, msg, data);
         }
+        #endregion
 
-        void ILogService.TraceError(string error)
+        #region Search events
+        [Event(3000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Search, Channel = EventChannel.Admin)]
+        public void SearchCritical(string errorCode, string msg, string data)
         {
-            TraceError(error);
+            WriteEvent(3000, errorCode, msg, data);
         }
 
-        void ILogService.TraceError(string error, Exception ex)
+        [Event(3001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Search, Channel = EventChannel.Admin)]
+        public void SearchError(string errorCode, string msg, string data)
         {
-            TraceError2(error, Helpers.ExceptionPrinter(ex));
+            WriteEvent(3001, errorCode, msg, data);
         }
 
-        void ILogService.UpdateIndex(string indexName, Api.Index indexDetails)
+        [Event(3002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Search, Channel = EventChannel.Admin)]
+        public void SearchWarning(string errorCode, string msg, string data)
         {
-            UpdateIndex(indexName, JsonConvert.SerializeObject(indexDetails, JsonSerializerSettings));
+            WriteEvent(3002, errorCode, msg, data);
         }
 
-        void ILogService.TraceInformation(string informationMessage, string messageDetails)
+        [Event(3003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Search, Channel = EventChannel.Admin)]
+        public void SearchInfo(string errorCode, string msg, string data)
         {
-            TraceInfomation(informationMessage, messageDetails);
+            WriteEvent(3003, errorCode, msg, data);
         }
 
-
-        void ILogService.ComponentInitializationFailed(string name, string componentType, string message)
+        [Event(3004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Search, Channel = EventChannel.Operational)]
+        public void SearchVerbose(string errorCode, string msg, string data)
         {
-            ComponentInitializationFailed(name, componentType, message);
+            WriteEvent(3004, errorCode, msg, data);
         }
 
-        void ILogService.ComponentInitializationFailed(string name, string componentType, Exception ex)
+        [Event(3005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Search, Channel = EventChannel.Operational)]
+        public void SearchLogAlways(string errorCode, string msg, string data)
         {
-            ComponentInitializationFailed(name, componentType, Helpers.ExceptionPrinter(ex));
+            WriteEvent(3005, errorCode, msg, data);
         }
+        #endregion
+
+        #region Document events
+        [Event(4000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Document, Channel = EventChannel.Admin)]
+        public void DocumentCritical(string errorCode, string msg, string data)
+        {
+            WriteEvent(4000, errorCode, msg, data);
+        }
+
+        [Event(4001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Document, Channel = EventChannel.Admin)]
+        public void DocumentError(string errorCode, string msg, string data)
+        {
+            WriteEvent(4001, errorCode, msg, data);
+        }
+
+        [Event(4002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Document, Channel = EventChannel.Admin)]
+        public void DocumentWarning(string errorCode, string msg, string data)
+        {
+            WriteEvent(4002, errorCode, msg, data);
+        }
+
+        [Event(4003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Document, Channel = EventChannel.Admin)]
+        public void DocumentInfo(string errorCode, string msg, string data)
+        {
+            WriteEvent(4003, errorCode, msg, data);
+        }
+
+        [Event(4004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Document, Channel = EventChannel.Operational)]
+        public void DocumentVerbose(string errorCode, string msg, string data)
+        {
+            WriteEvent(4004, errorCode, msg, data);
+        }
+
+        [Event(4005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Document, Channel = EventChannel.Operational)]
+        public void DocumentLogAlways(string errorCode, string msg, string data)
+        {
+            WriteEvent(4005, errorCode, msg, data);
+        }
+        #endregion
+
+        #region Default events
+        [Event(5000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Default, Channel = EventChannel.Admin)]
+        public void DefaultCritical(string errorCode, string msg, string data)
+        {
+            WriteEvent(5000, errorCode, msg, data);
+        }
+
+        [Event(5001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Default, Channel = EventChannel.Admin)]
+        public void DefaultError(string errorCode, string msg, string data)
+        {
+            WriteEvent(5001, errorCode, msg, data);
+        }
+
+        [Event(5002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Default, Channel = EventChannel.Admin)]
+        public void DefaultWarning(string errorCode, string msg, string data)
+        {
+            WriteEvent(5002, errorCode, msg, data);
+        }
+
+        [Event(5003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Default, Channel = EventChannel.Admin)]
+        public void DefaultInfo(string errorCode, string msg, string data)
+        {
+            WriteEvent(5003, errorCode, msg, data);
+        }
+
+        [Event(5004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Default, Channel = EventChannel.Operational)]
+        public void DefaultVerbose(string errorCode, string msg, string data)
+        {
+            WriteEvent(5004, errorCode, msg, data);
+        }
+
+        [Event(5005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Default, Channel = EventChannel.Operational)]
+        public void DefaultLogAlways(string errorCode, string msg, string data)
+        {
+            WriteEvent(5005, errorCode, msg, data);
+        }
+        #endregion
+
+        #region Plugin events
+        [Event(6000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void PluginCritical(string errorCode, string msg, string data)
+        {
+            WriteEvent(6000, errorCode, msg, data);
+        }
+
+        [Event(6001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void PluginError(string errorCode, string msg, string data)
+        {
+            WriteEvent(6001, errorCode, msg, data);
+        }
+
+        [Event(6002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void PluginWarning(string errorCode, string msg, string data)
+        {
+            WriteEvent(6002, errorCode, msg, data);
+        }
+
+        [Event(6003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void PluginInfo(string errorCode, string msg, string data)
+        {
+            WriteEvent(6003, errorCode, msg, data);
+        }
+
+        [Event(6004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Plugin, Channel = EventChannel.Operational)]
+        public void PluginVerbose(string errorCode, string msg, string data)
+        {
+            WriteEvent(6004, errorCode, msg, data);
+        }
+
+        [Event(6005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Plugin, Channel = EventChannel.Operational)]
+        public void PluginLogAlways(string errorCode, string msg, string data)
+        {
+            WriteEvent(6005, errorCode, msg, data);
+        }
+        #endregion
     }
 }
