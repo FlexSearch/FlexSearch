@@ -608,50 +608,6 @@ module Analyzer =
                                    >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
     
 [<RequireQualifiedAccessAttribute>]
-module Script = 
-    open Microsoft.CSharp
-    open System.CodeDom.Compiler
-    open Microsoft.CodeAnalysis.Scripting.CSharp
-    open Microsoft.CodeAnalysis.Scripting
-
-    /// Script is used to add scripting capability to the index. These can be used to generate dynamic
-    /// field values based upon other indexed values or to modify scores of the returned results.
-    /// Any valid C# expression can be used as a script.
-    [<ToStringAttribute; Sealed>]
-    type Dto() = 
-        inherit DtoBase()
-        
-        /// Name of the script.
-        member val ScriptName = defString with get, set
-        
-        /// Source code of the script. 
-        member val Source = defString with get, set
-        
-        /// AUTO
-        member val ScriptType = ScriptType.Dto.ComputedField with get, set
-        
-        override this.Validate() = this.ScriptName
-                                   |> propertyNameValidator "ScriptName"
-                                   >>= fun _ -> this.Source |> notBlank "Source"
-    
-    /// Template method code for computed field script
-    let private computedFieldScriptTemplate = """
-string Execute(dynamic fields) { [SourceCode] }
-"""
-    
-    /// Compiles the given string to a function
-    let compileScript (sourceCode : string) = 
-        try 
-            let options = ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll").AddNamespaces("System.Dynamic")
-            let state = CSharpScript.Run(sourceCode, options)
-            let compiledScript = state.CreateDelegate<System.Func<System.Dynamic.DynamicObject, string>>("Execute")
-            ok (compiledScript)
-        with e -> fail (ScriptCannotBeCompiled(exceptionPrinter e))
-    
-    /// Compile computed field script
-    let compileComputedFieldScript (src) = compileScript (computedFieldScriptTemplate.Replace("[SourceCode]", src))
-
-[<RequireQualifiedAccessAttribute>]
 module Field = 
     /// A field is a section of a Document. 
     /// <para>
@@ -715,6 +671,8 @@ module Field =
         
         /// Fields can get their content dynamically through scripts. This is the name of 
         /// the script to be used for getting field data at index time.
+        /// Script name follows the below convention
+        /// ScriptName('param1','param2','param3')
         member val ScriptName = "" with get, set
         
         new(fieldName : string) = Dto(fieldName, FieldType.Dto.Text)
@@ -736,7 +694,7 @@ module Field =
           IsStored : bool
           Similarity : FieldSimilarity.Dto
           FieldType : FieldType.T
-          Source : System.Func<System.Dynamic.DynamicObject, string> option
+          Source : Func<string, string, Dictionary<string,string>, string> option
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
           RequiresAnalyzer : bool
@@ -878,13 +836,13 @@ module Field =
     
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
-               analyzerFactory : string -> Choice<Analyzer, IMessage>, scriptsManager : ScriptsManager) = 
+               analyzerFactory : string -> Choice<Analyzer, IMessage>, scriptService) = 
         let getSource (field : Dto) = 
-            if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok (None)
+            if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok <| None
             else 
-                match scriptsManager.ComputedFieldScripts.TryGetValue(field.ScriptName) with
-                | true, a -> ok (Some(a))
-                | _ -> fail (ScriptNotFound(field.ScriptName, field.FieldName))
+                match scriptService(field.ScriptName) with
+                | Choice1Of2(func) -> ok <| Some(func)
+                | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
         
         let getFieldType (field : Dto) = 
             maybe { 
@@ -1091,9 +1049,6 @@ module Index =
         /// Fields to be used in index.
         member val Fields = defArray<Field.Dto> with get, set
         
-        /// Scripts to be used in index.
-        member val Scripts = defArray<Script.Dto> with get, set
-        
         /// Search Profiles
         member val SearchProfiles = defArray<SearchQuery.Dto> with get, set
         
@@ -1110,26 +1065,9 @@ module Index =
         override this.Validate() = 
             let checkDuplicateFieldName() = 
                 this.Fields.Select(fun x -> x.FieldName).ToArray() |> hasDuplicates "Fields" "FieldName"
-            let checkDuplicateScriptNames() = 
-                this.Scripts.Select(fun x -> x.ScriptName).ToArray() |> hasDuplicates "Scripts" "ScriptName"
             let checkDuplicateQueries() = 
                 this.SearchProfiles.Select(fun x -> x.QueryName).ToArray() |> hasDuplicates "SearchProfiles" "QueryName"
-            
-            // Check if the script specified against a fields exists
-            let checkScriptExists() = 
-                let result = 
-                    this.Fields
-                    |> Seq.map (fun field -> 
-                           if String.IsNullOrWhiteSpace(field.ScriptName) = false then 
-                               if this.Scripts.FirstOrDefault(fun x -> x.ScriptName = field.ScriptName) = Unchecked.defaultof<Script.Dto> then 
-                                   fail (ScriptNotFound(field.ScriptName, field.FieldName))
-                               else ok()
-                           else ok())
-                    |> Seq.filter (fun x -> failed x)
-                    |> Seq.toArray
-                if result.Count() = 0 then ok()
-                else result.[0]
-            
+                        
             let validateSearchQuery() = 
                 // Check if any query name is missing in search profiles. Cannot do this through annotation as the
                 // Query Name is not mandatory for normal Search Queries
@@ -1141,14 +1079,11 @@ module Index =
             this.IndexName
             |> propertyNameValidator "IndexName"
             >>= fun _ -> seqValidator (this.Fields.Cast<DtoBase>())
-            >>= fun _ -> seqValidator (this.Scripts.Cast<DtoBase>())
             >>= fun _ -> seqValidator (this.SearchProfiles.Cast<DtoBase>())
             >>= checkDuplicateFieldName
-            >>= checkDuplicateScriptNames
             >>= validateSearchQuery
             >>= checkDuplicateQueries
-            >>= checkScriptExists
-
+            
 //////////////////////////////////////////////////////////////////////////
 /// Helper DTOs
 //////////////////////////////////////////////////////////////////////////

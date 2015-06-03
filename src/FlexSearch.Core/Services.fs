@@ -27,6 +27,10 @@ open System.Runtime.Caching
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open FlexLucene.Queryparser.Classic
+open Microsoft.CSharp
+open System.CodeDom.Compiler
+open Microsoft.CodeAnalysis.Scripting.CSharp
+open Microsoft.CodeAnalysis.Scripting
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
@@ -79,8 +83,8 @@ type IJobService =
     abstract GetJob : string -> Choice<Job, IMessage>
     abstract DeleteAllJobs : unit -> Choice<unit, IMessage>
     abstract UpdateJob : Job -> Choice<unit, IMessage>
-    abstract UpdateJob : jobId : string * JobStatus * count : int -> unit
-    abstract UpdateJob : jobId: string * JobStatus * count : int * msg : string -> unit
+    abstract UpdateJob : jobId:string * JobStatus * count:int -> unit
+    abstract UpdateJob : jobId:string * JobStatus * count:int * msg:string -> unit
 
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
@@ -89,7 +93,59 @@ type IAnalyzerService =
     abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, IMessage>
     abstract UpdateAnalyzer : analyzer:Analyzer.Dto -> Choice<unit, IMessage>
     abstract GetAllAnalyzers : unit -> Analyzer.Dto []
-    abstract Analyze : analyzerName:string * input:string -> Choice<string[], IMessage>
+    abstract Analyze : analyzerName:string * input:string -> Choice<string [], IMessage>
+
+/// Script related services
+type IScriptService = 
+    /// Signature : fun (indexName, fieldName, source) -> string
+    abstract GetComputedScript : scriptName:string
+     -> Choice<Func<string, string, Dictionary<string, string>, string>, IMessage>
+
+[<Sealed>]
+type ScriptService(threadSafeWriter : ThreadSafeFileWriter) = 
+    
+    let path = 
+        Constants.ConfFolder +/ "Scripts"
+        |> Directory.CreateDirectory
+        |> fun x -> x.FullName
+    
+    let computedScripts = conDict<Func<string, string, Dictionary<string, string>, string>>()
+    
+    let compile (sourceCode) = 
+        try 
+            let options = 
+                ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
+                             .AddNamespaces("System.Dynamic")
+            let state = CSharpScript.Run(sourceCode, options)
+            ok (state)
+        with e -> fail (ScriptCannotBeCompiled(exceptionPrinter e))
+    
+    let compileScripts (searchPattern) (stateProcessor : ScriptState * string -> unit) = 
+        let processFile (file) = 
+            let code = File.ReadAllText(file)
+            let fileName = Path.GetFileNameWithoutExtension(file)
+            match compile (code) with
+            | Choice1Of2(state) -> stateProcessor (state, fileName |> after '_')
+            | Choice2Of2(err) -> ()
+        Directory.EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly) |> Seq.iter processFile
+    
+    let compileComputedScripts() = 
+        let processor (state : ScriptState, scriptName) = 
+            let compiledScript = 
+                state.CreateDelegate<Func<string, string, Dictionary<string, string>, string>>("Execute")
+            computedScripts.TryAdd(scriptName, compiledScript) |> ignore
+        compileScripts "computed_*.csx" processor
+    
+    let getCompileOptions() = 
+        ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
+                     .AddNamespaces("System", "System.Math", "System.Collection.Generic", 
+                                    "System.Text.RegularExpressions")
+    do compileComputedScripts()
+    interface IScriptService with
+        member __.GetComputedScript(scriptName) = 
+            match computedScripts.TryGetValue(scriptName) with
+            | true, func -> ok <| func
+            | _ -> fail <| ScriptNotFound(scriptName, String.Empty)
 
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
@@ -119,7 +175,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                                                   updateAnalyzer (dto)
                                                   |> logErrorChoice
                                                   |> ignore
-                                              | Choice2Of2(error) -> Logger.Log (error))
+                                              | Choice2Of2(error) -> Logger.Log(error))
     
     let getAnalyzer (analyzerName) = 
         match store.TryGetValue(analyzerName) with
@@ -161,13 +217,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
             | _ -> fail <| AnalyzerNotFound(analyzerName)
         
         member this.Analyze(analyzerName : string, input : string) = 
-            maybe { 
-                let! analyzer = getAnalyzer (analyzerName)
-                return parseTextUsingAnalyzer(analyzer, "", input).ToArray()         
-            }
+            maybe { let! analyzer = getAnalyzer (analyzerName)
+                    return parseTextUsingAnalyzer(analyzer, "", input).ToArray() }
 
 [<Sealed>]
-type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, ?testMode : bool) = 
+type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     
     let path = 
@@ -213,7 +267,8 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
     /// Load a index
     let loadIndex (index : Index.Dto) = 
         maybe { 
-            let! setting = IndexWriter.createIndexSetting (index, analyzerService.GetAnalyzer)
+            let! setting = IndexWriter.createIndexSetting 
+                               (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
             if index.Online then 
                 let indexWriter = IndexWriter.create (setting)
                 state
@@ -232,7 +287,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                match threadSafeWriter.ReadFile<Index.Dto>(x) with
                | Choice1Of2(dto) -> Some(dto)
                | Choice2Of2(error) -> 
-                   Logger.Log (error)
+                   Logger.Log(error)
                    None)
         |> Seq.filter (fun x -> x.IsSome)
         |> Seq.map (fun i -> 
@@ -290,7 +345,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         member __.Commit(indexName : string) = maybe { let! writer = indexOnline indexName
                                                        writer |> IndexWriter.commit false }
         member __.ForceCommit(indexName : string) = maybe { let! writer = indexOnline indexName
-                                                       writer |> IndexWriter.commit true }
+                                                            writer |> IndexWriter.commit true }
         member __.Refresh(indexName : string) = maybe { let! writer = indexOnline indexName
                                                         writer |> IndexWriter.refresh }
         member __.GetRealtimeSearcher(indexName : string, shardNo : int) = 
@@ -353,7 +408,7 @@ type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>
                     // This is a search profile based query. So copy over essential
                     // values from Search profile to query. Keep the search query
                     /// values if override is set to true
-                    if not search.OverrideProfileOptions then
+                    if not search.OverrideProfileOptions then 
                         search.Columns <- sq.Columns
                         search.DistinctBy <- sq.DistinctBy
                         search.Skip <- sq.Skip
@@ -459,25 +514,26 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
 [<Sealed>]
 type JobService() = 
     let cache = MemoryCache.Default
-    let getCachePolicy () =
+    
+    let getCachePolicy() = 
         let policy = new CacheItemPolicy()
         policy.AbsoluteExpiration <- DateTimeOffset.Now.AddHours(5.00)
         policy
-                
+    
     interface IJobService with
         
-        member __.UpdateJob (jobId, jobStatus, itemCount) =
-            if isNotBlank jobId then
+        member __.UpdateJob(jobId, jobStatus, itemCount) = 
+            if isNotBlank jobId then 
                 let job = new Job(JobId = jobId, Status = jobStatus, Message = "", ProcessedItems = itemCount)
                 let item = new CacheItem(jobId, job)
                 cache.Set(item, getCachePolicy())
-            
-        member __.UpdateJob (jobId, jobStatus, itemCount, message) =
-            if isNotBlank jobId then
+        
+        member __.UpdateJob(jobId, jobStatus, itemCount, message) = 
+            if isNotBlank jobId then 
                 let job = new Job(JobId = jobId, Status = jobStatus, Message = message, ProcessedItems = itemCount)
                 let item = new CacheItem(jobId, job)
                 cache.Set(item, getCachePolicy())
-                
+        
         member __.UpdateJob(job : Job) : Choice<unit, IMessage> = 
             let item = new CacheItem(job.JobId, job)
             cache.Set(item, getCachePolicy())

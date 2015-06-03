@@ -105,13 +105,10 @@ module DataHelpers =
             new Field.Dto("ipaddress", FieldType.Dto.ExactText)
             new Field.Dto("cvv2", FieldType.Dto.Int)
             new Field.Dto("description", FieldType.Dto.Highlight)
-            new Field.Dto("fullname", FieldType.Dto.Text, ScriptName = "fullname") |]
-        index.Scripts <- 
-            [| new Script.Dto( ScriptName = "fullname", Source = """return fields.firstname + " " + fields.lastname;""", ScriptType = ScriptType.Dto.ComputedField) |]
+            new Field.Dto("fullname", FieldType.Dto.Text) |]
         
         let client = new FlexClient(owinServer().HttpClient)
         client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
-
         index
 
     let createDemoIndex = 

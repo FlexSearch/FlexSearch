@@ -140,16 +140,16 @@ type ``Index Creation Tests``() =
         client.AddIndex(index).Result |> isCreated
         client.DeleteIndex(indexName).Result |> isSuccessful
     
-    [<Example("post-indices-id-4", "")>]
-    member __.``Create an index with dynamic fields`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
-        let index = newIndex indexName
-        index.Fields <- [| new Field.Dto("firstname")
-                           new Field.Dto("lastname")
-                           new Field.Dto("fullname", ScriptName = "fullnamescript") |]
-        index.Scripts <- 
-            [| new Script.Dto(ScriptName = "fullnamescript", Source = "return fields.firstname + \" \" + fields.lastname;", ScriptType = ScriptType.Dto.ComputedField) |]
-        client.AddIndex(index).Result |> isCreated
-        client.DeleteIndex(index.IndexName).Result |> isSuccessful
+//    [<Example("post-indices-id-4", "")>]
+//    member __.``Create an index with dynamic fields`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
+//        let index = newIndex indexName
+//        index.Fields <- [| new Field.Dto("firstname")
+//                           new Field.Dto("lastname")
+//                           new Field.Dto("fullname", ScriptName = "fullnamescript") |]
+//        index.Scripts <- 
+//            [| new Script.Dto(ScriptName = "fullnamescript", Source = "return fields.firstname + \" \" + fields.lastname;", ScriptType = ScriptType.Dto.ComputedField) |]
+//        client.AddIndex(index).Result |> isCreated
+//        client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("post-indices-id-5", "")>]
     member __.``Create an index by setting all properties`` (client : FlexClient, index : Index.Dto, handler : LoggingHandler) = 

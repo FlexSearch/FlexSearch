@@ -144,6 +144,7 @@ module Main =
             .WithParameter("testMode", Some(testServer)) |> ignore
         builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance()
             .WithParameter("testMode", Some(testServer)) |> ignore
+        builder |> FactoryService.registerSingleInstance<ScriptService, IScriptService>
         builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
         builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
         builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>

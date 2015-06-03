@@ -29,17 +29,22 @@ open java.io
 open java.util
 open System.Diagnostics
 
-type AtomicLong(value: int64) = 
+type AtomicLong(value : int64) = 
     let refCell = ref value
+    
     member __.Value 
-        with get() = Interlocked.Read(refCell)
-        and set(value) = Interlocked.Exchange(refCell, value) |> ignore
+        with get () = Interlocked.Read(refCell)
+        and set (value) = Interlocked.Exchange(refCell, value) |> ignore
+    
     /// Increments the ref cell and returns the incremented value
     member __.Increment() = Interlocked.Increment(refCell)
+    
     /// Decrements the ref cell and returns the decremented value
-    member __.Decrement() = Interlocked.Decrement(refCell)    
+    member __.Decrement() = Interlocked.Decrement(refCell)
+    
     /// Reset the ref cell to initial value
     member __.Reset() = Interlocked.Exchange(refCell, value) |> ignore
+    
     static member Create() = new AtomicLong(0L)
     static member Create(value) = new AtomicLong(value)
 
@@ -98,7 +103,6 @@ module IndexSetting =
           Fields : Field.T []
           FieldsLookup : IReadOnlyDictionary<string, Field.T>
           SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery.Dto>
-          ScriptsManager : ScriptsManager
           IndexConfiguration : IndexConfiguration.Dto
           BaseFolder : string
           ShardConfiguration : ShardConfiguration.Dto }
@@ -122,7 +126,6 @@ module IndexSettingBuilder =
               Fields = Unchecked.defaultof<_>
               FieldsLookup = Unchecked.defaultof<_>
               SearchProfiles = Unchecked.defaultof<_>
-              ScriptsManager = Unchecked.defaultof<_>
               IndexConfiguration = Unchecked.defaultof<_>
               BaseFolder = path
               ShardConfiguration = Unchecked.defaultof<_> }
@@ -146,24 +149,6 @@ module IndexSettingBuilder =
         c.IdIndexPostingsFormat <- idIndexPostingsFormat
         { build with Setting = { build.Setting with IndexConfiguration = c } }
     
-    /// Compile all the scripts and initialize the script manager
-    let withScripts (scripts : seq<Script.Dto>) (build) = 
-        let profileSelectorScripts = 
-            new Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>(StringComparer.OrdinalIgnoreCase)
-        let computedFieldScripts = 
-            new Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>(StringComparer.OrdinalIgnoreCase)
-        let customScoringScripts = 
-            new Dictionary<string, System.Dynamic.DynamicObject * double -> double>(StringComparer.OrdinalIgnoreCase)
-        for s in scripts do
-            if s.ScriptType = ScriptType.Dto.ComputedField then 
-                let a = returnOrFail (Script.compileComputedFieldScript (s.Source))
-                computedFieldScripts.Add(s.ScriptName, a)
-        let sm = 
-            { ComputedFieldScripts = computedFieldScripts
-              ProfileSelectorScripts = profileSelectorScripts
-              CustomScoringScripts = customScoringScripts }
-        { build with Setting = { build.Setting with ScriptsManager = sm } }
-    
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer           
     let buildAnalyzer (fields : Field.T [], isIndexAnalyzer : bool) = 
@@ -171,9 +156,7 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field.Dto array, analyzerService) (build) = 
-        if isNull (build.Setting.ScriptsManager) then 
-            failwithf "Internal Error: Script manager should be initialized before creating IndexFields."
+    let withFields (fields : Field.Dto array, analyzerService, scriptService) (build) = 
         let ic = build.Setting.IndexConfiguration
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new ResizeArray<Field.T>()
@@ -181,7 +164,7 @@ module IndexSettingBuilder =
         resultLookup.Add(Constants.IdField, Field.getIdField (ic.IdIndexPostingsFormat))
         resultLookup.Add(Constants.LastModifiedField, Field.getTimeStampField (ic.DefaultIndexPostingsFormat))
         for field in fields do
-            let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, build.Setting.ScriptsManager))
+            let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
         let fieldArr = result.ToArray()
@@ -190,7 +173,7 @@ module IndexSettingBuilder =
                                               Fields = fieldArr
                                               SearchAnalyzer = buildAnalyzer (fieldArr, false)
                                               IndexAnalyzer = buildAnalyzer (fieldArr, true) } }
-    
+
     /// Build search profiles from the Index object
     let withSearchProfiles (profiles : SearchQuery.Dto array, parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery.Dto>(StringComparer.OrdinalIgnoreCase)
@@ -289,8 +272,6 @@ module DocumentTemplate =
         // Timestamp fields
         template.TemplateFields.[1].SetLongValue(document.TimeStamp)
         template.TemplateFields.[2].SetLongValue(document.TimeStamp)
-        // Create a dynamic dictionary which will be used during scripting
-        let dynamicFields = new DynamicDictionary(document.Fields)
         // Performance of F# iter is very slow here.
         let mutable i = 2
         for field in template.Setting.Fields do
@@ -303,7 +284,7 @@ module DocumentTemplate =
                     try 
                         // Wrong values for the data type will still be handled as update Lucene field will
                         // check the data type
-                        let value = s.Invoke(dynamicFields)
+                        let value = s.Invoke(document.IndexName, field.FieldName, document.Fields)
                         value |> Field.updateLuceneField field template.TemplateFields.[i]
                     with _ -> Field.updateLuceneFieldToDefault field template.TemplateFields.[i]
                 | None -> 
@@ -391,7 +372,8 @@ module TransactionLog =
         let mutable currentGen = gen
         let mutable fileStream = Unchecked.defaultof<_>
         let populateFS() = 
-            fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, FileShare.ReadWrite)
+            fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, 
+                                         FileShare.ReadWrite)
         
         let processor = 
             MailboxProcessor.Start(fun inbox -> 
@@ -415,7 +397,7 @@ module TransactionLog =
         member __.ReadLog(gen : int64) = 
             if File.Exists(path +/ gen.ToString()) then 
                 try 
-                    seq {
+                    seq { 
                         use fileStream = 
                             new FileStream(path +/ gen.ToString(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
                         while fileStream.Position <> fileStream.Length do
@@ -511,47 +493,43 @@ module ShardWriter =
     /// survive an OS or machine crash or power loss. Note that this does not wait for any running background 
     /// merges to finish. This may be a costly operation, so you should test the cost in your application and 
     /// do it only when really necessary.
-    let commit (forceCommit: bool) (sw : T) = 
-        !> "Checking Commit Condition"
-        !> "Generation: %i" sw.Generation.Value
-        !> "Outstanding Flushes: %i" sw.OutstandingFlushes.Value
-        !> "Force Commit: %b" forceCommit
-        let internalCommit() =
-            !> "Starting Commit"
+    let commit (forceCommit : bool) (sw : T) = 
+        !>"Checking Commit Condition"
+        (!>) "Generation: %i" sw.Generation.Value
+        (!>) "Outstanding Flushes: %i" sw.OutstandingFlushes.Value
+        (!>) "Force Commit: %b" forceCommit
+        let internalCommit() = 
+            !>"Starting Commit"
             lock sw.Lock (fun _ -> sw.LastCommitTime <- DateTime.Now)
             sw.OutstandingFlushes.Reset()
-            !> "Outstanding Flushes: %i" sw.OutstandingFlushes.Value
+            (!>) "Outstanding Flushes: %i" sw.OutstandingFlushes.Value
             let generation = sw.Generation
             // Increment the generation before committing so that the 
             // newly added items go to the next log file
             let newGen = sw.Generation.Increment()
-            !> "New Generation: %i" newGen
+            (!>) "New Generation: %i" newGen
             // Set the new commit data
-            !> "Performing Commit"
+            !>"Performing Commit"
             getCommitData generation.Value sw.ModifyIndex.Value
             |> sw.IndexWriter.SetCommitData
             |> sw.IndexWriter.Commit
-            !> "Deleting older commit files"
-            try
-                loopFiles(sw.TxLogPath) 
-                |> Seq.iter(fun filePath -> 
-                    let (success, gen) = Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
-                    // Delete files going back up to last 2 generations
-                    if success && (newGen - 2L) <= gen then
-                        File.Delete(filePath)
-                    else
-                        // File name does not follow our naming convention
-                        // so delete it as it should not be here anyhow.
-                        File.Delete(filePath)
-                )
+            !>"Deleting older commit files"
+            try 
+                loopFiles (sw.TxLogPath) |> Seq.iter (fun filePath -> 
+                                                let (success, gen) = 
+                                                    Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
+                                                // Delete files going back up to last 2 generations
+                                                if success && (newGen - 2L) <= gen then File.Delete(filePath)
+                                                else 
+                                                    // File name does not follow our naming convention
+                                                    // so delete it as it should not be here anyhow.
+                                                    File.Delete(filePath))
             with _ -> ()
-
-        if forceCommit then
-            internalCommit()
-        else if sw.IndexWriter.HasUncommittedChanges() 
-           && ((DateTime.Now - sw.LastCommitTime).Seconds >= sw.CommitDuration 
-               || sw.OutstandingFlushes.Value >= int64 sw.Settings.CommitEveryNFlushes) then 
-            internalCommit()
+        if forceCommit then internalCommit()
+        else 
+            if sw.IndexWriter.HasUncommittedChanges() 
+               && ((DateTime.Now - sw.LastCommitTime).Seconds >= sw.CommitDuration 
+                   || sw.OutstandingFlushes.Value >= int64 sw.Settings.CommitEveryNFlushes) then internalCommit()
     
     /// Commits all changes to an index, waits for pending merges to complete, closes all 
     /// associated files and releases the write lock.
@@ -788,20 +766,19 @@ module IndexWriter =
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
     /// Create index settings from the Index Dto
-    let createIndexSetting (index : Index.Dto, analyzerService) = 
+    let createIndexSetting (index : Index.Dto, analyzerService, scriptService) = 
         try 
             withIndexName (index.IndexName, Constants.DataFolder +/ index.IndexName)
             |> withShardConfiguration (index.ShardConfiguration)
             |> withIndexConfiguration (index.IndexConfiguration)
-            |> withScripts (index.Scripts)
-            |> withFields (index.Fields, analyzerService)
+            |> withFields (index.Fields, analyzerService, scriptService)
             |> withSearchProfiles (index.SearchProfiles, new FlexParser())
             |> build
             |> ok
         with :? ValidationException as e -> 
-            Logger.Log <|IndexLoadingFailure(index.IndexName, index.ToString(), exceptionPrinter e)
+            Logger.Log <| IndexLoadingFailure(index.IndexName, index.ToString(), exceptionPrinter e)
             fail <| e.Data0
-            
+    
     /// Close the index    
     let close (writer : T) = 
         writer.Token.Cancel()
@@ -863,7 +840,8 @@ module IndexWriter =
     let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
     
     /// Commit unsaved data to the index
-    let commit (forceCommit: bool) (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
+    let commit (forceCommit : bool) (s : T) = 
+        s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
     
     let getRealTimeSearchers (s : T) = 
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
@@ -903,9 +881,8 @@ module IndexWriter =
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
             let logEntries = 
-                shardWriter.TxWriter.ReadLog(shardWriter.Generation.Value) 
-                // TODO: Find a more memory efficient way of sorting the transaction log file
-                |> Seq.sortBy (fun l -> l.TransactionId)
+                shardWriter.TxWriter.ReadLog(shardWriter.Generation.Value) // TODO: Find a more memory efficient way of sorting the transaction log file
+                                                                           |> Seq.sortBy (fun l -> l.TransactionId)
             for entry in logEntries do
                 match entry.Operation with
                 | TransactionLog.Operation.Create | TransactionLog.Operation.Update -> 
@@ -947,7 +924,8 @@ module IndexWriter =
         // Add the scheduler for the index
         // Commit Scheduler
         if settings.IndexConfiguration.AutoCommit then 
-            Async.Start(indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) (commit false))
+            Async.Start
+                (indexWriter |> scheduleIndexJob (settings.IndexConfiguration.CommitTimeSeconds * 1000) (commit false))
         // NRT Scheduler
         if settings.IndexConfiguration.AutoRefresh then 
             Async.Start(indexWriter |> scheduleIndexJob settings.IndexConfiguration.RefreshTimeMilliseconds refresh)

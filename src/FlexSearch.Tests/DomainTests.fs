@@ -69,23 +69,23 @@ type ``Index Field tests``() =
 
 type ``Index Dto tests``() = 
     
-    member __.``Script cannot contain in-valid script name``() = 
+    member __.``Field cannot contain in-valid field name``() = 
         let index = new Index.Dto()
         index.IndexName <- "valid"
-        index.Scripts <- [| new Script.Dto(ScriptName = "INVALIDKEY", Source = "dummy") |]
+        index.Fields <- [| new Field.Dto("INVALIDKEY") |]
         test <@ failed <| index.Validate() @>
     
     member __.``Scripts can have valid keys``() = 
         let index = new Index.Dto()
         index.IndexName <- "valid"
-        index.Scripts <- [| new Script.Dto(ScriptName = "validkey", Source = "dummy") |]
+        index.Fields <- [| new Field.Dto("validkey") |]
         test <@ succeeded <| index.Validate() @>
     
     member __.``Validation will fail even for a single invalid key``() = 
         let index = new Index.Dto()
         index.IndexName <- "valid"
-        index.Scripts <- [| new Script.Dto(ScriptName = "INVALIDKEY", Source = "dummy")
-                            new Script.Dto(ScriptName = "INVALIDKEY", Source = "dummy") |]
+        index.Fields <- [|  new Field.Dto("validkey")
+                            new Field.Dto("INVALIDKEY") |]
         test <@ failed <| index.Validate() @>
     
     member __.``Adding duplicate fields to the index should fail``() = 

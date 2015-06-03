@@ -105,7 +105,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Online <- true
         index.Fields <- [| new Field.Dto("countryname")
-                           new Field.Dto("exports", FieldType.Dto.Long, ScriptName = "striptonumbers")
+                           new Field.Dto("exports", FieldType.Dto.Long)
                            new Field.Dto("imports", FieldType.Dto.Text, IndexAnalyzer = "striptonumbersanalyzer")
                            new Field.Dto("independence", FieldType.Dto.Date)
                            new Field.Dto("militaryexpenditure", FieldType.Dto.Double)
@@ -125,12 +125,6 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
                            new Field.Dto("countrycode", FieldType.Dto.ExactText)
                            new Field.Dto("nationality")
                            new Field.Dto("coordinates", FieldType.Dto.ExactText) |]
-        // Custom Script
-        let source = 
-            """return !System.String.IsNullOrWhiteSpace(fields.exports) ? fields.exports.Replace(" ", "").Replace("$",""): "0";"""
-        let stripNumbersScript = 
-            new Script.Dto(ScriptName = "striptonumbers", Source = source, ScriptType = ScriptType.Dto.ComputedField)
-        index.Scripts <- [| stripNumbersScript |]
         index
     
     let buildSynonymFile fileName = 

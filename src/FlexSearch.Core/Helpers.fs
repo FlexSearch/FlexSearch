@@ -249,6 +249,14 @@ module Helpers =
         else
             input.Substring(startingPos, endingPos - startingPos)
 
+    /// Returns the string after a given character
+    let inline after (startingChar : char) (input: string) =
+        let startingPos = input.IndexOf(startingChar) + 1
+        if startingPos = -1 then
+            String.Empty
+        else
+            input.Substring(startingPos)
+
     /// <summary>
     /// Simple exception formatter
     /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/
