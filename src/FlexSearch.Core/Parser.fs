@@ -171,3 +171,21 @@ module Parsers =
                 match run Parser input with
                 | Success(result, _, _) -> ok result
                 | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError errorMsg
+
+    // ----------------------------------------------------------------------------
+    // Function Parser 
+    // Format: functionName('param1','param2','param3')
+    // ----------------------------------------------------------------------------
+    let private funParameter = stringLiteralAsString .>> ws
+    let private funParameters = (sepBy funParameter (str_ws ",")) .>> ws
+    let private commaSeparatedParamsBetweenBrackets = between (str_ws "(") (str_ws ")") funParameters .>> ws
+    let private funParser = pipe2 identifier commaSeparatedParamsBetweenBrackets (fun name p -> (name, p.ToArray()))
+    
+    /// Parses a function call with format functionName('param1','param2','param3')
+    let ParseFunctionCall(input : string) = 
+        let parse (queryString) (parser) = 
+            match run parser queryString with
+            | Success(result, _, _) -> ok result
+            | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg)
+        assert (input <> null)
+        funParser |> parse input

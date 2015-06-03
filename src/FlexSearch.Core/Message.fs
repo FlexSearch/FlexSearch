@@ -189,6 +189,7 @@ type SearchMessage =
     | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string
+    | MethodCallParsingError of error : string
     | UnknownSearchProfile of indexName : string * profileName : string
     | PurelyNegativeQueryNotSupported
     interface IMessage with
@@ -206,6 +207,7 @@ type SearchMessage =
             | QueryOperatorFieldTypeNotSupported(f) -> 
                 sprintf "Query operator field type not supported for field '%s'" f
             | QueryStringParsingError(e) -> sprintf "Query string parsing error: \n%s" e
+            | MethodCallParsingError(e) -> sprintf "Unable to parse the method call: \n%s" e
             | UnknownSearchProfile(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
             | PurelyNegativeQueryNotSupported -> "Purely negative queries (not top query) not supported"
             | SearchProfileUnsupportedFieldValue(fn) -> sprintf "Search Profile does not support array values as an input for field '%s'." fn

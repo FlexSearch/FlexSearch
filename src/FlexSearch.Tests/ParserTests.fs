@@ -64,3 +64,25 @@ type SearchParserTests() =
     [<InlineData("abc ='a1234'")>]
     [<Ignore>]
     member __.``Expressions with spacing issues should parse`` (sut : string) = test2 sut
+
+let test3 str = 
+    match ParseFunctionCall(str) with
+    | Choice1Of2(ast) -> ast
+    | Choice2Of2(errorMsg) -> raise <| invalidOp (errorMsg.ToString())
+
+open Swensen.Unquote
+
+type MethodParserTests() = 
+    
+    member __.``Simple method call syntax should succeed``() =
+        let actual = test3 "functionName()"
+        let expected = ("functionName", Array.empty<string>)
+        test <@ actual = expected @>
+
+    member __.``Method call will multiple params should succeed``() =
+        let actual = test3 "functionName('a' , 'b'             , 'c')"
+        let expected = ("functionName", [| "a"; "b"; "c"|])
+        test <@ actual = expected @>
+
+    member __.``Invalid Method call will not succeed``() =
+        test <@ failed <| ParseFunctionCall("functionName(   ") @>
