@@ -242,7 +242,11 @@ module SearchDsl =
                 match indexWriter.Settings.FieldsLookup.TryGetValue(fieldName) with
                 | (true, field) -> 
                     let value = document.Get(field.SchemaName)
-                    if notNull value then fields.Add(field.FieldName, value)
+                    if notNull value then 
+                        if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then
+                            fields.Add(field.FieldName, String.Empty)
+                        else
+                            fields.Add(field.FieldName, value)
                 | _ -> ()
         fields
     

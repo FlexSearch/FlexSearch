@@ -401,16 +401,16 @@ module FieldType =
     /// Gets the default string value associated with the field type.
     let inline defaultValue f = 
         match f with
-        | Custom(_, _, _) -> "null"
-        | Stored(_) -> "null"
-        | Text(_) -> "null"
+        | Custom(_, _, _) -> Constants.StringDefaultValue
+        | Stored(_) -> Constants.StringDefaultValue
+        | Text(_) -> Constants.StringDefaultValue
         | Bool(_) -> "false"
-        | ExactText(_) -> "null"
+        | ExactText(_) -> Constants.StringDefaultValue
         | Date(_) -> "00010101"
         | DateTime(_) -> "00010101000000"
         | Int(_) -> "0"
         | Double(_) -> "0.0"
-        | Highlight(_) -> "null"
+        | Highlight(_) -> Constants.StringDefaultValue
         | Long(_) -> "0"
     
     /// Gets the sort field associated with the field type. This is used for determining sort style
@@ -784,12 +784,12 @@ module Field =
     /// Set the value of index field to the default value
     let inline updateLuceneFieldToDefault flexField (luceneField : Field) = 
         match flexField.FieldType with
-        | FieldType.Custom(_, _, _) -> luceneField.SetStringValue("null")
-        | FieldType.Stored -> luceneField.SetStringValue("null")
-        | FieldType.Text(_) -> luceneField.SetStringValue("null")
+        | FieldType.Custom(_, _, _) -> luceneField.SetStringValue(Constants.StringDefaultValue)
+        | FieldType.Stored -> luceneField.SetStringValue(Constants.StringDefaultValue)
+        | FieldType.Text(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Bool(_) -> luceneField.SetStringValue("false")
-        | FieldType.ExactText(_) -> luceneField.SetStringValue("null")
-        | FieldType.Highlight(_) -> luceneField.SetStringValue("null")
+        | FieldType.ExactText(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
+        | FieldType.Highlight(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Date -> luceneField.SetLongValue(DateDefaultValue)
         | FieldType.DateTime -> luceneField.SetLongValue(DateTimeDefaultValue)
         | FieldType.Int -> luceneField.SetIntValue(0)
@@ -824,12 +824,12 @@ module Field =
         match flexField.FieldType with
         | FieldType.Custom(_, _, b) -> 
             getField 
-                (flexField.SchemaName, "null", 
+                (flexField.SchemaName, Constants.StringDefaultValue, 
                  getFieldTemplate (b.FieldTermVector, flexField.IsStored, b.Tokenize, b.Index))
-        | FieldType.Stored -> getStoredField (flexField.SchemaName, "null")
-        | FieldType.Text(_) -> getTextField (flexField.SchemaName, "null", storeInfoMap (flexField.IsStored))
-        | FieldType.Highlight(_) -> getField (flexField.SchemaName, "null", flexHighLightFieldType.Value)
-        | FieldType.ExactText(_) -> getTextField (flexField.SchemaName, "null", storeInfo)
+        | FieldType.Stored -> getStoredField (flexField.SchemaName, Constants.StringDefaultValue)
+        | FieldType.Text(_) -> getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfoMap (flexField.IsStored))
+        | FieldType.Highlight(_) -> getField (flexField.SchemaName, Constants.StringDefaultValue, flexHighLightFieldType.Value)
+        | FieldType.ExactText(_) -> getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfo)
         | FieldType.Bool(_) -> getTextField (flexField.SchemaName, "false", storeInfo)
         | FieldType.Date -> getLongField (flexField.SchemaName, DateDefaultValue, storeInfo)
         | FieldType.DateTime -> getLongField (flexField.SchemaName, DateTimeDefaultValue, storeInfo)
@@ -1012,7 +1012,11 @@ module SearchQuery =
         /// Can be used to override the configuration saved in the search profile
         /// with the one which is passed as the Search Query
         member val OverrideProfileOptions = false with get, set
-                
+        
+        /// Returns an empty string for null values saved in the index rather than
+        /// the null constant
+        member val ReturnEmptyStringForNull = true with get, set
+              
         new() = Dto(defString, defString)
         override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
