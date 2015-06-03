@@ -123,7 +123,7 @@ module SearchDsl =
         
         let getValueForSearchProfile (fieldName, v : string, source : Dictionary<string, string>) = 
             generateMatchAllQuery.Value <- false
-            match v.Trim() with
+            match v with
             // Match self but fail if value is not found
             | "" | "[!]" -> 
                 match source.TryGetValue(fieldName) with
@@ -147,19 +147,19 @@ module SearchDsl =
                 match source.TryGetValue(fieldName) with
                 | true, v1 -> 
                     if isNotBlank v1 then ok <| [| v1 |]
-                    else ok <| [| x.Substring(1, x.Length - 2) |]
-                | _ -> ok <| [| x.Substring(1, x.Length - 2) |]
+                    else ok <| [| x |> between '[' ']' |]
+                | _ -> ok <| [| x |> between '[' ']' |]
             // Cross matching cases
             // Default cross matching case
             | x when x.StartsWith("<") && (x.EndsWith(">") || x.EndsWith(">[!]")) -> 
-                match source.TryGetValue(x.Substring(1, x.LastIndexOf('>') - 1)) with
+                match source.TryGetValue(x |> between '<' '>') with
                 | true, v1 -> 
                     if isNotBlank v1 then ok <| [| v1 |]
                     else fail <| MissingFieldValue fieldName
                 | _ -> fail <| MissingFieldValue fieldName
             // Cross matching and ignore clause if value is not found
             | x when x.StartsWith("<") && x.EndsWith(">[*]") -> 
-                match source.TryGetValue(x.Substring(1, x.LastIndexOf('>') - 1)) with
+                match source.TryGetValue(x |> between '<' '>') with
                 | true, v1 -> 
                     if isNotBlank v1 then ok <| [| v1 |]
                     else 
@@ -170,11 +170,11 @@ module SearchDsl =
                     ok <| Array.empty
             // Cross matching and use default if value is not found
             | x when x.StartsWith("<") && x.EndsWith("]") -> 
-                match source.TryGetValue(x.Substring(1, x.LastIndexOf('>') - 1)) with
+                match source.TryGetValue(x |> between '<' '>') with
                 | true, v1 -> 
                     if isNotBlank v1 then ok <| [| v1 |]
-                    else ok <| [| x.Substring(x.IndexOf('[') + 1, x.LastIndexOf(']') - x.IndexOf('[') - 1) |]
-                | _ -> ok <| [| x.Substring(x.IndexOf('[') + 1, x.LastIndexOf(']') - x.IndexOf('[') - 1) |]
+                    else ok <| [| x |> between '[' ']' |]
+                | _ -> ok <| [| x |> between '[' ']' |]
             // Constant value
             | v1 -> ok <| [| v1 |]
         
