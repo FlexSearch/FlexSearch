@@ -24,6 +24,7 @@ type SearchParserTests() =
     [<InlineData("['abc'  ,  'pqr']")>]
     [<InlineData("[         'abc'          ]")>]
     [<InlineData("[    'abc'    ]")>]
+    [<Ignore>]
     member __.``Input should be parsed for the 'List of Values'`` (sut : string) = 
         test FlexSearch.Core.Parsers.listOfValues sut
     
@@ -44,6 +45,7 @@ type SearchParserTests() =
     [<InlineData("abc >= '1\\'2'")>]
     [<InlineData("not (abc eq 'sdsd' and abc eq 'asasa') and pqr eq 'asas'")>]
     [<InlineData("abc eq 'a' AND pr eq 'b'")>]
+    [<Ignore>]
     member __.``Simple expression should parse`` (sut : string) = test2 sut
     
     [<InlineData("f1: 'v1',f2 : 'v2'", 2)>]
@@ -52,6 +54,7 @@ type SearchParserTests() =
     [<InlineData("        f1: 'v1',f2:'v2',f3 : 'v3'", 3)>]
     [<InlineData("f1 : 'v\\'1',f2 : 'v2'", 2)>]
     [<InlineData("name:'X Fit Gym Ltd',address1_line1:'Friday Street',address1_line2:'',address1_line3:'',address1_city:'CHORLEY',address1_postalcode:'PR6 OAA',emailaddress1:'matt.grimshaw-xfitgymchorley@hotmail.co.uk'", 7)>]
+    [<Ignore>]
     member __.``Search Profile QueryString should parse`` (sut : string, expected : int) = 
         match ParseQueryString(sut, false) with
         | Choice1Of2(result) -> <@ result.Count = expected @>
@@ -59,4 +62,5 @@ type SearchParserTests() =
     
     [<InlineData("abc ='1234'")>]
     [<InlineData("abc ='a1234'")>]
+    [<Ignore>]
     member __.``Expressions with spacing issues should parse`` (sut : string) = test2 sut

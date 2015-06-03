@@ -32,6 +32,7 @@ type ValidatorTests() =
     [<InlineData("test")>]
     [<InlineData("1234")>]
     [<InlineData("_test")>]
+    [<Ignore>]
     member __.PropertyValidatorSuccessTests(sut : string) = 
         test <@ Validators.propertyNameValidator fldName sut = ok() @>
     
@@ -40,6 +41,7 @@ type ValidatorTests() =
     [<InlineData(Constants.IdField)>]
     [<InlineData(Constants.LastModifiedField)>]
     [<InlineData("<test>")>]
+    [<Ignore>]
     member __.PropertyValidatorFailureTests(sut : string) = 
         test <@ Validators.propertyNameValidator fldName sut = fail (InvalidPropertyName(fldName, sut)) @>
 

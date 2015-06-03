@@ -20,6 +20,7 @@ type ``Index Field tests``() =
     [<InlineDataAttribute(FieldType.Dto.Text)>]
     [<InlineDataAttribute(FieldType.Dto.Highlight)>]
     [<InlineDataAttribute(FieldType.Dto.Custom)>]
+    [<Ignore>]
     member __.``Correct Index Analyzer should be specified for {fieldType} field types`` (fieldType : FieldType.Dto) = 
         let field = new Field.Dto()
         field.FieldName <- "notblank"
@@ -30,6 +31,7 @@ type ``Index Field tests``() =
     [<InlineDataAttribute(FieldType.Dto.Text)>]
     [<InlineDataAttribute(FieldType.Dto.Highlight)>]
     [<InlineDataAttribute(FieldType.Dto.Custom)>]
+    [<Ignore>]
     member __.``Correct Search Analyzer should be specified for {fieldType} field types`` (fieldType : FieldType.Dto) = 
         let field = new Field.Dto()
         field.FieldName <- "notblank"
@@ -44,6 +46,7 @@ type ``Index Field tests``() =
     [<InlineDataAttribute(FieldType.Dto.ExactText)>]
     [<InlineDataAttribute(FieldType.Dto.Int)>]
     [<InlineDataAttribute(FieldType.Dto.Stored)>]
+    [<Ignore>]
     member __.``Search Analyzer is ignored for {fieldType} field types`` (fieldType : FieldType.Dto) = 
         let field = new Field.Dto("test")
         field.FieldType <- fieldType
@@ -57,6 +60,7 @@ type ``Index Field tests``() =
     [<InlineDataAttribute(FieldType.Dto.ExactText)>]
     [<InlineDataAttribute(FieldType.Dto.Int)>]
     [<InlineDataAttribute(FieldType.Dto.Stored)>]
+    [<Ignore>]
     member __.``Index Analyzer is ignored for {fieldType} field types`` (fieldType : FieldType.Dto) = 
         let field = new Field.Dto("test")
         field.FieldType <- fieldType

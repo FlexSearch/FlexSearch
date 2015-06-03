@@ -191,6 +191,7 @@ id,t1,t2,i1
     [<InlineData(2, "3", "4")>]
     [<InlineData(3, "4", "5")>]
     [<InlineData(4, "5", "6")>]
+    [<Ignore>]
     member __.``Searching for 'i1 = 1' with records to return = 2 and skip = x will return 2 records`` (skip : int, 
                                                                                                         expected1 : string, 
                                                                                                         expected2 : string) = 

@@ -23,6 +23,9 @@ type ExampleAttribute(fileName : string, title : string) =
     member this.FileName = fileName
     member this.Title = title
 
+[<AttributeUsage(AttributeTargets.Method)>]
+type IgnoreAttribute() = inherit Attribute()
+
 [<AutoOpenAttribute>]
 module DataHelpers = 
     open Autofac
@@ -180,5 +183,8 @@ type SingleInstancePerClassConvention() as self =
     
     do 
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
+        // Temporarily ignore parametric tests because Fixie doesn't handle them in VS 2015
+        // Comment out this line if you want to also execute ignored tests
+        self.Methods.Where(fun m -> m.HasOrInherits<IgnoreAttribute>() |> not) |> ignore
         self.ClassExecution.CreateInstancePerClass().UsingFactory(fun typ -> fixtureFactory (typ)) |> ignore
         self.Parameters.Add<InputParameterSource>() |> ignore
