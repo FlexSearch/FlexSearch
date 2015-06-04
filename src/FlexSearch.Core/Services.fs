@@ -116,12 +116,14 @@ type ScriptService(threadSafeWriter : ThreadSafeFileWriter) =
     
     let computedScripts = conDict<ComputedScript>()
     
+    let getCompileOptions() = 
+        ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
+                     .AddNamespaces("System", "System.Math", "System.Collections.Generic", 
+                            "System.Text.RegularExpressions")
+    
     let compile (sourceCode) = 
         try 
-            let options = 
-                ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
-                             .AddNamespaces("System.Dynamic")
-            let state = CSharpScript.Run(sourceCode, options)
+            let state = CSharpScript.Run(sourceCode, getCompileOptions())
             ok (state)
         with e -> fail (ScriptCannotBeCompiled(exceptionPrinter e))
     
@@ -140,11 +142,6 @@ type ScriptService(threadSafeWriter : ThreadSafeFileWriter) =
                 state.CreateDelegate<ComputedScript>("Execute")
             computedScripts.TryAdd(scriptName, compiledScript) |> ignore
         compileScripts "computed_*.csx" processor
-    
-    let getCompileOptions() = 
-        ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
-                     .AddNamespaces("System", "System.Math", "System.Collection.Generic", 
-                            "System.Text.RegularExpressions")
     
     let getComputedScript(scriptName) =
         match computedScripts.TryGetValue(scriptName) with
