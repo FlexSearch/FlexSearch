@@ -280,11 +280,11 @@ module DocumentTemplate =
             if not (protectedFields (field.FieldName)) then 
                 // If it is computed field then generate and add it otherwise follow standard path
                 match field.Source with
-                | Some(s) -> 
+                | Some(s, options) -> 
                     try 
                         // Wrong values for the data type will still be handled as update Lucene field will
                         // check the data type
-                        let value = s.Invoke(document.IndexName, field.FieldName, document.Fields)
+                        let value = s.Invoke(document.IndexName, field.FieldName, document.Fields, options)
                         value |> Field.updateLuceneField field template.TemplateFields.[i]
                     with _ -> Field.updateLuceneFieldToDefault field template.TemplateFields.[i]
                 | None -> 

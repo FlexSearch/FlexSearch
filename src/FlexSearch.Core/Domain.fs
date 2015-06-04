@@ -606,6 +606,13 @@ module Analyzer =
                                    |> propertyNameValidator "AnalyzerName"
                                    >>= this.Tokenizer.Validate
                                    >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
+
+[<AutoOpen>]
+module Scripts =
+    
+    /// Default signature which is used by computed scripts
+    /// Format -> indexName, fieldName, fields, parameters
+    type ComputedScript = Func<string, string, IReadOnlyDictionary<string, string>, string[], string>
     
 [<RequireQualifiedAccessAttribute>]
 module Field = 
@@ -694,7 +701,7 @@ module Field =
           IsStored : bool
           Similarity : FieldSimilarity.Dto
           FieldType : FieldType.T
-          Source : Func<string, string, Dictionary<string,string>, string> option
+          Source : (ComputedScript * string[]) option
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
           RequiresAnalyzer : bool
