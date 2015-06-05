@@ -94,6 +94,33 @@ type AnalyzerWrapper(?defaultAnalyzer0 : Analyzer) =
         | true, analyzer -> analyzer
         | _ -> defaultAnalyzer
 
+module Codec = 
+    open FlexLucene.Codecs.Lucene50
+    open FlexLucene.Codecs.Lucene410
+    open FlexLucene.Codecs.Lucene41
+    open FlexLucene.Codecs
+    
+    /// Get the default codec associated with the index version
+    let getCodec ( enableBloomFilter : bool) (version : IndexVersion.Dto) = 
+        let getPostingsFormat (fieldName : string, enableBloomFilter, defaultFormat) = 
+            if fieldName.Equals(Constants.IdField) && enableBloomFilter then 
+                new BloomFilteringPostingsFormat(defaultFormat) :> PostingsFormat
+            else defaultFormat
+        match version with
+        | IndexVersion.Dto.Lucene_5_0_0 -> 
+            let postingsFormat = new Lucene50PostingsFormat()
+            { new Lucene50Codec() with
+                  member this.getPostingsFormatForField (fieldName) = 
+                      getPostingsFormat (fieldName, enableBloomFilter, postingsFormat) } :> Codec
+            |> ok
+        | IndexVersion.Dto.Lucene_4_x_x -> 
+            let postingsFormat = new Lucene41PostingsFormat()
+            { new Lucene410Codec() with
+                  member this.getPostingsFormatForField (fieldName) = 
+                      getPostingsFormat (fieldName, enableBloomFilter, postingsFormat) } :> Codec
+            |> ok
+        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
+
 module IndexSetting = 
     /// General index settings
     type T = 
@@ -133,21 +160,8 @@ module IndexSettingBuilder =
     
     let withShardConfiguration (conf) (build) = 
         { build with Setting = { build.Setting with ShardConfiguration = conf } }
-    
-    let withIndexConfiguration (c : IndexConfiguration.Dto) (build) = 
-        let defaultIndexPostingsFormat = 
-            c.IndexVersion
-            |> IndexVersion.getDefaultPostingsFormat
-            |> extract
-        
-        let idIndexPostingsFormat = 
-            c.IndexVersion
-            |> IndexVersion.getIdFieldPostingsFormat c.UseBloomFilterForId
-            |> extract
-        
-        c.DefaultIndexPostingsFormat <- defaultIndexPostingsFormat
-        c.IdIndexPostingsFormat <- idIndexPostingsFormat
-        { build with Setting = { build.Setting with IndexConfiguration = c } }
+    let withIndexConfiguration (conf) (build) = 
+        { build with Setting = { build.Setting with IndexConfiguration = conf } }
     
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer           
@@ -161,8 +175,8 @@ module IndexSettingBuilder =
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new ResizeArray<Field.T>()
         // Add system fields
-        resultLookup.Add(Constants.IdField, Field.getIdField (ic.IdIndexPostingsFormat))
-        resultLookup.Add(Constants.LastModifiedField, Field.getTimeStampField (ic.DefaultIndexPostingsFormat))
+        resultLookup.Add(Constants.IdField, Field.getIdField (ic.UseBloomFilterForId))
+        resultLookup.Add(Constants.LastModifiedField, Field.getTimeStampField())
         for field in fields do
             let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)
@@ -173,7 +187,7 @@ module IndexSettingBuilder =
                                               Fields = fieldArr
                                               SearchAnalyzer = buildAnalyzer (fieldArr, false)
                                               IndexAnalyzer = buildAnalyzer (fieldArr, true) } }
-
+    
     /// Build search profiles from the Index object
     let withSearchProfiles (profiles : SearchQuery.Dto array, parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery.Dto>(StringComparer.OrdinalIgnoreCase)
@@ -219,7 +233,7 @@ module IndexWriterConfigBuilder =
         
         let codec = 
             s.IndexConfiguration.IndexVersion
-            |> IndexVersion.getDefaultCodec
+            |> Codec.getCodec s.IndexConfiguration.UseBloomFilterForId
             |> extract
         
         let similarityProvider = s |> getSimilarityProvider
@@ -775,9 +789,14 @@ module IndexWriter =
             |> withSearchProfiles (index.SearchProfiles, new FlexParser())
             |> build
             |> ok
-        with :? ValidationException as e -> 
+        with
+        | :? ValidationException as e -> 
             Logger.Log <| IndexLoadingFailure(index.IndexName, index.ToString(), exceptionPrinter e)
             fail <| e.Data0
+        | e -> 
+            let error = IndexLoadingFailure(index.IndexName, index.ToString(), exceptionPrinter e)
+            Logger.Log <| error
+            fail <| error
     
     /// Close the index    
     let close (writer : T) = 

@@ -35,6 +35,9 @@ open System.Threading
 module Constants = 
     
     [<Literal>]
+    let BloomFilter = "<bloom>"
+
+    [<Literal>]
     let generationLabel = "generation"
     
     [<Literal>]

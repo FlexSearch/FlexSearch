@@ -69,49 +69,6 @@ module FieldSimilarity =
             | _ -> defaultFormat
 
 [<RequireQualifiedAccessAttribute>]
-module FieldPostingsFormat = 
-    /// A postings format is responsible for encoding/decoding terms, postings, and proximity data.
-    type Dto = 
-        | Undefined = 0
-        /// Wraps Lucene41PostingsFormat format for on-disk storage, but then at read time 
-        /// loads and stores all terms and postings directly in RAM as byte[], int[].
-        ///
-        /// WARNING: This is exceptionally RAM intensive: it makes no effort to compress 
-        /// the postings data, storing terms as separate byte[] and postings as 
-        /// separate int[], but as a result it gives substantial increase in search performance.
-        | Direct = 1
-        /// Stores terms and postings (docs, positions, payloads) in RAM, using an FST.
-        /// Note that this codec implements advance as a linear scan! This means if you 
-        /// store large fields in here, queries that rely on advance will 
-        /// (AND BooleanQuery, PhraseQuery) will be relatively slow!
-        | Memory = 2
-        /// A PostingsFormat useful for low doc-frequency fields such as primary keys. 
-        /// Bloom filters are maintained in a ".blm" file which offers "fast-fail" for 
-        /// reads in segments known to have no record of the key. A choice of delegate 
-        /// PostingsFormat is used to record all other Postings data.
-        ///
-        /// A choice of BloomFilterFactory can be passed to tailor Bloom Filter settings 
-        /// on a per-field basis. The default configuration is DefaultBloomFilterFactory 
-        /// which allocates a ~8mb bit-set and hashes values using MurmurHash2. 
-        /// This should be suitable for most purposes.
-        ///
-        /// NOTE: This uses Lucene 4.1 postings format as a wrapper.
-        | Bloom_4_1 = 3
-        /// This postings format "in-lines" the postings for terms that have low docFreq. 
-        /// It wraps another postings format, which is used for writing the non in-lined terms. 
-        ///
-        /// NOTE: This uses Lucene 4.1 postings format as a wrapper.
-        | Pulsing_4_1 = 4
-        /// Lucene 4.1 postings format, which encodes postings in packed integer blocks 
-        /// for fast decode.
-        | Lucene_4_1 = 5
-        /// Lucene 5.0 postings format, which encodes postings in packed integer blocks 
-        /// for fast decode.
-        | Lucene_5_0 = 6
-        /// Bloom postings format which uses Lucene 5.0 postings format as wrapper.
-        | Bloom_5_0 = 7
-
-[<RequireQualifiedAccessAttribute>]
 module DirectoryType = 
     /// A Directory is a flat list of files. Files may be written once, when they are created. 
     /// Once a file is created it may only be opened for read, or deleted. Random access is 
@@ -214,55 +171,49 @@ module IndexVersion =
     /// always be a default codec associated with each index version.
     type Dto = 
         | Undefined = 0
-        /// Lucene 4.9 index format
-        | Lucene_4_9 = 1
-        /// Lucene 4.10 index format
-        | Lucene_4_10 = 2
-        /// Lucene 4.10.1 index format
-        | Lucene_4_10_1 = 3
+        /// Lucene 4.x.x index format
+        /// It is deprecated and is here for legacy support
+        | Lucene_4_x_x = 1
         /// Lucene 5.0.0 index format
-        | Lucene_5_0_0 = 4
+        | Lucene_5_0_0 = 2
     
     /// Build Lucene index version from FlexSearch index version    
     let build = 
         function 
-        | Dto.Lucene_4_9 -> ok (Version.LUCENE_4_9)
-        | Dto.Lucene_4_10 -> ok (Version.LUCENE_4_10_0)
-        | Dto.Lucene_4_10_1 -> ok (Version.LUCENE_4_10_1)
+        | Dto.Lucene_4_x_x -> ok (Version.LUCENE_4_10_4)
         | Dto.Lucene_5_0_0 -> ok (Version.LUCENE_5_0_0)
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
-    
-    /// Get the default codec associated with an index version
-    let getDefaultCodec = 
-        function 
-        | Dto.Lucene_4_9 -> ok (new FlexCodec410() :> Codec)
-        | Dto.Lucene_4_10 -> ok (new FlexCodec410() :> Codec)
-        | Dto.Lucene_4_10_1 -> ok (new FlexCodec410() :> Codec)
-        | Dto.Lucene_5_0_0 -> ok (new FlexCodec50() :> Codec)
-        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
-    
-    /// Get the default codec associated with an index version
-    let getDefaultPostingsFormat = 
-        function 
-        | Dto.Lucene_4_9 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-        | Dto.Lucene_4_10 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-        | Dto.Lucene_4_10_1 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-        | Dto.Lucene_5_0_0 -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
-        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
-    
-    /// Get the id postings format associated with an index version
-    let getIdFieldPostingsFormat (useBloomFilter) (version) = 
-        match (version, useBloomFilter) with
-        | Dto.Lucene_4_9, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
-        | Dto.Lucene_4_9, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-        | Dto.Lucene_4_10, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
-        | Dto.Lucene_4_10, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-        | Dto.Lucene_4_10_1, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
-        | Dto.Lucene_4_10_1, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-        | Dto.Lucene_5_0_0, true -> ok (FieldPostingsFormat.Dto.Bloom_5_0)
-        | Dto.Lucene_5_0_0, false -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
-        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
+//    /// Get the default codec associated with an index version
+//    let getDefaultCodec = 
+//        function 
+//        | Dto.Lucene_4_9 -> ok (new FlexCodec410() :> Codec)
+//        | Dto.Lucene_4_10 -> ok (new FlexCodec410() :> Codec)
+//        | Dto.Lucene_4_10_1 -> ok (new FlexCodec410() :> Codec)
+//        | Dto.Lucene_5_0_0 -> ok (new FlexCodec50() :> Codec)
+//        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
+//    
+//    /// Get the default codec associated with an index version
+//    let getDefaultPostingsFormat = 
+//        function 
+//        | Dto.Lucene_4_9 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
+//        | Dto.Lucene_4_10 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
+//        | Dto.Lucene_4_10_1 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
+//        | Dto.Lucene_5_0_0 -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
+//        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
+//    
+//    /// Get the id postings format associated with an index version
+//    let getIdFieldPostingsFormat (useBloomFilter) (version) = 
+//        match (version, useBloomFilter) with
+//        | Dto.Lucene_4_9, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
+//        | Dto.Lucene_4_9, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
+//        | Dto.Lucene_4_10, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
+//        | Dto.Lucene_4_10, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
+//        | Dto.Lucene_4_10_1, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
+//        | Dto.Lucene_4_10_1, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
+//        | Dto.Lucene_5_0_0, true -> ok (FieldPostingsFormat.Dto.Bloom_5_0)
+//        | Dto.Lucene_5_0_0, false -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
+//        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 module ScriptType = 
     /// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
     /// the type of operation that the current script can perform. These can vary from scripts
@@ -466,13 +417,13 @@ module IndexConfiguration =
         /// flushes so keep the setting as high as possilbe. Making
         /// this setting too high will result in excessive ram usage.  
         member val CommitEveryNFlushes = 3 with get, set
-
+        
         /// Determines whether to commit first before closing an index
         member val CommitOnClose = true with get, set
-
+        
         /// Determines whether to enable auto commit functionality or not
         member val AutoCommit = true with get, set
-
+        
         /// A Directory is a flat list of files. Files may be 
         /// written once, when they are created. Once a file 
         /// is created it may only be opened for read, or 
@@ -501,7 +452,7 @@ module IndexConfiguration =
         
         /// Determines whether to enable auto refresh or not
         member val AutoRefresh = true with get, set
-
+        
         /// Corresponds to Lucene Index version. There will
         /// always be a default codec associated with each 
         /// index version.
@@ -510,13 +461,6 @@ module IndexConfiguration =
         /// Signifies if bloom filter should be used for 
         /// encoding Id field.
         member val UseBloomFilterForId = true with get, set
-        
-        /// This will be computed at run time based on the 
-        /// index version
-        member val IdIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.Dto> with get, set
-        
-        /// This will be computed at run time based on the index version
-        member val DefaultIndexPostingsFormat = Unchecked.defaultof<FieldPostingsFormat.Dto> with get, set
         
         /// Similarity defines the components of Lucene scoring. Similarity
         /// determines how Lucene weights terms and Lucene interacts with 
@@ -608,12 +552,11 @@ module Analyzer =
                                    >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
 
 [<AutoOpen>]
-module Scripts =
-    
+module Scripts = 
     /// Default signature which is used by computed scripts
     /// Format -> indexName, fieldName, fields, parameters
-    type ComputedScript = Func<string, string, IReadOnlyDictionary<string, string>, string[], string>
-    
+    type ComputedScript = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
+
 [<RequireQualifiedAccessAttribute>]
 module Field = 
     /// A field is a section of a Document. 
@@ -701,7 +644,7 @@ module Field =
           IsStored : bool
           Similarity : FieldSimilarity.Dto
           FieldType : FieldType.T
-          Source : (ComputedScript * string[]) option
+          Source : (ComputedScript * string []) option
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
           RequiresAnalyzer : bool
@@ -745,7 +688,7 @@ module Field =
     let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> Field
     let getField (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
         new Field(fieldName, value, template)
-
+    
     /// Set the value of index field to the default value
     let inline updateLuceneFieldToDefault flexField (luceneField : Field) = 
         match flexField.FieldType with
@@ -760,12 +703,11 @@ module Field =
         | FieldType.Int -> luceneField.SetIntValue(0)
         | FieldType.Double -> luceneField.SetDoubleValue(0.0)
         | FieldType.Long -> luceneField.SetLongValue(int64 0)
-
+    
     /// Set the value of index field using the passed value
     let inline updateLuceneField flexField (lucenceField : Field) (value : string) = 
-        if isBlank value then
-            lucenceField |> updateLuceneFieldToDefault flexField
-        else
+        if isBlank value then lucenceField |> updateLuceneFieldToDefault flexField
+        else 
             match flexField.FieldType with
             | FieldType.Custom(_, _, _) -> lucenceField.SetStringValue(value)
             | FieldType.Stored -> lucenceField.SetStringValue(value)
@@ -782,7 +724,7 @@ module Field =
     let inline storeInfoMap (isStored) = 
         if isStored then Field.Store.YES
         else Field.Store.NO
-
+    
     /// Creates a default Lucene index field for the passed flex field.
     let inline createDefaultLuceneField flexField = 
         let storeInfo = storeInfoMap (flexField.IsStored)
@@ -792,8 +734,10 @@ module Field =
                 (flexField.SchemaName, Constants.StringDefaultValue, 
                  getFieldTemplate (b.FieldTermVector, flexField.IsStored, b.Tokenize, b.Index))
         | FieldType.Stored -> getStoredField (flexField.SchemaName, Constants.StringDefaultValue)
-        | FieldType.Text(_) -> getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfoMap (flexField.IsStored))
-        | FieldType.Highlight(_) -> getField (flexField.SchemaName, Constants.StringDefaultValue, flexHighLightFieldType.Value)
+        | FieldType.Text(_) -> 
+            getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfoMap (flexField.IsStored))
+        | FieldType.Highlight(_) -> 
+            getField (flexField.SchemaName, Constants.StringDefaultValue, flexHighLightFieldType.Value)
         | FieldType.ExactText(_) -> getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfo)
         | FieldType.Bool(_) -> getTextField (flexField.SchemaName, "false", storeInfo)
         | FieldType.Date -> getLongField (flexField.SchemaName, DateDefaultValue, storeInfo)
@@ -814,11 +758,13 @@ module Field =
             None
     
     /// Get the schema name for a field from the name and postings format
-    let schemaName (fieldName, postingsFormat : string) = sprintf "%s<%s>" fieldName (postingsFormat.ToLowerInvariant())
+    let schemaName (fieldName, postingsFormat : string) = 
+        if isNotBlank postingsFormat then sprintf "%s%s" fieldName (postingsFormat.ToLowerInvariant())
+        else sprintf "%s" fieldName
     
-    let create (fieldName : string, postingsFormat : FieldPostingsFormat.Dto, fieldType : FieldType.T) = 
+    let create (fieldName : string, fieldType : FieldType.T, postingsFormat) = 
         { FieldName = fieldName
-          SchemaName = schemaName (fieldName, postingsFormat.ToString())
+          SchemaName = schemaName (fieldName, postingsFormat)
           IsStored = true
           FieldType = fieldType
           Source = None
@@ -827,19 +773,19 @@ module Field =
           RequiresAnalyzer = FieldType.requiresAnalyzer (fieldType) }
     
     /// Field to be used by the Id field
-    let getIdField (postingsFormat : FieldPostingsFormat.Dto) = 
+    let getIdField (bloomEnabled) = 
         let indexInformation = 
             { Index = true
               Tokenize = false
               FieldTermVector = FieldTermVector.Dto.DoNotStoreTermVector
               FieldIndexOptions = FieldIndexOptions.Dto.DocsOnly }
-        create 
-            (Constants.IdField, postingsFormat, 
-             FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation))
+        create (Constants.IdField, 
+                FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), 
+                if bloomEnabled then Constants.BloomFilter
+                else String.Empty)
     
     /// Field to be used by time stamp
-    let getTimeStampField (postingsFormat : FieldPostingsFormat.Dto) = 
-        create (Constants.LastModifiedField, postingsFormat, FieldType.DateTime)
+    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, String.Empty)
     
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
@@ -847,7 +793,7 @@ module Field =
         let getSource (field : Dto) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok <| None
             else 
-                match scriptService(field.ScriptName) with
+                match scriptService (field.ScriptName) with
                 | Choice1Of2(func) -> ok <| Some(func)
                 | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
         
@@ -883,7 +829,7 @@ module Field =
             let! source = getSource (field)
             let! fieldType = getFieldType (field)
             return { FieldName = field.FieldName
-                     SchemaName = schemaName (field.FieldName, indexConfiguration.DefaultIndexPostingsFormat.ToString())
+                     SchemaName = schemaName (field.FieldName, String.Empty)
                      FieldType = fieldType
                      Source = source
                      Similarity = field.Similarity
@@ -948,17 +894,17 @@ module SearchQuery =
         /// all the other records are filtered using the score set by the
         /// top scoring record.
         member val CutOff = defDouble with get, set
-
+        
         /// Can be used to return records with distinct values for 
         /// the given field. Works in a manner similar to Sql distinct by clause.
         member val DistinctBy = defString with get, set
-
+        
         /// Used to enable paging and skip certain pre-fetched results.
         member val Skip = 0 with get, set
         
         /// Query string to be used for searching
         member val QueryString = query with get, set
-                
+        
         /// If true will return collapsed search results which are in tabular form.
         /// Flat results enable easy binding to a grid but grouping results is tougher
         /// with Flat result.
@@ -981,7 +927,7 @@ module SearchQuery =
         /// Returns an empty string for null values saved in the index rather than
         /// the null constant
         member val ReturnEmptyStringForNull = true with get, set
-              
+        
         new() = Dto(defString, defString)
         override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
@@ -1025,13 +971,13 @@ module Document =
             let def = new Dto()
             (def :> IFreezable).Freeze()
             def
-
+        
         override this.Validate() = this.IndexName
                                    |> notBlank "IndexName"
                                    >>= fun _ -> this.Id |> notBlank "Id"
         new(indexName, id) = Dto(indexName, id)
         new() = Dto(defString, defString)
-        
+
 module Index = 
     /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
     /// to support features like schema and sharding. So in this sense a FlexSearch 
@@ -1074,7 +1020,7 @@ module Index =
                 this.Fields.Select(fun x -> x.FieldName).ToArray() |> hasDuplicates "Fields" "FieldName"
             let checkDuplicateQueries() = 
                 this.SearchProfiles.Select(fun x -> x.QueryName).ToArray() |> hasDuplicates "SearchProfiles" "QueryName"
-                        
+            
             let validateSearchQuery() = 
                 // Check if any query name is missing in search profiles. Cannot do this through annotation as the
                 // Query Name is not mandatory for normal Search Queries
@@ -1082,7 +1028,6 @@ module Index =
                     this.SearchProfiles |> Seq.filter (fun x -> String.IsNullOrWhiteSpace(x.QueryName))
                 if missingQueryNames.Count() <> 0 then fail (NotBlank("QueryName"))
                 else ok()
-            
             this.IndexName
             |> propertyNameValidator "IndexName"
             >>= fun _ -> seqValidator (this.Fields.Cast<DtoBase>())
@@ -1090,7 +1035,7 @@ module Index =
             >>= checkDuplicateFieldName
             >>= validateSearchQuery
             >>= checkDuplicateQueries
-            
+
 //////////////////////////////////////////////////////////////////////////
 /// Helper DTOs
 //////////////////////////////////////////////////////////////////////////
@@ -1108,7 +1053,7 @@ type SearchResults() =
     /// greater than the returned results depending upon the requested 
     /// document count. 
     member val TotalAvailable = 0 with get, set
-    
+
 /// Used by long running processes. All long running FlexSearch operations create
 /// an instance of Job and return the Id to the caller. This Id can be used by the
 /// caller to check the status of the job.
@@ -1161,7 +1106,6 @@ type Job() =
 //    new() = MapList(new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase))
 //    override __.Validate() = ok()
 //
-
 /// <summary>
 /// Request to analyze a text against an analyzer. The reason to force
 /// this parameter to request body is to avoid escaping of restricted characters
@@ -1173,8 +1117,7 @@ type AnalysisRequest() =
     inherit DtoBase()
     member val Text = defString with get, set
     override this.Validate() = 
-        if this.Text |> isBlank 
-        then MissingFieldValue "Text" |> fail 
+        if this.Text |> isBlank then MissingFieldValue "Text" |> fail
         else ok()
 
 type CreateResponse(id : string) = 
