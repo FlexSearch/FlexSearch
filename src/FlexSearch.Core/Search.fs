@@ -44,6 +44,7 @@ module SearchResultComponents =
     /// easily extended in future to include more things.
     type ResultMeta = 
         { RecordsReturned : int
+          BestScore : float32
           TotalAvailable : int }
     
     /// Wrapper around the search result. This is also used
@@ -380,6 +381,7 @@ module SearchDsl =
         
         { Meta = 
               { RecordsReturned = recordsReturned
+                BestScore = totalDocs.GetMaxScore() 
                 TotalAvailable = totalAvailable }
           Documents = results }
 
