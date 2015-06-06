@@ -94,7 +94,6 @@ module DuplicateDetection =
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Online <- true
         index.Fields <- [| new Field.Dto(sessionId, FieldType.Dto.ExactText)
-                           new Field.Dto(sessionId, FieldType.Dto.ExactText)
                            new Field.Dto(targetId, FieldType.Dto.ExactText)
                            new Field.Dto(recordType, FieldType.Dto.ExactText)
                            // Source record
@@ -146,6 +145,12 @@ module DuplicateDetection =
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
     inherit HttpHandlerBase<DuplicateDetectionRequest, Guid>()
     
+    do
+        if not (indexService.IndexExists(schema.IndexName)) then
+            match indexService.AddIndex(schema) with
+            | Choice1Of2(_) -> ()
+            | Choice2Of2(error) -> Logger.Log(error)
+
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
         let query = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
         query.Columns <- [| session.DisplayFieldName |]
@@ -217,8 +222,6 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         body.Value.ProfileName <- request.SubResId.Value
         match indexService.IsIndexOnline(request.ResId.Value) with
         | Choice1Of2(writer) -> 
-            body.Value.DisplayName <- request.OwinContext |> stringFromQueryString "displayname" Constants.IdField
-            body.Value.ThreadCount <- request.OwinContext |> intFromQueryString "threadcount" 1
             match writer.Settings.SearchProfiles.TryGetValue(request.SubResId.Value) with
             | true, _ -> 
                 let jobId = Guid.NewGuid()
