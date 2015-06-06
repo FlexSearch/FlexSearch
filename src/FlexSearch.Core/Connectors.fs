@@ -43,7 +43,7 @@ module CsvHelpers =
                         yield record
                 }
             with e -> 
-                Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
+                Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
                 Seq.empty
         
         (headers, records)
@@ -76,7 +76,7 @@ type CsvIndexingRequest() =
 /// Connector for importing CSV file data into the system.
 [<Sealed>]
 [<Name("POST-/indices/:id/csv")>]
-type CsvHandler(queueService : IQueueService, jobService : IJobService) = 
+type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobService : IJobService) = 
     inherit HttpHandlerBase<CsvIndexingRequest, string>()
     
     //    let ProcessFileUsingCsvHelper(body : CsvIndexingRequest, path : string) = 
@@ -104,7 +104,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
     //                ok()
     let processFile (body : CsvIndexingRequest, path : string) = 
         use reader = new TextFieldParser(path)
-        !> "Parsing CSV file at: %s" path
+        (!>) "Parsing CSV file at: %s" path
         reader.TextFieldType <- FieldType.Delimited
         reader.SetDelimiters([| "," |])
         let headers = 
@@ -112,7 +112,7 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
             else body.Headers
         match headers with
         | [||] -> 
-            !> "CSV Parsing failed. No header row. File: %s" path
+            (!>) "CSV Parsing failed. No header row. File: %s" path
             fail <| HeaderRowIsEmpty
         | _ -> 
             let mutable rows = 0L
@@ -127,9 +127,9 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
                         document.Fields.Add(headers.[i], currentRow.[i])
                     queueService.AddDocumentQueue(document)
                 with e -> 
-                    !> "CSV Parsing error: %A" e
-                    Logger.Log (e, MessageKeyword.Plugin, MessageLevel.Warning)
-            !> "CSV Parsing finished. Processed Rows:%i File: %s" rows path
+                    (!>) "CSV Parsing error: %A" e
+                    Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
+            (!>) "CSV Parsing finished. Processed Rows:%i File: %s" rows path
             ok()
     
     let bulkRequestProcessor = 
@@ -171,7 +171,9 @@ type CsvHandler(queueService : IQueueService, jobService : IJobService) =
             ok <| jobId.ToString("N")
         
         body.IndexName <- index
-        body.Validate() >>= pathValidation >>= postBulkRequestMessage
+        match indexService.IsIndexOnline(index) with
+        | Choice1Of2(_) -> body.Validate() >>= pathValidation >>= postBulkRequestMessage
+        | Choice2Of2(error) -> fail <| error
     
     override __.Process(request, body) = SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
 
@@ -223,16 +225,20 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
                     if request.ForceCreate then queueService.AddDocumentQueue(document)
                     else queueService.AddOrUpdateDocumentQueue(document)
                     rows <- rows + 1
-                    if rows % 5000 = 0 then 
-                        jobService.UpdateJob(jobId, JobStatus.InProgress, rows)
+                    if rows % 5000 = 0 then jobService.UpdateJob(jobId, JobStatus.InProgress, rows)
                 jobService.UpdateJob(jobId, JobStatus.Completed, rows)
-                Logger.Log (sprintf "SQL connector: Job Finished. Query:{%s}. Index:{%s}" request.Query request.IndexName, MessageKeyword.Plugin, MessageLevel.Info)
-            else
-                jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, rows, "No rows returned.") 
-                Logger.Log (sprintf "SQL connector error. No rows returned. Query:{%s}" request.Query, MessageKeyword.Plugin, MessageLevel.Error)
+                Logger.Log
+                    (sprintf "SQL connector: Job Finished. Query:{%s}. Index:{%s}" request.Query request.IndexName, 
+                     MessageKeyword.Plugin, MessageLevel.Info)
+            else 
+                jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, rows, "No rows returned.")
+                Logger.Log
+                    (sprintf "SQL connector error. No rows returned. Query:{%s}" request.Query, MessageKeyword.Plugin, 
+                     MessageLevel.Error)
         with e -> 
-                jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, 0, (e |> exceptionPrinter))
-                Logger.Log (sprintf "SQL connector error: %s" (e |> exceptionPrinter), MessageKeyword.Plugin, MessageLevel.Error)
+            jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, 0, (e |> exceptionPrinter))
+            Logger.Log
+                (sprintf "SQL connector error: %s" (e |> exceptionPrinter), MessageKeyword.Plugin, MessageLevel.Error)
     
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
