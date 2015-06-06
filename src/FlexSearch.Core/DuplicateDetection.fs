@@ -123,6 +123,7 @@ module DuplicateDetection =
     let writeDuplicates (sourceRecord : SourceRecord, targetRecords : List<TargetRecord>, 
                          documentService : IDocumentService) = 
         let sourceDoc = new Document.Dto(schema.IndexName, getId())
+        sourceDoc.Fields.Add(sessionId, sourceRecord.SessionId)
         sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId)
         sourceDoc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
         sourceDoc.Fields.Add(sourceDisplayName, sourceRecord.SourceDisplayName)
