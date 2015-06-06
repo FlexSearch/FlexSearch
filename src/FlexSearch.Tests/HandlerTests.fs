@@ -14,7 +14,7 @@ module CsvHandlerTests =
                 new CsvIndexingRequest(IndexName = index.IndexName, HasHeaderRecord = true, Path = "..\\..\\test.csv") 
                 |> Some
             let reqCntxt = RequestContext.Create(new OwinContext(), defString, index.IndexName, defString, defString)
-            let csvHandler = new CsvHandler(queueService, jobService)
+            let csvHandler = new CsvHandler(queueService, indexService, jobService)
             test <@ succeeded <| indexService.AddIndex(index) @>
             csvHandler.Process(reqCntxt, csvReq)
         
