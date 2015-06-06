@@ -71,7 +71,7 @@ module Constants =
     
     // Default value to be used for string data type
     [<Literal>]
-    let StringDefaultValue = "#null"
+    let StringDefaultValue = "null"
     
     /// Default value to be used for flex date data type
     let DateDefaultValue = Int64.Parse("00010101")
