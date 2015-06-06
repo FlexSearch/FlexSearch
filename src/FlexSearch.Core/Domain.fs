@@ -184,36 +184,6 @@ module IndexVersion =
         | Dto.Lucene_5_0_0 -> ok (Version.LUCENE_5_0_0)
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
-//    /// Get the default codec associated with an index version
-//    let getDefaultCodec = 
-//        function 
-//        | Dto.Lucene_4_9 -> ok (new FlexCodec410() :> Codec)
-//        | Dto.Lucene_4_10 -> ok (new FlexCodec410() :> Codec)
-//        | Dto.Lucene_4_10_1 -> ok (new FlexCodec410() :> Codec)
-//        | Dto.Lucene_5_0_0 -> ok (new FlexCodec50() :> Codec)
-//        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
-//    
-//    /// Get the default codec associated with an index version
-//    let getDefaultPostingsFormat = 
-//        function 
-//        | Dto.Lucene_4_9 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-//        | Dto.Lucene_4_10 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-//        | Dto.Lucene_4_10_1 -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-//        | Dto.Lucene_5_0_0 -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
-//        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
-//    
-//    /// Get the id postings format associated with an index version
-//    let getIdFieldPostingsFormat (useBloomFilter) (version) = 
-//        match (version, useBloomFilter) with
-//        | Dto.Lucene_4_9, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
-//        | Dto.Lucene_4_9, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-//        | Dto.Lucene_4_10, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
-//        | Dto.Lucene_4_10, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-//        | Dto.Lucene_4_10_1, true -> ok (FieldPostingsFormat.Dto.Bloom_4_1)
-//        | Dto.Lucene_4_10_1, false -> ok (FieldPostingsFormat.Dto.Lucene_4_1)
-//        | Dto.Lucene_5_0_0, true -> ok (FieldPostingsFormat.Dto.Bloom_5_0)
-//        | Dto.Lucene_5_0_0, false -> ok (FieldPostingsFormat.Dto.Lucene_5_0)
-//        | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 module ScriptType = 
     /// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
     /// the type of operation that the current script can perform. These can vary from scripts
@@ -232,17 +202,6 @@ module ScriptType =
         /// get executed at index time only.
         | ComputedField = 3
 
-///// Represents the current state of the index.
-//type IndexState = 
-//    | Undefined = 0
-//    /// Index is opening. 
-//    | Opening = 1
-//    /// Index is Online.
-//    | Online = 2
-//    /// Index is off-line.
-//    | Offline = 3
-//    /// Index is closing
-//    | Closing = 4
 /// Represents the status of job.
 type JobStatus = 
     | Undefined = 0
@@ -378,14 +337,6 @@ module FieldType =
         | Double(_) -> SortField.Type.DOUBLE
         | Highlight(_) -> failwithf "Sorting is not possible on string or text data type."
         | Long(_) -> SortField.Type.LONG
-
-// ----------------------------------------------------------------------------
-// Search profile related types
-// ----------------------------------------------------------------------------
-type ScriptsManager = 
-    { ComputedFieldScripts : Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>
-      ProfileSelectorScripts : Dictionary<string, System.Func<System.Dynamic.DynamicObject, string>>
-      CustomScoringScripts : Dictionary<string, System.Dynamic.DynamicObject * double -> double> }
 
 module ShardConfiguration = 
     /// Allows to control various Index Shards related settings.
@@ -1083,29 +1034,6 @@ type Job() =
     
     override __.Validate() = ok()
 
-///// Represents a list of words which can be used for filtering by an analyzer.
-///// These can contain stop words or keep words etc.
-//[<ToString; Sealed>]
-//type FilterList(words : List<string>) = 
-//    inherit ValidatableBase()
-//    
-//    /// List of words
-//    member val Words = words with get, set
-//    
-//    new() = FilterList(Unchecked.defaultof<List<string>>)
-//    override __.Validate() = ok()
-//
-///// Represents a list of words which can be used for synonym matching by an analyzer.
-//[<ToString; Sealed>]
-//type MapList(words : Dictionary<string, List<string>>) = 
-//    inherit ValidatableBase()
-//    
-//    /// Words to be used for synonym matching.
-//    member val Words = words with get, set
-//    
-//    new() = MapList(new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase))
-//    override __.Validate() = ok()
-//
 /// <summary>
 /// Request to analyze a text against an analyzer. The reason to force
 /// this parameter to request body is to avoid escaping of restricted characters
