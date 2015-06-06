@@ -31,6 +31,7 @@ open System.Xml.Linq
 open Microsoft.VisualBasic.FileIO
 
 type Session() = 
+    member val Id = Guid.NewGuid().ToString()
     member val SessionId = Guid.NewGuid().ToString()
     member val IndexName = Unchecked.defaultof<string> with get, set
     member val ProfileName = Unchecked.defaultof<string> with get, set
@@ -114,7 +115,7 @@ module DuplicateDetection =
     let getId() = Guid.NewGuid().ToString()
     
     let writeSessionRecord (session : Session, documentService : IDocumentService) = 
-        let doc = new Document.Dto(schema.IndexName, getId())
+        let doc = new Document.Dto(schema.IndexName, session.Id)
         doc.Fields.Add(sessionId, session.SessionId)
         doc.Fields.Add(recordType, sessionRecordType)
         doc.Fields.Add(sessionProperties, formatter.SerializeToString(session))
@@ -146,12 +147,12 @@ module DuplicateDetection =
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
     inherit HttpHandlerBase<DuplicateDetectionRequest, Guid>()
     
-    do
-        if not (indexService.IndexExists(schema.IndexName)) then
+    do 
+        if not (indexService.IndexExists(schema.IndexName)) then 
             match indexService.AddIndex(schema) with
             | Choice1Of2(_) -> ()
             | Choice2Of2(error) -> Logger.Log(error)
-
+    
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
         let query = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
         query.Columns <- [| session.DisplayFieldName |]
@@ -188,7 +189,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
         let mainQuery = 
             new SearchQuery.Dto(session.IndexName, req.SelectionQuery, Count = int req.MaxRecordsToScan, 
-                                ReturnFlatResult = true, Columns = [| req.DisplayName |])
+                                ReturnFlatResult = true, Columns = [| "*" |])
         let resultC = searchService.Search(mainQuery)
         match resultC with
         | Choice1Of2(result) -> 
