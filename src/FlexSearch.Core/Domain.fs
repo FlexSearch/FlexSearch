@@ -184,24 +184,6 @@ module IndexVersion =
         | Dto.Lucene_5_0_0 -> ok (Version.LUCENE_5_0_0)
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
-module ScriptType = 
-    /// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
-    /// the type of operation that the current script can perform. These can vary from scripts
-    /// used for computing fields dynamically at index time or scripts which can be used to alter
-    /// FlexSearch's default scoring.
-    type Dto = 
-        | Undefined = 0
-        /// Can be used to dynamically select a search profile based upon the given input.
-        /// Not available in the current version.
-        | SearchProfileSelector = 1
-        /// Can be used to modify the default scoring of the engine.
-        /// Not available at the moment.
-        | CustomScoring = 2
-        /// Can be used to dynamically compute fields at index time. For example one can write
-        /// a script to generate full name automatically from first name and last name. These
-        /// get executed at index time only.
-        | ComputedField = 3
-
 /// Represents the status of job.
 type JobStatus = 
     | Undefined = 0
@@ -502,6 +484,10 @@ module Analyzer =
                                    >>= this.Tokenizer.Validate
                                    >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
 
+/// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
+/// the type of operation that the current script can perform. These can vary from scripts
+/// used for computing fields dynamically at index time or scripts which can be used to alter
+/// FlexSearch's default scoring.    
 [<AutoOpen>]
 module Scripts = 
     /// Default signature which is used by computed scripts
