@@ -89,6 +89,9 @@ module Constants =
     /// Flex index folder
     let ConfFolder = rootFolder +/ "Conf" |> createDir
     
+    /// Default script folder
+    let ScriptFolder = ConfFolder +/ "Scripts" |> createDir
+    
     /// Flex plug-in folder
     let PluginFolder = rootFolder +/ "Plugins" |> createDir
     

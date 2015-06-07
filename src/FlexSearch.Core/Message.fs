@@ -158,7 +158,7 @@ type BuilderError =
     | UnSupportedIndexVersion of indexVersion : string
     | UnsupportedDirectoryType of directoryType : string
     | UnSupportedFieldType of fieldName : string * fieldType : string
-    | ScriptCannotBeCompiled of error : string
+    | ScriptCannotBeCompiled of scriptName : string * error : string
     | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Error)
@@ -174,7 +174,7 @@ type BuilderError =
             | UnSupportedIndexVersion(i) -> sprintf "Unsupported index version: %s" i
             | UnsupportedDirectoryType(d) -> sprintf "Unsupported directory type: %s" d
             | UnSupportedFieldType(fn, ft) -> sprintf "Unsupported field type '%s' for field '%s'" fn ft
-            | ScriptCannotBeCompiled(e) -> sprintf "Script cannot be compiled: \n%s" e
+            | ScriptCannotBeCompiled(sn, e) -> sprintf "Script '%s' cannot be compiled: \n%s" sn e
             | AnalyzerNotSupportedForFieldType(f, a) -> sprintf "Analyzer '%s' not supported for field '%s'" f a
             |> caseToMsg this
 

@@ -26,11 +26,9 @@ open System.Linq
 open System.Runtime.Caching
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
+open System.Collections.Concurrent
 open FlexLucene.Queryparser.Classic
 open Microsoft.CSharp
-open System.CodeDom.Compiler
-open Microsoft.CodeAnalysis.Scripting.CSharp
-open Microsoft.CodeAnalysis.Scripting
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
@@ -97,67 +95,45 @@ type IAnalyzerService =
 
 /// Script related services
 type IScriptService = 
+    
     /// Signature : fun (indexName, fieldName, source, options) -> string
-    abstract GetComputedScript : scriptName:string -> Choice<ComputedScript, IMessage>
-
+    abstract GetScript : scriptName:string * scriptType:ScriptType -> Choice<Scripts.T, IMessage>
+    
     /// This methods verifies that the script call itself is valid and return the funtion along
     /// with the paramters that can be passed to the funtion
     /// Usually a script call looks like below
     /// function('param1','param2','param3',....)
-    abstract VerifyComputedScriptSig : scriptSig:string -> Choice<ComputedScript * string[], IMessage>
+    abstract GetScriptSig : scriptSig:string -> Choice<string * string [], IMessage>
+    
+    abstract GetComputedScript : scriptSig:string -> Choice<ComputedDelegate * string [], IMessage>
 
 [<Sealed>]
-type ScriptService(threadSafeWriter : ThreadSafeFileWriter) = 
+type ScriptService(threadSafeWriter : ThreadSafeFileWriter) as self = 
+    let scripts = conDict<Scripts.T>()
+    let addScripts (s : seq<string * Scripts.T>) = 
+        s |> Seq.iter (fun (scriptName, script) -> scripts.TryAdd(scriptName, script) |> ignore)
     
-    let path = 
-        Constants.ConfFolder +/ "Scripts"
-        |> Directory.CreateDirectory
-        |> fun x -> x.FullName
+    do 
+        Scripts.compileAllScripts (ScriptType.Computed) |> addScripts
+        Scripts.compileAllScripts (ScriptType.PostSearch) |> addScripts
+        Scripts.compileAllScripts (ScriptType.SearchProfile) |> addScripts
     
-    let computedScripts = conDict<ComputedScript>()
-    
-    let getCompileOptions() = 
-        ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
-                     .AddNamespaces("System", "System.Math", "System.Collections.Generic", 
-                            "System.Text.RegularExpressions")
-    
-    let compile (sourceCode) = 
-        try 
-            let state = CSharpScript.Run(sourceCode, getCompileOptions())
-            ok (state)
-        with e -> fail (ScriptCannotBeCompiled(exceptionPrinter e))
-    
-    let compileScripts (searchPattern) (stateProcessor : ScriptState * string -> unit) = 
-        let processFile (file) = 
-            let code = File.ReadAllText(file)
-            let fileName = Path.GetFileNameWithoutExtension(file)
-            match compile (code) with
-            | Choice1Of2(state) -> stateProcessor (state, fileName |> after '_')
-            | Choice2Of2(err) -> ()
-        Directory.EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly) |> Seq.iter processFile
-    
-    let compileComputedScripts() = 
-        let processor (state : ScriptState, scriptName) = 
-            let compiledScript = 
-                state.CreateDelegate<ComputedScript>("Execute")
-            computedScripts.TryAdd(scriptName, compiledScript) |> ignore
-        compileScripts "computed_*.csx" processor
-    
-    let getComputedScript(scriptName) =
-        match computedScripts.TryGetValue(scriptName) with
+    let getScript (scriptName, scriptType) = 
+        match scripts.TryGetValue(scriptName + (scriptType.ToString())) with
         | true, func -> ok <| func
         | _ -> fail <| ScriptNotFound(scriptName, String.Empty)
-
-    do compileComputedScripts()
+    
     interface IScriptService with
-        member __.GetComputedScript(scriptName) = getComputedScript(scriptName)
-            
-        member __.VerifyComputedScriptSig(scriptSig) = maybe{
-            let! (scriptName, parameters) = ParseFunctionCall(scriptSig)
-            let! script = getComputedScript(scriptName)
-            return (script, parameters)
-        }
-            
+        member __.GetScript(scriptName, scriptType) = getScript (scriptName, scriptType)
+        member __.GetScriptSig(scriptSig) = ParseFunctionCall(scriptSig)
+        member __.GetComputedScript(scriptSig) = 
+            maybe { 
+                let! (functionName, parameters) = ParseFunctionCall(scriptSig)
+                let! script = getScript (functionName, ScriptType.Computed)
+                return! match script with
+                        | ComputedScript(s) -> ok <| (s, parameters)
+                        | _ -> fail <| ScriptNotFound(functionName, ScriptType.Computed.ToString())
+            }
 
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
@@ -279,7 +255,8 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
     /// Load a index
     let loadIndex (index : Index.Dto) = 
         maybe { 
-            let! setting = IndexWriter.createIndexSetting (index, analyzerService.GetAnalyzer, scriptService.VerifyComputedScriptSig)
+            let! setting = IndexWriter.createIndexSetting 
+                               (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
             if index.Online then 
                 let indexWriter = IndexWriter.create (setting)
                 state

@@ -484,16 +484,6 @@ module Analyzer =
                                    >>= this.Tokenizer.Validate
                                    >>= fun _ -> seqValidator (this.Filters.Cast<DtoBase>())
 
-/// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
-/// the type of operation that the current script can perform. These can vary from scripts
-/// used for computing fields dynamically at index time or scripts which can be used to alter
-/// FlexSearch's default scoring.    
-[<AutoOpen>]
-module Scripts = 
-    /// Default signature which is used by computed scripts
-    /// Format -> indexName, fieldName, fields, parameters
-    type ComputedScript = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
-
 [<RequireQualifiedAccessAttribute>]
 module Field = 
     /// A field is a section of a Document. 
@@ -581,7 +571,7 @@ module Field =
           IsStored : bool
           Similarity : FieldSimilarity.Dto
           FieldType : FieldType.T
-          Source : (ComputedScript * string []) option
+          Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
           RequiresAnalyzer : bool
@@ -1075,3 +1065,75 @@ module ServerSettings =
                   NodeName = parsedResult.NodeName }
             ok setting
         else fail <| FileNotFound path
+
+/// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
+/// the type of operation that the current script can perform. These can vary from scripts
+/// used for computing fields dynamically at index time or scripts which can be used to alter
+/// FlexSearch's default scoring.    
+[<AutoOpen>]
+module Scripts = 
+    open System.CodeDom.Compiler
+    open Microsoft.CodeAnalysis.Scripting.CSharp
+    open Microsoft.CodeAnalysis.Scripting
+    
+    type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
+    
+    type PostSearchDeletegate = Func<SearchQuery.Dto, string, float32, Dictionary<string, string>, bool * float32>
+    
+    type SearchProfileDelegate = Action<SearchQuery.Dto, Dictionary<string, string>>
+    
+    type T = 
+        /// Default signature which is used by computed scripts
+        /// Format -> indexName, fieldName, fields, parameters
+        | ComputedScript of script : ComputedDelegate
+        /// Script which can be used to filter search query results
+        /// Format -> searchQuery, id, score, fields -> filtering result * score
+        | PostSearchScript of script : PostSearchDeletegate
+        /// Script to process search profile data
+        | SearchProfileScript of script : SearchProfileDelegate
+    
+    type ScriptType = 
+        | Computed = 1
+        | PostSearch = 2
+        | SearchProfile = 3
+    
+    let pattern (scriptType : ScriptType) = 
+        match scriptType with
+        | ScriptType.Computed -> "computed_*.csx"
+        | ScriptType.PostSearch -> "postsearch_*.csx"
+        | ScriptType.SearchProfile -> "searchprofile_*.csx"
+        | _ -> failwithf "Unknown ScriptType"
+    
+    let getCompileOptions() = 
+        ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
+                     .AddNamespaces("System", "System.Math", "System.Collections.Generic", 
+                                    "System.Text.RegularExpressions")
+    
+    let generateDeletegate (scriptType : ScriptType) (state : ScriptState) = 
+        match scriptType with
+        | ScriptType.Computed -> ComputedScript <| state.CreateDelegate<ComputedDelegate>("Execute")
+        | ScriptType.PostSearch -> PostSearchScript <| state.CreateDelegate<PostSearchDeletegate>("Execute")
+        | ScriptType.SearchProfile -> SearchProfileScript <| state.CreateDelegate<SearchProfileDelegate>("Execute")
+        | _ -> failwithf "Unknown ScriptType"
+    
+    /// Compiles a script with the given source code
+    let compile (sourceCode, scriptName, scriptType : ScriptType) = 
+        try 
+            CSharpScript.Run(sourceCode, getCompileOptions())
+            |> generateDeletegate scriptType
+            |> fun x -> (scriptName, x)
+            |> ok
+        with e -> fail <| ScriptCannotBeCompiled(scriptName, exceptionPrinter e)
+    
+    /// Compiles a script from the file
+    let compileFromFile (filePath, scriptType : ScriptType) = 
+        let code = File.ReadAllText(filePath)
+        let fileName = Path.GetFileNameWithoutExtension(filePath)
+        compile (code, fileName |> after '_', scriptType)
+    
+    /// Compiles all the scripts of a given type
+    let compileAllScripts (scriptType : ScriptType) = 
+        Directory.EnumerateFiles(Constants.ScriptFolder, scriptType |> pattern, SearchOption.TopDirectoryOnly)
+        |> Seq.map (fun x -> compileFromFile (x, scriptType))
+        |> Seq.filter resultToBool
+        |> Seq.map extract
