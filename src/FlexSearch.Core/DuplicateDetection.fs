@@ -130,6 +130,7 @@ module DuplicateDetection =
         sourceDoc.Fields.Add(sourceDisplayName, sourceRecord.SourceDisplayName)
         sourceDoc.Fields.Add(sourceStatus, sourceRecord.SourceStatus)
         sourceDoc.Fields.Add(totalDupesFound, targetRecords.Count.ToString())
+        sourceDoc.Fields.Add(recordType, sourceRecordType)
         documentService.AddDocument(sourceDoc) |> ignore
         for target in targetRecords do
             let doc = new Document.Dto(schema.IndexName, getId())
@@ -140,6 +141,7 @@ module DuplicateDetection =
             doc.Fields.Add(targetDisplayName, target.TargetDisplayName)
             doc.Fields.Add(quality, target.Quality)
             doc.Fields.Add(targetScore, target.TargetScore.ToString())
+            doc.Fields.Add(recordType, targetRecordType)
             documentService.AddDocument(doc) |> ignore
 
 [<Sealed>]
