@@ -95,14 +95,15 @@ module DuplicateDetection =
         index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
         index.Online <- true
         index.Fields <- [| new Field.Dto(sessionId, FieldType.Dto.ExactText)
-                           new Field.Dto(targetId, FieldType.Dto.ExactText)
                            new Field.Dto(recordType, FieldType.Dto.ExactText)
                            // Source record
+                           new Field.Dto(sourceId, FieldType.Dto.ExactText)
                            new Field.Dto(sourceRecordId, FieldType.Dto.ExactText)
                            new Field.Dto(sourceDisplayName, FieldType.Dto.Stored)
                            new Field.Dto(totalDupesFound, FieldType.Dto.Int)
                            new Field.Dto(sourceStatus, FieldType.Dto.Int)
                            // Target record
+                           new Field.Dto(targetId, FieldType.Dto.ExactText)
                            new Field.Dto(targetRecordId, FieldType.Dto.ExactText)
                            new Field.Dto(targetDisplayName, FieldType.Dto.Stored)
                            new Field.Dto(targetScore, FieldType.Dto.Double)
