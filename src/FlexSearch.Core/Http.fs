@@ -298,6 +298,8 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
     member __.Configuration(app : IAppBuilder) = 
+        // Setup CORS
+        app.UseCors(Cors.CorsOptions.AllowAll) |> ignore
         let fileServerOptions = new FileServerOptions()
         fileServerOptions.EnableDirectoryBrowsing <- true
         fileServerOptions.EnableDefaultFiles <- true
