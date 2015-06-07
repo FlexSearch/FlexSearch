@@ -137,6 +137,7 @@ module DuplicateDetection =
             let doc = new Document.Dto(schema.IndexName, getId())
             doc.Fields.Add(sessionId, sourceRecord.SessionId)
             doc.Fields.Add(sourceId, sourceRecord.SourceId)
+            doc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
             doc.Fields.Add(targetId, target.TargetId)
             doc.Fields.Add(targetRecordId, target.TargetRecordId)
             doc.Fields.Add(targetDisplayName, target.TargetDisplayName)
@@ -176,7 +177,9 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                         let score = docs.Meta.BestScore / resultScore * 100.0f
                         let targetRecord = 
                             new TargetRecord(session.SessionId, header.SourceId, 
-                                             TargetDisplayName = result.[session.DisplayFieldName], TargetScore = score)
+                                             TargetDisplayName = result.[session.DisplayFieldName], 
+                                             TargetScore = score,
+                                             TargetRecordId = result.[Constants.IdField])
                         targetRecords.Add(targetRecord)
                 if targetRecords.Count >= 1 then writeDuplicates (header, targetRecords, documentService)
         | _ -> ()
