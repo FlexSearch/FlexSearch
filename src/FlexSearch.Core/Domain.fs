@@ -1104,10 +1104,9 @@ module Scripts =
         | _ -> failwithf "Unknown ScriptType"
     
     let getCompileOptions() = 
-        ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
-                     .AddNamespaces("System", "System.Math", "System.Collections.Generic", 
-                                    "System.Text.RegularExpressions")
-    
+        let options = ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll").AddNamespaces("System", "System.Math", "System.Collections.Generic", "System.Text.RegularExpressions", "FlexSearch.Core")
+        options.AddReferences(typeof<SearchQuery.Dto>.Assembly)
+
     let generateDeletegate (scriptType : ScriptType) (state : ScriptState) = 
         match scriptType with
         | ScriptType.Computed -> ComputedScript <| state.CreateDelegate<ComputedDelegate>("Execute")
