@@ -1121,7 +1121,7 @@ module Scripts =
         try 
             CSharpScript.Run(sourceCode, getCompileOptions())
             |> generateDeletegate scriptType
-            |> fun x -> (scriptName, x)
+            |> fun x -> (sprintf "%s%s" scriptName (string scriptType), x)
             |> ok
         with e -> fail <| ScriptCannotBeCompiled(scriptName, exceptionPrinter e)
     
