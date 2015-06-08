@@ -686,8 +686,7 @@ module Field =
     
     /// Get the schema name for a field from the name and postings format
     let schemaName (fieldName, postingsFormat : string) = 
-        if isNotBlank postingsFormat then sprintf "%s%s" fieldName (postingsFormat.ToLowerInvariant())
-        else sprintf "%s" fieldName
+        sprintf "%s" fieldName
     
     let create (fieldName : string, fieldType : FieldType.T, postingsFormat) = 
         { FieldName = fieldName
