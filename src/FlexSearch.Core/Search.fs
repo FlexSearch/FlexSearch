@@ -227,6 +227,14 @@ module SearchDsl =
     /// Returns a document from the index
     let getDocument (indexWriter : IndexWriter.T, search : SearchQuery.Dto, document : Document) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        let getValue(field: Field.T) =
+            let value = document.Get(field.SchemaName)
+            if notNull value then 
+                if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then
+                    fields.Add(field.FieldName, String.Empty)
+                else
+                    fields.Add(field.FieldName, value)
+
         match search.Columns with
         // Return no other columns when nothing is passed
         | _ when search.Columns.Length = 0 -> ()
@@ -234,20 +242,12 @@ module SearchDsl =
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
                 if field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField then ()
-                else 
-                    let value = document.Get(field.SchemaName)
-                    if notNull value then fields.Add(field.FieldName, value)
+                else getValue(field)
         // Return only the requested columns
         | _ -> 
             for fieldName in search.Columns do
                 match indexWriter.Settings.FieldsLookup.TryGetValue(fieldName) with
-                | (true, field) -> 
-                    let value = document.Get(field.SchemaName)
-                    if notNull value then 
-                        if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then
-                            fields.Add(field.FieldName, String.Empty)
-                        else
-                            fields.Add(field.FieldName, value)
+                | (true, field) -> getValue(field)
                 | _ -> ()
         fields
     
