@@ -278,11 +278,18 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                    Logger.Log(error)
                    None)
         |> Seq.filter (fun x -> x.IsSome)
-        |> Seq.map (fun i -> 
-               Task.Run(fun _ -> 
-                   loadIndex i.Value
-                   |> logErrorChoice
-                   |> ignore))
+        |> Seq.map 
+               (fun i -> 
+               Task.Run
+                   (fun _ -> 
+                   try 
+                       loadIndex i.Value
+                       |> logErrorChoice
+                       |> ignore
+                   with e -> 
+                       Logger.Log
+                           (sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, 
+                            MessageLevel.Error)))
         |> Seq.toArray
         |> Task.WaitAll
     

@@ -417,4 +417,4 @@ type Logger() =
     /// This is an general exception logging method. This should only be used in limited cases
     /// where there is no specific message available to log the error.    
     static member Log(msg: string, ex: Exception, keyword : MessageKeyword, level: MessageLevel) =
-        logMethod(keyword, level)("Generic", sprintf "%s \n%s" ex.Message (exceptionPrinter ex), String.Empty)
+        logMethod(keyword, level)("Generic", sprintf "%s \n%s" msg (exceptionPrinter ex), String.Empty)
