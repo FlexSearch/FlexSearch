@@ -322,7 +322,7 @@ type NodeMessage =
         member this.OperationMessage() = 
             match this with
             | PluginsLoaded(pt, p) -> sprintf "The following Plugins of type: {%s} are loaded successfully. %A" pt p
-            | PluginLoadFailure(pn, pt, e) -> sprintf "The Plugin of type: {%s} with name: {%s} was not loaded due to an error. Please refer to the log for more information." pt pn
+            | PluginLoadFailure(pn, pt, e) -> sprintf "The Plugin of type: {%s} with name: {%s} was not loaded due to an error. Please refer to the log for more information. /n %s" pt pn e
             |> caseToMsg this
 
 type IndexMessage =
