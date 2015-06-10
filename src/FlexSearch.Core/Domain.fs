@@ -844,7 +844,7 @@ module SearchQuery =
         
         /// Script which can be used to select a search profile. This can help in
         /// dynamic selection of search profile based on the incoming data.
-        member val SearchProfileSelector = defString with get, set
+        member val SearchProfileScript = defString with get, set
         
         /// Can be used to override the configuration saved in the search profile
         /// with the one which is passed as the Search Query

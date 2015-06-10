@@ -106,6 +106,7 @@ type IScriptService =
     abstract GetScriptSig : scriptSig:string -> Choice<string * string [], IMessage>
     
     abstract GetComputedScript : scriptSig:string -> Choice<ComputedDelegate * string [], IMessage>
+    abstract GetSearchProfileScript : scriptSig:string -> Choice<SearchProfileDelegate, IMessage>
 
 [<Sealed>]
 type ScriptService(threadSafeWriter : ThreadSafeFileWriter) as self = 
@@ -126,6 +127,7 @@ type ScriptService(threadSafeWriter : ThreadSafeFileWriter) as self =
     interface IScriptService with
         member __.GetScript(scriptName, scriptType) = getScript (scriptName, scriptType)
         member __.GetScriptSig(scriptSig) = ParseFunctionCall(scriptSig)
+        
         member __.GetComputedScript(scriptSig) = 
             maybe { 
                 let! (functionName, parameters) = ParseFunctionCall(scriptSig)
@@ -134,20 +136,30 @@ type ScriptService(threadSafeWriter : ThreadSafeFileWriter) as self =
                         | ComputedScript(s) -> ok <| (s, parameters)
                         | _ -> fail <| ScriptNotFound(functionName, ScriptType.Computed.ToString())
             }
-       
+        
+        member __.GetSearchProfileScript(scriptName) = 
+            maybe { 
+                let! script = getScript (scriptName, ScriptType.SearchProfile)
+                return! match script with
+                        | SearchProfileScript(s) -> ok <| s
+                        | _ -> fail <| ScriptNotFound(scriptName, ScriptType.Computed.ToString())
+            }
+
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     
-    let getPhoneticFilter(encoder) = 
+    let getPhoneticFilter (encoder) = 
         let filterParams = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         filterParams.Add("encoder", encoder)
         filterParams.Add("inject", "false")
         let filters = new List<TokenFilter.Dto>()
         filters.Add(new TokenFilter.Dto(FilterName = "phonetic", Parameters = filterParams))
-        let analyzerDefinition = new Analyzer.Dto(AnalyzerName = encoder.ToLowerInvariant(), Tokenizer = new Tokenizer.Dto(TokenizerName = "whitespace"), Filters = filters)
-        (analyzerDefinition, Analysis.buildFromAnalyzerDto(analyzerDefinition) |> extract)
-
+        let analyzerDefinition = 
+            new Analyzer.Dto(AnalyzerName = encoder.ToLowerInvariant(), 
+                             Tokenizer = new Tokenizer.Dto(TokenizerName = "whitespace"), Filters = filters)
+        (analyzerDefinition, Analysis.buildFromAnalyzerDto (analyzerDefinition) |> extract)
+    
     let path = 
         Constants.ConfFolder +/ "Analyzers"
         |> Directory.CreateDirectory
@@ -185,8 +197,8 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> Analyzer
         store |> add ("standard", (standardAnalyzer, instance))
         store |> add ("keyword", (new Analyzer.Dto(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
-        store |> add ("refinedsoundex", getPhoneticFilter("refinedsoundex"))
-        store |> add ("doublemetaphone", getPhoneticFilter("doublemetaphone"))
+        store |> add ("refinedsoundex", getPhoneticFilter ("refinedsoundex"))
+        store |> add ("doublemetaphone", getPhoneticFilter ("doublemetaphone"))
         if not testMode then loadAllAnalyzers()
     
     interface IAnalyzerService with
@@ -392,7 +404,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         member __.UpdateIndexFields(fields : Field.Dto []) = failwith "Not implemented yet"
 
 [<Sealed>]
-type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>, indexService : IIndexService) = 
+type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, indexService : IIndexService) = 
     
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
@@ -424,6 +436,18 @@ type SearchService(parser : IFlexParser, queryFactory : IFlexFactory<IFlexQuery>
                     let! values = match inputValues with
                                   | Some(values) -> Choice1Of2(values)
                                   | None -> Parsers.ParseQueryString(search.QueryString, false)
+                    // Check if search profile script is defined. If yes then execute it.
+                    do! if isNotBlank sq.SearchProfileScript then 
+                            match scriptService.GetSearchProfileScript(sq.SearchProfileScript) with
+                            | Choice1Of2(script) -> 
+                                try 
+                                    script.Invoke(sq, values)
+                                    ok()
+                                with e -> 
+                                    Logger.Log("SearchProfile Query execution error", e, MessageKeyword.Search, MessageLevel.Warning)
+                                    ok()
+                            | Choice2Of2(err) -> fail <| err
+                        else ok()
                     return (p', Some(values))
                 | _ -> return! fail <| UnknownSearchProfile(search.IndexName, search.SearchProfile)
             else let! predicate = parser.Parse(search.QueryString)
