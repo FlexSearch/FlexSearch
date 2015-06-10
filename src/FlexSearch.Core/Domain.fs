@@ -436,7 +436,7 @@ module TokenFilter =
         member val FilterName = defString with get, set
         
         /// Parameters required by the filter.
-        member val Parameters = strDict()
+        member val Parameters = strDict() with get, set
         
         override this.Validate() = this.FilterName |> propertyNameValidator "FilterName"
 
@@ -460,7 +460,7 @@ module Tokenizer =
         member val TokenizerName = "standard" with get, set
         
         /// Parameters required by the tokenizer.
-        member val Parameters = strDict()
+        member val Parameters = strDict() with get, set
         
         override this.Validate() = this.TokenizerName |> propertyNameValidator "TokenizerName"
 
