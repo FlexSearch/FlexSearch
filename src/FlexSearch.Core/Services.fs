@@ -134,11 +134,20 @@ type ScriptService(threadSafeWriter : ThreadSafeFileWriter) as self =
                         | ComputedScript(s) -> ok <| (s, parameters)
                         | _ -> fail <| ScriptNotFound(functionName, ScriptType.Computed.ToString())
             }
-
+       
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     
+    let getPhoneticFilter(encoder) = 
+        let filterParams = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        filterParams.Add("encoder", encoder)
+        filterParams.Add("inject", "false")
+        let filters = new List<TokenFilter.Dto>()
+        filters.Add(new TokenFilter.Dto(FilterName = "phonetic", Parameters = filterParams))
+        let analyzerDefinition = new Analyzer.Dto(AnalyzerName = encoder.ToLowerInvariant(), Tokenizer = new Tokenizer.Dto(TokenizerName = "whitespace"), Filters = filters)
+        (analyzerDefinition, Analysis.buildFromAnalyzerDto(analyzerDefinition) |> extract)
+
     let path = 
         Constants.ConfFolder +/ "Analyzers"
         |> Directory.CreateDirectory
@@ -176,6 +185,8 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> Analyzer
         store |> add ("standard", (standardAnalyzer, instance))
         store |> add ("keyword", (new Analyzer.Dto(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
+        store |> add ("refinedsoundex", getPhoneticFilter("refinedsoundex"))
+        store |> add ("doublemetaphone", getPhoneticFilter("doublemetaphone"))
         if not testMode then loadAllAnalyzers()
     
     interface IAnalyzerService with

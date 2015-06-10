@@ -657,3 +657,27 @@ id,i1
         searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 < '20'"
     member __.``Searching for records with i1 <= '20' should return 5``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 <= '20'"
+
+
+// ----------------------------------------------------------------------------
+// Analyzer specific search tests
+// ----------------------------------------------------------------------------
+type ``Phonetic matching tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+    let testData = """
+id,t1
+1,smith
+2,smyth
+3,Schmidt
+4,fish
+5,phish
+"""
+    do 
+        index.Fields.First(fun x -> x.FieldName = "t1").SearchAnalyzer <- "refinedsoundex"
+        index.Fields.First(fun x -> x.FieldName = "t1").IndexAnalyzer <- "refinedsoundex"
+        indexTestData (testData, index, indexService, documentService)
+
+    member __.``Searching for t1 = 'smith' should return 2 records as smith and smyth are phonetic equivalents``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 = 'smith'"
+
+    member __.``Searching for t1 = 'fish' should return 1 record as fish and phish are not phonetic equivalents``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 = 'fish'"
