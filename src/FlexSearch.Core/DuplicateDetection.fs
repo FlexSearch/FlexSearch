@@ -408,7 +408,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         template <- template.Replace("{{AggregratedResults}}", aggrBuilder.ToString())
         File.WriteAllText
             (Constants.WebFolder +/ "Reports" 
-             +/ (sprintf "%s_%s_%i.html" request.ProfileName (Path.GetFileNameWithoutExtension(request.SourceFileName)) 
+             +/ (sprintf "%s_%s_%s_cutoff_%i_%i.html" request.IndexName request.ProfileName (Path.GetFileNameWithoutExtension(request.SourceFileName)) (int request.CutOff)
                      (GetCurrentTimeAsLong())), template)
     
     let requestProcessor = 
