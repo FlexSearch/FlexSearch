@@ -1,4 +1,4 @@
-/// <reference path="../../.tmp/typings/tsd.d.ts" />
+/// <reference path="../../typings/tsd.d.ts" />
 
 /// <reference path="main/main.controller.ts" />
 /// <reference path="../app/components/navbar/navbar.controller.ts" />
@@ -8,7 +8,7 @@
 
 module flexportal {
   'use strict';
-  
+
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngRoute', 'ngMaterial'])
     .controller('MainCtrl', MainCtrl)
     .controller('NavbarCtrl', NavbarCtrl)
@@ -18,11 +18,11 @@ module flexportal {
 
     .config(function($routeProvider: ng.route.IRouteProvider) {
       $routeProvider
-        .when('/', {
+        .when('/main', {
           templateUrl: 'app/main/main.html',
           controller: MainCtrl
         })
-        .when('/sessions/:id/:id1/:id2', {
+        .when('/session/:id', {
           templateUrl: 'app/sessions/session.html',
           controller: SessionController
         })
@@ -31,7 +31,7 @@ module flexportal {
           controller: SessionsController
         })
         .otherwise({
-          redirectTo: '/'
+          redirectTo: '/main'
         });
     })
   ;
