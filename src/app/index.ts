@@ -15,7 +15,11 @@ module flexportal {
     .controller('SessionController', SessionController)
     .controller('SessionsController', SessionsController)
     .service('LogService', LogService)
-
+    .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
+      $mdThemingProvider.theme('default')
+        .primaryPalette('green')
+        .accentPalette('teal');
+    })
     .config(function($routeProvider: ng.route.IRouteProvider) {
       $routeProvider
         .when('/main', {

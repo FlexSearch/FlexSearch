@@ -9,7 +9,8 @@
     "restangular": "~1.4.0",
     "angular-route": "~1.4.0",
     "angular-material": "~0.9.8",
-    "angular": "~1.4.0"
+    "angular": "~1.4.0",
+    "angular-material-data-table": "*"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0"

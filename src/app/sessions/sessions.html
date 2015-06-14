@@ -1,1 +1,32 @@
-<h1>Sessions Page</h1>
+<div layout="row" layout-wrap style="margin-top:32px">
+	<div flex="10"></div>
+	<md-content flex>
+		
+		<h1 class="md-display-1">Sessions</h2>
+		
+			<md-data-table-container>
+				<table md-data-table md-row-select="selected">
+					<thead md-order="query.order" md-trim-column-names>
+						<tr>
+							<th>Index Name</th>
+							<th>Profile Name</th>
+							<th>Job Start Time</th>
+							<th>Job End Time</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr ng-repeat="session in Sessions">
+							<td>{{session.IndexName}}</td>
+							<td>{{session.ProfileName}}</td>
+							<td>{{session.JobStartTime}}</td>
+							<td>{{session.JobEndTime}}</td>
+						</tr>
+					</tbody>
+				</table>
+			</md-data-table-container>
+			<md-data-table-toolbar layout-align="end">
+				<md-data-table-pagination md-limit="{{Limit}}" md-page="{{Page}}" md-total="{{Total}}"></md-data-table-pagination>
+			</md-data-table-toolbar>
+	</md-content>
+	<div flex="10"></div>
+</div>
