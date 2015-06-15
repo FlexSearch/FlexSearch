@@ -4,4 +4,3 @@ bower_components/
 .tmp/
 dist/
 typings/
-tsd.json
