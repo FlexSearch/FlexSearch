@@ -7,7 +7,7 @@ module flexportal {
     name: string
   }
 
-  interface IRouteParamsService extends ng.route.IRouteParamsService {
+  interface IRouteParamsService extends angular.ui.IUrlRouterService {
     id: string
     id1: string
     id2: number
@@ -15,7 +15,7 @@ module flexportal {
 
   export class SessionController {
     /* @ngInject */
-    constructor($scope: ISessionProperties, $routeParams: IRouteParamsService,private $location: ng.ILocationService) {
+    constructor($scope: ISessionProperties, $routeParams: IRouteParamsService, private $location: ng.ILocationService) {
       var id = 'not passed';
       $scope.id = $routeParams.id;
       $scope.id1 = $routeParams.id1;

@@ -1,1 +1,17 @@
-<h1>Main Page</h1>
+<md-toolbar>
+  <div class="md-toolbar-tools">
+    <h1>
+      <a ng-href="#/main" class="md-display-1">FlexSearch</a>
+    </h1>
+    <span flex></span>
+    <md-button ng-href="#/sessions">Sessions</md-button>
+  </div>
+</md-toolbar>
+
+<!--[if lt IE 10]>
+  <p class="browsehappy">You are using an
+    <strong>outdated</strong>browser. Please
+    <a href="http://browsehappy.com/">upgrade your browser</a>to improve your experience.</p>
+<![endif]-->
+
+<div ui-view layout="column" class="main-content" flex></div>

@@ -1,6 +1,6 @@
 <!doctype html>
 <html ng-app="flexportal">
-  
+
   <head>
     <meta charset="utf-8">
     <title>flexportal</title>
@@ -19,25 +19,11 @@
     <!-- endinject -->
     <!-- endbuild -->
   </head>
-  
-  <body layout="column" layout-fill>
-    <md-toolbar>
-      <div class="md-toolbar-tools">
-        <h1>
-          <a ng-href="#/main" class="md-display-1">FlexSearch</a>
-        </h1>
-        <span flex></span>
-        <md-button ng-href="#/sessions">Sessions</md-button>
+
+  <body>
+      <div class="full-height">
+          <div layout="column" flex ui-view></div>
       </div>
-    </md-toolbar>
-    <!--[if lt IE 10]>
-      <p class="browsehappy">You are using an
-        <strong>outdated</strong>browser. Please
-        <a href="http://browsehappy.com/">upgrade your browser</a>to improve your experience.</p>
-    <![endif]-->
-    <!--<md-content ng-view></md-content>-->
-    
-    <div ui-view></div>
 
     <!-- build:js(src) scripts/vendor.js -->
     <!-- bower:js -->

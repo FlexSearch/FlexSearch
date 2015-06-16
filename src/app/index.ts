@@ -17,27 +17,9 @@ module flexportal {
         .primaryPalette('green')
         .accentPalette('teal');
     })
-    // .config(function($routeProvider: ng.route.IRouteProvider) {
-    //   $routeProvider
-    //     .when('/main', {
-    //       templateUrl: 'app/main/main.html',
-    //       controller: MainCtrl
-    //     })
-    //     .when('/session/:id', {
-    //       templateUrl: 'app/sessions/session.html',
-    //       controller: SessionController
-    //     })
-    //     .when('/sessions', {
-    //       templateUrl: 'app/sessions/sessions.html',
-    //       controller: SessionsController
-    //     })
-    //     .otherwise({
-    //       redirectTo: '/main'
-    //     });
-    // })
     .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider : angular.ui.IUrlRouterProvider){
-      $urlRouterProvider.otherwise("/main");
-      
+      $urlRouterProvider.otherwise("/");
+
       $stateProvider
         .state('main', {
           url: "/main",
@@ -45,14 +27,16 @@ module flexportal {
           controller: 'MainCtrl'
         })
         .state('sessions', {
-          url: "/sessions",
+          url: "^/sessions",
           templateUrl: "app/partials/sessions.html",
-          controller: 'SessionsController'
+          controller: 'SessionsController',
+          parent: 'main'
         })
         .state('session', {
-          url: "/session/:id",
+          url: "^/session/:id",
           templateUrl: "app/partials/session.html",
-          controller: 'SessionController'
+          controller: 'SessionController',
+          parent: 'main'
         });
     });
 }
