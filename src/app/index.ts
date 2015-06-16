@@ -4,7 +4,6 @@
 /// <reference path="../app/components/navbar/navbar.controller.ts" />
 /// <reference path="../app/sessions/session.controller.ts" />
 /// <reference path="../app/sessions/sessions.controller.ts" />
-/// <reference path="../app/services/logService.ts" />
 
 module flexportal {
   'use strict';

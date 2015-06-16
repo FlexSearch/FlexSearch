@@ -15,13 +15,12 @@ module flexportal {
 
   export class SessionController {
     /* @ngInject */
-    constructor($scope: ISessionProperties, $routeParams: IRouteParamsService, $log : LogService ,private $location: ng.ILocationService) {
+    constructor($scope: ISessionProperties, $routeParams: IRouteParamsService,private $location: ng.ILocationService) {
       var id = 'not passed';
       $scope.id = $routeParams.id;
       $scope.id1 = $routeParams.id1;
       $scope.id2 = $routeParams.id2;
       $scope.name = 'Seemant';
-      $log.log("Hello");
     }
   }
 }

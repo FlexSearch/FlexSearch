@@ -4,5 +4,4 @@ bower_components/
 .tmp/
 dist/
 typings/
-.settings/
 npm-debug.log
