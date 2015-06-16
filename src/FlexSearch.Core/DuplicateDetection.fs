@@ -43,20 +43,22 @@ type Session() =
     member val RecordsAvailable = Unchecked.defaultof<int> with get, set
     member val ThreadCount = Unchecked.defaultof<int> with get, set
 
+type TargetRecord(sessionId, sourceId) = 
+    member val TargetId = 0 with get, set
+    member val TargetRecordId = "" with get, set
+    member val TargetDisplayName = "" with get, set
+    member val TrueDuplicate = false with get, set
+    member val Quality = "0" with get, set
+    member val TargetScore = 0.0f with get, set
+
 type SourceRecord(sessionId) = 
     member val SessionId = sessionId
-    member val SourceId = Guid.NewGuid().ToString()
+    member val SourceId = 0 with get, set
     member val SourceRecordId = "" with get, set
     member val SourceDisplayName = "" with get, set
     member val SourceStatus = "0" with get, set
     member val TotalDupes = 0 with get, set
-
-type TargetRecord(sessionId, sourceId) = 
-    member val TargetId = Guid.NewGuid().ToString()
-    member val TargetRecordId = "" with get, set
-    member val TargetDisplayName = "" with get, set
-    member val Quality = "0" with get, set
-    member val TargetScore = 0.0f with get, set
+    member val TargetRecords = new List<TargetRecord>() with get, set
 
 type DuplicateDetectionRequest() = 
     inherit DtoBase()
@@ -66,6 +68,7 @@ type DuplicateDetectionRequest() =
     member val IndexName = defString with get, set
     member val ProfileName = defString with get, set
     member val MaxRecordsToScan = Int16.MaxValue with get, set
+    member val NextId = new AtomicLong(0L) with get
     override this.Validate() = ok()
 
 [<AutoOpen>]
@@ -81,6 +84,7 @@ module DuplicateDetection =
     let sourceDisplayName = "sourcedisplayname"
     let totalDupesFound = "totaldupesfound"
     let sourceStatus = "sourcestatus"
+    let targetRecords = "targetrecords"
     let targetRecordId = "targetrecordid"
     let targetDisplayName = "targetdisplayname"
     let targetScore = "targetscore"
@@ -97,17 +101,12 @@ module DuplicateDetection =
         index.Fields <- [| new Field.Dto(sessionId, FieldType.Dto.ExactText)
                            new Field.Dto(recordType, FieldType.Dto.ExactText)
                            // Source record
-                           new Field.Dto(sourceId, FieldType.Dto.ExactText)
+                           new Field.Dto(sourceId, FieldType.Dto.ExactText, AllowSort = true)
                            new Field.Dto(sourceRecordId, FieldType.Dto.ExactText)
                            new Field.Dto(sourceDisplayName, FieldType.Dto.Stored)
                            new Field.Dto(totalDupesFound, FieldType.Dto.Int)
-                           new Field.Dto(sourceStatus, FieldType.Dto.Int)
-                           // Target record
-                           new Field.Dto(targetId, FieldType.Dto.ExactText)
-                           new Field.Dto(targetRecordId, FieldType.Dto.ExactText)
-                           new Field.Dto(targetDisplayName, FieldType.Dto.Stored)
-                           new Field.Dto(targetScore, FieldType.Dto.Double)
-                           new Field.Dto(quality, FieldType.Dto.Int)
+                           new Field.Dto(sourceStatus, FieldType.Dto.Int, AllowSort = true)
+                           new Field.Dto(targetRecords, FieldType.Dto.Text)
                            // Session related
                            new Field.Dto(sessionProperties, FieldType.Dto.Text)
                            new Field.Dto(misc, FieldType.Dto.Text) |]
@@ -122,30 +121,18 @@ module DuplicateDetection =
         doc.Fields.Add(sessionProperties, formatter.SerializeToString(session))
         documentService.AddOrUpdateDocument(doc) |> ignore
     
-    let writeDuplicates (sourceRecord : SourceRecord, targetRecords : List<TargetRecord>, 
-                         documentService : IDocumentService) = 
+    let writeDuplicates (sourceRecord : SourceRecord, documentService : IDocumentService) = 
         let sourceDoc = new Document.Dto(schema.IndexName, getId())
         sourceDoc.Fields.Add(sessionId, sourceRecord.SessionId)
-        sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId)
+        sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId.ToString())
         sourceDoc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
         sourceDoc.Fields.Add(sourceDisplayName, sourceRecord.SourceDisplayName)
         sourceDoc.Fields.Add(sourceStatus, sourceRecord.SourceStatus)
-        sourceDoc.Fields.Add(totalDupesFound, targetRecords.Count.ToString())
+        sourceDoc.Fields.Add(totalDupesFound, sourceRecord.TargetRecords.Count.ToString())
         sourceDoc.Fields.Add(recordType, sourceRecordType)
+        sourceDoc.Fields.Add(targetRecords, formatter.SerializeToString(sourceRecord.TargetRecords))
         documentService.AddDocument(sourceDoc) |> ignore
-        for target in targetRecords do
-            let doc = new Document.Dto(schema.IndexName, getId())
-            doc.Fields.Add(sessionId, sourceRecord.SessionId)
-            doc.Fields.Add(sourceId, sourceRecord.SourceId)
-            doc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
-            doc.Fields.Add(targetId, target.TargetId)
-            doc.Fields.Add(targetRecordId, target.TargetRecordId)
-            doc.Fields.Add(targetDisplayName, target.TargetDisplayName)
-            doc.Fields.Add(quality, target.Quality)
-            doc.Fields.Add(targetScore, target.TargetScore.ToString())
-            doc.Fields.Add(recordType, targetRecordType)
-            documentService.AddDocument(doc) |> ignore
-
+        
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
@@ -166,22 +153,24 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         | Choice1Of2(results) -> 
             if results.Meta.RecordsReturned > 1 then 
                 !>"Duplicate Found"
-                let targetRecords = new List<TargetRecord>()
                 let header = 
-                    new SourceRecord(session.SessionId, SourceRecordId = record.[Constants.IdField], 
-                                     SourceDisplayName = record.[session.DisplayFieldName])
+                    new SourceRecord(session.SessionId, SourceRecordId = record.[Constants.IdField], SourceDisplayName = record.[session.DisplayFieldName])
                 let docs = results |> toFlatResults
+                let mutable i = 1
                 for result in docs.Documents do
                     let resultScore = float32 result.[Constants.Score]
                     if not (result.[Constants.IdField] = header.SourceRecordId) then 
-                        let score = docs.Meta.BestScore / resultScore * 100.0f
+                        let score = resultScore / docs.Meta.BestScore * 100.0f
                         let targetRecord = 
-                            new TargetRecord(session.SessionId, header.SourceId, 
+                            new TargetRecord(session.SessionId, header.SourceId, TargetId = i, 
                                              TargetDisplayName = result.[session.DisplayFieldName], 
                                              TargetScore = score,
                                              TargetRecordId = result.[Constants.IdField])
-                        targetRecords.Add(targetRecord)
-                if targetRecords.Count >= 1 then writeDuplicates (header, targetRecords, documentService)
+                        i <- i + 1
+                        header.TargetRecords.Add(targetRecord)
+                if header.TargetRecords.Count >= 1 then 
+                    header.SourceId <- int (req.NextId.Increment())
+                    writeDuplicates (header, documentService)
         | _ -> ()
     
     let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest) = 
