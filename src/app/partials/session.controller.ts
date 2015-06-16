@@ -5,9 +5,10 @@ module flexportal {
     id1: string
     id2: number
     name: string
+    duplicates: number []
   }
 
-  interface IRouteParamsService extends angular.ui.IUrlRouterService {
+  interface IRouteParamsService extends angular.ui.IStateParamsService {
     id: string
     id1: string
     id2: number
@@ -21,6 +22,9 @@ module flexportal {
       $scope.id1 = $routeParams.id1;
       $scope.id2 = $routeParams.id2;
       $scope.name = 'Seemant';
+      $scope.duplicates = [];
+      
+      for(var i = 0; i < 10; i++) $scope.duplicates.push(i);
     }
   }
 }

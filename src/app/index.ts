@@ -10,7 +10,7 @@ module flexportal {
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
     .controller('MainCtrl', MainCtrl)
-    .controller('SessionController', SessionController)
+    .controller('SessionController', ["$scope", "$stateParams", SessionController])
     .controller('SessionsController', SessionsController)
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
       $mdThemingProvider.theme('default')
