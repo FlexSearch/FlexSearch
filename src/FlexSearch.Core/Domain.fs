@@ -521,6 +521,9 @@ module Field =
         /// while searching.
         member val Store = true with get, set
         
+        /// If AllowSort is set to true then we will index the field with docvalues.
+        member val AllowSort = false with get, set
+        
         /// Analyzer to be used while indexing.
         member val IndexAnalyzer = StandardAnalyzer with get, set
         
@@ -571,6 +574,7 @@ module Field =
           IsStored : bool
           Similarity : FieldSimilarity.Dto
           FieldType : FieldType.T
+          GenerateDocValue : bool
           Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
@@ -606,8 +610,16 @@ module Field =
     
     let store = Field.Store.YES
     let doNotStore = Field.Store.NO
+    
+    /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
+    /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
+    /// intend to use for sorting or access through the field cache.
     let getStringField (fieldName, value, store) = new StringField(fieldName, value, store) :> Field
+    
+    /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
+    /// 'body' field, that contains the bulk of a document's text.
     let getTextField (fieldName, value, store) = new TextField(fieldName, value, store) :> Field
+    
     let getLongField (fieldName, value : int64, store : Field.Store) = new LongField(fieldName, value, store) :> Field
     let getIntField (fieldName, value : int32, store : Field.Store) = new IntField(fieldName, value, store) :> Field
     let getDoubleField (fieldName, value : float, store : Field.Store) = 
@@ -615,42 +627,72 @@ module Field =
     let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> Field
     let getField (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
         new Field(fieldName, value, template)
+    let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
     
     /// Set the value of index field to the default value
-    let inline updateLuceneFieldToDefault flexField (luceneField : Field) = 
+    let inline updateLuceneFieldToDefault flexField (isDocValue : bool) (luceneField : Field) = 
         match flexField.FieldType with
         | FieldType.Custom(_, _, _) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Stored -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Text(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Bool(_) -> luceneField.SetStringValue("false")
-        | FieldType.ExactText(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
+        | FieldType.ExactText(_) -> 
+            if isDocValue then luceneField.SetBytesValue(bytesForNullString)
+            else luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Highlight(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Date -> luceneField.SetLongValue(DateDefaultValue)
         | FieldType.DateTime -> luceneField.SetLongValue(DateTimeDefaultValue)
-        | FieldType.Int -> luceneField.SetIntValue(0)
+        | FieldType.Int -> 
+            // Numeric doc values can only be saved as Int64 
+            if isDocValue then luceneField.SetLongValue(0L)
+            else luceneField.SetIntValue(0)
         | FieldType.Double -> luceneField.SetDoubleValue(0.0)
         | FieldType.Long -> luceneField.SetLongValue(int64 0)
     
     /// Set the value of index field using the passed value
-    let inline updateLuceneField flexField (lucenceField : Field) (value : string) = 
-        if isBlank value then lucenceField |> updateLuceneFieldToDefault flexField
+    let inline updateLuceneField flexField (lucenceField : Field) (isDocValue : bool) (value : string) = 
+        if isBlank value then lucenceField |> updateLuceneFieldToDefault flexField isDocValue
         else 
             match flexField.FieldType with
             | FieldType.Custom(_, _, _) -> lucenceField.SetStringValue(value)
             | FieldType.Stored -> lucenceField.SetStringValue(value)
             | FieldType.Text(_) -> lucenceField.SetStringValue(value)
             | FieldType.Highlight(_) -> lucenceField.SetStringValue(value)
-            | FieldType.ExactText(_) -> lucenceField.SetStringValue(value)
+            | FieldType.ExactText(_) -> 
+                if isDocValue then lucenceField.SetBytesValue(System.Text.Encoding.Unicode.GetBytes(value))
+                else lucenceField.SetStringValue(value)
             | FieldType.Bool(_) -> (value |> pBool false).ToString() |> lucenceField.SetStringValue
             | FieldType.Date -> (value |> pLong DateDefaultValue) |> lucenceField.SetLongValue
             | FieldType.DateTime -> (value |> pLong DateTimeDefaultValue) |> lucenceField.SetLongValue
-            | FieldType.Int -> (value |> pInt 0) |> lucenceField.SetIntValue
+            | FieldType.Int ->
+                // Numeric doc values can only be saved as Int64 
+                if isDocValue then (value |> pLong 0L) |> lucenceField.SetLongValue
+                else (value |> pInt 0) |> lucenceField.SetIntValue
             | FieldType.Double -> (value |> pDouble 0.0) |> lucenceField.SetDoubleValue
-            | FieldType.Long -> (value |> pLong (int64 0)) |> lucenceField.SetLongValue
+            | FieldType.Long -> (value |> pLong 0L) |> lucenceField.SetLongValue
     
     let inline storeInfoMap (isStored) = 
         if isStored then Field.Store.YES
         else Field.Store.NO
+    
+    /// Create docvalues field from 
+    let inline createDocValueField flexField = 
+        match flexField.FieldType with
+        | FieldType.Custom(_) | FieldType.Stored | FieldType.Text(_) | FieldType.Highlight(_) | FieldType.Bool(_) -> 
+            None
+        | FieldType.ExactText(_) -> 
+            Some <| (new SortedDocValuesField(flexField.SchemaName, new FlexLucene.Util.BytesRef()) :> Field)
+        | FieldType.Long | FieldType.DateTime | FieldType.Date | FieldType.Int -> 
+            Some <| (new NumericDocValuesField(flexField.SchemaName, 0L) :> Field)
+        | FieldType.Double -> Some <| (new DoubleDocValuesField(flexField.SchemaName, 0.0) :> Field)
+    
+    /// Create docvalues field from 
+    let inline requiresCustomDocValues fieldType = 
+        match fieldType with
+        | FieldType.Custom(_) | FieldType.Stored | FieldType.Text(_) | FieldType.Highlight(_) | FieldType.Bool(_) -> 
+            false
+        | FieldType.ExactText(_) | FieldType.Long | FieldType.DateTime | FieldType.Date | FieldType.Int | FieldType.Double -> 
+            true
     
     /// Creates a default Lucene index field for the passed flex field.
     let inline createDefaultLuceneField flexField = 
@@ -665,8 +707,8 @@ module Field =
             getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfoMap (flexField.IsStored))
         | FieldType.Highlight(_) -> 
             getField (flexField.SchemaName, Constants.StringDefaultValue, flexHighLightFieldType.Value)
-        | FieldType.ExactText(_) -> getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfo)
-        | FieldType.Bool(_) -> getTextField (flexField.SchemaName, "false", storeInfo)
+        | FieldType.ExactText(_) -> getStringField (flexField.SchemaName, Constants.StringDefaultValue, storeInfo)
+        | FieldType.Bool(_) -> getStringField (flexField.SchemaName, "false", storeInfo)
         | FieldType.Date -> getLongField (flexField.SchemaName, DateDefaultValue, storeInfo)
         | FieldType.DateTime -> getLongField (flexField.SchemaName, DateTimeDefaultValue, storeInfo)
         | FieldType.Int -> getIntField (flexField.SchemaName, 0, storeInfo)
@@ -684,15 +726,12 @@ module Field =
         | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
             None
     
-    /// Get the schema name for a field from the name and postings format
-    let schemaName (fieldName, postingsFormat : string) = 
-        sprintf "%s" fieldName
-    
-    let create (fieldName : string, fieldType : FieldType.T, postingsFormat) = 
+    let create (fieldName : string, fieldType : FieldType.T, generateDocValues) = 
         { FieldName = fieldName
-          SchemaName = schemaName (fieldName, postingsFormat)
+          SchemaName = fieldName
           IsStored = true
           FieldType = fieldType
+          GenerateDocValue = generateDocValues
           Source = None
           Searchable = FieldType.searchable (fieldType)
           Similarity = FieldSimilarity.Dto.TFIDF
@@ -705,13 +744,12 @@ module Field =
               Tokenize = false
               FieldTermVector = FieldTermVector.Dto.DoNotStoreTermVector
               FieldIndexOptions = FieldIndexOptions.Dto.DocsOnly }
-        create (Constants.IdField, 
-                FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), 
-                if bloomEnabled then Constants.BloomFilter
-                else String.Empty)
+        create 
+            (Constants.IdField, 
+             FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false)
     
     /// Field to be used by time stamp
-    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, String.Empty)
+    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, false)
     
     /// Build FlexField from field
     let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
@@ -751,12 +789,15 @@ module Field =
                 | _ -> return! fail (UnSupportedFieldType(field.FieldName, field.FieldType.ToString()))
             }
         
+        let checkDocValuesSupport (field : Dto) (fieldType : FieldType.T) = 
+            field.AllowSort && requiresCustomDocValues (fieldType)
         maybe { 
             let! source = getSource (field)
             let! fieldType = getFieldType (field)
             return { FieldName = field.FieldName
-                     SchemaName = schemaName (field.FieldName, String.Empty)
+                     SchemaName = field.FieldName
                      FieldType = fieldType
+                     GenerateDocValue = checkDocValuesSupport field fieldType
                      Source = source
                      Similarity = field.Similarity
                      IsStored = field.Store
@@ -1104,9 +1145,12 @@ module Scripts =
         | _ -> failwithf "Unknown ScriptType"
     
     let getCompileOptions() = 
-        let options = ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll").AddNamespaces("System", "System.Math", "System.Collections.Generic", "System.Text.RegularExpressions", "FlexSearch.Core")
+        let options = 
+            ScriptOptions.Default.AddReferences("Microsoft.CSharp.dll", "System.dll", "System.Core.dll")
+                         .AddNamespaces("System", "System.Math", "System.Collections.Generic", 
+                                        "System.Text.RegularExpressions", "FlexSearch.Core")
         options.AddReferences(typeof<SearchQuery.Dto>.Assembly)
-
+    
     let generateDeletegate (scriptType : ScriptType) (state : ScriptState) = 
         match scriptType with
         | ScriptType.Computed -> ComputedScript <| state.CreateDelegate<ComputedDelegate>("Execute")

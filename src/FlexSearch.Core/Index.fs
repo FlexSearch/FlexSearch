@@ -101,7 +101,7 @@ module Codec =
     open FlexLucene.Codecs
     
     /// Get the default codec associated with the index version
-    let getCodec ( enableBloomFilter : bool) (version : IndexVersion.Dto) = 
+    let getCodec (enableBloomFilter : bool) (version : IndexVersion.Dto) = 
         let getPostingsFormat (fieldName : string, enableBloomFilter, defaultFormat) = 
             if fieldName.Equals(Constants.IdField) && enableBloomFilter then 
                 new BloomFilteringPostingsFormat(defaultFormat) :> PostingsFormat
@@ -272,7 +272,12 @@ module DocumentTemplate =
         add (new NumericDocValuesField(s.FieldsLookup.[Constants.LastModifiedField].SchemaName, int64 0))
         for field in s.Fields do
             // Ignore these 4 fields here.
-            if not (protectedFields (field.FieldName)) then add (Field.createDefaultLuceneField (field))
+            if not (protectedFields (field.FieldName)) then 
+                add (Field.createDefaultLuceneField (field))
+                if field.GenerateDocValue then 
+                    match Field.createDocValueField (field) with
+                    | Some(docField) -> add (docField)
+                    | _ -> ()
         { Setting = s
           TemplateFields = fields.ToArray()
           Template = template }
@@ -292,19 +297,31 @@ module DocumentTemplate =
             i <- i + 1
             // Ignore these 3 fields here.
             if not (protectedFields (field.FieldName)) then 
-                // If it is computed field then generate and add it otherwise follow standard path
-                match field.Source with
-                | Some(s, options) -> 
-                    try 
-                        // Wrong values for the data type will still be handled as update Lucene field will
-                        // check the data type
-                        let value = s.Invoke(document.IndexName, field.FieldName, document.Fields, options)
-                        value |> Field.updateLuceneField field template.TemplateFields.[i]
-                    with _ -> Field.updateLuceneFieldToDefault field template.TemplateFields.[i]
+                let value = 
+                    // If it is computed field then generate and add it otherwise follow standard path
+                    match field.Source with
+                    | Some(s, options) -> 
+                        try 
+                            // Wrong values for the data type will still be handled as update Lucene field will
+                            // check the data type
+                            let value = s.Invoke(document.IndexName, field.FieldName, document.Fields, options)
+                            Some <| value
+                        with _ -> None
+                    | None -> 
+                        match document.Fields.TryGetValue(field.FieldName) with
+                        | (true, value) -> Some <| value
+                        | _ -> None
+                match value with
+                | Some(v) -> 
+                    v |> Field.updateLuceneField field template.TemplateFields.[i] false
+                    if field.GenerateDocValue then 
+                        v |> Field.updateLuceneField field template.TemplateFields.[i + 1] true
+                        i <- i + 1
                 | None -> 
-                    match document.Fields.TryGetValue(field.FieldName) with
-                    | (true, value) -> value |> Field.updateLuceneField field template.TemplateFields.[i]
-                    | _ -> Field.updateLuceneFieldToDefault field template.TemplateFields.[i]
+                    Field.updateLuceneFieldToDefault field false template.TemplateFields.[i]
+                    if field.GenerateDocValue then 
+                        Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
+                        i <- i + 1
         template.Template
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality

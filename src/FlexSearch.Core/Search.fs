@@ -264,7 +264,11 @@ module SearchDsl =
             | null -> Sort.RELEVANCE
             | _ -> 
                 match indexWriter.Settings.FieldsLookup.TryGetValue(searchQuery.OrderBy) with
-                | (true, field) -> new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType))
+                | (true, field) -> 
+                    if field.GenerateDocValue then
+                        new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType))
+                    else
+                        Sort.RELEVANCE
                 | _ -> Sort.RELEVANCE
         
         let distinctBy = 

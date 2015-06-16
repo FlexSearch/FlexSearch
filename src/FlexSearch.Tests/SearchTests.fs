@@ -206,12 +206,12 @@ id,t1,t2,i1
 
 type ``Sorting Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
-id,et1,t2,i1
-1,a,jhonson,1
-2,c,hewitt,1
-3,b,Garner,1
-4,e,Garner,1
-5,d,jhonson,1"""
+id,et1,t2,i1,i2
+1,a,jhonson,1,1
+2,c,hewitt,1,3
+3,b,Garner,1,2
+4,e,Garner,1,4
+5,d,jhonson,1,5"""
     do indexTestData (testData, index, indexService, documentService)
     member __.``Searching for 'i1 = 1' with orderby et1 should return 5 records``() = 
         let result = 
@@ -225,6 +225,32 @@ id,et1,t2,i1
         result |> assertFieldValue 2 "et1" "c"
         result |> assertFieldValue 3 "et1" "d"
         result |> assertFieldValue 4 "et1" "e"
+
+    member __.``Sorting is possible on int field``() =
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "i2" |]
+            |> withOrderBy "i2"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 5
+        result |> assertFieldValue 0 "i2" "1"
+        result |> assertFieldValue 1 "i2" "2"
+        result |> assertFieldValue 2 "i2" "3"
+        result |> assertFieldValue 3 "i2" "4"
+        result |> assertFieldValue 4 "i2" "5"
+
+    member __.``Sorting is not possible on text field``() =
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "i2" |]
+            |> withOrderBy "t2"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 5
+        result |> assertFieldValue 0 "i2" "1"
+        result |> assertFieldValue 1 "i2" "3"
+        result |> assertFieldValue 2 "i2" "2"
+        result |> assertFieldValue 3 "i2" "4"
+        result |> assertFieldValue 4 "i2" "5"
 
 type ``Highlighting Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
