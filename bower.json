@@ -10,7 +10,8 @@
     "angular-route": "~1.4.0",
     "angular-material": "~0.9.8",
     "angular": "~1.4.0",
-    "angular-material-data-table": "*"
+    "angular-material-data-table": "*",
+    "angular-ui-router": "~0.2.15"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0"
