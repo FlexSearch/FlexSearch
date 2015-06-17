@@ -18,8 +18,8 @@ module flexportal {
   }
 
   interface IMainScope extends ng.IScope {
-    awesomeThings: Thing[],
-    toggleSideNav(navID:string): void
+    awesomeThings: Thing[]
+    toggleSideNav(navID: string): void
   }
 
   export class MainCtrl {
@@ -82,6 +82,7 @@ module flexportal {
         $mdUtil.debounce(function(){
             $mdSidenav(navID).toggle();
         }, 300)();
+      };
 
       awesomeThings.forEach(function(awesomeThing: Thing) {
         $scope.awesomeThings.push(awesomeThing);
