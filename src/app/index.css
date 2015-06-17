@@ -2,9 +2,17 @@
     height: 100%;
 }
 
+.full-width {
+  width: 100%;
+}
+
 md-sidenav[md-component-id='leftMenu'] {
     width: 250px;
     min-width: 200px;
+}
+
+md-content.duplicate-list{
+  min-width: 250px;
 }
 
 .site-content-toolbar {
@@ -22,3 +30,25 @@ md-sidenav[md-component-id='leftMenu'] {
   color: #202020 !important;
   z-index: 3;
 }
+
+.material-icons.md-48, .material-icons .md-48 {
+  font-size: 48px;
+}
+
+.duplicate-list md-icon.md-secondary {
+  margin-top: 0px;  
+}
+
+md-content.main-content {
+  background-color: rgba(0, 0, 0, 0.0470588);
+}
+
+
+
+
+/* Material CSS */
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }

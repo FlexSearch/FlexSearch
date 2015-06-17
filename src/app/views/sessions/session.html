@@ -1,30 +1,50 @@
 	<div layout="row" class="full-height">
-		<md-content flex="33" layout="row" layout-wrap>
-				<md-card flex="95" ng-repeat="dup in duplicates">
-					<md-card-content>
-						<h2 class="md-title">Seemant Rajvanshi {{dup}}</h2>
-						<md-divider></md-divider>
-						<md-list-item>
-							<p>Semant Rajvanshi</p>
-							<md-switch class="md-secondary"></md-switch>
-						</md-list-item>
-						<md-divider></md-divider>
-						<md-list-item>
-							<p>Simant Rajvanshi</p>
-							<md-switch class="md-secondary"></md-switch>
-						</md-list-item>
-						<md-divider></md-divider>
-						<md-list-item>
-							<p>Simant Rajvanshi</p>
-							<md-switch class="md-secondary"></md-switch>
-						</md-list-item>
-					</md-card-content>
-					<div class="md-actions" layout="row" layout-align="end center">
-						<md-subheader class="md-no-sticky" layout-align="left">Proposed</md-subheader>
-						<md-button>Action 1</md-button>
-						<md-button>Action 2</md-button>
-					</div>
-				</md-card>
+		<md-content class="duplicate-list md-whiteframe-z2" layout="row">
+			<md-list class="full-width">
+				<md-list-item class="md-3-line" ng-repeat="dup in duplicates" ng-click="openMail(email)">
+
+                    <img class="md-avatar animate" src="assets/images/yeoman.png">
+
+                    <div class="md-list-item-text">
+                        <div layout="column" layout-align="space-between start">
+                            <h3>{{dup.Source.Name}}</h3>
+                            <p class="md-caption">Processed</p>
+                        </div>
+						<div layout="row" layout-align="space-between start" ng-repeat="target in dup.Targets">
+                            <h4>{{target.Name}}</h4>
+                            <p class="md-caption">{{target.Score}}</p>
+                        </div>
+                    </div>
+
+                    <md-divider ng-hide="$last"></md-divider>
+                </md-list-item>
+			</md-list>
 		</md-content>
-		<div flex="60"></div>
+		
+		<div layout="column" layout-align="top center" layout-padding flex>
+			<md-card flex>
+			<md-tabs md-dynamic-height md-border-bottom>
+		      <md-tab label="one">
+		        <md-content class="md-padding">
+		          <h1 class="md-display-2">Tab One</h1>
+		          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla venenatis ante augue. Phasellus volutpat neque ac dui mattis vulputate. Etiam consequat aliquam cursus. In sodales pretium ultrices. Maecenas lectus est, sollicitudin consectetur felis nec, feugiat ultricies mi.</p>
+		        </md-content>
+		      </md-tab>
+		      <md-tab label="two">
+		        <md-content class="md-padding">
+		          <h1 class="md-display-2">Tab Two</h1>
+		          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla venenatis ante augue. Phasellus volutpat neque ac dui mattis vulputate. Etiam consequat aliquam cursus. In sodales pretium ultrices. Maecenas lectus est, sollicitudin consectetur felis nec, feugiat ultricies mi. Aliquam erat volutpat. Nam placerat, tortor in ultrices porttitor, orci enim rutrum enim, vel tempor sapien arcu a tellus. Vivamus convallis sodales ante varius gravida. Curabitur a purus vel augue ultrices ultricies id a nisl. Nullam malesuada consequat diam, a facilisis tortor volutpat et. Sed urna dolor, aliquet vitae posuere vulputate, euismod ac lorem. Sed felis risus, pulvinar at interdum quis, vehicula sed odio. Phasellus in enim venenatis, iaculis tortor eu, bibendum ante. Donec ac tellus dictum neque volutpat blandit. Praesent efficitur faucibus risus, ac auctor purus porttitor vitae. Phasellus ornare dui nec orci posuere, nec luctus mauris semper.</p>
+		          <p>Morbi viverra, ante vel aliquet tincidunt, leo dolor pharetra quam, at semper massa orci nec magna. Donec posuere nec sapien sed laoreet. Etiam cursus nunc in condimentum facilisis. Etiam in tempor tortor. Vivamus faucibus egestas enim, at convallis diam pulvinar vel. Cras ac orci eget nisi maximus cursus. Nunc urna libero, viverra sit amet nisl at, hendrerit tempor turpis. Maecenas facilisis convallis mi vel tempor. Nullam vitae nunc leo. Cras sed nisl consectetur, rhoncus sapien sit amet, tempus sapien.</p>
+		          <p>Integer turpis erat, porttitor vitae mi faucibus, laoreet interdum tellus. Curabitur posuere molestie dictum. Morbi eget congue risus, quis rhoncus quam. Suspendisse vitae hendrerit erat, at posuere mi. Cras eu fermentum nunc. Sed id ante eu orci commodo volutpat non ac est. Praesent ligula diam, congue eu enim scelerisque, finibus commodo lectus.</p>
+		        </md-content>
+		      </md-tab>
+		      <md-tab label="three">
+		        <md-content class="md-padding">
+		          <h1 class="md-display-2">Tab Three</h1>
+		          <p>Integer turpis erat, porttitor vitae mi faucibus, laoreet interdum tellus. Curabitur posuere molestie dictum. Morbi eget congue risus, quis rhoncus quam. Suspendisse vitae hendrerit erat, at posuere mi. Cras eu fermentum nunc. Sed id ante eu orci commodo volutpat non ac est. Praesent ligula diam, congue eu enim scelerisque, finibus commodo lectus.</p>
+		        </md-content>
+		      </md-tab>
+		    </md-tabs>
+			</md-card>
+		</div>
 	</div>

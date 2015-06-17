@@ -18,12 +18,13 @@ module flexportal {
   }
 
   interface IMainScope extends ng.IScope {
-    awesomeThings: Thing[]
+    awesomeThings: Thing[],
+    toggleSideNav(navID:string): void
   }
 
   export class MainCtrl {
     /* @ngInject */
-    constructor ($scope: IMainScope) {
+    constructor ($scope: IMainScope, $mdUtil: any, $mdSidenav: any) {
       var awesomeThings = [
       {
         'title': 'AngularJS',
@@ -76,6 +77,11 @@ module flexportal {
     ];
 
       $scope.awesomeThings = new Array<Thing>();
+
+      $scope.toggleSideNav = function(navID) {
+        $mdUtil.debounce(function(){
+            $mdSidenav(navID).toggle();
+        }, 300)();
 
       awesomeThings.forEach(function(awesomeThing: Thing) {
         $scope.awesomeThings.push(awesomeThing);

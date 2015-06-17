@@ -8,7 +8,7 @@ module flexportal {
   'use strict';
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
-    .controller('MainCtrl', MainCtrl)
+    .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", SessionController])
     .controller('SessionsController', SessionsController)
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
