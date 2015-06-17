@@ -1,12 +1,20 @@
-<md-toolbar>
+<!--<md-toolbar>
   <div class="md-toolbar-tools">
     <h1>
-      <a ng-href="#/main" class="md-display-1">FlexSearch</a>
+      <a href="http://www.flexsearch.net" class="md-display-1">FlexSearch</a>
     </h1>
-    <span flex></span>
-    <md-button ng-href="#/sessions">Sessions</md-button>
   </div>
-</md-toolbar>
+</md-toolbar>-->
+
+<md-sidenav class="md-sidenav-left md-whiteframe-z2 full-height site-sidenav" md-component-id="leftMenu" md-is-locked-open="true">
+  <md-toolbar class="md-theme-indigo">
+    <h1 class="md-toolbar-tools">Duplicate Detection</h1>
+  </md-toolbar>
+  <md-content layout-padding layout="column" layout-align="start start">
+    <md-button ui-sref="sessions">Sessions</md-button>
+    <md-button ui-sref="todo">Search Profiles</md-button>
+  </md-content>
+</md-sidenav>
 
 <!--[if lt IE 10]>
   <p class="browsehappy">You are using an
@@ -14,4 +22,12 @@
     <a href="http://browsehappy.com/">upgrade your browser</a>to improve your experience.</p>
 <![endif]-->
 
-<div ui-view layout="column" class="main-content" flex></div>
+
+<md-content layout="column" flex>
+  <md-toolbar class="md-whiteframe-z2 md-default-theme site-content-toolbar">
+    <div class="md-toolbar-tools">
+      <md-button href="http://www.flexsearch.net">FlexSearch</md-button>
+    </div>
+  </md-toolbar>
+  <md-content ui-view layout="column" class="main-content" flex></md-content>
+</md-content>

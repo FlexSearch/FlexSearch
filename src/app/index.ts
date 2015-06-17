@@ -1,9 +1,8 @@
 /// <reference path="../../typings/tsd.d.ts" />
 
 /// <reference path="../app/partials/main.controller.ts" />
-/// <reference path="../app/components/navbar/navbar.controller.ts" />
-/// <reference path="../app/partials/session.controller.ts" />
-/// <reference path="../app/partials/sessions.controller.ts" />
+/// <reference path="../app/views/sessions/session.controller.ts" />
+/// <reference path="../app/views/sessions/sessions.controller.ts" />
 
 module flexportal {
   'use strict';
@@ -14,11 +13,11 @@ module flexportal {
     .controller('SessionsController', SessionsController)
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
       $mdThemingProvider.theme('default')
-        .primaryPalette('green')
+        .primaryPalette('blue')
         .accentPalette('teal');
     })
     .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider : angular.ui.IUrlRouterProvider){
-      $urlRouterProvider.otherwise("/");
+      $urlRouterProvider.otherwise("/main");
 
       $stateProvider
         .state('main', {
@@ -26,15 +25,20 @@ module flexportal {
           templateUrl: "app/partials/main.html",
           controller: 'MainCtrl'
         })
+        .state('todo', {
+          url: "/todo",
+          template: "<h1>To be implemented</h1>",
+          parent: 'main'
+        })
         .state('sessions', {
           url: "^/sessions",
-          templateUrl: "app/partials/sessions.html",
+          templateUrl: "app/views/sessions/sessions.html",
           controller: 'SessionsController',
           parent: 'main'
         })
         .state('session', {
           url: "^/session/:id",
-          templateUrl: "app/partials/session.html",
+          templateUrl: "app/views/sessions/session.html",
           controller: 'SessionController',
           parent: 'main'
         });

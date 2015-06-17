@@ -1,3 +1,24 @@
 .full-height {
     height: 100%;
 }
+
+md-sidenav[md-component-id='leftMenu'] {
+    width: 250px;
+    min-width: 200px;
+}
+
+.site-content-toolbar {
+  background: #f6f6f6 !important;
+  background-image: initial;
+  background-position-x: initial;
+  background-position-y: initial;
+  background-size: initial;
+  background-repeat-x: initial;
+  background-repeat-y: initial;
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: rgb(246, 246, 246);
+  color: #202020 !important;
+  z-index: 3;
+}
