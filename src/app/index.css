@@ -43,7 +43,9 @@ md-content.main-content {
   background-color: rgba(0, 0, 0, 0.0470588);
 }
 
-
+.site-content-toolbar .md-icon-button:first-child{
+  margin-top: -10px;
+}
 
 
 /* Material CSS */
