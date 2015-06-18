@@ -68,7 +68,7 @@ type DuplicateDetectionRequest() =
     member val IndexName = defString with get, set
     member val ProfileName = defString with get, set
     member val MaxRecordsToScan = Int16.MaxValue with get, set
-    member val NextId = new AtomicLong(0L) with get
+    member val NextId = new AtomicLong(0L)
     override this.Validate() = ok()
 
 [<AutoOpen>]
@@ -96,7 +96,7 @@ module DuplicateDetection =
     let schema = 
         let index = new Index.Dto(IndexName = "duplicates")
         index.IndexConfiguration <- new IndexConfiguration.Dto()
-        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
         index.Online <- true
         index.Fields <- [| new Field.Dto(sessionId, FieldType.Dto.ExactText)
                            new Field.Dto(recordType, FieldType.Dto.ExactText)
@@ -132,7 +132,7 @@ module DuplicateDetection =
         sourceDoc.Fields.Add(recordType, sourceRecordType)
         sourceDoc.Fields.Add(targetRecords, formatter.SerializeToString(sourceRecord.TargetRecords))
         documentService.AddDocument(sourceDoc) |> ignore
-        
+
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
@@ -154,7 +154,8 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             if results.Meta.RecordsReturned > 1 then 
                 !>"Duplicate Found"
                 let header = 
-                    new SourceRecord(session.SessionId, SourceRecordId = record.[Constants.IdField], SourceDisplayName = record.[session.DisplayFieldName])
+                    new SourceRecord(session.SessionId, SourceRecordId = record.[Constants.IdField], 
+                                     SourceDisplayName = record.[session.DisplayFieldName])
                 let docs = results |> toFlatResults
                 let mutable i = 1
                 for result in docs.Documents do
@@ -163,8 +164,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                         let score = resultScore / docs.Meta.BestScore * 100.0f
                         let targetRecord = 
                             new TargetRecord(session.SessionId, header.SourceId, TargetId = i, 
-                                             TargetDisplayName = result.[session.DisplayFieldName], 
-                                             TargetScore = score,
+                                             TargetDisplayName = result.[session.DisplayFieldName], TargetScore = score, 
                                              TargetRecordId = result.[Constants.IdField])
                         i <- i + 1
                         header.TargetRecords.Add(targetRecord)
@@ -249,11 +249,22 @@ type DuplicateDetectionReportRequest() =
     member val ProfileName = defString with get, set
     member val IndexName = defString with get, set
     member val QueryString = defString with get, set
+    member val SelectionQuery = defString with get, set
     member val CutOff = defDouble with get, set
-    override this.Validate() = this.IndexName
-                               |> notBlank "IndexName"
-                               >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
-                               >>= fun _ -> this.SourceFileName |> notBlank "SourceFileName"
+    override this.Validate() = 
+        this.IndexName
+        |> notBlank "IndexName"
+        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+        >>= fun _ -> 
+            let valid = this.SourceFileName
+                        |> isNotBlank
+                        || this.SelectionQuery |> isNotBlank
+            if not valid then 
+                fail 
+                <| GenericError
+                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
+                        new ResizeArray<KeyValuePair<string, string>>())
+            else ok()
 
 type Stats() = 
     member val TotalRecords = 0 with get, set
@@ -350,13 +361,51 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             builder |> addElement (EndTable)
         (builder.ToString(), aggrBuilder.ToString())
     
-    let generateReport (jobId, request : DuplicateDetectionReportRequest) = 
-        //let (headers, records) = CsvHelpers.readCsv (request.SourceFileName, None)
+    let getFileDataSource (request : DuplicateDetectionReportRequest) = 
         use reader = new TextFieldParser(request.SourceFileName)
         reader.TextFieldType <- FieldType.Delimited
         reader.SetDelimiters([| "," |])
         reader.TrimWhiteSpace <- true
         let headers = reader.ReadFields()
+        
+        let data = 
+            seq { 
+                while not reader.EndOfData do
+                    yield reader.ReadFields()
+            }
+        (headers, data)
+    
+    let getIndexDataSource (request : DuplicateDetectionReportRequest) = 
+        let mainQuery = 
+            new SearchQuery.Dto(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
+                                ReturnFlatResult = true, Columns = [| "*" |])
+        let result = searchService.Search(mainQuery)
+        match result with
+        | Choice1Of2(result) -> 
+            let headers = 
+                searchService.Search(new SearchQuery.Dto(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, Columns = [| "*" |]))
+                |> extract |> toFlatResults 
+                |> fun x -> 
+                    let d = x.Documents.ToList().First()
+                    d.Keys.ToArray()
+
+            (!>) "Main Query Records Returned:%i" result.Meta.RecordsReturned
+            let records = result |> toFlatResults
+            let d = seq {
+                for record in records.Documents do
+                    yield record.Values.ToArray()
+            }
+            (headers, d)
+        | Choice2Of2(err) -> 
+            Logger.Log(err)
+            (Array.empty, Seq.empty)
+        
+    let getDataSource (request : DuplicateDetectionReportRequest) = 
+        if isNotBlank request.SourceFileName then getFileDataSource (request)
+        else getIndexDataSource (request)
+    
+    let generateReport (jobId, request : DuplicateDetectionReportRequest) = 
+        let (headers, data) = getDataSource(request)
         let stats = new Stats()
         let builder = new StringBuilder()
         let aggrBuilder = new StringBuilder()
@@ -368,8 +417,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         aggrBuilder |> addElement (BeginTable(true, aggrHeader))
         (!>) "Starting Duplicate detection report generation using file %s" request.SourceFileName
         let mutable count = 0
-        while not reader.EndOfData do
-            let record = reader.ReadFields()
+        for record in data do
             stats.TotalRecords <- stats.TotalRecords + 1
             let (reportRes, aggrResult) = performDedupe (record, headers, request, stats)
             builder.AppendLine(reportRes) |> ignore
@@ -397,7 +445,8 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         template <- template.Replace("{{AggregratedResults}}", aggrBuilder.ToString())
         File.WriteAllText
             (Constants.WebFolder +/ "Reports" 
-             +/ (sprintf "%s_%s_%s_cutoff_%i_%i.html" request.IndexName request.ProfileName (Path.GetFileNameWithoutExtension(request.SourceFileName)) (int request.CutOff)
+             +/ (sprintf "%s_%s_%s_cutoff_%i_%i.html" request.IndexName request.ProfileName 
+                     (Path.GetFileNameWithoutExtension(request.SourceFileName)) (int request.CutOff) 
                      (GetCurrentTimeAsLong())), template)
     
     let requestProcessor = 
@@ -417,11 +466,9 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             match writer.Settings.SearchProfiles.TryGetValue(body.ProfileName) with
             | true, (_, profile) -> 
                 body.QueryString <- profile.QueryString
-                if File.Exists(body.SourceFileName) then 
-                    let jobId = Guid.NewGuid()
-                    requestProcessor.Post(jobId, body)
-                    return jobId
-                else return! fail <| ResourceNotFound(body.SourceFileName, "File")
+                let jobId = Guid.NewGuid()
+                requestProcessor.Post(jobId, body)
+                return jobId
             | _ -> return! fail <| UnknownSearchProfile(indexName, body.ProfileName)
         }
     
