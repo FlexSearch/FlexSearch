@@ -707,8 +707,8 @@ module Field =
             getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfoMap (flexField.IsStored))
         | FieldType.Highlight(_) -> 
             getField (flexField.SchemaName, Constants.StringDefaultValue, flexHighLightFieldType.Value)
-        | FieldType.ExactText(_) -> getStringField (flexField.SchemaName, Constants.StringDefaultValue, storeInfo)
-        | FieldType.Bool(_) -> getStringField (flexField.SchemaName, "false", storeInfo)
+        | FieldType.ExactText(_) -> getTextField (flexField.SchemaName, Constants.StringDefaultValue, storeInfo)
+        | FieldType.Bool(_) -> getTextField (flexField.SchemaName, "false", storeInfo)
         | FieldType.Date -> getLongField (flexField.SchemaName, DateDefaultValue, storeInfo)
         | FieldType.DateTime -> getLongField (flexField.SchemaName, DateTimeDefaultValue, storeInfo)
         | FieldType.Int -> getIntField (flexField.SchemaName, 0, storeInfo)

@@ -457,55 +457,6 @@ id,et1,et2
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "h"
 
-//
-//    member __.``Cross matching can be used to match different fields``() =
-//        let result = 
-//            getQuery (index.IndexName, "et1:'a'")
-//            |> withSearchProfile "matchself"
-//            |> searchAndExtract searchService
-//        // t1 should get its value from t2. We are using t2 = sam which 
-//        // should only match a single record
-//        result |> assertReturnedDocsCount 1
-//
-//    member __.``There are 8 records in the index``() = 
-//        let result = getQuery (index.IndexName, "_id matchall '*'") |> searchAndExtract searchService
-//        result |> assertReturnedDocsCount 8
-//    
-//    member __.``Searching with searchprofile 'profile1' will return 2 record``() = 
-//        let result = 
-//            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',i1:'1',et1:'c'")
-//            |> withSearchProfile "profile1"
-//            |> searchAndExtract searchService
-//        result |> assertReturnedDocsCount 2
-//    
-//    member __.``If no value for i1 is passed then the default configured value of 1 will be used``() = 
-//        let result = 
-//            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt',et1:'c'")
-//            |> withSearchProfile "profile1"
-//            |> searchAndExtract searchService
-//        result |> assertReturnedDocsCount 2
-//    
-//    member __.``If no value for i1 is passed and no value for et1 is passed then et1 will be ignored``() = 
-//        let result = 
-//            getQuery (index.IndexName, "t1:'jhon',t2:'hewitt'")
-//            |> withSearchProfile "profile1"
-//            |> searchAndExtract searchService
-//        result |> assertReturnedDocsCount 4
-//    
-//    member __.``If no value for t1 is passed then the profile will throw error as that option is set``() = 
-//        let result = 
-//            getQuery (index.IndexName, "t2:'hewitt'")
-//            |> withSearchProfile "profile1"
-//            |> searchService.Search
-//        test <@ result = fail(MissingFieldValue("t1")) @>
-//    
-//    member __.``If no value for t2 is passed then the profile will throw error as the value is missing``() = 
-//        let result = 
-//            getQuery (index.IndexName, "t1:'jhon'")
-//            |> withSearchProfile "profile1"
-//            |> searchService.Search
-//        test <@ result = fail(MissingFieldValue("t2")) @>
-
 type ``DistinctBy Tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
@@ -707,3 +658,32 @@ id,t1
 
     member __.``Searching for t1 = 'fish' should return 1 record as fish and phish are not phonetic equivalents``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 = 'fish'"
+
+// ----------------------------------------------------------------------------
+// Filed type specific search tests
+// ----------------------------------------------------------------------------
+type ``Exact Matching Field tests``(index : Index.Dto, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+
+    let testData = """
+id,et1,b1
+1,A,TRUE
+2,aa,true
+3,Aa,True
+4,aA,False
+5,AA,FALSE
+"""
+    do 
+        indexTestData (testData, index, indexService, documentService)
+
+    member __.``Searching for et1 = 'a' should return 1 records as field is case insensitive``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "et1 = 'a'"
+
+    member __.``Searching for et1 = 'aa' should return 4 records as field is case insensitive``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "et1 = 'aa'"
+
+    member __.``Searching for b1 = 'true' should return 3 records as field is case insensitive``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "b1 = 'true'"
+
+    member __.``Searching for b1 = 'FALSE' should return 2 records as field is case insensitive``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "b1 = 'FALSE'"
+
