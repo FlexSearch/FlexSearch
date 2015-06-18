@@ -40,9 +40,17 @@ module flexportal {
         })
         .state('session', {
           url: "^/session/:id",
-          templateUrl: "app/views/sessions/session.html",
-          controller: 'SessionController',
-          parent: 'main'
+          parent: 'main',
+          views: {
+            "": {
+              templateUrl: "app/views/sessions/session.html",
+              controller: 'SessionController'
+            },
+            "topMenuToolbar": {
+              templateUrl: "app/views/sessions/session.toolbar.html",
+              controller: 'SessionController'
+            }
+          }
         })
         .state('comparison', {
           url: "^/session/:sessionId/:sourceId",
