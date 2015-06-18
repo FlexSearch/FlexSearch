@@ -1,10 +1,9 @@
+/// <reference path="../../references.ts" />
+
 module flexportal {
   'use strict';
-  class Session {
-    SessionId: string
-    IndexName: string
-    ProfileName: string
-  }
+  
+  import Session = FlexSearch.DuplicateDetection.Session;
   
   interface ISessionsProperties extends ng.IScope {
     Sessions: Session[]
@@ -21,14 +20,17 @@ module flexportal {
         $scope.Page = 5;
         $scope.Total = 5;
         console.log(response.data);
+        
+        
+        
         for (var i = 0; i < response.data.Data.length; i++) {
           var data = response.data.Data[i];
           console.log(data);
           var sessionProperties = JSON.parse(data.sessionproperties);
-          var session = new Session();
-          session.IndexName = sessionProperties.IndexName;
-          session.ProfileName = sessionProperties.ProfileName;
-          $scope.Sessions.push(session);
+          // var session = ;
+          // session.IndexName = sessionProperties.IndexName;
+          // session.ProfileName = sessionProperties.ProfileName;
+          // $scope.Sessions.push(session);
         }
       });
     }
