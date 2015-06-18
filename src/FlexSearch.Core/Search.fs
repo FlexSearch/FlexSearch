@@ -337,10 +337,9 @@ module SearchDsl =
             let timeStamp = int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
             let fields = getDocument (indexWriter, searchQuery, document)
             if searchQuery.ReturnFlatResult then 
-                fields.Add(Constants.IdField, document.Get(indexWriter.GetSchemaName(Constants.IdField)))
-                fields.Add
-                    (Constants.LastModifiedField, document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
-                if searchQuery.ReturnScore then fields.Add("_score", hit.Score.ToString())
+                fields.[Constants.IdField] <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
+                fields.[Constants.LastModifiedField] <- document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField))
+                if searchQuery.ReturnScore then fields.[Constants.Score] <- hit.Score.ToString()
                 SearchResultComponents.FlatResult(fields)
             else 
                 let resultDoc = new Document.Dto()
