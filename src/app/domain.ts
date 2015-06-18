@@ -11,11 +11,11 @@
 
 declare module FlexSearch.Core {
 
-    export interface AnalysisRequest {
+    export class AnalysisRequest {
         Text: string;
     }
 
-    export interface Country {
+    export class Country {
         Id: string;
         CountryName: string;
         Exports: string;
@@ -40,11 +40,11 @@ declare module FlexSearch.Core {
         Coordinates: string;
     }
 
-    export interface CreateResponse {
+    export class CreateResponse {
         Id: string;
     }
 
-    export interface CsvIndexingRequest {
+    export class CsvIndexingRequest {
         IndexName: string;
         HasHeaderRecord: boolean;
         Headers: string[];
@@ -58,7 +58,7 @@ declare module FlexSearch.Core {
         Ram
     }
 
-    export interface Document_Dto {
+    export class Document_Dto {
         Fields: string[];
         Id: string;
         TimeStamp: number;
@@ -68,7 +68,7 @@ declare module FlexSearch.Core {
         Default: FlexSearch.Core.Document_Dto;
     }
 
-    export interface Field_Dto {
+    export class Field_Dto {
         FieldName: string;
         Analyze: boolean;
         Index: boolean;
@@ -120,14 +120,14 @@ declare module FlexSearch.Core {
         Long
     }
 
-    export interface HighlightOption_Dto {
+    export class HighlightOption_Dto {
         FragmentsToReturn: number;
         HighlightedFields: string[];
         PostTag: string;
         PreTag: string;
     }
     
-    export interface IndexConfiguration_Dto {
+    export class IndexConfiguration_Dto {
         CommitTimeSeconds: number;
         CommitEveryNFlushes: number;
         CommitOnClose: boolean;
@@ -143,7 +143,7 @@ declare module FlexSearch.Core {
         DefaultFieldSimilarity: FlexSearch.Core.FieldSimilarity_Dto;
     }
 
-    export interface IndexExistsResponse {
+    export class IndexExistsResponse {
         Exists: boolean;
     }
 
@@ -153,7 +153,7 @@ declare module FlexSearch.Core {
         Lucene_5_0_0
     }
 
-    export interface Job {
+    export class Job {
         JobId: string;
         TotalItems: number;
         ProcessedItems: number;
@@ -171,7 +171,7 @@ declare module FlexSearch.Core {
         CompletedWithErrors
     }
 
-    export interface SearchQuery_Dto {
+    export class SearchQuery_Dto {
         QueryName: string;
         Columns: string[];
         Count: number;
@@ -190,13 +190,13 @@ declare module FlexSearch.Core {
         ReturnEmptyStringForNull: boolean;
     }
 
-    export interface SearchResults {
+    export class SearchResults {
         Documents: FlexSearch.Core.Document_Dto[];
         RecordsReturned: number;
         TotalAvailable: number;
     }
 
-    export interface SqlIndexingRequest {
+    export class SqlIndexingRequest {
         IndexName: string;
         Query: string;
         ConnectionString: string;
@@ -207,7 +207,7 @@ declare module FlexSearch.Core {
 
 declare module FlexSearch.DuplicateDetection {
 
-    export interface DuplicateDetectionReportRequest {
+    export class DuplicateDetectionReportRequest {
         SourceFileName: string;
         ProfileName: string;
         IndexName: string;
@@ -215,7 +215,7 @@ declare module FlexSearch.DuplicateDetection {
         CutOff: number;
     }
 
-    export interface DuplicateDetectionRequest {
+    export class DuplicateDetectionRequest {
         SelectionQuery: string;
         DisplayName: string;
         ThreadCount: number;
@@ -224,7 +224,7 @@ declare module FlexSearch.DuplicateDetection {
         MaxRecordsToScan: number;
     }
 
-    interface Session {
+    export class Session {
         Id: string;
         SessionId: string;
         IndexName: string;
@@ -238,7 +238,7 @@ declare module FlexSearch.DuplicateDetection {
         ThreadCount: number;
     }
 
-    export interface SourceRecord {
+    export class SourceRecord {
         SessionId: string;
         SourceId: string;
         SourceRecordId: string;
@@ -247,7 +247,7 @@ declare module FlexSearch.DuplicateDetection {
         TotalDupes: number;
     }
 
-    export interface Stats {
+    export class Stats {
         TotalRecords: number;
         MatchedRecords: number;
         NoMatchRecords: number;
@@ -256,7 +256,7 @@ declare module FlexSearch.DuplicateDetection {
         MoreThanTwoMatchRecord: number;
     }
 
-    export interface TargetRecord {
+    export class TargetRecord {
         TargetId: string;
         TargetRecordId: string;
         TargetDisplayName: string;
