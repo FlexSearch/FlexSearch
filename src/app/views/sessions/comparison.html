@@ -9,13 +9,6 @@
     </tr>
   </thead>
   <tbody>
-      <!--{{#each model.fields}}
-          <tr {{bind-attr class="areEqual::error"}}>
-            <td>{{fieldName}}</td>
-            <td>{{sourceValue}}</td>
-            <td>{{targetValue}}</td>
-          </tr>
-      {{/each}}-->
       <tr >
         <td>firstname</td>
         <td>Vladimir</td>
@@ -42,11 +35,23 @@
   </tbody>
   <tfoot class="full-width">
     <tr>
-      <th></th>
-      <th><md-switch/></th>
-      <th><md-switch/></th>
-      <th><md-switch/></th>
-      <th><md-switch/></th>
+        <th></th>
+        <th></th>
+        <th class="center aligned">
+          <div class="ui toggle checkbox">
+            <input type="radio" name="fruit">
+          </div>
+        </th>
+        <th class="center aligned">
+          <div class="ui toggle checkbox">
+            <input type="radio" name="fruit">
+          </div>
+        </th>
+        <th class="center aligned">
+          <div class="ui toggle checkbox">
+            <input type="radio" name="fruit">
+          </div>
+        </th>
     </tr>
   </tbody>
 </table>

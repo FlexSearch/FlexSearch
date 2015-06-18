@@ -3,6 +3,7 @@
 /// <reference path="../app/partials/main.controller.ts" />
 /// <reference path="../app/views/sessions/session.controller.ts" />
 /// <reference path="../app/views/sessions/sessions.controller.ts" />
+/// <reference path="../app/views/sessions/comparison.ts" />
 
 module flexportal {
   'use strict';
@@ -11,6 +12,7 @@ module flexportal {
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", SessionController])
     .controller('SessionsController', SessionsController)
+    .controller('ComparisonController', ComparisonController)
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
       $mdThemingProvider.theme('default')
         .primaryPalette('blue')
@@ -47,7 +49,8 @@ module flexportal {
           parent: 'session',
           views: {
             "comparison": {
-              templateUrl: "app/views/sessions/comparison.html"
+              templateUrl: "app/views/sessions/comparison.html",
+              controller: ComparisonController
             }
           }
         })
