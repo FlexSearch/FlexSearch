@@ -55,6 +55,15 @@ md-content.main-content {
   padding: 0 25px;
 }
 
+
+md-card.sessions {
+  padding: 30px;
+}
+
+md-card.comparison {
+  margin: 30px;
+}
+
 /* Material CSS */
 .material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
 .material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }

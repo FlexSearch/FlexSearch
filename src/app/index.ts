@@ -61,7 +61,7 @@ module flexportal {
               controller: ComparisonController
             }
           }
-        })
+        }); 
         
     });
 }
