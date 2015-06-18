@@ -47,6 +47,9 @@ md-content.main-content {
   margin-top: -10px;
 }
 
+.comparison-page {
+  padding: 20px;
+}
 
 /* Material CSS */
 .material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }

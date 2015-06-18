@@ -1,0 +1,52 @@
+<table class="ui celled table">
+  <thead>
+    <tr>
+      <th>Field Name</th>
+      <th>Source Record</th>
+      <th>Record 1</th>
+      <th>Record 2</th>
+      <th>Record 3</th>
+    </tr>
+  </thead>
+  <tbody>
+      <!--{{#each model.fields}}
+          <tr {{bind-attr class="areEqual::error"}}>
+            <td>{{fieldName}}</td>
+            <td>{{sourceValue}}</td>
+            <td>{{targetValue}}</td>
+          </tr>
+      {{/each}}-->
+      <tr >
+        <td>firstname</td>
+        <td>Vladimir</td>
+        <td class="negative">Fladimir</td>
+        <td>Vladimir</td>
+        <td class="negative">Fladimir</td>
+      </tr>
+	  
+	  <tr >
+        <td>lastname</td>
+        <td>Negacevschi</td>
+        <td>Negacevschi</td>
+        <td>Negacevschi</td>
+        <td>Negacevschi</td>
+      </tr>
+	  
+	  <tr>
+        <td>Gender</td>
+        <td>Male</td>
+        <td class="negative">Female</td>
+        <td>Male</td>
+        <td>Male</td>
+      </tr>
+  </tbody>
+  <tfoot class="full-width">
+    <tr>
+      <th></th>
+      <th><md-switch/></th>
+      <th><md-switch/></th>
+      <th><md-switch/></th>
+      <th><md-switch/></th>
+    </tr>
+  </tbody>
+</table>
