@@ -12,7 +12,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr ng-repeat="session in Sessions">
+				<tr ng-repeat="session in Sessions" ng-click="goToSession(session.SessionId)">
 					<td>{{session.IndexName}}</td>
 					<td>{{session.ProfileName}}</td>
 					<td>{{session.JobStartTimeString}}</td>

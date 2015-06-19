@@ -47,21 +47,32 @@ md-content.main-content {
   margin-top: -10px;
 }
 
-.comparison-page {
-  padding: 20px;
-}
-
 .md-toolbar-tools {
   padding: 0 25px;
 }
 
+/* --------------- */
+/* Comparison Page */
+/* --------------- */
+
+.comparison-page {
+  padding: 20px;
+}
+
+md-card.comparison {
+  margin: 30px;
+}
+
+/* ------------- */
+/* Sessions Page */
+/* ------------- */
 
 md-card.sessions {
   padding: 30px;
 }
 
-md-card.comparison {
-  margin: 30px;
+md-card.sessions .ui.table tr {
+  cursor: pointer;
 }
 
 /* Material CSS */
