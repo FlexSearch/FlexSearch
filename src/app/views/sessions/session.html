@@ -2,11 +2,12 @@
 		<md-content flex="25" class="duplicate-list md-whiteframe-z2" layout="row">
 			<md-list class="full-width">
 				<md-subheader>Add Paging TODO</md-subheader>
-				<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMail(email)">
-					<i class="material-icons {{dupe.Source.Status}}" style="padding-right:15px">{{dup.Source.Icon}}</i>
+				<md-list-item class="md-2-line" ng-repeat="dup in flexDuplicates" ng-click="openMatches(dup)">
+					<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
 					<div class="md-list-item-text">
-						<h3>{{dup.Source.Name}}</h3>
-						<p>{{dup.Targets.length}} Matches</p>
+						<h3>{{dup.SourceDisplayName}}</h3>
+						<p ng-if="dup.TotalDupes == 1">{{dup.TotalDupes}} Match</p>
+						<p ng-if="dup.TotalDupes != 1">{{dup.TotalDupes}} Matches</p>
 					</div>
 					<md-divider ng-hide="$last"></md-divider>
 				</md-list-item>

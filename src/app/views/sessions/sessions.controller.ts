@@ -19,7 +19,7 @@ module flexportal {
   export class SessionsController {
     /* @ngInject */
     constructor($scope: ISessionsProperties, $state: any, $http: ng.IHttpService) {
-      $http.get("http://localhost:9800/indices/duplicates/search?c=*&q=type+=+'session'").then((response: any) => {
+      $http.get(DuplicatesUrl + "/search?c=*&q=type+=+'session'").then((response: any) => {
         $scope.goToSession = function(sessionId) {
           $state.go('session', {id: sessionId});
         };
