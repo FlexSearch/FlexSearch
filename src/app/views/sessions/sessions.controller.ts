@@ -21,7 +21,7 @@ module flexportal {
     constructor($scope: ISessionsProperties, $state: any, $http: ng.IHttpService) {
       $http.get(DuplicatesUrl + "/search?c=*&q=type+=+'session'").then((response: any) => {
         $scope.goToSession = function(sessionId) {
-          $state.go('session', {id: sessionId});
+          $state.go('session', {sessionId: sessionId});
         };
 
         var toDateStr = function(dateStr: any) {
