@@ -12,61 +12,16 @@
           </div>
         </div>
       </th>
-      
-      <!--<th>
-        <div layout="row" layout-align="space-between center">
-          <div>Record 1</div>
-          <div class="ui toggle checkbox">
-            <input type="radio" name="fruit">
-          </div>
-        </div>
-      </th>
-      <th><div layout="row" layout-align="space-between center">
-          <div>Record 2</div>
-          <div class="ui toggle checkbox">
-            <input type="radio" name="fruit">
-          </div>
-        </div></th>
-      <th><div layout="row" layout-align="space-between center">
-          <div>Record 3</div>
-          <div class="ui toggle checkbox">
-            <input type="radio" name="fruit">
-          </div>
-        </div></th>-->
     </tr>
   </thead>
   <tbody>
     <tr ng-repeat="field in FieldNames">
       <td>{{field}}</td>
       <td>{{Source.Values[$index]}}</td>
-      <td ng-repeat="target in $parent.Targets" ng-class="areEqual($parent.$index, $index) ? 'negative': ''">
+      <td ng-repeat="target in $parent.Targets" ng-class="areEqual($parent.$index, $index) ? '': 'negative'">
         {{target.Values[$parent.$index]}}
       </td>
     </tr>
-    
-      <!--<tr >
-        <td>firstname</td>
-        <td>{{Source.Values[0]}}</td>
-        <td class="negative">Fladimir</td>
-        <td>Vladimir</td>
-        <td class="negative">Fladimir</td>
-      </tr>
-	  
-	  <tr >
-        <td>lastname</td>
-        <td>Negacevschi</td>
-        <td>Negacevschi</td>
-        <td>Negacevschi</td>
-        <td>Negacevschi</td>
-      </tr>
-	  
-	  <tr>
-        <td>Gender</td>
-        <td>Male</td>
-        <td class="negative">Female</td>
-        <td>Male</td>
-        <td>Male</td>
-      </tr>-->
   </tbody>
 </table>
 

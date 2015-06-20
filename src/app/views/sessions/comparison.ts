@@ -6,11 +6,17 @@ module flexportal {
     FieldNames: string []
     Source: { Name:any; Values: any[] }
     Targets: { Name:any; Values: any[] } []
+    areEqual(fieldNumber: number, targetNumber: number): boolean
   }
 
   export class ComparisonController {
     /* @ngInject */
     constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService) {
+      // Function to check if two field values from source vs target are equal
+      $scope.areEqual = function(fieldNumber, targetNumber) {
+        return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
+      }
+      
       // Get the duplicate that needs to be displayed
       $http.get(DuplicatesUrl + "/search", {params: {
         q: "type = 'source' and sessionid = '" + $stateParams.sessionId + "' and sourceid = '" + $stateParams.sourceId + "'",
