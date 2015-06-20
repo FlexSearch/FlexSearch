@@ -12,7 +12,7 @@ md-sidenav[md-component-id='leftMenu'] {
 }
 
 md-content.duplicate-list{
-  min-width: 250px;
+  min-width: 270px;
 }
 
 .site-content-toolbar {
@@ -60,13 +60,27 @@ md-content.main-content {
 }
 
 md-card.comparison {
-  margin: 30px;
+  margin: 30px 30px 15px 30px;
   overflow: auto;
 }
 
 th .ui.checkbox {
   margin-left: 20px;
 }
+
+.md-subheader .ui.segment {
+  padding: 0px;
+}
+
+.md-subheader.pagination .md-subheader-inner {
+  padding: 16px 1px 16px 1px;
+}
+
+h2[sticky-state='active'] ~ div md-card.comparison {
+  margin-top: 60px;
+}
+
+
 
 /* ------------- */
 /* Sessions Page */
