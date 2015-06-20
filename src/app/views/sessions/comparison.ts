@@ -4,8 +4,8 @@ module flexportal {
   interface IComparisonScope extends ISessionScope {
     ActiveDuplicate: Duplicate
     FieldNames: string []
-    SourceValues: { Name:any; Values: any[] }
-    TargetValues: { Name:any; Values: any[] } []
+    Source: { Name:any; Values: any[] }
+    Targets: { Name:any; Values: any[] } []
   }
 
   export class ComparisonController {
@@ -38,22 +38,41 @@ module flexportal {
               $scope.FieldNames = Object.keys(document.Fields);
               
               // Instantiate the Source Record
-              $scope.SourceValues = {Name: $scope.ActiveDuplicate.SourceDisplayName, Values: []};
+              $scope.Source = {Name: $scope.ActiveDuplicate.SourceDisplayName, Values: []};
               
               for (var i in document.Fields)
-                $scope.SourceValues.Values.push(document.Fields[i]);
+                $scope.Source.Values.push(document.Fields[i]);
               
               console.log ("Comparison scope ", $scope);
             });
             
             // Get the Targets
+            $scope.Targets = [];
+            for (var i in $scope.ActiveDuplicate.Targets) {
+              var ts = $scope.ActiveDuplicate.Targets;
+              
+              getRecordById(session.IndexName, ts[i].TargetRecordId, $http)
+              .then(response => {
+                var document = <FlexSearch.Core.DocumentDto>response.data.Data;
+                
+                // Instantiate the Source Record
+                var target = {Name: ts[i].TargetDisplayName, Values: []};
+                
+                for (var j in document.Fields)
+                  target.Values.push(document.Fields[j]);
+                
+                // Add the target to the list of Targets
+                $scope.Targets.push(target);
+              });
+            }
+            
+            // Enable the checkboxes
+            // Since the HTML elements haven't loaded yet, I'm waiting for 1 sec.
+            // This should be replaced by some sort of onLoad event. TODO
+            window.setTimeout(function(){
+              (<any>$('.ui.checkbox')).checkbox();
+            }, 1000);
           });
-      });
-      
-      
-
-      $scope.$on('$viewContentLoaded', function(event) {
-        (<any>$('.ui.checkbox')).checkbox();
       });
     }
   }

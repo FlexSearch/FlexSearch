@@ -61,6 +61,11 @@ md-content.main-content {
 
 md-card.comparison {
   margin: 30px;
+  overflow: auto;
+}
+
+th .ui.checkbox {
+  margin-left: 20px;
 }
 
 /* ------------- */
