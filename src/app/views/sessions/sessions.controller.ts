@@ -8,39 +8,61 @@ module flexportal {
     JobEndTimeString: string
   }
 
-  interface ISessionsProperties extends ng.IScope {
+  interface ISessionsScope extends ng.IScope {
     Sessions: Session[]
-    Limit: number
-    Page: number
-    Total: number
+    ActivePage: number
+    PageCount: number
+    PageSize: number
     goToSession(sessionId: string): void
+    getPage(pageNumber: number): void
   }
 
   export class SessionsController {
     /* @ngInject */
-    constructor($scope: ISessionsProperties, $state: any, $http: ng.IHttpService) {
-      $http.get(DuplicatesUrl + "/search?c=*&q=type+=+'session'").then((response: any) => {
-        $scope.goToSession = function(sessionId) {
-          $state.go('session', {sessionId: sessionId});
-        };
-
-        var toDateStr = function(dateStr: any) {
-          var date = new Date(dateStr);
-          return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
-        }
-
-        var results = <FlexSearch.Core.SearchResults>response.data.Data;
-        $scope.Sessions = results.Documents
-          .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
-          .map(s => {
-            s.JobStartTimeString = toDateStr(s.JobStartTime);
-            s.JobEndTimeString = toDateStr(s.JobEndTime);
-            return s;
-          });
-        $scope.Limit = 10;
-        $scope.Page = 1;
-        $scope.Total = results.TotalAvailable;
-      });
+    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService) {
+      
+      // Initialize paging
+      $scope.PageSize = 10
+      $scope.ActivePage = 1
+      $scope.getPage = function(pageNumber) {
+        
+        // Set the active page
+        if (pageNumber < 1 || pageNumber > $scope.PageCount) return;
+        $scope.ActivePage = pageNumber;
+        
+        // Get the sessions
+        $http.get(DuplicatesUrl + "/search", { params: {
+          c: "*",
+          q: "type = 'session'",
+          skip: ($scope.ActivePage - 1) * $scope.PageSize,
+          count: $scope.PageSize
+        }})
+        .then((response: any) => {
+          $scope.goToSession = function(sessionId) {
+            $state.go('session', {sessionId: sessionId});
+          };
+  
+          var toDateStr = function(dateStr: any) {
+            var date = new Date(dateStr);
+            return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
+          }
+  
+          var results = <FlexSearch.Core.SearchResults>response.data.Data;
+          $scope.Sessions = results.Documents
+            .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
+            .map(s => {
+              s.JobStartTimeString = toDateStr(s.JobStartTime);
+              s.JobEndTimeString = toDateStr(s.JobEndTime);
+              return s;
+            });
+            
+          // Set the number of pages
+          $scope.PageCount = Math.ceil(results.TotalAvailable / $scope.PageSize);
+        });
+      };
+      
+      // Get the active page
+      $scope.getPage($scope.ActivePage);
     }
   }
 }
