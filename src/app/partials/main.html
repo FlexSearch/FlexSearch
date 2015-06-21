@@ -1,8 +1,13 @@
 <md-sidenav class="md-sidenav-left md-whiteframe-z2 full-height site-sidenav" md-component-id="leftMenu" md-is-locked-open="$mdMedia('gt-md')" >
   <md-toolbar class="md-theme-indigo">
+    <h1 class="md-toolbar-tools">
+      <a href="http://www.flexsearch.net">FlexSearch</a>
+    </h1>
+  </md-toolbar>
+  <md-toolbar class="md-theme-indigo">
     <h1 class="md-toolbar-tools">Duplicate Detection</h1>
   </md-toolbar>
-  <md-content layout-padding layout="column" layout-align="start start">
+  <md-content layout-padding layout="column" layout-align="start end">
     <md-button ui-sref="sessions">Sessions</md-button>
     <md-button ui-sref="todo">Search Profiles</md-button>
   </md-content>
@@ -21,7 +26,7 @@
       <md-button class="md-icon-button" hide-gt-md ng-click="toggleSideNav('leftMenu')" aria-label="side navigation">
         <md-icon class="md-dark">menu</md-icon>
       </md-button>
-      <md-button href="http://www.flexsearch.net">FlexSearch</md-button>
+      <!--<md-button href="http://www.flexsearch.net">FlexSearch</md-button>-->
     </div>
   </md-toolbar>
   <md-content ui-view layout="column" class="main-content" flex></md-content>
