@@ -80,6 +80,14 @@ h2[sticky-state='active'] ~ div md-card.comparison {
   margin-top: 60px;
 }
 
+.md-subheader.pagination {
+  display: none;
+}
+
+div.activeDuplicate {
+  padding-left: 30px;
+}
+
 /* ------------- */
 /* Sessions Page */
 /* ------------- */
