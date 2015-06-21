@@ -48,8 +48,6 @@ module flexportal {
               
               for (var i in document.Fields)
                 $scope.Source.Values.push(document.Fields[i]);
-              
-              console.log ("Comparison scope ", $scope);
             });
             
             // Get the Targets
