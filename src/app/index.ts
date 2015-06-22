@@ -36,10 +36,15 @@ module flexportal {
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
     // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
-    .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", SessionController])
-    .controller('SessionsController', SessionsController)
+    .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", SessionController])
+    .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", ComparisonController])
-    
+    .service('datePrinter', function() {
+      this.toDateStr = function(dateStr: any) {
+        var date = new Date(dateStr);
+        return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
+      }; 
+    })
     // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
       $mdThemingProvider.theme('default')

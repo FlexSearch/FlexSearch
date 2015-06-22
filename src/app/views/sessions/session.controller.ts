@@ -11,7 +11,7 @@ module flexportal {
         SourceStatusName: any
     }
     
-    export interface ISessionScope extends ng.IScope {
+    export interface ISessionScope extends ng.IScope, IMainScope {
         duplicates: Duplicate[]
         session: Session
         openMatches(dup: Duplicate) : void
@@ -46,7 +46,7 @@ module flexportal {
 
     export class SessionController {
         /* @ngInject */
-        constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any) {
+        constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any) {
             $scope.selectedTarget = null;
             $scope.$on('selectedTargetChanged', function(event, newValue) {
                $scope.selectedTarget = newValue; 
@@ -80,6 +80,13 @@ module flexportal {
                       .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
                       [0];
                       
+                    // Display the session details on the top toolbar
+                    var title = 
+                        "Session for " + $scope.session.IndexName 
+                        + " using " + $scope.session.ProfileName + " profile"
+                        + " started at " + datePrinter.toDateStr($scope.session.JobStartTime)
+                    $scope.setTitle(title);
+                  
                     return $scope.session;
                 });
             })(sessionId);

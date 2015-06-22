@@ -19,11 +19,11 @@ module flexportal {
 
   export class SessionsController {
     /* @ngInject */
-    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService) {
+    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any) {
       
       // Initialize paging
-      $scope.PageSize = 10
-      $scope.ActivePage = 1
+      $scope.PageSize = 10;
+      $scope.ActivePage = 1;
       $scope.getPage = function(pageNumber) {
         
         // Set the active page
@@ -42,17 +42,12 @@ module flexportal {
             $state.go('session', {sessionId: sessionId});
           };
   
-          var toDateStr = function(dateStr: any) {
-            var date = new Date(dateStr);
-            return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
-          }
-  
           var results = <FlexSearch.Core.SearchResults>response.data.Data;
           $scope.Sessions = results.Documents
             .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
             .map(s => {
-              s.JobStartTimeString = toDateStr(s.JobStartTime);
-              s.JobEndTimeString = toDateStr(s.JobEndTime);
+              s.JobStartTimeString = datePrinter.toDateStr(s.JobStartTime);
+              s.JobEndTimeString = datePrinter.toDateStr(s.JobEndTime);
               return s;
             });
             

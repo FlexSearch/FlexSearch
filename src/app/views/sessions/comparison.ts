@@ -41,10 +41,10 @@ module flexportal {
             indexName = $scope.session.IndexName;
         
         process(sourceId, targetId, indexName)
-        .then(function(response){
+        .then(function(response) {
           $mdToast.show(
             $mdToast.simple()
-              .content(response)
+              .content(response || "Done!")
               .position("top right")
               .hideDelay(3000)
           );
