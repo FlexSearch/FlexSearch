@@ -9,6 +9,7 @@ module flexportal {
   class ComparisonItem {
     Name: string
     Id: string
+    TrueDuplicate: boolean
     Values: any[]
   }
   
@@ -21,6 +22,7 @@ module flexportal {
 
     // Processing specific    
     doProcessing(): void
+    selectedTarget: string
   }
 
   export class ComparisonController {
@@ -35,22 +37,62 @@ module flexportal {
       $scope.doProcessing = function() {
         // Show the progress bar
         $('.comparison-page md-progress-linear').show();
+        var duplicate = $scope.ActiveDuplicate,
+            selectedTargetIdx = parseInt($scope.selectedTarget);
         
-        var sourceId = $scope.ActiveDuplicate.SourceRecordId,
-            targetId = $scope.ActiveDuplicate.Targets[parseInt($scope.selectedTarget) - 1].TargetRecordId,
+        var sourceId = duplicate.SourceRecordId,
+            targetId = duplicate.Targets[selectedTargetIdx].TargetRecordId,
             indexName = $scope.session.IndexName;
         
+        // Do the user specified processing
         process(sourceId, targetId, indexName)
         .then(function(response) {
           $mdToast.show(
             $mdToast.simple()
               .content(response || "Done!")
               .position("top right")
-              .hideDelay(3000)
-          );
+              .hideDelay(3000));
+        })
+        // Update the FlexSearch index and the view
+        .then(function() {
           
-          // Hide back the progress bar
-          $('.comparison-page md-progress-linear').hide();
+          // Set the status of the Source to Processed
+          var dup = $scope.duplicates.filter(d => d.FlexSearchId == duplicate.FlexSearchId)[0]; 
+          dup.SourceStatus = "2";
+          dup.SourceStatusName = toSourceStatusName(2);
+          duplicate.SourceStatus = "2";
+          
+          // Set the selected target record to be a True Duplicate
+          $scope.Targets[selectedTargetIdx].TrueDuplicate = true;
+          duplicate.Targets[selectedTargetIdx].TrueDuplicate = true;
+          
+          $http.put(DuplicatesUrl + "/documents/" + duplicate.FlexSearchId,
+            {
+              Fields: {
+                sessionid: duplicate.SessionId,
+                sourcedisplayname: duplicate.SourceDisplayName,
+                sourceid: duplicate.SourceId,
+                sourcerecordid: duplicate.SourceRecordId,
+                totaldupesfound: duplicate.TotalDupes,
+                type: "source",
+                sourcestatus: 2,
+                targetrecords: JSON.stringify(duplicate.Targets)
+              },
+              Id: duplicate.FlexSearchId,
+              IndexName: "duplicates"
+            })
+          .then(function() {
+            $mdToast.show(
+              $mdToast.simple()
+                .content("FlexSearch index updated")
+                .position("top right")
+                .hideDelay(3000)
+            );
+          })
+          .then(function(){
+            // Hide back the progress bar
+            $('.comparison-page md-progress-linear').hide();
+          });
         });
       };
       
@@ -84,6 +126,7 @@ module flexportal {
               $scope.Source = {
                 Name: $scope.ActiveDuplicate.SourceDisplayName, 
                 Id: $scope.ActiveDuplicate.SourceId, 
+                TrueDuplicate: false,
                 Values: []};
               
               for (var i in document.Fields)
@@ -93,7 +136,7 @@ module flexportal {
             // Get the Targets
             $scope.Targets = [];
             for (var i in $scope.ActiveDuplicate.Targets) {
-              (function(flexTarget) {
+              (function(flexTarget: FlexSearch.DuplicateDetection.TargetRecord) {
                 getRecordById(session.IndexName, flexTarget.TargetRecordId, $http)
                 .then(response => {
                   var document = <FlexSearch.Core.DocumentDto>response.data.Data;
@@ -102,6 +145,7 @@ module flexportal {
                   var target = {
                     Name: flexTarget.TargetDisplayName, 
                     Id: flexTarget.TargetId, 
+                    TrueDuplicate: flexTarget.TrueDuplicate,
                     Values: [] };
                   
                   for (var j in document.Fields)

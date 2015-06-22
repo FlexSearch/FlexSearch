@@ -9,6 +9,7 @@ module flexportal {
     export class Duplicate extends FlexSearch.DuplicateDetection.SourceRecord {
         Targets: TargetRecord []    
         SourceStatusName: any
+        FlexSearchId: string
     }
     
     export interface ISessionScope extends ng.IScope, IMainScope {
@@ -17,7 +18,6 @@ module flexportal {
         openMatches(dup: Duplicate) : void
         duplicatesPromise: ng.IPromise<Duplicate[]> 
         sessionPromise: ng.IPromise<Session>
-        selectedTarget: string
         
         // Pagination specific
         getPage(pageNumber: number): void
@@ -32,6 +32,7 @@ module flexportal {
 
     export function fromDocumentToDuplicate(d: FlexSearch.Core.DocumentDto) {
         var dup = new Duplicate();
+        dup.FlexSearchId = d.Id;
         dup.SessionId = d.Fields["sessionid"];
         dup.SourceId = d.Fields["sourceid"];
         dup.SourceRecordId = d.Fields["sourcerecordid"];
@@ -47,10 +48,6 @@ module flexportal {
     export class SessionController {
         /* @ngInject */
         constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any) {
-            $scope.selectedTarget = null;
-            $scope.$on('selectedTargetChanged', function(event, newValue) {
-               $scope.selectedTarget = newValue; 
-            });
             var sessionId = $stateParams.sessionId;
             $scope.ActivePage = 1;
             $scope.PageSize = 20;

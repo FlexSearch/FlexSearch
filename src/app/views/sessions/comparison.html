@@ -17,9 +17,10 @@
         
         <th ng-repeat="target in Targets" class="target">
           <div layout="row" layout-align="space-between center">
+            <i class="large green checkmark icon" ng-show="target.TrueDuplicate"></i>
             <div>Match {{$index + 1}}: {{target.Name}}</div>
             <div class="ui toggle checkbox">
-              <input type="radio" name="target" value="{{target.Id}}">
+              <input type="radio" name="target" value="{{$index}}">
             </div>
           </div>
         </th>

@@ -6,6 +6,6 @@ function process(sourceId, targetId, indexName) {
 		console.log(sourceId, targetId, indexName);
 		setTimeout(function () {
 			resolve("This is DONE!!");
-		}, 3000);
+		}, 1500);
 	});
 }

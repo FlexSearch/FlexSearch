@@ -260,6 +260,7 @@ module FlexSearch.DuplicateDetection {
         TargetId: string;
         TargetRecordId: string;
         TargetDisplayName: string;
+        TrueDuplicate: boolean;
         Quality: string;
         TargetScore: number;
     }

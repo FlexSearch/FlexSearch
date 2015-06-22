@@ -94,6 +94,10 @@ div.activeDuplicate {
   padding-left: 30px;
 }
 
+i.checkmark.icon {
+  margin-right: 10px;
+}
+
 /* ------------- */
 /* Sessions Page */
 /* ------------- */
