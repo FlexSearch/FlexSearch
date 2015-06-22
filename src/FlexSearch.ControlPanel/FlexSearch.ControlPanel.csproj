@@ -84,6 +84,7 @@
     <Compile Include="LogService.cs" />
     <Compile Include="ShellViewModel.cs" />
     <Compile Include="Tasks\InstallServerTask.cs" />
+    <Compile Include="Tasks\OpenEventLogTask.cs" />
     <Compile Include="Tasks\TaskBase.cs" />
     <Compile Include="Tasks\TaskRegisteration.cs" />
     <Page Include="ShellView.xaml">

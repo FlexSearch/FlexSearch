@@ -51,6 +51,7 @@ namespace FlexSearch.ControlPanel
         {
             Log += String.Format("\n{0}", msg);
         }
+        
         public ShellViewModel()
         {
             this.MainMessage = NotService;
