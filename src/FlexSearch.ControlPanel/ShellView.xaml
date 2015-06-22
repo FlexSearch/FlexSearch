@@ -67,19 +67,21 @@
                         <VisualBrush Visual="{StaticResource appbar_information_circle}" Stretch="Fill" />
                     </Rectangle.OpacityMask>
                 </Rectangle>
-                <Rectangle Visibility="Hidden" Fill="White" Height="32" Width="32" Margin="5">
+                <Rectangle Visibility="Collapsed" Fill="White" Height="32" Width="32" Margin="5">
                     <Rectangle.OpacityMask>
                         <VisualBrush Visual="{StaticResource appbar_check}" Stretch="Fill" />
                     </Rectangle.OpacityMask>
                 </Rectangle>
                 <TextBlock x:Name="MainMessage" Margin="5" Grid.Row="0" Grid.Column="1" TextWrapping="WrapWithOverflow" FontSize="14"></TextBlock>
+                <Controls:ProgressRing Grid.Row="1" Height="48" Width="48" IsActive="{Binding NotProcessing}"></Controls:ProgressRing>
                 <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1" Margin="5">
                     <Rectangle Margin="0,20,0,10" StrokeThickness="5" Height="1" Panel.ZIndex="1" Fill="#FFF5F7F6" Stroke="#FFF5F7F6" />
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
                         <Button Margin="5" IsEnabled="{Binding NotProcessing}">Install Windows Service</Button>
-                        <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Secondary Action</Label>
+                        <Rectangle Margin="5,0" StrokeThickness="5" Height="auto" Width="1" Panel.ZIndex="1" Fill="#FFF5F7F6" Stroke="#FFF5F7F6" />
+                        <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Action:</Label>
                         <Controls:SplitButton 
-                        MinWidth="100"
+                        MinWidth="200"
                         Margin="5"
                         HorizontalContentAlignment="Left"
                         HorizontalAlignment="Center"
@@ -94,7 +96,7 @@
             </Grid>
         </GroupBox>
         <GroupBox Grid.Row="2" Grid.ColumnSpan="2" Margin="5" Header="Log" BorderThickness="1" BorderBrush="AntiqueWhite">
-            <TextBox x:Name="Log" AcceptsReturn="True" TextWrapping="Wrap" Height="Auto" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible" IsReadOnly="True"></TextBox>
+            <TextBox x:Name="Log" AcceptsReturn="True" TextWrapping="Wrap" Height="Auto" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="#00333337" Margin="4,-4,-4,-4"></TextBox>
         </GroupBox>
     </Grid>
 </Controls:MetroWindow>
