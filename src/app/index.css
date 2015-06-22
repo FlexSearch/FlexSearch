@@ -55,13 +55,15 @@ md-content.main-content {
 /* Comparison Page */
 /* --------------- */
 
-.comparison-page {
-  padding: 20px;
+md-whiteframe.comparison-page {
+  margin: 30px;
+  padding: 0px;
+  /*height: 100%;*/
 }
 
 md-card.comparison {
   margin: 30px 30px 15px 30px;
-  overflow: auto;
+ 
 }
 
 th .ui.checkbox {

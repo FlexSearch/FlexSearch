@@ -1,6 +1,11 @@
 /// <reference path="..\..\references\references.d.ts" />
 
+
 module flexportal {
+  
+  // The processing function supplied by the user
+  declare function process(source, target) : ng.IPromise<{}>
+  
   class ComparisonItem {
     Name: string
     Id: string
@@ -12,6 +17,7 @@ module flexportal {
     FieldNames: string []
     Source: ComparisonItem
     Targets: ComparisonItem []
+    doProcessing(): void
     areEqual(fieldNumber: number, targetNumber: number): boolean
   }
 
@@ -22,6 +28,17 @@ module flexportal {
       $scope.areEqual = function(fieldNumber, targetNumber) {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
       }
+      
+      // Function that will be executed when the Process button is pressed
+      $scope.doProcessing = function() {
+        var source = <FlexSearch.DuplicateDetection.SourceRecord>$scope.ActiveDuplicate;
+        var target = $scope.ActiveDuplicate.Targets[parseInt($scope.selectedTarget) - 1];
+        
+        process(source, target)
+        .then(function(response){
+          console.log(response);
+        });
+      };
       
       // Get the duplicate that needs to be displayed
       $http.get(DuplicatesUrl + "/search", {params: {
@@ -89,17 +106,17 @@ module flexportal {
               (<any>$('.ui.checkbox')).checkbox({
                 onChange: function() {
                   // Initialization
-                  var selectedTarget = null
+                  $scope.selectedTarget = null;
                   $('.md-button.process').attr("ng-disabled", "true");
                   
                   // Check which checkbox changed
                   var cb = $(".ui.checkbox").each(function(i, item){
                     if((<any>$(item)).checkbox('is checked')) {
-                      selectedTarget = $(item).find("input").attr('value');
+                      $scope.selectedTarget = $(item).find("input").attr('value');
                     }
                   });
                   
-                  $scope.$emit('selectedTargetChanged', selectedTarget);
+                  $scope.$digest();
                 }
               });
             }, 1000);

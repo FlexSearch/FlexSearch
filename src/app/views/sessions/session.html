@@ -1,44 +1,42 @@
-	<div layout="row" class="full-height">
-		<md-content flex="25" class="duplicate-list md-whiteframe-z2" layout="column">
-			<div class="ui basic center aligned segment">
-				<div class="ui pagination menu">
-					<a ng-click="getPage(1)" class="icon item back">
-				        <i class="angle double left icon"></i>
-					</a>
-				    <a class="item" ng-click="getPage(ActivePage - 1)">
-				        <i class="angle left icon"></i>
-				    </a>
-				    <a class="item">
-				        {{ActivePage}}
-				    </a>
-				    <a class="item" ng-click="getPage(ActivePage + 1)">
-				        <i class="angle right icon"></i>
-				    </a>
-				    <a ng-click="getPage(PageCount)" class="icon item back">
-				        <i class="angle double right icon"></i>
-					</a>
-				</div>
+<div layout="row" class="full-height">
+	<md-content flex="25" class="duplicate-list md-whiteframe-z2" layout="column">
+		<div class="ui basic center aligned segment">
+			<div class="ui pagination menu">
+				<a ng-click="getPage(1)" class="icon item back">
+			        <i class="angle double left icon"></i>
+				</a>
+			    <a class="item" ng-click="getPage(ActivePage - 1)">
+			        <i class="angle left icon"></i>
+			    </a>
+			    <a class="item">
+			        {{ActivePage}}
+			    </a>
+			    <a class="item" ng-click="getPage(ActivePage + 1)">
+			        <i class="angle right icon"></i>
+			    </a>
+			    <a ng-click="getPage(PageCount)" class="icon item back">
+			        <i class="angle double right icon"></i>
+				</a>
 			</div>
-			<md-content>
-				<md-list class="full-width">
-					<md-subheader class="pagination">
-					</md-subheader>
-					<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
-						<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
-						<div class="md-list-item-text">
-							<h3>{{dup.SourceDisplayName}}</h3>
-							<p ng-if="dup.TotalDupes == 1">{{dup.TotalDupes}} Match</p>
-							<p ng-if="dup.TotalDupes != 1">{{dup.TotalDupes}} Matches</p>
-						</div>
-						<md-divider ng-hide="$last"></md-divider>
-					</md-list-item>
-				</md-list>
-			</md-content>
+		</div>
+		<md-content>
+			<md-list class="full-width">
+				<md-subheader class="pagination">
+				</md-subheader>
+				<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
+					<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
+					<div class="md-list-item-text">
+						<h3>{{dup.SourceDisplayName}}</h3>
+						<p ng-if="dup.TotalDupes == 1">{{dup.TotalDupes}} Match</p>
+						<p ng-if="dup.TotalDupes != 1">{{dup.TotalDupes}} Matches</p>
+					</div>
+					<md-divider ng-hide="$last"></md-divider>
+				</md-list-item>
+			</md-list>
 		</md-content>
-		
-	<div layout="column" layout-align="top center" layout-padding flex>
-		<md-card flex class="comparison">
-			<div ui-view="comparison" class="comparison-page"></div>
-		</md-card>
-	</div>
-	</div>
+	</md-content>
+	
+	<md-whiteframe layout="column" layout-align="top center" layout-padding flex ui-view="comparison" 
+		class="comparison-page md-whiteframe-z2">
+	</md-whiteframe>
+</div>

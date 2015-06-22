@@ -39,7 +39,6 @@ module flexportal {
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", SessionController])
     .controller('SessionsController', SessionsController)
     .controller('ComparisonController', ["$scope", "$stateParams", ComparisonController])
-    .controller('SessionToolbarController', ["$scope", "$http", SessionToolbarController])    
     
     // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
@@ -72,16 +71,8 @@ module flexportal {
         .state('session', {
           url: "^/session/:sessionId",
           parent: 'main',
-          views: {
-            "": {
-              templateUrl: "app/views/sessions/session.html",
-              controller: 'SessionController'
-            },
-            "topMenuToolbar": {
-              templateUrl: "app/views/sessions/session.toolbar.html",
-              controller: 'SessionToolbarController'
-            }
-          }
+          controller: 'SessionController',
+          templateUrl: "app/views/sessions/session.html"
         })
         .state('comparison', {
           url: "/:sourceId",

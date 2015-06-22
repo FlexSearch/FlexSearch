@@ -1,28 +1,36 @@
-<table class="ui celled table">
-  <thead>
-    <tr>
-      <th>Field Name</th>
-      <th>Source: {{Source.Name}}</th>
-      
-      <th ng-repeat="target in Targets" class="target">
-        <div layout="row" layout-align="space-between center">
-          <div>Match {{$index + 1}}: {{target.Name}}</div>
-          <div class="ui toggle checkbox">
-            <input type="radio" name="target" value="{{target.Id}}">
-          </div>
-        </div>
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr ng-repeat="field in FieldNames">
-      <td>{{field}}</td>
-      <td>{{Source.Values[$index]}}</td>
-      <td ng-repeat="target in $parent.Targets" ng-class="areEqual($parent.$index, $index) ? '': 'negative'">
-        {{target.Values[$parent.$index]}}
-      </td>
-    </tr>
-  </tbody>
-</table>
+<md-toolbar>
+  <div class="md-toolbar-tools">
+    <span flex></span>
+    <md-button class="process" ng-click="doProcessing()" ng-disabled="selectedTarget == null">
+    	<md-icon class="md-dark">check_box</md-icon>Process</md-button>
+  </div>
+</md-toolbar>
 
-<div>{{dups.length}}</div>
+<md-content>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Field Name</th>
+        <th>Source: {{Source.Name}}</th>
+        
+        <th ng-repeat="target in Targets" class="target">
+          <div layout="row" layout-align="space-between center">
+            <div>Match {{$index + 1}}: {{target.Name}}</div>
+            <div class="ui toggle checkbox">
+              <input type="radio" name="target" value="{{target.Id}}">
+            </div>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="field in FieldNames">
+        <td>{{field}}</td>
+        <td>{{Source.Values[$index]}}</td>
+        <td ng-repeat="target in $parent.Targets" ng-class="areEqual($parent.$index, $index) ? '': 'negative'">
+          {{target.Values[$parent.$index]}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</md-content>
