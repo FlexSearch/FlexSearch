@@ -4,7 +4,7 @@
 module flexportal {
   
   // The processing function supplied by the user
-  declare function process(source, target) : ng.IPromise<{}>
+  declare function process(sourceId, targetId, indexName) : ng.IPromise<{}>
   
   class ComparisonItem {
     Name: string
@@ -31,10 +31,11 @@ module flexportal {
       
       // Function that will be executed when the Process button is pressed
       $scope.doProcessing = function() {
-        var source = <FlexSearch.DuplicateDetection.SourceRecord>$scope.ActiveDuplicate;
-        var target = $scope.ActiveDuplicate.Targets[parseInt($scope.selectedTarget) - 1];
+        var sourceId = $scope.ActiveDuplicate.SourceRecordId,
+            targetId = $scope.ActiveDuplicate.Targets[parseInt($scope.selectedTarget) - 1].TargetRecordId,
+            indexName = $scope.session.IndexName;
         
-        process(source, target)
+        process(sourceId, targetId, indexName)
         .then(function(response){
           console.log(response);
         });
