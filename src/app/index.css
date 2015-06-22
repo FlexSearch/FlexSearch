@@ -61,6 +61,10 @@ md-whiteframe.comparison-page {
   /*height: 100%;*/
 }
 
+.comparison-page md-progress-linear {
+  display: none;
+}
+
 md-card.comparison {
   margin: 30px 30px 15px 30px;
  

@@ -17,13 +17,15 @@ module flexportal {
     FieldNames: string []
     Source: ComparisonItem
     Targets: ComparisonItem []
-    doProcessing(): void
     areEqual(fieldNumber: number, targetNumber: number): boolean
+
+    // Processing specific    
+    doProcessing(): void
   }
 
   export class ComparisonController {
     /* @ngInject */
-    constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService) {
+    constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any) {
       // Function to check if two field values from source vs target are equal
       $scope.areEqual = function(fieldNumber, targetNumber) {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
@@ -31,13 +33,24 @@ module flexportal {
       
       // Function that will be executed when the Process button is pressed
       $scope.doProcessing = function() {
+        // Show the progress bar
+        $('.comparison-page md-progress-linear').show();
+        
         var sourceId = $scope.ActiveDuplicate.SourceRecordId,
             targetId = $scope.ActiveDuplicate.Targets[parseInt($scope.selectedTarget) - 1].TargetRecordId,
             indexName = $scope.session.IndexName;
         
         process(sourceId, targetId, indexName)
         .then(function(response){
-          console.log(response);
+          $mdToast.show(
+            $mdToast.simple()
+              .content(response)
+              .position("top right")
+              .hideDelay(3000)
+          );
+          
+          // Hide back the progress bar
+          $('.comparison-page md-progress-linear').hide();
         });
       };
       

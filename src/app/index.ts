@@ -38,7 +38,7 @@ module flexportal {
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", SessionController])
     .controller('SessionsController', SessionsController)
-    .controller('ComparisonController', ["$scope", "$stateParams", ComparisonController])
+    .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", ComparisonController])
     
     // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
