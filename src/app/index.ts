@@ -34,15 +34,21 @@ module flexportal {
   }
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
+    // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", SessionController])
     .controller('SessionsController', SessionsController)
     .controller('ComparisonController', ["$scope", "$stateParams", ComparisonController])
+    .controller('SessionToolbarController', ["$scope", "$http", SessionToolbarController])    
+    
+    // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
       $mdThemingProvider.theme('default')
         .primaryPalette('blue')
         .accentPalette('teal');
     })
+    
+    // Route configuration
     .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider: angular.ui.IUrlRouterProvider) {
       $urlRouterProvider.otherwise("/main");
 
@@ -73,7 +79,7 @@ module flexportal {
             },
             "topMenuToolbar": {
               templateUrl: "app/views/sessions/session.toolbar.html",
-              controller: 'SessionController'
+              controller: 'SessionToolbarController'
             }
           }
         })

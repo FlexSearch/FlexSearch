@@ -17,6 +17,7 @@ module flexportal {
         openMatches(dup: Duplicate) : void
         duplicatesPromise: ng.IPromise<Duplicate[]> 
         sessionPromise: ng.IPromise<Session>
+        selectedTarget: string
         
         // Pagination specific
         getPage(pageNumber: number): void
@@ -46,6 +47,10 @@ module flexportal {
     export class SessionController {
         /* @ngInject */
         constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any) {
+            $scope.selectedTarget = null;
+            $scope.$on('selectedTargetChanged', function(event, newValue) {
+               $scope.selectedTarget = newValue; 
+            });
             var sessionId = $stateParams.sessionId;
             $scope.ActivePage = 1;
             $scope.PageSize = 20;

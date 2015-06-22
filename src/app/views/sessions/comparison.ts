@@ -1,11 +1,17 @@
-module flexportal {
+/// <reference path="..\..\references\references.d.ts" />
 
+module flexportal {
+  class ComparisonItem {
+    Name: string
+    Id: string
+    Values: any[]
+  }
   
   interface IComparisonScope extends ISessionScope {
     ActiveDuplicate: Duplicate
     FieldNames: string []
-    Source: { Name:any; Values: any[] }
-    Targets: { Name:any; Values: any[] } []
+    Source: ComparisonItem
+    Targets: ComparisonItem []
     areEqual(fieldNumber: number, targetNumber: number): boolean
   }
 
@@ -44,7 +50,10 @@ module flexportal {
               $scope.FieldNames = Object.keys(document.Fields);
               
               // Instantiate the Source Record
-              $scope.Source = {Name: $scope.ActiveDuplicate.SourceDisplayName, Values: []};
+              $scope.Source = {
+                Name: $scope.ActiveDuplicate.SourceDisplayName, 
+                Id: $scope.ActiveDuplicate.SourceId, 
+                Values: []};
               
               for (var i in document.Fields)
                 $scope.Source.Values.push(document.Fields[i]);
@@ -53,28 +62,46 @@ module flexportal {
             // Get the Targets
             $scope.Targets = [];
             for (var i in $scope.ActiveDuplicate.Targets) {
-              var ts = $scope.ActiveDuplicate.Targets;
-              
-              getRecordById(session.IndexName, ts[i].TargetRecordId, $http)
-              .then(response => {
-                var document = <FlexSearch.Core.DocumentDto>response.data.Data;
-                
-                // Instantiate the Source Record
-                var target = {Name: ts[i].TargetDisplayName, Values: []};
-                
-                for (var j in document.Fields)
-                  target.Values.push(document.Fields[j]);
-                
-                // Add the target to the list of Targets
-                $scope.Targets.push(target);
-              });
+              (function(flexTarget) {
+                getRecordById(session.IndexName, flexTarget.TargetRecordId, $http)
+                .then(response => {
+                  var document = <FlexSearch.Core.DocumentDto>response.data.Data;
+                  
+                  // Instantiate the Source Record
+                  var target = {
+                    Name: flexTarget.TargetDisplayName, 
+                    Id: flexTarget.TargetId, 
+                    Values: [] };
+                  
+                  for (var j in document.Fields)
+                    target.Values.push(document.Fields[j]);
+                  
+                  // Add the target to the list of Targets
+                  $scope.Targets.push(target);
+                });
+              })($scope.ActiveDuplicate.Targets[i]);
             }
             
             // Enable the checkboxes
             // Since the HTML elements haven't loaded yet, I'm waiting for 1 sec.
             // This should be replaced by some sort of onLoad event. TODO
             window.setTimeout(function(){
-              (<any>$('.ui.checkbox')).checkbox();
+              (<any>$('.ui.checkbox')).checkbox({
+                onChange: function() {
+                  // Initialization
+                  var selectedTarget = null
+                  $('.md-button.process').attr("ng-disabled", "true");
+                  
+                  // Check which checkbox changed
+                  var cb = $(".ui.checkbox").each(function(i, item){
+                    if((<any>$(item)).checkbox('is checked')) {
+                      selectedTarget = $(item).find("input").attr('value');
+                    }
+                  });
+                  
+                  $scope.$emit('selectedTargetChanged', selectedTarget);
+                }
+              });
             }, 1000);
           });
       });
