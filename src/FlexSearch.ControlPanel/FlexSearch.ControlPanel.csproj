@@ -78,8 +78,14 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AppBootstrapper.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="ILogService.cs" />
     <Compile Include="IShell.cs" />
+    <Compile Include="LogService.cs" />
     <Compile Include="ShellViewModel.cs" />
+    <Compile Include="Tasks\InstallServerTask.cs" />
+    <Compile Include="Tasks\TaskBase.cs" />
+    <Compile Include="Tasks\TaskRegisteration.cs" />
     <Page Include="ShellView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
