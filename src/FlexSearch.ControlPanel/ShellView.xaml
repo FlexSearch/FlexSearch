@@ -88,7 +88,7 @@
                         HorizontalContentAlignment="Left"
                         HorizontalAlignment="Center"
                         VerticalContentAlignment="Center"
-                        SelectedIndex="{Binding ActionsSelectedIndex}"
+                        SelectedIndex="{Binding ActionsSelectedIndex, Mode=TwoWay}"
                         ItemsSource="{Binding Actions}"
                         IsEnabled="{Binding NotProcessing}"
                         cal:Message.Attach="[Event Click] = [Action InvokeAction()]"

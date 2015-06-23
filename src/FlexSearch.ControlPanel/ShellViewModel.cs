@@ -69,6 +69,7 @@ namespace FlexSearch.ControlPanel
                     Helpers.PrintSeparator();
                     Console.WriteLine(String.Format("Invoke action: {0}", action.Item1));
                     action.Item2.Invoke();
+                    DetectPrimaryAction();
                     Console.WriteLine(String.Format("Action: {0} invoked successfully.", action.Item1));
                 }
                 catch (Exception e)
@@ -126,12 +127,17 @@ namespace FlexSearch.ControlPanel
                 return;
             }
 
-            this.MainMessage += "FlexSearch Server is installed as a service.";
+
             var service = Helpers.GetService("FlexSearch-Server");
             if (service.Status != ServiceControllerStatus.Running)
             {
-                this.MainMessage += " FlexSearch Server service is not running.";
+                this.MainMessage = "FlexSearch Server is installed as a service, but the service is not running.";
                 this.ActionsSelectedIndex = 2;
+            }
+            else
+            {
+                this.MainMessage = "FlexSearch Server is installed as a service and the service is running correctly.";
+                this.ActionsSelectedIndex = 3;
             }
         }
     }
