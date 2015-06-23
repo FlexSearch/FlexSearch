@@ -51,6 +51,10 @@ md-content.main-content {
   padding: 0 25px;
 }
 
+.md-toolbar-tools .md-button md-icon {
+  margin-right: 5px;
+}
+
 /* --------------- */
 /* Comparison Page */
 /* --------------- */

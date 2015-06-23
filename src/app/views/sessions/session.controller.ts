@@ -47,7 +47,7 @@ module flexportal {
 
     export class SessionController {
         /* @ngInject */
-        constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any) {
+        constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any, flexClient: FlexClient) {
             var sessionId = $stateParams.sessionId;
             $scope.ActivePage = 1;
             $scope.PageSize = 20;
@@ -65,17 +65,9 @@ module flexportal {
             // Get the Session Properties
            (function(sId) {
                 // Store the promise on the $scope to be accessed by child controllers
-                $scope.sessionPromise = $http.get(DuplicatesUrl + "/search", 
-                    { params: { 
-                        q: "type = 'session' and sessionid = '" + sId + "'",
-                        c: "*" } }
-                )
-                .then(function(response : any) {
-                    var results = <FlexSearch.Core.SearchResults>response.data.Data;
-                    
-                    $scope.session = results.Documents
-                      .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
-                      [0];
+                $scope.sessionPromise = flexClient.getSessionBySessionId(sId)
+                .then(document => {
+                    $scope.session = <Session>JSON.parse(document.Fields["sessionproperties"]);
                       
                     // Display the session details on the top toolbar
                     var title = 
@@ -97,16 +89,12 @@ module flexportal {
                 // Get the Duplicates
                 (function(sId) {
                     // Store the promise on the $scope to make it accessible by child controllers
-                    $scope.duplicatesPromise = $http.get(DuplicatesUrl + "/search", 
-                        { params: { 
-                            q: "type = 'source' and sessionid = '" + sId + "'",
-                            c: "*",
-                            count: $scope.PageSize,
-                            skip: ($scope.ActivePage - 1) * $scope.PageSize } }
-                    )
-                    .then(function(response : any) {
-                        var results = <FlexSearch.Core.SearchResults>response.data.Data;
-                        
+                    $scope.duplicatesPromise = flexClient.getDuplicatesFromSession(
+                        sId,
+                        $scope.PageSize,
+                        ($scope.ActivePage - 1) * $scope.PageSize
+                    ) 
+                    .then(results => {
                         $scope.duplicates = results.Documents.map(fromDocumentToDuplicate);
                             
                         // Set the number of pages

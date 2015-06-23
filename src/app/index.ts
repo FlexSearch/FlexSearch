@@ -4,6 +4,7 @@
 /// <reference path="../app/views/sessions/session.controller.ts" />
 /// <reference path="../app/views/sessions/sessions.controller.ts" />
 /// <reference path="../app/views/sessions/comparison.ts" />
+/// <reference path="../app/services/flexClient.ts" />
 
 module flexportal {
   'use strict';
@@ -21,13 +22,7 @@ module flexportal {
       default: return { Name: "Proposed", Icon: "speaker_notes" };
     }
   }
-  
-  // FlexSearch Client functions
-  export function getRecordById(indexName, id, $http) {
-    var url = FlexSearchUrl + "/indices/" + indexName + "/documents/" + id + "?c=*";
-    return $http.get(url);
-  }
-  
+
   // Error Handling
   export function errorHandler(e) {
     console.log(e); // TODO
@@ -36,15 +31,19 @@ module flexportal {
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
     // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
-    .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", SessionController])
-    .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", SessionsController])
-    .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", ComparisonController])
+    .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
+    .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", SessionsController])
+    .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
+    
+    // Services
     .service('datePrinter', function() {
       this.toDateStr = function(dateStr: any) {
         var date = new Date(dateStr);
         return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
       }; 
     })
+    .service('flexClient', ["$http", function($http) { return new FlexClient($http);} ])
+    
     // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
       $mdThemingProvider.theme('default')

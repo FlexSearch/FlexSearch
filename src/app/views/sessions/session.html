@@ -21,8 +21,6 @@
 		</div>
 		<md-content>
 			<md-list class="full-width">
-				<md-subheader class="pagination">
-				</md-subheader>
 				<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
 					<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
 					<div class="md-list-item-text">

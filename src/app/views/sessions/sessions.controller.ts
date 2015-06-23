@@ -19,7 +19,7 @@ module flexportal {
 
   export class SessionsController {
     /* @ngInject */
-    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any) {
+    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any, flexClient: FlexClient) {
       
       // Initialize paging
       $scope.PageSize = 10;
@@ -31,18 +31,14 @@ module flexportal {
         $scope.ActivePage = pageNumber;
         
         // Get the sessions
-        $http.get(DuplicatesUrl + "/search", { params: {
-          c: "*",
-          q: "type = 'session'",
-          skip: ($scope.ActivePage - 1) * $scope.PageSize,
-          count: $scope.PageSize
-        }})
-        .then((response: any) => {
+        flexClient.getSessions(
+          $scope.PageSize, 
+          ($scope.ActivePage - 1) * $scope.PageSize)
+        .then(results => {
           $scope.goToSession = function(sessionId) {
             $state.go('session', {sessionId: sessionId});
           };
   
-          var results = <FlexSearch.Core.SearchResults>response.data.Data;
           $scope.Sessions = results.Documents
             .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
             .map(s => {

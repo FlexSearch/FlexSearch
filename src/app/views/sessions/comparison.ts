@@ -20,14 +20,15 @@ module flexportal {
     Targets: ComparisonItem []
     areEqual(fieldNumber: number, targetNumber: number): boolean
 
-    // Processing specific    
+    // Toolbar specific    
     doProcessing(): void
+    doReview(): void
     selectedTarget: string
   }
 
   export class ComparisonController {
     /* @ngInject */
-    constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any) {
+    constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any, flexClient: FlexClient) {
       // Function to check if two field values from source vs target are equal
       $scope.areEqual = function(fieldNumber, targetNumber) {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
@@ -57,30 +58,18 @@ module flexportal {
         .then(function() {
           
           // Set the status of the Source to Processed
-          var dup = $scope.duplicates.filter(d => d.FlexSearchId == duplicate.FlexSearchId)[0]; 
-          dup.SourceStatus = "2";
-          dup.SourceStatusName = toSourceStatusName(2);
+          var dups = $scope.duplicates.filter(d => d.FlexSearchId == duplicate.FlexSearchId);
+          if (dups.length > 0) { 
+            dups[0].SourceStatus = "2";
+            dups[0].SourceStatusName = toSourceStatusName(2);
+          }
           duplicate.SourceStatus = "2";
           
           // Set the selected target record to be a True Duplicate
           $scope.Targets[selectedTargetIdx].TrueDuplicate = true;
           duplicate.Targets[selectedTargetIdx].TrueDuplicate = true;
           
-          $http.put(DuplicatesUrl + "/documents/" + duplicate.FlexSearchId,
-            {
-              Fields: {
-                sessionid: duplicate.SessionId,
-                sourcedisplayname: duplicate.SourceDisplayName,
-                sourceid: duplicate.SourceId,
-                sourcerecordid: duplicate.SourceRecordId,
-                totaldupesfound: duplicate.TotalDupes,
-                type: "source",
-                sourcestatus: 2,
-                targetrecords: JSON.stringify(duplicate.Targets)
-              },
-              Id: duplicate.FlexSearchId,
-              IndexName: "duplicates"
-            })
+          flexClient.updateDuplicate(duplicate)
           .then(function() {
             $mdToast.show(
               $mdToast.simple()
@@ -96,29 +85,52 @@ module flexportal {
         });
       };
       
-      // Get the duplicate that needs to be displayed
-      $http.get(DuplicatesUrl + "/search", {params: {
-        q: "type = 'source' and sessionid = '" + $stateParams.sessionId + "' and sourceid = '" + $stateParams.sourceId + "'",
-        c: "*"
-      }})
-      .then((response: any) => {
-        var results = <FlexSearch.Core.SearchResults>response.data.Data;
+      // Function that will be executed after the Review button is pressed
+      $scope.doReview = function() {
+        // Show the progress bar
+        $('.comparison-page md-progress-linear').show();
+        var duplicate = $scope.ActiveDuplicate;
+          
+        // Get the duplicate from FlexSearch
+          
+        // Set the status of the Source to Reviewed
+        var dups = $scope.duplicates.filter(d => d.FlexSearchId == duplicate.FlexSearchId);
+        if (dups.length > 0) { 
+          dups[0].SourceStatus = "1";
+          dups[0].SourceStatusName = toSourceStatusName(1);
+        }
+        duplicate.SourceStatus = "1";
         
-        // Get the first response
-        if(results.Documents.length != 1) { errorHandler("no results"); return; }
-
+        flexClient.updateDuplicate(duplicate)
+        .then(function() {
+          $mdToast.show(
+            $mdToast.simple()
+              .content("FlexSearch index updated")
+              .position("top right")
+              .hideDelay(3000)
+          );
+        })
+        .then(function(){
+          // Hide back the progress bar
+          $('.comparison-page md-progress-linear').hide();
+        });
+      };
+      
+      // Get the duplicate that needs to be displayed
+      flexClient.getDuplicateBySourceId($stateParams.sessionId, $stateParams.sourceId)
+      .then(document => {
+        if(document == null) { errorHandler("Couldn't find duplicate"); return; }
+        
         // Store the active duplicate
-        $scope.ActiveDuplicate = fromDocumentToDuplicate(results.Documents[0]);
+        $scope.ActiveDuplicate = fromDocumentToDuplicate(document);
         
         // Wait until the session properties are received to get the duplicate index name
         // that is needed to get the source and target records
         $scope.sessionPromise
           .then(session => {
             // Get the Source record
-            getRecordById(session.IndexName, $scope.ActiveDuplicate.SourceRecordId, $http)
-            .then(response => {
-              var document = <FlexSearch.Core.DocumentDto>response.data.Data;
-              
+            flexClient.getRecordById(session.IndexName, $scope.ActiveDuplicate.SourceRecordId)
+            .then(document => {
               // Populate the FieldNames
               $scope.FieldNames = Object.keys(document.Fields);
               
@@ -137,10 +149,8 @@ module flexportal {
             $scope.Targets = [];
             for (var i in $scope.ActiveDuplicate.Targets) {
               (function(flexTarget: FlexSearch.DuplicateDetection.TargetRecord) {
-                getRecordById(session.IndexName, flexTarget.TargetRecordId, $http)
-                .then(response => {
-                  var document = <FlexSearch.Core.DocumentDto>response.data.Data;
-                  
+                flexClient.getRecordById(session.IndexName, flexTarget.TargetRecordId)
+                .then(document => {
                   // Instantiate the Source Record
                   var target = {
                     Name: flexTarget.TargetDisplayName, 
@@ -165,7 +175,6 @@ module flexportal {
                 onChange: function() {
                   // Initialization
                   $scope.selectedTarget = null;
-                  $('.md-button.process').attr("ng-disabled", "true");
                   
                   // Check which checkbox changed
                   var cb = $(".ui.checkbox").each(function(i, item){
