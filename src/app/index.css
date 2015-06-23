@@ -116,3 +116,7 @@ md-card.sessions .ui.table tr {
 
 .material-icons.md-light { color: rgba(255, 255, 255, 1); }
 .material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
+.material-icons.Processed { color: #5bbd72 !important; }		
+.material-icons.Reviewed { color: rgb(33, 150, 243); }		
+.material-icons.Proposed { color: #FB8C00; }		
