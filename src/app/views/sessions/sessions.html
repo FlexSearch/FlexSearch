@@ -3,6 +3,9 @@
 	  <div class="md-toolbar-tools">
 	    <h3>Sessions</h3>
 	    <span flex></span>
+		<md-button ui-sref="sessionsNew">
+	    	<md-icon class="md-light large">add_circle</md-icon>
+	    </md-button>
 	  </div>
 	  <md-progress-linear md-mode="indeterminate" ng-show="false"></md-progress-linear>
 	</md-toolbar>
@@ -47,4 +50,7 @@
 			</div>
 		</div>
 	</md-content>
+</md-whiteframe>
+
+<md-whiteframe layout="column" layout-align="top center" class="new-session md-whiteframe-z2" ui-view>
 </md-whiteframe>

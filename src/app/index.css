@@ -106,9 +106,8 @@ i.checkmark.icon {
 /* Sessions Page */
 /* ------------- */
 
-md-whiteframe.sessions-page {
+md-whiteframe.sessions-page, md-whiteframe.new-session {
   margin: 30px;
-  /*height: 100%;*/
 }
 
 .sessions-page .ui.table tr {
@@ -125,3 +124,9 @@ md-whiteframe.sessions-page {
 .material-icons.Processed { color: #5bbd72 !important; }		
 .material-icons.Reviewed { color: rgb(33, 150, 243); }		
 .material-icons.Proposed { color: #FB8C00; }		
+
+md-icon span.large, md-icon.large {
+  font-size: 36px;
+  height: 36px;
+  width: 36px;
+}

@@ -8,7 +8,7 @@ module flexportal {
     JobEndTimeString: string
   }
 
-  interface ISessionsScope extends ng.IScope, IMainScope {
+  export interface ISessionsScope extends ng.IScope, IMainScope {
     Sessions: Session[]
     ActivePage: number
     PageCount: number

@@ -5,6 +5,7 @@
 /// <reference path="../app/views/sessions/sessions.controller.ts" />
 /// <reference path="../app/views/sessions/comparison.ts" />
 /// <reference path="../app/services/flexClient.ts" />
+/// <reference path="../app/views/sessions/sessionsNew.ts" />
 
 module flexportal {
   'use strict';
@@ -34,6 +35,7 @@ module flexportal {
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
     .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
+    .controller('SessionsNewController', ["$scope", "flexClient", SessionsNewController])
     
     // Services
     .service('datePrinter', function() {
@@ -46,9 +48,28 @@ module flexportal {
     
     // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
-      $mdThemingProvider.theme('default')
-        .primaryPalette('blue')
-        .accentPalette('teal');
+      $mdThemingProvider.definePalette("docs-blue", $mdThemingProvider.extendPalette("blue", {
+          50: "#DCEFFF",
+          100: "#AAD1F9",
+          200: "#7BB8F5",
+          300: "#4C9EF1",
+          400: "#1C85ED",
+          500: "#106CC8",
+          600: "#0159A2",
+          700: "#025EE9",
+          800: "#014AB6",
+          900: "#013583",
+          contrastDefaultColor: "light",
+          contrastDarkColors: "50 100 200 A100",
+          contrastStrongLightColors: "300 400 A200 A400"
+      }));
+      $mdThemingProvider.definePalette("docs-red", 
+        $mdThemingProvider.extendPalette("red", { A100: "#DE3641" }
+      )); 
+      $mdThemingProvider.theme("docs-dark", "default")
+        .primaryPalette("light-blue").dark();
+      $mdThemingProvider.theme("default")
+        .primaryPalette("docs-blue").accentPalette("docs-red");
     })
     
     // Route configuration
@@ -71,6 +92,12 @@ module flexportal {
           templateUrl: "app/views/sessions/sessions.html",
           controller: 'SessionsController',
           parent: 'main'
+        })
+        .state('sessionsNew', {
+          url: "/new",
+          templateUrl: "app/views/sessions/sessionsNew.html",
+          controller: 'SessionsNewController',
+          parent: 'sessions'
         })
         .state('session', {
           url: "^/session/:sessionId",
