@@ -3,6 +3,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:tb="http://www.hardcodet.net/taskbar"
+        xmlns:cal="http://www.caliburnproject.org"
         xmlns:local="clr-namespace:FlexSearch.ControlPanel"
                       Title="FlexSearch Control Panel" 
                       MinHeight="480" MinWidth="640" 
@@ -27,10 +28,10 @@
     </Window.Resources>
     <Controls:MetroWindow.RightWindowCommands>
         <Controls:WindowCommands>
-            <Button Content="about" />
-            <Button Content="settings" />
-            <Button Content="explore" />
-            <Button Content="exit" />
+            <Button Content="about" cal:Message.Attach="[Event Click] = [Action InvokeAction('about')]"/>
+            <Button Content="settings" cal:Message.Attach="[Event Click] = [Action InvokeAction('settings')]"/>
+            <Button Content="explore" cal:Message.Attach="[Event Click] = [Action InvokeAction('explore')]"/>
+            <Button x:Name="Exit" Content="exit" Click="Exit_Click"/>
         </Controls:WindowCommands>
     </Controls:MetroWindow.RightWindowCommands>
     <Grid>
@@ -73,11 +74,12 @@
                     </Rectangle.OpacityMask>
                 </Rectangle>
                 <TextBlock x:Name="MainMessage" Margin="5" Grid.Row="0" Grid.Column="1" TextWrapping="WrapWithOverflow" FontSize="14"></TextBlock>
-                <Controls:ProgressRing Grid.Row="1" Height="48" Width="48" IsActive="{Binding NotProcessing}"></Controls:ProgressRing>
+
                 <StackPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1" Margin="5">
                     <Rectangle Margin="0,20,0,10" StrokeThickness="5" Height="1" Panel.ZIndex="1" Fill="#FFF5F7F6" Stroke="#FFF5F7F6" />
                     <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                        <Button Margin="5" IsEnabled="{Binding NotProcessing}">Install Windows Service</Button>
+                        <Controls:ProgressRing Grid.Row="1" Height="48" Width="48" IsActive="{Binding IsBusy, Mode=TwoWay}" Foreground="White"></Controls:ProgressRing>
+                        <Button Visibility="Collapsed" Margin="5" IsEnabled="{Binding NotProcessing}">Install Windows Service</Button>
                         <Rectangle Margin="5,0" StrokeThickness="5" Height="auto" Width="1" Panel.ZIndex="1" Fill="#FFF5F7F6" Stroke="#FFF5F7F6" />
                         <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Action:</Label>
                         <Controls:SplitButton 
@@ -86,17 +88,27 @@
                         HorizontalContentAlignment="Left"
                         HorizontalAlignment="Center"
                         VerticalContentAlignment="Center"
-                        SelectedIndex="1"
+                        SelectedIndex="{Binding ActionsSelectedIndex}"
                         ItemsSource="{Binding Actions}"
                         IsEnabled="{Binding NotProcessing}"
-                        DisplayMemberPath="Title"
+                        cal:Message.Attach="[Event Click] = [Action InvokeAction()]"
+                        DisplayMemberPath="Item1"
                         VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
             </Grid>
         </GroupBox>
         <GroupBox Grid.Row="2" Grid.ColumnSpan="2" Margin="5" Header="Log" BorderThickness="1" BorderBrush="AntiqueWhite">
-            <TextBox x:Name="Log" AcceptsReturn="True" TextWrapping="Wrap" Height="Auto" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Visible" IsReadOnly="True" Background="#00333337" Margin="4,-4,-4,-4"></TextBox>
+            <TextBox x:Name="Log" 
+                     AcceptsReturn="True" 
+                     TextWrapping="Wrap" 
+                     Height="Auto" 
+                     ScrollViewer.CanContentScroll="True" 
+                     ScrollViewer.VerticalScrollBarVisibility="Visible" 
+                     IsReadOnly="True" 
+                     Background="#00333337" 
+                     Margin="4,-4,-4,-4"
+                     TextChanged="Log_TextChanged"></TextBox>
         </GroupBox>
     </Grid>
 </Controls:MetroWindow>

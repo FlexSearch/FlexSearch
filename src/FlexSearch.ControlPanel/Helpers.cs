@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Security.Principal;
+using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,6 +12,12 @@ namespace FlexSearch.ControlPanel
     internal class Helpers
     {
         public static string BasePath = AppDomain.CurrentDomain.BaseDirectory;
+
+        public static void PrintSeparator()
+        {
+            Console.WriteLine("-----------------------------------------------");
+        }
+
         public static bool IsAdministrator()
         {
             return (new WindowsPrincipal(WindowsIdentity.GetCurrent()))
@@ -33,23 +40,54 @@ namespace FlexSearch.ControlPanel
             }
         }
 
-        public static bool Exec(string path, string argument)
+        public static void Exec(string path, string argument, bool useShellExecute = false)
         {
             var psi = new ProcessStartInfo();
             psi.FileName = path;
             psi.Arguments = argument;
             psi.WorkingDirectory = BasePath;
-            psi.RedirectStandardOutput = false;
-            psi.UseShellExecute = false;
+            //  Set the options.
+            psi.UseShellExecute = useShellExecute;
+
+            if (!useShellExecute)
+            {
+                psi.ErrorDialog = false;
+                psi.CreateNoWindow = true;
+
+                //  Specify redirection.
+                psi.RedirectStandardError = true;
+                psi.RedirectStandardInput = true;
+                psi.RedirectStandardOutput = true;
+            }
+            Console.WriteLine("Executing process: " + path);
+            Console.WriteLine("Process Arguments: " + argument);
             using (var p = Process.Start(psi))
             {
-                p.WaitForExit();
-                if (p.ExitCode != 0 && (psi.FileName != "netsh.exe" && p.ExitCode != 183))
+                // Process can be null in case of Shell Execute
+                if (p != null)
                 {
-                    return true;
+                    p.WaitForExit();
+                    if (p.StandardOutput != null)
+                    {
+                        Console.WriteLine(p.StandardOutput.ReadToEnd());
+                    }
+                    Console.WriteLine("Process Exit Code: " + p.ExitCode);
                 }
-                return false;
             }
+        }
+
+        public static bool DoesServiceExist(string serviceName)
+        {
+            ServiceController[] services = ServiceController.GetServices("127.0.0.1");
+            var service = services.FirstOrDefault(s => s.ServiceName == serviceName);
+            return service != null;
+        }
+
+        public static ServiceController GetService(string serviceName)
+        {
+            ServiceController[] services = ServiceController.GetServices("127.0.0.1");
+            var service = services.FirstOrDefault(s => s.ServiceName == serviceName);
+            return service;
         }
     }
 }

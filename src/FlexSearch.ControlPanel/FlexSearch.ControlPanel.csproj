@@ -16,6 +16,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <NuGetPackageImportStamp>31be3593</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -77,16 +78,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Tasks.cs" />
     <Compile Include="AppBootstrapper.cs" />
+    <Compile Include="ConsoleWriter.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="ILogService.cs" />
     <Compile Include="IShell.cs" />
-    <Compile Include="LogService.cs" />
     <Compile Include="ShellViewModel.cs" />
-    <Compile Include="Tasks\InstallServerTask.cs" />
-    <Compile Include="Tasks\OpenEventLogTask.cs" />
-    <Compile Include="Tasks\TaskBase.cs" />
-    <Compile Include="Tasks\TaskRegisteration.cs" />
     <Page Include="ShellView.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -141,6 +138,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\1382_cogs.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.Server\FlexSearch.Server.fsproj">
+      <Project>{0abe2f45-cf90-40ec-98cd-144eb0ae9bdd}</Project>
+      <Name>FlexSearch.Server</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />

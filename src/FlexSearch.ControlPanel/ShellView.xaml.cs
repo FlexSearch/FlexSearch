@@ -26,18 +26,33 @@ namespace FlexSearch.ControlPanel
         {
             InitializeComponent();
             Instance = this;
+            Console.SetOut(new ConsoleWriter(this.Log, this.Dispatcher));
+            Console.WriteLine("Starting FlexSearch Control Panel");
         }
 
         private void MetroWindow_StateChanged(object sender, EventArgs e)
         {
-            if (this.WindowState == System.Windows.WindowState.Minimized) {
+            if (this.WindowState == System.Windows.WindowState.Minimized)
+            {
                 this.Hide();
             }
         }
 
-        protected override void OnClosing(System.ComponentModel.CancelEventArgs e) {
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
             e.Cancel = true;
             this.Hide();
+        }
+
+        private void Log_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            Log.CaretIndex = Log.Text.Length;
+            Log.ScrollToEnd();
+        }
+
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
         }
     }
 
@@ -62,7 +77,7 @@ namespace FlexSearch.ControlPanel
             ShellView.Instance.Activate();
             ShellView.Instance.Topmost = true;
             ShellView.Instance.Focus();
-            
+
         }
 
         public bool CanExecute(object parameter)
@@ -71,5 +86,5 @@ namespace FlexSearch.ControlPanel
         }
 
         public event EventHandler CanExecuteChanged;
-    } 
+    }
 }
