@@ -62,6 +62,7 @@ namespace FlexSearch.ControlPanel
                 {
                     Console.WriteLine("Starting FlexSearch Server service.");
                     service.Start();
+                    service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(60.0));
                 }
                 else
                 {
@@ -83,6 +84,7 @@ namespace FlexSearch.ControlPanel
                 {
                     Console.WriteLine("Stopping FlexSearch Server service.");
                     service.Stop();
+                    service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(60.0));
                 }
                 else
                 {
