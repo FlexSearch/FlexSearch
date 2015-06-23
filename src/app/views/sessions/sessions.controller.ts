@@ -8,7 +8,7 @@ module flexportal {
     JobEndTimeString: string
   }
 
-  interface ISessionsScope extends ng.IScope {
+  interface ISessionsScope extends ng.IScope, IMainScope {
     Sessions: Session[]
     ActivePage: number
     PageCount: number
@@ -20,6 +20,7 @@ module flexportal {
   export class SessionsController {
     /* @ngInject */
     constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any, flexClient: FlexClient) {
+      $scope.setTitle("");
       
       // Initialize paging
       $scope.PageSize = 10;

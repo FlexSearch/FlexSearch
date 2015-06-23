@@ -1,7 +1,13 @@
-<div layout="row" layout-align="center center"  style="margin-top:32px">
-	<md-card class="sessions">
-		<h1 class="md-display-1">Sessions</h2>
-		
+<md-whiteframe layout="column" layout-align="top center" class="sessions-page md-whiteframe-z2">
+	<md-toolbar>
+	  <div class="md-toolbar-tools">
+	    <h3>Sessions</h3>
+	    <span flex></span>
+	  </div>
+	  <md-progress-linear md-mode="indeterminate" ng-show="false"></md-progress-linear>
+	</md-toolbar>
+	
+	<md-content class="sessions">
 		<table class="ui table">
 			<thead>
 				<tr>
@@ -40,6 +46,5 @@
 				</a>
 			</div>
 		</div>
-				
-	</md-card>
-</div>
+	</md-content>
+</md-whiteframe>

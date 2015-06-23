@@ -106,11 +106,12 @@ i.checkmark.icon {
 /* Sessions Page */
 /* ------------- */
 
-md-card.sessions {
-  padding: 30px;
+md-whiteframe.sessions-page {
+  margin: 30px;
+  /*height: 100%;*/
 }
 
-md-card.sessions .ui.table tr {
+.sessions-page .ui.table tr {
   cursor: pointer;
 }
 
