@@ -363,6 +363,7 @@ type GetSearchHandler(searchService : ISearchService) =
         query.Count <- request.OwinContext |> intFromQueryString "count" query.Count
         query.Skip <- request.OwinContext |> intFromQueryString "skip" query.Skip
         query.OrderBy <- request.OwinContext |> stringFromQueryString "orderby" query.OrderBy
+        query.OrderByDirection <- request.OwinContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
         query.ReturnFlatResult <- request.OwinContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
         query.SearchProfile <- request.OwinContext |> stringFromQueryString "searchprofile" query.SearchProfile
         query.IndexName <- request.ResId.Value
