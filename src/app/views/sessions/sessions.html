@@ -3,7 +3,7 @@
 	  <div class="md-toolbar-tools">
 	    <h3>Sessions</h3>
 	    <span flex></span>
-		<md-button ui-sref="sessionsNew">
+		<md-button ui-sref="sessionsNew" ng-click="toggleRight()">
 	    	<md-icon class="md-light large">add_circle</md-icon>
 	    </md-button>
 	  </div>
@@ -52,5 +52,5 @@
 	</md-content>
 </md-whiteframe>
 
-<md-whiteframe layout="column" layout-align="top center" class="new-session md-whiteframe-z2" ui-view>
-</md-whiteframe>
+<md-sidenav layout="column" layout-align="top center" class="new-session md-whiteframe-z2 md-sidenav-right" md-component-id="right" ui-view>
+</md-sidenav>

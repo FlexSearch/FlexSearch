@@ -106,18 +106,16 @@ i.checkmark.icon {
 /* Sessions Page */
 /* ------------- */
 
-md-whiteframe.sessions-page, md-whiteframe.new-session {
+md-whiteframe.sessions-page {
   margin: 30px;
-  min-height: 350px;
 }
 
 .sessions-page .ui.table tr {
   cursor: pointer;
 }
 
-md-whiteframe.new-session {
-  background-color: white;
-  display: none;
+md-sidenav.new-session {
+  min-width: 400px;
 }
 
 

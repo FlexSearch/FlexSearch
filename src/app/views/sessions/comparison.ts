@@ -134,7 +134,7 @@ module flexportal {
             flexClient.getRecordsByIds(session.IndexName, dupRecs) 
             .then(documents => {
               // Populate the FieldNames
-              $scope.FieldNames = Object.keys(document.Fields);
+              $scope.FieldNames = Object.keys(documents[0]);
               
               // Instantiate the Source Record
               $scope.Source = {
@@ -169,47 +169,6 @@ module flexportal {
               
               console.log($scope);
             });
-            
-            // Get the Source record
-            flexClient.getRecordById(session.IndexName, $scope.ActiveDuplicate.SourceRecordId)
-            .then(document => {
-              // Populate the FieldNames
-              $scope.FieldNames = Object.keys(document.Fields);
-              
-              
-              
-              // Instantiate the Source Record
-              $scope.Source = {
-                Name: $scope.ActiveDuplicate.SourceDisplayName, 
-                Id: $scope.ActiveDuplicate.SourceId, 
-                TrueDuplicate: false,
-                Values: []};
-              
-              for (var i in document.Fields)
-                $scope.Source.Values.push(document.Fields[i]);
-            });
-            
-            // Get the Targets
-            $scope.Targets = [];
-            for (var i in $scope.ActiveDuplicate.Targets) {
-              (function(flexTarget: FlexSearch.DuplicateDetection.TargetRecord) {
-                flexClient.getRecordById(session.IndexName, flexTarget.TargetRecordId)
-                .then(document => {
-                  // Instantiate the Source Record
-                  var target = {
-                    Name: flexTarget.TargetDisplayName, 
-                    Id: flexTarget.TargetId, 
-                    TrueDuplicate: flexTarget.TrueDuplicate,
-                    Values: [] };
-                  
-                  for (var j in document.Fields)
-                    target.Values.push(document.Fields[j]);
-                  
-                  // Add the target to the list of Targets
-                  $scope.Targets.push(target);
-                });
-              })($scope.ActiveDuplicate.Targets[i]);
-            }
             
             // Enable the checkboxes
             // Since the HTML elements haven't loaded yet, I'm waiting for 1 sec.

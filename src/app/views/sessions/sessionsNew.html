@@ -3,7 +3,7 @@
 	  <div class="md-toolbar-tools">
 	    <h3>New Session</h3>
 	    <span flex></span>
-		<md-button ng-click="createSession()" type="submit" ng-disabled="form.$invalid" >
+		<md-button ng-click=" closeSidenav(); createSession();" type="submit" ng-disabled="form.$invalid" >
 	    	<md-icon ng-class="md-light">send</md-icon>
 	      Create
 	    </md-button>
@@ -11,27 +11,28 @@
 	  <md-progress-linear md-mode="indeterminate" ng-show="false"></md-progress-linear>
 </md-toolbar>
 	
-<md-content layout="column">
-	<md-content layout-padding layout="row" layout-sm="column" layout-align="space-around center" >
+<md-content layout="column" layout-padding layout-align="space-around start">
+	<!--<md-content layout-padding layout="row" layout-sm="column" layout-align="space-around center" >-->
 		<md-select placeholder="Index Name" ng-model="IndexNumber" md-on-open="clearDependencies()" required>
-			<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' Index</md-option>
-		</md-select>
-		<md-select placeholder="Profile Name" name="profileName" ng-model="ProfileNumber" ng-disabled="IndexNumber == null" required>
-			<md-option ng-repeat="sp in Indices[IndexNumber].SearchProfiles" value="{{$index}}">'{{sp.Name}}' Profile</md-option>
+			<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' index</md-option>
 		</md-select>
 		<md-select placeholder="Field Name" ng-model="FieldName" ng-disabled="IndexNumber == null" required>
-			<md-option ng-repeat="field in Indices[IndexNumber].Fields" value="{{field}}">'{{field}}' Field</md-option>
+			<md-option ng-repeat="field in Indices[IndexNumber].Fields" value="{{field}}">'{{field}}' display field</md-option>
 		</md-select>
-	</md-content>
-	<md-content layout-padding layout="column" layout-sm="column">
-		<md-input-container flex>
+		<md-select placeholder="Profile Name" name="profileName" ng-model="ProfileNumber" ng-disabled="IndexNumber == null" required>
+			<md-option ng-repeat="sp in Indices[IndexNumber].SearchProfiles" value="{{$index}}">'{{sp.Name}}' profile</md-option>
+		</md-select>
+		
+	<!--</md-content>-->
+	<!--<md-content layout-padding layout="column" layout-sm="column">-->
+		<md-input-container layout-fill>
 		  <label>Search Profile Query String</label>
 		  <textarea columns="1" ng-model="Indices[IndexNumber].SearchProfiles[ProfileNumber].QueryString" disabled></textarea>
 		</md-input-container>
-		<md-input-container flex>
+		<md-input-container layout-fill>
 		  <label>Selection Query</label>
 		  <input ng-model="SelectionQuery" required>
 		</md-input-container>
-	</md-content>
+	<!--</md-content>-->
 </md-content>
 </form>

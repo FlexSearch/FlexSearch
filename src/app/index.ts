@@ -40,7 +40,7 @@ module flexportal {
     // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
-    .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", SessionsController])
+    .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", "$mdSidenav", "$mdUtil", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
     .controller('SessionsNewController', ["$scope", "flexClient", "$mdToast", "$state", SessionsNewController])
     

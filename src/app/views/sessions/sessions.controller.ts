@@ -15,12 +15,37 @@ module flexportal {
     PageSize: number
     goToSession(sessionId: string): void
     getPage(pageNumber: number): void
+    toggleRight(): void
+    closeSidenav() : void
   }
 
   export class SessionsController {
     /* @ngInject */
-    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any, flexClient: FlexClient) {
+    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any, flexClient: FlexClient, $mdSidenav: any, $mdUtil: any) {
       $scope.setTitle("");
+      
+      // Handler for toggling the sidenav
+      function buildToggler(navID) {
+        var debounceFn =  $mdUtil.debounce(function(){
+              $mdSidenav(navID)
+                .toggle();
+            },300);
+        return debounceFn;
+      }
+      $scope.toggleRight = buildToggler('right');
+      
+      // Function for closing the sidenav
+      $scope.closeSidenav = function() {
+        $mdSidenav('right').close();
+      }; 
+      
+      // Function for monitoring the sidenav close
+      $scope.$watch(
+        function () { return $mdSidenav('right').isOpen(); },
+        function (newValue, oldValue) {
+          if (newValue == false)
+            $state.go('sessions');
+        });
       
       // Initialize paging
       $scope.PageSize = 20;

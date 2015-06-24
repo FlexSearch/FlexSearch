@@ -17,6 +17,7 @@ module flexportal {
     Indices: Index []
     createSession() : void
     clearDependencies(): void
+    closeSidenav() : void
   }
 
   export class SessionsNewController {
@@ -24,6 +25,11 @@ module flexportal {
     constructor($scope: ISessionsNewScope, flexClient: FlexClient, $mdToast: any, $state: any) {
       // Display the frame
       $('md-whiteframe.new-session').show();
+      
+      
+      
+      // Display the sidenav
+      //$scope.toggleRight();
       
       // Get the available indices
       flexClient.getIndices()
