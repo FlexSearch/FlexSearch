@@ -303,18 +303,14 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         |> Seq.filter (fun x -> x.IsSome)
         |> Seq.map 
                (fun i -> 
-               Task.Run
-                   (fun _ -> 
-                   try 
-                       loadIndex i.Value
-                       |> logErrorChoice
-                       |> ignore
-                   with e -> 
-                       Logger.Log
-                           (sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, 
-                            MessageLevel.Error)))
-        |> Seq.toArray
-        |> Task.WaitAll
+               (Task.Run(fun _ -> 
+                    try 
+                        loadIndex i.Value
+                        |> logErrorChoice
+                        |> ignore
+                    with e -> Logger.Log(sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, MessageLevel.Error)))
+                   .ConfigureAwait(false))
+        |> ignore
     
     do 
         if not testMode then loadAllIndex()
@@ -444,7 +440,9 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                                     script.Invoke(sq, values)
                                     ok()
                                 with e -> 
-                                    Logger.Log("SearchProfile Query execution error", e, MessageKeyword.Search, MessageLevel.Warning)
+                                    Logger.Log
+                                        ("SearchProfile Query execution error", e, MessageKeyword.Search, 
+                                         MessageLevel.Warning)
                                     ok()
                             | Choice2Of2(err) -> fail <| err
                         else ok()
