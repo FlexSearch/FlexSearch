@@ -101,7 +101,7 @@ module DuplicateDetection =
         index.Fields <- [| new Field.Dto(sessionId, FieldType.Dto.ExactText)
                            new Field.Dto(recordType, FieldType.Dto.ExactText)
                            // Source record
-                           new Field.Dto(sourceId, FieldType.Dto.ExactText, AllowSort = true)
+                           new Field.Dto(sourceId, FieldType.Dto.Int, AllowSort = true)
                            new Field.Dto(sourceRecordId, FieldType.Dto.ExactText)
                            new Field.Dto(sourceDisplayName, FieldType.Dto.Stored)
                            new Field.Dto(totalDupesFound, FieldType.Dto.Int)
