@@ -68,6 +68,7 @@ type DuplicateDetectionRequest() =
     member val IndexName = defString with get, set
     member val ProfileName = defString with get, set
     member val MaxRecordsToScan = Int16.MaxValue with get, set
+    member val DuplicatesCount = Int16.MaxValue with get, set
     member val NextId = new AtomicLong(0L)
     override this.Validate() = ok()
 
@@ -195,8 +196,12 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             writeSessionRecord (session, documentService)
             try 
                 let _ = 
-                    Parallel.ForEach
-                        (records.Documents, parallelOptions, fun record -> duplicateRecordCheck (req, record, session))
+                    Parallel.ForEach(records.Documents, parallelOptions, 
+                                     fun record loopState -> 
+                                         if loopState.IsStopped then ()
+                                         else if req.NextId.Value >= (int64) req.DuplicatesCount then 
+                                             loopState.Stop()
+                                         else duplicateRecordCheck (req, record, session))
                 ()
             with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
             session.JobEndTime <- DateTime.Now
@@ -383,29 +388,33 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         match result with
         | Choice1Of2(result) -> 
             let headers = 
-                searchService.Search(new SearchQuery.Dto(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, Columns = [| "*" |]))
-                |> extract |> toFlatResults 
+                searchService.Search
+                    (new SearchQuery.Dto(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, 
+                                         Columns = [| "*" |]))
+                |> extract
+                |> toFlatResults
                 |> fun x -> 
                     let d = x.Documents.ToList().First()
                     d.Keys.ToArray()
-
             (!>) "Main Query Records Returned:%i" result.Meta.RecordsReturned
             let records = result |> toFlatResults
-            let d = seq {
-                for record in records.Documents do
-                    yield record.Values.ToArray()
-            }
+            
+            let d = 
+                seq { 
+                    for record in records.Documents do
+                        yield record.Values.ToArray()
+                }
             (headers, d)
         | Choice2Of2(err) -> 
             Logger.Log(err)
             (Array.empty, Seq.empty)
-        
+    
     let getDataSource (request : DuplicateDetectionReportRequest) = 
         if isNotBlank request.SourceFileName then getFileDataSource (request)
         else getIndexDataSource (request)
     
     let generateReport (jobId, request : DuplicateDetectionReportRequest) = 
-        let (headers, data) = getDataSource(request)
+        let (headers, data) = getDataSource (request)
         let stats = new Stats()
         let builder = new StringBuilder()
         let aggrBuilder = new StringBuilder()
