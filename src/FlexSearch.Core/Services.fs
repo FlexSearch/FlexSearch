@@ -276,16 +276,12 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
     /// Load a index
     let loadIndex (index : Index.Dto) = 
         maybe { 
-            let! setting = IndexWriter.createIndexSetting 
-                               (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
             if index.Online then 
+                let! setting = IndexWriter.createIndexSetting 
+                                    (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
                 let indexWriter = IndexWriter.create (setting)
                 state
                 |> tryUpdate (index.IndexName, (index, Some(indexWriter)))
-                |> ignore
-            else 
-                state
-                |> tryUpdate (index.IndexName, (index, None))
                 |> ignore
         }
     
@@ -294,20 +290,27 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         Directory.EnumerateFiles(path)
         |> Seq.map (fun x -> 
                match threadSafeWriter.ReadFile<Index.Dto>(x) with
-               | Choice1Of2(dto) -> Some(dto)
+               | Choice1Of2(dto) -> 
+                    state
+                    |> tryUpdate (dto.IndexName, (dto, None))
+                    |> ignore
+                    Some(dto)
                | Choice2Of2(error) -> 
                    Logger.Log(error)
                    None)
         |> Seq.filter (fun x -> x.IsSome)
         |> Seq.iter (fun i -> 
-            ThreadPool.QueueUserWorkItem(fun _ -> 
-                    try 
-                        loadIndex i.Value
-                        |> logErrorChoice
-                        |> ignore
-                    with e -> 
-                        Logger.Log(sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, MessageLevel.Error)) |> ignore
-            )
+               ThreadPool.QueueUserWorkItem
+                   (fun _ -> 
+                   try 
+                       loadIndex i.Value
+                       |> logErrorChoice
+                       |> ignore
+                   with e -> 
+                       Logger.Log
+                           (sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, 
+                            MessageLevel.Error))
+               |> ignore)
     
     do 
         if not testMode then loadAllIndex()
