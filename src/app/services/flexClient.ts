@@ -30,12 +30,29 @@ module flexportal {
 			return response.data.Data;
 		}
 		
+		private static getFlatResults (response: any) {
+			return <string[]>FlexClient.getData(response);
+		}
+		
 		public getRecordById(indexName, id) {
 			var url = FlexSearchUrl + "/indices/" + indexName + "/documents/" + id + "?c=*";
 			return this.$http.get(url)
 				.then(
 					response => <FlexSearch.Core.DocumentDto>(<any>response.data).Data,
 					errorHandler);
+	  	}
+		  
+	  	public getRecordsByIds(indexName, ids: any []) {
+			var idStr = ids
+				.reduce(function (acc, val) { return acc + ",'" + val + "'" }, "")
+				.substr(1);
+		  	return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/search", { params: 
+				  {
+					 q: "_id eq [" + idStr + "] {clausetype: 'or'}",
+					 c: "*",
+					 returnFlatResult: "true"
+				  } })
+			  .then(FlexClient.getFlatResults);
 	  	}
 		  
 	  	// Get the duplicate that needs to be displayed

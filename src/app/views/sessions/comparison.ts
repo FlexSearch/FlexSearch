@@ -128,11 +128,55 @@ module flexportal {
         // that is needed to get the source and target records
         $scope.sessionPromise
           .then(session => {
+            var dupRecs = [$scope.ActiveDuplicate.SourceRecordId] 
+              .concat($scope.ActiveDuplicate.Targets.map(t => t.TargetRecordId));
+              
+            flexClient.getRecordsByIds(session.IndexName, dupRecs) 
+            .then(documents => {
+              // Populate the FieldNames
+              $scope.FieldNames = Object.keys(document.Fields);
+              
+              // Instantiate the Source Record
+              $scope.Source = {
+                Name: $scope.ActiveDuplicate.SourceDisplayName, 
+                Id: $scope.ActiveDuplicate.SourceId, 
+                TrueDuplicate: false,
+                Values: []};
+              
+              var sourceFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.SourceRecordId);
+              for (var i in sourceFields)
+                $scope.Source.Values.push(sourceFields[i]);
+              
+              // Populate the Targets
+              $scope.Targets = [];
+              for (var i in $scope.ActiveDuplicate.Targets) {
+                var flexTarget = $scope.ActiveDuplicate.Targets[i];
+                
+                // Instantiate the Target Record
+                var target = {
+                  Name: flexTarget.TargetDisplayName, 
+                  Id: flexTarget.TargetId, 
+                  TrueDuplicate: flexTarget.TrueDuplicate,
+                  Values: [] };
+                
+                var targetFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.Targets[i].TargetRecordId);
+                for (var j in targetFields)
+                  target.Values.push(targetFields[j]);
+                
+                // Add the target to the list of Targets
+                $scope.Targets.push(target);
+              }
+              
+              console.log($scope);
+            });
+            
             // Get the Source record
             flexClient.getRecordById(session.IndexName, $scope.ActiveDuplicate.SourceRecordId)
             .then(document => {
               // Populate the FieldNames
               $scope.FieldNames = Object.keys(document.Fields);
+              
+              
               
               // Instantiate the Source Record
               $scope.Source = {

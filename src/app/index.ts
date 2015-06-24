@@ -28,6 +28,13 @@ module flexportal {
   export function errorHandler(e) {
     console.log(e); // TODO
   }
+  
+  // Helpers
+  export function firstOrDefault(a: any [], fieldName, value) {
+    var r = a.filter(x => x[fieldName] == value);
+    if (r.length > 0) return r[0];
+    return null;
+  }
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
     // Controllers

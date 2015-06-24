@@ -24,6 +24,7 @@ module flexportal {
         ActivePage: number
         PageCount: number
         PageSize: number
+        DupesCount: number
     }
 
     interface IRouteParamsService extends angular.ui.IStateParamsService {
@@ -50,7 +51,7 @@ module flexportal {
         constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any, flexClient: FlexClient) {
             var sessionId = $stateParams.sessionId;
             $scope.ActivePage = 1;
-            $scope.PageSize = 20;
+            $scope.PageSize = 50;
             
             // Configure what to do when a match card is clicked
             $scope.openMatches = function(dup: Duplicate) {
@@ -81,6 +82,9 @@ module flexportal {
             })(sessionId);
             
             $scope.getPage = function (pageNumber) {
+                // Show the progress bar
+                var progress = $(".duplicate-list md-progress-linear");
+                progress.show();
                 
                 // Set the active page
                 if (pageNumber < 1 || pageNumber > $scope.PageCount) return;
@@ -96,9 +100,15 @@ module flexportal {
                     ) 
                     .then(results => {
                         $scope.duplicates = results.Documents.map(fromDocumentToDuplicate);
-                            
+                        
+                        // Set the total number of Duplicates    
+                        $scope.DupesCount = results.TotalAvailable;
+                        
                         // Set the number of pages
                         $scope.PageCount = Math.ceil(results.TotalAvailable / $scope.PageSize);
+                            
+                        // Hide the progress bar
+                        progress.hide();
                             
                         return $scope.duplicates;
                     });

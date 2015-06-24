@@ -1,5 +1,6 @@
 <div layout="row" class="full-height">
 	<md-content flex="25" class="duplicate-list md-whiteframe-z2" layout="column">
+		<md-progress-linear md-mode="indeterminate"></md-progress-linear>
 		<div class="ui basic center aligned segment">
 			<div class="ui pagination menu">
 				<a ng-click="getPage(1)" class="icon item back">
@@ -9,7 +10,7 @@
 			        <i class="angle left icon"></i>
 			    </a>
 			    <a class="item">
-			        {{ActivePage}}
+			        Page {{ActivePage}} of {{PageCount}}
 			    </a>
 			    <a class="item" ng-click="getPage(ActivePage + 1)">
 			        <i class="angle right icon"></i>
@@ -19,7 +20,11 @@
 				</a>
 			</div>
 		</div>
+		
 		<md-content>
+			<md-subheader>
+				Records {{(ActivePage - 1) * PageSize}} - {{(ActivePage - 1) * PageSize + duplicates.length}} of {{DupesCount}}
+			</md-subheader>
 			<md-list class="full-width">
 				<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
 					<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>

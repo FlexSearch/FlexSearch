@@ -23,7 +23,7 @@ module flexportal {
       $scope.setTitle("");
       
       // Initialize paging
-      $scope.PageSize = 10;
+      $scope.PageSize = 20;
       $scope.ActivePage = 1;
       $scope.getPage = function(pageNumber) {
         
