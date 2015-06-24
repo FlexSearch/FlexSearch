@@ -31,6 +31,11 @@ let withOrderBy (column : string) (query : SearchQuery.Dto) =
     query.OrderBy <- column
     query
 
+let withOrderByDesc (column : string) (query : SearchQuery.Dto) = 
+    query.OrderBy <- column
+    query.OrderByDirection <- "desc"
+    query
+
 let withDistinctBy (column : string) (query : SearchQuery.Dto) = 
     query.DistinctBy <- column
     query
@@ -226,6 +231,20 @@ id,et1,t2,i1,i2
         result |> assertFieldValue 3 "et1" "d"
         result |> assertFieldValue 4 "et1" "e"
 
+    member __.``Searching for 'i1 = 1' with orderby et1 and direction desc should return 5 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "et1" |]
+            |> withOrderByDesc "et1"
+
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 5
+        result |> assertFieldValue 0 "et1" "e"
+        result |> assertFieldValue 1 "et1" "d"
+        result |> assertFieldValue 2 "et1" "c"
+        result |> assertFieldValue 3 "et1" "b"
+        result |> assertFieldValue 4 "et1" "a"
+
     member __.``Sorting is possible on int field``() =
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
@@ -238,6 +257,19 @@ id,et1,t2,i1,i2
         result |> assertFieldValue 2 "i2" "3"
         result |> assertFieldValue 3 "i2" "4"
         result |> assertFieldValue 4 "i2" "5"
+
+    member __.``Sorting in descending order is possible on int field``() =
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "i2" |]
+            |> withOrderByDesc "i2"
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 5
+        result |> assertFieldValue 0 "i2" "5"
+        result |> assertFieldValue 1 "i2" "4"
+        result |> assertFieldValue 2 "i2" "3"
+        result |> assertFieldValue 3 "i2" "2"
+        result |> assertFieldValue 4 "i2" "1"
 
     member __.``Sorting is not possible on text field``() =
         let result = 

@@ -856,6 +856,9 @@ module SearchQuery =
         /// Can be used to order the results by score or specific field.
         member val OrderBy = "score" with get, set
         
+        /// Can be used to determine the sort order.
+        member val OrderByDirection = "asc" with get, set
+
         /// Can be used to remove results lower than a certain threshold.
         /// This works in conjunction with the score of the top record as
         /// all the other records are filtered using the score set by the

@@ -259,6 +259,11 @@ module SearchDsl =
         // array per search is high
         let topDocsCollection : TopFieldDocs array = Array.zeroCreate indexSearchers.Length
         
+        let sortOrder =
+            match searchQuery.OrderByDirection with
+            | InvariantEqual "asc" -> false
+            | _ -> true
+
         let sort = 
             match searchQuery.OrderBy with
             | null -> Sort.RELEVANCE
@@ -266,7 +271,7 @@ module SearchDsl =
                 match indexWriter.Settings.FieldsLookup.TryGetValue(searchQuery.OrderBy) with
                 | (true, field) -> 
                     if field.GenerateDocValue then
-                        new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType))
+                        new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType, sortOrder))
                     else
                         Sort.RELEVANCE
                 | _ -> Sort.RELEVANCE
