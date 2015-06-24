@@ -26,6 +26,7 @@ open System.Linq
 open System.Runtime.Caching
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
+open System.Threading
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
@@ -298,16 +299,15 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
                    Logger.Log(error)
                    None)
         |> Seq.filter (fun x -> x.IsSome)
-        |> Seq.map 
-               (fun i -> 
-               (Task.Run(fun _ -> 
+        |> Seq.iter (fun i -> 
+            ThreadPool.QueueUserWorkItem(fun _ -> 
                     try 
                         loadIndex i.Value
                         |> logErrorChoice
                         |> ignore
-                    with e -> Logger.Log(sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, MessageLevel.Error)))
-                   .ConfigureAwait(false))
-        |> ignore
+                    with e -> 
+                        Logger.Log(sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, MessageLevel.Error)) |> ignore
+            )
     
     do 
         if not testMode then loadAllIndex()
