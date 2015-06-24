@@ -406,7 +406,7 @@ type FlexTermQuery() =
                 // with all the terms as sub clauses with And operator
                 // This behaviour will result in matching of both the terms in the results which may not be
                 // adjacent to each other. The adjacency case should be handled through phrase query
-                zeroOneOrManyQuery <| getTerms (flexIndexField, values.[0]) <| getTermQuery flexIndexField.SchemaName 
+                zeroOneOrManyQuery <| getTerms (flexIndexField, values) <| getTermQuery flexIndexField.SchemaName 
                 <| getBooleanClause parameters
 
 /// Fuzzy Query
@@ -417,7 +417,7 @@ type FlexFuzzyQuery() =
         member __.GetQuery(flexIndexField, values, parameters) = 
             let slop = parameters |> intFromOptDict "slop" 1
             let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-            zeroOneOrManyQuery <| getTerms (flexIndexField, values.[0]) 
+            zeroOneOrManyQuery <| getTerms (flexIndexField, values) 
             <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClause.Occur.MUST
 
 /// Match all Query
@@ -433,7 +433,7 @@ type FlexPhraseQuery() =
     interface IFlexQuery with
         member __.QueryName() = [| "match" |]
         member __.GetQuery(flexIndexField, values, parameters) = 
-            let terms = getTerms (flexIndexField, values.[0])
+            let terms = getTerms (flexIndexField, values)
             let query = new PhraseQuery()
             for term in terms do
                 query.Add(new Term(flexIndexField.SchemaName, term))

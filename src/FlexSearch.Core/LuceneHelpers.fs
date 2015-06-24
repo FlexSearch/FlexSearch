@@ -104,11 +104,14 @@ module QueryHelpers =
     let inline getTerm (fieldName : string) (text : string) = new Term(fieldName, text)
         
     // Find terms associated with the search string
-    let inline getTerms (flexField : Field.T, value) = 
-        match Field.getSearchAnalyzer (flexField) with
-        | Some(a) -> parseTextUsingAnalyzer (a, flexField.SchemaName, value)
-        | None -> new List<string>([ value ])
-    
+    let inline getTerms (flexField : Field.T, values : string[]) = 
+        let result = new List<string>()
+        for value in values do
+            match Field.getSearchAnalyzer (flexField) with
+            | Some(a) -> result.AddRange(parseTextUsingAnalyzer (a, flexField.SchemaName, value))
+            | None -> result.Add(value)
+        result
+
     // ----------------------------------------------------------------------------
     // Queries
     // ----------------------------------------------------------------------------

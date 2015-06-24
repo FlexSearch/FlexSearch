@@ -560,6 +560,8 @@ id,t1,t2,i1
 4,aaron,Garner,43
 5,fred,jhonson,332"""
     do indexTestData (testData, index, indexService, documentService)
+    member __.``Term match query supports array style syntax``() =
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "_id eq ['1','2'] {clausetype:'or'}"
     member __.``Searching for 'id eq 1' should return 1 records``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 1 "_id eq '1'"
     member __.``Searching for int field 'i1 eq 44' should return 1 records``() = 
