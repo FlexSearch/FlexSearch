@@ -1,8 +1,9 @@
+<form name="form">
 <md-toolbar>
 	  <div class="md-toolbar-tools">
 	    <h3>New Session</h3>
 	    <span flex></span>
-		<md-button ng-click="createSession()" >
+		<md-button ng-click="createSession()" type="submit" ng-disabled="form.$invalid" >
 	    	<md-icon ng-class="md-light">send</md-icon>
 	      Create
 	    </md-button>
@@ -12,33 +13,25 @@
 	
 <md-content layout="column">
 	<md-content layout-padding layout="row" layout-sm="column" layout-align="space-around center" >
-		<!--<md-input-container layout="row" layout-align="start center" flex>
-			<div class="ui large blue horizontal label">Index Name</div>
-			<md-select placeholder=". . ." ng-model="IndexName">
-				<md-option ng-repeat="index in Indices" value="{{index.Name}}">'{{index.Name}}' Index</md-option>
-			</md-select>
-		</md-input-container>
-		<md-input-container layout="row" layout-align="start center" flex>
-			<div class="ui large blue horizontal label">Profile Name</div>
-			<md-select placeholder=". . ." ng-model="ProfileName">
-				<md-option ng-repeat="index in Indices" value="{{index.Name}}">'{{index.Name}}' Profile</md-option>
-			</md-select>
-		</md-input-container>-->
-		
-		<md-select placeholder="Index Name" ng-model="IndexName">
-			<md-option ng-repeat="index in Indices" value="{{index.Name}}">'{{index.Name}}' Index</md-option>
+		<md-select placeholder="Index Name" ng-model="IndexNumber" md-on-open="clearDependencies()" required>
+			<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' Index</md-option>
 		</md-select>
-		<md-select placeholder="Profile Name" ng-model="ProfileName">
-			<md-option ng-repeat="index in Indices" value="{{index.Name}}">'{{index.Name}}' Profile</md-option>
+		<md-select placeholder="Profile Name" name="profileName" ng-model="ProfileNumber" ng-disabled="IndexNumber == null" required>
+			<md-option ng-repeat="sp in Indices[IndexNumber].SearchProfiles" value="{{$index}}">'{{sp.Name}}' Profile</md-option>
 		</md-select>
-		<md-select placeholder="Field Name" ng-model="FieldName" >
-			<md-option ng-repeat="index in Indices" value="{{index.Name}}">'{{index.Name}}' Field</md-option>
+		<md-select placeholder="Field Name" ng-model="FieldName" ng-disabled="IndexNumber == null" required>
+			<md-option ng-repeat="field in Indices[IndexNumber].Fields" value="{{field}}">'{{field}}' Field</md-option>
 		</md-select>
 	</md-content>
-	<md-content layout-padding layout="row" layout-sm="column">
+	<md-content layout-padding layout="column" layout-sm="column">
+		<md-input-container flex>
+		  <label>Search Profile Query String</label>
+		  <textarea columns="1" ng-model="Indices[IndexNumber].SearchProfiles[ProfileNumber].QueryString" disabled></textarea>
+		</md-input-container>
 		<md-input-container flex>
 		  <label>Selection Query</label>
-		  <input ng-model="SelectionQuery">
+		  <input ng-model="SelectionQuery" required>
 		</md-input-container>
 	</md-content>
 </md-content>
+</form>

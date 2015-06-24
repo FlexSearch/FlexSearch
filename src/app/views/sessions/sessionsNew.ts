@@ -6,24 +6,69 @@ module flexportal {
   class Index {
     Name: string
     Fields: string []
-    SearchProfiles: string []
+    SearchProfiles: { Name: string; QueryString: string } []
   }
 
   interface ISessionsNewScope extends ng.IScope, ISessionsScope {
-	  IndexName: string
-	  ProfileName: string
-	  DisplayFieldName: string
+	  IndexNumber: number
+    ProfileNumber: number
+	  FieldName: string
 	  SelectionQuery: string
-    Indices: any []
+    Indices: Index []
+    createSession() : void
+    clearDependencies(): void
   }
 
   export class SessionsNewController {
     /* @ngInject */
-    constructor($scope: ISessionsNewScope, flexClient: FlexClient) {
-      $scope.Indices = [
-        {Name: "contact"}, 
-        {Name: "contactbdm"},
-        {Name: "duplicates"} ];
+    constructor($scope: ISessionsNewScope, flexClient: FlexClient, $mdToast: any, $state: any) {
+      // Display the frame
+      $('md-whiteframe.new-session').show();
+      
+      // Get the available indices
+      flexClient.getIndices()
+      .then(response => {
+        $scope.Indices = response.map(i => {
+          var idx = new Index();
+          idx.Name = i.IndexName;
+          idx.Fields = i.Fields.map(f => f.FieldName);
+          idx.SearchProfiles = i.SearchProfiles.map(sp => { 
+            return {
+              Name: sp.QueryName, 
+              QueryString: sp.QueryString } });
+          return idx; 
+          });
+      });
+      
+      $scope.createSession = function() {
+        var progress = $("form[name='newSession'] md-progress-linear");
+        progress.show();
+        
+        var index = $scope.Indices[$scope.IndexNumber];
+        flexClient.submitDuplicateDetection (
+          index.Name,
+          index.SearchProfiles[$scope.ProfileNumber].Name,
+          $scope.FieldName,
+          $scope.SelectionQuery
+        )
+        .then(() => {
+          progress.hide();
+          
+          $mdToast.show(
+              $mdToast.simple()
+                .content("Duplicate Detection job submitted")
+                .position("top right")
+                .hideDelay(3000)
+            );
+          
+          $state.go('sessions');
+        });
+      };
+      
+      $scope.clearDependencies = function() {
+        $scope.ProfileNumber = undefined;
+        $scope.FieldName = undefined;
+      };
     }
   }
 }

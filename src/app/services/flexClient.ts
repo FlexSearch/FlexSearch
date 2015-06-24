@@ -26,6 +26,10 @@ module flexportal {
 			return results.Documents[0];
 		}
 		
+		private static getData (response: any) {
+			return response.data.Data;
+		}
+		
 		public getRecordById(indexName, id) {
 			var url = FlexSearchUrl + "/indices/" + indexName + "/documents/" + id + "?c=*";
 			return this.$http.get(url)
@@ -90,7 +94,20 @@ module flexportal {
 	          skip: skip,
 	          count: count
 	        }})
-			.then(FlexClient.getSearchResults);
+			.then(FlexClient.getSearchResults, errorHandler);
+		}
+		
+		public getIndices() {
+			return this.$http.get(FlexSearchUrl + "/indices")
+				.then(FlexClient.getData, errorHandler)
+				.then(result => <any[]> result, errorHandler);
+		}
+		
+		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery) {
+			return this.$http.post(FlexSearchUrl + "/indices/" + indexName + "/duplicatedetection/" + searchProfile, {
+					DisplayName: displayFieldName,
+					SelectionQuery: selectionQuery
+				});
 		}
 	}
 }

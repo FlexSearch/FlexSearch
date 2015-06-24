@@ -108,11 +108,18 @@ i.checkmark.icon {
 
 md-whiteframe.sessions-page, md-whiteframe.new-session {
   margin: 30px;
+  min-height: 350px;
 }
 
 .sessions-page .ui.table tr {
   cursor: pointer;
 }
+
+md-whiteframe.new-session {
+  background-color: white;
+  display: none;
+}
+
 
 /* Material CSS */
 .material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
