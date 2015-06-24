@@ -276,9 +276,12 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
     /// Load a index
     let loadIndex (index : Index.Dto) = 
         maybe { 
+            state
+                |> tryUpdate (index.IndexName, (index, None))
+                |> ignore
             if index.Online then 
                 let! setting = IndexWriter.createIndexSetting 
-                                    (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
+                                   (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
                 let indexWriter = IndexWriter.create (setting)
                 state
                 |> tryUpdate (index.IndexName, (index, Some(indexWriter)))
@@ -291,10 +294,10 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         |> Seq.map (fun x -> 
                match threadSafeWriter.ReadFile<Index.Dto>(x) with
                | Choice1Of2(dto) -> 
-                    state
-                    |> tryUpdate (dto.IndexName, (dto, None))
-                    |> ignore
-                    Some(dto)
+                   state
+                   |> tryUpdate (dto.IndexName, (dto, None))
+                   |> ignore
+                   Some(dto)
                | Choice2Of2(error) -> 
                    Logger.Log(error)
                    None)
