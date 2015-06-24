@@ -26,9 +26,6 @@ open System.Linq
 open System.Runtime.Caching
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
-open System.Collections.Concurrent
-open FlexLucene.Queryparser.Classic
-open Microsoft.CSharp
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
@@ -109,7 +106,7 @@ type IScriptService =
     abstract GetSearchProfileScript : scriptSig:string -> Choice<SearchProfileDelegate, IMessage>
 
 [<Sealed>]
-type ScriptService(threadSafeWriter : ThreadSafeFileWriter) as self = 
+type ScriptService() = 
     let scripts = conDict<Scripts.T>()
     let addScripts (s : seq<string * Scripts.T>) = 
         s |> Seq.iter (fun (scriptName, script) -> scripts.TryAdd(scriptName, script) |> ignore)
@@ -227,7 +224,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
             | true, (dto, _) -> ok <| dto
             | _ -> fail <| AnalyzerNotFound(analyzerName)
         
-        member this.Analyze(analyzerName : string, input : string) = 
+        member __.Analyze(analyzerName : string, input : string) = 
             maybe { let! analyzer = getAnalyzer (analyzerName)
                     return parseTextUsingAnalyzer(analyzer, "", input).ToArray() }
 
@@ -346,7 +343,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
         
         member __.OpenIndex(indexName : string) = 
             maybe { 
-                let! (indexState, indexWriter) = indexState indexName
+                let! (indexState, _) = indexState indexName
                 match indexState with
                 | IndexState.Opening | IndexState.Online -> return! fail <| IndexIsAlreadyOnline(indexName)
                 | _ -> 
@@ -397,7 +394,7 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
             }
         
         member __.GetAllIndex() = state.Values.ToArray() |> Array.map fst
-        member __.UpdateIndexFields(fields : Field.Dto []) = failwith "Not implemented yet"
+        member __.UpdateIndexFields(_ : Field.Dto []) = failwith "Not implemented yet"
 
 [<Sealed>]
 type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, indexService : IIndexService) = 
@@ -470,7 +467,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
     interface ISearchService with
         member __.Search(searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string>) = 
             search (searchQuery, Some <| inputFields)
-        member this.Search(searchQuery : SearchQuery.Dto) = search (searchQuery, None)
+        member __.Search(searchQuery : SearchQuery.Dto) = search (searchQuery, None)
 
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 
@@ -618,12 +615,12 @@ type QueueService(documentService : IDocumentService) =
     
     interface IQueueService with
         
-        member this.AddDocumentQueue(document) = 
+        member __.AddDocumentQueue(document) = 
             Async.AwaitTask(addQueue.SendAsync(document))
             |> Async.RunSynchronously
             |> ignore
         
-        member this.AddOrUpdateDocumentQueue(document) = 
+        member __.AddOrUpdateDocumentQueue(document) = 
             Async.AwaitTask(addOrUpdateQueue.SendAsync(document))
             |> Async.RunSynchronously
             |> ignore
