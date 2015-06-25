@@ -69,6 +69,8 @@ type ISearchService =
     abstract Search : searchQuery:SearchQuery.Dto * inputFields:Dictionary<string, string>
      -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
     abstract Search : searchQuery:SearchQuery.Dto -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
+    abstract Search : searchQuery:SearchQuery.Dto * searchProfileString:string
+     -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
 
 /// Queuing related operations
 type IQueueService = 
@@ -277,8 +279,8 @@ type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAn
     let loadIndex (index : Index.Dto) = 
         maybe { 
             state
-                |> tryUpdate (index.IndexName, (index, None))
-                |> ignore
+            |> tryUpdate (index.IndexName, (index, None))
+            |> ignore
             if index.Online then 
                 let! setting = IndexWriter.createIndexSetting 
                                    (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
@@ -471,6 +473,21 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                 let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
                 return SearchDsl.search (writers, query, searchQuery) }
     interface ISearchService with
+        
+        member __.Search(searchQuery : SearchQuery.Dto, searchProfileString : string) = 
+            maybe { 
+                let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+                // Parse the search profile to see if it is a valid query
+                let! predicate = parser.Parse(searchProfileString)
+                let! searchData = Parsers.ParseQueryString(searchQuery.QueryString, false)
+                match predicate with
+                | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
+                | _ -> let! query = SearchDsl.generateQuery 
+                                        (writers.Settings.FieldsLookup, predicate, searchQuery, Some(searchData), 
+                                         queryTypes)
+                       return SearchDsl.search (writers, query, searchQuery)
+            }
+        
         member __.Search(searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string>) = 
             search (searchQuery, Some <| inputFields)
         member __.Search(searchQuery : SearchQuery.Dto) = search (searchQuery, None)

@@ -376,3 +376,27 @@ type GetSearchHandler(searchService : ISearchService) =
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
+
+type SearchProfileTestDto() =
+    inherit DtoBase()
+    member val SearchQuery = Unchecked.defaultof<SearchQuery.Dto> with get, set
+    member val SearchProfile = defString with get, set
+    override this.Validate() = 
+        this.SearchQuery.Validate()
+        >>= fun _ -> notBlank "SearchProfile" this.SearchProfile
+
+[<Name("POST-/indices/:id/searchprofiletest")>]
+[<Sealed>]
+type PostSearchProfileTestHandler(searchService : ISearchService) = 
+    inherit HttpHandlerBase<SearchProfileTestDto, obj>()
+    override __.Process(request, body) =
+        body.Value.SearchQuery.IndexName <- request.ResId.Value
+        match searchService.Search(body.Value.SearchQuery, body.Value.SearchProfile) with
+        | Choice1Of2(result) -> 
+            if body.Value.SearchQuery.ReturnFlatResult then 
+                request.OwinContext.Response.Headers.Add
+                    ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
+                request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                SuccessResponse((toFlatResults result).Documents :> obj, Ok)
+            else SuccessResponse(toSearchResults (result) :> obj, Ok)
+        | Choice2Of2(error) -> FailureResponse(error, BadRequest)
