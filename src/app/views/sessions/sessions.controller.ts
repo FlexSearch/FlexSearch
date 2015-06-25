@@ -59,7 +59,8 @@ module flexportal {
         // Get the sessions
         flexClient.getSessions(
           $scope.PageSize, 
-          ($scope.ActivePage - 1) * $scope.PageSize)
+          ($scope.ActivePage - 1) * $scope.PageSize,
+          "timestamp", "desc" )
         .then(results => {
           $scope.goToSession = function(sessionId) {
             $state.go('session', {sessionId: sessionId});

@@ -96,7 +96,8 @@ module flexportal {
                     $scope.duplicatesPromise = flexClient.getDuplicatesFromSession(
                         sId,
                         $scope.PageSize,
-                        ($scope.ActivePage - 1) * $scope.PageSize
+                        ($scope.ActivePage - 1) * $scope.PageSize,
+                        "sourceid"
                     ) 
                     .then(results => {
                         $scope.duplicates = results.Documents.map(fromDocumentToDuplicate);

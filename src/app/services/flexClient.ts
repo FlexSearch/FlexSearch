@@ -93,23 +93,27 @@ module flexportal {
 			.then(FlexClient.getFirstResponse, errorHandler);
 		} 
 		
-		public getDuplicatesFromSession(sessionId, count, skip) {
+		public getDuplicatesFromSession(sessionId, count, skip, sortby?, sortDirection?) {
             return this.$http.get(DuplicatesUrl + "/search", 
                 { params: { 
                     q: "type = 'source' and sessionid = '" + sessionId + "'",
                     c: "*",
                     count: count,
-                    skip: skip } }
-            )
+                    skip: skip,
+					orderBy: sortby,
+			  		orderByDirection: sortDirection }})
 			.then(FlexClient.getSearchResults, errorHandler);
 		}
 		
-		public getSessions(count, skip) {
+		public getSessions(count, skip, sortby?, sortDirection?) {
+			
 			return this.$http.get(DuplicatesUrl + "/search", { params: {
 	          c: "*",
 	          q: "type = 'session'",
 	          skip: skip,
-	          count: count
+	          count: count,
+			  orderBy: sortby,
+			  orderByDirection: sortDirection
 	        }})
 			.then(FlexClient.getSearchResults, errorHandler);
 		}
