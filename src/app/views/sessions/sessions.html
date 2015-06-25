@@ -3,11 +3,14 @@
 	  <div class="md-toolbar-tools">
 	    <h3>Sessions</h3>
 	    <span flex></span>
+		<md-button ng-click="getPage(ActivePage)">
+	    	<md-icon class="md-light large">refresh</md-icon>
+	    </md-button>
 		<md-button ui-sref="sessionsNew" ng-click="toggleRight()">
 	    	<md-icon class="md-light large">add_circle</md-icon>
 	    </md-button>
 	  </div>
-	  <md-progress-linear md-mode="indeterminate" ng-show="false"></md-progress-linear>
+	  <md-progress-linear md-mode="indeterminate"></md-progress-linear>
 	</md-toolbar>
 	
 	<md-content class="sessions">

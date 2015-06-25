@@ -51,6 +51,9 @@ module flexportal {
       $scope.PageSize = 20;
       $scope.ActivePage = 1;
       $scope.getPage = function(pageNumber) {
+        // Display progress bar
+        var progress = $('.sessions-page md-progress-linear');
+        progress.show();
         
         // Set the active page
         if (pageNumber < 1 || pageNumber > $scope.PageCount) return;
@@ -76,7 +79,8 @@ module flexportal {
             
           // Set the number of pages
           $scope.PageCount = Math.ceil(results.TotalAvailable / $scope.PageSize);
-        });
+        })
+        .then(() => progress.hide());
       };
       
       // Get the active page
