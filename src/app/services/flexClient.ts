@@ -124,10 +124,14 @@ module flexportal {
 				.then(result => <any[]> result, errorHandler);
 		}
 		
-		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery) {
+		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery,
+			threadCount?, maxRecordsToScan?, maxDupsToReturn?) {
 			return this.$http.post(FlexSearchUrl + "/indices/" + indexName + "/duplicatedetection/" + searchProfile, {
 					DisplayName: displayFieldName,
-					SelectionQuery: selectionQuery
+					SelectionQuery: selectionQuery,
+					ThreadCount: threadCount,
+					MaxRecordsToScan: maxRecordsToScan,
+					DuplicatesCount: maxDupsToReturn
 				});
 		}
 	}

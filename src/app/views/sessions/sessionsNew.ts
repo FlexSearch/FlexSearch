@@ -14,10 +14,12 @@ module flexportal {
     ProfileNumber: number
 	  FieldName: string
 	  SelectionQuery: string
+    ThreadCount: number
+    MaxRecordsToScan: number
+    MaxDupsToReturn: number
     Indices: Index []
     createSession() : void
     clearDependencies(): void
-    closeSidenav() : void
   }
 
   export class SessionsNewController {
@@ -26,10 +28,8 @@ module flexportal {
       // Display the frame
       $('md-whiteframe.new-session').show();
       
-      
-      
-      // Display the sidenav
-      //$scope.toggleRight();
+      // Set the default values for the parameters
+      $scope.ThreadCount = 1;
       
       // Get the available indices
       flexClient.getIndices()
@@ -55,7 +55,10 @@ module flexportal {
           index.Name,
           index.SearchProfiles[$scope.ProfileNumber].Name,
           $scope.FieldName,
-          $scope.SelectionQuery
+          $scope.SelectionQuery,
+          $scope.ThreadCount,
+          $scope.MaxRecordsToScan,
+          $scope.MaxDupsToReturn
         )
         .then(() => {
           progress.hide();
