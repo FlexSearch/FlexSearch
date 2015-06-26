@@ -39,8 +39,12 @@ md-content.duplicate-list{
   margin-top: 0px;  
 }
 
-md-content.main-content {
+.nonSideNav {
   background-color: rgba(0, 0, 0, 0.0470588);
+}
+
+md-content.main-content {
+  background: transparent;
 }
 
 .site-content-toolbar .md-icon-button:first-child{
@@ -54,7 +58,6 @@ md-content.main-content {
 .md-toolbar-tools .md-button md-icon {
   margin-right: 5px;
 }
-
 
 /* -------------------- */
 /* Site Content Toolbar */
@@ -71,7 +74,6 @@ md-content.main-content {
 md-whiteframe.comparison-page {
   margin: 30px;
   padding: 0px;
-  /*height: 100%;*/
 }
 
 .comparison-page md-progress-linear {
@@ -134,10 +136,27 @@ md-sidenav.new-session {
 
 md-content.leftColumn {
   min-width: 300px;
+  margin: 30px 0px 10px 20px;
 }
 
 .leftColumn md-select md-select-label:first-child {
   border-bottom: none;
+}
+
+/*.leftColumn md-content:first-child {
+  overflow-y: scroll;
+}*/
+
+.rightColumn {
+  background: transparent;
+}
+
+.rightColumn md-whiteframe.comparison-page {
+  background: white;
+}
+
+.search-results {
+  margin: 0px 30px 10px 30px;
 }
 
 /* Material CSS */
@@ -156,3 +175,17 @@ md-icon span.large, md-icon.large {
   height: 36px;
   width: 36px;
 }
+
+/* ----------- */
+/* Error sheet */
+/* ----------- */
+
+md-bottom-sheet.error {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+md-bottom-sheet.error md-content {
+  padding: 20px;
+}
+

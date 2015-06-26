@@ -13,7 +13,7 @@ module flexportal {
     Values: any[]
   }
   
-  interface IComparisonScope extends ISessionScope {
+  interface IComparisonScope extends ISessionScope, IMainScope {
     ActiveDuplicate: Duplicate
     FieldNames: string []
     Source: ComparisonItem
@@ -119,7 +119,7 @@ module flexportal {
       // Get the duplicate that needs to be displayed
       flexClient.getDuplicateBySourceId($stateParams.sessionId, $stateParams.sourceId)
       .then(document => {
-        if(document == null) { errorHandler("Couldn't find duplicate"); return; }
+        if(document == null) { $scope.showError("Couldn't find duplicate"); return; }
         
         // Store the active duplicate
         $scope.ActiveDuplicate = fromDocumentToDuplicate(document);

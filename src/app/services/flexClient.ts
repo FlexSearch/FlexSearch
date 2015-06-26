@@ -6,20 +6,31 @@ module flexportal {
 	
 	export class FlexClient {
 		private $http: ng.IHttpService;
+		private $mdBottomSheet: any;
+		private $q: any;
+		private handleError: any;
 		
         /* @ngInject */
-		constructor($http: ng.IHttpService) {
+		constructor($http: ng.IHttpService, $mdBottomSheet: any, $q: any) {
 			 this.$http = $http;
+			 this.$mdBottomSheet = $mdBottomSheet;
+			 this.$q = $q;
+			 this.handleError = 
+			 	function(bs, q) {
+					return errorHandler
+						.bind(null, q)
+						.bind(null, bs);
+				} (this.$mdBottomSheet, this.$q);
 		}
 		
 		private static getSearchResults (response : any) {
 			return <SearchResults>response.data.Data;
 		}
 		
-		private static getFirstResponse (results: SearchResults) {
+		private getFirstResponse (results: SearchResults) {
 			// Get the first response
 			if (results.Documents.length != 1) { 
-				errorHandler("No results returned."); 
+				this.handleError("No results returned."); 
 				return null; 
 			}
 			
@@ -39,7 +50,7 @@ module flexportal {
 			return this.$http.get(url)
 				.then(
 					response => <FlexSearch.Core.DocumentDto>(<any>response.data).Data,
-					errorHandler);
+					this.handleError);
 	  	}
 		  
 	  	public getRecordsByIds(indexName, ids: any []) {
@@ -61,8 +72,8 @@ module flexportal {
 				q: "type = 'source' and sessionid = '" + sessionId + "' and sourceid = '" + sourceId + "'",		
 				c: "*" }}
 			)
-			.then(FlexClient.getSearchResults, errorHandler)
-	      	.then(FlexClient.getFirstResponse, errorHandler);
+			.then(FlexClient.getSearchResults, this.handleError)
+	      	.then(this.getFirstResponse, this.handleError);
 	  	}
 		  
 	  	public updateDuplicate(duplicate: Duplicate) {
@@ -89,8 +100,8 @@ module flexportal {
 		            q: "type = 'session' and sessionid = '" + sessionId + "'",
 		            c: "*" } }
 		    )
-		    .then(FlexClient.getSearchResults, errorHandler)
-			.then(FlexClient.getFirstResponse, errorHandler);
+		    .then(FlexClient.getSearchResults, this.handleError)
+			.then(this.getFirstResponse, this.handleError);
 		} 
 		
 		public getDuplicatesFromSession(sessionId, count, skip, sortby?, sortDirection?) {
@@ -102,7 +113,7 @@ module flexportal {
                     skip: skip,
 					orderBy: sortby,
 			  		orderByDirection: sortDirection }})
-			.then(FlexClient.getSearchResults, errorHandler);
+			.then(FlexClient.getSearchResults, this.handleError);
 		}
 		
 		public getSessions(count, skip, sortby?, sortDirection?) {
@@ -115,13 +126,13 @@ module flexportal {
 			  orderBy: sortby,
 			  orderByDirection: sortDirection
 	        }})
-			.then(FlexClient.getSearchResults, errorHandler);
+			.then(FlexClient.getSearchResults, this.handleError);
 		}
 		
 		public getIndices() {
 			return this.$http.get(FlexSearchUrl + "/indices")
-				.then(FlexClient.getData, errorHandler)
-				.then(result => <any[]> result, errorHandler);
+				.then(FlexClient.getData, this.handleError)
+				.then(result => <any[]> result, this.handleError);
 		}
 		
 		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery,
@@ -133,6 +144,21 @@ module flexportal {
 					MaxRecordsToScan: maxRecordsToScan,
 					DuplicatesCount: maxDupsToReturn
 				});
+		}
+		
+		public submitSearchProfileTest(indexName, searchQueryString, searchProfileQueryString, 
+			columnsToRetrieve?: string[], count?, skip?) {
+			return this.$http.post(FlexSearchUrl + "/indices/" + indexName + "/searchprofiletest", {
+				SearchQuery: {
+					QueryString: searchQueryString,
+					Columns: columnsToRetrieve || ["*"],
+					Count: count,
+					Skip: skip
+				},
+				SearchProfile: searchProfileQueryString
+			})
+			.then(FlexClient.getData,
+				this.handleError);
 		}
 	}
 }

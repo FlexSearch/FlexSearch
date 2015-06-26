@@ -1,0 +1,12 @@
+<md-bottom-sheet class="md-list md-has-header error">
+  <md-toolbar class="md-warn">
+    <div class="md-toolbar-tools">
+	   <h2>{{message}}</h2>
+    </div>
+  </md-toolbar>
+  <md-content>
+	  <p ng-show="errorCode == undefined">No further information provided</p>
+	  <p ng-show="errorCode != undefined">Error Code: {{errorCode}}</p>
+	  <p ng-show="errorMessage != undefined">Message: {{errorMessage}}</p>
+  </md-content>
+</md-bottom-sheet>

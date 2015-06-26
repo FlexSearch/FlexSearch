@@ -1,12 +1,14 @@
 /// <reference path="../../typings/tsd.d.ts" />
 
 /// <reference path="../app/partials/main.controller.ts" />
+/// <reference path="../app/partials/error.ts" />
 /// <reference path="../app/views/sessions/session.controller.ts" />
 /// <reference path="../app/views/sessions/sessions.controller.ts" />
 /// <reference path="../app/views/sessions/comparison.ts" />
 /// <reference path="../app/services/flexClient.ts" />
 /// <reference path="../app/views/sessions/sessionsNew.ts" />
 /// <reference path="../app/views/searchProfiles/searchProfile.ts" />
+/// <reference path="../app/views/searchProfiles/searchProfileSettings.ts" />
 
 module flexportal {
   'use strict';
@@ -25,11 +27,6 @@ module flexportal {
     }
   }
 
-  // Error Handling
-  export function errorHandler(e) {
-    console.log(e); // TODO
-  }
-  
   // Helpers
   export function firstOrDefault(a: any [], fieldName, value) {
     var r = a.filter(x => x[fieldName] == value);
@@ -39,12 +36,14 @@ module flexportal {
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
     // Controllers
-    .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", MainCtrl])
+    .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
     .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", "$mdSidenav", "$mdUtil", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
     .controller('SessionsNewController', ["$scope", "flexClient", "$mdToast", "$state", SessionsNewController])
-    .controller('SearchProfileController', ["$scope", "$state", "flexClient", "$mdSidenav", "$mdUtil", SearchProfileController])
+    .controller('SearchProfileController', ["$scope", "$state", "flexClient", "$mdSidenav", "$mdUtil", "$mdBottomSheet", SearchProfileController])
+    .controller('SearchProfileSettingsController', ["$scope", "$mdBottomSheet", SearchProfileSettingsController])
+    .controller('ErrorController', ErrorController)
     
     // Services
     .service('datePrinter', function() {
@@ -53,7 +52,7 @@ module flexportal {
         return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
       }; 
     })
-    .service('flexClient', ["$http", function($http) { return new FlexClient($http);} ])
+    .service('flexClient', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new FlexClient($http, $mdBottomSheet, $q);} ])
     
     // Theming
     .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
