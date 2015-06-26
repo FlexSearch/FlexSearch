@@ -1,0 +1,31 @@
+<md-progress-linear layout-fill class="indices" md-mode="indeterminate"></md-progress-linear>
+<div layout="row" class="full-height" >
+	<md-content flex="25" class="leftColumn md-whiteframe-z2" layout="column">
+		<md-content layout="column" >
+			<md-toolbar layout="row" layout-align="center center">
+				<div>
+					<md-select placeholder="Select index" ng-model="IndexNumber" md-on-open="clearDependencies()" required>
+						<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' index</md-option>
+					</md-select>
+				</div>
+			</md-toolbar>
+			<md-content class="fieldValues" flex="70">
+				<md-list>
+					<md-list-item  ng-repeat="field in Indices[IndexNumber].Fields">
+						<md-input-container layout-fill>
+						  <label>{{field.Name}}</label>
+						  <input ng-model="field.Value">
+						</md-input-container>
+						<md-checkbox ng-model="field.Show" aria-label="Show in results"/>
+					</md-list-item>
+				</md-list>
+			</md-content>
+			<md-content class="searchSettings" flex>
+			</md-content>
+		</md-content>
+	</md-content>
+	
+	<md-whiteframe layout="column" layout-align="top center" layout-padding flex ui-view="comparison" 
+		class="comparison-page md-whiteframe-z2">
+	</md-whiteframe>
+</div>

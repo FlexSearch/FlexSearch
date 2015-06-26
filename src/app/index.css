@@ -55,6 +55,15 @@ md-content.main-content {
   margin-right: 5px;
 }
 
+
+/* -------------------- */
+/* Site Content Toolbar */
+/* -------------------- */
+.site-content-toolbar .md-icon-button:first-child{
+  margin-top: -10px;
+}
+
+
 /* --------------- */
 /* Comparison Page */
 /* --------------- */
@@ -118,6 +127,18 @@ md-sidenav.new-session {
   min-width: 400px;
 }
 
+
+/* -------------------- */
+/* Search Profiles Page */
+/* -------------------- */
+
+md-content.leftColumn {
+  min-width: 300px;
+}
+
+.leftColumn md-select md-select-label:first-child {
+  border-bottom: none;
+}
 
 /* Material CSS */
 .material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }

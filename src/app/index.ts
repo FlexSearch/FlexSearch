@@ -6,6 +6,7 @@
 /// <reference path="../app/views/sessions/comparison.ts" />
 /// <reference path="../app/services/flexClient.ts" />
 /// <reference path="../app/views/sessions/sessionsNew.ts" />
+/// <reference path="../app/views/searchProfiles/searchProfile.ts" />
 
 module flexportal {
   'use strict';
@@ -43,6 +44,7 @@ module flexportal {
     .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", "$mdSidenav", "$mdUtil", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
     .controller('SessionsNewController', ["$scope", "flexClient", "$mdToast", "$state", SessionsNewController])
+    .controller('SearchProfileController', ["$scope", "$state", "flexClient", "$mdSidenav", "$mdUtil", SearchProfileController])
     
     // Services
     .service('datePrinter', function() {
@@ -84,6 +86,8 @@ module flexportal {
       $urlRouterProvider.otherwise("/main");
 
       $stateProvider
+      
+        // Session URLs
         .state('main', {
           url: "/main",
           templateUrl: "app/partials/main.html",
@@ -121,6 +125,14 @@ module flexportal {
               controller: ComparisonController
             }
           }
+        })
+        
+        // Search Profile URLs
+        .state('searchProfile', {
+          url: "^/searchProfile",
+          parent: 'main',
+          controller: 'SearchProfileController',
+          templateUrl: "app/views/searchProfiles/searchProfile.html"
         });
 
     });
