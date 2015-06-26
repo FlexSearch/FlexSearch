@@ -31,7 +31,7 @@
 			</md-toolbar>
 		</md-content>
 		<md-content flex class="rightColumn" layout="column">
-			<md-whiteframe flex layout="column" layout-align="top center" layout-padding class="comparison-page md-whiteframe-z2">
+			<md-whiteframe flex="25" layout="column" layout-align="top center" layout-padding class="comparison-page md-whiteframe-z2">
 				<md-toolbar>
 					<div class="md-toolbar-tools">
 						<span flex/>
@@ -46,41 +46,45 @@
 					</md-input-container>
 				</md-content>
 			</md-whiteframe>
-			<md-whiteframe class="search-results md-whiteframe-z2" ng-show="Response != undefined">
-				<table class="ui celled table">
-					<thead>
-						<tr>
-							<th>No.</th>
-							<th ng-repeat="field in Response.FieldNames">{{field}}</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr ng-repeat="doc in DocumentsInPage">
-							<td>{{PageSize * (ActivePage - 1) + $index + 1}}</td>
-							<td ng-repeat="field in doc">{{field}}</td>
-						</tr>
-					</tbody>
-				</table>
-				<div class="ui basic center aligned segment">
-					<div class="ui pagination menu">
-						<a ng-click="getPage(1)" class="icon item back">
+			<md-content class="search-results md-whiteframe-z2" ng-show="Response != undefined" flex layout="column">
+				<md-content>
+					<table class="ui small compact celled table">
+						<thead>
+							<tr>
+								<th>No.</th>
+								<th ng-repeat="field in Response.FieldNames">{{field}}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="doc in DocumentsInPage">
+								<td>{{PageSize * (ActivePage - 1) + $index + 1}}</td>
+								<td ng-repeat="field in doc">{{field}}</td>
+							</tr>
+						</tbody>
+					</table>
+				</md-content>
+				<md-toolbar>
+					<div class="ui basic center aligned segment">
+						<div class="ui pagination menu">
+							<a ng-click="getPage(1)" class="icon item back">
 					        <i class="angle double left icon"></i>
 						</a>
-						<a class="item" ng-click="getPage(ActivePage - 1)">
+							<a class="item" ng-click="getPage(ActivePage - 1)">
 					        <i class="angle left icon"></i>
 					    </a>
-						<a class="item">
+							<a class="item">
 					        Page {{ActivePage}} of {{PageCount}}
 					    </a>
-						<a class="item" ng-click="getPage(ActivePage + 1)">
+							<a class="item" ng-click="getPage(ActivePage + 1)">
 					        <i class="angle right icon"></i>
 					    </a>
-						<a ng-click="getPage(PageCount)" class="icon item back">
+							<a ng-click="getPage(PageCount)" class="icon item back">
 					        <i class="angle double right icon"></i>
 						</a>
+						</div>
 					</div>
-				</div>
-			</md-whiteframe>
+				</md-toolbar>
+			</md-content>
 		</md-content>
 	</div>
 </form>
