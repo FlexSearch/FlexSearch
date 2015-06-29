@@ -179,6 +179,7 @@ type BuilderError =
             |> caseToMsg this
 
 type SearchMessage = 
+    | SearchError of ``exception`` : string
     | QueryNotFound of queryName : string
     | InvalidFieldName of fieldName : string
     | StoredFieldCannotBeSearched of fieldName : string
@@ -197,6 +198,7 @@ type SearchMessage =
         
         member this.OperationMessage() = 
             match this with
+            | SearchError(e) -> sprintf "Internal Search error \n%s" e
             | QueryNotFound(q) -> sprintf "Query not found: %s" q
             | InvalidFieldName(f) -> sprintf "Invalid field name: %s" f
             | StoredFieldCannotBeSearched(f) -> sprintf "Stored field cannot be searched: %s" f

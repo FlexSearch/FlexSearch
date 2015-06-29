@@ -24,9 +24,9 @@ open System.Collections.Generic
 open System.IO
 open System.Linq
 open System.Runtime.Caching
+open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
-open System.Threading
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
@@ -347,10 +347,15 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                             (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, queryTypes)
         }
     
+    let searchWrapper (writers, query, searchQuery) = 
+        try 
+            ok <| SearchDsl.search (writers, query, searchQuery)
+        with e -> fail <| SearchError(exceptionPrinter e)
+    
     let search (searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string> option) = 
         maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
-                return SearchDsl.search (writers, query, searchQuery) }
+                return! searchWrapper (writers, query, searchQuery) }
     interface ISearchService with
         
         member __.Search(searchQuery : SearchQuery.Dto, searchProfileString : string) = 
@@ -364,7 +369,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                 | _ -> let! query = SearchDsl.generateQuery 
                                         (writers.Settings.FieldsLookup, predicate, searchQuery, Some(searchData), 
                                          queryTypes)
-                       return SearchDsl.search (writers, query, searchQuery)
+                       return! searchWrapper (writers, query, searchQuery)
             }
         
         member __.Search(searchQuery : SearchQuery.Dto, inputFields : Dictionary<string, string>) = 

@@ -291,12 +291,14 @@ module SearchDsl =
             | 0 -> 10 + searchQuery.Skip
             | _ -> searchQuery.Count + searchQuery.Skip
         
-        indexWriter.ShardWriters |> Array.Parallel.iter (fun x -> 
-                                        // This is to enable proper sorting
-                                        let topFieldCollector = 
-                                            TopFieldCollector.Create(sort, count, null, true, true, true)
-                                        indexSearchers.[x.ShardNo].IndexSearcher.Search(query, topFieldCollector)
-                                        topDocsCollection.[x.ShardNo] <- topFieldCollector.TopDocs())
+        let searchShard(x : ShardWriter.T) =
+            // This is to enable proper sorting
+            let topFieldCollector = 
+                TopFieldCollector.Create(sort, count, null, true, true, true)
+            indexSearchers.[x.ShardNo].IndexSearcher.Search(query, topFieldCollector)
+            topDocsCollection.[x.ShardNo] <- topFieldCollector.TopDocs()
+            
+        indexWriter.ShardWriters |> Array.Parallel.iter searchShard
         let totalDocs = TopDocs.Merge(sort, count, topDocsCollection)
         let hits = totalDocs.ScoreDocs
         let recordsReturned = totalDocs.ScoreDocs.Count() - searchQuery.Skip
