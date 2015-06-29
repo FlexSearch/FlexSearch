@@ -1,32 +1,19 @@
 ﻿namespace FlexSearch.Core
 
 open FlexLucene.Analysis
-open FlexLucene.Analysis.Core
-open FlexLucene.Analysis.Miscellaneous
 open FlexLucene.Analysis.Standard
-open FlexLucene.Analysis.Util
-open FlexLucene.Codecs
 open FlexLucene.Codecs.Bloom
-open FlexLucene.Codecs.Idversion
-open FlexLucene.Codecs.Lucene42
-open FlexLucene.Codecs.Perfield
 open FlexLucene.Document
 open FlexLucene.Index
-open FlexLucene.Sandbox
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
-open FlexLucene.Store
 open FlexSearch.Core
 open FlexSearch.Core.DictionaryHelpers
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
-open System.Data
 open System.IO
 open System.Threading
-open System.Threading.Tasks
-open System.Threading.Tasks.Dataflow
-open java.io
 open java.util
 open System.Diagnostics
 open System.Threading.Tasks
@@ -383,9 +370,7 @@ type RealTimeSearcher(searchManger : SearcherManager) =
 
 module TransactionLog = 
     //open ProtoBuf
-    open MsgPack
     open MsgPack.Serialization
-    open System.Text
     
     type Operation = 
         | Create = 1
@@ -488,7 +473,7 @@ module ShardWriter =
         /// A hook for extending classes to execute operations after pending 
         /// added and deleted documents have been flushed to the Directory but 
         /// before the change is committed (new segments_N file written).
-        override this.doAfterFlush() = 
+        override __.doAfterFlush() = 
             /// State can be null when the index writer is opened for the
             /// very first time
             if not (isNull state) then state.IncrementFlushCount() |> ignore
@@ -587,7 +572,7 @@ module ShardWriter =
         try 
             sw.SearcherManager.Close()
             sw.IndexWriter.Close()
-        with e as AlreadyClosedException -> ()
+        with _ as AlreadyClosedException -> ()
     
     /// Adds a document to this index.
     let addDocument (document : Document) (sw : T) = sw.TrackingIndexWriter.AddDocument(document) |> ignore
@@ -924,7 +909,7 @@ module IndexWriter =
                 else 
                     try 
                         work indexWriter
-                    with e -> cts.Dispose()
+                    with _ -> cts.Dispose()
                 return! loop delay cts
             }
         loop delay indexWriter.Token
