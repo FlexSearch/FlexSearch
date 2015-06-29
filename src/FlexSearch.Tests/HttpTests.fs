@@ -199,7 +199,7 @@ type ``Index Other Services Tests``() =
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
         actual |> isSuccessful
-        (actual |> data).Status =? IndexState.Offline
+        (actual |> data).Status =? IndexStatus.Offline
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("put-indices-id-status-1", "")>]
@@ -208,7 +208,7 @@ type ``Index Other Services Tests``() =
         client.AddIndex(index).Result |> isCreated
         client.BringIndexOnline(index.IndexName).Result |> isSuccessful
         let actual = client.GetIndexStatus(index.IndexName).Result
-        (actual |> data).Status =? IndexState.Online
+        (actual |> data).Status =? IndexStatus.Online
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("put-indices-id-status-1", "")>]
@@ -216,10 +216,10 @@ type ``Index Other Services Tests``() =
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
         actual |> isSuccessful
-        (actual |> data).Status =? IndexState.Online
+        (actual |> data).Status =? IndexStatus.Online
         client.SetIndexOffline(index.IndexName).Result |> isSuccessful
         let actual = client.GetIndexStatus(index.IndexName).Result
-        (actual |> data).Status =? IndexState.Offline
+        (actual |> data).Status =? IndexStatus.Offline
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("get-indices-id-exists-1", "")>]

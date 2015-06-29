@@ -89,7 +89,7 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
 //        body.Value.IndexName <- request.ResId.Value
 //        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
 type IndexStatusResponse() = 
-    member val Status = Unchecked.defaultof<IndexState> with get, set
+    member val Status = Unchecked.defaultof<IndexStatus> with get, set
 
 /// Get index status
 [<Name("GET-/indices/:id/status")>]

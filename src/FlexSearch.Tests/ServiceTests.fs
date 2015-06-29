@@ -11,12 +11,12 @@ module IndexServiceTests =
         member __.``Newly created index should be online`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Online) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Online) @>
         
         member __.``Newly created index should be offline`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Offline) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
         
         member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
@@ -37,13 +37,13 @@ module IndexServiceTests =
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Online) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Online) @>
         
         member __.``Online index can be made offline`` (indexService : IIndexService, index : Index.Dto) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexState.Offline) @>
+            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
 
 module DocumentServiceTests = 
     type DocumentManagementTests() = 
