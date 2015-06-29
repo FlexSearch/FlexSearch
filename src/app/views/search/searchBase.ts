@@ -20,15 +20,12 @@ module flexportal {
     Indices: Index []
     IndexNumber: number
     ActiveIndex: Index
-    RecordsToRetrieve: number
     spQueryString: string
     atLeastOneFieldIsPopulated(): boolean
     submit(index: Index): void
     Response: Response
     DocumentsInPage: string[][]
-    showSettings(event: any): void
-    OrderBy: string
-    OrderByDirection: string
+    showSearchProfileDropDown: boolean
     
     // Pagination specific
     getPage(pageNumber: number): void
@@ -42,6 +39,10 @@ module flexportal {
     
     // Settings Bottom Sheet
     $settingsBottomSheet: any
+    OrderBy: string
+    OrderByDirection: string
+    showSettings(event: any): void
+    RecordsToRetrieve: number
   }
   
   export class SearchBaseController {

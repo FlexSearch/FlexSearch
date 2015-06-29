@@ -11,11 +11,14 @@ module flexportal {
       // ---- Important ---- //
       var parentScope = (<ISearchBase>$scope.$parent);
       
+      // Show the Search Profile dropdown
+      parentScope.showSearchProfileDropDown = true;
+      
       // Function that submits the Search Profile test to FlexSearch
       parentScope.submit = function(index: Index) {
         // Build the Search Query String
         var searchQueryString = index.Fields
-          .filter(f => f.Value != undefined)
+          .filter(f => f.Value != undefined && f.Value != "")
           .map(f => f.Name + ":'" + f.Value + "'")
           .join(",");
           
@@ -24,7 +27,9 @@ module flexportal {
             .filter(f => f.Show)
             .map(f => f.Name);
           
-         flexClient.submitSearchProfileTest(index.Name, searchQueryString, parentScope.spQueryString,
+         flexClient.submitSearchProfileTest(index.Name, 
+           searchQueryString || "_id matchall 'x'", 
+           parentScope.spQueryString,
            columns.length == 0 ? undefined : columns, parentScope.RecordsToRetrieve)
            .then(result => {
              var r = new Response();

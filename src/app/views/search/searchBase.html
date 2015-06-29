@@ -34,6 +34,9 @@
 					</div>
 				</md-toolbar>
 				<md-content flex>
+					<md-select placeholder="Choose existing Search Profile" ng-model="spQueryString" ng-show="showSearchProfileDropDown" flex>
+						<md-option ng-repeat="sp in Indices[IndexNumber].SearchProfiles" value="{{sp.QueryString}}">{{sp.Name}}</md-option>
+					</md-select>
 					<md-input-container flex>
 						<label>Query String</label>
 						<textarea ng-model="spQueryString" columns="1" required></textarea>

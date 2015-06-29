@@ -15,6 +15,9 @@ module flexportal {
       // on this screen
       parentScope.atLeastOneFieldIsPopulated = function() { return true; };
       
+      // Don't show the Search Profile dropdown
+      parentScope.showSearchProfileDropDown = false;
+      
       // Function that submits the Search Profile test to FlexSearch
       parentScope.submit = function(index: Index) {
          // Colate the columns to retrieve
