@@ -32,7 +32,6 @@ module flexportal {
     ActivePage: number
     PageCount: number
     PageSize: number
-    DupesCount: number
     
     // Progress Bar
     mainProgressBar: boolean
@@ -64,6 +63,9 @@ module flexportal {
       $scope.ActivePage = 1;
       $scope.PageSize = 15;
       $scope.getPage = function(pageNumber) {
+        // Clear up the returned documents if there are no results
+        if($scope.PageCount == 0) $scope.DocumentsInPage = [];
+        
         // Set the active page
         if (pageNumber < 1 || pageNumber > $scope.PageCount) return;
         $scope.ActivePage = pageNumber;
