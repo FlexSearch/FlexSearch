@@ -220,6 +220,7 @@ type IndexingMessage =
     | IndexIsAlreadyOffline of indexName : string
     | IndexInOpenState of indexName : string
     | IndexInInvalidState of indexName : string
+    | UnableToUpdateIndexStatus of indexName : string * oldStatus : string * newStatus : string
     | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>
     | IndexNotFound of indexName : string
     | DocumentIdAlreadyExists of indexName : string * id : string
@@ -235,6 +236,7 @@ type IndexingMessage =
             | IndexIsAlreadyOffline(i) -> sprintf "Index '%s' is already offline" i
             | IndexInOpenState(i) -> sprintf "Index '%s' is in an open state" i
             | IndexInInvalidState(i) -> sprintf "Index '%s' is in an invalid state" i
+            | UnableToUpdateIndexStatus(i, os, ns) -> sprintf "Unable to update the status of the index '%s' from '%s' to '%s'." i os ns
             | ErrorOpeningIndexWriter(ip, _, _) -> sprintf "Error opening index writer at path '%s'." ip
             | IndexNotFound(i) -> sprintf "Index '%s' was not found" i
             | DocumentIdAlreadyExists(idx, id) -> sprintf "Document ID '%s' already exists for index '%s'" id idx

@@ -45,7 +45,7 @@ type IIndexService =
     abstract IndexExists : indexName:string -> bool
     abstract IndexOnline : indexName:string -> bool
     abstract IsIndexOnline : indexName:string -> Choice<IndexWriter.T, IMessage>
-    abstract GetIndexState : indexName:string -> Choice<IndexState, IMessage>
+    abstract GetIndexState : indexName:string -> Choice<IndexStatus, IMessage>
     abstract OpenIndex : indexName:string -> Choice<unit, IMessage>
     abstract CloseIndex : indexName:string -> Choice<unit, IMessage>
     abstract Commit : indexName:string -> Choice<unit, IMessage>
@@ -232,176 +232,55 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                     return parseTextUsingAnalyzer(analyzer, "", input).ToArray() }
 
 [<Sealed>]
-type IndexService(threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
+type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
-    
-    let path = 
-        Constants.ConfFolder +/ "Indices"
-        |> Directory.CreateDirectory
-        |> fun x -> x.FullName
-    
-    /// State information related to all the indices present in the
-    /// system. An index can exist but be offline. In that case there
-    /// won't be any associated index writer
-    let state = conDict<Index.Dto * IndexWriter.T option>()
-    
-    /// Returns IndexNotFound error
-    let indexNotFound (indexName) = IndexNotFound <| indexName
-    
-    /// Check if the given index exists
-    let indexExists (indexName) = 
-        match state.TryGetValue(indexName) with
-        | true, _ -> ok()
-        | _ -> fail <| indexNotFound indexName
-    
-    /// Checks if a given index is online or not. If it is 
-    /// online then return the index writer
-    let indexOnline (indexName) = 
-        match state.TryGetValue(indexName) with
-        | true, (_, writerOption) -> 
-            match writerOption with
-            | Some(writer) -> 
-                match writer.State with
-                | IndexState.Online -> ok <| writer
-                | _ -> fail <| IndexShouldBeOnline indexName
-            | None -> fail <| IndexShouldBeOnline indexName
-        | _ -> fail <| indexNotFound indexName
-    
-    let indexState (indexName) = 
-        match state.TryGetValue(indexName) with
-        | true, (_, writerOption) -> 
-            match writerOption with
-            | Some(writer) -> ok <| (writer.State, Some(writer))
-            | None -> ok <| (IndexState.Offline, None)
-        | _ -> fail <| indexNotFound indexName
-    
-    /// Load a index
-    let loadIndex (index : Index.Dto) = 
-        maybe { 
-            state
-            |> tryUpdate (index.IndexName, (index, None))
-            |> ignore
-            if index.Online then 
-                let! setting = IndexWriter.createIndexSetting 
-                                   (index, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
-                let indexWriter = IndexWriter.create (setting)
-                state
-                |> tryUpdate (index.IndexName, (index, Some(indexWriter)))
-                |> ignore
-        }
-    
-    /// Load all index from the store
-    let loadAllIndex() = 
-        Directory.EnumerateFiles(path)
-        |> Seq.map (fun x -> 
-               match threadSafeWriter.ReadFile<Index.Dto>(x) with
-               | Choice1Of2(dto) -> 
-                   state
-                   |> tryUpdate (dto.IndexName, (dto, None))
-                   |> ignore
-                   Some(dto)
-               | Choice2Of2(error) -> 
-                   Logger.Log(error)
-                   None)
-        |> Seq.filter (fun x -> x.IsSome)
-        |> Seq.iter (fun i -> 
-               ThreadPool.QueueUserWorkItem
-                   (fun _ -> 
-                   try 
-                       loadIndex i.Value
-                       |> logErrorChoice
-                       |> ignore
-                   with e -> 
-                       Logger.Log
-                           (sprintf "Index Loading Error. Index Name: %s" i.Value.IndexName, e, MessageKeyword.Node, 
-                            MessageLevel.Error))
-               |> ignore)
+    let im = 
+        IndexManager.create 
+            (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
     
     do 
-        if not testMode then loadAllIndex()
+        if not testMode then im |> IndexManager.loadAllIndex
     
     interface IIndexService with
-        member __.IsIndexOnline(indexName : string) = indexOnline (indexName)
-        
-        member __.AddIndex(index : Index.Dto) = 
-            maybe { 
-                do! index.Validate()
-                match indexExists index.IndexName with
-                | Choice1Of2(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
-                | _ -> 
-                    do! threadSafeWriter.WriteFile(path +/ index.IndexName, index)
-                    do! loadIndex <| index
-                    return CreateResponse(index.IndexName)
-            }
-        
-        member __.CloseIndex(indexName : string) = 
-            maybe { 
-                let! (indexState, indexWriter) = indexState indexName
-                match indexState with
-                | IndexState.Closing | IndexState.Offline -> return! fail <| IndexIsAlreadyOffline(indexName)
-                | _ -> 
-                    let item = fst state.[indexName]
-                    item.Online <- false
-                    do! threadSafeWriter.WriteFile(path +/ indexName, item)
-                    indexWriter.Value |> IndexWriter.close
-                    state
-                    |> tryUpdate (indexName, (item, None))
-                    |> ignore
-            }
-        
-        member __.OpenIndex(indexName : string) = 
-            maybe { 
-                let! (indexState, _) = indexState indexName
-                match indexState with
-                | IndexState.Opening | IndexState.Online -> return! fail <| IndexIsAlreadyOnline(indexName)
-                | _ -> 
-                    let item = fst state.[indexName]
-                    item.Online <- true
-                    do! threadSafeWriter.WriteFile(path +/ indexName, item)
-                    do! loadIndex item
-            }
-        
-        member __.Commit(indexName : string) = maybe { let! writer = indexOnline indexName
+        member __.IsIndexOnline(indexName : string) = im |> IndexManager.indexOnline (indexName)
+        member __.AddIndex(index : Index.Dto) = im |> IndexManager.addIndex (index)
+        member __.CloseIndex(indexName : string) = im |> IndexManager.closeIndex (indexName)
+        member __.OpenIndex(indexName : string) = im |> IndexManager.openIndex (indexName)
+        member __.Commit(indexName : string) = maybe { let! writer = im |> IndexManager.indexOnline indexName
                                                        writer |> IndexWriter.commit false }
-        member __.ForceCommit(indexName : string) = maybe { let! writer = indexOnline indexName
+        member __.ForceCommit(indexName : string) = maybe { let! writer = im |> IndexManager.indexOnline indexName
                                                             writer |> IndexWriter.commit true }
-        member __.Refresh(indexName : string) = maybe { let! writer = indexOnline indexName
+        member __.Refresh(indexName : string) = maybe { let! writer = im |> IndexManager.indexOnline indexName
                                                         writer |> IndexWriter.refresh }
         member __.GetRealtimeSearcher(indexName : string, shardNo : int) = 
-            maybe { let! writer = indexOnline indexName
+            maybe { let! writer = im |> IndexManager.indexOnline indexName
                     return writer |> IndexWriter.getRealTimeSearcher shardNo }
-        member __.GetRealtimeSearchers(indexName : string) = maybe { let! writer = indexOnline indexName
+        member __.GetRealtimeSearchers(indexName : string) = maybe { let! writer = im 
+                                                                                   |> IndexManager.indexOnline indexName
                                                                      return writer |> IndexWriter.getRealTimeSearchers }
         
         member __.GetIndex(indexName : string) = 
-            match state.TryGetValue(indexName) with
-            | true, (index, _) -> ok <| index
+            match im.Store.TryGetValue(indexName) with
+            | true, state -> ok <| state.IndexDto
             | _ -> fail <| IndexNotFound indexName
         
         member __.IndexExists(indexName : string) = 
-            match state.TryGetValue(indexName) with
+            match im.Store.TryGetValue(indexName) with
             | true, _ -> true
             | _ -> false
         
-        member __.IndexOnline(indexName : string) = indexOnline indexName |> resultToBool
+        member __.IndexOnline(indexName : string) = 
+            im
+            |> IndexManager.indexOnline indexName
+            |> resultToBool
         
         member __.GetIndexState(indexName : string) = 
-            match indexState indexName with
-            | Choice1Of2(state, _) -> ok <| state
+            match im |> IndexManager.indexState indexName with
+            | Choice1Of2(state) -> ok <| state.IndexStatus
             | Choice2Of2(error) -> fail <| error
         
-        member __.DeleteIndex(indexName : string) = 
-            maybe { 
-                let! (_, writerOption) = indexState indexName
-                match writerOption with
-                | Some(writer) -> writer |> IndexWriter.close
-                | None -> ()
-                state.TryRemove(indexName) |> ignore
-                do! threadSafeWriter.DeleteFile(path +/ indexName)
-                delDir (DataFolder +/ indexName)
-            }
-        
-        member __.GetAllIndex() = state.Values.ToArray() |> Array.map fst
+        member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
+        member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
         member __.UpdateIndexFields(_ : Field.Dto []) = failwith "Not implemented yet"
 
 [<Sealed>]

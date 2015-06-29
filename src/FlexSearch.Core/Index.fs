@@ -17,6 +17,7 @@ open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexLucene.Store
 open FlexSearch.Core
+open FlexSearch.Core.DictionaryHelpers
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -28,6 +29,45 @@ open System.Threading.Tasks.Dataflow
 open java.io
 open java.util
 open System.Diagnostics
+open System.Threading.Tasks
+
+/// Interface to be used by the services which require pre-notification
+/// of server shutdown so that they can start performing there interal 
+/// cleanup
+type IRequireNotificationForShutdown = 
+    abstract shutdown : unit -> Task
+
+/// Signifies Shard status
+type ShardStatus = 
+    | Opening = 1
+    | Recovering = 2
+    | Online = 3
+    | Offline = 4
+    | Closing = 5
+    | Faulted = 6
+
+/// Represents the current state of the index.
+type IndexStatus = 
+    | Opening = 1
+    | Recovering = 2
+    | Online = 3
+    | OnlineFollower = 4
+    | Offline = 5
+    | Closing = 6
+    | Faulted = 7
+
+/// The types of events which can be raised on the event aggregrator
+type EventType = 
+    | ShardStatusChange of indexName : string * shardNo : int * shardStatus : ShardStatus
+    | IndexStatusChange of indexName : string * indexStatus : IndexStatus
+    | RegisterForShutdownCallback of service : IRequireNotificationForShutdown
+
+/// A multi-purpose event aggregrator pipeline for raising and subscribing to server
+/// event in a decoupled manner
+type EventAggregrator() = 
+    let event = new Event<EventType>()
+    member __.Event() = event.Publish
+    member __.Push(e : EventType) = event.Trigger(e)
 
 type AtomicLong(value : int64) = 
     let refCell = ref value
@@ -341,18 +381,6 @@ type RealTimeSearcher(searchManger : SearcherManager) =
     interface IDisposable with
         member __.Dispose() : unit = ()
 
-/// <summary>
-/// Represents the current state of the index.
-/// </summary>
-type IndexState = 
-    | Opening = 1
-    | Recovering = 2
-    | Online = 3
-    | OnlineFollower = 4
-    | Offline = 5
-    | Closing = 6
-    | Faulted = 7
-
 module TransactionLog = 
     //open ProtoBuf
     open MsgPack
@@ -447,15 +475,6 @@ module TransactionLog =
                 if not (isNull fileStream) then fileStream.Close()
 
 module ShardWriter = 
-    /// Signifies Shard status
-    type Status = 
-        | Opening
-        | Recovering
-        | Online
-        | Offline
-        | Closing
-        | Faulted
-    
     /// Returns the user commit data to be stored with the index
     let getCommitData (gen : int64) (modifyIndex : int64) = 
         hashMap()
@@ -484,7 +503,7 @@ module ShardWriter =
           TxWriter : TransactionLog.TxWriter
           CommitDuration : int
           /// Shows the status of the current Shard
-          mutable Status : Status
+          mutable Status : ShardStatus
           /// Represents the generation of commit
           Generation : AtomicLong
           /// Represents the last commit time. This is used by the
@@ -632,7 +651,7 @@ module ShardWriter =
               CommitDuration = settings.CommitTimeSeconds
               LastCommitTime = DateTime.Now
               OutstandingFlushes = AtomicLong.Create()
-              Status = Opening
+              Status = ShardStatus.Opening
               ModifyIndex = AtomicLong.Create(modifyIndex)
               TxWriter = new TransactionLog.TxWriter(logPath, generation)
               Settings = settings
@@ -791,7 +810,7 @@ module IndexWriter =
         { Template : ThreadLocal<DocumentTemplate.T>
           Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
-          State : IndexState
+          State : IndexStatus
           Settings : IndexSetting.T
           Token : CancellationTokenSource }
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
@@ -913,7 +932,7 @@ module IndexWriter =
     /// Replay all the uncommitted transactions from the logs
     let replayTransactionLogs (indexWriter : T) = 
         let replayShardTransaction (shardWriter : ShardWriter.T) = 
-            shardWriter.Status <- ShardWriter.Status.Recovering
+            shardWriter.Status <- ShardStatus.Recovering
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
             let logEntries = 
@@ -932,7 +951,7 @@ module IndexWriter =
             // in subsequent searches. We can also commit here but it will
             // introduce blank commits in case there are no logs to replay.
             shardWriter |> ShardWriter.refresh
-            shardWriter.Status <- ShardWriter.Status.Online
+            shardWriter.Status <- ShardStatus.Online
         indexWriter.ShardWriters |> Array.Parallel.iter replayShardTransaction
     
     /// Create a new index instance
@@ -953,7 +972,7 @@ module IndexWriter =
             { Template = template
               ShardWriters = shardWriters
               Caches = caches
-              State = IndexState.Online
+              State = IndexStatus.Online
               Settings = settings
               Token = new System.Threading.CancellationTokenSource() }
         indexWriter |> replayTransactionLogs
@@ -966,3 +985,182 @@ module IndexWriter =
         if settings.IndexConfiguration.AutoRefresh then 
             Async.Start(indexWriter |> scheduleIndexJob settings.IndexConfiguration.RefreshTimeMilliseconds refresh)
         indexWriter
+
+/// Index Manager module is responsible for the life cycle of an index on the node. Life cycle management will include 
+/// state mangement also.
+/// Note: The logical hierarchy of objects will be
+///     IndexManager : Manage life cycle of multiple indices
+///             -> has Many -> 
+///     IndexWriter : Manage a index and all its shards
+///             -> has Many -> 
+///     ShardWriter : Responsible for managing single shard of an index
+module IndexManager = 
+    let path = 
+        Constants.ConfFolder +/ "Indices"
+        |> Directory.CreateDirectory
+        |> fun x -> x.FullName
+    
+    /// Represent the internal representation of the index state
+    type IndexState = 
+        { IndexDto : Index.Dto
+          IndexStatus : IndexStatus
+          IndexWriter : IndexWriter.T option }
+    
+    type T = 
+        { Store : ConcurrentDictionary<string, IndexState>
+          EventAggregrator : EventAggregrator
+          ThreadSafeFileWriter : ThreadSafeFileWriter
+          GetAnalyzer : string -> Choice<Analyzer, IMessage>
+          GetComputedScript : string -> Choice<ComputedDelegate * string [], IMessage> }
+    
+    /// Returns IndexNotFound error
+    let indexNotFound (indexName) = IndexNotFound <| indexName
+    
+    let createIndexState (dto, status) = 
+        { IndexDto = dto
+          IndexStatus = status
+          IndexWriter = None }
+    
+    let createIndexStateWithWriter (dto, status, writer) = 
+        { IndexDto = dto
+          IndexStatus = status
+          IndexWriter = Some(writer) }
+    
+    /// Updates an index status to the given value
+    let updateState (newState : IndexState) (t : T) = 
+        match t.Store.TryGetValue(newState.IndexDto.IndexName) with
+        | true, state -> 
+            match t.Store.TryUpdate(state.IndexDto.IndexName, newState, state) with
+            | true -> ok()
+            | false -> 
+                fail 
+                <| UnableToUpdateIndexStatus
+                       (state.IndexDto.IndexName, state.IndexStatus.ToString(), newState.IndexStatus.ToString())
+        | _ -> 
+            match t.Store.TryAdd(newState.IndexDto.IndexName, newState) with
+            | true -> ok()
+            | false -> 
+                fail <| UnableToUpdateIndexStatus(newState.IndexDto.IndexName, "None", newState.IndexDto.ToString())
+    
+    /// Check if the given index exists
+    let indexExists (indexName) (t : T) = 
+        match t.Store.TryGetValue(indexName) with
+        | true, _ -> ok()
+        | _ -> fail <| indexNotFound indexName
+    
+    /// Checks if a given index is online or not. If it is 
+    /// online then return the index writer
+    let indexOnline (indexName) (t : T) = 
+        match t.Store.TryGetValue(indexName) with
+        | true, state -> 
+            match state.IndexStatus with
+            | IndexStatus.Online when state.IndexWriter.IsSome -> ok <| state.IndexWriter.Value
+            | IndexStatus.Online -> failwithf "Internal Error: Index is in invalid state."
+            | _ -> fail <| IndexShouldBeOnline indexName
+        | _ -> fail <| indexNotFound indexName
+    
+    let indexState (indexName) (t : T) = 
+        match t.Store.TryGetValue(indexName) with
+        | true, state -> ok <| state
+        | _ -> fail <| indexNotFound indexName
+    
+    /// Load a index from the given index dto
+    let loadIndex (dto : Index.Dto) (t : T) = 
+        maybe { 
+            do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
+            if dto.Online then 
+                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
+                let indexWriter = IndexWriter.create (setting)
+                do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
+            else
+                do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
+        }
+    
+    /// Loads all indices from the given path
+    let loadAllIndex (t : T) = 
+        let loadFromFile (path) = 
+            match t.ThreadSafeFileWriter.ReadFile<Index.Dto>(path) with
+            | Choice1Of2(dto) -> 
+                t
+                |> updateState (createIndexState (dto, IndexStatus.Opening))
+                |> ignore
+                Some(dto)
+            | Choice2Of2(error) -> 
+                Logger.Log(error)
+                None
+        
+        let queueOnThreadPool (dto : Index.Dto) = 
+            ThreadPool.QueueUserWorkItem
+                (fun _ -> 
+                try 
+                    t
+                    |> loadIndex dto
+                    |> logErrorChoice
+                    |> ignore
+                with e -> 
+                    Logger.Log
+                        (sprintf "Index Loading Error. Index Name: %s" dto.IndexName, e, MessageKeyword.Node, 
+                         MessageLevel.Error))
+            |> ignore
+        
+        loopDir (path)
+        |> Seq.map loadFromFile
+        |> Seq.choose id
+        |> Seq.iter queueOnThreadPool
+    
+    /// Add a new index to the node
+    let addIndex (index : Index.Dto) (t : T) = 
+        maybe { 
+            do! index.Validate()
+            match t |> indexExists index.IndexName with
+            | Choice1Of2(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
+            | _ -> 
+                do! t.ThreadSafeFileWriter.WriteFile(path +/ index.IndexName, index)
+                do! t |> loadIndex index
+                return CreateResponse(index.IndexName)
+        }
+    
+    /// Close an existing index and set the status to offline
+    let closeIndex (indexName : string) (t : T) = 
+        maybe { 
+            let! indexState = t |> indexState indexName
+            match indexState.IndexStatus with
+            | IndexStatus.Closing | IndexStatus.Offline -> return! fail <| IndexIsAlreadyOffline(indexName)
+            | _ -> 
+                indexState.IndexDto.Online <- false
+                do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto)
+                indexState.IndexWriter.Value |> IndexWriter.close
+                do! t |> updateState (createIndexState (indexState.IndexDto, IndexStatus.Offline))
+        }
+    
+    /// open an existing index and set the status to online
+    let openIndex (indexName : string) (t : T) = 
+        maybe { 
+            let! indexState = t |> indexState indexName
+            match indexState.IndexStatus with
+            | IndexStatus.Opening | IndexStatus.Online -> return! fail <| IndexIsAlreadyOnline(indexName)
+            | _ -> 
+                indexState.IndexDto.Online <- true
+                do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto)
+                do! t |> loadIndex indexState.IndexDto
+        }
+    
+    /// Deletes an existing index
+    let deleteIndex (indexName : string) (t : T) = 
+        maybe { 
+            let! indexState = t |> indexState indexName
+            match indexState.IndexWriter with
+            | Some(writer) -> writer |> IndexWriter.close
+            | None -> ()
+            t.Store.TryRemove(indexName) |> ignore
+            do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName)
+            delDir (DataFolder +/ indexName)
+        }
+    
+    /// Create a new 
+    let create(eventAggregrator, threadSafeFileWriter, getAnalyzer, getComputedScript) =
+        { Store = conDict<IndexState>()
+          EventAggregrator = eventAggregrator
+          ThreadSafeFileWriter = threadSafeFileWriter
+          GetAnalyzer= getAnalyzer
+          GetComputedScript = getComputedScript }
