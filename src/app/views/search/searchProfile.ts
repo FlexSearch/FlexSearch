@@ -52,7 +52,7 @@ module flexportal {
       // Function to show settings for search request
       parentScope.showSettings = function($event){
          parentScope.$settingsBottomSheet.show({
-            templateUrl: 'app/views/searchProfiles/searchProfileSettings.html',
+            templateUrl: 'app/views/search/searchProfileSettings.html',
             controller: 'SearchProfileSettingsController',
             targetEvent: $event,
             parent: $('.leftColumn'),

@@ -7,9 +7,11 @@
 /// <reference path="../app/views/sessions/comparison.ts" />
 /// <reference path="../app/services/flexClient.ts" />
 /// <reference path="../app/views/sessions/sessionsNew.ts" />
-/// <reference path="../app/views/searchProfiles/searchProfile.ts" />
-/// <reference path="../app/views/searchProfiles/searchProfileSettings.ts" />
-/// <reference path="../app/views/searchProfiles/searchBase.ts" />
+/// <reference path="../app/views/search/searchProfile.ts" />
+/// <reference path="../app/views/search/searchProfileSettings.ts" />
+/// <reference path="../app/views/search/searchBase.ts" />
+/// <reference path="../app/views/search/search.ts" />
+/// <reference path="../app/views/search/searchSettings.ts" />
 
 module flexportal {
   'use strict';
@@ -42,9 +44,11 @@ module flexportal {
     .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", "$mdSidenav", "$mdUtil", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
     .controller('SessionsNewController', ["$scope", "flexClient", "$mdToast", "$state", SessionsNewController])
-    .controller('SearchProfileController', SearchProfileController)
-    .controller('SearchProfileSettingsController', ["$scope", "$mdBottomSheet", SearchProfileSettingsController])
     .controller('SearchBaseController', ["$scope", "flexClient", "$mdBottomSheet", SearchBaseController])
+    .controller('SearchProfileSettingsController', ["$scope", "$mdBottomSheet", SearchProfileSettingsController])
+    .controller('SearchProfileController', SearchProfileController)
+    .controller('SearchController', SearchController)
+    .controller('SearchSettingsController', ["$scope", "$mdBottomSheet", SearchSettingsController])
     .controller('ErrorController', ErrorController)
     
     // Services
@@ -134,14 +138,20 @@ module flexportal {
           url: "^/searchBase",
           parent: 'main',
           controller: 'SearchBaseController',
-          templateUrl: "app/views/searchProfiles/searchBase.html"
+          templateUrl: "app/views/search/searchBase.html"
         })
         .state('searchProfile', {
           url: "^/searchProfile",
           parent: 'searchBase',
           controller: 'SearchProfileController',
-          templateUrl: "app/views/searchProfiles/searchProfile.html"
-        });
+          templateUrl: "app/views/search/searchProfile.html"
+        })
+        .state('search', {
+          url: "^/search",
+          parent: 'searchBase',
+          controller: 'SearchController',
+          templateUrl: "app/views/search/search.html"
+        })
 
     });
 }

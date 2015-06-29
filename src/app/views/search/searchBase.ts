@@ -27,6 +27,8 @@ module flexportal {
     Response: Response
     DocumentsInPage: string[][]
     showSettings(event: any): void
+    OrderBy: string
+    OrderByDirection: string
     
     // Pagination specific
     getPage(pageNumber: number): void

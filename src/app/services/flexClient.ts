@@ -157,8 +157,20 @@ module flexportal {
 				},
 				SearchProfile: searchProfileQueryString
 			})
-			.then(FlexClient.getData,
-				this.handleError);
+			.then(FlexClient.getData, this.handleError);
+		}
+		
+		public submitSearch(indexName, searchQueryString, columnsToRetrieve?: string[], count?, skip?,
+			orderBy?, orderByDirection?) {
+			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/search", { params: {
+				q: searchQueryString,
+				c: columnsToRetrieve || ["*"],
+				count: count,
+				skip: skip,
+				orderBy: orderBy,
+				orderByDirection: orderByDirection
+			}})
+			.then(FlexClient.getSearchResults, this.handleError);
 		}
 	}
 }
