@@ -6,7 +6,7 @@ module flexportal {
   
   export class SearchProfileSettingsController {
     /* @ngInject */
-    constructor($scope: ISearchProfile, $mdBottomSheet: any) {
+    constructor($scope: ISearchBase, $mdBottomSheet: any) {
       
     }
   }

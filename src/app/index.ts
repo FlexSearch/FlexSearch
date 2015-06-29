@@ -9,6 +9,7 @@
 /// <reference path="../app/views/sessions/sessionsNew.ts" />
 /// <reference path="../app/views/searchProfiles/searchProfile.ts" />
 /// <reference path="../app/views/searchProfiles/searchProfileSettings.ts" />
+/// <reference path="../app/views/searchProfiles/searchBase.ts" />
 
 module flexportal {
   'use strict';
@@ -41,8 +42,9 @@ module flexportal {
     .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", "$mdSidenav", "$mdUtil", SessionsController])
     .controller('ComparisonController', ["$scope", "$stateParams", "$mdToast", "flexClient", ComparisonController])
     .controller('SessionsNewController', ["$scope", "flexClient", "$mdToast", "$state", SessionsNewController])
-    .controller('SearchProfileController', ["$scope", "$state", "flexClient", "$mdSidenav", "$mdUtil", "$mdBottomSheet", SearchProfileController])
+    .controller('SearchProfileController', SearchProfileController)
     .controller('SearchProfileSettingsController', ["$scope", "$mdBottomSheet", SearchProfileSettingsController])
+    .controller('SearchBaseController', ["$scope", "flexClient", "$mdBottomSheet", SearchBaseController])
     .controller('ErrorController', ErrorController)
     
     // Services
@@ -127,9 +129,16 @@ module flexportal {
         })
         
         // Search Profile URLs
+        .state('searchBase', {
+          abstract: true,
+          url: "^/searchBase",
+          parent: 'main',
+          controller: 'SearchBaseController',
+          templateUrl: "app/views/searchProfiles/searchBase.html"
+        })
         .state('searchProfile', {
           url: "^/searchProfile",
-          parent: 'main',
+          parent: 'searchBase',
           controller: 'SearchProfileController',
           templateUrl: "app/views/searchProfiles/searchProfile.html"
         });
