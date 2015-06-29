@@ -9,13 +9,13 @@
 					</md-select>
 				</div>
 			</md-toolbar>
-			<md-content layout="column" flex>
+			<md-content layout="column" flex ng-show="IndexNumber != undefined">
 				<md-content class="fieldValues" flex="70" ui-view>
 					<!-- Here is where you would insert the list of fields of an index
 						and any controls associated with them -->
 				</md-content>
 			</md-content>
-			<md-toolbar>
+			<md-toolbar ng-show="IndexNumber != undefined">
 				<div class="md-toolbar-tools md-toolbar-tools-bottom">
 					<span flex/>
 					<md-button ng-click="showSettings($event)" class="md-icon-button">
@@ -24,7 +24,7 @@
 				</div>
 			</md-toolbar>
 		</md-content>
-		<md-content flex class="rightColumn" layout="column">
+		<md-content flex class="rightColumn" layout="column" ng-show="IndexNumber != undefined">
 			<md-whiteframe flex="25" layout="column" layout-align="top center" layout-padding class="comparison-page md-whiteframe-z2">
 				<md-toolbar>
 					<div class="md-toolbar-tools">
