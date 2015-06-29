@@ -1086,7 +1086,7 @@ module IndexManager =
                          MessageLevel.Error))
             |> ignore
         
-        loopDir (path)
+        loopFiles (path)
         |> Seq.map loadFromFile
         |> Seq.choose id
         |> Seq.iter queueOnThreadPool
