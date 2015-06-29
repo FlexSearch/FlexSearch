@@ -795,7 +795,6 @@ module IndexWriter =
         { Template : ThreadLocal<DocumentTemplate.T>
           Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
-          State : IndexStatus
           Settings : IndexSetting.T
           Token : CancellationTokenSource }
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
@@ -957,7 +956,6 @@ module IndexWriter =
             { Template = template
               ShardWriters = shardWriters
               Caches = caches
-              State = IndexStatus.Online
               Settings = settings
               Token = new System.Threading.CancellationTokenSource() }
         indexWriter |> replayTransactionLogs
