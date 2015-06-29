@@ -39,6 +39,11 @@ module flexportal {
         $mdSidenav('right').close();
       }; 
       
+      // Helper function for navigating to a different section
+      $scope.goToSession = function(sessionId) {
+        $state.go('session', {sessionId: sessionId});
+      };
+      
       // Function for monitoring the sidenav close
       $scope.$watch(
         function () { return $mdSidenav('right').isOpen(); },
@@ -56,7 +61,7 @@ module flexportal {
         progress.show();
         
         // Set the active page
-        if (pageNumber < 1 || pageNumber > $scope.PageCount) return;
+        if (pageNumber < 1 || (pageNumber > $scope.PageCount && $scope.PageCount > 0)) return;
         $scope.ActivePage = pageNumber;
         
         // Get the sessions
@@ -65,10 +70,6 @@ module flexportal {
           ($scope.ActivePage - 1) * $scope.PageSize,
           "timestamp", "desc" )
         .then(results => {
-          $scope.goToSession = function(sessionId) {
-            $state.go('session', {sessionId: sessionId});
-          };
-  
           $scope.Sessions = results.Documents
             .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
             .map(s => {
