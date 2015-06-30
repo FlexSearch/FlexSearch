@@ -367,17 +367,18 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         (builder.ToString(), aggrBuilder.ToString())
     
     let getFileDataSource (request : DuplicateDetectionReportRequest) = 
-        use reader = new TextFieldParser(request.SourceFileName)
+        let reader = new TextFieldParser(request.SourceFileName)
         reader.TextFieldType <- FieldType.Delimited
         reader.SetDelimiters([| "," |])
         reader.TrimWhiteSpace <- true
         let headers = reader.ReadFields()
-        
+
         let data = 
             seq { 
                 while not reader.EndOfData do
                     yield reader.ReadFields()
             }
+        
         (headers, data)
     
     let getIndexDataSource (request : DuplicateDetectionReportRequest) = 
