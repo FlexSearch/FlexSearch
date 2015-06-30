@@ -176,6 +176,11 @@ md-icon span.large, md-icon.large {
   width: 36px;
 }
 
+/* Go back to original Material font */
+button, select, html, textarea, body, input, h1, h2, h3, h4, h5  {
+  font-family: RobotoDraft, Roboto, 'Helvetica Neue', sans-serif; }
+
+
 /* ----------- */
 /* Error sheet */
 /* ----------- */
