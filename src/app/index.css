@@ -45,6 +45,7 @@ md-content.duplicate-list{
 
 md-content.main-content {
   background: transparent;
+  padding: 20px 30px 10px 30px;
 }
 
 .site-content-toolbar .md-icon-button:first-child{
@@ -72,7 +73,7 @@ md-content.main-content {
 /* --------------- */
 
 md-whiteframe.comparison-page {
-  margin: 30px;
+  margin: 0px 0px 30px 30px;
   padding: 0px;
 }
 
@@ -136,16 +137,11 @@ md-sidenav.new-session {
 
 md-content.leftColumn {
   min-width: 300px;
-  margin: 30px 0px 10px 20px;
 }
 
 .leftColumn md-select md-select-label:first-child {
   border-bottom: none;
 }
-
-/*.leftColumn md-content:first-child {
-  overflow-y: scroll;
-}*/
 
 .rightColumn {
   background: transparent;
@@ -156,7 +152,7 @@ md-content.leftColumn {
 }
 
 .search-results {
-  margin: 0px 30px 10px 30px;
+  margin: 0px 0px 0px 30px;
 }
 
 /* Material CSS */
@@ -174,6 +170,10 @@ md-icon span.large, md-icon.large {
   font-size: 36px;
   height: 36px;
   width: 36px;
+}
+
+md-icon.transparent {
+  opacity: 0.5;
 }
 
 /* Go back to original Material font */
@@ -194,3 +194,48 @@ md-bottom-sheet.error md-content {
   padding: 20px;
 }
 
+
+/* ---------- */
+/* Dashboards */
+/* ---------- */
+
+.cluster-container md-whiteframe {
+  margin: 7px;  
+  background-color: white;
+}
+
+.opacity-60 {
+  opacity: 0.6;
+}
+
+.font-weight-100 {
+  font-weight: 100;
+}
+
+md-whiteframe.stat p {
+  margin: 0px;
+}
+
+md-whiteframe md-content canvas {
+  height: 200px;
+}
+
+md-toolbar.clickable:hover {
+  cursor: pointer;
+}
+
+.cluster-container .leftColumn {
+  min-width: 300px;
+  padding-right: 15px;
+}
+
+.cluster-container .rightColumn md-whiteframe md-toolbar {
+  padding: 15px 10px;
+}
+
+canvas {
+width: auto !important;
+max-height: 250px;
+height: 100% !important;
+
+}

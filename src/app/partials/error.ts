@@ -7,7 +7,7 @@ module flexportal {
     var message = "An error occured";
     var errorCode, errorMessage, errorProperties;
     
-    if (e instanceof String)
+    if (typeof e == "string")
       message = e;
     else if (e.data != undefined && e.data.Error != undefined && e.data.Error.ErrorCode != undefined) {
       errorCode = e.data.Error.ErrorCode;

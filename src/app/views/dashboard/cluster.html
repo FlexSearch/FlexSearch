@@ -1,0 +1,90 @@
+<div layout-gt-md="row" layout-md="column" layout-sm="column" class="cluster-container">
+	<div layout="column" class="leftColumn" flex="35">
+		<md-whiteframe class="md-whiteframe-z1">
+			<md-toolbar>
+				<div class="md-toolbar-tools">
+					<h2>List of Indices</h2>
+				</div>
+			</md-toolbar>
+			<md-content>
+				<md-list>
+					<md-list-item class="md-2-line" ng-repeat="index in Indices" ng-click="bla()">
+						<md-icon class="large transparent">blur_on</md-icon>
+						<div class="md-list-item-text">
+							<h3>{{$index+1}}. {{ index.IndexName }}</h3>
+							<p>{{ index.Online ? "Online" : "Offline" }}</p>
+						</div>
+						<md-divider ng-hide="$last"></md-divider>
+					</md-list-item>
+				</md-list>
+			</md-content>
+		</md-whiteframe>
+	</div>
+	<div layout="column" flex layout-align="space-between center" class="rightColumn">
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+			<md-toolbar layout="row" layout-align="space-between center" layout-padding>
+				<div>
+					<md-icon class="md-light large transparent">network_wifi</md-icon>
+				</div>
+				<div layout="column" layout-align="center end">
+					<p class="md-display-1 font-weight-100">localhost:9800</p>
+					<p class="md-body-2 opacity-60">FlexSearch URL</p>
+				</div>
+			</md-toolbar>
+		</md-whiteframe>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+			<md-toolbar layout="row" layout-align="space-between center" layout-padding>
+				<div>
+					<md-icon class="md-light large transparent">computer</md-icon>
+				</div>
+				<div layout="column" layout-align="center end">
+					<p class="md-display-1 font-weight-100">1 Server</p>
+					<p class="md-body-2 opacity-60">Server Count</p>
+				</div>
+			</md-toolbar>
+		</md-whiteframe>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+			<md-toolbar layout="row" layout-align="space-between center" layout-padding class="clickable" ng-click="$showIndicesDetails = !$showIndicesDetails; rerender('indices', $showIndicesDetails);">
+				<div>
+					<md-icon class="md-light large transparent">storage</md-icon>
+				</div>
+				<div layout="column" layout-align="center end">
+					<p class="md-display-1 font-weight-100">6 Indices</p>
+					<p class="md-body-2 opacity-60">Index Count</p>
+				</div>
+			</md-toolbar>
+			<md-content ng-show="$showIndicesDetails" layout-padding layout-align="center center">
+				<canvas id="indices" class="chart chart-doughnut" data="ChartsData['indices'].Data" labels="ChartsData['indices'].Labels"
+				legend="true"></canvas>
+			</md-content>
+		</md-whiteframe>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+			<md-toolbar layout="row" layout-align="space-between center" layout-padding class="clickable" ng-click="$showMemoryDetails = !$showMemoryDetails; rerender('memory', $showMemoryDetails);">
+				<div>
+					<md-icon class="md-light large transparent">memory</md-icon>
+				</div>
+				<div layout="column" layout-align="center end">
+					<p class="md-display-1 font-weight-100">0.2Gb</p>
+					<p class="md-body-2 opacity-60">Memory Usage</p>
+				</div>
+			</md-toolbar>
+			<md-content ng-show="$showMemoryDetails" layout-padding layout-align="center center">
+				<canvas id="memory" class="chart chart-pie" data="ChartsData['memory'].Data" labels="ChartsData['memory'].Labels" legend="true"></canvas>
+			</md-content>
+		</md-whiteframe>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+			<md-toolbar layout="row" layout-align="space-between center" layout-padding class="clickable" ng-click="$showDiskUsage = !$showDiskUsage; rerender('disk', $showDiskUsage);">
+				<div>
+					<md-icon class="md-light large transparent">sd_storage</md-icon>
+				</div>
+				<div layout="column" layout-align="center end">
+					<p class="md-display-1 font-weight-100">1.3Gb</p>
+					<p class="md-body-2 opacity-60">Disk Usage</p>
+				</div>
+			</md-toolbar>
+			<md-content ng-show="$showDiskUsage" layout-padding layout-align="center center">
+				<canvas id="disk" class="chart chart-pie" data="ChartsData['disk'].Data" labels="ChartsData['disk'].Labels" legend="true"></canvas>
+			</md-content>
+		</md-whiteframe>
+	</div>
+</div>

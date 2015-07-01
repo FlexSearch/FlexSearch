@@ -81,6 +81,7 @@ module FlexSearch.Core {
         TermVector: FieldTermVectorDto;
         OmitNorms: boolean;
         ScriptName: string;
+        AllowSort: boolean;
     }
 
     enum FieldIndexOptionsDto {

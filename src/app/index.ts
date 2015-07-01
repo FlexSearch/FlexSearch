@@ -12,6 +12,7 @@
 /// <reference path="../app/views/search/searchBase.ts" />
 /// <reference path="../app/views/search/search.ts" />
 /// <reference path="../app/views/search/searchSettings.ts" />
+/// <reference path="../app/views/dashboard/cluster.ts" />
 
 module flexportal {
   'use strict';
@@ -37,7 +38,7 @@ module flexportal {
     return null;
   }
 
-  angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router'])
+  angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 'ui.router', 'chart.js'])
     // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
@@ -50,6 +51,7 @@ module flexportal {
     .controller('SearchController', SearchController)
     .controller('SearchSettingsController', ["$scope", "$mdBottomSheet", SearchSettingsController])
     .controller('ErrorController', ErrorController)
+    .controller('ClusterController', ClusterController)
     
     // Services
     .service('datePrinter', function() {
@@ -88,7 +90,7 @@ module flexportal {
     
     // Route configuration
     .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider: angular.ui.IUrlRouterProvider) {
-      $urlRouterProvider.otherwise("/main");
+      $urlRouterProvider.otherwise("/dashboard");
 
       $stateProvider
       
@@ -153,5 +155,12 @@ module flexportal {
           templateUrl: "app/views/search/search.html"
         })
 
+        // Dashboard
+        .state('dashboard', {
+          url: "^/dashboard",
+          parent: 'main',
+          controller: 'ClusterController',
+          templateUrl: "app/views/dashboard/cluster.html"
+        });
     });
 }

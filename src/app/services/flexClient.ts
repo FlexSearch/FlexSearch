@@ -3,6 +3,17 @@
 module flexportal {
 	
 	import SearchResults = FlexSearch.Core.SearchResults;
+	import FieldDto = FlexSearch.Core.FieldDto;
+	import IndexConfigurationDto = FlexSearch.Core.IndexConfigurationDto;
+	
+	export class IndexResult {
+		Fields: FieldDto[]
+		IndexConfiguration: IndexConfigurationDto
+		SearchProfiles: any[]
+		ShardConfiguration: any
+		IndexName: string
+		Online: boolean
+	}
 	
 	export class FlexClient {
 		private $http: ng.IHttpService;
@@ -130,9 +141,11 @@ module flexportal {
 		}
 		
 		public getIndices() {
+			
+			
 			return this.$http.get(FlexSearchUrl + "/indices")
 				.then(FlexClient.getData, this.handleError)
-				.then(result => <any[]> result, this.handleError);
+				.then(result => <IndexResult []> result, this.handleError);
 		}
 		
 		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery,
