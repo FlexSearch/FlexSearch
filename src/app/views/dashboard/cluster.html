@@ -1,6 +1,6 @@
-<div layout-gt-md="row" layout-md="column" layout-sm="column" class="cluster-container">
+<div layout-gt-sm="row" layout-sm="column" class="cluster-container">
 	<div layout="column" class="leftColumn" flex="35">
-		<md-whiteframe class="md-whiteframe-z1">
+		<md-whiteframe class="md-whiteframe-z1" layout="column">
 			<md-toolbar>
 				<div class="md-toolbar-tools">
 					<h2>List of Indices</h2>
@@ -20,7 +20,7 @@
 			</md-content>
 		</md-whiteframe>
 	</div>
-	<div layout="column" flex layout-align="space-between center" class="rightColumn">
+	<md-content layout="column" flex layout-align="space-between center" class="rightColumn">
 		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding>
 				<div>
@@ -86,5 +86,13 @@
 				<canvas id="disk" class="chart chart-pie" data="ChartsData['disk'].Data" labels="ChartsData['disk'].Labels" legend="true"></canvas>
 			</md-content>
 		</md-whiteframe>
-	</div>
+	</md-content>
+</div>
+
+<div class="overall" class="md-whiteframe-z1" layout="column" layout-padding layout-align="center center">
+	<!--<md-content class="md-whiteframe-z1" layout="column" layout-padding>-->
+		<div class="canvas-holder">
+			<canvas height="300" width="600" id="overall">
+		</div>
+	<!--</md-content>-->
 </div>
