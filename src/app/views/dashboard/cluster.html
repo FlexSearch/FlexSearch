@@ -21,7 +21,7 @@
 		</md-whiteframe>
 	</div>
 	<md-content layout="column" flex layout-align="space-between center" class="rightColumn">
-		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="!Rendering">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding>
 				<div>
 					<md-icon class="md-light large transparent">network_wifi</md-icon>
@@ -32,7 +32,7 @@
 				</div>
 			</md-toolbar>
 		</md-whiteframe>
-		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="!Rendering">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding>
 				<div>
 					<md-icon class="md-light large transparent">computer</md-icon>
@@ -43,7 +43,7 @@
 				</div>
 			</md-toolbar>
 		</md-whiteframe>
-		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="Rendering == 'indices' || Rendering == null">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding class="clickable" ng-click="$showIndicesDetails = !$showIndicesDetails; rerender('indices', $showIndicesDetails);">
 				<div>
 					<md-icon class="md-light large transparent">storage</md-icon>
@@ -58,7 +58,7 @@
 				legend="true"></canvas>
 			</md-content>
 		</md-whiteframe>
-		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="Rendering == 'memory' || Rendering == null">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding class="clickable" ng-click="$showMemoryDetails = !$showMemoryDetails; rerender('memory', $showMemoryDetails);">
 				<div>
 					<md-icon class="md-light large transparent">memory</md-icon>
@@ -72,7 +72,7 @@
 				<canvas id="memory" class="chart chart-pie" data="ChartsData['memory'].Data" labels="ChartsData['memory'].Labels" legend="true"></canvas>
 			</md-content>
 		</md-whiteframe>
-		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill>
+		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="Rendering == 'disk' || Rendering == null">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding class="clickable" ng-click="$showDiskUsage = !$showDiskUsage; rerender('disk', $showDiskUsage);">
 				<div>
 					<md-icon class="md-light large transparent">sd_storage</md-icon>
@@ -88,11 +88,11 @@
 		</md-whiteframe>
 	</md-content>
 </div>
-
-<div class="overall" class="md-whiteframe-z1" layout="column" layout-padding layout-align="center center">
-	<!--<md-content class="md-whiteframe-z1" layout="column" layout-padding>-->
-		<div class="canvas-holder">
-			<canvas height="300" width="600" id="overall">
-		</div>
-	<!--</md-content>-->
-</div>
+<md-content class="overall md-whiteframe-z1 full-height" layout="row" layout-padding >
+	<div class="canvas-holder" layout="column" layout-align="center center">
+		<canvas height="300" width="600" id="overall">
+	</div>
+	<div class="canvas-holder" layout="column" layout-align="center center">
+		<canvas height="300" width="600" id="docs">
+	</div>
+</md-content>

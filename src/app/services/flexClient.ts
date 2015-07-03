@@ -185,5 +185,23 @@ module flexportal {
 			}})
 			.then(FlexClient.getSearchResults, this.handleError);
 		}
+		
+		public getDocsCount(indexName) {
+			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/documents", { params: {
+				count: 1
+			}})
+			.then(FlexClient.getData, this.handleError)
+			.then(result => parseInt(result.TotalAvailable), this.handleError)
+		}
+		
+		public newPromise(data) {
+			return this.$q(function(resolve, reject) {
+				resolve(data);
+			});
+		}
+		
+		public resolveAllPromises(promises) {
+			return this.$q.all(promises);
+		}
 	}
 }
