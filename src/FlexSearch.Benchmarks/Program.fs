@@ -10,7 +10,7 @@ open FlexSearch.Documention
 
 let GenerateGlossary() = 
     
-    ReferenceDocumentation.GenerateGlossary()
+    //ReferenceDocumentation.GenerateGlossary()
     printfn "Missing Definition"
     for def in ReferenceDocumentation.missingDefinitions do
         printfn "%s" def
@@ -43,7 +43,7 @@ type Arguments =
 let main argv = 
     //GenerateApiDocumentation()
     //GenerateGlossary()
-    ReferenceDocumentation.GenerateGlossaryPages()
+    //ReferenceDocumentation.GenerateGlossaryPages()
     //GenerateIndicesExamples()
     //Global.AddIndex()
     

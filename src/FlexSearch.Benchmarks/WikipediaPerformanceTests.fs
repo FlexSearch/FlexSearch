@@ -1,30 +1,12 @@
 ﻿namespace FlexSearch.Benchmarks
 
-open Autofac
-open FlexSearch.Api
 open FlexSearch.Core
-open FlexSearch.Utility
 open PerfUtil
 open System
-open System.Collections.Generic
-open System.Diagnostics
 open System.IO
 open System.Linq
 open System.Threading
 open System.Threading.Tasks
-open System.Threading.Tasks.Dataflow
-open org.apache.lucene.analysis
-open org.apache.lucene.analysis.core
-open org.apache.lucene.analysis.miscellaneous
-open org.apache.lucene.analysis.standard
-open org.apache.lucene.analysis.tokenattributes
-open org.apache.lucene.analysis.util
-open org.apache.lucene.index
-open org.apache.lucene.queries
-open org.apache.lucene.queryparser.classic
-open org.apache.lucene.queryparser.flexible
-open org.apache.lucene.search
-open org.apache.lucene.search.highlight
 
 module WikipediaPerformanceTests = 
     let QueriesCount = 1000
@@ -91,7 +73,7 @@ module WikipediaPerformanceTests =
     /// <param name="outputFolder"></param>
     let RandomQueryGenerator(outputFolder : string) = 
         let searchers = 
-            match Global.IndexService.GetIndexSearchers(Global.WikiIndexName) with
+            match Global.IndexService.GetRealtimeSearchers(Global.WikiIndexName) with
             | Choice1Of2(s) -> s
             | _ -> failwithf "Unable to get the searchers"
         
@@ -104,28 +86,28 @@ module WikipediaPerformanceTests =
         let medFreqTerms = new ResizeArray<TermFrequencyInfomation>()
         let lowFreqTerms = new ResizeArray<TermFrequencyInfomation>()
         let termFreq = 
-            org.apache.lucene.misc.HighFreqTerms.getHighFreqTerms 
-                (searchers.[0].getIndexReader(), 10000, "body[lucene_4_9]<lucene_4_1>", 
-                 new org.apache.lucene.misc.HighFreqTerms.DocFreqComparator())
+            FlexLucene.Misc.HighFreqTerms.GetHighFreqTerms
+                (searchers.[0].IndexReader, 10000, "body[lucene_4_9]<lucene_4_1>", 
+                 new FlexLucene.Misc.HighFreqTerms.DocFreqComparator())
         let medFreqUpperRange = 1000000
         let medFreqLowerRange = 100000
         let lowFreqLowerRange = 10000
         // Divide the terms in 3 ranges
         for freqTerm in termFreq do
-            let term = freqTerm.termtext.utf8ToString().Replace("'", "\\'")
-            match freqTerm.docFreq with
+            let term = freqTerm.Termtext.utf8ToString().Replace("'", "\\'")
+            match freqTerm.DocFreq with
             | x when x >= medFreqUpperRange -> 
                 highFreqTerms.Add({ Term = term
-                                    DocFrequency = freqTerm.docFreq
-                                    TermFrequency = freqTerm.totalTermFreq })
+                                    DocFrequency = freqTerm.DocFreq
+                                    TermFrequency = freqTerm.TotalTermFreq })
             | x when x >= medFreqLowerRange && x < medFreqUpperRange -> 
                 medFreqTerms.Add({ Term = term
-                                   DocFrequency = freqTerm.docFreq
-                                   TermFrequency = freqTerm.totalTermFreq })
+                                   DocFrequency = freqTerm.DocFreq
+                                   TermFrequency = freqTerm.TotalTermFreq })
             | x when x >= lowFreqLowerRange && x < medFreqLowerRange -> 
                 lowFreqTerms.Add({ Term = term
-                                   DocFrequency = freqTerm.docFreq
-                                   TermFrequency = freqTerm.totalTermFreq })
+                                   DocFrequency = freqTerm.DocFreq
+                                   TermFrequency = freqTerm.TotalTermFreq })
             | _ -> ()
         use termQueryHighFile = new StreamWriter(Path.Combine(outputFolder, "TermQueriesHigh.txt"))
         use termQueryMedFile = new StreamWriter(Path.Combine(outputFolder, "TermQueriesMed.txt"))
@@ -229,7 +211,7 @@ module WikipediaPerformanceTests =
             let mutable line = file.ReadLine()
             if line = null then proc <- false
             else 
-                let document = new FlexDocument(IndexName = Global.WikiIndexName, Id = (i.ToString()))
+                let document = new Document.Dto(IndexName = Global.WikiIndexName, Id = (i.ToString()))
                 document.Fields.Add("title", line.Substring(0, line.IndexOf('|') - 1))
                 document.Fields.Add("body", line.Substring(line.IndexOf('|') + 1))
                 queueService.AddDocumentQueue(document)
@@ -265,8 +247,8 @@ module WikipediaPerformanceTests =
     
     let ExecuteIndexingTestThreadLocal(data : WikiArticle array) = 
         let localStore = 
-            new ThreadLocal<FlexDocument>(fun _ -> 
-            let dict = new FlexDocument(IndexName = Global.WikiIndexName)
+            new ThreadLocal<Document.Dto>(fun _ -> 
+            let dict = new Document.Dto(IndexName = Global.WikiIndexName)
             dict.Fields.Add("title", "")
             dict.Fields.Add("body", "")
             dict)
@@ -280,8 +262,8 @@ module WikipediaPerformanceTests =
                              localStore.Value.Fields.["body"] <- n.Body
                              localStore.Value.Id <- n.Id
                              match documentService.AddDocument(localStore.Value) with
-                             | Choice1Of2(a) -> ()
-                             | Choice2Of2(e) -> printfn "Error: indexing document"
+                             | Choice1Of2(_) -> ()
+                             | Choice2Of2(_) -> printfn "Error: indexing document"
                          with e -> printfn "%A" e.Message
                          ()))
         |> ignore
@@ -290,7 +272,7 @@ module WikipediaPerformanceTests =
     let ExecuteIndexingTestDataFlow(data : WikiArticle array) = 
         let queueService = Global.QueueService
         for article in data do
-            let document = new FlexDocument(IndexName = Global.WikiIndexName, Id = article.Id)
+            let document = new Document.Dto(IndexName = Global.WikiIndexName, Id = article.Id)
             document.Fields.Add("title", article.Title)
             document.Fields.Add("body", article.Body)
             queueService.AddDocumentQueue(document)
@@ -327,9 +309,9 @@ module WikipediaPerformanceTests =
         Parallel.ForEach(queries, parallelOptions, 
                          (fun n -> 
                          try 
-                             match searchService.Search(new SearchQuery(Global.WikiIndexName, n)) with
-                             | Choice1Of2(a) -> ()
-                             | Choice2Of2(e) -> printfn "Error: %s Query:%s" e.UserMessage n
+                             match searchService.Search(new SearchQuery.Dto(Global.WikiIndexName, n)) with
+                             | Choice1Of2(_) -> ()
+                             | Choice2Of2(e) -> printfn "Error: %A Query:%s" e n
                          with e -> printfn "%A" e.Message
                          ()))
         |> ignore
@@ -351,8 +333,8 @@ module WikipediaPerformanceTests =
         let repeat = 3.0
         let totalQueriesPerFile = 1000.0
         
-        let runTests (threadCount) =
-            printfn "Starting test for thread count: %i" threadCount 
+        let runTests (threadCount) = 
+            printfn "Starting test for thread count: %i" threadCount
             let mutable i = 1
             for file in testFiles do
                 printfn "Executing test %i\%i File: %s Thread Count:%i" i (testFiles.Count()) file threadCount
@@ -376,7 +358,6 @@ module WikipediaPerformanceTests =
                                (folderPath, 
                                 sprintf "QueryTestsResult-%s.txt" (System.DateTime.Now.ToString("yyyyMMddHHmm"))), 
                            FileMode.Create)
-        let tmp = Console.Out
         let sw = new StreamWriter(fs)
         Console.SetOut(sw)
         printfn "Long Test: %b" longTest

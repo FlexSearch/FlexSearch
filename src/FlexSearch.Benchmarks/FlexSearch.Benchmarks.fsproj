@@ -9,12 +9,13 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>FlexSearch.Documentation</RootNamespace>
     <AssemblyName>Benchmarks</AssemblyName>
-    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>FlexSearch.Benchmarks</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -174,7 +175,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Owin">
-      <HintPath>..\packages\Microsoft.Owin.3.0.0\lib\net45\Microsoft.Owin.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Owin.Hosting">
@@ -235,34 +236,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Bootstrapper\FlexSearch.Bootstrapper.fsproj">
-      <Name>FlexSearch.Bootstrapper</Name>
-      <Project>{c8122e6b-66be-418d-808e-c50871926552}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Client\FlexSearch.Client.fsproj">
-      <Name>FlexSearch.Client</Name>
-      <Project>{e9a351e4-311b-4c7e-a483-e38fd96da0ca}</Project>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.Http\FlexSearch.Http.fsproj">
-      <Name>FlexSearch.Http</Name>
-      <Project>{0634b15c-b81e-44c8-b46d-cb6197988fa6}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.IntegrationTests\FlexSearch.IntegrationTests.fsproj">
-      <Name>FlexSearch.IntegrationTests</Name>
-      <Project>{7879d589-02a7-45bd-b80b-a37bb560457f}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\FlexSearch.TestSupport\FlexSearch.TestSupport.fsproj">
-      <Name>FlexSearch.TestSupport</Name>
-      <Project>{6f26a1d2-ef8a-4ec7-adba-25844be00b74}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
