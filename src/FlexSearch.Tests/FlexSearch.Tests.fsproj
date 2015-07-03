@@ -63,6 +63,7 @@
     <Compile Include="InfrastructureTests.fs" />
     <Compile Include="DomainTests.fs" />
     <Compile Include="ServiceTests.fs" />
+    <Compile Include="ScriptingTests.fs" />
     <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
     <Compile Include="ParserTests.fs" />
