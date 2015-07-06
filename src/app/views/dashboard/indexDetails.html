@@ -1,5 +1,10 @@
-<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-fill layout-padding>
-	<md-content>
+<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-fill >
+	<md-toolbar class="no-padding md-whiteframe-z1">
+		<div class="md-toolbar-tools">
+			<h2>{{ IndexName }} details</h2>
+		</div>
+	</md-toolbar>
+	<md-content layout-padding>
 		<json-formatter json="currentIndex" open="1"></json-formatter>
 	</md-content>
 </md-whiteframe>

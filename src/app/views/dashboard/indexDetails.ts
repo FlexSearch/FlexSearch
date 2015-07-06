@@ -5,22 +5,23 @@ module flexportal {
 
   interface IIndexDetailsScope extends ng.IScope, IClusterScope {
     currentIndex: any
+    IndexName: string
   }
 
   export class IndexDetailsController {
     
     /* @ngInject */
     constructor($scope: IIndexDetailsScope, $stateParams: any) {
-      var indexName = $stateParams.indexName;
-      $scope.setTitle("'" + indexName + "' index");
+      $scope.IndexName = $stateParams.indexName;
+      $scope.setTitle("'" + $scope.IndexName + "' index");
       $scope.currentIndex = { Status: "Retrieving data" };
 
 
       $scope.IndicesDataPromise.then(() => {
-        var filtered = $scope.Indices.filter(i => i.IndexName == indexName);
+        var filtered = $scope.Indices.filter(i => i.IndexName == $scope.IndexName);
 
         if (filtered.length != 1) {
-          $scope.currentIndex = { Error: "Couldn't find index " + indexName };
+          $scope.currentIndex = { Error: "Couldn't find index " + $scope.IndexName };
           return;
         }
 

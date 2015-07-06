@@ -47,6 +47,8 @@ module flexportal {
   export class SearchBaseController {
     /* @ngInject */
     constructor($scope: ISearchBase, flexClient: FlexClient, $mdBottomSheet: any) {
+      $scope.setTitle("");
+      
       // Set the default value for the Search Profile Query string
       // to serve as an example
       $scope.spQueryString = "firstname = ''";

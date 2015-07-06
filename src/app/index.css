@@ -6,6 +6,10 @@
   width: 100%;
 }
 
+.no-padding {
+  padding: 0px !important;
+}
+
 md-sidenav[md-component-id='leftMenu'] {
     width: 250px;
     min-width: 200px;
