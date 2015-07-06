@@ -3,15 +3,20 @@
 module flexportal {
   'use strict';
 
-  interface IClusterScope extends ng.IScope, IMainScope {
+  export interface IClusterScope extends ng.IScope, IMainScope {
     ChartsData: { Data: number[]; Labels: string[] }[]
     Charts: any[]
     rerender(chart: any, show: boolean): void
     Indices: IndexResult[]
     RadarChart: LinearInstance
     BarChart: LinearInstance
+    IndicesDataPromise: ng.IPromise<void>
+    
     // Shows which small chart is being displayed on the right column
     Rendering: string
+    
+    // Goes to the details page of the given index
+    showDetails(indexName): void
   }
 
   var colors = ["125, 188, 219", "125, 219, 144", "167, 125, 219",
@@ -59,7 +64,7 @@ module flexportal {
     }
 
     private static GetIndicesData(flexClient: FlexClient, $scope: IClusterScope) {
-      flexClient.getIndices()
+      return flexClient.getIndices()
         .then(response => $scope.Indices = response)
         .then(() => console.log($scope.Indices))
         // Get the number of documents in each index
@@ -121,7 +126,7 @@ module flexportal {
           
           ClusterController.createChart("bar", $('#docs'), $scope.BarChart, 
             barData, { responsive: false });
-        })
+        });
     }
     
     /* @ngInject */
@@ -154,7 +159,7 @@ module flexportal {
       });
 
       // Get the data for the charts
-      ClusterController.GetIndicesData(flexClient, $scope);
+      $scope.IndicesDataPromise = ClusterController.GetIndicesData(flexClient, $scope);
 
       var chartDataStore = [];
       chartDataStore['indices'] = {
@@ -168,39 +173,6 @@ module flexportal {
       chartDataStore['disk'] = {
         Data: [0.2, 10],
         Labels: ["Used", "Free"]
-      };
-      $scope.ChartsData['overall'] = {
-        Data: [
-          {
-            label: "My First dataset",
-            fillColor: "rgba(220,220,220,0.2)",
-            strokeColor: "rgba(220,220,220,1)",
-            pointColor: "rgba(220,220,220,1)",
-            pointStrokeColor: "#fff",
-            pointHighlightFill: "#fff",
-            pointHighlightStroke: "rgba(220,220,220,1)",
-            data: [65, 59, 90, 81, 56, 55, 40]
-          },
-          {
-            label: "My Second dataset",
-            fillColor: "rgba(151,187,205,0.2)",
-            strokeColor: "rgba(151,187,205,1)",
-            pointColor: "rgba(151,187,205,1)",
-            pointStrokeColor: "#fff",
-            pointHighlightFill: "#fff",
-            pointHighlightStroke: "rgba(151,187,205,1)",
-            data: [28, 48, 40, 19, 108, 27, 100]
-          }
-        ]
-        ,
-        
-        // Data : [
-        //   [65, 59, 90, 81, 56, 55, 40],
-        //   [28, 48, 40, 19, 96, 27, 100]
-        // ],
-        
-        // Labels: ["Eating", "Drinking", "Sleeping", "Designing", "Coding", "Cycling", "Running"]
-        Labels: [""]
       };
 
       $scope.rerender = function(chartName, show) {
@@ -222,6 +194,10 @@ module flexportal {
         else {
           $scope.Rendering = null;
         }
+      }
+      
+      $scope.showDetails = function (indexName) {
+        $state.go("indexDetails", {indexName: indexName});
       }
     }
   }

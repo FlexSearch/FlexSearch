@@ -8,7 +8,7 @@
 			</md-toolbar>
 			<md-content>
 				<md-list>
-					<md-list-item class="md-2-line" ng-repeat="index in Indices" ng-click="bla()">
+					<md-list-item class="md-2-line" ng-repeat="index in Indices track by $index" ng-click="showDetails(index.IndexName)">
 						<md-icon class="large transparent">blur_on</md-icon>
 						<div class="md-list-item-text">
 							<h3>{{$index+1}}. {{ index.IndexName }}</h3>
@@ -20,7 +20,7 @@
 			</md-content>
 		</md-whiteframe>
 	</div>
-	<md-content layout="column" flex layout-align="space-between center" class="rightColumn">
+	<md-content layout="column" flex layout-align="space-between center" class="rightColumn" ui-view>
 		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="!Rendering">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding>
 				<div>
