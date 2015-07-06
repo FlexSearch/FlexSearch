@@ -11,6 +11,7 @@ module flexportal {
     RadarChart: LinearInstance
     BarChart: LinearInstance
     IndicesDataPromise: ng.IPromise<void>
+    FlexSearchUrl : string
     
     // Shows which small chart is being displayed on the right column
     Rendering: string
@@ -132,6 +133,7 @@ module flexportal {
     /* @ngInject */
     constructor($scope: IClusterScope, $state: any, $timeout: ng.ITimeoutService, flexClient: FlexClient) {
       $scope.Rendering = null;
+      $scope.FlexSearchUrl = FlexSearchUrl;
       
       // Clear the chart binding data if window is resized
       $(window).resize(function() {
