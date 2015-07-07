@@ -1,0 +1,24 @@
+{
+  "name": "flexportal",
+  "version": "0.0.0",
+  "dependencies": {
+    "angular-animate": "~1.4.0",
+    "angular-touch": "~1.4.0",
+    "angular-sanitize": "~1.4.0",
+    "jquery": "~2.1.1",
+    "restangular": "~1.4.0",
+    "angular-route": "~1.4.0",
+    "angular-material": "~0.9.8",
+    "angular": "~1.4.0",
+    "angular-material-data-table": "*",
+    "angular-ui-router": "~0.2.15",
+    "angular-chart.js": "~0.7.2",
+    "json-formatter": "~0.3.0"
+  },
+  "devDependencies": {
+    "angular-mocks": "~1.4.0"
+  },
+  "resolutions": {
+    "angular-material": "~0.9.8"
+  }
+}

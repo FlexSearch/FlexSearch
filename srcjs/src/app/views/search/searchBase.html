@@ -1,0 +1,87 @@
+<form name="form" layout="column">
+	<md-progress-linear layout-fill md-mode="indeterminate" ng-show="mainProgressBar"></md-progress-linear>
+	<div layout="row" class="full-height">
+		<md-content flex="25" class="leftColumn md-whiteframe-z2" layout="column">
+			<md-toolbar layout="row" layout-align="center center">
+				<div>
+					<md-select placeholder="Select index" ng-model="IndexNumber" required>
+						<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' index</md-option>
+					</md-select>
+				</div>
+			</md-toolbar>
+			<md-content layout="column" flex ng-show="IndexNumber != undefined">
+				<md-content class="fieldValues" flex="70" ui-view>
+					<!-- Here is where you would insert the list of fields of an index
+						and any controls associated with them -->
+				</md-content>
+			</md-content>
+			<md-toolbar ng-show="IndexNumber != undefined">
+				<div class="md-toolbar-tools md-toolbar-tools-bottom">
+					<span flex/>
+					<md-button ng-click="showSettings($event)" class="md-icon-button">
+						<md-icon class="md-light large">settings</md-icon>
+					</md-button>
+				</div>
+			</md-toolbar>
+		</md-content>
+		<md-content flex class="rightColumn" layout="column" ng-show="IndexNumber != undefined">
+			<md-whiteframe flex="25" layout="column" layout-align="top center" layout-padding class="comparison-page md-whiteframe-z2">
+				<md-toolbar>
+					<div class="md-toolbar-tools">
+						<span flex/>
+						<md-button ng-click="submit(Indices[IndexNumber])" type="submit" ng-disabled="form.$invalid || !atLeastOneFieldIsPopulated()">
+							<md-icon ng-class="md-light">send</md-icon>Submit</md-button>
+					</div>
+				</md-toolbar>
+				<md-content flex>
+					<md-select placeholder="Choose existing Search Profile" ng-model="spQueryString" ng-show="showSearchProfileDropDown" flex>
+						<md-option ng-repeat="sp in Indices[IndexNumber].SearchProfiles" value="{{sp.QueryString}}">{{sp.Name}}</md-option>
+					</md-select>
+					<md-input-container flex>
+						<label>Query String</label>
+						<textarea ng-model="spQueryString" columns="1" required></textarea>
+					</md-input-container>
+				</md-content>
+			</md-whiteframe>
+			<md-content class="search-results md-whiteframe-z2" ng-show="Response != undefined" layout="column">
+				<md-content>
+					<table class="ui small compact celled table">
+						<thead>
+							<tr>
+								<th>No.</th>
+								<th ng-repeat="field in Response.FieldNames">{{field}}</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr ng-repeat="doc in DocumentsInPage">
+								<td>{{PageSize * (ActivePage - 1) + $index + 1}}</td>
+								<td ng-repeat="field in doc">{{field}}</td>
+							</tr>
+						</tbody>
+					</table>
+				</md-content>
+				<md-toolbar>
+					<div class="ui basic center aligned segment">
+						<div class="ui pagination menu">
+							<a ng-click="getPage(1)" class="icon item back">
+					        <i class="angle double left icon"></i>
+						</a>
+							<a class="item" ng-click="getPage(ActivePage - 1)">
+					        <i class="angle left icon"></i>
+					    </a>
+							<a class="item">
+					        Page {{ActivePage}} of {{PageCount}}
+					    </a>
+							<a class="item" ng-click="getPage(ActivePage + 1)">
+					        <i class="angle right icon"></i>
+					    </a>
+							<a ng-click="getPage(PageCount)" class="icon item back">
+					        <i class="angle double right icon"></i>
+						</a>
+						</div>
+					</div>
+				</md-toolbar>
+			</md-content>
+		</md-content>
+	</div>
+</form>

@@ -1,0 +1,45 @@
+<md-toolbar>
+  <div class="md-toolbar-tools">
+    <h3>{{ActiveDuplicate.SourceDisplayName}}  (ID: {{ActiveDuplicate.SourceId}})</h3>
+    <span flex></span>
+    <md-button ng-click="doReview()" ng-disabled="ActiveDuplicate.SourceStatus > 0">
+    	<md-icon ng-class="[md-light, review, {'md-inactive': ActiveDuplicate.SourceStatus > 0}]">check_circle</md-icon>
+      {{ActiveDuplicate.SourceStatus == 1 ? 'Reviewed' : 'Review'}}
+    </md-button>
+    <md-button ng-click="doProcessing()" ng-disabled="selectedTarget == null || ActiveDuplicate.SourceStatus == 2">
+    	<md-icon ng-class="[md-light, process, {'md-inactive': selectedTarget == null || ActiveDuplicate.SourceStatus == 2}]">send</md-icon>
+      {{ActiveDuplicate.SourceStatus == 2 ? 'Processed' : 'Process'}}
+    </md-button>
+  </div>
+  <md-progress-linear md-mode="indeterminate"></md-progress-linear>
+</md-toolbar>
+
+<md-content>
+  <table class="ui celled table">
+    <thead>
+      <tr>
+        <th>Field Name</th>
+        <th>Source: {{Source.Name}}</th>
+        
+        <th ng-repeat="target in Targets" class="target">
+          <div layout="row" layout-align="space-between center">
+            <i class="large green checkmark icon" ng-show="target.TrueDuplicate"></i>
+            <div>Match {{$index + 1}}: {{target.Name}}</div>
+            <div class="ui toggle checkbox">
+              <input type="radio" name="target" value="{{$index}}">
+            </div>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="field in FieldNames">
+        <td>{{field}}</td>
+        <td>{{Source.Values[$index]}}</td>
+        <td ng-repeat="target in $parent.Targets" ng-class="areEqual($parent.$index, $index) ? '': 'negative'">
+          {{target.Values[$parent.$index]}}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</md-content>
