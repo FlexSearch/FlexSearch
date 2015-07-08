@@ -115,9 +115,9 @@ type ScriptService() =
         s |> Seq.iter (fun (scriptName, script) -> scripts.TryAdd(scriptName, script) |> ignore)
     
     do 
-        Scripts.compileAllScripts (ScriptType.Computed) |> addScripts
-        Scripts.compileAllScripts (ScriptType.PostSearch) |> addScripts
-        Scripts.compileAllScripts (ScriptType.SearchProfile) |> addScripts
+        Compiler.compileAllScripts (ScriptType.Computed) |> addScripts
+        Compiler.compileAllScripts (ScriptType.PostSearch) |> addScripts
+        Compiler.compileAllScripts (ScriptType.SearchProfile) |> addScripts
     
     let getScript (scriptName, scriptType) = 
         match scripts.TryGetValue(scriptName + (scriptType.ToString())) with
