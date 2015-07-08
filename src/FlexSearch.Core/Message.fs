@@ -394,7 +394,7 @@ module Log =
         | _, Nothing -> ()
         | keyword, level ->
             let om = message.OperationMessage()
-            let properties = sprintf "%A" om.Properties
+            let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
             logMethod(keyword, level)(om.ErrorCode, om.Message, properties)
 
     let logErrorChoice (message : Choice<_, IMessage>) = 
