@@ -304,7 +304,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         fileServerOptions.EnableDirectoryBrowsing <- true
         fileServerOptions.EnableDefaultFiles <- true
         fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder)
-        fileServerOptions.RequestPath <- new PathString(@"/static")
+        fileServerOptions.RequestPath <- new PathString(@"/portal")
         app.UseFileServer(fileServerOptions) |>  ignore
         
         // This should always be the last middleware in the pipeline as this is

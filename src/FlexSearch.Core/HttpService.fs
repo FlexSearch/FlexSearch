@@ -19,6 +19,7 @@ namespace FlexSearch.Core
 
 open Microsoft.Owin
 open System.Net
+open System.IO
 
 /// Returns OK status
 [<Sealed>]
@@ -33,18 +34,15 @@ type PingHandler() =
 type GetRootHandler() = 
     inherit HttpHandlerBase<NoBody, unit>()
     
-    let htmlPage = 
-        let filePath = System.IO.Path.Combine(Constants.WebFolder, "WelcomePage.html")
-        if System.IO.File.Exists(filePath) then 
-            let pageText = System.IO.File.ReadAllText(filePath)
-            pageText.Replace
-                ("{version}", System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
-        else sprintf "FlexSearch %s" (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString())
+    let filePath = Path.Combine(Constants.WebFolder, "index.html")
+    let pageExists = filePath |> System.IO.File.Exists 
     
     override __.Process(request, _) = 
-        request.OwinContext.Response.ContentType <- "text/html"
-        request.OwinContext.Response.StatusCode <- 200
-        SuccessResponse(await (request.OwinContext.Response.WriteAsync htmlPage), HttpStatusCode.OK)
+        if pageExists then
+            request.OwinContext.Response.Redirect("/portal/index.html");
+            NoResponse
+        else
+            FailureResponse(FileNotFound(filePath), NotFound)
 
 ///  Get all indices
 [<Name("GET-/indices")>]
