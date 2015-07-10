@@ -6,6 +6,8 @@ open Fake
 open Fake.AssemblyInfoFile
 open System.IO
 open System.Linq
+open System
+open System.Diagnostics
 open System.Management.Automation
 
 TraceEnvironmentVariables()
@@ -127,16 +129,22 @@ Target "BuildPortal" <| fun _ ->
         .Invoke()
         |> Seq.iter (sprintf "%A" >> trace)
 
-    trace "Directories in portal (after build):"
-    Directory.EnumerateDirectories(portalDir)
-    |> Seq.iter (sprintf "%A" >> trace)
-
     FileUtils.cd @"..\src"
+
+Target "BuildPortalBat" <| fun _ ->
+    let result = 
+        ProcessHelper.ExecProcess 
+            (fun (info : ProcessStartInfo) -> 
+                info.FileName <- "cmd"
+                info.Arguments <- "/c start /wait build.bat"
+                info.WorkingDirectory <- portalDir)
+            (TimeSpan.FromMinutes 30.0)
+    if result <> 0 then failwith "Error during build"
+    
+    trace "Build portal complete"
+
 Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
-    trace "Directories in portal (before moving):"
-    Directory.EnumerateDirectories(portalDir)
-    |> Seq.iter (sprintf "%A" >> trace)
     let source = portalDir + @"\dist"
     FileHelper.CopyRecursive source webDir true |> ignore
 
@@ -152,7 +160,7 @@ Target "MovePortal" <| fun _ ->
 ==> "MovePortal"
 ==> "Zip"
 
-"BuildPortal"
+"BuildPortalBat"
 ==> "MovePortal"
 
 // start building core FlexSearch
