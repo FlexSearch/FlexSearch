@@ -131,18 +131,6 @@ Target "BuildPortal" <| fun _ ->
 
     FileUtils.cd @"..\src"
 
-Target "BuildPortalBat" <| fun _ ->
-    let result = 
-        ProcessHelper.ExecProcess 
-            (fun (info : ProcessStartInfo) -> 
-                info.FileName <- "cmd"
-                info.Arguments <- "/c start /wait build.bat"
-                info.WorkingDirectory <- portalDir)
-            (TimeSpan.FromMinutes 30.0)
-    if result <> 0 then failwith "Error during build"
-    
-    trace "Build portal complete"
-
 Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
     let source = portalDir + @"\dist"
