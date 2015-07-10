@@ -1,10 +1,12 @@
 // include Fake lib
 #r @"packages\FAKE\tools\FakeLib.dll"
+#r "System.Management.Automation"
 
 open Fake
 open Fake.AssemblyInfoFile
 open System.IO
 open System.Linq
+open System.Management.Automation
 
 TraceEnvironmentVariables()
 //RestorePackages()
@@ -31,6 +33,8 @@ let copyright = "(c) Seemant Rajvanshi, 2012 - 2014"
 let buildDir = @".\build\"
 let testDir = @".\build\"
 let deployDir = @".\deploy\"
+let portalDir = currentDirectory + @"\..\srcjs"
+let webDir = buildDir + @"Web\"
 
 // Create necessary directories if they don't exist
 Directory.CreateDirectory(buildDir)
@@ -91,7 +95,7 @@ let AssemblyInfoCSharp path title =
                                                                                  Attribute.Version version ]
 
 // Targets
-Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib" ])
+Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web" ])
 // This is to ensure that the compiled weaver is copied to the correct folder so that Fody can pick it up
 Target "BuildWeaver" (fun _ -> 
     !!"weavers/weavers.fsproj"
@@ -114,6 +118,22 @@ Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
     (fun _ -> !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir + "FlexSearch." + version + ".zip"))
+
+// Portal related
+Target "BuildPortal" <| fun _ ->
+    FileUtils.cd portalDir
+    PowerShell.Create()
+        .AddScript(File.ReadAllText("build.ps1"))
+        .Invoke()
+        |> Seq.iter (sprintf "%A" >> trace)
+
+    FileUtils.cd @"..\src"
+Target "MovePortal" <| fun _ ->
+    trace "Moving Portal"
+    let source = portalDir + @"\dist"
+    FileHelper.CopyRecursive source webDir true |> ignore
+
+
 // Dependencies
 "Clean" 
 ==> "RestorePackages" 
@@ -123,5 +143,12 @@ Target "Zip"
 ==> "Default" 
 ==> "MoveFiles" 
 ==> "Zip"
-// start build
+
+"BuildPortal"
+==> "MovePortal"
+
+// start building core FlexSearch
 RunTargetOrDefault "Zip"
+
+// Start building the portal
+RunTargetOrDefault "MovePortal"
