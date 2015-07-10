@@ -142,6 +142,7 @@ Target "MovePortal" <| fun _ ->
 // ==> "Test"
 ==> "Default" 
 ==> "MoveFiles" 
+==> "MovePortal"
 ==> "Zip"
 
 "BuildPortal"
@@ -149,6 +150,3 @@ Target "MovePortal" <| fun _ ->
 
 // start building core FlexSearch
 RunTargetOrDefault "Zip"
-
-// Start building the portal
-RunTargetOrDefault "MovePortal"
