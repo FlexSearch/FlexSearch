@@ -1,5 +1,5 @@
 npm install
 bower install
-tsd update
+tsd update --save
 gulp
 
