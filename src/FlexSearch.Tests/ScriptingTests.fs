@@ -15,7 +15,7 @@ void Execute(SearchQuery.Dto query, Dictionary<string, string> fields){
 	}
 }
 """
-        let (_, sut) = Scripts.compile (scriptSrc, "test", ScriptType.SearchProfile) |> extract
+        let (_, sut) = Compiler.compileScript (scriptSrc, "test", ScriptType.SearchProfile) |> extract
         let testDict = new Dictionary<string, string>()
         testDict.Add("test", "test0")
         match sut with
@@ -35,7 +35,7 @@ string Execute(string indexName, string fieldName, IReadOnlyDictionary<string, s
     return value;
 }
 """
-        let (_, sut) = Scripts.compile (scriptSrc, "test", ScriptType.Computed) |> extract
+        let (_, sut) = Compiler.compileScript(scriptSrc, "test", ScriptType.Computed) |> extract
         let testDict = new Dictionary<string, string>()
         testDict.Add("test", "test0")
         match sut with
