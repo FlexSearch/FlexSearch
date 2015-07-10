@@ -129,14 +129,14 @@ Target "BuildPortal" <| fun _ ->
 
     trace "Directories in portal (after build):"
     Directory.EnumerateDirectories(portalDir)
-    |> (sprintf "%A" >> trace)
+    |> Seq.iter (sprintf "%A" >> trace)
 
     FileUtils.cd @"..\src"
 Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
     trace "Directories in portal (before moving):"
     Directory.EnumerateDirectories(portalDir)
-    |> (sprintf "%A" >> trace)
+    |> Seq.iter (sprintf "%A" >> trace)
     let source = portalDir + @"\dist"
     FileHelper.CopyRecursive source webDir true |> ignore
 
