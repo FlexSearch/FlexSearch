@@ -160,7 +160,7 @@ Target "MovePortal" <| fun _ ->
 ==> "MovePortal"
 ==> "Zip"
 
-"BuildPortalBat"
+"BuildPortal"
 ==> "MovePortal"
 
 // start building core FlexSearch
