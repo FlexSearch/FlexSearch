@@ -66,7 +66,7 @@ module flexportal {
     .service('flexClient', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new FlexClient($http, $mdBottomSheet, $q);} ])
     
     // Theming
-    .config(function($mdThemingProvider: ng.material.MDThemingProvider) {
+    .config(function($mdThemingProvider: ng.material.IThemingProvider) {
       $mdThemingProvider.definePalette("docs-blue", $mdThemingProvider.extendPalette("blue", {
           50: "#DCEFFF",
           100: "#AAD1F9",
