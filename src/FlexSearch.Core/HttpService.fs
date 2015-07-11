@@ -44,6 +44,22 @@ type GetRootHandler() =
         else
             FailureResponse(FileNotFound(filePath), NotFound)
 
+/// Returns the homepage
+[<Name("GET-/favicon.ico")>]
+[<Sealed>]
+type GetFaviconHandler() = 
+    inherit HttpHandlerBase<NoBody, unit>()
+
+    let filePath = Path.Combine(Constants.WebFolder, "favicon.ico")
+    let pageExists = filePath |> System.IO.File.Exists 
+    
+    override __.Process(request, _) = 
+        if pageExists then
+            request.OwinContext.Response.Redirect("/portal/favicon.ico");
+            NoResponse
+        else
+            FailureResponse(FileNotFound(filePath), NotFound)
+
 ///  Get all indices
 [<Name("GET-/indices")>]
 [<Sealed>]
