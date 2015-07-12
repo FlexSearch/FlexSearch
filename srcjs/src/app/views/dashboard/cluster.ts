@@ -3,14 +3,20 @@
 module flexportal {
   'use strict';
 
+  export class IndexDetailedResult extends IndexResult {
+    DocCount: number
+    DiskSize: number
+  }
+
   export interface IClusterScope extends ng.IScope, IMainScope {
     ChartsData: { Data: number[]; Labels: string[] }[]
+    ChartsDataStore: { Data: number[]; Labels: string[] }[]
     Charts: any[]
     rerender(chart: any, show: boolean): void
-    Indices: IndexResult[]
+    Indices: IndexDetailedResult[]
     RadarChart: LinearInstance
     BarChart: LinearInstance
-    IndicesDataPromise: ng.IPromise<void>
+    IndicesPromise: ng.IPromise<void>
     FlexSearchUrl : string
     
     // Shows which small chart is being displayed on the right column
@@ -38,12 +44,11 @@ module flexportal {
       (<any>$scope.RadarChart).datasets[dsIdx].points[dataIdx].value = 100;
       
       $scope.RadarChart.update();
-      
-      console.log($scope.RadarChart);
     }
     
     private static toPercentage(array : number[]) {
       var max = Math.max.apply(null, array);
+      if(max == 0) return array;
       
       return array.map(x => Math.floor(x/max * 100));
     }
@@ -66,16 +71,34 @@ module flexportal {
 
     private static GetIndicesData(flexClient: FlexClient, $scope: IClusterScope) {
       return flexClient.getIndices()
-        .then(response => $scope.Indices = response)
-        .then(() => console.log($scope.Indices))
+        .then(response => $scope.Indices = <IndexDetailedResult[]>response)
         // Get the number of documents in each index
         .then(() => flexClient.resolveAllPromises(
             $scope.Indices.map(i => flexClient.getDocsCount(i.IndexName))))
+        // Store the number of documents on the main Index Store
+        .then(docCounts => $scope.Indices.forEach((idx, i) => idx.DocCount = docCounts[i]))
+        // Get the indices disk size
+        .then(() => flexClient.resolveAllPromises(
+          $scope.Indices.map(i => flexClient.getIndexSize(i.IndexName))))
+        // Store the disk size of the indices
+        .then(sizes => {
+          $scope.Indices.forEach((idx, i) => idx.DiskSize = sizes[i]);
+          $scope.ChartsDataStore['disk'] = {
+            Data: [
+              $scope.Indices
+                .map(i => i.DiskSize)
+                .reduce((acc, val) => acc + val, 0) / 1024 / 1024, // Convert to MB
+              1000], // 1000 MB in total TODO
+            Labels: ["Used", "Free"]
+          };
+        })
         // Create the Radar Chart
-        .then(docCounts => {
-          console.log(docCounts);
+        .then(() => {
           // Compute everything to percentage
-          var docs = ClusterController.toPercentage(docCounts);
+          var sizes = ClusterController.toPercentage(
+            $scope.Indices.map(i => i.DiskSize));
+          var docs = ClusterController.toPercentage(
+            $scope.Indices.map(i => i.DocCount));
           var shards = ClusterController.toPercentage(
             $scope.Indices.map(i => parseInt(i.ShardConfiguration.ShardCount)));
           var profiles = ClusterController.toPercentage(
@@ -95,7 +118,7 @@ module flexportal {
               fillColor: "rgba(" + nextColor + ",0.2)",
               strokeColor: "rgba(" + nextColor + ",1)",
               data: [
-                docs[i],  // TODO
+                sizes[i],
                 shards[i],
                 profiles[i],
                 fields[i],
@@ -108,11 +131,9 @@ module flexportal {
           
           ClusterController.createChart("radar", $('#overall'), $scope.RadarChart, 
             radarData, { responsive: false });
-            
-          return docCounts;
         })
         // Create the Bar Chart
-        .then(docCounts => {
+        .then(() => {
           var barData : LinearChartData = {
             labels: $scope.Indices.map(i => i.IndexName),
             datasets: [{
@@ -121,7 +142,7 @@ module flexportal {
                 strokeColor: "rgba(151,187,205,0.8)",
                 highlightFill: "rgba(151,187,205,0.75)",
                 highlightStroke: "rgba(151,187,205,1)",
-                data: docCounts
+                data: $scope.Indices.map(i => i.DocCount)
               }]
           };
           
@@ -161,26 +182,20 @@ module flexportal {
       });
 
       // Get the data for the charts
-      $scope.IndicesDataPromise = ClusterController.GetIndicesData(flexClient, $scope);
+      $scope.IndicesPromise = ClusterController.GetIndicesData(flexClient, $scope);
 
-      var chartDataStore = [];
-      chartDataStore['indices'] = {
+      $scope.ChartsDataStore = [];
+      $scope.ChartsDataStore['indices'] = {
         Data: [4, 1, 1],
         Labels: ["Online", "Recovering", "Offline"]
       };
-      chartDataStore['memory'] = {
+      $scope.ChartsDataStore['memory'] = {
         Data: [1, 10],
-        Labels: ["Used", "Free"]
-      };
-      chartDataStore['disk'] = {
-        Data: [0.2, 10],
         Labels: ["Used", "Free"]
       };
 
       $scope.rerender = function(chartName, show) {
         if (show) {
-          
-          
           // Destroy the charts if they exist
           if ($scope.ChartsData[chartName] != undefined) {
             $scope.Charts.forEach((c, i) => c.destroy());
@@ -189,7 +204,7 @@ module flexportal {
           }    
           // Rebuild the chart
           $timeout(function() {
-            $scope.ChartsData[chartName] = chartDataStore[chartName];
+            $scope.ChartsData[chartName] = $scope.ChartsDataStore[chartName];
             $scope.Rendering = chartName;
           });
         }

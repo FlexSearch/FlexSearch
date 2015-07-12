@@ -194,6 +194,12 @@ module flexportal {
 			.then(result => parseInt(result.TotalAvailable), this.handleError)
 		}
 		
+		public getIndexSize(indexName) {
+			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/size")
+			.then(FlexClient.getData, this.handleError)
+			.then(result => parseInt(result));
+		}
+		
 		public newPromise(data) {
 			return this.$q(function(resolve, reject) {
 				resolve(data);

@@ -17,7 +17,7 @@ module flexportal {
       $scope.currentIndex = { Status: "Retrieving data" };
 
 
-      $scope.IndicesDataPromise.then(() => {
+      $scope.IndicesPromise.then(() => {
         var filtered = $scope.Indices.filter(i => i.IndexName == $scope.IndexName);
 
         if (filtered.length != 1) {
