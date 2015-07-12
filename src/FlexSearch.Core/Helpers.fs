@@ -329,6 +329,15 @@ module Helpers =
     
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore
+
+    // Returns the size on disk of a folder by summing up the file sizes
+    let getFolderSize (path : string) =
+        let rec getFolderSizeRec sum (dir : DirectoryInfo) =
+            dir.EnumerateFiles() 
+            |> Seq.map (fun f -> f.Length)
+            |> Seq.sum
+            |> (+) (dir.EnumerateDirectories() |> Seq.sumBy (getFolderSizeRec sum))
+        getFolderSizeRec 0 (new DirectoryInfo(path))
    
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns

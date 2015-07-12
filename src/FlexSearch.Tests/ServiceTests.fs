@@ -45,6 +45,16 @@ module IndexServiceTests =
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
 
+    type CommonTests() =
+        member __.``Should return size of existing index`` (indexService: IIndexService, index : Index.Dto) =
+            index.Online <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            test <@ succeeded <| indexService.Commit(index.IndexName) @>
+            test <@ succeeded <| indexService.GetDiskUsage index.IndexName @>
+
+        member __.``Should fail when asking for size of non-existing index`` (indexService: IIndexService) =
+            test <@ failed <| indexService.GetDiskUsage "non-existing-index" @>
+
 module DocumentServiceTests = 
     type DocumentManagementTests() = 
         

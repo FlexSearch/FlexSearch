@@ -53,6 +53,7 @@ type IIndexService =
     abstract Refresh : indexName:string -> Choice<unit, IMessage>
     abstract GetRealtimeSearchers : indexName:string -> Choice<array<RealTimeSearcher>, IMessage>
     abstract GetRealtimeSearcher : indexName:string * int -> Choice<RealTimeSearcher, IMessage>
+    abstract GetDiskUsage : indexName:string -> Choice<int64, IMessage>
 
 /// Document related operations
 type IDocumentService = 
@@ -282,6 +283,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
         member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
         member __.UpdateIndexFields(_ : Field.Dto []) = failwith "Not implemented yet"
+        member __.GetDiskUsage(indexName : string) = im |> IndexManager.getDiskUsage indexName
 
 [<Sealed>]
 type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, indexService : IIndexService) = 

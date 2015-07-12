@@ -138,6 +138,14 @@ type GetExistsHandler(indexService : IIndexService) =
         | true -> SuccessResponse(new IndexExistsResponse(Exists = true), Ok)
         | false -> FailureResponse(IndexNotFound(request.ResName), NotFound)
 
+/// Gets the size on disk of an index
+[<Name("GET-/indices/:id/size")>]
+[<Sealed>]
+type GetIndexSizeHandler(indexService : IIndexService) = 
+    inherit HttpHandlerBase<NoBody, int64>()
+    override __.Process(request, _) = 
+        SomeResponse(indexService.GetDiskUsage request.ResId.Value, Ok, BadRequest)
+
 // -------------------------- //
 // -------------------------- //
 // Analysis Handlers          //  

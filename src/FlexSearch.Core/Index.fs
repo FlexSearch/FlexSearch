@@ -1147,3 +1147,9 @@ module IndexManager =
           ThreadSafeFileWriter = threadSafeFileWriter
           GetAnalyzer= getAnalyzer
           GetComputedScript = getComputedScript }
+
+    /// Returns the disk usage of an index
+    let getDiskUsage (indexName : string) (t: T) =
+        match t.Store.ContainsKey indexName with
+        | true -> ok <| getFolderSize (DataFolder +/ indexName)
+        | _ -> fail <| IndexNotFound indexName
