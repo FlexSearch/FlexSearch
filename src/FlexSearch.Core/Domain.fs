@@ -1073,6 +1073,16 @@ type CreateResponse(id : string) =
 type IndexExistsResponse() = 
     member val Exists = Unchecked.defaultof<bool> with get, set
 
+type MemoryDetailsResponse() =
+    inherit DtoBase()
+    // Memory used by FlexSearch application
+    member val UsedMemory = defInt64 with get, set
+    // Total available memory for the server
+    member val TotalMemory = 0UL with get, set
+    // Percentage of memory used by FlexSearch
+    member val Usage = defDouble with get, set
+    override this.Validate() = ok ()
+
 module ServerSettings = 
     [<CLIMutableAttribute>]
     type T = 

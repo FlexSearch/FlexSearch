@@ -422,3 +422,18 @@ type PostSearchProfileTestHandler(searchService : ISearchService) =
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
+
+[<Name("GET-/memory")>]
+[<Sealed>]
+type GetMemoryDetails() =
+    inherit HttpHandlerBase<NoBody, MemoryDetailsResponse>()
+    override __.Process(request, body) =
+        let usedMemory = 
+            let procName = System.Diagnostics.Process.GetCurrentProcess().ProcessName
+            let counter = new System.Diagnostics.PerformanceCounter("Process", "Working Set - Private", procName)
+            counter.RawValue
+        let totalMemory = (new Microsoft.VisualBasic.Devices.ComputerInfo()).TotalPhysicalMemory
+        SuccessResponse(new MemoryDetailsResponse(
+            UsedMemory = usedMemory,
+            TotalMemory = totalMemory,
+            Usage = float(usedMemory) / float(totalMemory) * 100.0), Ok)
