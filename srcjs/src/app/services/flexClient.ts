@@ -207,6 +207,10 @@ module flexportal {
 			.then(result => <MemoryDetailsResponse>result, this.handleError);
 		}
 		
+		public setupDemoIndex() {
+			return this.$http.put(FlexSearchUrl + "/setupdemo", {});
+		}
+		
 		public newPromise(data) {
 			return this.$q(function(resolve, reject) {
 				resolve(data);

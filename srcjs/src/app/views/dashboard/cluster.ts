@@ -12,8 +12,6 @@ module flexportal {
     ChartsData: { Data: number[]; Labels: string[] }[]
     ChartsDataStore: { Data: number[]; Labels: string[] }[]
     Charts: any[]
-    prettysize(s,n,o): string
-    rerender(chart: any, show: boolean): void
     Indices: IndexDetailedResult[]
     MemoryDetails: FlexSearch.Core.MemoryDetailsResponse
     RadarChart: LinearInstance
@@ -26,6 +24,18 @@ module flexportal {
     
     // Goes to the details page of the given index
     showDetails(indexName): void
+    
+    // Helper function to pretty print byte values
+    prettysize(s,n,o): string
+    
+    rerender(chart: any, show: boolean): void
+    
+    // Demo Index related
+    setupDemoIndex() : void
+    hasDemoIndex: boolean
+    
+    // Progress bar
+    showProgress: boolean
   }
 
   var colors = ["125, 188, 219", "125, 219, 144", "167, 125, 219",
@@ -116,6 +126,7 @@ module flexportal {
     }
 
     private static GetIndicesData(flexClient: FlexClient, $scope: IClusterScope) {
+      $scope.showProgress = true;
       return flexClient.getIndices()
         .then(response => $scope.Indices = <IndexDetailedResult[]>response)
         
@@ -207,7 +218,8 @@ module flexportal {
           
           ClusterController.createChart("bar", $('#docs'), $scope.BarChart, 
             barData, { responsive: false });
-        });
+        })
+        .then(() => { $scope.showProgress = false; return; });
     }
     
     /* @ngInject */
@@ -215,6 +227,8 @@ module flexportal {
       $scope.Rendering = null;
       $scope.FlexSearchUrl = FlexSearchUrl;
       $scope.prettysize = ClusterController.getPrettySizeFunc();
+      // First assume we have the demo index set up
+      $scope.hasDemoIndex = true; 
       
       // Clear the chart binding data if window is resized
       $(window).resize(function() {
@@ -243,6 +257,9 @@ module flexportal {
 
       // Get the data for the charts
       $scope.IndicesPromise = ClusterController.GetIndicesData(flexClient, $scope);
+      
+      // Check if we have a demo index or not
+      $scope.IndicesPromise.then(() => $scope.hasDemoIndex = $scope.Indices.some(i => i.IndexName == 'country'));
 
       $scope.ChartsDataStore = [];
       $scope.ChartsDataStore['indices'] = {
@@ -271,6 +288,15 @@ module flexportal {
       
       $scope.showDetails = function (indexName) {
         $state.go("indexDetails", {indexName: indexName});
+      }
+      
+      $scope.setupDemoIndex = function() {
+        $scope.showProgress = true;
+        flexClient.setupDemoIndex()
+        .then(() => $scope.hasDemoIndex = true)
+        .then(() => $scope.showProgress = false)
+        // Refresh the page
+        .then(() => $state.reload());
       }
     }
   }
