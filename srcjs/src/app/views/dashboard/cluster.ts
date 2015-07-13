@@ -27,6 +27,8 @@ module flexportal {
     
     // Helper function to pretty print byte values
     prettysize(s,n,o): string
+    // Helper function that sums up an array of numbers
+    sum(arr: number[]): number
     
     rerender(chart: any, show: boolean): void
     
@@ -143,12 +145,8 @@ module flexportal {
         .then(sizes => {
           $scope.Indices.forEach((idx, i) => idx.DiskSize = sizes[i]);
           $scope.ChartsDataStore['disk'] = {
-            Data: [
-              $scope.Indices
-                .map(i => i.DiskSize)
-                .reduce((acc, val) => acc + val, 0),
-              1000], // 1000 MB in total TODO
-            Labels: ["Used", "Free"]
+            Data: $scope.Indices.map(i => i.DiskSize),
+            Labels: $scope.Indices.map(i => i.IndexName)
           };
         })
         
@@ -298,6 +296,8 @@ module flexportal {
         // Refresh the page
         .then(() => $state.reload());
       }
+      
+      $scope.sum = function(arr) { return arr.reduce((acc, val) => acc + val, 0) };
     }
   }
 }
