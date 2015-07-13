@@ -5,6 +5,7 @@ module flexportal {
 	import SearchResults = FlexSearch.Core.SearchResults;
 	import FieldDto = FlexSearch.Core.FieldDto;
 	import IndexConfigurationDto = FlexSearch.Core.IndexConfigurationDto;
+	import MemoryDetailsResponse = FlexSearch.Core.MemoryDetailsResponse;
 	
 	export class IndexResult {
 		Fields: FieldDto[]
@@ -197,7 +198,13 @@ module flexportal {
 		public getIndexSize(indexName) {
 			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/size")
 			.then(FlexClient.getData, this.handleError)
-			.then(result => parseInt(result));
+			.then(result => parseInt(result), this.handleError);
+		}
+		
+		public getMemoryDetails() {
+			return this.$http.get(FlexSearchUrl + "/memory")
+			.then(FlexClient.getData, this.handleError)
+			.then(result => <MemoryDetailsResponse>result, this.handleError);
 		}
 		
 		public newPromise(data) {

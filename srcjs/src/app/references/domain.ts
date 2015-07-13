@@ -204,6 +204,12 @@ module FlexSearch.Core {
         ForceCreate: boolean;
         CreateJob: boolean;
     }
+    
+    export class MemoryDetailsResponse {
+        UsedMemory: number;
+        TotalMemory: number;
+        Usage: number;
+    }
 }
 
 module FlexSearch.DuplicateDetection {
@@ -265,5 +271,4 @@ module FlexSearch.DuplicateDetection {
         Quality: string;
         TargetScore: number;
     }
-
 }

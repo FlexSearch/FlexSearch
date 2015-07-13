@@ -64,7 +64,7 @@
 					<md-icon class="md-light large transparent">memory</md-icon>
 				</div>
 				<div layout="column" layout-align="center end">
-					<p class="md-display-1 font-weight-100">0.2Gb</p>
+					<p class="md-display-1 font-weight-100">{{prettysize(ChartsDataStore['memory'].Data[0])}}</p>
 					<p class="md-body-2 opacity-60">Memory Usage</p>
 				</div>
 			</md-toolbar>
@@ -78,7 +78,7 @@
 					<md-icon class="md-light large transparent">sd_storage</md-icon>
 				</div>
 				<div layout="column" layout-align="center end">
-					<p class="md-display-1 font-weight-100">{{ChartsDataStore['disk'].Data[0].toFixed(2)}}MB</p>
+					<p class="md-display-1 font-weight-100">{{prettysize(ChartsDataStore['disk'].Data[0])}}</p>
 					<p class="md-body-2 opacity-60">Disk Usage</p>
 				</div>
 			</md-toolbar>
