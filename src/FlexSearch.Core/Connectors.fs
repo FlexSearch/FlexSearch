@@ -229,7 +229,7 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
                 jobService.UpdateJob(jobId, JobStatus.Completed, rows)
                 Logger.Log
                     (sprintf "SQL connector: Job Finished. Query:{%s}. Index:{%s}" request.Query request.IndexName, 
-                     MessageKeyword.Plugin, MessageLevel.Info)
+                     MessageKeyword.Plugin, MessageLevel.Verbose)
             else 
                 jobService.UpdateJob(jobId, JobStatus.CompletedWithErrors, rows, "No rows returned.")
                 Logger.Log
