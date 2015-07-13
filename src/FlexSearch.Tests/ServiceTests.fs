@@ -114,6 +114,25 @@ module DocumentServiceTests =
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test 
                 <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = document.Fields.["t1"] @>
+
+        member __.``Should be able to delete all documents in an index``(index : Index.Dto, indexService : IIndexService, 
+                                                                         documentService : IDocumentService) =
+            index.Online <- true
+            test <@succeeded <| indexService.AddIndex(index) @>
+            [1..10] |> Seq.iter (fun i ->
+                let d = new Document.Dto(index.IndexName, i.ToString())
+                d.Fields.["t1"] <- "0"
+                test <@ succeeded <| documentService.AddDocument(d) @>)
+
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            
+            // Initially we have 10 docs
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 10 @>
+
+            // After deletion we have 0 docs
+            test <@ succeeded <| documentService.DeleteAllDocuments(index.IndexName) @>
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
+
     
     type ``Versioning tests``() = 
         

@@ -287,6 +287,23 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
             else FailureResponse(error, BadRequest)
 
 /// <summary>
+///  Deletes all documents
+/// </summary>
+/// <remarks>
+/// Deletes all document from the given index
+/// </remarks>
+/// <method>DELETE</method>
+/// <uri>/indices/:indexId/documents</uri>
+/// <resource>document</resource>
+/// <id>delete-documents</id>
+[<Name("DELETE-/indices/:id/documents")>]
+[<Sealed>]
+type DeleteDocumentsHandler(documentService : IDocumentService) = 
+    inherit HttpHandlerBase<NoBody, unit>()
+    override __.Process(request, _) = 
+        SomeResponse(documentService.DeleteAllDocuments(request.ResId.Value), Ok, BadRequest)
+
+/// <summary>
 ///  Delete a document
 /// </summary>
 /// <remarks>
