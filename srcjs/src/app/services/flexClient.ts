@@ -211,6 +211,12 @@ module flexportal {
 			return this.$http.put(FlexSearchUrl + "/setupdemo", {});
 		}
 		
+		public getIndexStatus(indexName) {
+			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/status")
+			.then(FlexClient.getData, this.handleError)
+			.then(result => <string>result.Status, this.handleError);
+		}
+		
 		public newPromise(data) {
 			return this.$q(function(resolve, reject) {
 				resolve(data);

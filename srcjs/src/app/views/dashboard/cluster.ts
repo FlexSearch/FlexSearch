@@ -6,6 +6,7 @@ module flexportal {
   export class IndexDetailedResult extends IndexResult {
     DocCount: number
     DiskSize: number
+    StatusReason: string
   }
 
   export interface IClusterScope extends ng.IScope, IMainScope {
@@ -131,6 +132,19 @@ module flexportal {
       $scope.showProgress = true;
       return flexClient.getIndices()
         .then(response => $scope.Indices = <IndexDetailedResult[]>response)
+        
+        // Get the status of each index
+        .then(() => flexClient.resolveAllPromises(
+            $scope.Indices.map(i => flexClient.getIndexStatus(i.IndexName))))
+        // Store the indexes on the main index
+        .then(statuses => {
+          $scope.Indices.forEach((idx, i) => idx.StatusReason = statuses[i]);
+          var grouped = _.groupBy(statuses, s => s);
+          $scope.ChartsDataStore['indices'] = {
+            Data: _.map(grouped, g => g.length),
+            Labels: Object.keys(grouped)
+          };
+        })
         
         // Get the number of documents in each index
         .then(() => flexClient.resolveAllPromises(
@@ -297,7 +311,10 @@ module flexportal {
         .then(() => $state.reload());
       }
       
-      $scope.sum = function(arr) { return arr.reduce((acc, val) => acc + val, 0) };
+      $scope.sum = function(arr) {
+        if(arr) return arr.reduce((acc, val) => acc + val, 0);
+        return 0; 
+      };
     }
   }
 }
