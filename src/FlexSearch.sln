@@ -21,8 +21,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Logging", "FlexS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.ControlPanel", "FlexSearch.ControlPanel\FlexSearch.ControlPanel.csproj", "{074409E5-778D-4D5C-8BC4-170D0D0C83B5}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Benchmarks", "FlexSearch.Benchmarks\FlexSearch.Benchmarks.fsproj", "{FC60337C-7E0A-4327-813D-0952FF7544B4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,16 +82,6 @@ Global
 		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|x64.ActiveCfg = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{FC60337C-7E0A-4327-813D-0952FF7544B4}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
