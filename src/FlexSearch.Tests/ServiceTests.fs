@@ -158,8 +158,10 @@ module DocumentServiceTests =
             test <@ succeeded delResult @>
             test <@ (extract delResult |> toSearchResults).RecordsReturned = 4 @>
 
+            test <@ succeeded <| indexService.Refresh index.IndexName @>
+
             // Now we should only have 6 docs left
-            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 10 @>
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 6 @>
 
     
     type ``Versioning tests``() = 

@@ -461,11 +461,14 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Deletes all the documents from the returned search query
         member __.DeleteDocumentsFromSearch(indexName, searchQuery) =
             maybe {
-                // First delete the documents
+                // First run the search query to get the results
+                let! searchResults = searchService.Search(searchQuery)
+
+                // Then delete the documents
                 do! indexName |> deleteByQuery searchQuery   
 
-                // Then return the search results
-                return! searchService.Search(searchQuery) }
+                // Finally return the search results
+                return searchResults }
             
 
 /// <summary>

@@ -826,6 +826,13 @@ module IndexWriter =
         writer.Token.Cancel()
         writer.ShardWriters |> Array.iter (fun s -> ShardWriter.close (s))
     
+    /// Refresh the index    
+    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
+    
+    /// Commit unsaved data to the index
+    let commit (forceCommit : bool) (s : T) = 
+        s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
+
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
     /// Add or update a document
@@ -881,13 +888,6 @@ module IndexWriter =
             s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
             s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
         }
-    
-    /// Refresh the index    
-    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
-    
-    /// Commit unsaved data to the index
-    let commit (forceCommit : bool) (s : T) = 
-        s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
     
     let getRealTimeSearchers (s : T) = 
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
