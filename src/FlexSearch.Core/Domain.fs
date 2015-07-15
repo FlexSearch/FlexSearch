@@ -901,6 +901,25 @@ module SearchQuery =
         new() = Dto(defString, defString)
         override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
+    /// Gets a search query from an Owin request using the optional body
+    let getQueryFromRequest request body =
+        let query = 
+            match body with
+            | Some(q) -> q
+            | None -> new Dto()
+        query.QueryString <- request.OwinContext |> stringFromQueryString "q" query.QueryString
+        query.Columns <- match request.OwinContext.Request.Query.Get("c") with
+                         | null -> query.Columns
+                         | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
+        query.Count <- request.OwinContext |> intFromQueryString "count" query.Count
+        query.Skip <- request.OwinContext |> intFromQueryString "skip" query.Skip
+        query.OrderBy <- request.OwinContext |> stringFromQueryString "orderby" query.OrderBy
+        query.OrderByDirection <- request.OwinContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
+        query.ReturnFlatResult <- request.OwinContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
+        query.SearchProfile <- request.OwinContext |> stringFromQueryString "searchprofile" query.SearchProfile
+        query.IndexName <- request.ResId.Value
+        query
+
 [<RequireQualifiedAccessAttribute>]
 module Document = 
     /// A document represents the basic unit of information which can be added or retrieved from the index. 

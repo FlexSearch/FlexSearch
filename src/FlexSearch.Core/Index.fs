@@ -583,6 +583,9 @@ module ShardWriter =
     
     /// Delete all documents in the index.
     let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll() |> ignore
+
+    /// Delete all documents returned by search query
+    let deleteFromSearch (query : FlexLucene.Search.Query) (sw: T)  = sw.TrackingIndexWriter.DeleteDocuments query |> ignore
     
     /// Updates a document by id by first deleting the document containing term and then 
     /// adding the new document.
@@ -860,6 +863,10 @@ module IndexWriter =
     /// Delete all documents in the index
     let deleteAllDocuments (s : T) = s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))
     
+    /// Deletes all documents returned by search query
+    // TODO: maybe include this in transaction log
+    let deleteAllDocumentsFromSearch q iw = iw.ShardWriters |> Array.Parallel.iter (ShardWriter.deleteFromSearch q)
+
     /// Delete a document from index
     let deleteDocument (id : string) (s : T) = 
         maybe { 
