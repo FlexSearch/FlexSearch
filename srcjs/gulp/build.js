@@ -71,18 +71,26 @@ module.exports = function(options) {
       .pipe($.flatten())
       .pipe(gulp.dest(options.dist + '/fonts/'));
   });
-
+  
   gulp.task('other', function () {
     return gulp.src([
       options.src + '/**/*',
-      '!' + options.src + '/**/*.{html,css,js,ts}'
+      '!' + options.src + '/**/*.{html,js,css,ts}'
     ])
       .pipe(gulp.dest(options.dist + '/'));
   });
+
+  // Task for copying over js libraries that should remain untouched
+  gulp.task('pure-libs', function() {
+    return gulp.src(options.src + '/app/references/*')
+      .pipe($.filter('process.js'))
+      .pipe(gulp.dest(options.tmp + '/serve/scripts'))
+      .pipe(gulp.dest(options.dist + '/scripts'))
+  })
 
   gulp.task('clean', ['tsd:purge'], function (done) {
     $.del([options.dist + '/', options.tmp + '/'], done);
   });
 
-  gulp.task('build', ['html', 'fonts', 'other']);
+  gulp.task('build', ['html', 'fonts', 'other', 'pure-libs']);
 };
