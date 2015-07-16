@@ -391,22 +391,44 @@ type GetJobByIdHandler(jobService : IJobService) =
 type GetSearchHandler(searchService : ISearchService) = 
     inherit HttpHandlerBase<SearchQuery.Dto, obj>(false)
     override __.Process(request, body) = 
-        let query = 
-            match body with
-            | Some(q) -> q
-            | None -> new SearchQuery.Dto()
-        query.QueryString <- request.OwinContext |> stringFromQueryString "q" query.QueryString
-        query.Columns <- match request.OwinContext.Request.Query.Get("c") with
-                         | null -> query.Columns
-                         | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
-        query.Count <- request.OwinContext |> intFromQueryString "count" query.Count
-        query.Skip <- request.OwinContext |> intFromQueryString "skip" query.Skip
-        query.OrderBy <- request.OwinContext |> stringFromQueryString "orderby" query.OrderBy
-        query.OrderByDirection <- request.OwinContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
-        query.ReturnFlatResult <- request.OwinContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
-        query.SearchProfile <- request.OwinContext |> stringFromQueryString "searchprofile" query.SearchProfile
-        query.IndexName <- request.ResId.Value
+        let query = SearchQuery.getQueryFromRequest request body
+            
         match searchService.Search(query) with
+        | Choice1Of2(result) -> 
+            if query.ReturnFlatResult then 
+                request.OwinContext.Response.Headers.Add
+                    ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
+                request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                SuccessResponse((toFlatResults result).Documents :> obj, Ok)
+            else SuccessResponse(toSearchResults (result) :> obj, Ok)
+        | Choice2Of2(error) -> FailureResponse(error, BadRequest)
+
+/// <summary>
+///  Deletes documents returned by search query
+/// </summary>
+/// <remarks>
+/// Deletes all document returned by the search query for the given index. Returns the records identified
+/// by the search query.
+/// </remarks>
+/// <method>DELETE</method>
+/// <parameters>
+/// <parameter name="q" required="true">Short hand for 'QueryString'.</parameter>
+/// <parameter name="count">Count parameter. Refer to 'Search Query' properties.</parameter>
+/// <parameter name="skip">Skip parameter. Refer to 'Search Query' properties.</parameter>
+/// <parameter name="orderby">Order by parameter. Refer to 'Search Query' properties.</parameter>
+/// <parameter name="orderbydirection">Order by Direction parameter. Refer to 'Search Query' properties.</parameter>
+/// </parameters>
+/// <uri>/indices/:indexId/search</uri>
+/// <resource>document</resource>
+/// <id>delete-documents</id>
+[<Name("DELETE-/indices/:id/search")>]
+[<Sealed>]
+type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) = 
+    inherit HttpHandlerBase<NoBody, obj>()
+    override __.Process(request, _) = 
+        let query = SearchQuery.getQueryFromRequest request <| Some (new SearchQuery.Dto())
+
+        match documentService.DeleteDocumentsFromSearch(request.ResId.Value, query) with
         | Choice1Of2(result) -> 
             if query.ReturnFlatResult then 
                 request.OwinContext.Response.Headers.Add

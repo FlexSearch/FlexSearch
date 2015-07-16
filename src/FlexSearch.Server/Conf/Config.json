@@ -1,0 +1,5 @@
+﻿{
+	HttpPort : 9800,
+	DataFolder : "./data",
+	NodeName : "FlexNode"
+}

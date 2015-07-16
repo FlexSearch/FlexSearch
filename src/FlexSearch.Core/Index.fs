@@ -583,6 +583,9 @@ module ShardWriter =
     
     /// Delete all documents in the index.
     let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll() |> ignore
+
+    /// Delete all documents returned by search query
+    let deleteFromSearch (query : FlexLucene.Search.Query) (sw: T)  = sw.TrackingIndexWriter.DeleteDocuments query |> ignore
     
     /// Updates a document by id by first deleting the document containing term and then 
     /// adding the new document.
@@ -823,6 +826,13 @@ module IndexWriter =
         writer.Token.Cancel()
         writer.ShardWriters |> Array.iter (fun s -> ShardWriter.close (s))
     
+    /// Refresh the index    
+    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
+    
+    /// Commit unsaved data to the index
+    let commit (forceCommit : bool) (s : T) = 
+        s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
+
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
     /// Add or update a document
@@ -860,6 +870,10 @@ module IndexWriter =
     /// Delete all documents in the index
     let deleteAllDocuments (s : T) = s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))
     
+    /// Deletes all documents returned by search query
+    // TODO: maybe include this in transaction log
+    let deleteAllDocumentsFromSearch q iw = iw.ShardWriters |> Array.Parallel.iter (ShardWriter.deleteFromSearch q)
+
     /// Delete a document from index
     let deleteDocument (id : string) (s : T) = 
         maybe { 
@@ -874,13 +888,6 @@ module IndexWriter =
             s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
             s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
         }
-    
-    /// Refresh the index    
-    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
-    
-    /// Commit unsaved data to the index
-    let commit (forceCommit : bool) (s : T) = 
-        s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
     
     let getRealTimeSearchers (s : T) = 
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])

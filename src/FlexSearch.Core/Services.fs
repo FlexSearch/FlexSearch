@@ -61,8 +61,9 @@ type IDocumentService =
     abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, IMessage>
     abstract AddOrUpdateDocument : document:Document.Dto -> Choice<unit, IMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, IMessage>
-    abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, IMessage>
+    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery.Dto -> Choice<SearchResults<T>, IMessage>
     abstract DeleteAllDocuments : indexName:string -> Choice<unit, IMessage>
+    abstract AddDocument : document:Document.Dto -> Choice<CreateResponse, IMessage>
     abstract TotalDocumentCount : indexName:string -> Choice<int, IMessage>
 
 /// Search related operations
@@ -72,6 +73,7 @@ type ISearchService =
     abstract Search : searchQuery:SearchQuery.Dto -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
     abstract Search : searchQuery:SearchQuery.Dto * searchProfileString:string
      -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
+    abstract GetLuceneQuery : searchQuery:SearchQuery.Dto -> Choice<FlexLucene.Search.Query, IMessage>
 
 /// Queuing related operations
 type IQueueService = 
@@ -358,6 +360,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
         maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
                 return! searchWrapper (writers, query, searchQuery) }
+
     interface ISearchService with
         
         member __.Search(searchQuery : SearchQuery.Dto, searchProfileString : string) = 
@@ -378,10 +381,23 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
             search (searchQuery, Some <| inputFields)
         member __.Search(searchQuery : SearchQuery.Dto) = search (searchQuery, None)
 
+        // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
+        member __.GetLuceneQuery(searchQuery: SearchQuery.Dto) =
+            maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+                    return! generateSearchQuery (writers, searchQuery, None, queryTypes) }
+
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 
+    let deleteByQuery searchQuery indexName = 
+        maybe { 
+            let! query = searchService.GetLuceneQuery searchQuery
+            let! writer = indexService.IsIndexOnline indexName
+
+            writer |> IndexWriter.deleteAllDocumentsFromSearch query
+        }
+
     interface IDocumentService with
-        
+
         /// Returns the total number of documents present in the index
         member __.TotalDocumentCount(indexName : string) = maybe { let! writer = indexService.IsIndexOnline <| indexName
                                                                    return writer |> IndexWriter.getDocumentCount }
@@ -441,6 +457,19 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Delete all the documents present in an index
         member __.DeleteAllDocuments indexName = maybe { let! writer = indexService.IsIndexOnline <| indexName
                                                          writer |> IndexWriter.deleteAllDocuments }
+
+        /// Deletes all the documents from the returned search query
+        member __.DeleteDocumentsFromSearch(indexName, searchQuery) =
+            maybe {
+                // First run the search query to get the results
+                let! searchResults = searchService.Search(searchQuery)
+
+                // Then delete the documents
+                do! indexName |> deleteByQuery searchQuery   
+
+                // Finally return the search results
+                return searchResults }
+            
 
 /// <summary>
 /// Job service class which will be dynamically injected using IOC.

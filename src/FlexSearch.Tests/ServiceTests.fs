@@ -118,7 +118,7 @@ module DocumentServiceTests =
         member __.``Should be able to delete all documents in an index``(index : Index.Dto, indexService : IIndexService, 
                                                                          documentService : IDocumentService) =
             index.Online <- true
-            test <@succeeded <| indexService.AddIndex(index) @>
+            test <@ succeeded <| indexService.AddIndex(index) @>
             [1..10] |> Seq.iter (fun i ->
                 let d = new Document.Dto(index.IndexName, i.ToString())
                 d.Fields.["t1"] <- "0"
@@ -132,6 +132,36 @@ module DocumentServiceTests =
             // After deletion we have 0 docs
             test <@ succeeded <| documentService.DeleteAllDocuments(index.IndexName) @>
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
+
+        member __.``Should be able to delete documents returned by search query``(index: Index.Dto, indexService: IIndexService,
+                                                                                  documentService: IDocumentService, searchService: ISearchService) =
+            index.Online <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            [1..10] |> Seq.iter (fun i ->
+                let d = new Document.Dto(index.IndexName, i.ToString())
+                d.Fields.["i1"] <- i.ToString()
+                test <@ succeeded <| documentService.AddDocument(d) @>)
+
+            test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+
+            // Initially we have 10 docs
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 10 @>
+
+            // Create a query that brings back 4 docs
+            let query = new SearchQuery.Dto(index.IndexName, "i1 <= '4'")
+            let searchRes = searchService.Search(query)
+            test <@ succeeded searchRes @>
+            test <@ (extract searchRes |> toSearchResults).RecordsReturned = 4 @>
+
+            // Execute deletion query 
+            let delResult = documentService.DeleteDocumentsFromSearch(index.IndexName, query)
+            test <@ succeeded delResult @>
+            test <@ (extract delResult |> toSearchResults).RecordsReturned = 4 @>
+
+            test <@ succeeded <| indexService.Refresh index.IndexName @>
+
+            // Now we should only have 6 docs left
+            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 6 @>
 
     
     type ``Versioning tests``() = 
