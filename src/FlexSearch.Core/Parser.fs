@@ -50,11 +50,12 @@ module Parsers =
     
     /// String literal parser. Takes '\' as espace character
     /// Based on: http://www.quanttec.com/fparsec/tutorial.html
-    let stringLiteralAsString = 
-        let escape = anyOf "'\\" |>> function 
-                     | c -> string c // every other char is mapped to itself
-        between (pstring "\'") (pstring "\'") 
-            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" .>> escape)) .>> ws
+    let stringLiteralAsString : Parser<string, unit> = 
+        let normalChar = satisfy (fun c -> c <> '\\' && c <> '\'')
+        let escapedChar = pstring "\\'" |>> (fun _ -> '\'')
+        let backslash = (pchar '\\') .>> followedBy (satisfy <| (<>) '\'')
+        between (pstring "\'") (pstring "\'")
+            (manyChars (normalChar <|> escapedChar <|> backslash))
                 
     let stringLiteral = stringLiteralAsString |>> SingleValue 
         
