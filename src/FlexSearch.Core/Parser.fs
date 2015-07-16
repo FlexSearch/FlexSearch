@@ -48,41 +48,24 @@ module Parsers =
     let ws = spaces
     let str_ws s = pstringCI s .>> ws
     
-    /// <summary>
     /// String literal parser. Takes '\' as espace character
     /// Based on: http://www.quanttec.com/fparsec/tutorial.html
-    /// </summary>
-    let stringLiteral = 
-        let escape = anyOf "'" |>> function 
-                     | c -> string c // every other char is mapped to itself
-        between (pstring "\'") (pstring "\'") 
-            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) |>> SingleValue 
-        .>> ws
-    
     let stringLiteralAsString = 
-        let escape = anyOf "'" |>> function 
+        let escape = anyOf "'\\" |>> function 
                      | c -> string c // every other char is mapped to itself
         between (pstring "\'") (pstring "\'") 
-            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) .>> ws
+            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" .>> escape)) .>> ws
+                
+    let stringLiteral = stringLiteralAsString |>> SingleValue 
+        
+    let listOfValues = (str_ws "[" >>. sepBy1 stringLiteralAsString (str_ws ",") .>> str_ws "]") |>> ValueList .>> ws
     
-    let stringLiteralList = 
-        let escape = anyOf "'" |>> function 
-                     | c -> string c // every other char is mapped to itself
-        between (pstring "\'") (pstring "\'") 
-            (stringsSepBy (manySatisfy (fun c -> c <> '\'' && c <> '\\')) (pstring "\\" >>. escape)) .>> ws
-    
-    let listOfValues = (str_ws "[" >>. sepBy1 stringLiteralList (str_ws ",") .>> str_ws "]") |>> ValueList .>> ws
-    
-    /// <summary>
     /// Value parser
     /// Note: THe order of choice is important as stringLiteral uses
     /// character backtracking.This is done to avoid the use of attempt.
-    /// </summary>
     let value = choice [ stringLiteral; listOfValues ]
     
-    /// <summary>
     /// Identifier implementation. Alphanumeric character without spaces
-    /// </summary>
     let identifier = 
         many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''') 
             "Field name should be alpha number without '(', ')' and ' '." .>> ws
