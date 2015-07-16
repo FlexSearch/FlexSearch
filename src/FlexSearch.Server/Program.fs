@@ -12,7 +12,7 @@ let main argv =
     //    // Load server settings
     let settings = 
         match ServerSettings.createFromFile 
-                  (Path.Combine(Constants.ConfFolder, "Config.yml"), new YamlFormatter() :> IFormatter) with
+                  (Path.Combine(Constants.ConfFolder, "Config.json"), jsonFormatter) with
         | Choice1Of2(s) -> s
         | Choice2Of2(e) -> 
             //            logger.TraceError("Error parsing 'Config.yml' file.", e)
