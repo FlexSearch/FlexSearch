@@ -1,0 +1,433 @@
+definitions:
+    NoBody:
+      Properties: {}
+
+    ShardConfiguration:
+      
+      Properties:
+        ShardCount:
+          
+          Type: integer
+
+    IndexConfiguration:
+      
+      Properties:
+        CommitTimeSeconds:
+          
+          Type: integer
+        CommitEveryNFlushes:
+          
+          Type: integer
+        CommitOnClose:
+          
+          Type: boolean
+        AutoCommit:
+          
+          Type: boolean
+        DirectoryType:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - FileSystem
+          - MemoryMapped
+          - Ram
+        DefaultWriteLockTimeout:
+          
+          Type: integer
+        RamBufferSizeMb:
+          
+          Type: integer
+        MaxBufferedDocs:
+          
+          Type: integer
+        RefreshTimeMilliseconds:
+          
+          Type: integer
+        AutoRefresh:
+          
+          Type: boolean
+        IndexVersion:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - Lucene_4_x_x
+          - Lucene_5_0_0
+        UseBloomFilterForId:
+          
+          Type: boolean
+        DefaultFieldSimilarity:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - BM25
+          - TFIDF
+
+    TokenFilter:
+      Properties:
+        FilterName:
+          
+          Type: string
+        Parameters:
+          
+          Type: object
+          AdditionalProperties:
+            Type: string
+          
+    Tokenizer:
+      
+      Type: object
+      Properties:
+        TokenizerName:
+          
+          Type: string
+        Parameters:
+          
+          Type: object
+          AdditionalProperties:
+            Type: string
+          
+    Analyzer:
+      Type: object
+      Properties:
+        AnalyzerName:
+          
+          Type: string
+        Tokenizer:
+          $ref: "#/definitions/Tokenizer"
+        Filters:
+          
+          Type: array
+          Items:
+            - $ref: "#/definitions/TokenFilter"
+
+    Field:
+      Properties:
+        FieldName:
+          
+          Type: string
+        Analyze:
+          
+          Type: boolean
+        Index:
+          
+          Type: boolean
+        Store:
+          
+          Type: boolean
+        AllowSort:
+          
+          Type: boolean
+        IndexAnalyzer:
+          
+          Type: string
+        SearchAnalyzer:
+          
+          Type: string
+        FieldType:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - Int
+          - Double
+          - ExactText
+          - Text
+          - Highlight
+          - Bool
+          - Date
+          - DateTime
+          - Custom
+          - Stored
+          - Long
+        Similarity:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - BM25
+          - TFIDF
+        IndexOptions:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - DocsOnly
+          - DocsAndFreqs
+          - DocsAndFreqsAndPositions
+          - DocsAndFreqsAndPositionsAndOffsets
+        TermVector:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - DoNotStoreTermVector
+          - StoreTermVector
+          - StoreTermVectorWithPositions
+          - StoreTermVectorWithPositionsandOffsets
+        OmitNorms:
+          
+          Type: boolean
+        ScriptName:
+          
+          Type: string
+
+    HighlightOption:
+      Properties:
+        FragmentsToReturn:
+          
+          Type: integer
+        HighlightedFields:
+          
+          Type: array
+          Items:
+            - Type: string
+        PostTag:
+          
+          Type: string
+        PreTag:
+          
+          Type: string
+
+    SearchQuery:
+      Properties:
+        QueryName:
+          
+          Type: string
+        Columns:
+          
+          Type: array
+          Items:
+          - Type: string
+        Count:
+          
+          Type: integer
+        Highlights:
+          
+          Type: 
+            - $ref: "#/definitions/HighlightOption"
+        IndexName:
+          
+          Type: string
+        OrderBy:
+          
+          Type: string
+        OrderByDirection:
+          
+          Type: string
+        CutOff:
+          
+          Type: Float
+        DistinctBy:
+          
+          Type: string
+        Skip:
+          
+          Type: integer
+        QueryString:
+          
+          Type: string
+        ReturnFlatResult:
+          
+          Type: boolean
+        ReturnScore:
+          
+          Type: boolean
+        SearchProfile:
+          
+          Type: string
+        SearchProfileScript:
+          
+          Type: string
+        OverrideProfileOptions:
+          
+          Type: boolean
+        ReturnEmptyStringForNull:
+          
+          Type: boolean
+
+    Document:
+      Properties:
+        Fields:
+          
+          Type: object
+          AdditionalProperties:
+            Type: string
+        Id:
+          
+          Type: string
+        TimeStamp:
+          
+          Type: integer
+        IndexName:
+          
+          Type: string
+        Highlights:
+          
+          Type: array
+          Items:
+          - Type: string
+        Score:
+          
+          Type: Float
+          
+    Index:
+      Properties:
+        IndexName:
+          
+          Type: string
+        Fields:
+          
+          Type: array
+          Items:
+            - $ref: "#/definitions/Field"
+        SearchProfiles:
+          
+          Type: array
+          Items:
+            - $ref: "#/definitions:SearchQuery"
+        ShardConfiguration:
+          $ref: "#/definitions:ShardConfiguration"
+        IndexConfiguration:
+          $ref: "#/definitions:IndexConfiguration"
+        Online:
+          
+          Type: boolean
+          
+    DuplicateDetectionReportRequest:
+      Properties:
+        SourceFileName:
+          
+          Type: string
+        ProfileName:
+          
+          Type: string
+        IndexName:
+          
+          Type: string
+        QueryString:
+          
+          Type: string
+        SelectionQuery:
+          
+          Type: string
+        CutOff:
+          
+          Type: Float
+      
+    DuplicateDetectionRequest:
+      Properties:
+        SelectionQuery:
+          
+          Type: string
+        DisplayName:
+          
+          Type: string
+        ThreadCount:
+          
+          Type: integer
+        IndexName:
+          
+          Type: string
+        ProfileName:
+          
+          Type: string
+        MaxRecordsToScan:
+          
+          Type: integer
+        DuplicatesCount:
+          
+          Type: integer
+      
+    SqlIndexingRequest:
+      Properties:
+        IndexName:
+          
+          Type: string
+        Query:
+          
+          Type: string
+        ConnectionString:
+          
+          Type: string
+        ForceCreate:
+          
+          Type: boolean
+        CreateJob:
+          
+          Type: boolean
+
+    CsvIndexingRequest:
+      Properties:
+        IndexName:
+          
+          Type: string
+        HasHeaderRecord:
+          
+          Type: boolean
+        Headers:
+          
+          Type: array
+          Items:
+          - Type: string
+        Path:
+          
+          Type: string
+
+    SearchProfileTestDto:
+      Properties:
+        SearchQuery:
+          $ref: "#/definitions/SearchQuery"
+        SearchProfile:
+          
+          Type: string
+      
+    MemoryDetailsResponse:
+      Properties:
+        UsedMemory:
+          
+          Type: integer
+        TotalMemory:
+          
+          Type: integer
+        Usage:
+          
+          Type: Float
+      
+    AnalysisRequest:
+      Properties:
+        Text:
+          
+          Type: string
+          
+    Job:
+      Properties:
+        JobId:
+          
+          Type: string
+        TotalItems:
+          
+          Type: integer
+        ProcessedItems:
+          
+          Type: integer
+        FailedItems:
+          
+          Type: integer
+        Status:
+          
+          Type: string
+          Enum:
+          - Undefined
+          - Initializing
+          - Initialized
+          - InProgress
+          - Completed
+          - CompletedWithErrors
+        Message:
+          
+          Type: string
+          
+          

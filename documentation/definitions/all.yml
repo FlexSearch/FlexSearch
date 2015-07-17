@@ -1,0 +1,823 @@
+Http+NoBody:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties: {}
+  AllowAdditionalProperties: true
+ShardConfiguration: &o7
+  Required: true
+  Type: Object, Null
+  AllowAdditionalItems: true
+  Properties:
+    ShardCount:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+  AllowAdditionalProperties: true
+IndexConfiguration: &o8
+  Required: true
+  Type: Object, Null
+  AllowAdditionalItems: true
+  Properties:
+    CommitTimeSeconds:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    CommitEveryNFlushes:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    CommitOnClose:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    AutoCommit:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    DirectoryType:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - &o0 []
+      - &o1 []
+      - &o2 []
+      - &o4 []
+    DefaultWriteLockTimeout:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    RamBufferSizeMb:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    MaxBufferedDocs:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    RefreshTimeMilliseconds:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    AutoRefresh:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    IndexVersion:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+    UseBloomFilterForId:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    DefaultFieldSimilarity:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+  AllowAdditionalProperties: true
+TokenFilter:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    FilterName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Parameters:
+      Required: true
+      Type: Object, Null
+      AllowAdditionalItems: true
+      AdditionalProperties:
+        Type: String, Null
+        AllowAdditionalItems: true
+        AllowAdditionalProperties: true
+      AllowAdditionalProperties: true
+Tokenizer: &o3
+  Required: true
+  Type: Object, Null
+  AllowAdditionalItems: true
+  Properties:
+    TokenizerName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Parameters:
+      Required: true
+      Type: Object, Null
+      AllowAdditionalItems: true
+      AdditionalProperties:
+        Type: String, Null
+        AllowAdditionalItems: true
+        AllowAdditionalProperties: true
+      AllowAdditionalProperties: true
+Analyzer:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    AnalyzerName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Tokenizer: *o3
+    Filters:
+      Required: true
+      Type: Array, Null
+      Items:
+      - Type: Object, Null
+        AllowAdditionalItems: true
+        Properties:
+          FilterName:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          Parameters:
+            Required: true
+            Type: Object, Null
+            AllowAdditionalItems: true
+            AdditionalProperties:
+              Type: String, Null
+              AllowAdditionalItems: true
+              AllowAdditionalProperties: true
+            AllowAdditionalProperties: true
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+Field: &o6
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    FieldName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Analyze:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Index:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Store:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    AllowSort:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    IndexAnalyzer:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    SearchAnalyzer:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    FieldType:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+      - *o4
+      - &o5 []
+      - &o10 []
+      - []
+      - []
+      - []
+      - []
+      - []
+      - []
+    Similarity:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+    IndexOptions:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+      - *o4
+      - *o5
+    TermVector:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+      - *o4
+      - *o5
+    OmitNorms:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ScriptName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+HighlightOption:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    FragmentsToReturn:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    HighlightedFields:
+      Required: true
+      Type: Array, Null
+      Items:
+      - *o6
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    PostTag:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    PreTag:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+SearchQuery: &o9
+  Required: true
+  Type: Object, Null
+  AllowAdditionalItems: true
+  Properties:
+    QueryName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Columns:
+      Required: true
+      Type: Array, Null
+      Items:
+      - Type: String, Null
+        AllowAdditionalItems: true
+        AllowAdditionalProperties: true
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Count:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Highlights:
+      Required: true
+      Type: Object, Null
+      AllowAdditionalItems: true
+      Properties:
+        FragmentsToReturn:
+          Required: true
+          Type: Integer
+          AllowAdditionalItems: true
+          AllowAdditionalProperties: true
+        HighlightedFields:
+          Required: true
+          Type: Array, Null
+          Items:
+          - Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          AllowAdditionalItems: true
+          AllowAdditionalProperties: true
+        PostTag:
+          Required: true
+          Type: String, Null
+          AllowAdditionalItems: true
+          AllowAdditionalProperties: true
+        PreTag:
+          Required: true
+          Type: String, Null
+          AllowAdditionalItems: true
+          AllowAdditionalProperties: true
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    OrderBy:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    OrderByDirection:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    CutOff:
+      Required: true
+      Type: Float
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    DistinctBy:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Skip:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    QueryString:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ReturnFlatResult:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ReturnScore:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    SearchProfile:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    SearchProfileScript:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    OverrideProfileOptions:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ReturnEmptyStringForNull:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+Document:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    Fields:
+      Required: true
+      Type: Object, Null
+      AllowAdditionalItems: true
+      AdditionalProperties:
+        Type: String, Null
+        AllowAdditionalItems: true
+        AllowAdditionalProperties: true
+      AllowAdditionalProperties: true
+    Id:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    TimeStamp:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Highlights:
+      Required: true
+      Type: Array, Null
+      Items:
+      - Type: String, Null
+        AllowAdditionalItems: true
+        AllowAdditionalProperties: true
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Score:
+      Required: true
+      Type: Float
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+Index:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Fields:
+      Required: true
+      Type: Array, Null
+      Items:
+      - *o6
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    SearchProfiles:
+      Required: true
+      Type: Array, Null
+      Items:
+      - Type: Object, Null
+        AllowAdditionalItems: true
+        Properties:
+          QueryName:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          Columns:
+            Required: true
+            Type: Array, Null
+            Items:
+            - Type: String, Null
+              AllowAdditionalItems: true
+              AllowAdditionalProperties: true
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          Count:
+            Required: true
+            Type: Integer
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          Highlights:
+            Required: true
+            Type: Object, Null
+            AllowAdditionalItems: true
+            Properties:
+              FragmentsToReturn:
+                Required: true
+                Type: Integer
+                AllowAdditionalItems: true
+                AllowAdditionalProperties: true
+              HighlightedFields:
+                Required: true
+                Type: Array, Null
+                Items:
+                - Type: String, Null
+                  AllowAdditionalItems: true
+                  AllowAdditionalProperties: true
+                AllowAdditionalItems: true
+                AllowAdditionalProperties: true
+              PostTag:
+                Required: true
+                Type: String, Null
+                AllowAdditionalItems: true
+                AllowAdditionalProperties: true
+              PreTag:
+                Required: true
+                Type: String, Null
+                AllowAdditionalItems: true
+                AllowAdditionalProperties: true
+          IndexName:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          OrderBy:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          OrderByDirection:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          CutOff:
+            Required: true
+            Type: Float
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          DistinctBy:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          Skip:
+            Required: true
+            Type: Integer
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          QueryString:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          ReturnFlatResult:
+            Required: true
+            Type: Boolean
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          ReturnScore:
+            Required: true
+            Type: Boolean
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          SearchProfile:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          SearchProfileScript:
+            Required: true
+            Type: String, Null
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          OverrideProfileOptions:
+            Required: true
+            Type: Boolean
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+          ReturnEmptyStringForNull:
+            Required: true
+            Type: Boolean
+            AllowAdditionalItems: true
+            AllowAdditionalProperties: true
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ShardConfiguration: *o7
+    IndexConfiguration: *o8
+    Online:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+DuplicateDetectionReportRequest:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    SourceFileName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ProfileName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    QueryString:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    SelectionQuery:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    CutOff:
+      Required: true
+      Type: Float
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+  AllowAdditionalProperties: true
+DuplicateDetectionRequest:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    SelectionQuery:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    DisplayName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ThreadCount:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ProfileName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    MaxRecordsToScan:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    DuplicatesCount:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    NextId:
+      Required: true
+      Type: Object, Null
+      AllowAdditionalItems: true
+      Properties:
+        Value:
+          Required: true
+          Type: Integer
+          AllowAdditionalItems: true
+          AllowAdditionalProperties: true
+      AllowAdditionalProperties: true
+  AllowAdditionalProperties: true
+SqlIndexingRequest:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Query:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ConnectionString:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ForceCreate:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    CreateJob:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+CsvIndexingRequest:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    IndexName:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    HasHeaderRecord:
+      Required: true
+      Type: Boolean
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Headers:
+      Required: true
+      Type: Array, Null
+      Items:
+      - Type: String, Null
+        AllowAdditionalItems: true
+        AllowAdditionalProperties: true
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Path:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+SearchProfileTestDto:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    SearchQuery: *o9
+    SearchProfile:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+  AllowAdditionalProperties: true
+MemoryDetailsResponse:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    UsedMemory:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    TotalMemory:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Usage:
+      Required: true
+      Type: Float
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+  AllowAdditionalProperties: true
+AnalysisRequest:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    Text:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+Job:
+  Type: Object
+  AllowAdditionalItems: true
+  Properties:
+    JobId:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    TotalItems:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    ProcessedItems:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    FailedItems:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+    Status:
+      Required: true
+      Type: Integer
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
+      Enum:
+      - *o0
+      - *o1
+      - *o2
+      - *o4
+      - *o5
+      - *o10
+    Message:
+      Required: true
+      Type: String, Null
+      AllowAdditionalItems: true
+      AllowAdditionalProperties: true
