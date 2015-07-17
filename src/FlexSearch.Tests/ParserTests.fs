@@ -8,12 +8,12 @@ let parser = new FlexParser() :> IFlexParser
 let test p str = 
     match FParsec.CharParsers.run p str with
     | Success(_, _, _) -> ()
-    | Failure(errorMsg, _, _) -> raise <| invalidOp (errorMsg)
+    | Failure(errorMsg, _, _) -> raise <| invalidOp (sprintf "%A" errorMsg)
 
 let test2 str = 
     match parser.Parse(str) with
     | Choice1Of2(_) -> ()
-    | Choice2Of2(errorMsg) -> raise <| invalidOp (errorMsg.ToString())
+    | Choice2Of2(errorMsg) -> raise <| invalidOp (sprintf "%A" errorMsg)
 
 type SearchParserTests() = 
     member __.``Single escape character should be accepted``() = 

@@ -56,6 +56,7 @@ module Parsers =
         let backslash = (pchar '\\') .>> followedBy (satisfy <| (<>) '\'')
         between (pstring "\'") (pstring "\'")
             (manyChars (normalChar <|> escapedChar <|> backslash))
+        .>> ws
                 
     let stringLiteral = stringLiteralAsString |>> SingleValue 
         
