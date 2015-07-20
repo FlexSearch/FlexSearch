@@ -166,7 +166,7 @@ type ``Index Update Tests``() =
 
 type ``Delete Index Test 1``() = 
     [<Example("delete-indices-id-1", "")>]
-    member __.``Delete an index by id`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Delete an index by id`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         client.AddIndex(index).Result |> isCreated
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
 
@@ -307,7 +307,7 @@ type ``Search Tests``() =
     //let indexData = Container.Resolve<FlexSearch.Core.Services.DemoIndexService>().DemoData().Value
     
     let Query (queryString : string) (recordsReturned : int) (available : int) (client : FlexClient) = 
-        let searchQuery = new SearchQuery.SearchQuery("country", queryString)
+        let searchQuery = new SearchQuery("country", queryString)
         searchQuery.Count <- 300
         searchQuery.Columns <- [|"countryname"; "agriproducts"; "governmenttype"; "population" |]
         let response = client.Search(searchQuery).Result
@@ -418,10 +418,10 @@ type ``Search Tests``() =
     
     [<Example("post-indices-search-highlighting-1", "Text highlighting example")>]
     member __.``Search Highlight Feature Test1`` (client : FlexClient) = 
-        let query = new SearchQuery.SearchQuery("country", "background = 'most prosperous countries'")
+        let query = new SearchQuery("country", "background = 'most prosperous countries'")
         let highlight = new List<string>()
         highlight.Add("background")
-        query.Highlights <- new HighlightOption.HighlightOption(highlight |> Seq.toArray)
+        query.Highlights <- new HighlightOption(highlight |> Seq.toArray)
         query.Highlights.FragmentsToReturn <- 2
         query.Columns <- [|"country"; "background"|]
         let result = client.Search(query).Result

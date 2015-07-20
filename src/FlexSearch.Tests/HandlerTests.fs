@@ -9,7 +9,7 @@ module CsvHandlerTests =
 
     type ImportCsvTests() = 
         
-        let generateCsvIndexJob queueService jobService (indexService : IIndexService) (index : Index.Index) = 
+        let generateCsvIndexJob queueService jobService (indexService : IIndexService) (index : Index) = 
             let csvReq = 
                 new CsvIndexingRequest(IndexName = index.IndexName, HasHeaderRecord = true, Path = "..\\..\\test.csv") 
                 |> Some
@@ -18,7 +18,7 @@ module CsvHandlerTests =
             test <@ succeeded <| indexService.AddIndex(index) @>
             csvHandler.Process(reqCntxt, csvReq)
         
-        member __.``Should create a CSV Indexing job when file path is given`` (index : Index.Index, 
+        member __.``Should create a CSV Indexing job when file path is given`` (index : Index, 
                                                                                 queueService : IQueueService, 
                                                                                 jobService : IJobService, 
                                                                                 indexService : IIndexService) = 
@@ -26,7 +26,7 @@ module CsvHandlerTests =
             let jobResponse = index |> generateCsvIndexJob queueService jobService indexService
             test <@ rSucceeded <| jobResponse @>
         
-        member __.``Should Change the job status to Completed when it's done`` (index : Index.Index, 
+        member __.``Should Change the job status to Completed when it's done`` (index : Index, 
                                                                                 queueService : IQueueService, 
                                                                                 jobService : IJobService, 
                                                                                 indexService : IIndexService) = 

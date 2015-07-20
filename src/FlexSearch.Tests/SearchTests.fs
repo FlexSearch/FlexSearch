@@ -5,50 +5,50 @@ open Swensen.Unquote
 open System.Linq
 
 /// General search related helpers
-let getQuery (indexName, queryString) = new SearchQuery.SearchQuery(indexName, queryString)
+let getQuery (indexName, queryString) = new SearchQuery(indexName, queryString)
 
-let withName(name) (query : SearchQuery.SearchQuery) =
+let withName(name) (query : SearchQuery) =
     query.QueryName <- name
     query
 
-let withColumns (columns : string []) (query : SearchQuery.SearchQuery) = 
+let withColumns (columns : string []) (query : SearchQuery) = 
     query.Columns <- columns
     query
 
-let withSearchProfile (profileName : string) (query : SearchQuery.SearchQuery) = 
+let withSearchProfile (profileName : string) (query : SearchQuery) = 
     query.SearchProfile <- profileName
     query
 
-let withProfileOverride (query : SearchQuery.SearchQuery) =
+let withProfileOverride (query : SearchQuery) =
     query.OverrideProfileOptions <- true
     query
 
-let withHighlighting (option : HighlightOption.HighlightOption) (query : SearchQuery.SearchQuery) = 
+let withHighlighting (option : HighlightOption) (query : SearchQuery) = 
     query.Highlights <- option
     query
 
-let withOrderBy (column : string) (query : SearchQuery.SearchQuery) = 
+let withOrderBy (column : string) (query : SearchQuery) = 
     query.OrderBy <- column
     query
 
-let withOrderByDesc (column : string) (query : SearchQuery.SearchQuery) = 
+let withOrderByDesc (column : string) (query : SearchQuery) = 
     query.OrderBy <- column
     query.OrderByDirection <- "desc"
     query
 
-let withDistinctBy (column : string) (query : SearchQuery.SearchQuery) = 
+let withDistinctBy (column : string) (query : SearchQuery) = 
     query.DistinctBy <- column
     query
 
-let withNoScore (query : SearchQuery.SearchQuery) = 
+let withNoScore (query : SearchQuery) = 
     query.ReturnScore <- false
     query
 
-let withCount (count : int) (query : SearchQuery.SearchQuery) = 
+let withCount (count : int) (query : SearchQuery) = 
     query.Count <- count
     query
 
-let withSkip (skip : int) (query : SearchQuery.SearchQuery) = 
+let withSkip (skip : int) (query : SearchQuery) = 
     query.Skip <- skip
     query
 
@@ -57,7 +57,7 @@ let searchAndExtract (searchService : ISearchService) (query) =
     test <@ succeeded <| result @>
     (extract <| result) |> toSearchResults
 
-let searchForFlatAndExtract (searchService : ISearchService) (query : SearchQuery.SearchQuery) = 
+let searchForFlatAndExtract (searchService : ISearchService) (query : SearchQuery) = 
     query.ReturnFlatResult <- true
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
@@ -92,7 +92,7 @@ let verifyReturnedDocsCount (indexName : string) (expectedCount : int) (queryStr
     let result = getQuery (indexName, queryString) |> searchAndExtract searchService
     result |> assertReturnedDocsCount expectedCount
 
-type ``Column Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Column Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
 1,a,jhonson,1,test1
@@ -172,7 +172,7 @@ id,et1,t1,i1,s1
             |> searchAndExtract searchService
         result |> assertFieldPresent "s1"
 
-type ``Paging Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Paging Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
 1,Aaron,jhonson,1
@@ -209,7 +209,7 @@ id,t1,t2,i1
         test <@ result.Documents.[0].Id = expected1 @>
         test <@ result.Documents.[1].Id = expected2 @>
 
-type ``Sorting Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Sorting Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t2,i1,i2
 1,a,jhonson,1,1
@@ -284,7 +284,7 @@ id,et1,t2,i1,i2
         result |> assertFieldValue 3 "i2" "4"
         result |> assertFieldValue 4 "i2" "5"
 
-type ``Highlighting Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Highlighting Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,h1
 1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
@@ -292,7 +292,7 @@ id,et1,h1
 """
     do indexTestData (testData, index, indexService, documentService)
     member __.``Searching for abstract match 'practical approach' with orderby topic should return 1 records``() = 
-        let hlighlightOptions = new HighlightOption.HighlightOption([| "h1" |])
+        let hlighlightOptions = new HighlightOption([| "h1" |])
         hlighlightOptions.FragmentsToReturn <- 1
         hlighlightOptions.PreTag <- "<imp>"
         hlighlightOptions.PostTag <- "</imp>"
@@ -308,7 +308,7 @@ id,et1,h1
         test <@ result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>") @>
         test <@ result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") @>
 
-type ``Search profile Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Search profile Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,et2
 1,a,h
@@ -489,7 +489,7 @@ id,et1,et2
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "h"
 
-type ``DistinctBy Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``DistinctBy Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
 1,a,jhonson,1,test1
@@ -518,7 +518,7 @@ id,et1,t1,i1,s1
 // ----------------------------------------------------------------------------
 // Query type tests
 // ----------------------------------------------------------------------------
-type ``Phrase Match Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Phrase Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1
 1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
@@ -551,7 +551,7 @@ id,et1,t1
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
 
-type ``Term Match Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Term Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
 1,Aaron,jhonson,23
@@ -584,7 +584,7 @@ id,t1,t2,i1
     member this.``Searching for t1 'aaron' & t2 'jhonson or Garner' should return 2 record``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 = 'aaron' and (t2 = 'jhonson' or t2 = 'Garner')"
 
-type ``Term Match Complex Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Term Match Complex Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1
 1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
@@ -600,7 +600,7 @@ id,et1,t1
         |> verifyReturnedDocsCount index.IndexName 1 
                "t1 eq 'CompSci abbreviated approach undefinedword' {clausetype:'or'}"
 
-type ``Fuzzy WildCard Match Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Fuzzy WildCard Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
 1,Aaron,jhonson,23
@@ -642,7 +642,7 @@ id,t1,t2,i1
     member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 regex '[mb]oat'"
 
-type ``Range Query Tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Range Query Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,i1
 1,1
@@ -673,7 +673,7 @@ id,i1
 // ----------------------------------------------------------------------------
 // Analyzer specific search tests
 // ----------------------------------------------------------------------------
-type ``Phonetic matching tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Phonetic matching tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1
 1,smith
@@ -696,7 +696,7 @@ id,t1
 // ----------------------------------------------------------------------------
 // Filed type specific search tests
 // ----------------------------------------------------------------------------
-type ``Exact Matching Field tests``(index : Index.Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Exact Matching Field tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
 
     let testData = """
 id,et1,b1

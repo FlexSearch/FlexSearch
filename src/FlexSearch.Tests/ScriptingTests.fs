@@ -7,7 +7,7 @@ open System.Collections.Generic
 type SearchProfileScriptTests() = 
     member __.``Script should compile``() = 
         let scriptSrc = """
-void Execute(SearchQuery.Dto query, Dictionary<string, string> fields){
+void Execute(SearchQuery query, Dictionary<string, string> fields){
 	string value = String.Empty;
 	var queryString = query.QueryString;
     if (fields.TryGetValue("test", out value)) {	
@@ -20,7 +20,7 @@ void Execute(SearchQuery.Dto query, Dictionary<string, string> fields){
         testDict.Add("test", "test0")
         match sut with
         | SearchProfileScript(computedDelegate) -> 
-            let result = computedDelegate.Invoke(new SearchQuery.SearchQuery(), testDict)
+            let result = computedDelegate.Invoke(new SearchQuery(), testDict)
             test <@ testDict.["test"] = "test1" @>
         | _ -> failwithf "Wrong Script Type returned"
 

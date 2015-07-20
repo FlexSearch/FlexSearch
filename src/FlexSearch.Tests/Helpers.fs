@@ -42,9 +42,9 @@ module DataHelpers =
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
-        index.IndexConfiguration <- new IndexConfiguration.IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
+        index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Online <- true
-        index.IndexConfiguration.DirectoryType <- DirectoryType.DirectoryType.MemoryMapped
+        index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
         index.Fields <- [| new Field("b1", FieldDataType.Bool)
                            new Field("b2", FieldDataType.Bool)
                            new Field("d1", FieldDataType.Date)
@@ -61,7 +61,7 @@ module DataHelpers =
         index
 
     /// Utility method to add data to an index
-    let indexTestData (testData : string, index : Index.Index, indexService : IIndexService, 
+    let indexTestData (testData : string, index : Index, indexService : IIndexService, 
                        documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
@@ -95,9 +95,9 @@ module DataHelpers =
     let mockIndexSettings = 
         let index = new Index()
         index.IndexName <- "contact"
-        index.IndexConfiguration <- new IndexConfiguration.IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
+        index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Online <- true
-        index.IndexConfiguration.DirectoryType <- DirectoryType.DirectoryType.Ram
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
         index.Fields <- 
          [| new Field("firstname", FieldDataType.Text)
             new Field("lastname", FieldDataType.Text)
@@ -128,7 +128,7 @@ module DataHelpers =
         // We override Auto fixture's string generation mechanism to return this string which will be
         // used as index name
         fixture.Register<String>(fun _ -> Guid.NewGuid().ToString("N"))
-        fixture.Register<Index.Index>(fun _ -> getTestIndex()) |> ignore
+        fixture.Register<Index>(fun _ -> getTestIndex()) |> ignore
         fixture.Inject<IIndexService>(container.Resolve<IIndexService>()) |> ignore
         fixture.Inject<ISearchService>(container.Resolve<ISearchService>()) |> ignore
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
@@ -183,6 +183,6 @@ type SingleInstancePerClassConvention() as self =
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         // Temporarily ignore parametric tests because Fixie doesn't handle them in VS 2015
         // Comment out this line if you want to also execute ignored tests
-        self.Methods.Where(fun m -> m.HasOrInherits<IgnoreAttribute>() |> not) |> ignore
+        //self.Methods.Where(fun m -> m.HasOrInherits<IgnoreAttribute>() |> not) |> ignore
         self.ClassExecution.CreateInstancePerClass().UsingFactory(fun typ -> fixtureFactory (typ)) |> ignore
         self.Parameters.Add<InputParameterSource>() |> ignore

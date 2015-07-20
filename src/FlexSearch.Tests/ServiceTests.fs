@@ -5,48 +5,48 @@ open Swensen.Unquote
 
 module IndexServiceTests = 
     type AddIndexTests() = 
-        member __.``Should add a new index`` (index : Index.Index, indexService : IIndexService) = 
+        member __.``Should add a new index`` (index : Index, indexService : IIndexService) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
         
-        member __.``Newly created index should be online`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``Newly created index should be online`` (indexService : IIndexService, index : Index) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Online) @>
         
-        member __.``Newly created index should be offline`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``Newly created index should be offline`` (indexService : IIndexService, index : Index) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
         
-        member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.OpenIndex(index.IndexName) = fail(IndexIsAlreadyOnline(index.IndexName)) @>
         
-        member __.``It is not possible to close an closed index`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``It is not possible to close an closed index`` (indexService : IIndexService, index : Index) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.CloseIndex(index.IndexName) = fail(IndexIsAlreadyOffline(index.IndexName)) @>
         
-        member __.``Can not create the same index twice`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``Can not create the same index twice`` (indexService : IIndexService, index : Index) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.AddIndex(index) = fail(IndexAlreadyExists(index.IndexName)) @>
         
-        member __.``Offline index can be made online`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``Offline index can be made online`` (indexService : IIndexService, index : Index) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Online) @>
         
-        member __.``Online index can be made offline`` (indexService : IIndexService, index : Index.Index) = 
+        member __.``Online index can be made offline`` (indexService : IIndexService, index : Index) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
 
     type CommonTests() =
-        member __.``Should return size of existing index`` (indexService: IIndexService, index : Index.Index) =
+        member __.``Should return size of existing index`` (indexService: IIndexService, index : Index) =
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
@@ -58,7 +58,7 @@ module IndexServiceTests =
 module DocumentServiceTests = 
     type DocumentManagementTests() = 
         
-        member __.``Should be able to add and retrieve simple document`` (index : Index.Index, documentId : string, 
+        member __.``Should be able to add and retrieve simple document`` (index : Index, documentId : string, 
                                                                           indexService : IIndexService, 
                                                                           documentService : IDocumentService) = 
             index.Online <- true
@@ -69,7 +69,7 @@ module DocumentServiceTests =
             test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
         
-        member __.``Should be able to add and retrieve document after closing the index`` (index : Index.Index, 
+        member __.``Should be able to add and retrieve document after closing the index`` (index : Index, 
                                                                                            documentId : string, 
                                                                                            indexService : IIndexService, 
                                                                                            documentService : IDocumentService) = 
@@ -83,7 +83,7 @@ module DocumentServiceTests =
             test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
         
-        member __.``Should be able to add and delete a document`` (index : Index.Index, documentId : string, 
+        member __.``Should be able to add and delete a document`` (index : Index, documentId : string, 
                                                                    indexService : IIndexService, 
                                                                    documentService : IDocumentService) = 
             index.Online <- true
@@ -98,7 +98,7 @@ module DocumentServiceTests =
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
             test <@ failed <| documentService.GetDocument(index.IndexName, documentId) @>
         
-        member __.``Should be able to update a document`` (index : Index.Index, id : string, indexService : IIndexService, 
+        member __.``Should be able to update a document`` (index : Index, id : string, indexService : IIndexService, 
                                                            documentService : IDocumentService) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
@@ -115,7 +115,7 @@ module DocumentServiceTests =
             test 
                 <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = document.Fields.["t1"] @>
 
-        member __.``Should be able to delete all documents in an index``(index : Index.Index, indexService : IIndexService, 
+        member __.``Should be able to delete all documents in an index``(index : Index, indexService : IIndexService, 
                                                                          documentService : IDocumentService) =
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
@@ -133,7 +133,7 @@ module DocumentServiceTests =
             test <@ succeeded <| documentService.DeleteAllDocuments(index.IndexName) @>
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
 
-        member __.``Should be able to delete documents returned by search query``(index: Index.Index, indexService: IIndexService,
+        member __.``Should be able to delete documents returned by search query``(index: Index, indexService: IIndexService,
                                                                                   documentService: IDocumentService, searchService: ISearchService) =
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
@@ -148,7 +148,7 @@ module DocumentServiceTests =
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 10 @>
 
             // Create a query that brings back 4 docs
-            let query = new SearchQuery.SearchQuery(index.IndexName, "i1 <= '4'")
+            let query = new SearchQuery(index.IndexName, "i1 <= '4'")
             let searchRes = searchService.Search(query)
             test <@ succeeded searchRes @>
             test <@ (extract searchRes |> toSearchResults).RecordsReturned = 4 @>
@@ -168,7 +168,7 @@ module DocumentServiceTests =
         
         member __.``Cannot create a duplicate document with a timestamp of -1`` (indexService : IIndexService, 
                                                                                  documentService : IDocumentService, 
-                                                                                 index : Index.Index) = 
+                                                                                 index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -177,7 +177,7 @@ module DocumentServiceTests =
         
         member __.``Cannot create a duplicate document with a timestamp of -1 even after cache is cleared`` (indexService : IIndexService, 
                                                                                                              documentService : IDocumentService, 
-                                                                                                             index : Index.Index) = 
+                                                                                                             index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -187,7 +187,7 @@ module DocumentServiceTests =
         
         member __.``Cannot create a document with timestamp of 1`` (indexService : IIndexService, 
                                                                     documentService : IDocumentService, 
-                                                                    index : Index.Index) = 
+                                                                    index : Index) = 
             // TimeStamp of 1 implies that we want to ensure that the document exists which is against the logic of basic create operation
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1", TimeStamp = 1L)
@@ -195,7 +195,7 @@ module DocumentServiceTests =
         
         member __.``Duplicate document can be created with a timestamp of 0`` (indexService : IIndexService, 
                                                                                documentService : IDocumentService, 
-                                                                               index : Index.Index) = 
+                                                                               index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1", TimeStamp = 0L)
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -205,7 +205,7 @@ module DocumentServiceTests =
         
         member __.``For optimistic update the timestamp should match`` (indexService : IIndexService, 
                                                                         documentService : IDocumentService, 
-                                                                        index : Index.Index) = 
+                                                                        index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -216,7 +216,7 @@ module DocumentServiceTests =
         
         member __.``Cannot update a document with wrong timestamp`` (indexService : IIndexService, 
                                                                      documentService : IDocumentService, 
-                                                                     index : Index.Index) = 
+                                                                     index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -225,7 +225,7 @@ module DocumentServiceTests =
         
         member __.``Document should exist when updating with a timestamp of 1`` (indexService : IIndexService, 
                                                                                  documentService : IDocumentService, 
-                                                                                 index : Index.Index) = 
+                                                                                 index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -234,7 +234,7 @@ module DocumentServiceTests =
         
         member __.``Cannot create a document using update operation with a timestamp of 1`` (indexService : IIndexService, 
                                                                                              documentService : IDocumentService, 
-                                                                                             index : Index.Index) = 
+                                                                                             index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1", TimeStamp = 1L)
             test 
@@ -243,7 +243,7 @@ module DocumentServiceTests =
         
         member __.``A newly created document should have version number greater than 1`` (indexService : IIndexService, 
                                                                                           documentService : IDocumentService, 
-                                                                                          index : Index.Index) = 
+                                                                                          index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -252,7 +252,7 @@ module DocumentServiceTests =
         
         member __.``Timestamp field can be correctly retieved from the physical medium`` (indexService : IIndexService, 
                                                                                           documentService : IDocumentService, 
-                                                                                          index : Index.Index) = 
+                                                                                          index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -263,7 +263,7 @@ module DocumentServiceTests =
         
         member __.``Fields returned by the document service should match the total number of fields in the index`` (indexService : IIndexService, 
                                                                                                                     documentService : IDocumentService, 
-                                                                                                                    index : Index.Index) = 
+                                                                                                                    index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -275,7 +275,7 @@ module DocumentServiceTests =
         
         member __.``Version Cache gets cleared after a refresh is called`` (indexService : IIndexService, 
                                                                             documentService : IDocumentService, 
-                                                                            index : Index.Index) = 
+                                                                            index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -285,7 +285,7 @@ module DocumentServiceTests =
         
         member __.``Document version can be reterieved even after all caches are cleared`` (indexService : IIndexService, 
                                                                                             documentService : IDocumentService, 
-                                                                                            index : Index.Index) = 
+                                                                                            index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -301,7 +301,7 @@ type QueueServiceTests() =
     member __.``Queue service can be used to add document to an index`` (indexService : IIndexService, 
                                                                          queueService : IQueueService, 
                                                                          documentService : IDocumentService, 
-                                                                         index : Index.Index) = 
+                                                                         index : Index) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         let document = new Document(index.IndexName, "1")
         queueService.AddDocumentQueue(document)

@@ -36,7 +36,7 @@ type TransactionWriterTests() =
         test <@ result.[4].Id = txEntries.[4].Id @>
 
 type CommitTests() = 
-    member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index.Index, 
+    member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index, 
                                                                                       indexService : IIndexService, 
                                                                                       documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
@@ -51,7 +51,7 @@ type CommitTests() =
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "2") @>
 
-    member __.``Changes will be applied in the same order as receiveced 1`` (index : Index.Index, 
+    member __.``Changes will be applied in the same order as receiveced 1`` (index : Index, 
                                                                              indexService : IIndexService, 
                                                                              documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
@@ -65,7 +65,7 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
         test <@ failed <| documentService.GetDocument(index.IndexName, "1") @>
 
-    member __.``Changes will be applied in the same order as receiveced 2`` (index : Index.Index, 
+    member __.``Changes will be applied in the same order as receiveced 2`` (index : Index, 
                                                                              indexService : IIndexService, 
                                                                              documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
@@ -80,7 +80,7 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
 
-    member __.``TxLog file is changed immediately after a commit``( index : Index.Index, 
+    member __.``TxLog file is changed immediately after a commit``( index : Index, 
                                                                     indexService : IIndexService, 
                                                                     documentService : IDocumentService) = 
         // Reduce max buffered docs count so that we can flush quicker
@@ -109,7 +109,7 @@ type CommitTests() =
             // Test if the TxLog file is present with the current generation
             test <@ File.Exists(txFile) @>
 
-    member __.``Older TxLog files are deleted immediately after a commit``( index : Index.Index, 
+    member __.``Older TxLog files are deleted immediately after a commit``( index : Index, 
                                                                             indexService : IIndexService, 
                                                                             documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
