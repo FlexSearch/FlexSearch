@@ -88,6 +88,7 @@
     <Compile Include="Message.fs" />
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Http.fs" />
+    <Compile Include="Domain.fs" />
     <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
     <Compile Include="Parser.fs" />
