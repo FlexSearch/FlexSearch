@@ -28,6 +28,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>..\..\build-debug\FlexSearch.Core.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
+    <OtherFlags>--sig:$(OutputPath)\mysig.fsi</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -99,6 +100,7 @@
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
     <Compile Include="Benchmark.fs" />
+    <Compile Include="HttpService.fsi" />
     <Compile Include="HttpService.fs" />
     <Compile Include="Connectors.fs" />
     <Compile Include="DuplicateDetection.fs" />
