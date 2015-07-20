@@ -36,13 +36,13 @@ type TransactionWriterTests() =
         test <@ result.[4].Id = txEntries.[4].Id @>
 
 type CommitTests() = 
-    member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index.Dto, 
+    member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index.Index, 
                                                                                       indexService : IIndexService, 
                                                                                       documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
-        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
-        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "2")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "2")) @>
         // Close the index without any commit
         test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
         // Document should get recovered from TxLogs after index is reopened
@@ -51,12 +51,12 @@ type CommitTests() =
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "2") @>
 
-    member __.``Changes will be applied in the same order as receiveced 1`` (index : Index.Dto, 
+    member __.``Changes will be applied in the same order as receiveced 1`` (index : Index.Index, 
                                                                              indexService : IIndexService, 
                                                                              documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
-        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "1")) @>
         test <@ succeeded <| documentService.DeleteDocument(index.IndexName, "1") @>
         // Close the index without any commit
         test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
@@ -65,14 +65,14 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 0 @>
         test <@ failed <| documentService.GetDocument(index.IndexName, "1") @>
 
-    member __.``Changes will be applied in the same order as receiveced 2`` (index : Index.Dto, 
+    member __.``Changes will be applied in the same order as receiveced 2`` (index : Index.Index, 
                                                                              indexService : IIndexService, 
                                                                              documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
-        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "1")) @>
         test <@ succeeded <| documentService.DeleteDocument(index.IndexName, "1") @>
-        test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "1")) @>
         // Close the index without any commit
         test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
         // Document should get recovered from TxLogs after index is reopened
@@ -80,7 +80,7 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
 
-    member __.``TxLog file is changed immediately after a commit``( index : Index.Dto, 
+    member __.``TxLog file is changed immediately after a commit``( index : Index.Index, 
                                                                     indexService : IIndexService, 
                                                                     documentService : IDocumentService) = 
         // Reduce max buffered docs count so that we can flush quicker
@@ -104,18 +104,18 @@ type CommitTests() =
             test <@ writer.ShardWriters.[0].Generation.Value = previousGen + 1L  @>
             
             for j = 1 to documentsPerCommit do 
-                test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+                test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "1")) @>
             let txFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
             // Test if the TxLog file is present with the current generation
             test <@ File.Exists(txFile) @>
 
-    member __.``Older TxLog files are deleted immediately after a commit``( index : Index.Dto, 
+    member __.``Older TxLog files are deleted immediately after a commit``( index : Index.Index, 
                                                                             indexService : IIndexService, 
                                                                             documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         let writer = extract <| indexService.IsIndexOnline(index.IndexName)
         for i = 1 to 10 do
-            test <@ succeeded <| documentService.AddDocument(new Document.Dto(index.IndexName, "1")) @>
+            test <@ succeeded <| documentService.AddDocument(new Document.Document(index.IndexName, "1")) @>
             let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.ShardWriters.[0].TxLogPath).Count()
             let olderTxFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
             test <@ File.Exists(olderTxFile) @>

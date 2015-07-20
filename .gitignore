@@ -230,3 +230,4 @@ src/FlexSearch.Core/AssemblyInfo.fs
 src/FlexSearch.Logging/Properties/AssemblyInfo.cs
 src/FlexSearch.Server/AssemblyInfo.fs
 src/.vs/
+swagger-ui

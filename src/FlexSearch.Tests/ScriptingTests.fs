@@ -20,7 +20,7 @@ void Execute(SearchQuery.Dto query, Dictionary<string, string> fields){
         testDict.Add("test", "test0")
         match sut with
         | SearchProfileScript(computedDelegate) -> 
-            let result = computedDelegate.Invoke(new SearchQuery.Dto(), testDict)
+            let result = computedDelegate.Invoke(new SearchQuery.SearchQuery(), testDict)
             test <@ testDict.["test"] = "test1" @>
         | _ -> failwithf "Wrong Script Type returned"
 

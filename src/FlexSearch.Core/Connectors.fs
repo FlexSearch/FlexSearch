@@ -120,7 +120,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                 try 
                     rows <- rows + 1L
                     let currentRow = reader.ReadFields()
-                    let document = new Document.Dto(body.IndexName, currentRow.[0])
+                    let document = new Document.Document(body.IndexName, currentRow.[0])
                     document.TimeStamp <- 0L
                     // The first column is always id so skip it
                     for i = 1 to currentRow.Length - 1 do
@@ -219,7 +219,7 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
             use reader = command.ExecuteReader()
             if reader.HasRows then 
                 while reader.Read() do
-                    let document = new Document.Dto(IndexName = request.IndexName, Id = reader.[0].ToString())
+                    let document = new Document.Document(IndexName = request.IndexName, Id = reader.[0].ToString())
                     for i = 1 to reader.FieldCount - 1 do
                         document.Fields.Add(reader.GetName(i), reader.GetValue(i).ToString())
                     if request.ForceCreate then queueService.AddDocumentQueue(document)

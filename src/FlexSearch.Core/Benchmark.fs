@@ -218,7 +218,7 @@ module WikipediaPerformanceTests =
             let mutable line = file.ReadLine()
             if line = null then proc <- false
             else 
-                let document = new Document.Dto(IndexName = WikiIndexName, Id = (i.ToString()))
+                let document = new Document.Document(IndexName = WikiIndexName, Id = (i.ToString()))
                 document.Fields.Add("title", line.Substring(0, line.IndexOf('|') - 1))
                 document.Fields.Add("body", line.Substring(line.IndexOf('|') + 1))
                 queueService.AddDocumentQueue(document)
@@ -255,7 +255,7 @@ module WikipediaPerformanceTests =
     let ExecuteIndexingTestDataFlow (data : WikiArticle array) (queueService : IQueueService) 
         (indexService : IIndexService) = 
         for article in data do
-            let document = new Document.Dto(IndexName = WikiIndexName, Id = article.Id)
+            let document = new Document.Document(IndexName = WikiIndexName, Id = article.Id)
             document.Fields.Add("title", article.Title)
             document.Fields.Add("body", article.Body)
             queueService.AddDocumentQueue(document)
@@ -286,7 +286,7 @@ module WikipediaPerformanceTests =
         Parallel.ForEach(queries, parallelOptions, 
                          (fun n -> 
                          try 
-                             match searchService.Search(new SearchQuery.Dto(WikiIndexName, n)) with
+                             match searchService.Search(new SearchQuery.SearchQuery(WikiIndexName, n)) with
                              | Choice1Of2(_) -> ()
                              | Choice2Of2(e) -> printfn "Error: %A Query:%s" e n
                          with e -> printfn "%A" e.Message

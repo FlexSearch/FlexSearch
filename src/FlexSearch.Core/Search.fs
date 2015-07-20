@@ -36,7 +36,7 @@ module SearchResultComponents =
     /// Represents the search result format supported
     /// by the engine
     type T = 
-        | StructuredResult of Document.Dto
+        | StructuredResult of Document.Document
         | FlatResult of Dictionary<string, string>
     
     /// Represents the search related meta data that can
@@ -108,7 +108,7 @@ module SearchDsl =
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
     
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
-                       searchQuery : SearchQuery.Dto, isProfileBased : Dictionary<string, string> option, 
+                       searchQuery : SearchQuery.SearchQuery, isProfileBased : Dictionary<string, string> option, 
                        queryTypes : Dictionary<string, IFlexQuery>) = 
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
@@ -225,7 +225,7 @@ module SearchDsl =
         generateQuery predicate
     
     /// Returns a document from the index
-    let getDocument (indexWriter : IndexWriter.T, search : SearchQuery.Dto, document : Document) = 
+    let getDocument (indexWriter : IndexWriter.T, search : SearchQuery.SearchQuery, document : Document) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         let getValue(field: Field.T) =
             let value = document.Get(field.SchemaName)
@@ -251,7 +251,7 @@ module SearchDsl =
                 | _ -> ()
         fields
     
-    let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.Dto) = 
+    let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery.SearchQuery) = 
         (!>) "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
@@ -349,7 +349,7 @@ module SearchDsl =
                 if searchQuery.ReturnScore then fields.[Constants.Score] <- hit.Score.ToString()
                 SearchResultComponents.FlatResult(fields)
             else 
-                let resultDoc = new Document.Dto()
+                let resultDoc = new Document.Document()
                 resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
                 resultDoc.IndexName <- indexWriter.Settings.IndexName
                 resultDoc.TimeStamp <- timeStamp

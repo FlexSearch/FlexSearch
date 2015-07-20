@@ -40,7 +40,7 @@ module FieldSimilarity =
     /// Similarity defines the components of Lucene scoring. Similarity 
     /// determines how Lucene weights terms, and Lucene interacts with 
     /// Similarity at both index-time and query-time.
-    type Dto = 
+    type FieldSimilarity = 
         | Undefined = 0
         /// <summary>
         /// BM25 Similarity defines the components of Lucene scoring.
@@ -55,8 +55,8 @@ module FieldSimilarity =
     /// Converts the enum similarity to Lucene Similarity
     let getLuceneT = 
         function 
-        | Dto.TFIDF -> ok (new DefaultSimilarity() :> Similarity)
-        | Dto.BM25 -> ok (new BM25Similarity() :> Similarity)
+        | FieldSimilarity.TFIDF -> ok (new DefaultSimilarity() :> Similarity)
+        | FieldSimilarity.BM25 -> ok (new BM25Similarity() :> Similarity)
         | unknown -> fail (UnSupportedSimilarity(unknown.ToString()))
     
     /// Default similarity provider used by FlexSearch
@@ -73,7 +73,7 @@ module DirectoryType =
     /// A Directory is a flat list of files. Files may be written once, when they are created. 
     /// Once a file is created it may only be opened for read, or deleted. Random access is 
     /// permitted both when reading and writing.
-    type Dto = 
+    type DirectoryType = 
         | Undefined = 0
         /// FileSystem Directory is a straightforward implementation using java.io.RandomAccessFile. 
         /// However, it has poor concurrent performance (multiple threads will bottleneck) 
@@ -116,16 +116,16 @@ module DirectoryType =
         | Ram = 3
     
     /// Create a index directory from the given directory type    
-    let getIndexDirectory (directoryType : Dto, path : string) = 
+    let getIndexDirectory (directoryType : DirectoryType, path : string) = 
         // Note: Might move to SingleInstanceLockFactory to provide other services to open
         // the index in read-only mode
         let lockFactory = NativeFSLockFactory.GetDefault()
         let file = (new java.io.File(path)).toPath()
         try 
             match directoryType with
-            | Dto.FileSystem -> ok (FSDirectory.Open(file, lockFactory) :> FlexLucene.Store.Directory)
-            | Dto.MemoryMapped -> ok (MMapDirectory.Open(file, lockFactory) :> FlexLucene.Store.Directory)
-            | Dto.Ram -> ok (new RAMDirectory() :> FlexLucene.Store.Directory)
+            | DirectoryType.FileSystem -> ok (FSDirectory.Open(file, lockFactory) :> FlexLucene.Store.Directory)
+            | DirectoryType.MemoryMapped -> ok (MMapDirectory.Open(file, lockFactory) :> FlexLucene.Store.Directory)
+            | DirectoryType.Ram -> ok (new RAMDirectory() :> FlexLucene.Store.Directory)
             | unknown -> fail (UnsupportedDirectoryType(unknown.ToString()))
         with e -> fail (ErrorOpeningIndexWriter(path, exceptionPrinter (e), new ResizeArray<_>()))
 
@@ -136,7 +136,7 @@ module FieldTermVector =
     /// in those vectors. These can be used to accelerate highlighting and other ancillary 
     /// functionality, but impose a substantial cost in terms of index size. These can 
     /// only be configured for custom field type.
-    type Dto = 
+    type FieldTermVector = 
         | Undefined = 0
         /// Do not store term vectors.
         | DoNotStoreTermVector = 1
@@ -150,7 +150,7 @@ module FieldTermVector =
 
 module FieldIndexOptions = 
     /// Controls how much information is stored in the postings lists.
-    type Dto = 
+    type FieldIndexOptions = 
         | Undefined = 0
         /// Only documents are indexed: term frequencies and positions are omitted.
         | DocsOnly = 1
@@ -169,7 +169,7 @@ module IndexVersion =
     
     /// Corresponds to Lucene Index version. There will
     /// always be a default codec associated with each index version.
-    type Dto = 
+    type IndexVersion = 
         | Undefined = 0
         /// Lucene 4.x.x index format
         /// It is deprecated and is here for legacy support
@@ -180,8 +180,8 @@ module IndexVersion =
     /// Build Lucene index version from FlexSearch index version    
     let build = 
         function 
-        | Dto.Lucene_4_x_x -> ok (Version.LUCENE_4_10_4)
-        | Dto.Lucene_5_0_0 -> ok (Version.LUCENE_5_0_0)
+        | IndexVersion.Lucene_4_x_x -> ok (Version.LUCENE_4_10_4)
+        | IndexVersion.Lucene_5_0_0 -> ok (Version.LUCENE_5_0_0)
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
 /// Represents the status of job.
@@ -209,9 +209,9 @@ type FieldIndexingInformation =
       Tokenize : bool
       /// This maps to Lucene's term vectors and is only used for flex custom
       /// data type
-      FieldTermVector : FieldTermVector.Dto
+      FieldTermVector : FieldTermVector.FieldTermVector
       /// This maps to Lucene's field index options
-      FieldIndexOptions : FieldIndexOptions.Dto }
+      FieldIndexOptions : FieldIndexOptions.FieldIndexOptions }
 
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FieldType = 
@@ -220,7 +220,7 @@ module FieldType =
     /// The field type defines how FlexSearch should interpret data in a field and how the 
     /// field can be queried. There are many field types included with FlexSearch by default, 
     /// and custom types can also be defined.
-    type Dto = 
+    type FieldType = 
         // Case to handle deserialization to default value
         | Undefined = 0
         /// Integer
@@ -323,7 +323,7 @@ module FieldType =
 module ShardConfiguration = 
     /// Allows to control various Index Shards related settings.
     [<ToStringAttribute>]
-    type Dto() = 
+    type ShardConfiguration() = 
         inherit DtoBase()
         
         /// Total number of shards to be present in the given index.
@@ -335,7 +335,7 @@ module ShardConfiguration =
 module IndexConfiguration = 
     /// Allows to control various Index related settings.
     [<ToStringAttribute>]
-    type Dto() = 
+    type IndexConfiguration() = 
         inherit DtoBase()
         
         /// The amount of time in seconds that FlexSearch 
@@ -362,7 +362,7 @@ module IndexConfiguration =
         /// is created it may only be opened for read, or 
         /// deleted. Random access is permitted both when 
         /// reading and writing.
-        member val DirectoryType = DirectoryType.Dto.MemoryMapped with get, set
+        member val DirectoryType = DirectoryType.DirectoryType.MemoryMapped with get, set
         
         /// The default maximum time to wait for a write 
         /// lock (in milliseconds).
@@ -389,7 +389,7 @@ module IndexConfiguration =
         /// Corresponds to Lucene Index version. There will
         /// always be a default codec associated with each 
         /// index version.
-        member val IndexVersion = IndexVersion.Dto.Lucene_5_0_0 with get, set
+        member val IndexVersion = IndexVersion.IndexVersion.Lucene_5_0_0 with get, set
         
         /// Signifies if bloom filter should be used for 
         /// encoding Id field.
@@ -398,7 +398,7 @@ module IndexConfiguration =
         /// Similarity defines the components of Lucene scoring. Similarity
         /// determines how Lucene weights terms and Lucene interacts with 
         /// Similarity at both index-time and query-time.
-        member val DefaultFieldSimilarity = FieldSimilarity.Dto.TFIDF with get, set
+        member val DefaultFieldSimilarity = FieldSimilarity.FieldSimilarity.TFIDF with get, set
         
         override this.Validate() = this.CommitTimeSeconds
                                    |> gte "CommitTimeSeconds" 30
@@ -407,7 +407,7 @@ module IndexConfiguration =
                                    >>= (fun _ -> this.RefreshTimeMilliseconds |> gte "RefreshTimeMilliseconds" 25)
     
     let inline getIndexWriterConfiguration (codec : Codec) (similarity : Similarity) (indexAnalyzer : Analyzer) 
-               (configuration : Dto) = 
+               (configuration : IndexConfiguration) = 
         let iwc = new IndexWriterConfig(indexAnalyzer)
         iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
         iwc.SetRAMBufferSizeMB(float configuration.RamBufferSizeMb) |> ignore
@@ -420,7 +420,7 @@ module TokenFilter =
     /// replace it or discard it. A filter may also do more complex analysis by looking 
     /// ahead to consider multiple tokens at once, although this is less common. 
     [<ToStringAttribute; Sealed>]
-    type Dto() = 
+    type TokenFilter() = 
         inherit DtoBase()
         
         /// The name of the filter. Some pre-defined filters are the following-
@@ -445,7 +445,7 @@ module Tokenizer =
     /// of the characters in the text. An analyzer is aware of the field it is configured 
     /// for, but a tokenizer is not.
     [<ToStringAttribute; Sealed>]
-    type Dto() = 
+    type Tokenizer() = 
         inherit DtoBase()
         
         /// The name of the tokenizer. Some pre-defined tokenizers are the following-
@@ -467,17 +467,17 @@ module Tokenizer =
 module Analyzer = 
     /// An analyzer examines the text of fields and generates a token stream.
     [<ToStringAttribute; Sealed>]
-    type Dto() = 
+    type Analyzer() = 
         inherit DtoBase()
         
         /// Name of the analyzer
         member val AnalyzerName = defString with get, set
         
         // AUTO
-        member val Tokenizer = new Tokenizer.Dto() with get, set
+        member val Tokenizer = new Tokenizer.Tokenizer() with get, set
         
         /// Filters to be used by the analyzer.
-        member val Filters = new List<TokenFilter.Dto>() with get, set
+        member val Filters = new List<TokenFilter.TokenFilter>() with get, set
         
         override this.Validate() = this.AnalyzerName
                                    |> propertyNameValidator "AnalyzerName"
@@ -486,6 +486,8 @@ module Analyzer =
 
 [<RequireQualifiedAccessAttribute>]
 module Field = 
+    type LuceneField = FlexLucene.Document.Field
+
     /// A field is a section of a Document. 
     /// <para>
     /// Fields can contain different kinds of data. A name field, for example, 
@@ -504,7 +506,7 @@ module Field =
     /// query, FlexSearch can quickly consult the index and return the matching documents.
     /// </para>
     [<ToString; Sealed>]
-    type Dto(fieldName : string, fieldType : FieldType.Dto) = 
+    type Field(fieldName : string, fieldType : FieldType.FieldType) = 
         inherit DtoBase()
         
         /// Name of the field.
@@ -534,13 +536,13 @@ module Field =
         member val FieldType = fieldType with get, set
         
         /// AUTO
-        member val Similarity = FieldSimilarity.Dto.TFIDF with get, set
+        member val Similarity = FieldSimilarity.FieldSimilarity.TFIDF with get, set
         
         /// AUTO
-        member val IndexOptions = FieldIndexOptions.Dto.DocsAndFreqsAndPositions with get, set
+        member val IndexOptions = FieldIndexOptions.FieldIndexOptions.DocsAndFreqsAndPositions with get, set
         
         /// AUTO
-        member val TermVector = FieldTermVector.Dto.DoNotStoreTermVector with get, set
+        member val TermVector = FieldTermVector.FieldTermVector.DoNotStoreTermVector with get, set
         
         /// If true, omits the norms associated with this field (this disables length 
         /// normalization and index-time boosting for the field, and saves some memory). 
@@ -555,14 +557,14 @@ module Field =
         /// ScriptName('param1','param2','param3')
         member val ScriptName = "" with get, set
         
-        new(fieldName : string) = Dto(fieldName, FieldType.Dto.Text)
-        new() = Dto(defString, FieldType.Dto.Text)
+        new(fieldName : string) = Field(fieldName, FieldType.FieldType.Text)
+        new() = Field(defString, FieldType.FieldType.Text)
         override this.Validate() = 
             this.FieldName
             |> propertyNameValidator "FieldName"
             >>= (fun _ -> 
-            if (this.FieldType = FieldType.Dto.Text || this.FieldType = FieldType.Dto.Highlight 
-                || this.FieldType = FieldType.Dto.Custom) 
+            if (this.FieldType = FieldType.FieldType.Text || this.FieldType = FieldType.FieldType.Highlight 
+                || this.FieldType = FieldType.FieldType.Custom) 
                && (String.IsNullOrWhiteSpace(this.SearchAnalyzer) || String.IsNullOrWhiteSpace(this.IndexAnalyzer)) then 
                 fail (AnalyzerIsMandatory(this.FieldName))
             else ok())
@@ -572,7 +574,7 @@ module Field =
         { FieldName : string
           SchemaName : string
           IsStored : bool
-          Similarity : FieldSimilarity.Dto
+          Similarity : FieldSimilarity.FieldSimilarity
           FieldType : FieldType.T
           GenerateDocValue : bool
           Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option
@@ -594,43 +596,43 @@ module Field =
     
     /// Creates Lucene's field types. This is only used for FlexCustom data type to
     /// support flexible field type
-    let getFieldTemplate (fieldTermVector : FieldTermVector.Dto, stored, tokenized, _) = 
+    let getFieldTemplate (fieldTermVector : FieldTermVector.FieldTermVector, stored, tokenized, _) = 
         let fieldType = new FieldType()
         fieldType.SetStored(stored)
         fieldType.SetTokenized(tokenized)
         match fieldTermVector with
-        | FieldTermVector.Dto.DoNotStoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS)
-        | FieldTermVector.Dto.StoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS)
-        | FieldTermVector.Dto.StoreTermVectorsWithPositions -> 
+        | FieldTermVector.FieldTermVector.DoNotStoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS)
+        | FieldTermVector.FieldTermVector.StoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS)
+        | FieldTermVector.FieldTermVector.StoreTermVectorsWithPositions -> 
             fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
-        | FieldTermVector.Dto.StoreTermVectorsWithPositionsandOffsets -> 
+        | FieldTermVector.FieldTermVector.StoreTermVectorsWithPositionsandOffsets -> 
             fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
         | _ -> failwithf "Invalid Field term vector"
         fieldType
     
-    let store = Field.Store.YES
-    let doNotStore = Field.Store.NO
+    let store = LuceneField.Store.YES
+    let doNotStore = LuceneField.Store.NO
     
     /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
     /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
     /// intend to use for sorting or access through the field cache.
-    let getStringField (fieldName, value, store) = new StringField(fieldName, value, store) :> Field
+    let getStringField (fieldName, value, store) = new StringField(fieldName, value, store) :> LuceneField
     
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
-    let getTextField (fieldName, value, store) = new TextField(fieldName, value, store) :> Field
+    let getTextField (fieldName, value, store) = new TextField(fieldName, value, store) :> LuceneField
     
-    let getLongField (fieldName, value : int64, store : Field.Store) = new LongField(fieldName, value, store) :> Field
-    let getIntField (fieldName, value : int32, store : Field.Store) = new IntField(fieldName, value, store) :> Field
-    let getDoubleField (fieldName, value : float, store : Field.Store) = 
-        new DoubleField(fieldName, value, store) :> Field
-    let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> Field
+    let getLongField (fieldName, value : int64, store : LuceneField.Store) = new LongField(fieldName, value, store) :> LuceneField
+    let getIntField (fieldName, value : int32, store : LuceneField.Store) = new IntField(fieldName, value, store) :> LuceneField
+    let getDoubleField (fieldName, value : float, store : LuceneField.Store) = 
+        new DoubleField(fieldName, value, store) :> LuceneField
+    let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> LuceneField
     let getField (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
-        new Field(fieldName, value, template)
+        new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
     
     /// Set the value of index field to the default value
-    let inline updateLuceneFieldToDefault flexField (isDocValue : bool) (luceneField : Field) = 
+    let inline updateLuceneFieldToDefault flexField (isDocValue : bool) (luceneField : LuceneField) = 
         match flexField.FieldType with
         | FieldType.Custom(_, _, _) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.Stored -> luceneField.SetStringValue(Constants.StringDefaultValue)
@@ -650,7 +652,7 @@ module Field =
         | FieldType.Long -> luceneField.SetLongValue(int64 0)
     
     /// Set the value of index field using the passed value
-    let inline updateLuceneField flexField (lucenceField : Field) (isDocValue : bool) (value : string) = 
+    let inline updateLuceneField flexField (lucenceField : LuceneField) (isDocValue : bool) (value : string) = 
         if isBlank value then lucenceField |> updateLuceneFieldToDefault flexField isDocValue
         else 
             match flexField.FieldType with
@@ -672,8 +674,8 @@ module Field =
             | FieldType.Long -> (value |> pLong 0L) |> lucenceField.SetLongValue
     
     let inline storeInfoMap (isStored) = 
-        if isStored then Field.Store.YES
-        else Field.Store.NO
+        if isStored then LuceneField.Store.YES
+        else LuceneField.Store.NO
     
     /// Create docvalues field from 
     let inline createDocValueField flexField = 
@@ -681,10 +683,10 @@ module Field =
         | FieldType.Custom(_) | FieldType.Stored | FieldType.Text(_) | FieldType.Highlight(_) | FieldType.Bool(_) -> 
             None
         | FieldType.ExactText(_) -> 
-            Some <| (new SortedDocValuesField(flexField.SchemaName, new FlexLucene.Util.BytesRef()) :> Field)
+            Some <| (new SortedDocValuesField(flexField.SchemaName, new FlexLucene.Util.BytesRef()) :> LuceneField)
         | FieldType.Long | FieldType.DateTime | FieldType.Date | FieldType.Int -> 
-            Some <| (new NumericDocValuesField(flexField.SchemaName, 0L) :> Field)
-        | FieldType.Double -> Some <| (new DoubleDocValuesField(flexField.SchemaName, 0.0) :> Field)
+            Some <| (new NumericDocValuesField(flexField.SchemaName, 0L) :> LuceneField)
+        | FieldType.Double -> Some <| (new DoubleDocValuesField(flexField.SchemaName, 0.0) :> LuceneField)
     
     /// Create docvalues field from 
     let inline requiresCustomDocValues fieldType = 
@@ -734,7 +736,7 @@ module Field =
           GenerateDocValue = generateDocValues
           Source = None
           Searchable = FieldType.searchable (fieldType)
-          Similarity = FieldSimilarity.Dto.TFIDF
+          Similarity = FieldSimilarity.FieldSimilarity.TFIDF
           RequiresAnalyzer = FieldType.requiresAnalyzer (fieldType) }
     
     /// Field to be used by the Id field
@@ -742,8 +744,8 @@ module Field =
         let indexInformation = 
             { Index = true
               Tokenize = false
-              FieldTermVector = FieldTermVector.Dto.DoNotStoreTermVector
-              FieldIndexOptions = FieldIndexOptions.Dto.DocsOnly }
+              FieldTermVector = FieldTermVector.FieldTermVector.DoNotStoreTermVector
+              FieldIndexOptions = FieldIndexOptions.FieldIndexOptions.DocsOnly }
         create 
             (Constants.IdField, 
              FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false)
@@ -752,33 +754,33 @@ module Field =
     let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, false)
     
     /// Build FlexField from field
-    let build (field : Dto, indexConfiguration : IndexConfiguration.Dto, 
+    let build (field : Field, indexConfiguration : IndexConfiguration.IndexConfiguration, 
                analyzerFactory : string -> Choice<Analyzer, IMessage>, scriptService) = 
-        let getSource (field : Dto) = 
+        let getSource (field : Field) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok <| None
             else 
                 match scriptService (field.ScriptName) with
                 | Choice1Of2(func) -> ok <| Some(func)
                 | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
         
-        let getFieldType (field : Dto) = 
+        let getFieldType (field : Field) = 
             maybe { 
                 match field.FieldType with
-                | FieldType.Dto.Int -> return FieldType.Int
-                | FieldType.Dto.Double -> return FieldType.Double
-                | FieldType.Dto.Bool -> return FieldType.Bool(CaseInsensitiveKeywordAnalyzer)
-                | FieldType.Dto.Date -> return FieldType.Date
-                | FieldType.Dto.DateTime -> return FieldType.DateTime
-                | FieldType.Dto.Long -> return FieldType.Long
-                | FieldType.Dto.Stored -> return FieldType.Stored
-                | FieldType.Dto.ExactText -> return FieldType.ExactText(CaseInsensitiveKeywordAnalyzer)
-                | FieldType.Dto.Text | FieldType.Dto.Highlight | FieldType.Dto.Custom -> 
+                | FieldType.FieldType.Int -> return FieldType.Int
+                | FieldType.FieldType.Double -> return FieldType.Double
+                | FieldType.FieldType.Bool -> return FieldType.Bool(CaseInsensitiveKeywordAnalyzer)
+                | FieldType.FieldType.Date -> return FieldType.Date
+                | FieldType.FieldType.DateTime -> return FieldType.DateTime
+                | FieldType.FieldType.Long -> return FieldType.Long
+                | FieldType.FieldType.Stored -> return FieldType.Stored
+                | FieldType.FieldType.ExactText -> return FieldType.ExactText(CaseInsensitiveKeywordAnalyzer)
+                | FieldType.FieldType.Text | FieldType.FieldType.Highlight | FieldType.FieldType.Custom -> 
                     let! searchAnalyzer = analyzerFactory <| field.SearchAnalyzer
                     let! indexAnalyzer = analyzerFactory <| field.IndexAnalyzer
                     match field.FieldType with
-                    | FieldType.Dto.Text -> return FieldType.Text(searchAnalyzer, indexAnalyzer)
-                    | FieldType.Dto.Highlight -> return FieldType.Highlight(searchAnalyzer, indexAnalyzer)
-                    | FieldType.Dto.Custom -> 
+                    | FieldType.FieldType.Text -> return FieldType.Text(searchAnalyzer, indexAnalyzer)
+                    | FieldType.FieldType.Highlight -> return FieldType.Highlight(searchAnalyzer, indexAnalyzer)
+                    | FieldType.FieldType.Custom -> 
                         let indexingInformation = 
                             { Index = field.Index
                               Tokenize = field.Analyze
@@ -789,7 +791,7 @@ module Field =
                 | _ -> return! fail (UnSupportedFieldType(field.FieldName, field.FieldType.ToString()))
             }
         
-        let checkDocValuesSupport (field : Dto) (fieldType : FieldType.T) = 
+        let checkDocValuesSupport (field : Field) (fieldType : FieldType.T) = 
             field.AllowSort && requiresCustomDocValues (fieldType)
         maybe { 
             let! source = getSource (field)
@@ -808,7 +810,7 @@ module Field =
 module HighlightOption = 
     /// Used for configuring the settings for text highlighting in the search results
     [<ToString; Sealed>]
-    type Dto(fields : string []) = 
+    type HighlightOption(fields : string []) = 
         inherit DtoBase()
         
         /// Total number of fragments to return per document
@@ -823,7 +825,7 @@ module HighlightOption =
         /// Pre tag to represent the ending of the highlighted word
         member val PreTag = "<B>" with get, set
         
-        new() = Dto(Unchecked.defaultof<string []>)
+        new() = HighlightOption(Unchecked.defaultof<string []>)
         override __.Validate() = ok()
 
 module SearchQuery = 
@@ -831,7 +833,7 @@ module SearchQuery =
     /// a consistent syntax to execute various types of queries. The syntax is similar
     /// to the SQL syntax. This was done on purpose to reduce the learning curve.
     [<ToString; Sealed>]
-    type Dto(index : string, query : string) = 
+    type SearchQuery(index : string, query : string) = 
         inherit DtoBase()
         
         /// Unique name of the query. This is only required if you are setting up a 
@@ -848,7 +850,7 @@ module SearchQuery =
         member val Count = 10 with get, set
         
         /// AUTO
-        member val Highlights = new HighlightOption.Dto(Array.empty) with get, set
+        member val Highlights = new HighlightOption.HighlightOption(Array.empty) with get, set
         
         /// Name of the index
         member val IndexName = index with get, set
@@ -898,7 +900,7 @@ module SearchQuery =
         /// the null constant
         member val ReturnEmptyStringForNull = true with get, set
         
-        new() = Dto(defString, defString)
+        new() = SearchQuery(defString, defString)
         override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
     
     /// Gets a search query from an Owin request using the optional body
@@ -906,7 +908,7 @@ module SearchQuery =
         let query = 
             match body with
             | Some(q) -> q
-            | None -> new Dto()
+            | None -> new SearchQuery()
         query.QueryString <- request.OwinContext |> stringFromQueryString "q" query.QueryString
         query.Columns <- match request.OwinContext.Request.Query.Get("c") with
                          | null -> query.Columns
@@ -927,7 +929,7 @@ module Document =
     /// analogy an index can be considered as a table while a document is a row of that table. Like a table a 
     /// FlexSearch document requires a fix schema and all fields should have a field type.
     [<ToString; Sealed>]
-    type Dto(indexName : string, id : string) = 
+    type Document(indexName : string, id : string) = 
         inherit DtoBase()
         
         /// Fields to be added to the document for indexing.
@@ -957,15 +959,15 @@ module Document =
         member val Score = defDouble with get, set
         
         static member Default = 
-            let def = new Dto()
+            let def = new Document()
             (def :> IFreezable).Freeze()
             def
         
         override this.Validate() = this.IndexName
                                    |> notBlank "IndexName"
                                    >>= fun _ -> this.Id |> notBlank "Id"
-        new(indexName, id) = Dto(indexName, id)
-        new() = Dto(defString, defString)
+        new(indexName, id) = Document(indexName, id)
+        new() = Document(defString, defString)
 
 module Index = 
     /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
@@ -982,23 +984,23 @@ module Index =
     /// By default a newly created index stays off-line. This is by design to force the 
     /// user to enable an index before using it.
     [<ToString; Sealed>]
-    type Dto() = 
+    type Index() = 
         inherit DtoBase()
         
         /// Name of the index
         member val IndexName = defString with get, set
         
         /// Fields to be used in index.
-        member val Fields = defArray<Field.Dto> with get, set
+        member val Fields = defArray<Field.Field> with get, set
         
         /// Search Profiles
-        member val SearchProfiles = defArray<SearchQuery.Dto> with get, set
+        member val SearchProfiles = defArray<SearchQuery.SearchQuery> with get, set
         
         /// AUTO
-        member val ShardConfiguration = new ShardConfiguration.Dto() with get, set
+        member val ShardConfiguration = new ShardConfiguration.ShardConfiguration() with get, set
         
         /// AUTO
-        member val IndexConfiguration = new IndexConfiguration.Dto() with get, set
+        member val IndexConfiguration = new IndexConfiguration.IndexConfiguration() with get, set
         
         /// Signifies if the index is on-line or not? An index has to be 
         /// on-line in order to enable searching over it.
@@ -1033,7 +1035,7 @@ module Index =
 type SearchResults() = 
     
     /// Documents which are returned as a part of search response.
-    member val Documents = new List<Document.Dto>() with get, set
+    member val Documents = new List<Document.Document>() with get, set
     
     /// Total number of records returned.
     member val RecordsReturned = 0 with get, set
