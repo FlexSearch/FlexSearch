@@ -216,9 +216,10 @@ module Helpers =
     let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
     
     let emptyDir (path) = 
-        loopDir path |> Seq.iter (fun x -> Directory.Delete(x, true))
-        loopFiles path |> Seq.iter (fun x -> File.Delete(x))
-    
+        loopDir path |> Seq.iter (fun x -> 
+            loopFiles x |> Seq.iter (fun x -> File.Delete(x))    
+            Directory.Delete(x, true))
+        
     let delDir (path) = 
         emptyDir path
         Directory.Delete(path)
