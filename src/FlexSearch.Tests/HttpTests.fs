@@ -71,10 +71,10 @@ module Helpers =
         | _ -> failwithf "Not supported"
         requestBuilder
     
-    let newIndex indexName = new Index.Index(IndexName = indexName)
+    let newIndex indexName = new Index(IndexName = indexName)
     
-    let addField (index : Index.Index) (fieldName : string) =
-        index.Fields <- index.Fields |> Array.append [|new Field.Field(fieldName)|]
+    let addField (index : Index) (fieldName : string) =
+        index.Fields <- index.Fields |> Array.append [|new Field(fieldName)|]
     
 
     // ----------------------------------------------------------------------------
@@ -116,14 +116,14 @@ type ``Index Creation Tests``() =
         client.DeleteIndex(indexName).Result |> isSuccessful
     
     [<Example("post-indices-id-2", "Duplicate index cannot be created")>]
-    member __.``Duplicate index cannot be created`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Duplicate index cannot be created`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         client.AddIndex(index).Result |> isCreated
         let actual = client.AddIndex(index).Result
         actual |> fst |> hasErrorCode "IndexAlreadyExists"
         actual |> hasHttpStatusCode HttpStatusCode.Conflict
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
-    member __.``Create response contains the id of the created index`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Create response contains the id of the created index`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         let actual = client.AddIndex(index).Result
         actual |> isCreated
         (actual |> data).Id =? index.IndexName
@@ -136,7 +136,7 @@ type ``Index Creation Tests``() =
     [<Example("post-indices-id-3", "")>]
     member __.``Create index with two field 'firstname' & 'lastname'`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
         let index = newIndex indexName
-        index.Fields <- [| new Field.Field("firstname"); new Field.Field("lastname")|]
+        index.Fields <- [| new Field("firstname"); new Field("lastname")|]
         client.AddIndex(index).Result |> isCreated
         client.DeleteIndex(indexName).Result |> isSuccessful
     
@@ -152,14 +152,14 @@ type ``Index Creation Tests``() =
 //        client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("post-indices-id-5", "")>]
-    member __.``Create an index by setting all properties`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Create an index by setting all properties`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         let actual = client.AddIndex(index).Result
         actual |> hasHttpStatusCode HttpStatusCode.Created
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
 
 type ``Index Update Tests``() = 
     [<Example("put-indices-id-1", "")>]
-    member __.``Trying to update an index is not supported`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Trying to update an index is not supported`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         let actual = client.UpdateIndex(index).Result
         actual  |> fst |> hasErrorCode "HttpNotSupported"
         actual |> hasHttpStatusCode HttpStatusCode.BadRequest
@@ -194,7 +194,7 @@ type ``Get Non existing Index Tests``() =
 
 type ``Index Other Services Tests``() = 
     [<Example("get-indices-id-status-1", "Get status of an index (offine)")>]
-    member __.``Newly created index is always offline`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Newly created index is always offline`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         index.Online <- false
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
@@ -203,7 +203,7 @@ type ``Index Other Services Tests``() =
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("put-indices-id-status-1", "")>]
-    member __.``Set status of an index 'online'`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Set status of an index 'online'`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         index.Online <- false
         client.AddIndex(index).Result |> isCreated
         client.BringIndexOnline(index.IndexName).Result |> isSuccessful
@@ -212,7 +212,7 @@ type ``Index Other Services Tests``() =
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("put-indices-id-status-1", "")>]
-    member __.``Set status of an index 'offline'`` (client : FlexClient, index : Index.Index, handler : LoggingHandler) = 
+    member __.``Set status of an index 'offline'`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
         actual |> isSuccessful
@@ -237,14 +237,14 @@ type ``Index Other Services Tests``() =
 
 type ``Document Tests``() = 
     let testIndex indexName = 
-        let index = new Index.Index(IndexName = indexName, Online = true)
-        index.Fields <- [| new Field.Field("firstname", FieldType.FieldType.Text)
-                           new Field.Field("lastname") |]
+        let index = new Index(IndexName = indexName, Online = true)
+        index.Fields <- [| new Field("firstname", FieldDataType.Text)
+                           new Field("lastname") |]
         index
     
     let createDocument (client : FlexClient) indexName =
         client.AddIndex(testIndex indexName).Result |> isCreated
-        let document = new Document.Document(indexName, "1")
+        let document = new Document(indexName, "1")
         document.Fields.Add("firstname", "Seemant")
         document.Fields.Add("lastname", "Rajvanshi")
         let result = client.AddDocument(indexName, document).Result
@@ -265,7 +265,7 @@ type ``Document Tests``() =
 
     member __.``Cannot add a document without an id`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
         client.AddIndex(testIndex indexName).Result |> isCreated
-        let document = new Document.Document(indexName, " ")
+        let document = new Document(indexName, " ")
         client.AddDocument(indexName, document).Result |> hasHttpStatusCode HttpStatusCode.BadRequest
         printfn "%s" (handler.Log().ToString())
 

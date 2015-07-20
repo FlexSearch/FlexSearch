@@ -82,15 +82,15 @@ type FieldsMeta =
       Fields : Field.T []
       Lookup : IReadOnlyDictionary<string, Field.T> }
 
-type AnalyzerWrapper(?defaultAnalyzer0 : Analyzer) = 
+type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) = 
     inherit DelegatingAnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY)
-    let mutable map = conDict<Analyzer>()
-    let defaultAnalyzer = defaultArg defaultAnalyzer0 (new StandardAnalyzer() :> Analyzer)
+    let mutable map = conDict<LuceneAnalyzer>()
+    let defaultAnalyzer = defaultArg defaultAnalyzer0 (new StandardAnalyzer() :> LuceneAnalyzer)
     
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer           
     member __.BuildAnalyzer(fields : Field.T [], isIndexAnalyzer : bool) = 
-        let analyzerMap = conDict<Analyzer>()
+        let analyzerMap = conDict<LuceneAnalyzer>()
         analyzerMap.[Constants.IdField] <- CaseInsensitiveKeywordAnalyzer
         analyzerMap.[Constants.LastModifiedField] <- CaseInsensitiveKeywordAnalyzer
         fields 
@@ -128,19 +128,19 @@ module Codec =
     open FlexLucene.Codecs
     
     /// Get the default codec associated with the index version
-    let getCodec (enableBloomFilter : bool) (version : IndexVersion.IndexVersion) = 
+    let getCodec (enableBloomFilter : bool) (version : IndexVersion) = 
         let getPostingsFormat (fieldName : string, enableBloomFilter, defaultFormat) = 
             if fieldName.Equals(Constants.IdField) && enableBloomFilter then 
                 new BloomFilteringPostingsFormat(defaultFormat) :> PostingsFormat
             else defaultFormat
         match version with
-        | IndexVersion.IndexVersion.Lucene_5_0_0 -> 
+        | IndexVersion.Lucene_5_0_0 -> 
             let postingsFormat = new Lucene50PostingsFormat()
             { new Lucene50Codec() with
                   member this.getPostingsFormatForField (fieldName) = 
                       getPostingsFormat (fieldName, enableBloomFilter, postingsFormat) } :> Codec
             |> ok
-        | IndexVersion.IndexVersion.Lucene_4_x_x -> 
+        | IndexVersion.Lucene_4_x_x -> 
             let postingsFormat = new Lucene41PostingsFormat()
             { new Lucene410Codec() with
                   member this.getPostingsFormatForField (fieldName) = 
@@ -156,10 +156,10 @@ module IndexSetting =
           SearchAnalyzer : AnalyzerWrapper
           Fields : Field.T []
           FieldsLookup : IReadOnlyDictionary<string, Field.T>
-          SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery.SearchQuery>
-          IndexConfiguration : IndexConfiguration.IndexConfiguration
+          SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery>
+          IndexConfiguration : IndexConfiguration
           BaseFolder : string
-          ShardConfiguration : ShardConfiguration.ShardConfiguration }
+          ShardConfiguration : ShardConfiguration }
 
 /// Builder related to creating Index Settings    
 [<AutoOpenAttribute>]
@@ -197,7 +197,7 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field.Field array, analyzerService, scriptService) (build) = 
+    let withFields (fields : Field array, analyzerService, scriptService) (build) = 
         let ic = build.Setting.IndexConfiguration
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new ResizeArray<Field.T>()
@@ -216,8 +216,8 @@ module IndexSettingBuilder =
                                               IndexAnalyzer = buildAnalyzer (fieldArr, true) } }
     
     /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : SearchQuery.SearchQuery array, parser : IFlexParser) (build) = 
-        let result = new Dictionary<string, Predicate * SearchQuery.SearchQuery>(StringComparer.OrdinalIgnoreCase)
+    let withSearchProfiles (profiles : SearchQuery array, parser : IFlexParser) (build) = 
+        let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
             let predicate = returnOrFail <| parser.Parse profile.QueryString
             result.Add(profile.QueryName, (predicate, profile))
@@ -281,15 +281,15 @@ module DocumentTemplate =
     /// Note: Make sure that the template is not accessed by multiple threads.
     type T = 
         { Setting : IndexSetting.T
-          TemplateFields : array<Field>
-          Template : Document }
+          TemplateFields : array<LuceneField>
+          Template : LuceneDocument }
     
     let inline protectedFields (fieldName) = fieldName = Constants.IdField || fieldName = Constants.LastModifiedField
     
     /// Create a new document template            
     let create (s : IndexSetting.T) = 
-        let template = new Document()
-        let fields = new ResizeArray<Field>()
+        let template = new LuceneDocument()
+        let fields = new ResizeArray<LuceneField>()
         
         let add (field) = 
             template.Add(field)
@@ -311,7 +311,7 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let updateTempate (document : Document.Document) (template : T) = 
+    let updateTempate (document : Document) (template : T) = 
         // Update meta fields
         // Id Field
         template.TemplateFields.[0].SetStringValue(document.Id)
@@ -383,7 +383,7 @@ module TransactionLog =
         { TransactionId : int64
           Operation : Operation
           [<NullGuard.AllowNullAttribute>]
-          Document : Document.Document
+          Document : Document
           /// This will be used for delete operation as we
           /// don't require a document
           [<NullGuard.AllowNullAttribute>]
@@ -404,7 +404,7 @@ module TransactionLog =
         static member Create(txId, id) = 
             { TransactionId = txId
               Operation = Operation.Delete
-              Document = Document.Document.Default
+              Document = Document.Default
               Id = id
               Query = String.Empty }
     
@@ -501,7 +501,7 @@ module ShardWriter =
           /// Represents the current modify index. This is used by for
           /// recovery and shard sync from transaction logs.
           ModifyIndex : AtomicLong
-          Settings : IndexConfiguration.IndexConfiguration
+          Settings : IndexConfiguration
           /// Transaction log path to be used
           TxLogPath : string
           ShardNo : int
@@ -572,10 +572,10 @@ module ShardWriter =
         try 
             sw.SearcherManager.Close()
             sw.IndexWriter.Close()
-        with _ as AlreadyClosedException -> ()
+        with AlreadyClosedException -> ()
     
     /// Adds a document to this index.
-    let addDocument (document : Document) (sw : T) = sw.TrackingIndexWriter.AddDocument(document) |> ignore
+    let addDocument (document : LuceneDocument) (sw : T) = sw.TrackingIndexWriter.AddDocument(document) |> ignore
     
     /// Deletes the document with the given id.
     let deleteDocument (id : string) (idFieldName : string) (sw : T) = 
@@ -583,13 +583,14 @@ module ShardWriter =
     
     /// Delete all documents in the index.
     let deleteAll (sw : T) = sw.TrackingIndexWriter.DeleteAll() |> ignore
-
+    
     /// Delete all documents returned by search query
-    let deleteFromSearch (query : FlexLucene.Search.Query) (sw: T)  = sw.TrackingIndexWriter.DeleteDocuments query |> ignore
+    let deleteFromSearch (query : FlexLucene.Search.Query) (sw : T) = 
+        sw.TrackingIndexWriter.DeleteDocuments query |> ignore
     
     /// Updates a document by id by first deleting the document containing term and then 
     /// adding the new document.
-    let updateDocument (id : string, idFieldName : string, document : Document) (sw : T) = 
+    let updateDocument (id : string, idFieldName : string, document : LuceneDocument) (sw : T) = 
         sw.TrackingIndexWriter.UpdateDocument(id.Term(idFieldName), document) |> ignore
     
     /// Returns real time searcher. 
@@ -610,7 +611,7 @@ module ShardWriter =
     let getDocumentCount (sw : T) = sw.IndexWriter.NumDocs()
     
     /// Create a new shard
-    let create (shardNumber : int, settings : IndexConfiguration.IndexConfiguration, config : IndexWriterConfig, basePath : string, 
+    let create (shardNumber : int, settings : IndexConfiguration, config : IndexWriterConfig, basePath : string, 
                 directory : FlexLucene.Store.Directory) = 
         let iw = new FileWriter(directory, config)
         let commitData = iw.GetCommitData()
@@ -753,7 +754,7 @@ module VersionCache =
                 value
     
     /// Check and returns the current version number of the document
-    let versionCheck (doc : Document.Document, newVersion) (cache : T) = 
+    let versionCheck (doc : Document, newVersion) (cache : T) = 
         match doc.TimeStamp with
         | 0L -> 
             // We don't care what the version is let's proceed with normal operation
@@ -803,7 +804,7 @@ module IndexWriter =
         member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
     
     /// Create index settings from the Index Dto
-    let createIndexSetting (index : Index.Index, analyzerService, scriptService) = 
+    let createIndexSetting (index : Index, analyzerService, scriptService) = 
         try 
             withIndexName (index.IndexName, Constants.DataFolder +/ index.IndexName)
             |> withShardConfiguration (index.ShardConfiguration)
@@ -832,11 +833,11 @@ module IndexWriter =
     /// Commit unsaved data to the index
     let commit (forceCommit : bool) (s : T) = 
         s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
-
+    
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
     /// Add or update a document
-    let addOrUpdateDocument (document : Document.Document, create : bool, addToTxLog : bool) (s : T) = 
+    let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : T) = 
         maybe { 
             let shardNo = document.Id |> mapToShard s.ShardWriters.Length
             let newVersion = GetCurrentTimeAsLong()
@@ -862,10 +863,10 @@ module IndexWriter =
         }
     
     /// Add a document to the index
-    let addDocument (document : Document.Document) (s : T) = s |> addOrUpdateDocument (document, true, true)
+    let addDocument (document : Document) (s : T) = s |> addOrUpdateDocument (document, true, true)
     
     /// Add a document to the index
-    let updateDocument (document : Document.Document) (s : T) = s |> addOrUpdateDocument (document, false, true)
+    let updateDocument (document : Document) (s : T) = s |> addOrUpdateDocument (document, false, true)
     
     /// Delete all documents in the index
     let deleteAllDocuments (s : T) = s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))
@@ -873,7 +874,7 @@ module IndexWriter =
     /// Deletes all documents returned by search query
     // TODO: maybe include this in transaction log
     let deleteAllDocumentsFromSearch q iw = iw.ShardWriters |> Array.Parallel.iter (ShardWriter.deleteFromSearch q)
-
+    
     /// Delete a document from index
     let deleteDocument (id : string) (s : T) = 
         maybe { 
@@ -992,7 +993,7 @@ module IndexManager =
     
     /// Represent the internal representation of the index state
     type IndexState = 
-        { IndexDto : Index.Index
+        { IndexDto : Index
           IndexStatus : IndexStatus
           IndexWriter : IndexWriter.T option }
     
@@ -1000,7 +1001,7 @@ module IndexManager =
         { Store : ConcurrentDictionary<string, IndexState>
           EventAggregrator : EventAggregrator
           ThreadSafeFileWriter : ThreadSafeFileWriter
-          GetAnalyzer : string -> Choice<Analyzer, IMessage>
+          GetAnalyzer : string -> Choice<LuceneAnalyzer, IMessage>
           GetComputedScript : string -> Choice<ComputedDelegate * string [], IMessage> }
     
     /// Returns IndexNotFound error
@@ -1055,21 +1056,20 @@ module IndexManager =
         | _ -> fail <| indexNotFound indexName
     
     /// Load a index from the given index dto
-    let loadIndex (dto : Index.Index) (t : T) = 
+    let loadIndex (dto : Index) (t : T) = 
         maybe { 
             do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
             if dto.Online then 
                 let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
                 let indexWriter = IndexWriter.create (setting)
                 do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
-            else
-                do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
+            else do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
         }
     
     /// Loads all indices from the given path
     let loadAllIndex (t : T) = 
         let loadFromFile (path) = 
-            match t.ThreadSafeFileWriter.ReadFile<Index.Index>(path) with
+            match t.ThreadSafeFileWriter.ReadFile<Index>(path) with
             | Choice1Of2(dto) -> 
                 t
                 |> updateState (createIndexState (dto, IndexStatus.Opening))
@@ -1079,7 +1079,7 @@ module IndexManager =
                 Logger.Log(error)
                 None
         
-        let queueOnThreadPool (dto : Index.Index) = 
+        let queueOnThreadPool (dto : Index) = 
             ThreadPool.QueueUserWorkItem
                 (fun _ -> 
                 try 
@@ -1099,7 +1099,7 @@ module IndexManager =
         |> Seq.iter queueOnThreadPool
     
     /// Add a new index to the node
-    let addIndex (index : Index.Index) (t : T) = 
+    let addIndex (index : Index) (t : T) = 
         maybe { 
             do! index.Validate()
             match t |> indexExists index.IndexName with
@@ -1148,15 +1148,15 @@ module IndexManager =
         }
     
     /// Create a new 
-    let create(eventAggregrator, threadSafeFileWriter, getAnalyzer, getComputedScript) =
+    let create (eventAggregrator, threadSafeFileWriter, getAnalyzer, getComputedScript) = 
         { Store = conDict<IndexState>()
           EventAggregrator = eventAggregrator
           ThreadSafeFileWriter = threadSafeFileWriter
-          GetAnalyzer= getAnalyzer
+          GetAnalyzer = getAnalyzer
           GetComputedScript = getComputedScript }
-
+    
     /// Returns the disk usage of an index
-    let getDiskUsage (indexName : string) (t: T) =
+    let getDiskUsage (indexName : string) (t : T) = 
         match t.Store.ContainsKey indexName with
         | true -> ok <| getFolderSize (DataFolder +/ indexName)
         | _ -> fail <| IndexNotFound indexName

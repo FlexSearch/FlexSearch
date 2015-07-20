@@ -40,6 +40,10 @@ open System.Linq
 open java.io
 open java.util
 
+// type mappings to avoid name conflict
+type LuceneAnalyzer = FlexLucene.Analysis.Analyzer
+type LuceneDocument = FlexLucene.Document.Document
+
 /// Determines whether it's an infinite value and if it's minimum or maximum
 type Infinite = 
     | MinInfinite

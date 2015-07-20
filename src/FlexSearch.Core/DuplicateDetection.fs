@@ -95,35 +95,35 @@ module DuplicateDetection =
     let formatter = new NewtonsoftJsonFormatter() :> IFormatter
     
     let schema = 
-        let index = new Index.Index(IndexName = "duplicates")
-        index.IndexConfiguration <- new IndexConfiguration.IndexConfiguration()
-        index.IndexConfiguration.DirectoryType <- DirectoryType.DirectoryType.MemoryMapped
+        let index = new Index(IndexName = "duplicates")
+        index.IndexConfiguration <- new IndexConfiguration()
+        index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
         index.Online <- true
-        index.Fields <- [| new Field.Field(sessionId, FieldType.FieldType.ExactText)
-                           new Field.Field(recordType, FieldType.FieldType.ExactText)
+        index.Fields <- [| new Field(sessionId, FieldDataType.ExactText)
+                           new Field(recordType, FieldDataType.ExactText)
                            // Source record
-                           new Field.Field(sourceId, FieldType.FieldType.Int, AllowSort = true)
-                           new Field.Field(sourceRecordId, FieldType.FieldType.ExactText)
-                           new Field.Field(sourceDisplayName, FieldType.FieldType.Stored)
-                           new Field.Field(totalDupesFound, FieldType.FieldType.Int)
-                           new Field.Field(sourceStatus, FieldType.FieldType.Int, AllowSort = true)
-                           new Field.Field(targetRecords, FieldType.FieldType.Text)
+                           new Field(sourceId, FieldDataType.Int, AllowSort = true)
+                           new Field(sourceRecordId, FieldDataType.ExactText)
+                           new Field(sourceDisplayName, FieldDataType.Stored)
+                           new Field(totalDupesFound, FieldDataType.Int)
+                           new Field(sourceStatus, FieldDataType.Int, AllowSort = true)
+                           new Field(targetRecords, FieldDataType.Text)
                            // Session related
-                           new Field.Field(sessionProperties, FieldType.FieldType.Text)
-                           new Field.Field(misc, FieldType.FieldType.Text) |]
+                           new Field(sessionProperties, FieldDataType.Text)
+                           new Field(misc, FieldDataType.Text) |]
         index
     
     let getId() = Guid.NewGuid().ToString()
     
     let writeSessionRecord (session : Session, documentService : IDocumentService) = 
-        let doc = new Document.Document(schema.IndexName, session.Id)
+        let doc = new Document(schema.IndexName, session.Id)
         doc.Fields.Add(sessionId, session.SessionId)
         doc.Fields.Add(recordType, sessionRecordType)
         doc.Fields.Add(sessionProperties, formatter.SerializeToString(session))
         documentService.AddOrUpdateDocument(doc) |> ignore
     
     let writeDuplicates (sourceRecord : SourceRecord, documentService : IDocumentService) = 
-        let sourceDoc = new Document.Document(schema.IndexName, getId())
+        let sourceDoc = new Document(schema.IndexName, getId())
         sourceDoc.Fields.Add(sessionId, sourceRecord.SessionId)
         sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId.ToString())
         sourceDoc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
@@ -146,7 +146,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             | Choice2Of2(error) -> Logger.Log(error)
     
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
-        let query = new SearchQuery.SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
+        let query = new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
         query.Columns <- [| session.DisplayFieldName |]
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
@@ -184,7 +184,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         session.SelectionQuery <- req.SelectionQuery
         let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
         let mainQuery = 
-            new SearchQuery.SearchQuery(session.IndexName, req.SelectionQuery, Count = int req.MaxRecordsToScan, 
+            new SearchQuery(session.IndexName, req.SelectionQuery, Count = int req.MaxRecordsToScan, 
                                 ReturnFlatResult = true, Columns = [| "*" |])
         let resultC = searchService.Search(mainQuery)
         match resultC with
@@ -327,7 +327,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             headers |> Array.iteri (fun i header -> p.Add(header, record.[i]))
             p
         
-        let query = new SearchQuery.SearchQuery(request.IndexName, String.Empty, SearchProfile = request.ProfileName)
+        let query = new SearchQuery(request.IndexName, String.Empty, SearchProfile = request.ProfileName)
         query.Columns <- headers
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
@@ -383,14 +383,14 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
     
     let getIndexDataSource (request : DuplicateDetectionReportRequest) = 
         let mainQuery = 
-            new SearchQuery.SearchQuery(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
+            new SearchQuery(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
                                 ReturnFlatResult = true, Columns = [| "*" |])
         let result = searchService.Search(mainQuery)
         match result with
         | Choice1Of2(result) -> 
             let headers = 
                 searchService.Search
-                    (new SearchQuery.SearchQuery(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, 
+                    (new SearchQuery(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, 
                                          Columns = [| "*" |]))
                 |> extract
                 |> toFlatResults

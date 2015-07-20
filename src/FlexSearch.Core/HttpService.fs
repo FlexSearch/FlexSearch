@@ -64,21 +64,21 @@ type GetFaviconHandler() =
 [<Name("GET-/indices")>]
 [<Sealed>]
 type GetAllIndexHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<NoBody, Index.Index []>()
+    inherit HttpHandlerBase<NoBody, Index []>()
     override __.Process(_, _) = SuccessResponse(indexService.GetAllIndex(), Ok)
 
 ///  Get an index
 [<Name("GET-/indices/:id")>]
 [<Sealed>]
 type GetIndexByIdHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<NoBody, Index.Index>(true)
+    inherit HttpHandlerBase<NoBody, Index>(true)
     override __.Process(request, _) = SomeResponse(indexService.GetIndex(request.ResId.Value), Ok, NotFound)
 
 /// Create an index
 [<Name("POST-/indices")>]
 [<Sealed>]
 type PostIndexByIdHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<Index.Index, CreateResponse>()
+    inherit HttpHandlerBase<Index, CreateResponse>()
     override __.Process(_, body) = 
         match indexService.AddIndex(body.Value) with
         | Choice1Of2(response) -> SuccessResponse(response, Created)
@@ -161,7 +161,7 @@ type GetIndexSizeHandler(indexService : IIndexService) =
 [<Name("GET-/analyzers/:id")>]
 [<Sealed>]
 type GetAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<NoBody, Analyzer.Analyzer>()
+    inherit HttpHandlerBase<NoBody, Analyzer>()
     override __.Process(request, _) = SomeResponse(analyzerService.GetAnalyzerInfo(request.ResId.Value), Ok, NotFound)
 
 /// <summary>
@@ -174,7 +174,7 @@ type GetAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 [<Name("GET-/analyzers")>]
 [<Sealed>]
 type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<NoBody, Analyzer.Analyzer []>()
+    inherit HttpHandlerBase<NoBody, Analyzer []>()
     override __.Process(_, _) = SomeResponse(analyzerService.GetAllAnalyzers() |> Choice1Of2, Ok, BadRequest)
 
 /// <summary>
@@ -214,7 +214,7 @@ type DeleteAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 [<Name("PUT-/analyzers/:id")>]
 [<Sealed>]
 type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<Analyzer.Analyzer, unit>()
+    inherit HttpHandlerBase<Analyzer, unit>()
     override __.Process(request, body) = 
         body.Value.AnalyzerName <- request.ResId.Value
         SomeResponse(analyzerService.UpdateAnalyzer(body.Value), Ok, BadRequest)
@@ -259,7 +259,7 @@ type GetDocumentsHandler(documentService : IDocumentService) =
 [<Name("GET-/indices/:id/documents/:id")>]
 [<Sealed>]
 type GetDocumentByIdHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<NoBody, Document.Document>()
+    inherit HttpHandlerBase<NoBody, Document>()
     override __.Process(request, _) = 
         SomeResponse(documentService.GetDocument(request.ResId.Value, request.SubResId.Value), Ok, NotFound)
 
@@ -278,7 +278,7 @@ type GetDocumentByIdHandler(documentService : IDocumentService) =
 [<Name("POST-/indices/:id/documents")>]
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<Document.Document, CreateResponse>()
+    inherit HttpHandlerBase<Document, CreateResponse>()
     override __.Process(_, body) = 
         match documentService.AddDocument(body.Value) with
         | Choice1Of2(response) -> SuccessResponse(response, Created)
@@ -335,7 +335,7 @@ type DeleteDocumentByIdHandler(documentService : IDocumentService) =
 [<Name("PUT-/indices/:id/documents/:id")>]
 [<Sealed>]
 type PutDocumentByIdHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<Document.Document, unit>()
+    inherit HttpHandlerBase<Document, unit>()
     override __.Process(_, body) = SomeResponse(documentService.AddOrUpdateDocument(body.Value), Ok, BadRequest)
 
 // -------------------------- //
@@ -389,7 +389,7 @@ type GetJobByIdHandler(jobService : IJobService) =
 [<Name("GET|POST-/indices/:id/search")>]
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 
-    inherit HttpHandlerBase<SearchQuery.SearchQuery, obj>(false)
+    inherit HttpHandlerBase<SearchQuery, obj>(false)
     override __.Process(request, body) = 
         let query = SearchQuery.getQueryFromRequest request body
             
@@ -426,7 +426,7 @@ type GetSearchHandler(searchService : ISearchService) =
 type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, obj>()
     override __.Process(request, _) = 
-        let query = SearchQuery.getQueryFromRequest request <| Some (new SearchQuery.SearchQuery())
+        let query = SearchQuery.getQueryFromRequest request <| Some (new SearchQuery())
 
         match documentService.DeleteDocumentsFromSearch(request.ResId.Value, query) with
         | Choice1Of2(result) -> 
@@ -440,7 +440,7 @@ type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) =
 
 type SearchProfileTestDto() =
     inherit DtoBase()
-    member val SearchQuery = Unchecked.defaultof<SearchQuery.SearchQuery> with get, set
+    member val SearchQuery = Unchecked.defaultof<SearchQuery> with get, set
     member val SearchProfile = defString with get, set
     override this.Validate() = 
         this.SearchQuery.Validate()

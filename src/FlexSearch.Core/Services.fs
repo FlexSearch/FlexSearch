@@ -37,11 +37,11 @@ type IFlexFactory<'T> =
 
 /// Index related operations
 type IIndexService = 
-    abstract GetIndex : indexName:string -> Choice<Index.Index, IMessage>
-    abstract UpdateIndexFields : fields:Field.Field [] -> Choice<unit, IMessage>
+    abstract GetIndex : indexName:string -> Choice<Index, IMessage>
+    abstract UpdateIndexFields : fields:Field [] -> Choice<unit, IMessage>
     abstract DeleteIndex : indexName:string -> Choice<unit, IMessage>
-    abstract AddIndex : index:Index.Index -> Choice<CreateResponse, IMessage>
-    abstract GetAllIndex : unit -> Index.Index array
+    abstract AddIndex : index:Index -> Choice<CreateResponse, IMessage>
+    abstract GetAllIndex : unit -> Index array
     abstract IndexExists : indexName:string -> bool
     abstract IndexOnline : indexName:string -> bool
     abstract IsIndexOnline : indexName:string -> Choice<IndexWriter.T, IMessage>
@@ -57,28 +57,28 @@ type IIndexService =
 
 /// Document related operations
 type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<Document.Document, IMessage>
+    abstract GetDocument : indexName:string * id:string -> Choice<Document, IMessage>
     abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, IMessage>
-    abstract AddOrUpdateDocument : document:Document.Document -> Choice<unit, IMessage>
+    abstract AddOrUpdateDocument : document:Document -> Choice<unit, IMessage>
     abstract DeleteDocument : indexName:string * id:string -> Choice<unit, IMessage>
-    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery.SearchQuery -> Choice<SearchResults<T>, IMessage>
+    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Choice<SearchResults<T>, IMessage>
     abstract DeleteAllDocuments : indexName:string -> Choice<unit, IMessage>
-    abstract AddDocument : document:Document.Document -> Choice<CreateResponse, IMessage>
+    abstract AddDocument : document: Document -> Choice<CreateResponse, IMessage>
     abstract TotalDocumentCount : indexName:string -> Choice<int, IMessage>
 
 /// Search related operations
 type ISearchService = 
-    abstract Search : searchQuery:SearchQuery.SearchQuery * inputFields:Dictionary<string, string>
+    abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string>
      -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
-    abstract Search : searchQuery:SearchQuery.SearchQuery -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
-    abstract Search : searchQuery:SearchQuery.SearchQuery * searchProfileString:string
+    abstract Search : searchQuery:SearchQuery -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
+    abstract Search : searchQuery:SearchQuery * searchProfileString:string
      -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
-    abstract GetLuceneQuery : searchQuery:SearchQuery.SearchQuery -> Choice<FlexLucene.Search.Query, IMessage>
+    abstract GetLuceneQuery : searchQuery:SearchQuery -> Choice<FlexLucene.Search.Query, IMessage>
 
 /// Queuing related operations
 type IQueueService = 
-    abstract AddDocumentQueue : document:Document.Document -> unit
-    abstract AddOrUpdateDocumentQueue : document:Document.Document -> unit
+    abstract AddDocumentQueue : document:Document -> unit
+    abstract AddOrUpdateDocumentQueue : document:Document -> unit
 
 type IJobService = 
     abstract GetJob : string -> Choice<Job, IMessage>
@@ -89,11 +89,11 @@ type IJobService =
 
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
-    abstract GetAnalyzer : analyzerName:string -> Choice<Analyzer, IMessage>
-    abstract GetAnalyzerInfo : analyzerName:string -> Choice<Analyzer.Analyzer, IMessage>
+    abstract GetAnalyzer : analyzerName:string -> Choice<LuceneAnalyzer, IMessage>
+    abstract GetAnalyzerInfo : analyzerName:string -> Choice<Analyzer, IMessage>
     abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, IMessage>
-    abstract UpdateAnalyzer : analyzer:Analyzer.Analyzer -> Choice<unit, IMessage>
-    abstract GetAllAnalyzers : unit -> Analyzer.Analyzer []
+    abstract UpdateAnalyzer : analyzer:Analyzer -> Choice<unit, IMessage>
+    abstract GetAllAnalyzers : unit -> Analyzer []
     abstract Analyze : analyzerName:string * input:string -> Choice<string [], IMessage>
 
 /// Script related services
@@ -156,11 +156,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         let filterParams = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         filterParams.Add("encoder", encoder)
         filterParams.Add("inject", "false")
-        let filters = new List<TokenFilter.TokenFilter>()
-        filters.Add(new TokenFilter.TokenFilter(FilterName = "phonetic", Parameters = filterParams))
+        let filters = new List<TokenFilter>()
+        filters.Add(new TokenFilter(FilterName = "phonetic", Parameters = filterParams))
         let analyzerDefinition = 
-            new Analyzer.Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
-                             Tokenizer = new Tokenizer.Tokenizer(TokenizerName = "whitespace"), Filters = filters)
+            new Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
+                             Tokenizer = new Tokenizer(TokenizerName = "whitespace"), Filters = filters)
         (analyzerDefinition, Analysis.buildFromAnalyzerDto (analyzerDefinition) |> extract)
     
     let path = 
@@ -168,9 +168,9 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         |> Directory.CreateDirectory
         |> fun x -> x.FullName
     
-    let store = conDict<Analyzer.Analyzer * Analyzer>()
+    let store = conDict<Analyzer * LuceneAnalyzer>()
     
-    let updateAnalyzer (analyzer : Analyzer.Analyzer) = 
+    let updateAnalyzer (analyzer : Analyzer) = 
         maybe { 
             do! analyzer.Validate()
             let! instance = Analysis.buildFromAnalyzerDto (analyzer)
@@ -182,7 +182,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     
     let loadAllAnalyzers() = 
         Directory.EnumerateFiles(path) |> Seq.iter (fun x -> 
-                                              match threadSafeWriter.ReadFile<Analyzer.Analyzer>(x) with
+                                              match threadSafeWriter.ReadFile<Analyzer>(x) with
                                               | Choice1Of2(dto) -> 
                                                   updateAnalyzer (dto)
                                                   |> logErrorChoice
@@ -196,10 +196,10 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     
     do 
         // Add prebuilt analyzers
-        let standardAnalyzer = new Analyzer.Analyzer(AnalyzerName = "standard")
-        let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> Analyzer
+        let standardAnalyzer = new Analyzer(AnalyzerName = "standard")
+        let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> LuceneAnalyzer
         store |> add ("standard", (standardAnalyzer, instance))
-        store |> add ("keyword", (new Analyzer.Analyzer(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
+        store |> add ("keyword", (new Analyzer(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
         store |> add ("refinedsoundex", getPhoneticFilter ("refinedsoundex"))
         store |> add ("doublemetaphone", getPhoneticFilter ("doublemetaphone"))
         if not testMode then loadAllAnalyzers()
@@ -207,7 +207,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     interface IAnalyzerService with
         
         /// Create or update an existing analyzer
-        member __.UpdateAnalyzer(analyzer : Analyzer.Analyzer) = updateAnalyzer (analyzer)
+        member __.UpdateAnalyzer(analyzer : Analyzer) = updateAnalyzer (analyzer)
         
         /// Delete an analyzer. This 
         member __.DeleteAnalyzer(analyzerName : string) = 
@@ -246,7 +246,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
     
     interface IIndexService with
         member __.IsIndexOnline(indexName : string) = im |> IndexManager.indexOnline (indexName)
-        member __.AddIndex(index : Index.Index) = im |> IndexManager.addIndex (index)
+        member __.AddIndex(index : Index) = im |> IndexManager.addIndex (index)
         member __.CloseIndex(indexName : string) = im |> IndexManager.closeIndex (indexName)
         member __.OpenIndex(indexName : string) = im |> IndexManager.openIndex (indexName)
         member __.Commit(indexName : string) = maybe { let! writer = im |> IndexManager.indexOnline indexName
@@ -284,7 +284,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
         member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
-        member __.UpdateIndexFields(_ : Field.Field []) = failwith "Not implemented yet"
+        member __.UpdateIndexFields(_ : Field []) = failwith "Not implemented yet"
         member __.GetDiskUsage(indexName : string) = im |> IndexManager.getDiskUsage indexName
 
 [<Sealed>]
@@ -299,7 +299,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                 result.Add(queryName, pair.Value)
         result
     
-    let getSearchPredicate (writers : IndexWriter.T, search : SearchQuery.SearchQuery, 
+    let getSearchPredicate (writers : IndexWriter.T, search : SearchQuery, 
                             inputValues : Dictionary<string, string> option) = 
         maybe { 
             if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
@@ -340,7 +340,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                  return (predicate, None)
         }
     
-    let generateSearchQuery (writers : IndexWriter.T, searchQuery : SearchQuery.SearchQuery, 
+    let generateSearchQuery (writers : IndexWriter.T, searchQuery : SearchQuery, 
                              inputValues : Dictionary<string, string> option, queryTypes) = 
         maybe { 
             let! (predicate, searchProfile) = getSearchPredicate (writers, searchQuery, inputValues)
@@ -356,14 +356,14 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
             ok <| SearchDsl.search (writers, query, searchQuery)
         with e -> fail <| SearchError(exceptionPrinter e)
     
-    let search (searchQuery : SearchQuery.SearchQuery, inputFields : Dictionary<string, string> option) = 
+    let search (searchQuery : SearchQuery, inputFields : Dictionary<string, string> option) = 
         maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
                 return! searchWrapper (writers, query, searchQuery) }
 
     interface ISearchService with
         
-        member __.Search(searchQuery : SearchQuery.SearchQuery, searchProfileString : string) = 
+        member __.Search(searchQuery : SearchQuery, searchProfileString : string) = 
             maybe { 
                 let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 // Parse the search profile to see if it is a valid query
@@ -377,12 +377,12 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                        return! searchWrapper (writers, query, searchQuery)
             }
         
-        member __.Search(searchQuery : SearchQuery.SearchQuery, inputFields : Dictionary<string, string>) = 
+        member __.Search(searchQuery : SearchQuery, inputFields : Dictionary<string, string>) = 
             search (searchQuery, Some <| inputFields)
-        member __.Search(searchQuery : SearchQuery.SearchQuery) = search (searchQuery, None)
+        member __.Search(searchQuery : SearchQuery) = search (searchQuery, None)
 
         // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
-        member __.GetLuceneQuery(searchQuery: SearchQuery.SearchQuery) =
+        member __.GetLuceneQuery(searchQuery: SearchQuery) =
             maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                     return! generateSearchQuery (writers, searchQuery, None, queryTypes) }
 
@@ -405,7 +405,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Get a document by Id        
         member __.GetDocument(indexName, documentId) = 
             maybe { 
-                let q = new SearchQuery.SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField documentId))
+                let q = new SearchQuery(indexName, (sprintf "%s = '%s'" Constants.IdField documentId))
                 q.ReturnScore <- false
                 q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
@@ -419,7 +419,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Get top 10 document from the index
         member __.GetDocuments(indexName, count) = 
             maybe { 
-                let q = new SearchQuery.SearchQuery(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
+                let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" Constants.IdField))
                 q.ReturnScore <- false
                 q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
@@ -542,14 +542,14 @@ type QueueService(documentService : IDocumentService) =
     /// <summary>
     /// Queue for add operation 
     /// </summary>
-    let addQueue : ActionBlock<Document.Document> = 
-        new ActionBlock<Document.Document>(processAddQueueItems, executionBlockOptions())
+    let addQueue : ActionBlock<Document> = 
+        new ActionBlock<Document>(processAddQueueItems, executionBlockOptions())
     
     /// <summary>
     /// Queue for add or update operation 
     /// </summary>
-    let addOrUpdateQueue : ActionBlock<Document.Document> = 
-        new ActionBlock<Document.Document>(processAddOrUpdateQueueItems, executionBlockOptions())
+    let addOrUpdateQueue : ActionBlock<Document> = 
+        new ActionBlock<Document>(processAddOrUpdateQueueItems, executionBlockOptions())
     
     interface IQueueService with
         

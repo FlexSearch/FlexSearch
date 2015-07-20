@@ -170,23 +170,23 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
     // --------------------
     // Search related
     // --------------------
-    member this.Search(searchRequest : SearchQuery.SearchQuery) = 
-        this.PostHelper<SearchQuery.SearchQuery, SearchResults>
+    member this.Search(searchRequest : SearchQuery) = 
+        this.PostHelper<SearchQuery, SearchResults>
             (sprintf "/indices/%s/search" searchRequest.IndexName, searchRequest)
     // --------------------
     // Index related
     // --------------------
     member this.Connect() = this.GetHelper<unit>("/ping")
-    member this.AddIndex(index : Index.Index) = 
-        this.PostHelper<Index.Index, CreateResponse>("/indices", index)
-    member this.UpdateIndex(index : Index.Index) = 
-        this.PutHelper<Index.Index, unit>(sprintf "/indices/%s" index.IndexName, index)
+    member this.AddIndex(index : Index) = 
+        this.PostHelper<Index, CreateResponse>("/indices", index)
+    member this.UpdateIndex(index : Index) = 
+        this.PutHelper<Index, unit>(sprintf "/indices/%s" index.IndexName, index)
     member this.DeleteIndex(indexName : string) = 
         this.DeleteHelper<unit>(sprintf "/indices/%s" indexName)
     member this.GetIndex(indexName : string) = 
-        this.GetHelper<Index.Index>(sprintf "/indices/%s" indexName)
+        this.GetHelper<Index>(sprintf "/indices/%s" indexName)
     member this.GetAllIndex()  = 
-        this.GetHelper<List<Index.Index>>("/indices")
+        this.GetHelper<List<Index>>("/indices")
     member this.GetIndexStatus(indexName : string)  = 
         this.GetHelper<IndexStatusResponse>(sprintf "/indices/%s/status" indexName)
     member this.IndexExists(indexName : string)  = 
@@ -199,20 +199,20 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
     // --------------------
     // Document related
     // --------------------
-    member this.AddDocument(indexName : string, document : Document.Document) = 
+    member this.AddDocument(indexName : string, document : Document) = 
         document.IndexName <- indexName
-        this.PostHelper<Document.Document, CreateResponse>(sprintf "/indices/%s/documents" indexName, document)
+        this.PostHelper<Document, CreateResponse>(sprintf "/indices/%s/documents" indexName, document)
     member this.DeleteDocument(indexName : string, id : string)  = 
         this.DeleteHelper<unit>(sprintf "/indices/%s/documents/%s" indexName id)
     member this.DeleteAllDocuments(indexName : string)  = 
         this.DeleteHelper<unit>(sprintf "/indices/%s/documents" indexName)
     member this.GetDocument(indexName : string, id : string)  = 
-        this.GetHelper<Document.Document>(sprintf "/indices/%s/documents/%s" indexName id)
+        this.GetHelper<Document>(sprintf "/indices/%s/documents/%s" indexName id)
     member this.GetTopDocuments(indexName : string, count : int)  = 
         this.GetHelper<SearchResults>(sprintf "/indices/%s/documents?count=%i" indexName count)
-    member this.UpdateDocument(indexName : string, document : Document.Document) = 
+    member this.UpdateDocument(indexName : string, document : Document) = 
         document.IndexName <- indexName
-        this.PutHelper<Document.Document, unit>(sprintf "/indices/%s/documents/%s" indexName document.Id, document)
+        this.PutHelper<Document, unit>(sprintf "/indices/%s/documents/%s" indexName document.Id, document)
 
     // --------------------
     // Demo index related

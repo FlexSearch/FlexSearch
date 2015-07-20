@@ -41,23 +41,23 @@ module DataHelpers =
 
     /// Basic test index with all field types
     let getTestIndex() = 
-        let index = new Index.Index(IndexName = Guid.NewGuid().ToString("N"))
+        let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
         index.IndexConfiguration <- new IndexConfiguration.IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.DirectoryType.MemoryMapped
-        index.Fields <- [| new Field.Field("b1", FieldType.FieldType.Bool)
-                           new Field.Field("b2", FieldType.FieldType.Bool)
-                           new Field.Field("d1", FieldType.FieldType.Date)
-                           new Field.Field("dt1", FieldType.FieldType.DateTime)
-                           new Field.Field("db1", FieldType.FieldType.Double)
-                           new Field.Field("et1", FieldType.FieldType.ExactText, AllowSort = true)
-                           new Field.Field("h1", FieldType.FieldType.Highlight)
-                           new Field.Field("i1", FieldType.FieldType.Int)
-                           new Field.Field("i2", FieldType.FieldType.Int, AllowSort = true)
-                           new Field.Field("l1", FieldType.FieldType.Long)
-                           new Field.Field("t1", FieldType.FieldType.Text)
-                           new Field.Field("t2", FieldType.FieldType.Text)
-                           new Field.Field("s1", FieldType.FieldType.Stored) |]
+        index.Fields <- [| new Field("b1", FieldDataType.Bool)
+                           new Field("b2", FieldDataType.Bool)
+                           new Field("d1", FieldDataType.Date)
+                           new Field("dt1", FieldDataType.DateTime)
+                           new Field("db1", FieldDataType.Double)
+                           new Field("et1", FieldDataType.ExactText, AllowSort = true)
+                           new Field("h1", FieldDataType.Highlight)
+                           new Field("i1", FieldDataType.Int)
+                           new Field("i2", FieldDataType.Int, AllowSort = true)
+                           new Field("l1", FieldDataType.Long)
+                           new Field("t1", FieldDataType.Text)
+                           new Field("t2", FieldDataType.Text)
+                           new Field("s1", FieldDataType.Stored) |]
         index
 
     /// Utility method to add data to an index
@@ -70,7 +70,7 @@ module DataHelpers =
         let linesToLoop = lines.Skip(1).ToArray()
         for line in linesToLoop do
             let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
-            let document = new Document.Document()
+            let document = new Document()
             document.Id <- items.[0].Trim()
             document.IndexName <- index.IndexName
             for i in 1..items.Length - 1 do
@@ -93,20 +93,20 @@ module DataHelpers =
     /// Basic index configuration
     /// </summary>
     let mockIndexSettings = 
-        let index = new Index.Index()
+        let index = new Index()
         index.IndexName <- "contact"
         index.IndexConfiguration <- new IndexConfiguration.IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Online <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.DirectoryType.Ram
         index.Fields <- 
-         [| new Field.Field("firstname", FieldType.FieldType.Text)
-            new Field.Field("lastname", FieldType.FieldType.Text)
-            new Field.Field("email", FieldType.FieldType.ExactText)
-            new Field.Field("country", FieldType.FieldType.Text)
-            new Field.Field("ipaddress", FieldType.FieldType.ExactText)
-            new Field.Field("cvv2", FieldType.FieldType.Int)
-            new Field.Field("description", FieldType.FieldType.Highlight)
-            new Field.Field("fullname", FieldType.FieldType.Text) |]
+         [| new Field("firstname", FieldDataType.Text)
+            new Field("lastname", FieldDataType.Text)
+            new Field("email", FieldDataType.ExactText)
+            new Field("country", FieldDataType.Text)
+            new Field("ipaddress", FieldDataType.ExactText)
+            new Field("cvv2", FieldDataType.Int)
+            new Field("description", FieldDataType.Highlight)
+            new Field("fullname", FieldDataType.Text) |]
         
         let client = new FlexClient(owinServer().HttpClient)
         client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
