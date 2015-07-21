@@ -130,7 +130,7 @@ type FieldDataType =
 
 
 /// Allows to control various Index Shards related settings.
-[<ToStringAttribute>]
+[<ToString; Sealed>]
 type ShardConfiguration() = 
     inherit DtoBase()
     
@@ -140,7 +140,7 @@ type ShardConfiguration() =
     override this.Validate() = this.ShardCount |> gt ("ShardCount") 1
 
 /// Allows to control various Index related settings.
-[<ToStringAttribute>]
+[<ToString; Sealed>]
 type IndexConfiguration() = 
     inherit DtoBase()
     
@@ -217,7 +217,7 @@ type IndexConfiguration() =
 /// at each token in the stream sequentially and decides whether to pass it along, 
 /// replace it or discard it. A filter may also do more complex analysis by looking 
 /// ahead to consider multiple tokens at once, although this is less common. 
-[<ToStringAttribute; Sealed>]
+[<ToString; Sealed>]
 type TokenFilter() = 
     inherit DtoBase()
     
@@ -561,7 +561,7 @@ type Index() =
 /// Helper DTOs
 //////////////////////////////////////////////////////////////////////////
 /// Represents the result returned by FlexSearch for a given search query.
-[<Sealed>]
+[<ToString; Sealed>]
 type SearchResults() = 
     
     /// Documents which are returned as a part of search response.
@@ -618,12 +618,15 @@ type AnalysisRequest() =
         if this.Text |> isBlank then MissingFieldValue "Text" |> fail
         else ok()
 
+[<ToString; Sealed>]
 type CreateResponse(id : string) = 
     member val Id = id with get, set
 
+[<ToString; Sealed>]
 type IndexExistsResponse() = 
     member val Exists = Unchecked.defaultof<bool> with get, set
 
+[<ToString; Sealed>]
 type MemoryDetailsResponse() = 
     inherit DtoBase()
     // Memory used by FlexSearch application
