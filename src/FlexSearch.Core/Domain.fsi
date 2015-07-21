@@ -200,7 +200,7 @@ the field can be queried. There are many field types included with FlexSearch
 by default and custom types can also be defined.
 #endif
 
-type FieldType = 
+type FieldDataType = 
 
 #if opt_Int
 Integer
@@ -266,98 +266,104 @@ Long
 Allows to control various Index Shards related settings.
 #endif
 
+[<ToString; Sealed>]
 type ShardConfiguration = 
     inherit DtoBase
+    new : unit -> ShardConfiguration
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if prop_ShardCount
 Total number of shards to be present in the given index.
 #endif
-    val ShardCount : int
+    member ShardCount : int with get, set
 // ----------------------------------------------------------------------------
 
 #if def_IndexConfiguration
 Allows to control various Index related settings.
 #endif
 
+[<ToString; Sealed>]
 type IndexConfiguration = 
     inherit DtoBase
+    new : unit -> IndexConfiguration
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if prop_CommitTimeSeconds
 The amount of time in seconds that FlexSearch should wait before committing 
 changes to the disk. This is only used if no commits have happended in the
 set time period otherwise CommitEveryNFlushes takes care of commits
 #endif
-    val CommitTimeSeconds : int
+    member CommitTimeSeconds : int with get, set
 
 #if prop_CommitEveryNFlushes
 Determines how often the data be committed to the physical medium. Commits are 
 more expensive than flushes so keep the setting as high as possilbe. Making
 this setting too high will result in excessive ram usage. 
 #endif    
-    val CommitEveryNFlushes : int
+    member CommitEveryNFlushes : int with get, set
 
 #if prop_CommitOnClose
 Determines whether to commit first before closing an index
 #endif
-    val CommitOnClose: bool    
+    member CommitOnClose: bool with get, set   
 
 #if prop_AutoCommit
 Determines whether to enable auto commit functionality or not
 #endif
-    val AutoCommit : bool
+    member AutoCommit : bool with get, set
 
 #if prop_DirectoryType
 A Directory is a flat list of files. Files may be written once, when they are 
 created. Once a file is created it may only be opened for read, or deleted. 
 Random access is permitted both when reading and writing.
 #endif
-    val DirectoryType : DirectoryType
+    member DirectoryType : DirectoryType with get, set
 
 #if prop_DefaultWriteLockTimeout
 The default maximum time to wait for a write lock (in milliseconds).
 #endif
-    val DefaultWriteLockTimeout : int
+    member DefaultWriteLockTimeout : int with get, set
 
 #if prop_RamBufferSizeMb
 Determines the amount of RAM that may be used for buffering added documents and 
 deletions before they are flushed to the Directory.
 #endif
-    val RamBufferSizeMb : int
+    member RamBufferSizeMb : int with get, set
 
 #if prop_MaxBufferedDocs
 The number of buffered added documents that will trigger a flush if enabled.
 #endif
-    val MaxBufferedDocs : int
+    member MaxBufferedDocs : int with get, set
 
 #if prop_RefreshTimeMilliseconds
 The amount of time in milliseconds that FlexSearch should wait before reopening 
 index reader. This helps in keeping writing and real time aspects of the engine 
 separate.
 #endif
-    val RefreshTimeMilliseconds : int
+    member RefreshTimeMilliseconds : int with get, set
 
 #if prop_AutoRefresh
 Determines whether to enable auto refresh or not
 #endif
-    val AutoRefresh  : bool
+    member AutoRefresh  : bool with get, set
 
 #if prop_IndexVersion
 Corresponds to Lucene Index version. There will always be a default codec 
 associated with each index version.
 #endif
-    val IndexVersion : IndexVersion
+    member IndexVersion : IndexVersion with get, set
 
 #if prop_UseBloomFilterForId
 Signifies if bloom filter should be used for encoding Id field.
 #endif
-    val UseBloomFilterForId : bool
+    member UseBloomFilterForId : bool with get, set
 
 #if prop_DefaultFieldSimilarity
 Similarity defines the components of Lucene scoring. Similarity determines how 
 Lucene weights terms and Lucene interacts with Similarity at both index-time 
 and query-time.
 #endif
-    val DefaultFieldSimilarity : FieldSimilarity
+    member DefaultFieldSimilarity : FieldSimilarity with get, set
 // ----------------------------------------------------------------------------
 
 #if def_TokenFilter
@@ -366,8 +372,12 @@ at each token in the stream sequentially and decides whether to pass it along,
 replace it or discard it. A filter may also do more complex analysis by looking 
 ahead to consider multiple tokens at once, although this is less common. 
 #endif
+
+[<ToString; Sealed>]
 type TokenFilter = 
     inherit DtoBase
+    new : unit -> TokenFilter
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if FilterName       
 The name of the filter. Some pre-defined filters are the following-
@@ -381,22 +391,25 @@ The name of the filter. Some pre-defined filters are the following-
 + Soundex Filter
 For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
 #endif
-    val FilterName : string
+    member FilterName : string with get, set
        
 #if Parameters 
 Parameters required by the filter.
 #endif
-    val Parameters : Dictionary<string, string>
+    member Parameters : Dictionary<string, string> with get, set
 // ----------------------------------------------------------------------------
 
 #if def_Tokenizer
-valTokenizer breaks up a stream of text into tokens, where each token is a sub-sequence
+memberTokenizer breaks up a stream of text into tokens, where each token is a sub-sequence
 of the characters in the text. An analyzer is aware of the field it is configured 
 for, but a tokenizer is not.
 #endif
 
+[<ToString; Sealed>]
 type Tokenizer = 
     inherit DtoBase
+    new : unit -> Tokenizer
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if FilterName         
 The name of the tokenizer. Some pre-defined tokenizers are the following-
@@ -409,34 +422,37 @@ The name of the tokenizer. Some pre-defined tokenizers are the following-
 + White Space Tokenizer
 For more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/
 #endif
-    val TokenizerName : string
+    member TokenizerName : string with get, set
 
 #if Parameters         
 Parameters required by the tokenizer.
 #endif
-    val Parameters : Dictionary<string, string>
+    member Parameters : Dictionary<string, string> with get, set
 // ----------------------------------------------------------------------------
 
 #if def_Analyzer
 An analyzer examines the text of fields and generates a token stream.
 #endif
 
+[<ToString; Sealed>]
 type Analyzer =
     inherit DtoBase
+    new : unit -> Analyzer
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if AnalyzerName
 Name of the analyzer
 #endif
-    val AnalyzerName : string
+    member AnalyzerName : string with get, set
         
 #if AnalyzerName
 #endif
-    val Tokenizer : Tokenizer
+    member Tokenizer : Tokenizer with get, set
   
 #if Filters     
 Filters to be used by the analyzer.
 #endif
-    val Filters : List<TokenFilter>
+    member Filters : List<TokenFilter> with get, set
 // ----------------------------------------------------------------------------
 
 #if def_Field
@@ -444,7 +460,7 @@ A field is a section of a Document.
 
 Fields can contain different kinds of data. A name field, for example, 
 is text (character data). A shoe size field might be a floating point number 
-so that it could contain values like 6 and 9.5. Obviously, the definition of 
+so that it could contain memberues like 6 and 9.5. Obviously, the definition of 
 fields is flexible (you could define a shoe size field as a text field rather
 than a floating point number, for example), but if you define your fields correctly, 
 FlexSearch will be able to interpret them correctly and your users will get better 
@@ -457,65 +473,69 @@ the document’s fields and adds that information to an index. When you perform 
 query, FlexSearch can quickly consult the index and return the matching documents.
 #endif
 
+[<ToString; Sealed>]
 type Field = 
     inherit DtoBase
+    new : unit -> Field
+    new : fieldName:string -> Field
+    new : fieldName:string * fieldType:FieldDataType -> Field
 
 #if FieldName        
 Name of the field.
 #endif
-    val FieldName : string
+    member FieldName : string with get, set
 
 #if Analyze        
 Signifies if the field should be analyzed using an analyzer. 
 #endif
-    val Analyze : bool
+    member Analyze : bool with get, set
 
 #if Index        
 Signifies if a field should be indexed. A field can only be 
 stored without indexing.
 #endif
-    val Index : bool
+    member Index : bool with get, set
 
 #if Store        
 Signifies if a field should be stored so that it can retrieved
 while searching.
 #endif
-    val Store : bool
+    member Store : bool with get, set
 
 #if AllowSort        
-If AllowSort is set to true then we will index the field with docvalues.
+If AllowSort is set to true then we will index the field with docmemberues.
 #endif
-    val AllowSort : bool
+    member AllowSort : bool with get, set
 
 #if IndexAnalyzer        
 Analyzer to be used while indexing.
 #endif
-    val IndexAnalyzer : string
+    member IndexAnalyzer : string with get, set
 
 #if SearchAnalyzer        
 Analyzer to be used while searching.
 #endif
-    val SearchAnalyzer : string
+    member SearchAnalyzer : string with get, set
 
 #if FieldType        
 AUTO
 #endif
-    val FieldType : FieldType
+    member FieldType : FieldDataType with get, set
 
 #if FieldSimilarity        
 AUTO
 #endif
-    val Similarity : FieldSimilarity
+    member Similarity : FieldSimilarity with get, set
 
 #if FieldIndexOptions        
 AUTO
 #endif
-    val IndexOptions : FieldIndexOptions
+    member IndexOptions : FieldIndexOptions with get, set
 
 #if FieldTermVector        
 AUTO
 #endif
-    val TermVector : FieldTermVector
+    member TermVector : FieldTermVector with get, set
 
 #if OmitNorms        
 If true, omits the norms associated with this field (this disables length 
@@ -524,7 +544,7 @@ Defaults to true for all primitive (non-analyzed) field types, such as int,
 float, data, bool, and string. Only full-text fields or fields that need an 
 index-time boost need norms.
 #endif
-    val OmitNorms : bool
+    member OmitNorms : bool with get, set
 
 #if ScriptName        
 Fields can get their content dynamically through scripts. This is the name of 
@@ -532,51 +552,59 @@ the script to be used for getting field data at index time.
 Script name follows the below convention
 ScriptName('param1','param2','param3')
 #endif
-    val ScriptName : string
+    member ScriptName : string with get, set
 // ----------------------------------------------------------------------------
 
 #if def_HighlightOption 
 Used for configuring the settings for text highlighting in the search results
 #endif
 
+[<ToString; Sealed>]
 type HighlightOption = 
     inherit DtoBase
+    new : unit -> HighlightOption
+    new : fields:string [] -> HighlightOption
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if FragmentsToReturn        
 Total number of fragments to return per document
 #endif
-    val FragmentsToReturn : int
+    member FragmentsToReturn : int with get, set
 
 #if HighlightedFields      
 The fields to be used for text highlighting
 #endif
-    val HighlightedFields : string[]
+    member HighlightedFields : string[] with get, set
 
 #if PostTag        
 Post tag to represent the ending of the highlighted word
 #endif
-    val PostTag : string
+    member PostTag : string with get, set
 
 #if PreTag        
 Pre tag to represent the ending of the highlighted word
 #endif
-    val PreTag : string
+    member PreTag : string with get, set
 // ----------------------------------------------------------------------------
 
 #if def_SearchQuery
-valSearch query is used for searching over a FlexSearch index. This provides
-vala consistent syntax to execute various types of queries. The syntax is similar
-valto the SQL syntax. This was done on purpose to reduce the learning curve.
+memberSearch query is used for searching over a FlexSearch index. This provides
+membera consistent syntax to execute various types of queries. The syntax is similar
+memberto the SQL syntax. This was done on purpose to reduce the learning curve.
 #endif
 
+[<ToString; Sealed>]
 type SearchQuery = 
     inherit DtoBase
+    new : unit -> SearchQuery
+    new : index:string * query:string -> SearchQuery
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if QueryName        
 Unique name of the query. This is only required if you are setting up a 
 search profile.
 #endif
-    val QueryName : string
+    member QueryName : string with get, set
 
 #if Columns        
 Columns to be returned as part of results.
@@ -584,32 +612,32 @@ Columns to be returned as part of results.
 + [] - return no columns
 + ["columnName"] -  return specific column
 #endif
-    val Columns : string[]
+    member Columns : string[] with get, set
 
 #if Count        
 Count of results to be returned
 #endif
-    val Count : int
+    member Count : int with get, set
 
 #if Highlights        
 AUTO
 #endif
-    val Highlights : HighlightOption
+    member Highlights : HighlightOption with get, set
  
 #if IndexName       
 Name of the index
 #endif
-    val IndexName : string
+    member IndexName : string with get, set
 
 #if OrderBy        
 Can be used to order the results by score or specific field.
 #endif
-    val OrderBy : string
+    member OrderBy : string with get, set
 
 #if OrderByDirection        
 Can be used to determine the sort order.
 #endif
-    val OrderByDirection : string
+    member OrderByDirection : string with get, set
 
 #if CutOff        
 Can be used to remove results lower than a certain threshold.
@@ -617,58 +645,58 @@ This works in conjunction with the score of the top record as
 all the other records are filtered using the score set by the
 top scoring record.
 #endif
-    val CutOff: double
+    member CutOff: double with get, set
 
 #if DistinctBy       
-Can be used to return records with distinct values for 
+Can be used to return records with distinct memberues for 
 the given field. Works in a manner similar to Sql distinct by clause.
 #endif
-    val DistinctBy : string
+    member DistinctBy : string with get, set
 
 #if Skip        
 Used to enable paging and skip certain pre-fetched results.
 #endif
-    val Skip : int
+    member Skip : int with get, set
 
 #if QueryString        
 Query string to be used for searching
 #endif
-    val QueryString : string
+    member QueryString : string with get, set
 
 #if ReturnFlatResult        
 If true will return collapsed search results which are in tabular form.
 Flat results enable easy binding to a grid but grouping results is tougher
 with Flat result.
 #endif
-    val ReturnFlatResult : bool
+    member ReturnFlatResult : bool with get, set
 
 #if ReturnScore        
 If true then scores are returned as a part of search result.
 #endif
-    val ReturnScore : bool
+    member ReturnScore : bool with get, set
 
 #if SearchProfile        
 Profile Name to be used for profile based searching.
 #endif
-    val SearchProfile : string
+    member SearchProfile : string with get, set
 
 #if SearchProfileScript        
 Script which can be used to select a search profile. This can help in
 dynamic selection of search profile based on the incoming data.
 #endif
-    val SearchProfileScript : string
+    member SearchProfileScript : string with get, set
 
 #if OverrideProfileOptions        
 Can be used to override the configuration saved in the search profile
 with the one which is passed as the Search Query
 #endif
-    val OverrideProfileOptions : bool
+    member OverrideProfileOptions : bool with get, set
 
 #if ReturnEmptyStringForNull        
-Returns an empty string for null values saved in the index rather than
+Returns an empty string for null memberues saved in the index rather than
 the null constant
 #endif
-    val ReturnEmptyStringForNull : bool
+    member ReturnEmptyStringForNull : bool with get, set
 // ----------------------------------------------------------------------------
 
 #if def_Document
@@ -679,18 +707,23 @@ a table while a document is a row of that table. Like a table a FlexSearch docum
 requires a fix schema and all fields should have a field type.
 #endif
 
+[<ToString; Sealed>]
 type Document = 
     inherit DtoBase
- 
+    new : unit -> Document
+    new : indexName:string * id:string -> Document
+    override Validate : unit -> Choice<unit,IMessage>
+    static member Default : Document
+
  #if def_Document       
 Fields to be added to the document for indexing.
 #endif
-    val Fields : Dictionary<string, string>
+    member Fields : Dictionary<string, string> with get, set
 
 #if Id        
 Unique Id of the document
 #endif
-    val Id : string
+    member Id : string with get, set
 
 #if TimeStamp  
 Timestamp of the last modification of the document. This field is interpreted 
@@ -703,28 +736,28 @@ Version number semantics
 + 1 - Ensure that the document does exist. This is not relevant for create operation.
 > 1 - Ensure that the version matches exactly. This is not relevant for create operation.
 #endif
-    val TimeStamp : int64 
+    member TimeStamp : int64 with get, set
 
 #if IndexName
 Name of the index
 #endif
-    val IndexName : string
+    member IndexName : string with get, set
 
 #if Highlights        
 Any matched text highlighted snippets. Note: Only used for results
 #endif
-    val Highlights : string []
+    member Highlights : string [] with get, set
 
 #if Score        
 Score of the returned document. Note: Only used for results
 #endif
-    val Score : double
+    member Score : double with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_Index
 FlexSearch index is a logical index built on top of Lucene’s index in a manner 
 to support features like schema and sharding. So in this sense a FlexSearch 
-index consists of multiple Lucene’s index. Also, each FlexSearch shard is a valid 
+index consists of multiple Lucene’s index. Also, each FlexSearch shard is a memberid 
 Lucene index.
 
 In case of a database analogy an index represents a table in a database where 
@@ -737,124 +770,147 @@ By default a newly created index stays off-line. This is by design to force the
 user to enable an index before using it.
 #endif
 
+[<ToString; Sealed>]
 type Index =
     inherit DtoBase
+    new : unit -> Index
+    override Validate : unit -> Choice<unit,IMessage>
 
 #if Fields
 Fields to be used in index.
 #endif
-    val Fields : Field []
+    member Fields : Field [] with get, set
 
 #if IndexConfiguration
 #endif
-    val IndexConfiguration : IndexConfiguration
+    member IndexConfiguration : IndexConfiguration with get, set
 
 #if IndexName
 Name of the index
 #endif
-    val IndexName : string
+    member IndexName : string with get, set
 
 #if Online
 Signifies if the index is on-line or not? An index has to be on-line in order to 
 enable searching over it.
 #endif
-    val Online : bool
+    member Online : bool with get, set
 
 #if SearchProfiles
 Search Profiles
 #endif
-    val SearchProfiles : SearchQuery []
+    member SearchProfiles : SearchQuery [] with get, set
 
 #if ShardConfiguration
 #endif
-    val ShardConfiguration : ShardConfiguration
+    member ShardConfiguration : ShardConfiguration with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_SearchResults
-valRepresents the result returned by FlexSearch for a given search query.
+memberRepresents the result returned by FlexSearch for a given search query.
 #endif
 
+[<ToString; Sealed>]
 type SearchResults =
+    new : unit -> SearchResults
 #if Documents
-valDocuments which are returned as a part of search response.
+memberDocuments which are returned as a part of search response.
 #endif
-    val Documents : System.Collections.Generic.List<Document>
+    member Documents : System.Collections.Generic.List<Document> with get, set
 
 #if RecordsReturned
-valTotal number of records returned.
+memberTotal number of records returned.
 #endif
-    val RecordsReturned : int
+    member RecordsReturned : int with get, set
 
 #if TotalAvailable
-valTotal number of records available on the server. This could be 
-valgreater than the returned results depending upon the requested 
-valdocument count.
+memberTotal number of records available on the server. This could be 
+membergreater than the returned results depending upon the requested 
+memberdocument count.
 #endif
-    val TotalAvailable : int
+    member TotalAvailable : int with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_Job
-valUsed by long running processes. All long running FlexSearch operations create
-valan instance of Job and return the Id to the caller. This Id can be used by the
-valcaller to check the status of the job.
+memberUsed by long running processes. All long running FlexSearch operations create
+memberan instance of Job and return the Id to the caller. This Id can be used by the
+membercaller to check the status of the job.
 ///
-valNOTE: Job information is not persistent
+memberNOTE: Job information is not persistent
 #endif
 
+[<ToString; Sealed>]
 type Job =
     inherit DtoBase
+    new : unit -> Job
 
 #if FailedItems
-valItems which have failed processing.
+memberItems which have failed processing.
 #endif
-    val FailedItems : int
+    member FailedItems : int with get, set
 
 #if JobId
-valUnique Id of the Job
+memberUnique Id of the Job
 #endif
-    val JobId : string
+    member JobId : string with get, set
 
 #if Message
-valAny message that is associated with the job.
+memberAny message that is associated with the job.
 #endif
-    val Message : string
+    member Message : string with get, set
     
 #if ProcessedItems
-valItems already processed.
+memberItems already processed.
 #endif
-    val ProcessedItems : int
+    member ProcessedItems : int with get, set
 
 #if Status
-valOverall status of the job.
+memberOverall status of the job.
 #endif
-    val Status : JobStatus
+    member Status : JobStatus with get, set
     
 #if TotalItems
-valTotal items to be processed as a part of the current job.
+memberTotal items to be processed as a part of the current job.
 #endif
-    val TotalItems : int
+    member TotalItems : int with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_AnalysisRequest
-valRequest to analyze a text against an analyzer. The reason to force
-valthis parameter to request body is to avoid escaping of restricted characters
-valin the uri.
-valThis is helpful during analyzer testing.
+memberRequest to analyze a text against an analyzer. The reason to force
+memberthis parameter to request body is to avoid escaping of restricted characters
+memberin the uri.
+memberThis is helpful during analyzer testing.
 #endif
+[<ToString; Sealed>]
 type AnalysisRequest =
     inherit DtoBase
-    val Text : string
+    new : unit -> AnalysisRequest
+
+    member Text : string with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_CreateResponse
 
 #endif
+[<ToString; Sealed>]
 type CreateResponse =
-    val Id : string
+    new : id:string -> CreateResponse
+    member Id : string with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_IndexExistsResponse
 #endif
+[<ToString; Sealed>]
 type IndexExistsResponse =
-    val Exists : bool
+    new : unit -> IndexExistsResponse
+    member Exists : bool with get, set
 // ----------------------------------------------------------------------------
+
+[<ToString; Sealed>]
+type MemoryDetailsResponse =
+    inherit DtoBase
+    new : unit -> MemoryDetailsResponse
+    override Validate : unit -> Choice<unit,IMessage>
+    member TotalMemory : uint64 with get, set
+    member Usage : float with get, set
+    member UsedMemory : int64 with get, set
