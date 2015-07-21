@@ -174,3 +174,100 @@ module Parsers =
             | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg)
         assert (input <> null)
         funParser |> parse input
+
+
+
+
+    // ----------------------------------------------------------------------------
+    // Signature Documentation Parser
+    // ----------------------------------------------------------------------------
+
+    /// Generic definition
+    type Definition(name, summary) =
+        member val Name = name with get, set
+        member val Summary = summary with get, set 
+
+    /// DTO definition
+    type DtoDef(name, summary) =
+        inherit Definition(name, summary)
+
+    /// Web Service definition
+    type WsDef(name, summary) =
+        inherit Definition(name, summary)
+        member val Method = defString with get, set
+        member val Uri = defString with get, set
+        member val Params = defStringDict() with get, set
+        member val Description = defString with get, set
+        member val Examples = new List<string>() with get, set
+        override this.ToString() = 
+            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Name this.Summary this.Method this.Uri this.Params this.Description this.Examples
+
+    /// Helper parsers
+    let tripleQuote = pstring "\"\"\""
+    let singleQuote = pstring "\""
+    let tripleQuoteContent = ws >>. manyCharsTill anyChar tripleQuote
+    let singleQuoteContent = manySatisfy <| (<>) '"' 
+    let quote3Text = tripleQuote >>. tripleQuoteContent .>> ws
+    let quote1Text = (between singleQuote singleQuote singleQuoteContent) .>> ws
+    let endParser = followedBy (pstring "# ws_") <|> followedBy (pstring "# dto_") <|> eof
+
+
+    /// Information / Property parsers
+    let summary = 
+        manyCharsTill anyChar spaces1
+        .>>.
+        quote3Text
+        |>> fun x -> fun (def : Definition) -> def.Name <- fst x; def.Summary <- snd x
+    let meth =
+        (pstring "# meth") >>. ws >>. quote1Text
+        |>> fun x -> fun (def : WsDef) -> def.Method <- x
+    let uri = 
+        (pstring "# uri") >>. ws >>. quote1Text
+        |>> fun x -> fun (def : WsDef) -> def.Uri <- x
+    let param =
+        (pstring "# param_") 
+        >>. manyCharsTill anyChar spaces1 
+        .>>. quote3Text
+        |>> fun x -> fun (def : WsDef) -> def.Params.Add(fst x, snd x)
+    let description =
+        (pstring "# description") >>. ws >>. quote3Text
+        |>> fun x -> fun (def : WsDef) ->  def.Description <- x
+    let examples =
+        (pstring "# examples") >>. ws >>. quote3Text
+        |>> fun x -> fun (def : WsDef) -> 
+            x.Split([| "\r\n"; "\n" |], StringSplitOptions.None) 
+            |> Seq.filter (String.IsNullOrEmpty >> not)
+            |> Seq.iter def.Examples.Add 
+            |> ignore
+    let classAttribute = (pstring "[<") >>. ws >>. manyCharsTill anyChar (pstring ">]") |>> fun _ -> ignore
+    let typeDefContent = manyCharsTill anyChar ((followedBy <| (pstring "# ")) <|> eof)
+    let typeDef = 
+        (pstring "type") >>. spaces1 >>. restOfLine false
+        >>. typeDefContent
+        |>> fun _ -> ignore
+    let emptyLine = ws |>> fun _ -> ignore
+    
+    /// DTO parser    
+    let dtoParser = singleQuoteContent |>> (fun x -> new Definition("", ""))
+
+    /// Web Service parser
+    let wsParser = 
+        let wsProps = (meth <|> uri <|> param <|> description <|> examples <|> classAttribute <|> typeDef <|> emptyLine) .>> ws
+        summary .>>. manyTill wsProps endParser
+
+    /// Constructs a definition from the functions returned by the parsers
+    let dto_def = pstring "# dto_" >>. dtoParser
+    let ws_def = pstring "# ws_" >>. wsParser
+                 |>> fun (f,fs) ->
+                    let ws = new WsDef("","") 
+                    f ws
+                    fs |> Seq.iter (fun f -> f ws) |> ignore
+                    ws :> Definition
+
+    /// Definitions can be either DTOs or Web Services
+    let definitions : Parser<Definition list, unit> = manyTill (ws_def <|> dto_def) eof
+
+    let test p text =
+        match run p text with
+        | Success(r,_,_) -> sprintf "%A" r
+        | Failure(e,_,_) -> sprintf "%A" e
