@@ -183,26 +183,22 @@ module Parsers =
     // ----------------------------------------------------------------------------
 
     /// Generic definition
-    type Definition(name, summary) =
-        member val Name = name with get, set
-        member val Summary = summary with get, set 
-
-    /// DTO definition
-    type DtoDef(name, summary) =
-        inherit Definition(name, summary)
-
-    /// Web Service definition
-    type WsDef(name, summary) =
-        inherit Definition(name, summary)
+    type Definition(typ) =
+        member val Type = typ with get, set
+        member val TypeName = defString with get, set
+        member val Name = defString with get, set
+        member val Summary = defString with get, set
         member val Method = defString with get, set
         member val Uri = defString with get, set
         member val Params = defStringDict() with get, set
         member val Description = defString with get, set
         member val Examples = new List<string>() with get, set
+        member val Options = new List<string>() with get, set
         override this.ToString() = 
-            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Name this.Summary this.Method this.Uri this.Params this.Description this.Examples
+            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.Uri this.Params this.Description this.Examples 
 
     /// Helper parsers
+    let fignore = fun _-> ignore
     let tripleQuote = pstring "\"\"\""
     let singleQuote = pstring "\""
     let tripleQuoteContent = ws >>. manyCharsTill anyChar tripleQuote
@@ -219,53 +215,52 @@ module Parsers =
         quote3Text
         |>> fun x -> fun (def : Definition) -> def.Name <- fst x; def.Summary <- snd x
     let meth =
-        (pstring "# meth") >>. ws >>. quote1Text
-        |>> fun x -> fun (def : WsDef) -> def.Method <- x
+        pstring "# meth" >>. ws >>. quote1Text
+        |>> fun x -> fun (def : Definition) -> def.Method <- x
     let uri = 
-        (pstring "# uri") >>. ws >>. quote1Text
-        |>> fun x -> fun (def : WsDef) -> def.Uri <- x
+        pstring "# uri" >>. ws >>. quote1Text
+        |>> fun x -> fun (def : Definition) -> def.Uri <- x
     let param =
-        (pstring "# param_") 
+        pstring "# param_"
         >>. manyCharsTill anyChar spaces1 
         .>>. quote3Text
-        |>> fun x -> fun (def : WsDef) -> def.Params.Add(fst x, snd x)
+        |>> fun x -> fun (def : Definition) -> def.Params.Add(fst x, snd x)
     let description =
-        (pstring "# description") >>. ws >>. quote3Text
-        |>> fun x -> fun (def : WsDef) ->  def.Description <- x
+        pstring "# description" >>. ws >>. quote3Text
+        |>> fun x -> fun (def : Definition) ->  def.Description <- x
     let examples =
-        (pstring "# examples") >>. ws >>. quote3Text
-        |>> fun x -> fun (def : WsDef) -> 
+        pstring "# examples" >>. ws >>. quote3Text
+        |>> fun x -> fun (def : Definition) -> 
             x.Split([| "\r\n"; "\n" |], StringSplitOptions.None) 
             |> Seq.filter (String.IsNullOrEmpty >> not)
             |> Seq.iter def.Examples.Add 
             |> ignore
-    let classAttribute = (pstring "[<") >>. ws >>. manyCharsTill anyChar (pstring ">]") |>> fun _ -> ignore
-    let typeDefContent = manyCharsTill anyChar ((followedBy <| (pstring "# ")) <|> eof)
-    let typeDef = 
-        (pstring "type") >>. spaces1 >>. restOfLine false
-        >>. typeDefContent
-        |>> fun _ -> ignore
-    let emptyLine = ws |>> fun _ -> ignore
-    
+
+    let infoCode = [meth; uri; param; description; examples]
+
+    let ignoredContent : Parser<Definition -> unit, unit> = 
+        manyCharsTill anyChar ((followedBy <| (pstring "# ")) <|> eof)
+        |>> fignore
+
     /// DTO parser    
-    let dtoParser = singleQuoteContent |>> (fun x -> new Definition("", ""))
+    let dtoParser = singleQuoteContent |>> (fun x -> new Definition("dto"))
 
     /// Web Service parser
     let wsParser = 
-        let wsProps = (meth <|> uri <|> param <|> description <|> examples <|> classAttribute <|> typeDef <|> emptyLine) .>> ws
+        let wsProps = choice (infoCode @ [ignoredContent]) .>> ws
         summary .>>. manyTill wsProps endParser
 
     /// Constructs a definition from the functions returned by the parsers
-    let dto_def = pstring "# dto_" >>. dtoParser
+    let dto_def = (pstring "# dto_") >>. dtoParser
     let ws_def = pstring "# ws_" >>. wsParser
                  |>> fun (f,fs) ->
-                    let ws = new WsDef("","") 
+                    let ws = new Definition("ws") 
                     f ws
                     fs |> Seq.iter (fun f -> f ws) |> ignore
-                    ws :> Definition
+                    ws
 
     /// Definitions can be either DTOs or Web Services
-    let definitions : Parser<Definition list, unit> = manyTill (ws_def <|> dto_def) eof
+    let definitions : Parser<Definition list, unit> = ignoredContent >>. manyTill (ws_def <|> dto_def) eof
 
     let test p text =
         match run p text with
