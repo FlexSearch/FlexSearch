@@ -193,9 +193,16 @@ module Parsers =
         member val Params = defStringDict() with get, set
         member val Description = defString with get, set
         member val Examples = new List<string>() with get, set
-        member val Options = new List<string>() with get, set
+        member val Options = defStringDict() with get, set
+        member val Properties = defStringDict() with get, set
         override this.ToString() = 
-            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.Uri this.Params this.Description this.Examples 
+            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.Uri this.Params this.Description this.Examples this.Options this.Properties
+
+    let tryAdd (dict : Dictionary<string,string>) item = 
+        try dict.Add item
+        with ex -> printfn "Tried adding item %A to the dictionary containing:\n%A" item dict
+                   raise ex
+            
 
     /// Helper parsers
     let fignore = fun _-> ignore
@@ -205,14 +212,19 @@ module Parsers =
     let singleQuoteContent = manySatisfy <| (<>) '"' 
     let quote3Text = tripleQuote >>. tripleQuoteContent .>> ws
     let quote1Text = (between singleQuote singleQuote singleQuoteContent) .>> ws
-    let endParser = followedBy (pstring "# ws_") <|> followedBy (pstring "# dto_") <|> eof
-
+    let endDef = ["# ws_"; "# dto_"; "#if dto_"; "#if enum_"]
+                 |> List.map (fun str -> followedBy (pstring str))
+                 |> List.append [eof]
+                 |> choice
+    let endif = pstring "#endif"
+    let ifContent = ws >>. manyCharsTill anyChar endif
+    let ifMap = manyCharsTill anyChar spaces1 .>>. ifContent
 
     /// Information / Property parsers
     let summary = 
         manyCharsTill anyChar spaces1
         .>>.
-        quote3Text
+        (quote3Text <|> ifContent)
         |>> fun x -> fun (def : Definition) -> def.Name <- fst x; def.Summary <- snd x
     let meth =
         pstring "# meth" >>. ws >>. quote1Text
@@ -224,10 +236,10 @@ module Parsers =
         pstring "# param_"
         >>. manyCharsTill anyChar spaces1 
         .>>. quote3Text
-        |>> fun x -> fun (def : Definition) -> def.Params.Add(fst x, snd x)
+        |>> fun x -> fun (def : Definition) -> x |> tryAdd def.Params
     let description =
         pstring "# description" >>. ws >>. quote3Text
-        |>> fun x -> fun (def : Definition) ->  def.Description <- x
+        |>> fun x -> fun (def : Definition) -> def.Description <- x
     let examples =
         pstring "# examples" >>. ws >>. quote3Text
         |>> fun x -> fun (def : Definition) -> 
@@ -235,34 +247,39 @@ module Parsers =
             |> Seq.filter (String.IsNullOrEmpty >> not)
             |> Seq.iter def.Examples.Add 
             |> ignore
+    let dtoProps = 
+        pstring "#if prop_" 
+        >>. ifMap
+        |>> fun x -> fun (def: Definition) -> x |> tryAdd def.Properties
+    let enumOpt =
+        pstring "#if opt_" 
+        >>. ifMap
+        |>> fun x -> fun (def: Definition) -> x |> tryAdd def.Options
 
-    let infoCode = [meth; uri; param; description; examples]
-
+    // Combine the parsers into a choice
+    let infoCode = [meth; uri; param; description; examples; dtoProps; enumOpt]
     let ignoredContent : Parser<Definition -> unit, unit> = 
-        manyCharsTill anyChar ((followedBy <| (pstring "# ")) <|> eof)
+        manyCharsTill anyChar ((followedBy <| (pstring "#")) <|> eof)
         |>> fignore
+    let props = choice (infoCode @ [ignoredContent])
 
-    /// DTO parser    
-    let dtoParser = singleQuoteContent |>> (fun x -> new Definition("dto"))
-
-    /// Web Service parser
-    let wsParser = 
-        let wsProps = choice (infoCode @ [ignoredContent]) .>> ws
-        summary .>>. manyTill wsProps endParser
+    /// Parses any kind of definition starting after the "# def_" or "#if dto_" or "#if enum_" declaration    
+    let defParser = summary .>>. manyTill props endDef
 
     /// Constructs a definition from the functions returned by the parsers
-    let dto_def = (pstring "# dto_") >>. dtoParser
-    let ws_def = pstring "# ws_" >>. wsParser
-                 |>> fun (f,fs) ->
-                    let ws = new Definition("ws") 
-                    f ws
-                    fs |> Seq.iter (fun f -> f ws) |> ignore
-                    ws
+    let toDefinition defType (f,fs)  =
+        let ws = new Definition(defType) 
+        f ws
+        fs |> Seq.iter (fun f -> f ws) |> ignore
+        ws
+    let enum_def = pstring "#if enum_" >>. defParser |>> toDefinition "enum"
+    let dto_def = pstring "#if dto_" >>. defParser |>> toDefinition "dto"
+    let ws_def = pstring "# ws_" >>. defParser |>> toDefinition "ws"
 
     /// Definitions can be either DTOs or Web Services
-    let definitions : Parser<Definition list, unit> = ignoredContent >>. manyTill (ws_def <|> dto_def) eof
+    let definitions : Parser<Definition list, unit> = ignoredContent >>. manyTill (ws_def <|> dto_def <|> enum_def) eof
 
     let test p text =
         match run p text with
-        | Success(r,_,_) -> sprintf "%A" r
-        | Failure(e,_,_) -> sprintf "%A" e
+        | Success(r,_,_) -> r
+        | Failure(e,_,_) -> printfn "%A" e; failwith e
