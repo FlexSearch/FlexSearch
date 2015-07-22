@@ -2,7 +2,7 @@
 open System.Collections.Generic
 
 // ----------------------------------------------------------------------------
-#if def_FieldSimilarity_enum
+#if enum_FieldSimilarity
 Similarity defines the components of Lucene scoring. Similarity determines how 
 Lucene weights terms, and Lucene interacts with Similarity at both index-time 
 and query-time.
@@ -22,7 +22,7 @@ Lucene similarity.
     | TFIDF = 2
 // ----------------------------------------------------------------------------
 
-#if def_DirectoryType
+#if enum_DirectoryType
 A Directory is a flat list of files. Files may be written once, when they are 
 created. Once a file is created it may only be opened for read, or deleted. 
 Random access is permitted both when reading and writing.
@@ -76,7 +76,7 @@ file system cache of the operating system.
     | Ram = 3
 // ----------------------------------------------------------------------------
 
-#if def_FieldTermVector
+#if enum_FieldTermVector
 These options instruct FlexSearch to maintain full term vectors for each document, 
 optionally including the position and offset information for each term occurrence 
 in those vectors. These can be used to accelerate highlighting and other ancillary 
@@ -108,7 +108,7 @@ Store the term vector, Token position and offset information.
     | StoreTermVectorsWithPositionsandOffsets = 4
 // ----------------------------------------------------------------------------
 
-#if def_FieldIndexOptions_enum
+#if enum_FieldIndexOptions
 Controls how much information is stored in the postings lists.
 #endif
 
@@ -135,7 +135,7 @@ Indexes documents, frequencies, positions and offsets.
     | DocsAndFreqsAndPositionsAndOffsets = 4
 // ----------------------------------------------------------------------------
 
-#if def_IndexVersion_enum
+#if enum_IndexVersion
 Corresponds to Lucene Index version. There will always be a default codec 
 associated with each index version.
 #endif
@@ -153,7 +153,7 @@ Lucene 5.0.0 index format
     | Lucene_5_0_0 = 2
 // ----------------------------------------------------------------------------
 
-#if def_JobStatus_enum
+#if enum_JobStatus
 Represents the status of job.
 #endif
 
@@ -194,7 +194,7 @@ potentially write more error information to the logs.
     | CompletedWithErrors = 5
 // ----------------------------------------------------------------------------
 
-#if def_FieldType_enum
+#if enum_FieldType
 The field type defines how FlexSearch should interpret data in a field and how 
 the field can be queried. There are many field types included with FlexSearch 
 by default and custom types can also be defined.
@@ -262,7 +262,7 @@ Long
     | Long = 11
 // ----------------------------------------------------------------------------
 
-#if def_ShardConfiguration
+#if dto_ShardConfiguration
 Allows to control various Index Shards related settings.
 #endif
 
@@ -278,7 +278,7 @@ Total number of shards to be present in the given index.
     member ShardCount : int with get, set
 // ----------------------------------------------------------------------------
 
-#if def_IndexConfiguration
+#if dto_IndexConfiguration
 Allows to control various Index related settings.
 #endif
 
@@ -366,7 +366,7 @@ and query-time.
     member DefaultFieldSimilarity : FieldSimilarity with get, set
 // ----------------------------------------------------------------------------
 
-#if def_TokenFilter
+#if dto_TokenFilter
 Filters consume input and produce a stream of tokens. In most cases a filter looks 
 at each token in the stream sequentially and decides whether to pass it along, 
 replace it or discard it. A filter may also do more complex analysis by looking 
@@ -399,7 +399,7 @@ Parameters required by the filter.
     member Parameters : Dictionary<string, string> with get, set
 // ----------------------------------------------------------------------------
 
-#if def_Tokenizer
+#if dto_Tokenizer
 memberTokenizer breaks up a stream of text into tokens, where each token is a sub-sequence
 of the characters in the text. An analyzer is aware of the field it is configured 
 for, but a tokenizer is not.
@@ -430,7 +430,7 @@ Parameters required by the tokenizer.
     member Parameters : Dictionary<string, string> with get, set
 // ----------------------------------------------------------------------------
 
-#if def_Analyzer
+#if dto_Analyzer
 An analyzer examines the text of fields and generates a token stream.
 #endif
 
@@ -455,7 +455,7 @@ Filters to be used by the analyzer.
     member Filters : List<TokenFilter> with get, set
 // ----------------------------------------------------------------------------
 
-#if def_Field
+#if dto_Field
 A field is a section of a Document. 
 
 Fields can contain different kinds of data. A name field, for example, 
@@ -555,7 +555,7 @@ ScriptName('param1','param2','param3')
     member ScriptName : string with get, set
 // ----------------------------------------------------------------------------
 
-#if def_HighlightOption 
+#if dto_HighlightOption 
 Used for configuring the settings for text highlighting in the search results
 #endif
 
@@ -587,7 +587,7 @@ Pre tag to represent the ending of the highlighted word
     member PreTag : string with get, set
 // ----------------------------------------------------------------------------
 
-#if def_SearchQuery
+#if dto_SearchQuery
 memberSearch query is used for searching over a FlexSearch index. This provides
 membera consistent syntax to execute various types of queries. The syntax is similar
 memberto the SQL syntax. This was done on purpose to reduce the learning curve.
@@ -699,7 +699,7 @@ the null constant
     member ReturnEmptyStringForNull : bool with get, set
 // ----------------------------------------------------------------------------
 
-#if def_Document
+#if dto_Document
 A document represents the basic unit of information which can be added or 
 retrieved from the index. A document consists of several fields. A field represents 
 the actual data to be indexed. In database analogy an index can be considered as 
@@ -715,7 +715,7 @@ type Document =
     override Validate : unit -> Choice<unit,IMessage>
     static member Default : Document
 
- #if def_Document       
+ #if dto_Document       
 Fields to be added to the document for indexing.
 #endif
     member Fields : Dictionary<string, string> with get, set
