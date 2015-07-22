@@ -565,3 +565,22 @@ type DtoStore<'T>(fileWriter : ThreadSafeFileWriter) =
             tryAdd (key, item) |> ignore
             ok()
         | Choice2Of2(error) -> fail <| error
+
+type AtomicLong(value : int64) = 
+    let refCell = ref value
+    
+    member __.Value 
+        with get () = Interlocked.Read(refCell)
+        and set (value) = Interlocked.Exchange(refCell, value) |> ignore
+    
+    /// Increments the ref cell and returns the incremented value
+    member __.Increment() = Interlocked.Increment(refCell)
+    
+    /// Decrements the ref cell and returns the decremented value
+    member __.Decrement() = Interlocked.Decrement(refCell)
+    
+    /// Reset the ref cell to initial value
+    member __.Reset() = Interlocked.Exchange(refCell, value) |> ignore
+    
+    static member Create() = new AtomicLong(0L)
+    static member Create(value) = new AtomicLong(value)

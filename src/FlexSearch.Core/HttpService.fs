@@ -438,14 +438,6 @@ type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) =
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Choice2Of2(error) -> FailureResponse(error, BadRequest)
 
-type SearchProfileTestDto() =
-    inherit DtoBase()
-    member val SearchQuery = Unchecked.defaultof<SearchQuery> with get, set
-    member val SearchProfile = defString with get, set
-    override this.Validate() = 
-        this.SearchQuery.Validate()
-        >>= fun _ -> notBlank "SearchProfile" this.SearchProfile
-
 [<Name("POST-/indices/:id/searchprofiletest")>]
 [<Sealed>]
 type PostSearchProfileTestHandler(searchService : ISearchService) = 

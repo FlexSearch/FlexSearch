@@ -51,10 +51,6 @@ module Http =
               SubResId = subResId
               OwinContext = owinContext }
     
-    type NoBody() = 
-        inherit DtoBase()
-        override __.Validate() = ok()
-    
     type ResponseContext<'T> = 
         | SomeResponse of responseBody : Choice<'T, IMessage> * successCode : HttpStatusCode * failureCode : HttpStatusCode
         | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode

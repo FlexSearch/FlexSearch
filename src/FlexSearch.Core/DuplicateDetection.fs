@@ -60,18 +60,6 @@ type SourceRecord(sessionId) =
     member val TotalDupes = 0 with get, set
     member val TargetRecords = new List<TargetRecord>() with get, set
 
-type DuplicateDetectionRequest() = 
-    inherit DtoBase()
-    member val SelectionQuery = defString with get, set
-    member val DisplayName = defString with get, set
-    member val ThreadCount = 1 with get, set
-    member val IndexName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val MaxRecordsToScan = Int16.MaxValue with get, set
-    member val DuplicatesCount = Int16.MaxValue with get, set
-    member val NextId = new AtomicLong(0L)
-    override this.Validate() = ok()
-
 [<AutoOpen>]
 module DuplicateDetection = 
     let sessionId = "sessionid"
@@ -247,29 +235,6 @@ type FileWriterCommands =
     | BeginTable of aggrResultHeader : bool * record : Dictionary<string, string>
     | AddRecord of recordType : RecordType * primaryRecord : Dictionary<string, string> * record : Dictionary<string, string>
     | EndTable
-
-type DuplicateDetectionReportRequest() = 
-    inherit DtoBase()
-    member val SourceFileName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val IndexName = defString with get, set
-    member val QueryString = defString with get, set
-    member val SelectionQuery = defString with get, set
-    member val CutOff = defDouble with get, set
-    override this.Validate() = 
-        this.IndexName
-        |> notBlank "IndexName"
-        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
-        >>= fun _ -> 
-            let valid = this.SourceFileName
-                        |> isNotBlank
-                        || this.SelectionQuery |> isNotBlank
-            if not valid then 
-                fail 
-                <| GenericError
-                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
-                        new ResizeArray<KeyValuePair<string, string>>())
-            else ok()
 
 type Stats() = 
     member val TotalRecords = 0 with get, set
