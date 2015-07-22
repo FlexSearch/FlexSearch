@@ -379,7 +379,7 @@ type TokenFilter =
     new : unit -> TokenFilter
     override Validate : unit -> Choice<unit,IMessage>
 
-#if FilterName       
+#if prop_FilterName       
 The name of the filter. Some pre-defined filters are the following-
 + Ascii Folding Filter
 + Standard Filter
@@ -393,7 +393,7 @@ For more details refer to http://flexsearch.net/docs/concepts/understanding-anal
 #endif
     member FilterName : string with get, set
        
-#if Parameters 
+#if prop_Parameters 
 Parameters required by the filter.
 #endif
     member Parameters : Dictionary<string, string> with get, set
@@ -411,7 +411,7 @@ type Tokenizer =
     new : unit -> Tokenizer
     override Validate : unit -> Choice<unit,IMessage>
 
-#if FilterName         
+#if prop_FilterName         
 The name of the tokenizer. Some pre-defined tokenizers are the following-
 + Standard Tokenizer
 + Classic Tokenizer
@@ -424,7 +424,7 @@ For more details refer to http://flexsearch.net/docs/concepts/understanding-anal
 #endif
     member TokenizerName : string with get, set
 
-#if Parameters         
+#if prop_Parameters         
 Parameters required by the tokenizer.
 #endif
     member Parameters : Dictionary<string, string> with get, set
@@ -440,16 +440,16 @@ type Analyzer =
     new : unit -> Analyzer
     override Validate : unit -> Choice<unit,IMessage>
 
-#if AnalyzerName
+#if prop_AnalyzerName
 Name of the analyzer
 #endif
     member AnalyzerName : string with get, set
         
-#if AnalyzerName
+#if prop_TokenizerName
 #endif
     member Tokenizer : Tokenizer with get, set
   
-#if Filters     
+#if prop_Filters     
 Filters to be used by the analyzer.
 #endif
     member Filters : List<TokenFilter> with get, set
@@ -480,64 +480,64 @@ type Field =
     new : fieldName:string -> Field
     new : fieldName:string * fieldType:FieldDataType -> Field
 
-#if FieldName        
+#if prop_FieldName        
 Name of the field.
 #endif
     member FieldName : string with get, set
 
-#if Analyze        
+#if prop_Analyze        
 Signifies if the field should be analyzed using an analyzer. 
 #endif
     member Analyze : bool with get, set
 
-#if Index        
+#if prop_Index        
 Signifies if a field should be indexed. A field can only be 
 stored without indexing.
 #endif
     member Index : bool with get, set
 
-#if Store        
+#if prop_Store        
 Signifies if a field should be stored so that it can retrieved
 while searching.
 #endif
     member Store : bool with get, set
 
-#if AllowSort        
+#if prop_AllowSort        
 If AllowSort is set to true then we will index the field with docmemberues.
 #endif
     member AllowSort : bool with get, set
 
-#if IndexAnalyzer        
+#if prop_IndexAnalyzer        
 Analyzer to be used while indexing.
 #endif
     member IndexAnalyzer : string with get, set
 
-#if SearchAnalyzer        
+#if prop_SearchAnalyzer        
 Analyzer to be used while searching.
 #endif
     member SearchAnalyzer : string with get, set
 
-#if FieldType        
+#if prop_FieldType        
 AUTO
 #endif
     member FieldType : FieldDataType with get, set
 
-#if FieldSimilarity        
+#if prop_FieldSimilarity        
 AUTO
 #endif
     member Similarity : FieldSimilarity with get, set
 
-#if FieldIndexOptions        
+#if prop_FieldIndexOptions        
 AUTO
 #endif
     member IndexOptions : FieldIndexOptions with get, set
 
-#if FieldTermVector        
+#if prop_FieldTermVector        
 AUTO
 #endif
     member TermVector : FieldTermVector with get, set
 
-#if OmitNorms        
+#if prop_OmitNorms        
 If true, omits the norms associated with this field (this disables length 
 normalization and index-time boosting for the field, and saves some memory). 
 Defaults to true for all primitive (non-analyzed) field types, such as int, 
@@ -546,7 +546,7 @@ index-time boost need norms.
 #endif
     member OmitNorms : bool with get, set
 
-#if ScriptName        
+#if prop_ScriptName        
 Fields can get their content dynamically through scripts. This is the name of 
 the script to be used for getting field data at index time.
 Script name follows the below convention
@@ -566,22 +566,22 @@ type HighlightOption =
     new : fields:string [] -> HighlightOption
     override Validate : unit -> Choice<unit,IMessage>
 
-#if FragmentsToReturn        
+#if prop_FragmentsToReturn        
 Total number of fragments to return per document
 #endif
     member FragmentsToReturn : int with get, set
 
-#if HighlightedFields      
+#if prop_HighlightedFields      
 The fields to be used for text highlighting
 #endif
     member HighlightedFields : string[] with get, set
 
-#if PostTag        
+#if prop_PostTag        
 Post tag to represent the ending of the highlighted word
 #endif
     member PostTag : string with get, set
 
-#if PreTag        
+#if prop_PreTag        
 Pre tag to represent the ending of the highlighted word
 #endif
     member PreTag : string with get, set
@@ -600,13 +600,13 @@ type SearchQuery =
     new : index:string * query:string -> SearchQuery
     override Validate : unit -> Choice<unit,IMessage>
 
-#if QueryName        
+#if prop_QueryName        
 Unique name of the query. This is only required if you are setting up a 
 search profile.
 #endif
     member QueryName : string with get, set
 
-#if Columns        
+#if prop_Columns        
 Columns to be returned as part of results.
 + *  - return all columns
 + [] - return no columns
@@ -614,32 +614,32 @@ Columns to be returned as part of results.
 #endif
     member Columns : string[] with get, set
 
-#if Count        
+#if prop_Count        
 Count of results to be returned
 #endif
     member Count : int with get, set
 
-#if Highlights        
+#if prop_Highlights        
 AUTO
 #endif
     member Highlights : HighlightOption with get, set
  
-#if IndexName       
+#if prop_IndexName       
 Name of the index
 #endif
     member IndexName : string with get, set
 
-#if OrderBy        
+#if prop_OrderBy        
 Can be used to order the results by score or specific field.
 #endif
     member OrderBy : string with get, set
 
-#if OrderByDirection        
+#if prop_OrderByDirection        
 Can be used to determine the sort order.
 #endif
     member OrderByDirection : string with get, set
 
-#if CutOff        
+#if prop_CutOff        
 Can be used to remove results lower than a certain threshold.
 This works in conjunction with the score of the top record as
 all the other records are filtered using the score set by the
@@ -647,52 +647,52 @@ top scoring record.
 #endif
     member CutOff: double with get, set
 
-#if DistinctBy       
+#if prop_DistinctBy       
 Can be used to return records with distinct memberues for 
 the given field. Works in a manner similar to Sql distinct by clause.
 #endif
     member DistinctBy : string with get, set
 
-#if Skip        
+#if prop_Skip        
 Used to enable paging and skip certain pre-fetched results.
 #endif
     member Skip : int with get, set
 
-#if QueryString        
+#if prop_QueryString        
 Query string to be used for searching
 #endif
     member QueryString : string with get, set
 
-#if ReturnFlatResult        
+#if prop_ReturnFlatResult        
 If true will return collapsed search results which are in tabular form.
 Flat results enable easy binding to a grid but grouping results is tougher
 with Flat result.
 #endif
     member ReturnFlatResult : bool with get, set
 
-#if ReturnScore        
+#if prop_ReturnScore        
 If true then scores are returned as a part of search result.
 #endif
     member ReturnScore : bool with get, set
 
-#if SearchProfile        
+#if prop_SearchProfile        
 Profile Name to be used for profile based searching.
 #endif
     member SearchProfile : string with get, set
 
-#if SearchProfileScript        
+#if prop_SearchProfileScript        
 Script which can be used to select a search profile. This can help in
 dynamic selection of search profile based on the incoming data.
 #endif
     member SearchProfileScript : string with get, set
 
-#if OverrideProfileOptions        
+#if prop_OverrideProfileOptions        
 Can be used to override the configuration saved in the search profile
 with the one which is passed as the Search Query
 #endif
     member OverrideProfileOptions : bool with get, set
 
-#if ReturnEmptyStringForNull        
+#if prop_ReturnEmptyStringForNull        
 Returns an empty string for null memberues saved in the index rather than
 the null constant
 #endif
@@ -715,17 +715,17 @@ type Document =
     override Validate : unit -> Choice<unit,IMessage>
     static member Default : Document
 
- #if dto_Document       
+#if prop_Fields    
 Fields to be added to the document for indexing.
 #endif
     member Fields : Dictionary<string, string> with get, set
 
-#if Id        
+#if prop_Id        
 Unique Id of the document
 #endif
     member Id : string with get, set
 
-#if TimeStamp  
+#if prop_TimeStamp  
 Timestamp of the last modification of the document. This field is interpreted 
 differently during a create and update operation. It also dictates whether and 
 unique Id check is to be performed or not. 
@@ -738,17 +738,17 @@ Version number semantics
 #endif
     member TimeStamp : int64 with get, set
 
-#if IndexName
+#if prop_IndexName
 Name of the index
 #endif
     member IndexName : string with get, set
 
-#if Highlights        
+#if prop_Highlights        
 Any matched text highlighted snippets. Note: Only used for results
 #endif
     member Highlights : string [] with get, set
 
-#if Score        
+#if prop_Score        
 Score of the returned document. Note: Only used for results
 #endif
     member Score : double with get, set
@@ -776,32 +776,32 @@ type Index =
     new : unit -> Index
     override Validate : unit -> Choice<unit,IMessage>
 
-#if Fields
+#if prop_Fields
 Fields to be used in index.
 #endif
     member Fields : Field [] with get, set
 
-#if IndexConfiguration
+#if prop_IndexConfiguration
 #endif
     member IndexConfiguration : IndexConfiguration with get, set
 
-#if IndexName
+#if prop_IndexName
 Name of the index
 #endif
     member IndexName : string with get, set
 
-#if Online
+#if prop_Online
 Signifies if the index is on-line or not? An index has to be on-line in order to 
 enable searching over it.
 #endif
     member Online : bool with get, set
 
-#if SearchProfiles
+#if prop_SearchProfiles
 Search Profiles
 #endif
     member SearchProfiles : SearchQuery [] with get, set
 
-#if ShardConfiguration
+#if prop_ShardConfiguration
 #endif
     member ShardConfiguration : ShardConfiguration with get, set
 // ----------------------------------------------------------------------------
@@ -813,17 +813,17 @@ memberRepresents the result returned by FlexSearch for a given search query.
 [<ToString; Sealed>]
 type SearchResults =
     new : unit -> SearchResults
-#if Documents
+#if prop_Documents
 memberDocuments which are returned as a part of search response.
 #endif
     member Documents : System.Collections.Generic.List<Document> with get, set
 
-#if RecordsReturned
+#if prop_RecordsReturned
 memberTotal number of records returned.
 #endif
     member RecordsReturned : int with get, set
 
-#if TotalAvailable
+#if prop_TotalAvailable
 memberTotal number of records available on the server. This could be 
 membergreater than the returned results depending upon the requested 
 memberdocument count.
@@ -844,32 +844,32 @@ type Job =
     inherit DtoBase
     new : unit -> Job
 
-#if FailedItems
+#if prop_FailedItems
 memberItems which have failed processing.
 #endif
     member FailedItems : int with get, set
 
-#if JobId
+#if prop_JobId
 memberUnique Id of the Job
 #endif
     member JobId : string with get, set
 
-#if Message
+#if prop_Message
 memberAny message that is associated with the job.
 #endif
     member Message : string with get, set
     
-#if ProcessedItems
+#if prop_ProcessedItems
 memberItems already processed.
 #endif
     member ProcessedItems : int with get, set
 
-#if Status
+#if prop_Status
 memberOverall status of the job.
 #endif
     member Status : JobStatus with get, set
     
-#if TotalItems
+#if prop_TotalItems
 memberTotal items to be processed as a part of the current job.
 #endif
     member TotalItems : int with get, set
@@ -906,6 +906,8 @@ type IndexExistsResponse =
     member Exists : bool with get, set
 // ----------------------------------------------------------------------------
 
+#if dto_MemoryDetailsResponse
+#endif
 [<ToString; Sealed>]
 type MemoryDetailsResponse =
     inherit DtoBase
