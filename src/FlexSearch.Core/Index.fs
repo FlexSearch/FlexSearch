@@ -678,7 +678,7 @@ module VersionCache =
             let reader = readerContext.Reader()
             let terms = reader.Terms(cache.IdFieldName)
             assert (terms <> null)
-            let termsEnum = terms.iterator (null)
+            let termsEnum = terms.iterator ()
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
                 let docsEnums = termsEnum.Docs(null, null, 0)
