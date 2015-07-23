@@ -42,6 +42,7 @@ module Scripts =
         /// Script to process search profile data
         | SearchProfileScript of script : SearchProfileDelegate
     
+    [<Internal>]
     type ScriptType = 
         | Computed = 1
         | PostSearch = 2

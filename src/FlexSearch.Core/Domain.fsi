@@ -9,7 +9,9 @@ and query-time.
 #endif
 
 type FieldSimilarity = 
-
+#if opt_Undefined
+#endif
+    | Undefined = 0
 #if opt_BM25 
 BM25 Similarity defines the components of Lucene scoring.
 #endif
@@ -29,7 +31,9 @@ Random access is permitted both when reading and writing.
 #endif
 
 type DirectoryType = 
-
+#if opt_Undefined
+#endif
+    | Undefined = 0
 #if opt_FileSystem
 #endif
     | FileSystem = 1
@@ -85,7 +89,9 @@ only be configured for custom field type.
 #endif
 
 type FieldTermVector = 
-
+#if opt_Undefined
+#endif
+    | Undefined = 0
 #if opt_DoNotStoreTermVector
 Do not store term vectors.
 #endif
@@ -113,7 +119,9 @@ Controls how much information is stored in the postings lists.
 #endif
 
 type FieldIndexOptions = 
-
+#if opt_Undefined
+#endif
+    | Undefined = 0
 #if opt_DocsOnly
 Only documents are indexed: term frequencies and positions are omitted.
 #endif
@@ -140,7 +148,9 @@ Corresponds to Lucene Index version. There will always be a default codec
 associated with each index version.
 #endif
 type IndexVersion = 
-
+#if opt_Undefined
+#endif
+    | Undefined = 0
 #if opt_Lucene_4_x_x
 Lucene 4.x.x index format
 It is deprecated and is here for legacy support
@@ -158,7 +168,8 @@ Represents the status of job.
 #endif
 
 type JobStatus = 
-
+#if opt_Undefined
+#endif
     | Undefined = 0
 
 #if opt_Initializing
@@ -194,14 +205,65 @@ potentially write more error information to the logs.
     | CompletedWithErrors = 5
 // ----------------------------------------------------------------------------
 
-#if enum_FieldType
+#if enum_ShardStatus
+Signifies Shard status
+#endif
+type ShardStatus = 
+    #if opt_Opening
+    #endif
+    | Opening = 1
+    #if opt_Recovering
+    #endif
+    | Recovering = 2
+    #if opt_Online
+    #endif
+    | Online = 3
+    #if opt_Offline
+    #endif
+    | Offline = 4
+    #if opt_Closing
+    #endif
+    | Closing = 5
+    #if opt_Faulted
+    #endif
+    | Faulted = 6
+
+#if enum_IndexStatus
+Represents the current state of the index.
+#endif
+type IndexStatus = 
+    #if opt_Opening
+    #endif
+    | Opening = 1
+    #if opt_Recovering
+    #endif
+    | Recovering = 2
+    #if opt_Online
+    #endif
+    | Online = 3
+    #if opt_OnlineFollower
+    #endif
+    | OnlineFollower = 4
+    #if opt_Offline
+    #endif
+    | Offline = 5
+    #if opt_Closing
+    #endif
+    | Closing = 6
+    #if opt_Faulted
+    #endif
+    | Faulted = 7
+
+#if enum_FieldDataType
 The field type defines how FlexSearch should interpret data in a field and how 
 the field can be queried. There are many field types included with FlexSearch 
 by default and custom types can also be defined.
 #endif
 
 type FieldDataType = 
-
+#if opt_Undefined
+#endif
+    | Undefined = 0
 #if opt_Int
 Integer
 #endif
@@ -411,7 +473,7 @@ type Tokenizer =
     new : unit -> Tokenizer
     override Validate : unit -> Choice<unit,IMessage>
 
-#if prop_FilterName         
+#if prop_TokenizerName         
 The name of the tokenizer. Some pre-defined tokenizers are the following-
 + Standard Tokenizer
 + Classic Tokenizer
@@ -920,87 +982,6 @@ type MemoryDetailsResponse =
     member Usage : float with get, set
     member UsedMemory : int64 with get, set
 
-#if dto_CsvIndexingRequest
-Represents a request which can be sent to CSV connector to index CSV data.
-#endif
-[<Sealed>]
-type CsvIndexingRequest =
-    inherit DtoBase
-    new : unit -> CsvIndexingRequest
-    #if prop_IndexName
-    Name of the index
-    #endif
-    member IndexName : string with get, set
-    #if prop_HasHeaderRecord
-    Signifies if the passed CSV file(s) has a header record 
-    #endif
-    member HasHeaderRecord : bool with get, set
-    #if prop_Headers
-    The headers to be used by each column. This should only be passed when there is
-    no header in the csv file. The first column is always assumed to be id field. Make sure
-    in your array you always offset the column names by 1 position.
-    #endif
-    member Headers : string array with get, set
-    #if prop_Path
-    The path of the folder or file to be indexed. The service will pickup all files with 
-    .csv extension.
-    #endif
-    member Path : string with get, set
-
-#if dto_DuplicateDetectionRequest
-#endif
-type DuplicateDetectionRequest = 
-    inherit DtoBase
-    new : unit -> DuplicateDetectionRequest
-    #if prop_SelectionQuery
-    #endif
-    member SelectionQuery : string with get, set
-    #if prop_DisplayName
-    #endif
-    member DisplayName : string with get, set
-    #if prop_ThreadCount
-    #endif
-    member ThreadCount : int with get, set
-    #if prop_IndexName
-    #endif
-    member IndexName : string with get, set
-    #if prop_ProfileName
-    #endif
-    member ProfileName : string with get, set
-    #if prop_MaxRecordsToScan
-    #endif
-    member MaxRecordsToScan : int16 with get, set
-    #if prop_DuplicatesCount
-    #endif
-    member DuplicatesCount : int16 with get, set
-    #if prop_NextId
-    #endif
-    member NextId : AtomicLong
-
-#if dto_DuplicateDetectionReportRequest
-#endif
-type DuplicateDetectionReportRequest = 
-    inherit DtoBase
-    new : unit -> DuplicateDetectionReportRequest
-    #if prop_SourceFileName
-    #endif
-    member SourceFileName : string with get, set
-    #if prop_ProfileName
-    #endif
-    member ProfileName : string with get, set
-    #if prop_IndexName
-    #endif
-    member IndexName : string with get, set
-    #if prop_QueryString
-    #endif
-    member QueryString : string with get, set
-    #if prop_SelectionQuery
-    #endif
-    member SelectionQuery : string with get, set
-    #if prop_CutOff
-    #endif
-    member CutOff : float with get, set
-
 #if dto_NoBody
 #endif
 type NoBody =
@@ -1019,39 +1000,5 @@ type SearchProfileTestDto =
     #if prop_SearchQuery
     #endif
     member SearchQuery : SearchQuery
-    #if prop_SearchProfile
-    #endif
     member SearchProfile : string with set
-    #if prop_SearchQuery
-    #endif
     member SearchQuery : SearchQuery with set
-
-#if dto_SqlIndexingRequest
-Represents a request which can be sent to Sql connector to index SQL data
-#endif
-[<Sealed>]
-type SqlIndexingRequest = 
-    inherit DtoBase
-    new : unit -> SqlIndexingRequest
-    override Validate : unit -> Choice<unit,IMessage>
-    #if prop_
-    Name of the index
-    #endif
-    member IndexName : string with get, set
-    #if prop_
-    The query to be used to fetch data from Sql server
-    #endif
-    member Query : string with get, set
-    #if prop_
-    Connection string used to connect to the server
-    #endif
-    member ConnectionString : string with get, set
-    #if prop_
-    Signifies if all updates to the index are create
-    #endif
-    member ForceCreate : bool with get, set
-    #if prop_
-    Signifies if the connector should create a job for the task and return a jobId which can be used
-    to check the status of the job.
-    #endif
-    member CreateJob : bool with get, set

@@ -152,6 +152,12 @@ type NameAttribute(name : string) =
     inherit Attribute()
     member this.Name = name
 
+/// Represents a class attribute that marks the class as internal, meaning
+/// it's not exposed to the documentation.
+[<MetadataAttribute>]
+[<Sealed>]
+type InternalAttribute() = inherit Attribute()
+
 /// Implements the Freezable pattern
 [<InterfaceAttribute>]
 type IFreezable = 

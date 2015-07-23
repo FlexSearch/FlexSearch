@@ -38,6 +38,25 @@ type DirectoryType =
     | MemoryMapped = 2
     | Ram = 3
 
+/// Signifies Shard status
+type ShardStatus = 
+    | Opening = 1
+    | Recovering = 2
+    | Online = 3
+    | Offline = 4
+    | Closing = 5
+    | Faulted = 6
+
+/// Represents the current state of the index.
+type IndexStatus = 
+    | Opening = 1
+    | Recovering = 2
+    | Online = 3
+    | OnlineFollower = 4
+    | Offline = 5
+    | Closing = 6
+    | Faulted = 7
+
 /// These options instruct FlexSearch to maintain full term vectors for each document, 
 /// optionally including the position and offset information for each term occurrence 
 /// in those vectors. These can be used to accelerate highlighting and other ancillary 
@@ -644,66 +663,6 @@ type MemoryDetailsResponse() =
     member val Usage = defDouble with get, set
     override this.Validate() = ok()
 
-/// Represents a request which can be sent to CSV connector to index CSV data.
-[<Sealed>]
-type CsvIndexingRequest() = 
-    inherit DtoBase()
-    
-    /// Name of the index
-    member val IndexName = defString with get, set
-    
-    /// Signifies if the passed CSV file(s) has a header record 
-    member val HasHeaderRecord = false with get, set
-    
-    /// The headers to be used by each column. This should only be passed when there is
-    /// no header in the csv file. The first column is always assumed to be id field. Make sure
-    /// in your array you always offset the column names by 1 position.
-    member val Headers = defArray<string> with get, set
-    
-    /// The path of the folder or file to be indexed. The service will pickup all files with 
-    /// .csv extension.
-    member val Path = defString with get, set
-    
-    override __.Validate() = 
-        if __.HasHeaderRecord = false && (__.Headers |> Seq.isEmpty) then 
-            fail <| MissingFieldValue("HasHeaderRecord, Headers")
-        else ok()
-
-type DuplicateDetectionRequest() = 
-    inherit DtoBase()
-    member val SelectionQuery = defString with get, set
-    member val DisplayName = defString with get, set
-    member val ThreadCount = 1 with get, set
-    member val IndexName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val MaxRecordsToScan = Int16.MaxValue with get, set
-    member val DuplicatesCount = Int16.MaxValue with get, set
-    member val NextId = new AtomicLong(0L)
-    override this.Validate() = ok()
-
-type DuplicateDetectionReportRequest() = 
-    inherit DtoBase()
-    member val SourceFileName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val IndexName = defString with get, set
-    member val QueryString = defString with get, set
-    member val SelectionQuery = defString with get, set
-    member val CutOff = defDouble with get, set
-    override this.Validate() = 
-        this.IndexName
-        |> notBlank "IndexName"
-        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
-        >>= fun _ -> 
-            let valid = this.SourceFileName
-                        |> isNotBlank
-                        || this.SelectionQuery |> isNotBlank
-            if not valid then 
-                fail 
-                <| GenericError
-                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
-                        new ResizeArray<KeyValuePair<string, string>>())
-            else ok()
-
 type NoBody() = 
     inherit DtoBase()
     override __.Validate() = ok()
@@ -715,26 +674,3 @@ type SearchProfileTestDto() =
     override this.Validate() = 
         this.SearchQuery.Validate()
         >>= fun _ -> notBlank "SearchProfile" this.SearchProfile
-
-/// Represents a request which can be sent to Sql connector to index SQL data
-[<Sealed>]
-type SqlIndexingRequest() = 
-    inherit DtoBase()
-    
-    /// Name of the index
-    member val IndexName = defString with get, set
-    
-    /// The query to be used to fetch data from Sql server
-    member val Query = defString with get, set
-    
-    /// Connection string used to connect to the server
-    member val ConnectionString = defString with get, set
-    
-    /// Signifies if all updates to the index are create
-    member val ForceCreate = true with get, set
-    
-    /// Signifies if the connector should create a job for the task and return a jobId which can be used
-    /// to check the status of the job.
-    member val CreateJob = false with get, set
-    
-    override __.Validate() = ok()

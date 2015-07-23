@@ -24,25 +24,6 @@ open System.Threading.Tasks
 type IRequireNotificationForShutdown = 
     abstract shutdown : unit -> Task
 
-/// Signifies Shard status
-type ShardStatus = 
-    | Opening = 1
-    | Recovering = 2
-    | Online = 3
-    | Offline = 4
-    | Closing = 5
-    | Faulted = 6
-
-/// Represents the current state of the index.
-type IndexStatus = 
-    | Opening = 1
-    | Recovering = 2
-    | Online = 3
-    | OnlineFollower = 4
-    | Offline = 5
-    | Closing = 6
-    | Faulted = 7
-
 /// The types of events which can be raised on the event aggregrator
 type EventType = 
     | ShardStatusChange of indexName : string * shardNo : int * shardStatus : ShardStatus
@@ -353,6 +334,7 @@ module TransactionLog =
     //open ProtoBuf
     open MsgPack.Serialization
     
+    [<Internal>]
     type Operation = 
         | Create = 1
         | Update = 2
