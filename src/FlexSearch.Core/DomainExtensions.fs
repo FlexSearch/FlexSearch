@@ -228,7 +228,7 @@ module Field =
     /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
     /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
     /// intend to use for sorting or access through the field cache.
-    let getStringField (fieldName, value, store) = new StringField(fieldName, value, store) :> LuceneField
+    let getStringField (fieldName, value: string, store : LuceneField.Store) = new StringField(fieldName, value, store) :> LuceneField
     
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
