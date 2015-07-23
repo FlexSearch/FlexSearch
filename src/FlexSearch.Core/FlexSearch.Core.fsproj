@@ -141,7 +141,8 @@
       <HintPath>..\packages\FSharp.Control.AsyncSeq.2.0.1\lib\net45\FSharp.Control.AsyncSeq.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Reference Include="FSharp.Core">
+      <HintPath>..\packages\FSharp.Core.3.0.2\lib\net40\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharpx.Async">
@@ -325,6 +326,14 @@
     <Reference Include="mscorlib" />
     <Reference Include="MsgPack">
       <HintPath>..\packages\MsgPack.Cli.0.5.11\lib\net45\MsgPack.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nancy">
+      <HintPath>..\packages\Nancy.0.23.0\lib\net40\Nancy.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nancy.Swagger">
+      <HintPath>..\packages\Nancy.Swagger.0.1.0-alpha3\lib\net40\Nancy.Swagger.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">

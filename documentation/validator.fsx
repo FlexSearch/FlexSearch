@@ -4,6 +4,8 @@
 #r "../src/build/FlexSearch.Core.dll"
 #r "../src/build/Lib/microsoft.owin.dll"
 
+namespace FlexSearch
+
 open System
 open System.Collections.Generic
 open System.IO
@@ -88,14 +90,17 @@ module SigDocValidator =
         |> Seq.map (exec definitions)
         |> Seq.collect id
 
+    // Get the data needed for validation
+    let docDtos = defs |> Seq.filter (fun x -> x.Type = "dto") 
+                       |> Seq.sortBy (fun x -> x.Name)
+    let coreDtos = Assembly.GetAssembly(typeof<DtoBase>).GetTypes()
+                   |> Seq.filter (fun t -> t.IsSubclassOf(typeof<DtoBase>))
+                   |> Seq.filter isNotInternal
+                   |> Seq.sortBy (fun t -> t.Name)
+
     // Actual validation
     let validateDtos() =
-        let docDtos = defs |> Seq.filter (fun x -> x.Type = "dto") 
-                           |> Seq.sortBy (fun x -> x.Name)
-        let coreDtos = Assembly.GetAssembly(typeof<DtoBase>).GetTypes()
-                       |> Seq.filter (fun t -> t.IsSubclassOf(typeof<DtoBase>))
-                       |> Seq.filter isNotInternal
-                       |> Seq.sortBy (fun t -> t.Name)
+        
         
         //printDefsVsCores docDtos coreDtos
 
@@ -173,10 +178,3 @@ module SigDocValidator =
     match validationSequence with
     | Choice1Of2(x) -> printfn "Validation Succeeded"
     | Choice2Of2(x) -> printfn "Validation Failed. Check Operational logs in Event Viewer for details."; Log.log x
-        
-
-// ----------------------------------------------------------------------------
-// Generator for the Swagger JSON file
-// ----------------------------------------------------------------------------
-module SwaggerGenerator = ()
-    
