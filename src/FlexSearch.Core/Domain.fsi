@@ -812,6 +812,7 @@ memberRepresents the result returned by FlexSearch for a given search query.
 
 [<ToString; Sealed>]
 type SearchResults =
+    inherit DtoBase
     new : unit -> SearchResults
 #if prop_Documents
 memberDocuments which are returned as a part of search response.
@@ -894,6 +895,7 @@ type AnalysisRequest =
 #endif
 [<ToString; Sealed>]
 type CreateResponse =
+    inherit DtoBase
     new : id:string -> CreateResponse
     member Id : string with get, set
 // ----------------------------------------------------------------------------
@@ -902,6 +904,7 @@ type CreateResponse =
 #endif
 [<ToString; Sealed>]
 type IndexExistsResponse =
+    inherit DtoBase
     new : unit -> IndexExistsResponse
     member Exists : bool with get, set
 // ----------------------------------------------------------------------------
@@ -916,3 +919,139 @@ type MemoryDetailsResponse =
     member TotalMemory : uint64 with get, set
     member Usage : float with get, set
     member UsedMemory : int64 with get, set
+
+#if dto_CsvIndexingRequest
+Represents a request which can be sent to CSV connector to index CSV data.
+#endif
+[<Sealed>]
+type CsvIndexingRequest =
+    inherit DtoBase
+    new : unit -> CsvIndexingRequest
+    #if prop_IndexName
+    Name of the index
+    #endif
+    member IndexName : string with get, set
+    #if prop_HasHeaderRecord
+    Signifies if the passed CSV file(s) has a header record 
+    #endif
+    member HasHeaderRecord : bool with get, set
+    #if prop_Headers
+    The headers to be used by each column. This should only be passed when there is
+    no header in the csv file. The first column is always assumed to be id field. Make sure
+    in your array you always offset the column names by 1 position.
+    #endif
+    member Headers : string array with get, set
+    #if prop_Path
+    The path of the folder or file to be indexed. The service will pickup all files with 
+    .csv extension.
+    #endif
+    member Path : string with get, set
+
+#if dto_DuplicateDetectionRequest
+#endif
+type DuplicateDetectionRequest = 
+    inherit DtoBase
+    new : unit -> DuplicateDetectionRequest
+    #if prop_SelectionQuery
+    #endif
+    member SelectionQuery : string with get, set
+    #if prop_DisplayName
+    #endif
+    member DisplayName : string with get, set
+    #if prop_ThreadCount
+    #endif
+    member ThreadCount : int with get, set
+    #if prop_IndexName
+    #endif
+    member IndexName : string with get, set
+    #if prop_ProfileName
+    #endif
+    member ProfileName : string with get, set
+    #if prop_MaxRecordsToScan
+    #endif
+    member MaxRecordsToScan : int16 with get, set
+    #if prop_DuplicatesCount
+    #endif
+    member DuplicatesCount : int16 with get, set
+    #if prop_NextId
+    #endif
+    member NextId : AtomicLong
+
+#if dto_DuplicateDetectionReportRequest
+#endif
+type DuplicateDetectionReportRequest = 
+    inherit DtoBase
+    new : unit -> DuplicateDetectionReportRequest
+    #if prop_SourceFileName
+    #endif
+    member SourceFileName : string with get, set
+    #if prop_ProfileName
+    #endif
+    member ProfileName : string with get, set
+    #if prop_IndexName
+    #endif
+    member IndexName : string with get, set
+    #if prop_QueryString
+    #endif
+    member QueryString : string with get, set
+    #if prop_SelectionQuery
+    #endif
+    member SelectionQuery : string with get, set
+    #if prop_CutOff
+    #endif
+    member CutOff : float with get, set
+
+#if dto_NoBody
+#endif
+type NoBody =
+    inherit DtoBase
+    new : unit -> NoBody
+
+#if dto_SearchProfileTestDto
+#endif
+type SearchProfileTestDto =
+    inherit DtoBase
+    new : unit -> SearchProfileTestDto
+    override Validate : unit -> Choice<unit,IMessage>
+    #if prop_SearchProfile
+    #endif
+    member SearchProfile : string
+    #if prop_SearchQuery
+    #endif
+    member SearchQuery : SearchQuery
+    #if prop_SearchProfile
+    #endif
+    member SearchProfile : string with set
+    #if prop_SearchQuery
+    #endif
+    member SearchQuery : SearchQuery with set
+
+#if dto_SqlIndexingRequest
+Represents a request which can be sent to Sql connector to index SQL data
+#endif
+[<Sealed>]
+type SqlIndexingRequest = 
+    inherit DtoBase
+    new : unit -> SqlIndexingRequest
+    override Validate : unit -> Choice<unit,IMessage>
+    #if prop_
+    Name of the index
+    #endif
+    member IndexName : string with get, set
+    #if prop_
+    The query to be used to fetch data from Sql server
+    #endif
+    member Query : string with get, set
+    #if prop_
+    Connection string used to connect to the server
+    #endif
+    member ConnectionString : string with get, set
+    #if prop_
+    Signifies if all updates to the index are create
+    #endif
+    member ForceCreate : bool with get, set
+    #if prop_
+    Signifies if the connector should create a job for the task and return a jobId which can be used
+    to check the status of the job.
+    #endif
+    member CreateJob : bool with get, set

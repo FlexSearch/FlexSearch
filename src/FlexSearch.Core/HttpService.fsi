@@ -2,37 +2,37 @@
   
 [<SealedAttribute (); NameAttribute ("GET-/ping")>]
 type PingHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : unit -> PingHandler
-    override Process : Http.RequestContext * Http.NoBody option ->
+    override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("GET-/"); SealedAttribute ()>]
 type GetRootHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : unit -> GetRootHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("GET-/favicon.ico"); SealedAttribute ()>]
 type GetFaviconHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : unit -> GetFaviconHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("GET-/indices"); SealedAttribute ()>]
 type GetAllIndexHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,Index []>
+    inherit Http.HttpHandlerBase<NoBody,Index []>
     new : indexService:IIndexService -> GetAllIndexHandler
-    override Process : Http.RequestContext * Http.NoBody option ->
+    override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Index []>
 
 [<NameAttribute ("GET-/indices/:id"); SealedAttribute ()>]
 type GetIndexByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,Index>
+    inherit Http.HttpHandlerBase<NoBody,Index>
     new : indexService:IIndexService -> GetIndexByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Index>
 
 [<NameAttribute ("POST-/indices"); SealedAttribute ()>]
@@ -44,9 +44,9 @@ type PostIndexByIdHandler =
 
 [<NameAttribute ("DELETE-/indices/:id"); SealedAttribute ()>]
 type DeleteIndexByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : indexService:IIndexService -> DeleteIndexByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 type IndexStatusResponse =
@@ -56,44 +56,44 @@ type IndexStatusResponse =
 
 [<NameAttribute ("GET-/indices/:id/status"); SealedAttribute ()>]
 type GetStatusHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,IndexStatusResponse>
+    inherit Http.HttpHandlerBase<NoBody,IndexStatusResponse>
     new : indexService:IIndexService -> GetStatusHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<IndexStatusResponse>
 
 [<NameAttribute ("PUT-/indices/:id/status/:id"); SealedAttribute ()>]
 type PutStatusHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : indexService:IIndexService -> PutStatusHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("GET-/indices/:id/exists"); SealedAttribute ()>]
 type GetExistsHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,IndexExistsResponse>
+    inherit Http.HttpHandlerBase<NoBody,IndexExistsResponse>
     new : indexService:IIndexService -> GetExistsHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<IndexExistsResponse>
 
 [<NameAttribute ("GET-/indices/:id/size"); SealedAttribute ()>]
 type GetIndexSizeHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,int64>
+    inherit Http.HttpHandlerBase<NoBody,int64>
     new : indexService:IIndexService -> GetIndexSizeHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<int64>
 
 [<NameAttribute ("GET-/analyzers/:id"); SealedAttribute ()>]
 type GetAnalyzerByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,Analyzer>
+    inherit Http.HttpHandlerBase<NoBody,Analyzer>
     new : analyzerService:IAnalyzerService -> GetAnalyzerByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Analyzer>
 
 [<NameAttribute ("GET-/analyzers"); SealedAttribute ()>]
 type GetAllAnalyzerHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,Analyzer []>
+    inherit Http.HttpHandlerBase<NoBody,Analyzer []>
     new : analyzerService:IAnalyzerService -> GetAllAnalyzerHandler
-    override Process : Http.RequestContext * Http.NoBody option ->
+    override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Analyzer []>
 
 [<NameAttribute ("POST-/analyzers/:id/analyze"); SealedAttribute ()>]
@@ -105,9 +105,9 @@ type AnalyzeTextHandler =
 
 [<NameAttribute ("DELETE-/analyzers/:id"); SealedAttribute ()>]
 type DeleteAnalyzerByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : analyzerService:IAnalyzerService -> DeleteAnalyzerByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("PUT-/analyzers/:id"); SealedAttribute ()>]
@@ -120,16 +120,16 @@ type CreateOrUpdateAnalyzerByIdHandler =
 
 [<NameAttribute ("GET-/indices/:id/documents"); SealedAttribute ()>]
 type GetDocumentsHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,SearchResults>
+    inherit Http.HttpHandlerBase<NoBody,SearchResults>
     new : documentService:IDocumentService -> GetDocumentsHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<SearchResults>
 
 [<NameAttribute ("GET-/indices/:id/documents/:id"); SealedAttribute ()>]
 type GetDocumentByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,Document>
+    inherit Http.HttpHandlerBase<NoBody,Document>
     new : documentService:IDocumentService -> GetDocumentByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Document>
 
 [<NameAttribute ("POST-/indices/:id/documents"); SealedAttribute ()>]
@@ -141,16 +141,16 @@ type PostDocumentByIdHandler =
 
 [<NameAttribute ("DELETE-/indices/:id/documents"); SealedAttribute ()>]
 type DeleteDocumentsHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : documentService:IDocumentService -> DeleteDocumentsHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("DELETE-/indices/:id/documents/:id"); SealedAttribute ()>]
 type DeleteDocumentByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : documentService:IDocumentService -> DeleteDocumentByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("PUT-/indices/:id/documents/:id"); SealedAttribute ()>]
@@ -162,16 +162,16 @@ type PutDocumentByIdHandler =
 
 [<NameAttribute ("PUT-/setupdemo"); SealedAttribute ()>]
 type SetupDemoHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,unit>
+    inherit Http.HttpHandlerBase<NoBody,unit>
     new : service:DemoIndexService -> SetupDemoHandler
-    override Process : Http.RequestContext * Http.NoBody option ->
+    override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
 [<NameAttribute ("GET-/jobs/:id"); SealedAttribute ()>]
 type GetJobByIdHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,Job>
+    inherit Http.HttpHandlerBase<NoBody,Job>
     new : jobService:IJobService -> GetJobByIdHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Job>
 
 // ----------------------------------------------------------------------------
@@ -238,19 +238,10 @@ by the search query."""
 # examples """"""
 [<NameAttribute ("DELETE-/indices/:id/search"); SealedAttribute ()>]
 type DeleteDocumentsFromSearchHandler =
-    inherit Http.HttpHandlerBase<Http.NoBody,obj>
+    inherit Http.HttpHandlerBase<NoBody,obj>
     new : documentService:IDocumentService -> DeleteDocumentsFromSearchHandler
-    override Process : request:Http.RequestContext * Http.NoBody option ->
+    override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<obj>
-
-type SearchProfileTestDto =
-    inherit DtoBase
-    new : unit -> SearchProfileTestDto
-    override Validate : unit -> Choice<unit,IMessage>
-    member SearchProfile : string
-    member SearchQuery : SearchQuery
-    member SearchProfile : string with set
-    member SearchQuery : SearchQuery with set
 
 [<NameAttribute ("POST-/indices/:id/searchprofiletest"); SealedAttribute ()>]
 type PostSearchProfileTestHandler =
@@ -261,7 +252,7 @@ type PostSearchProfileTestHandler =
 
 [<NameAttribute ("GET-/memory"); SealedAttribute ()>]
 type GetMemoryDetails =
-    inherit Http.HttpHandlerBase<Http.NoBody,MemoryDetailsResponse>
+    inherit Http.HttpHandlerBase<NoBody,MemoryDetailsResponse>
     new : unit -> GetMemoryDetails
-    override Process : request:Http.RequestContext * body:Http.NoBody option ->
+    override Process : request:Http.RequestContext * body:NoBody option ->
                 Http.ResponseContext<MemoryDetailsResponse>

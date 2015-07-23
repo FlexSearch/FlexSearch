@@ -48,31 +48,6 @@ module CsvHelpers =
         
         (headers, records)
 
-/// Represents a request which can be sent to CSV connector to index CSV data.
-[<Sealed>]
-type CsvIndexingRequest() = 
-    inherit DtoBase()
-    
-    /// Name of the index
-    member val IndexName = defString with get, set
-    
-    /// Signifies if the passed CSV file(s) has a header record 
-    member val HasHeaderRecord = false with get, set
-    
-    /// The headers to be used by each column. This should only be passed when there is
-    /// no header in the csv file. The first column is always assumed to be id field. Make sure
-    /// in your array you always offset the column names by 1 position.
-    member val Headers = defArray<string> with get, set
-    
-    /// The path of the folder or file to be indexed. The service will pickup all files with 
-    /// .csv extension.
-    member val Path = defString with get, set
-    
-    override __.Validate() = 
-        if __.HasHeaderRecord = false && (__.Headers |> Seq.isEmpty) then 
-            fail <| MissingFieldValue("HasHeaderRecord, Headers")
-        else ok()
-
 /// Connector for importing CSV file data into the system.
 [<Sealed>]
 [<Name("POST-/indices/:id/csv")>]
@@ -176,29 +151,6 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
         | Choice2Of2(error) -> fail <| error
     
     override __.Process(request, body) = SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
-
-/// Represents a request which can be sent to Sql connector to index SQL data
-[<Sealed>]
-type SqlIndexingRequest() = 
-    inherit DtoBase()
-    
-    /// Name of the index
-    member val IndexName = defString with get, set
-    
-    /// The query to be used to fetch data from Sql server
-    member val Query = defString with get, set
-    
-    /// Connection string used to connect to the server
-    member val ConnectionString = defString with get, set
-    
-    /// Signifies if all updates to the index are create
-    member val ForceCreate = true with get, set
-    
-    /// Signifies if the connector should create a job for the task and return a jobId which can be used
-    /// to check the status of the job.
-    member val CreateJob = false with get, set
-    
-    override __.Validate() = ok()
 
 [<Sealed>]
 [<Name("POST-/indices/:id/sql")>]

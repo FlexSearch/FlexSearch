@@ -563,7 +563,8 @@ type Index() =
 /// Represents the result returned by FlexSearch for a given search query.
 [<ToString; Sealed>]
 type SearchResults() = 
-    
+    inherit DtoBase()
+
     /// Documents which are returned as a part of search response.
     member val Documents = new List<Document>() with get, set
     
@@ -574,6 +575,8 @@ type SearchResults() =
     /// greater than the returned results depending upon the requested 
     /// document count. 
     member val TotalAvailable = 0 with get, set
+
+    override this.Validate() = ok()
 
 /// Used by long running processes. All long running FlexSearch operations create
 /// an instance of Job and return the Id to the caller. This Id can be used by the
@@ -619,12 +622,16 @@ type AnalysisRequest() =
         else ok()
 
 [<ToString; Sealed>]
-type CreateResponse(id : string) = 
+type CreateResponse(id : string) =
+    inherit DtoBase() 
     member val Id = id with get, set
+    override this.Validate() = ok()
 
 [<ToString; Sealed>]
 type IndexExistsResponse() = 
+    inherit DtoBase()
     member val Exists = Unchecked.defaultof<bool> with get, set
+    override this.Validate() = ok()
 
 [<ToString; Sealed>]
 type MemoryDetailsResponse() = 
@@ -637,3 +644,97 @@ type MemoryDetailsResponse() =
     member val Usage = defDouble with get, set
     override this.Validate() = ok()
 
+/// Represents a request which can be sent to CSV connector to index CSV data.
+[<Sealed>]
+type CsvIndexingRequest() = 
+    inherit DtoBase()
+    
+    /// Name of the index
+    member val IndexName = defString with get, set
+    
+    /// Signifies if the passed CSV file(s) has a header record 
+    member val HasHeaderRecord = false with get, set
+    
+    /// The headers to be used by each column. This should only be passed when there is
+    /// no header in the csv file. The first column is always assumed to be id field. Make sure
+    /// in your array you always offset the column names by 1 position.
+    member val Headers = defArray<string> with get, set
+    
+    /// The path of the folder or file to be indexed. The service will pickup all files with 
+    /// .csv extension.
+    member val Path = defString with get, set
+    
+    override __.Validate() = 
+        if __.HasHeaderRecord = false && (__.Headers |> Seq.isEmpty) then 
+            fail <| MissingFieldValue("HasHeaderRecord, Headers")
+        else ok()
+
+type DuplicateDetectionRequest() = 
+    inherit DtoBase()
+    member val SelectionQuery = defString with get, set
+    member val DisplayName = defString with get, set
+    member val ThreadCount = 1 with get, set
+    member val IndexName = defString with get, set
+    member val ProfileName = defString with get, set
+    member val MaxRecordsToScan = Int16.MaxValue with get, set
+    member val DuplicatesCount = Int16.MaxValue with get, set
+    member val NextId = new AtomicLong(0L)
+    override this.Validate() = ok()
+
+type DuplicateDetectionReportRequest() = 
+    inherit DtoBase()
+    member val SourceFileName = defString with get, set
+    member val ProfileName = defString with get, set
+    member val IndexName = defString with get, set
+    member val QueryString = defString with get, set
+    member val SelectionQuery = defString with get, set
+    member val CutOff = defDouble with get, set
+    override this.Validate() = 
+        this.IndexName
+        |> notBlank "IndexName"
+        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+        >>= fun _ -> 
+            let valid = this.SourceFileName
+                        |> isNotBlank
+                        || this.SelectionQuery |> isNotBlank
+            if not valid then 
+                fail 
+                <| GenericError
+                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
+                        new ResizeArray<KeyValuePair<string, string>>())
+            else ok()
+
+type NoBody() = 
+    inherit DtoBase()
+    override __.Validate() = ok()
+
+type SearchProfileTestDto() =
+    inherit DtoBase()
+    member val SearchQuery = Unchecked.defaultof<SearchQuery> with get, set
+    member val SearchProfile = defString with get, set
+    override this.Validate() = 
+        this.SearchQuery.Validate()
+        >>= fun _ -> notBlank "SearchProfile" this.SearchProfile
+
+/// Represents a request which can be sent to Sql connector to index SQL data
+[<Sealed>]
+type SqlIndexingRequest() = 
+    inherit DtoBase()
+    
+    /// Name of the index
+    member val IndexName = defString with get, set
+    
+    /// The query to be used to fetch data from Sql server
+    member val Query = defString with get, set
+    
+    /// Connection string used to connect to the server
+    member val ConnectionString = defString with get, set
+    
+    /// Signifies if all updates to the index are create
+    member val ForceCreate = true with get, set
+    
+    /// Signifies if the connector should create a job for the task and return a jobId which can be used
+    /// to check the status of the job.
+    member val CreateJob = false with get, set
+    
+    override __.Validate() = ok()
