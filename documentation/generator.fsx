@@ -6,6 +6,8 @@
 #r "../src/build/Lib/swagger.objectmodel.dll"
 #r "../src/build/Lib/nancy.swagger.dll"
 
+namespace FlexSearch
+
 open System
 open System.IO
 open System.Collections.Generic
@@ -21,7 +23,6 @@ open FlexSearch.SigDocParser
 // ----------------------------------------------------------------------------
 // Generator for the Swagger JSON file
 // ----------------------------------------------------------------------------
-[<AutoOpen>]
 module SwaggerGenerator =
     let swaggerPath = __SOURCE_DIRECTORY__ + @"\swagger.json"
 
@@ -140,21 +141,22 @@ module SwaggerGenerator =
         with
         | e -> failwithf "An error occurred while converting Web Service %s to Swagger operation:\n%s" ws.Name (e |> exceptionPrinter)
 
-    let dtoModels = coreDtos |> Seq.zip docDtos
+    let dtoModels() = coreDtos |> Seq.zip docDtos
                     |> Seq.map (fun x -> typeToSwaggerModel (fst x) (snd x))
-    let enumModels = coreEnums |> Seq.zip docEnums
+    let enumModels() = coreEnums |> Seq.zip docEnums
                      |> Seq.map (fun x -> enumToSwaggerModel (fst x) (snd x))
-    let wsApis = coreWss |> Seq.zip docWss
+    let wsApis() = coreWss |> Seq.zip docWss
                  |> Seq.map (fun x -> wsToSwaggerApi (fst x) (snd x))
 
     let generateApiDeclaration() =
         let apiDecl = new ApiDeclaration()
         apiDecl.BasePath <- new Uri("http://localhost:9800")
-        apiDecl.Apis <- wsApis
-        apiDecl.Models <- (enumModels |> Seq.append dtoModels).ToDictionary(fun x -> x.Id)
+        apiDecl.Apis <- wsApis()
+        apiDecl.Models <- (enumModels() |> Seq.append <| dtoModels()).ToDictionary(fun x -> x.Id)
         apiDecl
         
     let generateJson() =
+        validateDocumentation()
         try
             let json = generateApiDeclaration().ToJson()
             File.WriteAllText(swaggerPath, json)

@@ -1,7 +1,9 @@
 {
   "name": "flexportal",
   "version": "0.0.0",
-  "dependencies": {},
+  "dependencies": {
+    "swagger-converter": "^0.1.7"
+  },
   "scripts": {
     "test": "gulp test"
   },

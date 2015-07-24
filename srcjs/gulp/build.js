@@ -1,10 +1,14 @@
 'use strict';
 
 var gulp = require('gulp');
-
+var fs = require('fs');
 var $ = require('gulp-load-plugins')({
   pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
 });
+
+var convert = require('swagger-converter');
+var swaggerDir = __dirname + '\\..\\..\\documentation\\';
+var swagger1_2 = require(swaggerDir + 'swagger.json');
 
 module.exports = function(options) {
   gulp.task('partials', function () {
@@ -90,6 +94,12 @@ module.exports = function(options) {
 
   gulp.task('clean', ['tsd:purge'], function (done) {
     $.del([options.dist + '/', options.tmp + '/'], done);
+  });
+
+  gulp.task('swagger', function() {
+    $.util.log("Building swagger...");
+    var swagger2_0 = convert(swagger1_2, []);
+    fs.writeFile(swaggerDir + "swagger_v2.json", JSON.stringify(swagger2_0));
   });
 
   gulp.task('build', ['html', 'fonts', 'other', 'pure-libs']);

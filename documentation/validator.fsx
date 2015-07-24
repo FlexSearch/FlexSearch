@@ -115,7 +115,7 @@ module SigDocValidator =
     let docWss = defs |> Seq.filter (fun x -> x.Type = "ws")
                       |> Seq.sortBy (fun x -> x.Name)
     let coreWss = Assembly.GetAssembly(typeof<Http.IHttpHandler>).GetTypes()
-                  |> Seq.filter (fun t -> not t.IsAbstract && t.GetInterfaces() |> Seq.contains typeof<Http.IHttpHandler>)
+                  |> Seq.filter (fun t -> not t.IsAbstract && t.GetInterfaces() |> Seq.exists ((=) typeof<Http.IHttpHandler>))
                   |> Seq.filter isNotInternal
                   |> Seq.sortBy (fun t -> t.Name)
     let docEnums = defs |> Seq.filter (fun x -> x.Type = "enum")
@@ -181,7 +181,7 @@ module SigDocValidator =
         // Not all Enumerations need to be in the documentation. Some are only used internally
         compareLists docEnums coreEnums compareEnum
 
-    let validationSequence =
+    let validationSequence() =
         printfn "\nValidating DTOs\n"
         validateDtos() 
         >>= fun _ -> printfn "\nValidating HTTP Web Services\n"; ok()
@@ -190,6 +190,7 @@ module SigDocValidator =
         >>= validateEnums
         >>= fun _ -> printfn "\n----------------\n"; ok()
 
-    match validationSequence with
-    | Choice1Of2(x) -> printfn "Validation Succeeded"
-    | Choice2Of2(x) -> Log.log x; failwith "Validation Failed. Check Operational logs in Event Viewer for details."
+    let validateDocumentation() =
+        match validationSequence() with
+        | Choice1Of2(x) -> printfn "Validation Succeeded"
+        | Choice2Of2(x) -> Log.log x; failwith "Validation Failed. Check Operational logs in Event Viewer for details."

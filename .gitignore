@@ -219,6 +219,8 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 #/idl/gen-csharp
+
+
 build-debug
 /src/FlexSearch.Java/target/
 src/FlexSearch.Api/AssemblyInfo.fs
@@ -230,4 +232,7 @@ src/FlexSearch.Core/AssemblyInfo.fs
 src/FlexSearch.Logging/Properties/AssemblyInfo.cs
 src/FlexSearch.Server/AssemblyInfo.fs
 src/.vs/
+src/.fake
 swagger-ui
+documentation/.fake/
+documentation/swagger*
