@@ -192,4 +192,4 @@ module SigDocValidator =
 
     match validationSequence with
     | Choice1Of2(x) -> printfn "Validation Succeeded"
-    | Choice2Of2(x) -> printfn "Validation Failed. Check Operational logs in Event Viewer for details."; Log.log x
+    | Choice2Of2(x) -> Log.log x; failwith "Validation Failed. Check Operational logs in Event Viewer for details."

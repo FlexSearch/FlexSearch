@@ -140,16 +140,6 @@ module SwaggerGenerator =
         with
         | e -> failwithf "An error occurred while converting Web Service %s to Swagger operation:\n%s" ws.Name (e |> exceptionPrinter)
 
-    let generateDefinitions (dtos : Type seq) =
-        dtos
-        |> Seq.map (fun dto -> 
-            let model = (new SwaggerModelData(dto)).ToModel() 
-                        |> Seq.find (fun m -> m.Id = dto.Name)
-            model.ToJson())
-        |> Seq.fold (fun acc value -> acc + "," + value) ""
-        |> fun json -> "{definitions:[" + json.Substring(1) + "]}"
-        |> fun json -> File.WriteAllText(swaggerPath, json)
-
     let dtoModels = coreDtos |> Seq.zip docDtos
                     |> Seq.map (fun x -> typeToSwaggerModel (fst x) (snd x))
     let enumModels = coreEnums |> Seq.zip docEnums
@@ -171,8 +161,4 @@ module SwaggerGenerator =
         with
         | e -> failwithf "%s" (exceptionPrinter e)
 
-    let generateApis () =
-        let builder = SwaggerRouteDataBuilder("indices", HttpMethod.Get, "/indices")
-        builder.BodyParam<Index>("Index description") |> ignore
-        builder.Model<IndexConfiguration>() |> ignore
-        builder.Data.ToOperation().ToJson()
+    generateJson()
