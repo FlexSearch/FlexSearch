@@ -26,7 +26,6 @@ type DuplicateDetectionRequest =
     #if prop_DuplicatesCount
     #endif
     member DuplicatesCount : int16 with get, set
-    member NextId : FlexSearch.Core.AtomicLong
 
 #if dto_DuplicateDetectionReportRequest
 #endif

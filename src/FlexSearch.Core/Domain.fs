@@ -645,6 +645,7 @@ type CreateResponse(id : string) =
     inherit DtoBase() 
     member val Id = id with get, set
     override this.Validate() = ok()
+    new() = CreateResponse("")
 
 [<ToString; Sealed>]
 type IndexExistsResponse() = 

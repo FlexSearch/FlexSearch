@@ -52,10 +52,10 @@ module SigDocValidator =
     let areEqual givenList expectedList =
         let rec areEqualR gl el lastCheck =
             match gl with
-            | [] -> ok()
+            | [] -> lastCheck >>= fun _ -> ok()
             | _ -> 
                 let check = isEqual (List.head gl) (List.head el) expectedList
-                lastCheck >>= fun _ -> areEqualR (List.tail gl) (List.tail gl) check
+                lastCheck >>= fun _ -> areEqualR (List.tail gl) (List.tail el) check
         let initialCheck = sameLen givenList expectedList
         areEqualR givenList expectedList initialCheck
 
@@ -97,11 +97,21 @@ module SigDocValidator =
                    |> Seq.filter (fun t -> t.IsSubclassOf(typeof<DtoBase>))
                    |> Seq.filter isNotInternal
                    |> Seq.sortBy (fun t -> t.Name)
+    let docWss = defs |> Seq.filter (fun x -> x.Type = "ws")
+                      |> Seq.sortBy (fun x -> x.Name)
+    let coreWss = Assembly.GetAssembly(typeof<Http.IHttpHandler>).GetTypes()
+                  |> Seq.filter (fun t -> not t.IsAbstract && t.GetInterfaces() |> Seq.contains typeof<Http.IHttpHandler>)
+                  |> Seq.filter isNotInternal
+                  |> Seq.sortBy (fun t -> t.Name)
+    let docEnums = defs |> Seq.filter (fun x -> x.Type = "enum")
+                        |> Seq.sortBy (fun x -> x.Name)
+    let coreEnums = Assembly.GetAssembly(typeof<Index>).GetTypes()
+                    |> Seq.filter (fun t -> t.IsSubclassOf(typeof<Enum>))
+                    |> Seq.filter isNotInternal
+                    |> Seq.sortBy (fun t -> t.Name)
 
-    // Actual validation
+    // Execute the actual validation
     let validateDtos() =
-        
-        
         //printDefsVsCores docDtos coreDtos
 
         let compareDto (doc : Definition) (core : Type) =
@@ -111,7 +121,9 @@ module SigDocValidator =
             >>= fun _ -> 
                 core.GetProperties()
                 // Public properties that have getter and setter
-                |> Seq.where (fun p -> p.GetSetMethod() <> null && p.GetGetMethod() <> null)
+                |> Seq.where (fun p -> 
+                    (p.GetSetMethod() <> null && p.GetGetMethod() <> null)
+                    || (p.GetGetMethod() <> null && p.GetGetMethod().IsStatic))
                 |> Seq.map (fun p -> p.Name)
                 |> Seq.sort
                 |> Seq.toList
@@ -120,13 +132,6 @@ module SigDocValidator =
         compareLists docDtos coreDtos compareDto
 
     let validateWss() =
-        let docWss = defs |> Seq.filter (fun x -> x.Type = "ws")
-                          |> Seq.sortBy (fun x -> x.Name)
-        let coreWss = Assembly.GetAssembly(typeof<Http.IHttpHandler>).GetTypes()
-                      |> Seq.filter (fun t -> not t.IsAbstract && t.GetInterfaces() |> Seq.contains typeof<Http.IHttpHandler>)
-                      |> Seq.filter isNotInternal
-                      |> Seq.sortBy (fun t -> t.Name)
-
         //printDefsVsCores docWss coreWss
 
         let compareWs (doc : Definition) (core: Type) =
@@ -144,13 +149,6 @@ module SigDocValidator =
         compareLists docWss coreWss compareWs
 
     let validateEnums() =
-        let docEnums = defs |> Seq.filter (fun x -> x.Type = "enum")
-                            |> Seq.sortBy (fun x -> x.Name)
-        let coreEnums = Assembly.GetAssembly(typeof<Index>).GetTypes()
-                        |> Seq.filter (fun t -> t.IsSubclassOf(typeof<Enum>))
-                        |> Seq.filter isNotInternal
-                        |> Seq.sortBy (fun t -> t.Name)
-        
         //printDefsVsCores docEnums coreEnums
 
         let compareEnum (doc: Definition) (core: Type) =

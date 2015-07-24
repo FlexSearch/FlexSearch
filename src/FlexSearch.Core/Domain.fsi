@@ -507,7 +507,7 @@ Name of the analyzer
 #endif
     member AnalyzerName : string with get, set
         
-#if prop_TokenizerName
+#if prop_Tokenizer
 #endif
     member Tokenizer : Tokenizer with get, set
   
@@ -584,17 +584,17 @@ AUTO
 #endif
     member FieldType : FieldDataType with get, set
 
-#if prop_FieldSimilarity        
+#if prop_Similarity        
 AUTO
 #endif
     member Similarity : FieldSimilarity with get, set
 
-#if prop_FieldIndexOptions        
+#if prop_IndexOptions        
 AUTO
 #endif
     member IndexOptions : FieldIndexOptions with get, set
 
-#if prop_FieldTermVector        
+#if prop_TermVector        
 AUTO
 #endif
     member TermVector : FieldTermVector with get, set
@@ -775,6 +775,8 @@ type Document =
     new : unit -> Document
     new : indexName:string * id:string -> Document
     override Validate : unit -> Choice<unit,IMessage>
+    #if prop_Default
+    #endif
     static member Default : Document
 
 #if prop_Fields    
@@ -949,6 +951,8 @@ type AnalysisRequest =
     inherit DtoBase
     new : unit -> AnalysisRequest
 
+    #if prop_Text
+    #endif
     member Text : string with get, set
 // ----------------------------------------------------------------------------
 
@@ -958,7 +962,10 @@ type AnalysisRequest =
 [<ToString; Sealed>]
 type CreateResponse =
     inherit DtoBase
+    new : unit -> CreateResponse
     new : id:string -> CreateResponse
+    #if prop_Id
+    #endif
     member Id : string with get, set
 // ----------------------------------------------------------------------------
 
@@ -968,6 +975,8 @@ type CreateResponse =
 type IndexExistsResponse =
     inherit DtoBase
     new : unit -> IndexExistsResponse
+    #if prop_Exists
+    #endif
     member Exists : bool with get, set
 // ----------------------------------------------------------------------------
 
@@ -978,8 +987,14 @@ type MemoryDetailsResponse =
     inherit DtoBase
     new : unit -> MemoryDetailsResponse
     override Validate : unit -> Choice<unit,IMessage>
+    #if prop_TotalMemory
+    #endif
     member TotalMemory : uint64 with get, set
+    #if prop_Usage
+    #endif
     member Usage : float with get, set
+    #if prop_UsedMemory
+    #endif
     member UsedMemory : int64 with get, set
 
 #if dto_NoBody
