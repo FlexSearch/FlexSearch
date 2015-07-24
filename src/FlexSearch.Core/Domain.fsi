@@ -209,6 +209,9 @@ potentially write more error information to the logs.
 Signifies Shard status
 #endif
 type ShardStatus = 
+    #if opt_Undefined
+    #endif
+    | Undefined = 0
     #if opt_Opening
     #endif
     | Opening = 1
@@ -232,6 +235,9 @@ type ShardStatus =
 Represents the current state of the index.
 #endif
 type IndexStatus = 
+    #if opt_Undefined
+    #endif
+    | Undefined = 0
     #if opt_Opening
     #endif
     | Opening = 1

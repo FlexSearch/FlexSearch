@@ -238,6 +238,7 @@ Search across the index for documents using SQL like query syntax.
 # param_orderby """Order by parameter. Refer to 'Search Query' properties."""
 # param_orderbydirection """Order by Direction parameter. Refer to 'Search Query' properties."""
 # param_returnflatresult """Return flat results parameter. Refer to 'Search Query' properties."""
+# uriparam_id """Name of the FlexSearch index"""
 # description """
 ---
 title: Search APIs
@@ -281,6 +282,7 @@ by the search query."""
 # param_skip """Skip parameter. Refer to 'Search Query' properties."""
 # param_orderby """Order by parameter. Refer to 'Search Query' properties."""
 # param_orderbydirection """Order by Direction parameter. Refer to 'Search Query' properties."""
+# uriparam_id """Name of the FlexSearch index"""
 # description """
 ## TODO
 """

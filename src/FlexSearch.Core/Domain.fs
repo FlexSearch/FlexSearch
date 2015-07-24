@@ -40,6 +40,7 @@ type DirectoryType =
 
 /// Signifies Shard status
 type ShardStatus = 
+    | Undefined = 0
     | Opening = 1
     | Recovering = 2
     | Online = 3
@@ -49,6 +50,7 @@ type ShardStatus =
 
 /// Represents the current state of the index.
 type IndexStatus = 
+    | Undefined = 0
     | Opening = 1
     | Recovering = 2
     | Online = 3

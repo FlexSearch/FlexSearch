@@ -104,7 +104,7 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
 //        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
 type IndexStatusResponse() = 
     inherit DtoBase()
-    member val Status = Unchecked.defaultof<IndexStatus> with get, set
+    member val Status = IndexStatus.Undefined with get, set
     override this.Validate() = ok()
 
 /// Get index status
