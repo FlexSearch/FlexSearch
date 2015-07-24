@@ -1,137 +1,215 @@
 {  
-   "definitions":[  
-      {  
+   "swaggerVersion":"1.2",
+   "basePath":"http://localhost:9800/",
+   "apis":[  ],
+   "models":{  
+      "AnalysisRequest":{  
          "id":"AnalysisRequest",
+         "description":"memberRequest to analyze a text against an analyzer. The reason to force\nmemberthis parameter to request body is to avoid escaping of restricted characters\nmemberin the uri.\nmemberThis is helpful during analyzer testing.\n",
          "required":[  
 
          ],
          "properties":{  
             "Text":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             }
          }
       },
-      {  
+      "Analyzer":{  
          "id":"Analyzer",
+         "description":"An analyzer examines the text of fields and generates a token stream.\n",
          "required":[  
 
          ],
          "properties":{  
             "AnalyzerName":{  
-               "type":"string"
+               "description":"Name of the analyzer\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Filters":{  
+               "description":"Filters to be used by the analyzer.\n",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "$ref":"TokenFilter"
                }
             },
             "Tokenizer":{  
-               "$ref":"Tokenizer"
+               "description":"",
+               "$ref":"Tokenizer",
+               "defaultValue":{  
+                  "TokenizerName":"standard",
+                  "Parameters":{  
+
+                  }
+               }
             }
          }
       },
-      {  
+      "CreateResponse":{  
          "id":"CreateResponse",
+         "description":"",
          "required":[  
 
          ],
          "properties":{  
             "Id":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             }
          }
       },
-      {  
+      "CsvIndexingRequest":{  
          "id":"CsvIndexingRequest",
+         "description":"Represents a request which can be sent to CSV connector to index CSV data.\n",
          "required":[  
             "HasHeaderRecord"
          ],
          "properties":{  
             "HasHeaderRecord":{  
-               "type":"boolean"
+               "description":"Signifies if the passed CSV file(s) has a header record \n    ",
+               "type":"boolean",
+               "defaultValue":false
             },
             "Headers":{  
+               "description":"The headers to be used by each column. This should only be passed when there is\n    no header in the csv file. The first column is always assumed to be id field. Make sure\n    in your array you always offset the column names by 1 position.\n    ",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "type":"string"
                }
             },
             "IndexName":{  
-               "type":"string"
+               "description":"Name of the index\n    ",
+               "type":"string",
+               "defaultValue":""
             },
             "Path":{  
-               "type":"string"
+               "description":"The path of the folder or file to be indexed. The service will pickup all files with \n    .csv extension.\n    ",
+               "type":"string",
+               "defaultValue":""
             }
          }
       },
-      {  
+      "Document":{  
          "id":"Document",
+         "description":"A document represents the basic unit of information which can be added or \nretrieved from the index. A document consists of several fields. A field represents \nthe actual data to be indexed. In database analogy an index can be considered as \na table while a document is a row of that table. Like a table a FlexSearch document \nrequires a fix schema and all fields should have a field type.\n",
          "required":[  
             "Score",
             "TimeStamp"
          ],
          "properties":{  
             "Default":{  
-               "$ref":"Document"
+               "description":"",
+               "$ref":"Document",
+               "defaultValue":{  
+                  "Fields":{  
+
+                  },
+                  "Id":"",
+                  "TimeStamp":0,
+                  "IndexName":"",
+                  "Highlights":[  
+
+                  ],
+                  "Score":0
+               }
             },
             "Fields":{  
+               "description":"Fields to be added to the document for indexing.\n",
                "type":"array",
+               "defaultValue":{  
+
+               },
                "items":{  
                   "type":"string"
                }
             },
             "Highlights":{  
+               "description":"Any matched text highlighted snippets. Note: Only used for results\n",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "type":"string"
                }
             },
             "Id":{  
-               "type":"string"
+               "description":"Unique Id of the document\n",
+               "type":"string",
+               "defaultValue":""
             },
             "IndexName":{  
-               "type":"string"
+               "description":"Name of the index\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Score":{  
+               "description":"Score of the returned document. Note: Only used for results\n",
                "type":"number",
-               "format":"double"
+               "format":"double",
+               "defaultValue":0
             },
             "TimeStamp":{  
+               "description":"Timestamp of the last modification of the document. This field is interpreted \ndifferently during a create and update operation. It also dictates whether and \nunique Id check is to be performed or not. \n\nVersion number semantics\n+ 0 - Don't care about the version and proceed with the operation normally.\n+ -1 - Ensure that the document does not exist (Performs unique Id check).\n+ 1 - Ensure that the document does exist. This is not relevant for create operation.\n> 1 - Ensure that the version matches exactly. This is not relevant for create operation.\n",
                "type":"integer",
-               "format":"int64"
+               "format":"int64",
+               "defaultValue":0
             }
          }
       },
-      {  
+      "DuplicateDetectionReportRequest":{  
          "id":"DuplicateDetectionReportRequest",
+         "description":"",
          "required":[  
             "CutOff"
          ],
          "properties":{  
             "CutOff":{  
+               "description":"",
                "type":"number",
-               "format":"double"
+               "format":"double",
+               "defaultValue":0
             },
             "IndexName":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "ProfileName":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "QueryString":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "SelectionQuery":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "SourceFileName":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             }
          }
       },
-      {  
+      "DuplicateDetectionRequest":{  
          "id":"DuplicateDetectionRequest",
+         "description":"",
          "required":[  
             "DuplicatesCount",
             "MaxRecordsToScan",
@@ -139,34 +217,46 @@
          ],
          "properties":{  
             "DisplayName":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "DuplicatesCount":{  
-               "$ref":"Int16"
+               "description":"",
+               "$ref":"Int16",
+               "defaultValue":32767
             },
             "IndexName":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "MaxRecordsToScan":{  
-               "$ref":"Int16"
-            },
-            "NextId":{  
-               "$ref":"AtomicLong"
+               "description":"",
+               "$ref":"Int16",
+               "defaultValue":32767
             },
             "ProfileName":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "SelectionQuery":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "ThreadCount":{  
+               "description":"",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":1
             }
          }
       },
-      {  
+      "Field":{  
          "id":"Field",
+         "description":"A field is a section of a Document. \n\nFields can contain different kinds of data. A name field, for example, \nis text (character data). A shoe size field might be a floating point number \nso that it could contain memberues like 6 and 9.5. Obviously, the definition of \nfields is flexible (you could define a shoe size field as a text field rather\nthan a floating point number, for example), but if you define your fields correctly, \nFlexSearch will be able to interpret them correctly and your users will get better \nresults when they perform a query.\n\nYou can tell FlexSearch about the kind of data a field contains by specifying its \nfield type. The field type tells FlexSearch how to interpret the field and how \nit can be queried. When you add a document, FlexSearch takes the information in \nthe document’s fields and adds that information to an index. When you perform a \nquery, FlexSearch can quickly consult the index and return the matching documents.\n",
          "required":[  
             "AllowSort",
             "Analyze",
@@ -180,104 +270,172 @@
          ],
          "properties":{  
             "AllowSort":{  
-               "type":"boolean"
+               "description":"If AllowSort is set to true then we will index the field with docmemberues.\n",
+               "type":"boolean",
+               "defaultValue":false
             },
             "Analyze":{  
-               "type":"boolean"
+               "description":"Signifies if the field should be analyzed using an analyzer. \n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "FieldName":{  
-               "type":"string"
+               "description":"Name of the field.\n",
+               "type":"string",
+               "defaultValue":""
             },
             "FieldType":{  
-               "$ref":"FieldDataType"
+               "description":"AUTO\n",
+               "$ref":"FieldDataType",
+               "defaultValue":"Text"
             },
             "Index":{  
-               "type":"boolean"
+               "description":"Signifies if a field should be indexed. A field can only be \nstored without indexing.\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "IndexAnalyzer":{  
-               "type":"string"
+               "description":"Analyzer to be used while indexing.\n",
+               "type":"string",
+               "defaultValue":"standard"
             },
             "IndexOptions":{  
-               "$ref":"FieldIndexOptions"
+               "description":"AUTO\n",
+               "$ref":"FieldIndexOptions",
+               "defaultValue":"DocsAndFreqsAndPositions"
             },
             "OmitNorms":{  
-               "type":"boolean"
+               "description":"If true, omits the norms associated with this field (this disables length \nnormalization and index-time boosting for the field, and saves some memory). \nDefaults to true for all primitive (non-analyzed) field types, such as int, \nfloat, data, bool, and string. Only full-text fields or fields that need an \nindex-time boost need norms.\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "ScriptName":{  
-               "type":"string"
+               "description":"Fields can get their content dynamically through scripts. This is the name of \nthe script to be used for getting field data at index time.\nScript name follows the below convention\nScriptName('param1','param2','param3')\n",
+               "type":"string",
+               "defaultValue":""
             },
             "SearchAnalyzer":{  
-               "type":"string"
+               "description":"Analyzer to be used while searching.\n",
+               "type":"string",
+               "defaultValue":"standard"
             },
             "Similarity":{  
-               "$ref":"FieldSimilarity"
+               "description":"AUTO\n",
+               "$ref":"FieldSimilarity",
+               "defaultValue":"TFIDF"
             },
             "Store":{  
-               "type":"boolean"
+               "description":"Signifies if a field should be stored so that it can retrieved\nwhile searching.\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "TermVector":{  
-               "$ref":"FieldTermVector"
+               "description":"AUTO\n",
+               "$ref":"FieldTermVector",
+               "defaultValue":"DoNotStoreTermVector"
             }
          }
       },
-      {  
+      "HighlightOption":{  
          "id":"HighlightOption",
+         "description":"Used for configuring the settings for text highlighting in the search results\n",
          "required":[  
             "FragmentsToReturn"
          ],
          "properties":{  
             "FragmentsToReturn":{  
+               "description":"Total number of fragments to return per document\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":2
             },
             "HighlightedFields":{  
+               "description":"The fields to be used for text highlighting\n",
                "type":"array",
                "items":{  
                   "type":"string"
                }
             },
             "PostTag":{  
-               "type":"string"
+               "description":"Post tag to represent the ending of the highlighted word\n",
+               "type":"string",
+               "defaultValue":"</B>"
             },
             "PreTag":{  
-               "type":"string"
+               "description":"Pre tag to represent the ending of the highlighted word\n",
+               "type":"string",
+               "defaultValue":"<B>"
             }
          }
       },
-      {  
+      "Index":{  
          "id":"Index",
+         "description":"FlexSearch index is a logical index built on top of Lucene’s index in a manner \nto support features like schema and sharding. So in this sense a FlexSearch \nindex consists of multiple Lucene’s index. Also, each FlexSearch shard is a memberid \nLucene index.\n\nIn case of a database analogy an index represents a table in a database where \none has to define a schema upfront before performing any kind of operation on \nthe table. There are various properties that can be defined at the index creation \ntime. Only IndexName is a mandatory property, though one should always define \nFields in an index to make any use of it.\n\nBy default a newly created index stays off-line. This is by design to force the \nuser to enable an index before using it.\n",
          "required":[  
             "Online"
          ],
          "properties":{  
             "Fields":{  
+               "description":"Fields to be used in index.\n",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "$ref":"Field"
                }
             },
             "IndexConfiguration":{  
-               "$ref":"IndexConfiguration"
+               "description":"",
+               "$ref":"IndexConfiguration",
+               "defaultValue":{  
+                  "CommitTimeSeconds":60,
+                  "CommitEveryNFlushes":3,
+                  "CommitOnClose":true,
+                  "AutoCommit":true,
+                  "DirectoryType":"MemoryMapped",
+                  "DefaultWriteLockTimeout":1000,
+                  "RamBufferSizeMb":100,
+                  "MaxBufferedDocs":-1,
+                  "RefreshTimeMilliseconds":500,
+                  "AutoRefresh":true,
+                  "IndexVersion":"Lucene_5_0_0",
+                  "UseBloomFilterForId":true,
+                  "DefaultFieldSimilarity":"TFIDF"
+               }
             },
             "IndexName":{  
-               "type":"string"
+               "description":"Name of the index\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Online":{  
-               "type":"boolean"
+               "description":"Signifies if the index is on-line or not? An index has to be on-line in order to \nenable searching over it.\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "SearchProfiles":{  
+               "description":"Search Profiles\n",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "$ref":"SearchQuery"
                }
             },
             "ShardConfiguration":{  
-               "$ref":"ShardConfiguration"
+               "description":"",
+               "$ref":"ShardConfiguration",
+               "defaultValue":{  
+                  "ShardCount":1
+               }
             }
          }
       },
-      {  
+      "IndexConfiguration":{  
          "id":"IndexConfiguration",
+         "description":"Allows to control various Index related settings.\n",
          "required":[  
             "AutoCommit",
             "AutoRefresh",
@@ -295,76 +453,109 @@
          ],
          "properties":{  
             "AutoCommit":{  
-               "type":"boolean"
+               "description":"Determines whether to enable auto commit functionality or not\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "AutoRefresh":{  
-               "type":"boolean"
+               "description":"Determines whether to enable auto refresh or not\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "CommitEveryNFlushes":{  
+               "description":"Determines how often the data be committed to the physical medium. Commits are \nmore expensive than flushes so keep the setting as high as possilbe. Making\nthis setting too high will result in excessive ram usage. \n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":3
             },
             "CommitOnClose":{  
-               "type":"boolean"
+               "description":"Determines whether to commit first before closing an index\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "CommitTimeSeconds":{  
+               "description":"The amount of time in seconds that FlexSearch should wait before committing \nchanges to the disk. This is only used if no commits have happended in the\nset time period otherwise CommitEveryNFlushes takes care of commits\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":60
             },
             "DefaultFieldSimilarity":{  
-               "$ref":"FieldSimilarity"
+               "description":"Similarity defines the components of Lucene scoring. Similarity determines how \nLucene weights terms and Lucene interacts with Similarity at both index-time \nand query-time.\n",
+               "$ref":"FieldSimilarity",
+               "defaultValue":"TFIDF"
             },
             "DefaultWriteLockTimeout":{  
+               "description":"The default maximum time to wait for a write lock (in milliseconds).\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":1000
             },
             "DirectoryType":{  
-               "$ref":"DirectoryType"
+               "description":"A Directory is a flat list of files. Files may be written once, when they are \ncreated. Once a file is created it may only be opened for read, or deleted. \nRandom access is permitted both when reading and writing.\n",
+               "$ref":"DirectoryType",
+               "defaultValue":"MemoryMapped"
             },
             "IndexVersion":{  
-               "$ref":"IndexVersion"
+               "description":"Corresponds to Lucene Index version. There will always be a default codec \nassociated with each index version.\n",
+               "$ref":"IndexVersion",
+               "defaultValue":"Lucene_5_0_0"
             },
             "MaxBufferedDocs":{  
+               "description":"The number of buffered added documents that will trigger a flush if enabled.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":-1
             },
             "RamBufferSizeMb":{  
+               "description":"Determines the amount of RAM that may be used for buffering added documents and \ndeletions before they are flushed to the Directory.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":100
             },
             "RefreshTimeMilliseconds":{  
+               "description":"The amount of time in milliseconds that FlexSearch should wait before reopening \nindex reader. This helps in keeping writing and real time aspects of the engine \nseparate.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":500
             },
             "UseBloomFilterForId":{  
-               "type":"boolean"
+               "description":"Signifies if bloom filter should be used for encoding Id field.\n",
+               "type":"boolean",
+               "defaultValue":true
             }
          }
       },
-      {  
+      "IndexExistsResponse":{  
          "id":"IndexExistsResponse",
+         "description":"",
          "required":[  
             "Exists"
          ],
          "properties":{  
             "Exists":{  
-               "type":"boolean"
+               "description":"",
+               "type":"boolean",
+               "defaultValue":false
             }
          }
       },
-      {  
+      "IndexStatusResponse":{  
          "id":"IndexStatusResponse",
+         "description":"",
          "required":[  
             "Status"
          ],
          "properties":{  
             "Status":{  
-               "$ref":"IndexStatus"
+               "description":"",
+               "$ref":"IndexStatus",
+               "defaultValue":"Undefined"
             }
          }
       },
-      {  
+      "Job":{  
          "id":"Job",
+         "description":"memberUsed by long running processes. All long running FlexSearch operations create\nmemberan instance of Job and return the Id to the caller. This Id can be used by the\nmembercaller to check the status of the job.\n///\nmemberNOTE: Job information is not persistent\n",
          "required":[  
             "FailedItems",
             "ProcessedItems",
@@ -373,30 +564,43 @@
          ],
          "properties":{  
             "FailedItems":{  
+               "description":"memberItems which have failed processing.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":0
             },
             "JobId":{  
-               "type":"string"
+               "description":"memberUnique Id of the Job\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Message":{  
-               "type":"string"
+               "description":"memberAny message that is associated with the job.\n",
+               "type":"string",
+               "defaultValue":""
             },
             "ProcessedItems":{  
+               "description":"memberItems already processed.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":0
             },
             "Status":{  
-               "$ref":"JobStatus"
+               "description":"memberOverall status of the job.\n",
+               "$ref":"JobStatus",
+               "defaultValue":"Initializing"
             },
             "TotalItems":{  
+               "description":"memberTotal items to be processed as a part of the current job.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":0
             }
          }
       },
-      {  
+      "MemoryDetailsResponse":{  
          "id":"MemoryDetailsResponse",
+         "description":"",
          "required":[  
             "TotalMemory",
             "Usage",
@@ -404,20 +608,27 @@
          ],
          "properties":{  
             "TotalMemory":{  
-               "$ref":"UInt64"
+               "description":"",
+               "$ref":"UInt64",
+               "defaultValue":0
             },
             "Usage":{  
+               "description":"",
                "type":"number",
-               "format":"double"
+               "format":"double",
+               "defaultValue":0
             },
             "UsedMemory":{  
+               "description":"",
                "type":"integer",
-               "format":"int64"
+               "format":"int64",
+               "defaultValue":0
             }
          }
       },
-      {  
+      "NoBody":{  
          "id":"NoBody",
+         "description":"",
          "required":[  
 
          ],
@@ -425,22 +636,27 @@
 
          }
       },
-      {  
+      "SearchProfileTestDto":{  
          "id":"SearchProfileTestDto",
+         "description":"",
          "required":[  
 
          ],
          "properties":{  
             "SearchProfile":{  
-               "type":"string"
+               "description":"",
+               "type":"string",
+               "defaultValue":""
             },
             "SearchQuery":{  
+               "description":"",
                "$ref":"SearchQuery"
             }
          }
       },
-      {  
+      "SearchQuery":{  
          "id":"SearchQuery",
+         "description":"memberSearch query is used for searching over a FlexSearch index. This provides\nmembera consistent syntax to execute various types of queries. The syntax is similar\nmemberto the SQL syntax. This was done on purpose to reduce the learning curve.\n",
          "required":[  
             "Count",
             "CutOff",
@@ -452,156 +668,415 @@
          ],
          "properties":{  
             "Columns":{  
+               "description":"Columns to be returned as part of results.\n+ *  - return all columns\n+ [] - return no columns\n+ [\"columnName\"] -  return specific column\n",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "type":"string"
                }
             },
             "Count":{  
+               "description":"Count of results to be returned\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":10
             },
             "CutOff":{  
+               "description":"Can be used to remove results lower than a certain threshold.\nThis works in conjunction with the score of the top record as\nall the other records are filtered using the score set by the\ntop scoring record.\n",
                "type":"number",
-               "format":"double"
+               "format":"double",
+               "defaultValue":0
             },
             "DistinctBy":{  
-               "type":"string"
+               "description":"Can be used to return records with distinct memberues for \nthe given field. Works in a manner similar to Sql distinct by clause.\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Highlights":{  
-               "$ref":"HighlightOption"
+               "description":"AUTO\n",
+               "$ref":"HighlightOption",
+               "defaultValue":{  
+                  "FragmentsToReturn":2,
+                  "HighlightedFields":[  
+
+                  ],
+                  "PostTag":"</B>",
+                  "PreTag":"<B>"
+               }
             },
             "IndexName":{  
-               "type":"string"
+               "description":"Name of the index\n",
+               "type":"string",
+               "defaultValue":""
             },
             "OrderBy":{  
-               "type":"string"
+               "description":"Can be used to order the results by score or specific field.\n",
+               "type":"string",
+               "defaultValue":"score"
             },
             "OrderByDirection":{  
-               "type":"string"
+               "description":"Can be used to determine the sort order.\n",
+               "type":"string",
+               "defaultValue":"asc"
             },
             "OverrideProfileOptions":{  
-               "type":"boolean"
+               "description":"Can be used to override the configuration saved in the search profile\nwith the one which is passed as the Search Query\n",
+               "type":"boolean",
+               "defaultValue":false
             },
             "QueryName":{  
-               "type":"string"
+               "description":"Unique name of the query. This is only required if you are setting up a \nsearch profile.\n",
+               "type":"string",
+               "defaultValue":""
             },
             "QueryString":{  
-               "type":"string"
+               "description":"Query string to be used for searching\n",
+               "type":"string",
+               "defaultValue":""
             },
             "ReturnEmptyStringForNull":{  
-               "type":"boolean"
+               "description":"Returns an empty string for null memberues saved in the index rather than\nthe null constant\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "ReturnFlatResult":{  
-               "type":"boolean"
+               "description":"If true will return collapsed search results which are in tabular form.\nFlat results enable easy binding to a grid but grouping results is tougher\nwith Flat result.\n",
+               "type":"boolean",
+               "defaultValue":false
             },
             "ReturnScore":{  
-               "type":"boolean"
+               "description":"If true then scores are returned as a part of search result.\n",
+               "type":"boolean",
+               "defaultValue":true
             },
             "SearchProfile":{  
-               "type":"string"
+               "description":"Profile Name to be used for profile based searching.\n",
+               "type":"string",
+               "defaultValue":""
             },
             "SearchProfileScript":{  
-               "type":"string"
+               "description":"Script which can be used to select a search profile. This can help in\ndynamic selection of search profile based on the incoming data.\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Skip":{  
+               "description":"Used to enable paging and skip certain pre-fetched results.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":0
             }
          }
       },
-      {  
+      "SearchResults":{  
          "id":"SearchResults",
+         "description":"memberRepresents the result returned by FlexSearch for a given search query.\n",
          "required":[  
             "RecordsReturned",
             "TotalAvailable"
          ],
          "properties":{  
             "Documents":{  
+               "description":"memberDocuments which are returned as a part of search response.\n",
                "type":"array",
+               "defaultValue":[  
+
+               ],
                "items":{  
                   "$ref":"Document"
                }
             },
             "RecordsReturned":{  
+               "description":"memberTotal number of records returned.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":0
             },
             "TotalAvailable":{  
+               "description":"memberTotal number of records available on the server. This could be \nmembergreater than the returned results depending upon the requested \nmemberdocument count.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":0
             }
          }
       },
-      {  
+      "ShardConfiguration":{  
          "id":"ShardConfiguration",
+         "description":"Allows to control various Index Shards related settings.\n",
          "required":[  
             "ShardCount"
          ],
          "properties":{  
             "ShardCount":{  
+               "description":"Total number of shards to be present in the given index.\n",
                "type":"integer",
-               "format":"int32"
+               "format":"int32",
+               "defaultValue":1
             }
          }
       },
-      {  
+      "SqlIndexingRequest":{  
          "id":"SqlIndexingRequest",
+         "description":"Represents a request which can be sent to Sql connector to index SQL data\n",
          "required":[  
             "CreateJob",
             "ForceCreate"
          ],
          "properties":{  
             "ConnectionString":{  
-               "type":"string"
+               "description":"Connection string used to connect to the server\n    ",
+               "type":"string",
+               "defaultValue":""
             },
             "CreateJob":{  
-               "type":"boolean"
+               "description":"Signifies if the connector should create a job for the task and return a jobId which can be used\n    to check the status of the job.\n    ",
+               "type":"boolean",
+               "defaultValue":false
             },
             "ForceCreate":{  
-               "type":"boolean"
+               "description":"Signifies if all updates to the index are create\n    ",
+               "type":"boolean",
+               "defaultValue":true
             },
             "IndexName":{  
-               "type":"string"
+               "description":"Name of the index\n    ",
+               "type":"string",
+               "defaultValue":""
             },
             "Query":{  
-               "type":"string"
+               "description":"The query to be used to fetch data from Sql server\n    ",
+               "type":"string",
+               "defaultValue":""
             }
          }
       },
-      {  
+      "TokenFilter":{  
          "id":"TokenFilter",
+         "description":"Filters consume input and produce a stream of tokens. In most cases a filter looks \nat each token in the stream sequentially and decides whether to pass it along, \nreplace it or discard it. A filter may also do more complex analysis by looking \nahead to consider multiple tokens at once, although this is less common. \n",
          "required":[  
 
          ],
          "properties":{  
             "FilterName":{  
-               "type":"string"
+               "description":"The name of the filter. Some pre-defined filters are the following-\n+ Ascii Folding Filter\n+ Standard Filter\n+ Beider Morse Filter\n+ Double Metaphone Filter\n+ Caverphone2 Filter\n+ Metaphone Filter\n+ Refined Soundex Filter\n+ Soundex Filter\nFor more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/\n",
+               "type":"string",
+               "defaultValue":""
             },
             "Parameters":{  
+               "description":"Parameters required by the filter.\n",
                "type":"array",
+               "defaultValue":{  
+
+               },
                "items":{  
                   "type":"string"
                }
             }
          }
       },
-      {  
+      "Tokenizer":{  
          "id":"Tokenizer",
+         "description":"memberTokenizer breaks up a stream of text into tokens, where each token is a sub-sequence\nof the characters in the text. An analyzer is aware of the field it is configured \nfor, but a tokenizer is not.\n",
          "required":[  
 
          ],
          "properties":{  
             "Parameters":{  
+               "description":"Parameters required by the tokenizer.\n",
                "type":"array",
+               "defaultValue":{  
+
+               },
                "items":{  
                   "type":"string"
                }
             },
             "TokenizerName":{  
-               "type":"string"
+               "description":"The name of the tokenizer. Some pre-defined tokenizers are the following-\n+ Standard Tokenizer\n+ Classic Tokenizer\n+ Keyword Tokenizer\n+ Letter Tokenizer\n+ Lower Case Tokenizer\n+ UAX29 URL Email Tokenizer\n+ White Space Tokenizer\nFor more details refer to http://flexsearch.net/docs/concepts/understanding-analyzers-tokenizers-and-filters/\n",
+               "type":"string",
+               "defaultValue":"standard"
+            }
+         }
+      },
+      "DirectoryType":{  
+         "id":"DirectoryType",
+         "description":"A Directory is a flat list of files. Files may be written once, when they are \ncreated. Once a file is created it may only be opened for read, or deleted. \nRandom access is permitted both when reading and writing.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "DirectoryType":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "FileSystem",
+                  "MemoryMapped",
+                  "Ram"
+               ]
+            }
+         }
+      },
+      "FieldDataType":{  
+         "id":"FieldDataType",
+         "description":"The field type defines how FlexSearch should interpret data in a field and how \nthe field can be queried. There are many field types included with FlexSearch \nby default and custom types can also be defined.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "FieldDataType":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "Int",
+                  "Double",
+                  "ExactText",
+                  "Text",
+                  "Highlight",
+                  "Bool",
+                  "Date",
+                  "DateTime",
+                  "Custom",
+                  "Stored",
+                  "Long"
+               ]
+            }
+         }
+      },
+      "FieldIndexOptions":{  
+         "id":"FieldIndexOptions",
+         "description":"Controls how much information is stored in the postings lists.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "FieldIndexOptions":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "DocsOnly",
+                  "DocsAndFreqs",
+                  "DocsAndFreqsAndPositions",
+                  "DocsAndFreqsAndPositionsAndOffsets"
+               ]
+            }
+         }
+      },
+      "FieldSimilarity":{  
+         "id":"FieldSimilarity",
+         "description":"Similarity defines the components of Lucene scoring. Similarity determines how \nLucene weights terms, and Lucene interacts with Similarity at both index-time \nand query-time.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "FieldSimilarity":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "BM25",
+                  "TFIDF"
+               ]
+            }
+         }
+      },
+      "FieldTermVector":{  
+         "id":"FieldTermVector",
+         "description":"These options instruct FlexSearch to maintain full term vectors for each document, \noptionally including the position and offset information for each term occurrence \nin those vectors. These can be used to accelerate highlighting and other ancillary \nfunctionality, but impose a substantial cost in terms of index size. These can \nonly be configured for custom field type.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "FieldTermVector":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "DoNotStoreTermVector",
+                  "StoreTermVector",
+                  "StoreTermVectorsWithPositions",
+                  "StoreTermVectorsWithPositionsandOffsets"
+               ]
+            }
+         }
+      },
+      "IndexStatus":{  
+         "id":"IndexStatus",
+         "description":"Represents the current state of the index.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "IndexStatus":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "Opening",
+                  "Recovering",
+                  "Online",
+                  "OnlineFollower",
+                  "Offline",
+                  "Closing",
+                  "Faulted"
+               ]
+            }
+         }
+      },
+      "IndexVersion":{  
+         "id":"IndexVersion",
+         "description":"Corresponds to Lucene Index version. There will always be a default codec \nassociated with each index version.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "IndexVersion":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "Lucene_4_x_x",
+                  "Lucene_5_0_0"
+               ]
+            }
+         }
+      },
+      "JobStatus":{  
+         "id":"JobStatus",
+         "description":"Represents the status of job.\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "JobStatus":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "Initializing",
+                  "Initialized",
+                  "InProgress",
+                  "Completed",
+                  "CompletedWithErrors"
+               ]
+            }
+         }
+      },
+      "ShardStatus":{  
+         "id":"ShardStatus",
+         "description":"Signifies Shard status\n",
+         "required":[  
+
+         ],
+         "properties":{  
+            "ShardStatus":{  
+               "type":"string",
+               "enum":[  
+                  "Undefined",
+                  "Opening",
+                  "Recovering",
+                  "Online",
+                  "Offline",
+                  "Closing",
+                  "Faulted"
+               ]
             }
          }
       }
-   ]
+   }
 }

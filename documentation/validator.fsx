@@ -25,6 +25,7 @@ module SigDocValidator =
         | IsEqual of expected : 'T * given : 'T * context : 'U
         | SameLength of expected : 'T seq * given : 'U seq
         | NotEmpty of given : string * context : 'U
+        | InList of item : 'T * list : 'T seq
         interface IMessage with
             member this.LogProperty() = (MessageKeyword.Default, MessageLevel.Verbose)
             member this.OperationMessage() = 
@@ -35,6 +36,7 @@ module SigDocValidator =
                         "Expected length to be equal to %d, but found %d.\nGiven list:%A\nExpected List:%A" 
                         (expected |> Seq.length) (given |> Seq.length) given expected
                 | NotEmpty(_,context) -> sprintf "The given string should not be empty:%A" context
+                | InList(item,list) -> sprintf "The given item '%A' is not in the list: %A" item list
                 |> caseToMsg this
 
     let isEqual given expected context = 
@@ -48,6 +50,10 @@ module SigDocValidator =
     let sameLen givenList expectedList =
         if (givenList |> Seq.length) = (expectedList |> Seq.length) then ok()
         else fail <| SameLength(expectedList, givenList)
+
+    let isInList item (list : 'a seq) =
+        if list |> Seq.exists (fun x -> x = item) then ok()
+        else fail <| InList(item, list)
 
     let areEqual givenList expectedList =
         let rec areEqualR gl el lastCheck =
@@ -69,10 +75,19 @@ module SigDocValidator =
                 (fun acc value -> acc >>= fun _ -> compareFunc (fst value) (snd value))
                 (ok())
 
-    let getMethodAndUriFromName (name :string) =
-        let r = name.Split('-')
-        if r.Length <> 2 then failwith <| "HTTP name format not recognized: " + name
-        else (r.[0], r.[1])
+    let getMethodAndUriFromType (typ :Type) =
+        typ.GetCustomAttribute(typeof<NameAttribute>) 
+        :?> NameAttribute
+        |> fun a -> a.Name
+        |> fun name ->
+            let r = name.Split('-')
+            if r.Length <> 2 then failwith <| "HTTP name format not recognized: " + name
+            else (r.[0], r.[1])
+
+    let getUriParams (uri : string) =
+        uri.Split('/') 
+        |> Seq.filter (fun x -> x.Length > 0 && x.[0] = ':')
+        |> Seq.map (fun x -> x.Substring(1))
 
     let isNotInternal (t : Type) = t.GetCustomAttribute(typeof<InternalAttribute>) = null
 
@@ -139,12 +154,14 @@ module SigDocValidator =
             isEqual doc.Type "ws" doc
             >>= fun _ -> isEqual doc.Name core.Name core
             >>= fun _ ->
-                let httpProps = core.GetCustomAttribute(typeof<NameAttribute>) 
-                                :?> NameAttribute
-                                |> fun a -> a.Name
-                                |> getMethodAndUriFromName
-                notEmpty (fst httpProps) ("HTTP Method", core)
-                >>= fun _ -> notEmpty (snd httpProps) ("HTTP URI", core)
+                let (meth, uri) = core |> getMethodAndUriFromType
+                notEmpty meth ("HTTP Method", core)
+                >>= fun _ -> notEmpty uri ("HTTP URI", core)
+                // Check that the URI parameter names actually match the ones in the uri
+                >>= fun _ -> 
+                    let uriParams = getUriParams uri
+                    doc.UriParams.Keys
+                    |> Seq.fold (fun acc value -> acc >>= fun _ -> isInList value uriParams) (ok())
 
         compareLists docWss coreWss compareWs
 

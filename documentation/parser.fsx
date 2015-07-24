@@ -10,10 +10,8 @@ open System.Reflection
 
 [<AutoOpen>]
 module ScriptSettings = 
-    //let corePath = "../src/FlexSearch.Core"
-    //let buildPath = "../src/build"
-    let corePath = @"C:\git\FlexSearch\src\FlexSearch.Core"
-    let buildPath = @"C:\git\FlexSearch\src\build"
+    let corePath = __SOURCE_DIRECTORY__ + "/../src/FlexSearch.Core"
+    let buildPath = __SOURCE_DIRECTORY__ +  "/../src/build"
 
 // ----------------------------------------------------------------------------
 // Signature Documentation Parser
@@ -33,14 +31,14 @@ module SigDocParser =
         member val Name = defString with get, set
         member val Summary = defString with get, set
         member val Method = defString with get, set
-        member val Uri = defString with get, set
+        member val UriParams = defStringDict() with get, set
         member val Params = defStringDict() with get, set
         member val Description = defString with get, set
         member val Examples = new List<string>() with get, set
         member val Options = defStringDict() with get, set
         member val Properties = defStringDict() with get, set
         override this.ToString() = 
-            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.Uri this.Params this.Description this.Examples this.Options this.Properties
+            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.UriParams this.Params this.Description this.Examples this.Options this.Properties
 
     let tryAdd (dict : Dictionary<string,string>) item = 
         try dict.Add item
@@ -74,9 +72,11 @@ module SigDocParser =
     let meth =
         pstring "# meth" >>. ws >>. quote1Text
         |>> fun x -> fun (def : Definition) -> def.Method <- x
-    let uri = 
-        pstring "# uri" >>. ws >>. quote1Text
-        |>> fun x -> fun (def : Definition) -> def.Uri <- x
+    let uriparam = 
+        pstring "# uriparam_"
+        >>. manyCharsTill anyChar spaces1 
+        .>>. quote3Text
+        |>> fun x -> fun (def : Definition) -> x |> tryAdd def.UriParams
     let param =
         pstring "# param_"
         >>. manyCharsTill anyChar spaces1 
@@ -102,7 +102,7 @@ module SigDocParser =
         |>> fun x -> fun (def: Definition) -> x |> tryAdd def.Options
 
     // Combine the parsers into a choice
-    let infoCode = [meth; uri; param; description; examples; dtoProps; enumOpt]
+    let infoCode = [meth; uriparam; param; description; examples; dtoProps; enumOpt]
     let ignoredContent : Parser<Definition -> unit, unit> = 
         manyCharsTill anyChar ((followedBy <| (pstring "#")) <|> eof)
         |>> fignore
