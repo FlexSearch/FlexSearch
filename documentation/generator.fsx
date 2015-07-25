@@ -85,7 +85,7 @@ module SwaggerGenerator =
             let api = new Api()
             api.Description <- ws.Description
             let (meth,uri) = handler |> getMethodAndUriFromType
-            api.Path <- uri
+            api.Path <- uri |> toSwaggerUri
             api.Operations <- 
                 // Create an Operation for each HTTP method
                 meth.Split('|')
