@@ -111,7 +111,6 @@ module SwaggerGenerator =
                             sp.ParamType <- ParameterType.Body
                             sp.ParameterModel <- bodyType
                             sp.DefaultValue <- bodyType.GetConstructor([||]).Invoke([||])
-                            sp.Required <- true
                             [sp] |> List.toSeq
                         else
                             ws.Params 
@@ -122,7 +121,6 @@ module SwaggerGenerator =
                                 sp.ParamType <- ParameterType.Query
                                 sp.ParameterModel <- bodyType
                                 sp.DefaultValue <- bodyType.GetConstructor([||]).Invoke([||])
-                                sp.Required <- true
                                 sp)
                         |> fun pars -> pars.ToList()
                         
