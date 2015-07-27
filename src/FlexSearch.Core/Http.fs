@@ -253,6 +253,10 @@ type IServer =
     abstract Start : unit -> unit
     abstract Stop : unit -> unit
 
+type ExtendedContentTypeProvider() as this = 
+    inherit Microsoft.Owin.StaticFiles.ContentTypes.FileExtensionContentTypeProvider()
+    do this.Mappings.Add(".json", "application/json")
+
 /// Owin katana server
 [<Sealed>]
 type OwinServer(httpModule : Dictionary<string, IHttpHandler>, ?port0 : int) = 
@@ -299,6 +303,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         let fileServerOptions = new FileServerOptions()
         fileServerOptions.EnableDirectoryBrowsing <- true
         fileServerOptions.EnableDefaultFiles <- true
+        fileServerOptions.StaticFileOptions.ContentTypeProvider <- new ExtendedContentTypeProvider()
         fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder)
         fileServerOptions.RequestPath <- new PathString(@"/portal")
         app.UseFileServer(fileServerOptions) |>  ignore
