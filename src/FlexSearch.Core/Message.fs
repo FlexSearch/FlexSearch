@@ -189,7 +189,7 @@ type SearchMessage =
     | DataCannotBeParsed of fieldName : string * expectedDataType : string
     | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
-    | QueryStringParsingError of error : string
+    | QueryStringParsingError of error : string * queryString : string
     | MethodCallParsingError of error : string
     | UnknownSearchProfile of indexName : string * profileName : string
     | PurelyNegativeQueryNotSupported
@@ -208,7 +208,7 @@ type SearchMessage =
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
             | QueryOperatorFieldTypeNotSupported(f) -> 
                 sprintf "Query operator field type not supported for field '%s'" f
-            | QueryStringParsingError(e) -> sprintf "Query string parsing error: \n%s" e
+            | QueryStringParsingError(e,q) -> sprintf "Query string parsing error: \n%s\n\nQuery String:\n%s" e q
             | MethodCallParsingError(e) -> sprintf "Unable to parse the method call: \n%s" e
             | UnknownSearchProfile(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
             | PurelyNegativeQueryNotSupported -> "Purely negative queries (not top query) not supported"
