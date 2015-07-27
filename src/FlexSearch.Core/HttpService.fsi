@@ -233,6 +233,7 @@ type GetJobByIdHandler =
 Search across the index for documents using SQL like query syntax.
 {{note: Any parameter passed as part of query string takes precedence over the same parameter in the request body.}}"""
 # param_q """Short hand for 'QueryString'."""
+# param_c """Columns to be retrieved. Use * to retrieve all columns."""
 # param_count """Count parameter. Refer to 'Search Query' properties."""
 # param_skip """Skip parameter. Refer to 'Search Query' properties."""
 # param_orderby """Order by parameter. Refer to 'Search Query' properties."""
