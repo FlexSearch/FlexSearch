@@ -119,8 +119,7 @@ module SwaggerGenerator =
                                 sp.Name <- kv.Key
                                 sp.Description <- kv.Value
                                 sp.ParamType <- ParameterType.Query
-                                sp.ParameterModel <- bodyType
-                                sp.DefaultValue <- bodyType.GetConstructor([||]).Invoke([||])
+                                sp.ParameterModel <- typeof<string>
                                 sp)
                         |> fun pars -> pars.ToList()
                         
