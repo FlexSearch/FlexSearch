@@ -14,6 +14,7 @@
 /// <reference path="../app/views/search/searchSettings.ts" />
 /// <reference path="../app/views/dashboard/cluster.ts" />
 /// <reference path="../app/views/dashboard/indexDetails.ts" />
+/// <reference path="../app/views/swagger/swagger.ts" />
 
 module flexportal {
   'use strict';
@@ -40,7 +41,7 @@ module flexportal {
   }
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 
-    'ui.router', 'chart.js', 'jsonFormatter'])
+    'ui.router', 'chart.js', 'jsonFormatter', 'swaggerUi'])
     // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
@@ -55,6 +56,7 @@ module flexportal {
     .controller('ErrorController', ErrorController)
     .controller('ClusterController', ClusterController)
     .controller('IndexDetailsController', ["$scope", "$stateParams", IndexDetailsController])
+    .controller('SwaggerController', SwaggerController)
     
     // Services
     .service('datePrinter', function() {
@@ -170,6 +172,14 @@ module flexportal {
           parent: 'dashboard',
           controller: 'IndexDetailsController',
           templateUrl: "app/views/dashboard/indexDetails.html"
+        })
+        
+        // Swagger
+        .state('swagger', {
+          url: "^/swagger",
+          parent: 'main',
+          controller: 'SwaggerController',
+          templateUrl: "app/views/swagger/swagger.html"
         })
     });
 }

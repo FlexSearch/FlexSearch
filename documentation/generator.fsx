@@ -6,8 +6,6 @@
 #r "../src/build/Lib/swagger.objectmodel.dll"
 #r "../src/build/Lib/nancy.swagger.dll"
 
-namespace FlexSearch
-
 open System
 open System.IO
 open System.Collections.Generic
@@ -62,6 +60,12 @@ module SwaggerGenerator =
             |> Seq.iter (fun kv -> 
                 kv.Value.Description <- def.Properties |> valFromKey kv.Key def
                 kv.Value.DefaultValue <- coreType |> propVal instance kv.Key)
+
+            // This is an exception for the Document dto that has a circular 
+            // reference to itself. Swagger UI does not support this, therefore
+            // I will remove that property
+            if def.Name = "Document" then
+                model.Properties.Remove("Default") |> ignore
 
             model
         with
@@ -147,6 +151,14 @@ module SwaggerGenerator =
                      |> Seq.map (fun x -> enumToSwaggerModel (fst x) (snd x))
     let wsApis() = coreWss |> Seq.zip docWss
                  |> Seq.map (fun x -> wsToSwaggerApi (fst x) (snd x))
+                 // Concatenate the operations of the webservices that have the same uri
+                 |> Seq.groupBy (fun x -> x.Path)
+                 |> Seq.map (fun (key,wss) ->
+                        let ws1 = wss |> Seq.head
+                        ws1.Operations <-
+                            wss 
+                            |> Seq.fold (fun acc value -> acc |> Seq.append value.Operations) Seq.empty
+                        ws1)
 
     let generateApiDeclaration() =
         let apiDecl = new ApiDeclaration()

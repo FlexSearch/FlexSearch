@@ -14,12 +14,14 @@
     "angular-ui-router": "~0.2.15",
     "angular-chart.js": "~0.7.2",
     "json-formatter": "~0.3.0",
-    "underscore": "~1.8.3"
+    "underscore": "~1.8.3",
+    "angular-swagger-ui": "~0.1.6"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0"
   },
   "resolutions": {
-    "angular-material": "~0.9.8"
+    "angular-material": "~0.9.8",
+    "angular": "~1.4.0"
   }
 }
