@@ -15,6 +15,7 @@
 /// <reference path="../app/views/dashboard/cluster.ts" />
 /// <reference path="../app/views/dashboard/indexDetails.ts" />
 /// <reference path="../app/views/swagger/swagger.ts" />
+/// <reference path="../app/views/analyzer/analyzerTest.ts" />
 
 module flexportal {
   'use strict';
@@ -57,6 +58,7 @@ module flexportal {
     .controller('ClusterController', ClusterController)
     .controller('IndexDetailsController', ["$scope", "$stateParams", IndexDetailsController])
     .controller('SwaggerController', SwaggerController)
+    .controller('AnalyzerTestController', ["$scope", "flexClient", AnalyzerTestController])
     
     // Services
     .service('datePrinter', function() {
@@ -180,6 +182,14 @@ module flexportal {
           parent: 'main',
           controller: 'SwaggerController',
           templateUrl: "app/views/swagger/swagger.html"
+        })
+        
+        // Analysis
+        .state('analyzerTest', {
+          url: "^/analyzertest",
+          parent: 'main',
+          controller: 'AnalyzerTestController',
+          templateUrl: "app/views/analyzer/analyzerTest.html"
         })
     });
 }

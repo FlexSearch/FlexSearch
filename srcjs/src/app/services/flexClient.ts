@@ -6,6 +6,7 @@ module flexportal {
 	import FieldDto = FlexSearch.Core.FieldDto;
 	import IndexConfigurationDto = FlexSearch.Core.IndexConfigurationDto;
 	import MemoryDetailsResponse = FlexSearch.Core.MemoryDetailsResponse;
+	import Analyzer = FlexSearch.Core.Analyzer;
 	
 	export class IndexResult {
 		Fields: FieldDto[]
@@ -215,6 +216,20 @@ module flexportal {
 			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/status")
 			.then(FlexClient.getData, this.handleError)
 			.then(result => <string>result.Status, this.handleError);
+		}
+		
+		public getAnalyzers() {
+			return this.$http.get(FlexSearchUrl + "/analyzers", {})
+			.then(FlexClient.getData, this.handleError)
+			.then(result => <Analyzer[]>result, this.handleError);
+		}
+		
+		public testAnalyzer(analyzerName, text) {
+			return this.$http.post(FlexSearchUrl + "/analyzers/" + analyzerName + "/analyze", {
+				"Text": text
+			})
+			.then(FlexClient.getData, this.handleError)
+			.then(result => <string[]>result, this.handleError);
 		}
 		
 		public newPromise(data) {

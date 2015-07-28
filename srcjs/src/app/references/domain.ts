@@ -210,6 +210,16 @@ module FlexSearch.Core {
         TotalMemory: number;
         Usage: number;
     }
+    
+    export class Tokenizer {
+        TokenizerName: string;
+        Parameters : any;
+    }
+    
+    export class Analyzer {
+        AnalyzerName : string;
+        Tokenizer: Tokenizer;
+    }
 }
 
 module FlexSearch.DuplicateDetection {
