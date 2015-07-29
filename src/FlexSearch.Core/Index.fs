@@ -256,7 +256,7 @@ module DocumentTemplate =
         let add (field) = 
             template.Add(field)
             fields.Add(field)
-        add (Field.getStringField (s.FieldsLookup.[Constants.IdField].SchemaName, "", Field.store))
+        add (Field.getTextField (s.FieldsLookup.[Constants.IdField].SchemaName, "", Field.store))
         add (Field.getLongField (s.FieldsLookup.[Constants.LastModifiedField].SchemaName, int64 0, Field.store))
         add (new NumericDocValuesField(s.FieldsLookup.[Constants.LastModifiedField].SchemaName, int64 0))
         for field in s.Fields do

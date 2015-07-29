@@ -704,7 +704,7 @@ id,et1,b1
 2,aa,true
 3,Aa,True
 4,aA,False
-5,AA,FALSE
+CC,AA,FALSE
 """
     do 
         indexTestData (testData, index, indexService, documentService)
@@ -720,4 +720,11 @@ id,et1,b1
 
     member __.``Searching for b1 = 'FALSE' should return 2 records as field is case insensitive``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 2 "b1 = 'FALSE'"
+
+    member __.``Searching for _id = 'CC' should return 1 records as field is case insensitive``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = 'CC'"
+
+    member __.``Searching for _id = 'cc' should return 1 records as field is case insensitive``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = 'cc'"
+
 
