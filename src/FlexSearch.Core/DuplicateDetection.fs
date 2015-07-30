@@ -29,10 +29,12 @@ open System.Linq
 open System.Web.UI
 open System.Xml.Linq
 open Microsoft.VisualBasic.FileIO
+open System.Runtime.Serialization
 
+[<Sealed>]
 type Session() = 
-    member val Id = Guid.NewGuid().ToString()
-    member val SessionId = Guid.NewGuid().ToString()
+    member val Id = Guid.NewGuid().ToString() with get
+    member val SessionId = Guid.NewGuid().ToString() with get
     member val IndexName = Unchecked.defaultof<string> with get, set
     member val ProfileName = Unchecked.defaultof<string> with get, set
     member val JobStartTime = Unchecked.defaultof<DateTime> with get, set
@@ -52,7 +54,7 @@ type TargetRecord(sessionId, sourceId) =
     member val TargetScore = 0.0f with get, set
 
 type SourceRecord(sessionId) = 
-    member val SessionId = sessionId
+    member val SessionId = sessionId with get
     member val SourceId = 0 with get, set
     member val SourceRecordId = "" with get, set
     member val SourceDisplayName = "" with get, set
@@ -80,7 +82,7 @@ module DuplicateDetection =
     let quality = "quality"
     let sessionProperties = "sessionproperties"
     let misc = "misc"
-    let formatter = new NewtonsoftJsonFormatter() :> IFormatter
+    let formatter = new NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
     
     let schema = 
         let index = new Index(IndexName = "duplicates")
@@ -107,8 +109,11 @@ module DuplicateDetection =
         let doc = new Document(schema.IndexName, session.Id)
         doc.Fields.Add(sessionId, session.SessionId)
         doc.Fields.Add(recordType, sessionRecordType)
-        doc.Fields.Add(sessionProperties, formatter.SerializeToString(session))
-        documentService.AddOrUpdateDocument(doc) |> ignore
+        let sessionPropertiesJson = formatter.SerializeToString(session)
+        assert (sessionPropertiesJson <> "{}")
+        doc.Fields.Add(sessionProperties, sessionPropertiesJson)
+        documentService.AddOrUpdateDocument(doc) 
+        |> Log.logErrorChoice            
     
     let writeDuplicates (sourceRecord : SourceRecord, documentService : IDocumentService) = 
         let sourceDoc = new Document(schema.IndexName, getId())
@@ -216,7 +221,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             let records = result |> toFlatResults
             session.RecordsReturned <- result.Meta.RecordsReturned
             session.RecordsAvailable <- result.Meta.TotalAvailable
-            writeSessionRecord (session, documentService)
+            writeSessionRecord (session, documentService) |> ignore
             try 
                 let _ = 
                     Parallel.ForEach(records.Documents, parallelOptions, 
@@ -228,7 +233,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                 ()
             with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
             session.JobEndTime <- DateTime.Now
-            writeSessionRecord (session, documentService)
+            writeSessionRecord (session, documentService) |> ignore
         | Choice2Of2(err) -> Logger.Log(err)
         !>"Dedupe Session Finished."
     
