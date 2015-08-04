@@ -15,7 +15,6 @@ module flexportal {
       // Modify the URL so that it uses the base URL in the browser
       $scope.transformFunction = function(options) {
         options.url = options.url.replace(new RegExp("http[s]?:\/\/[^:]+:[0-9]+"), flexClient.FlexSearchUrl);
-        
       };
       
       $scope.swaggerUrl = "swagger_v2.json";

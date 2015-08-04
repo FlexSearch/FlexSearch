@@ -20,10 +20,6 @@
 module flexportal {
   'use strict';
 
-  // Constants
-  //export var FlexSearchUrl = "http://localhost:9800"
-  //export var DuplicatesUrl = FlexSearchUrl + "/indices/duplicates"
-
   // Functions that map Option Sets
   export function toSourceStatusName(value: number) {
     switch (value) {
