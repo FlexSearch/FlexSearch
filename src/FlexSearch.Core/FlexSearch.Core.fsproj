@@ -328,14 +328,6 @@
       <HintPath>..\packages\MsgPack.Cli.0.5.11\lib\net45\MsgPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Nancy">
-      <HintPath>..\packages\Nancy.0.23.0\lib\net40\Nancy.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nancy.Swagger">
-      <HintPath>..\packages\Nancy.Swagger.0.1.0-alpha3\lib\net40\Nancy.Swagger.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -358,10 +350,6 @@
     </Reference>
     <Reference Include="Sigil">
       <HintPath>..\packages\Sigil.4.4.0\lib\net45\Sigil.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Swagger.ObjectModel">
-      <HintPath>..\packages\Swagger.ObjectModel.0.1.0-alpha3\lib\net40\Swagger.ObjectModel.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

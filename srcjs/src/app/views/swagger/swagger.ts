@@ -17,7 +17,7 @@ module flexportal {
         options.url = options.url.replace(new RegExp("http[s]?:\/\/[^:]+:[0-9]+"), flexClient.FlexSearchUrl);
       };
       
-      $scope.swaggerUrl = "swagger_v2.json";
+      $scope.swaggerUrl = "swagger.json";
       $scope.swaggerErrorHandler = function(response, status) {
         $scope.showError("Response:\n" + response.toString() + "\n\nStatus:\n" + status.toString());
       };

@@ -6,9 +6,7 @@ var $ = require('gulp-load-plugins')({
   pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
 });
 
-var convert = require('swagger-converter');
 var swaggerDir = __dirname + '\\..\\..\\documentation\\';
-var swagger1_2 = require(swaggerDir + 'swagger.json');
 
 module.exports = function(options) {
   gulp.task('partials', function () {
@@ -98,12 +96,8 @@ module.exports = function(options) {
 
   gulp.task('swagger', function() {
     $.util.log("Building swagger...");
-    var swagger2_0 = convert(swagger1_2, []);
-    swagger2_0.info.title = "FlexSearch API"
-    var swagger2Uri = swaggerDir + "swagger_v2.json"; 
-    fs.writeFile(swagger2Uri, JSON.stringify(swagger2_0));
     
-    return gulp.src(swagger2Uri)
+    return gulp.src(swaggerDir + "swagger.json")
       .pipe(gulp.dest(options.src))
       .pipe(gulp.dest(options.tmp))
       .pipe(gulp.dest(options.dist))

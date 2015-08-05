@@ -5,4 +5,4 @@ bower_components/
 dist/
 typings/
 npm-debug.log
-src/swagger_v2.json
+src/swagger.json
