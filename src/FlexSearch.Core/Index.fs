@@ -964,8 +964,8 @@ module IndexManager =
         { Store : ConcurrentDictionary<string, IndexState>
           EventAggregrator : EventAggregrator
           ThreadSafeFileWriter : ThreadSafeFileWriter
-          GetAnalyzer : string -> Choice<LuceneAnalyzer, IMessage>
-          GetComputedScript : string -> Choice<ComputedDelegate * string [], IMessage> }
+          GetAnalyzer : string -> Result<LuceneAnalyzer>
+          GetComputedScript : string -> Result<ComputedDelegate * string []> }
     
     /// Returns IndexNotFound error
     let indexNotFound (indexName) = IndexNotFound <| indexName
@@ -1033,12 +1033,12 @@ module IndexManager =
     let loadAllIndex (t : T) = 
         let loadFromFile (path) = 
             match t.ThreadSafeFileWriter.ReadFile<Index>(path) with
-            | Choice1Of2(dto) -> 
+            | Ok(dto) -> 
                 t
                 |> updateState (createIndexState (dto, IndexStatus.Opening))
                 |> ignore
                 Some(dto)
-            | Choice2Of2(error) -> 
+            | Fail(error) -> 
                 Logger.Log(error)
                 None
         
@@ -1066,7 +1066,7 @@ module IndexManager =
         maybe { 
             do! index.Validate()
             match t |> indexExists index.IndexName with
-            | Choice1Of2(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
+            | Ok(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
             | _ -> 
                 do! t.ThreadSafeFileWriter.WriteFile(path +/ index.IndexName, index)
                 do! t |> loadIndex index

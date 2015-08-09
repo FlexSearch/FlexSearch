@@ -30,50 +30,50 @@ open System.Threading.Tasks.Dataflow
 
 /// General factory Interface for all MEF based factories
 type IFlexFactory<'T> = 
-    abstract GetModuleByName : string -> Choice<'T, IMessage>
+    abstract GetModuleByName : string -> Result<'T>
     abstract ModuleExists : string -> bool
     abstract GetAllModules : unit -> Dictionary<string, 'T>
-    abstract GetMetaData : string -> Choice<IDictionary<string, obj>, IMessage>
+    abstract GetMetaData : string -> Result<IDictionary<string, obj>>
 
 /// Index related operations
 type IIndexService = 
-    abstract GetIndex : indexName:string -> Choice<Index, IMessage>
-    abstract UpdateIndexFields : fields:Field [] -> Choice<unit, IMessage>
-    abstract DeleteIndex : indexName:string -> Choice<unit, IMessage>
-    abstract AddIndex : index:Index -> Choice<CreateResponse, IMessage>
+    abstract GetIndex : indexName:string -> Result<Index>
+    abstract UpdateIndexFields : fields:Field [] -> Result<unit>
+    abstract DeleteIndex : indexName:string -> Result<unit>
+    abstract AddIndex : index:Index -> Result<CreateResponse>
     abstract GetAllIndex : unit -> Index array
     abstract IndexExists : indexName:string -> bool
     abstract IndexOnline : indexName:string -> bool
-    abstract IsIndexOnline : indexName:string -> Choice<IndexWriter.T, IMessage>
-    abstract GetIndexState : indexName:string -> Choice<IndexStatus, IMessage>
-    abstract OpenIndex : indexName:string -> Choice<unit, IMessage>
-    abstract CloseIndex : indexName:string -> Choice<unit, IMessage>
-    abstract Commit : indexName:string -> Choice<unit, IMessage>
-    abstract ForceCommit : indexName:string -> Choice<unit, IMessage>
-    abstract Refresh : indexName:string -> Choice<unit, IMessage>
-    abstract GetRealtimeSearchers : indexName:string -> Choice<array<RealTimeSearcher>, IMessage>
-    abstract GetRealtimeSearcher : indexName:string * int -> Choice<RealTimeSearcher, IMessage>
-    abstract GetDiskUsage : indexName:string -> Choice<int64, IMessage>
+    abstract IsIndexOnline : indexName:string -> Result<IndexWriter.T>
+    abstract GetIndexState : indexName:string -> Result<IndexStatus>
+    abstract OpenIndex : indexName:string -> Result<unit>
+    abstract CloseIndex : indexName:string -> Result<unit>
+    abstract Commit : indexName:string -> Result<unit>
+    abstract ForceCommit : indexName:string -> Result<unit>
+    abstract Refresh : indexName:string -> Result<unit>
+    abstract GetRealtimeSearchers : indexName:string -> Result<array<RealTimeSearcher>>
+    abstract GetRealtimeSearcher : indexName:string * int -> Result<RealTimeSearcher>
+    abstract GetDiskUsage : indexName:string -> Result<int64>
 
 /// Document related operations
 type IDocumentService = 
-    abstract GetDocument : indexName:string * id:string -> Choice<Document, IMessage>
-    abstract GetDocuments : indexName:string * count:int -> Choice<SearchResults, IMessage>
-    abstract AddOrUpdateDocument : document:Document -> Choice<unit, IMessage>
-    abstract DeleteDocument : indexName:string * id:string -> Choice<unit, IMessage>
-    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Choice<SearchResults<T>, IMessage>
-    abstract DeleteAllDocuments : indexName:string -> Choice<unit, IMessage>
-    abstract AddDocument : document: Document -> Choice<CreateResponse, IMessage>
-    abstract TotalDocumentCount : indexName:string -> Choice<int, IMessage>
+    abstract GetDocument : indexName:string * id:string -> Result<Document>
+    abstract GetDocuments : indexName:string * count:int -> Result<SearchResults>
+    abstract AddOrUpdateDocument : document:Document -> Result<unit>
+    abstract DeleteDocument : indexName:string * id:string -> Result<unit>
+    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Result<SearchResults<T>>
+    abstract DeleteAllDocuments : indexName:string -> Result<unit>
+    abstract AddDocument : document: Document -> Result<CreateResponse>
+    abstract TotalDocumentCount : indexName:string -> Result<int>
 
 /// Search related operations
 type ISearchService = 
     abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string>
-     -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
-    abstract Search : searchQuery:SearchQuery -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
+     -> Result<SearchResults<SearchResultComponents.T>>
+    abstract Search : searchQuery:SearchQuery -> Result<SearchResults<SearchResultComponents.T>>
     abstract Search : searchQuery:SearchQuery * searchProfileString:string
-     -> Choice<SearchResults<SearchResultComponents.T>, IMessage>
-    abstract GetLuceneQuery : searchQuery:SearchQuery -> Choice<FlexLucene.Search.Query, IMessage>
+     -> Result<SearchResults<SearchResultComponents.T>>
+    abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
 type IQueueService = 
@@ -81,35 +81,35 @@ type IQueueService =
     abstract AddOrUpdateDocumentQueue : document:Document -> unit
 
 type IJobService = 
-    abstract GetJob : string -> Choice<Job, IMessage>
-    abstract DeleteAllJobs : unit -> Choice<unit, IMessage>
-    abstract UpdateJob : Job -> Choice<unit, IMessage>
+    abstract GetJob : string -> Result<Job>
+    abstract DeleteAllJobs : unit -> Result<unit>
+    abstract UpdateJob : Job -> Result<unit>
     abstract UpdateJob : jobId:string * JobStatus * count:int -> unit
     abstract UpdateJob : jobId:string * JobStatus * count:int * msg:string -> unit
 
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
-    abstract GetAnalyzer : analyzerName:string -> Choice<LuceneAnalyzer, IMessage>
-    abstract GetAnalyzerInfo : analyzerName:string -> Choice<Analyzer, IMessage>
-    abstract DeleteAnalyzer : analyzerName:string -> Choice<unit, IMessage>
-    abstract UpdateAnalyzer : analyzer:Analyzer -> Choice<unit, IMessage>
+    abstract GetAnalyzer : analyzerName:string -> Result<LuceneAnalyzer>
+    abstract GetAnalyzerInfo : analyzerName:string -> Result<Analyzer>
+    abstract DeleteAnalyzer : analyzerName:string -> Result<unit>
+    abstract UpdateAnalyzer : analyzer:Analyzer -> Result<unit>
     abstract GetAllAnalyzers : unit -> Analyzer []
-    abstract Analyze : analyzerName:string * input:string -> Choice<string [], IMessage>
+    abstract Analyze : analyzerName:string * input:string -> Result<string []>
 
 /// Script related services
 type IScriptService = 
     
     /// Signature : fun (indexName, fieldName, source, options) -> string
-    abstract GetScript : scriptName:string * scriptType:ScriptType -> Choice<Scripts.T, IMessage>
+    abstract GetScript : scriptName:string * scriptType:ScriptType -> Result<Scripts.T>
     
     /// This methods verifies that the script call itself is valid and return the funtion along
     /// with the paramters that can be passed to the funtion
     /// Usually a script call looks like below
     /// function('param1','param2','param3',....)
-    abstract GetScriptSig : scriptSig:string -> Choice<string * string [], IMessage>
+    abstract GetScriptSig : scriptSig:string -> Result<string * string []>
     
-    abstract GetComputedScript : scriptSig:string -> Choice<ComputedDelegate * string [], IMessage>
-    abstract GetSearchProfileScript : scriptSig:string -> Choice<SearchProfileDelegate, IMessage>
+    abstract GetComputedScript : scriptSig:string -> Result<ComputedDelegate * string []>
+    abstract GetSearchProfileScript : scriptSig:string -> Result<SearchProfileDelegate>
 
 [<Sealed>]
 type ScriptService() = 
@@ -183,11 +183,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     let loadAllAnalyzers() = 
         Directory.EnumerateFiles(path) |> Seq.iter (fun x -> 
                                               match threadSafeWriter.ReadFile<Analyzer>(x) with
-                                              | Choice1Of2(dto) -> 
+                                              | Ok(dto) -> 
                                                   updateAnalyzer (dto)
                                                   |> logErrorChoice
                                                   |> ignore
-                                              | Choice2Of2(error) -> Logger.Log(error))
+                                              | Fail(error) -> Logger.Log(error))
     
     let getAnalyzer (analyzerName) = 
         match store.TryGetValue(analyzerName) with
@@ -279,8 +279,8 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         
         member __.GetIndexState(indexName : string) = 
             match im |> IndexManager.indexState indexName with
-            | Choice1Of2(state) -> ok <| state.IndexStatus
-            | Choice2Of2(error) -> fail <| error
+            | Ok(state) -> ok <| state.IndexStatus
+            | Fail(error) -> fail <| error
         
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
         member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
@@ -318,12 +318,12 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                         search.CutOff <- sq.CutOff
                         search.Count <- sq.Count
                     let! values = match inputValues with
-                                  | Some(values) -> Choice1Of2(values)
+                                  | Some(values) -> ok(values)
                                   | None -> Parsers.ParseQueryString(search.QueryString, false)
                     // Check if search profile script is defined. If yes then execute it.
                     do! if isNotBlank sq.SearchProfileScript then 
                             match scriptService.GetSearchProfileScript(sq.SearchProfileScript) with
-                            | Choice1Of2(script) -> 
+                            | Ok(script) -> 
                                 try 
                                     script.Invoke(sq, values)
                                     ok()
@@ -332,7 +332,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                                         ("SearchProfile Query execution error", e, MessageKeyword.Search, 
                                          MessageLevel.Warning)
                                     ok()
-                            | Choice2Of2(err) -> fail <| err
+                            | Fail(err) -> fail <| err
                         else ok()
                     return (p', Some(values))
                 | _ -> return! fail <| UnknownSearchProfile(search.IndexName, search.SearchProfile)
@@ -410,10 +410,10 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
                 match searchService.Search(q) with
-                | Choice1Of2(v') -> 
+                | Ok(v') -> 
                     if v'.Meta.RecordsReturned <> 0 then return (v'.Documents.First() |> toStructuredResult)
                     else return! fail <| DocumentIdNotFound(indexName, documentId)
-                | Choice2Of2(e) -> return! fail <| e
+                | Fail(e) -> return! fail <| e
             }
         
         /// Get top 10 document from the index
@@ -497,7 +497,7 @@ type JobService() =
                 let item = new CacheItem(jobId, job)
                 cache.Set(item, getCachePolicy())
         
-        member __.UpdateJob(job : Job) : Choice<unit, IMessage> = 
+        member __.UpdateJob(job : Job) = 
             let item = new CacheItem(job.JobId, job)
             cache.Set(item, getCachePolicy())
             ok()
@@ -505,7 +505,7 @@ type JobService() =
         member __.GetJob(jobId : string) = 
             assert (jobId <> null)
             let item = cache.GetCacheItem(jobId)
-            if item <> null then Choice1Of2(item.Value :?> Job)
+            if item <> null then ok <| (item.Value :?> Job)
             else fail <| JobNotFound jobId
         
         member __.DeleteAllJobs() = 

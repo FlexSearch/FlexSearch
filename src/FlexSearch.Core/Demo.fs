@@ -95,8 +95,8 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             indexDocument.Fields.Add("nationality", record.Nationality)
             indexDocument.Fields.Add("coordinates", record.Coordinates)
             match documentService.AddDocument(indexDocument) with
-            | Choice1Of2(_) -> ()
-            | Choice2Of2(e) -> failwithf "%A" e
+            | Ok(_) -> ()
+            | Fail(e) -> failwithf "%A" e
         indexService.Refresh(indexName) |> ignore
     
     let GetDemoIndexInfo() = 
@@ -166,8 +166,8 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     member this.GetDemoIndex() = GetDemoIndexInfo()
     member this.Setup() = 
         match indexService.IndexExists("country") with
-        | true -> Choice1Of2()
+        | true -> ok()
         | _ -> 
             match CreateIndex() with
-            | Choice1Of2(_) -> Choice1Of2()
-            | Choice2Of2(e) -> Choice2Of2(e)
+            | Ok(_) -> ok()
+            | Fail(e) -> Fail(e)

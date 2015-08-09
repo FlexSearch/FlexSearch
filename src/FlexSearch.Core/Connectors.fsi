@@ -34,7 +34,7 @@ Represents a request which can be sent to Sql connector to index SQL data
 type SqlIndexingRequest = 
     inherit DtoBase
     new : unit -> SqlIndexingRequest
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
     #if prop_IndexName
     Name of the index
     #endif

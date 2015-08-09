@@ -36,7 +36,7 @@ module CsvHandlerTests =
 
             let jobId = 
                 match jobResponse with
-                | SomeResponse(Choice1Of2(id),_,_) -> id
+                | SomeResponse(Ok(id),_,_) -> id
                 | _ -> defString
             
             let sw = new Stopwatch()

@@ -81,7 +81,7 @@ module WikipediaPerformanceTests =
     let RandomQueryGenerator (outputFolder : string) (indexService : IIndexService) = 
         let searchers = 
             match indexService.GetRealtimeSearchers(WikiIndexName) with
-            | Choice1Of2(s) -> s
+            | Ok(s) -> s
             | _ -> failwithf "Unable to get the searchers"
         
         // Term with highest freq is considered top end of the range and is marked as 100%
@@ -287,8 +287,8 @@ module WikipediaPerformanceTests =
                          (fun n -> 
                          try 
                              match searchService.Search(new SearchQuery(WikiIndexName, n)) with
-                             | Choice1Of2(_) -> ()
-                             | Choice2Of2(e) -> printfn "Error: %A Query:%s" e n
+                             | Ok(_) -> ()
+                             | Fail(e) -> printfn "Error: %A Query:%s" e n
                          with e -> printfn "%A" e.Message
                          ()))
         |> ignore

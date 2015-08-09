@@ -170,8 +170,8 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
     do 
         if not (indexService.IndexExists(schema.IndexName)) then 
             match indexService.AddIndex(schema) with
-            | Choice1Of2(_) -> ()
-            | Choice2Of2(error) -> Logger.Log(error)
+            | Ok(_) -> ()
+            | Fail(error) -> Logger.Log(error)
     
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
         let query = new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
@@ -179,7 +179,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
         match searchService.Search(query, record) with
-        | Choice1Of2(results) -> 
+        | Ok(results) -> 
             if results.Meta.RecordsReturned > 1 then 
                 !>"Duplicate Found"
                 let header = 
@@ -216,7 +216,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                                 ReturnFlatResult = true, Columns = [| "*" |])
         let resultC = searchService.Search(mainQuery)
         match resultC with
-        | Choice1Of2(result) -> 
+        | Ok(result) -> 
             (!>) "Main Query Records Returned:%i" result.Meta.RecordsReturned
             let records = result |> toFlatResults
             session.RecordsReturned <- result.Meta.RecordsReturned
@@ -234,7 +234,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
             session.JobEndTime <- DateTime.Now
             writeSessionRecord (session, documentService) |> ignore
-        | Choice2Of2(err) -> Logger.Log(err)
+        | Fail(err) -> Logger.Log(err)
         !>"Dedupe Session Finished."
     
     let requestProcessor = 
@@ -251,14 +251,14 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         body.Value.IndexName <- request.ResId.Value
         body.Value.ProfileName <- request.SubResId.Value
         match indexService.IsIndexOnline(request.ResId.Value) with
-        | Choice1Of2(writer) -> 
+        | Ok(writer) -> 
             match writer.Settings.SearchProfiles.TryGetValue(request.SubResId.Value) with
             | true, _ -> 
                 let jobId = Guid.NewGuid()
                 requestProcessor.Post(jobId, writer, body.Value)
                 SuccessResponse(jobId, Ok)
             | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
-        | Choice2Of2(error) -> FailureResponse(error, BadRequest)
+        | Fail(error) -> FailureResponse(error, BadRequest)
 
 // ----------------------------------------------------------------------------
 // Duplicate detection report related
@@ -347,7 +347,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         builder |> addElement (BeginTable(false, primaryRecord))
         builder |> addElement (AddRecord(Main, primaryRecord, primaryRecord))
         match searchService.Search(query, primaryRecord) with
-        | Choice1Of2(results) -> 
+        | Ok(results) -> 
             let docs = results |> toFlatResults
             match docs.Documents.Count() with
             | 0 -> 
@@ -366,7 +366,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             for doc in docs.Documents do
                 builder |> addElement (AddRecord(Result, primaryRecord, doc))
             builder |> addElement (EndTable)
-        | Choice2Of2(error) -> 
+        | Fail(error) -> 
             builder.Append(sprintf """%A""" error) |> ignore
             builder |> addElement (EndTable)
         (builder.ToString(), aggrBuilder.ToString())
@@ -392,7 +392,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
                                 ReturnFlatResult = true, Columns = [| "*" |])
         let result = searchService.Search(mainQuery)
         match result with
-        | Choice1Of2(result) -> 
+        | Ok(result) -> 
             let headers = 
                 searchService.Search
                     (new SearchQuery(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, 
@@ -411,7 +411,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
                         yield record.Values.ToArray()
                 }
             (headers, d)
-        | Choice2Of2(err) -> 
+        | Fail(err) -> 
             Logger.Log(err)
             (Array.empty, Seq.empty)
     

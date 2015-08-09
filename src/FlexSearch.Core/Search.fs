@@ -29,7 +29,7 @@ open System.Linq
 /// FlexQuery interface     
 type IFlexQuery = 
     abstract QueryName : unit -> string []
-    abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Choice<Query, IMessage>
+    abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
 
 [<AutoOpenAttribute>]
 module SearchResultComponents = 

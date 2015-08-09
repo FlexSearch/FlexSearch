@@ -146,7 +146,7 @@ module ResponseHelpers =
     let rSucceeded (r : ResponseContext<_>) = 
         match r with
         | SuccessResponse(_) -> true
-        | SomeResponse(Choice1Of2(_), _, _) -> true
+        | SomeResponse(Ok(_), _, _) -> true
         | _ -> false
 
 // ----------------------------------------------------------------------------

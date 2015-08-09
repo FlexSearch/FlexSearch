@@ -369,12 +369,12 @@ module Field =
     
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
-               analyzerFactory : string -> Choice<FlexLucene.Analysis.Analyzer, IMessage>, scriptService) = 
+               analyzerFactory : string -> Result<FlexLucene.Analysis.Analyzer>, scriptService) = 
         let getSource (field : FlexSearch.Core.Field) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok <| None
             else 
                 match scriptService (field.ScriptName) with
-                | Choice1Of2(func) -> ok <| Some(func)
+                | Ok(func) -> ok <| Some(func)
                 | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
         
         let getFieldType (field : FlexSearch.Core.Field) = 

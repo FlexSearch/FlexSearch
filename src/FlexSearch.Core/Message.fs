@@ -52,6 +52,11 @@ type IMessage =
     abstract OperationMessage : unit -> OperationMessage
     abstract LogProperty : unit -> MessageKeyword * MessageLevel
 
+/// Represents the result of a computation.
+type Result<'T> =
+    | Ok of 'T
+    | Fail of IMessage
+
 /// General purpose exception to be used. It is better to use
 /// DU based error than this exception.
 exception ValidationException of IMessage
@@ -397,9 +402,9 @@ module Log =
             let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
             logMethod(keyword, level)(om.ErrorCode, om.Message, properties)
 
-    let logErrorChoice (message : Choice<_, IMessage>) = 
+    let logErrorChoice (message : Result<_>) = 
         match message with
-        | Choice2Of2(error) -> log (error)
+        | Fail(error) -> log (error)
         | _ -> ()
         message
        
@@ -407,7 +412,7 @@ type Logger() =
     static member Log(msg : IMessage) =
         log(msg)
 
-    static member Log(message : Choice<_, IMessage>) =
+    static member Log(message : Result<_>) =
         logErrorChoice(message)
     
     static member Log(msg: string, keyword : MessageKeyword, level: MessageLevel) =

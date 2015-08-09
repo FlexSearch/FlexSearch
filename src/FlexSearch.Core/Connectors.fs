@@ -141,10 +141,10 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                     jobService.UpdateJob(job) |> ignore
                     let execFileJob filePath = 
                         match processFile (body, filePath) with
-                        | Choice1Of2() -> 
+                        | Ok() -> 
                             job.ProcessedItems <- job.ProcessedItems + 1
                             jobService.UpdateJob(job) |> ignore
-                        | Choice2Of2(error) -> 
+                        | Fail(error) -> 
                             job.FailedItems <- job.FailedItems + 1
                             jobService.UpdateJob(job) |> ignore
                     if isFolder then Directory.EnumerateFiles(path) |> Seq.iter execFileJob
@@ -172,8 +172,8 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
         
         body.IndexName <- index
         match indexService.IsIndexOnline(index) with
-        | Choice1Of2(_) -> body.Validate() >>= pathValidation >>= postBulkRequestMessage
-        | Choice2Of2(error) -> fail <| error
+        | Ok(_) -> body.Validate() >>= pathValidation >>= postBulkRequestMessage
+        | Fail(error) -> fail <| error
     
     override __.Process(request, body) = SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
 
@@ -259,7 +259,7 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
             else 
                 ExecuteSql(body, "")
                 ""
-            |> Choice1Of2
+            |> ok
         body.IndexName <- index
         body.Validate() >>= createJob
     

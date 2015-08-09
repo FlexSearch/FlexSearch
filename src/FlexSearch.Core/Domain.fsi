@@ -338,7 +338,7 @@ Allows to control various Index Shards related settings.
 type ShardConfiguration = 
     inherit DtoBase
     new : unit -> ShardConfiguration
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_ShardCount
 Total number of shards to be present in the given index.
@@ -354,7 +354,7 @@ Allows to control various Index related settings.
 type IndexConfiguration = 
     inherit DtoBase
     new : unit -> IndexConfiguration
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_CommitTimeSeconds
 The amount of time in seconds that FlexSearch should wait before committing 
@@ -445,7 +445,7 @@ ahead to consider multiple tokens at once, although this is less common.
 type TokenFilter = 
     inherit DtoBase
     new : unit -> TokenFilter
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_FilterName       
 The name of the filter. Some pre-defined filters are the following-
@@ -477,7 +477,7 @@ for, but a tokenizer is not.
 type Tokenizer = 
     inherit DtoBase
     new : unit -> Tokenizer
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_TokenizerName         
 The name of the tokenizer. Some pre-defined tokenizers are the following-
@@ -506,7 +506,7 @@ An analyzer examines the text of fields and generates a token stream.
 type Analyzer =
     inherit DtoBase
     new : unit -> Analyzer
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_AnalyzerName
 Name of the analyzer
@@ -632,7 +632,7 @@ type HighlightOption =
     inherit DtoBase
     new : unit -> HighlightOption
     new : fields:string [] -> HighlightOption
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_FragmentsToReturn        
 Total number of fragments to return per document
@@ -666,7 +666,7 @@ type SearchQuery =
     inherit DtoBase
     new : unit -> SearchQuery
     new : index:string * query:string -> SearchQuery
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_QueryName        
 Unique name of the query. This is only required if you are setting up a 
@@ -780,7 +780,7 @@ type Document =
     inherit DtoBase
     new : unit -> Document
     new : indexName:string * id:string -> Document
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
     #if prop_Default
     #endif
     static member Default : Document
@@ -844,7 +844,7 @@ user to enable an index before using it.
 type Index =
     inherit DtoBase
     new : unit -> Index
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
 
 #if prop_Fields
 Fields to be used in index.
@@ -992,7 +992,7 @@ type IndexExistsResponse =
 type MemoryDetailsResponse =
     inherit DtoBase
     new : unit -> MemoryDetailsResponse
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
     #if prop_TotalMemory
     #endif
     member TotalMemory : uint64 with get, set
@@ -1014,7 +1014,7 @@ type NoBody =
 type SearchProfileTestDto =
     inherit DtoBase
     new : unit -> SearchProfileTestDto
-    override Validate : unit -> Choice<unit,IMessage>
+    override Validate : unit -> Result<unit>
     #if prop_SearchProfile
     #endif
     member SearchProfile : string

@@ -87,7 +87,7 @@ module FactoryService =
             
             member __.GetMetaData(moduleName) = 
                 match getModuleByName (moduleName, true) with
-                | Choice2Of3(x) -> Choice1Of2(x)
+                | Choice2Of3(x) -> ok(x)
                 | _ -> fail <| ModuleNotFound(moduleName, moduleTypeName)
             
             member __.ModuleExists(moduleName) = 
@@ -174,7 +174,7 @@ module Main =
 //            let indexService = container.Resolve<IIndexService>()
 // Close all open indices
 //            match indexService.GetAllIndex() with
-//            | Choice1Of2(regs) -> 
+//            | Ok(regs) -> 
 //                for registeration in regs do
 //                    indexService.CloseIndex(registeration.IndexName) |> ignore
 //            | _ -> ()

@@ -292,13 +292,13 @@ module Helpers =
                 if (e.InnerException <> null) then printException e.InnerException (count + 1)
         printException e 1
         sb.ToString()
-    
-    let inline ParseDate(date : string) = 
-        match DateTime.TryParseExact
-                  (date, [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |], CultureInfo.InvariantCulture, 
-                   DateTimeStyles.None) with
-        | true, date -> Choice1Of2(date)
-        | _ -> Choice2Of2("UNABLE_TO_PARSE_DATETIME:The specified date time is not in a supported format.")
+//    
+//    let inline ParseDate(date : string) = 
+//        match DateTime.TryParseExact
+//                  (date, [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |], CultureInfo.InvariantCulture, 
+//                   DateTimeStyles.None) with
+//        | true, date -> Ok(date)
+//        | _ -> Fail <| Gener("UNABLE_TO_PARSE_DATETIME:The specified date time is not in a supported format.")
     
     /// Utility method to load a file into text string
     let LoadFile(filePath : string) = 
@@ -346,12 +346,6 @@ module Helpers =
 module DataType = 
     open Microsoft.Owin
     
-    /// Wraps a value in a Success
-    let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
-    
-    /// Wraps a message in a Failure
-    ///let inline fail<'a, 'b> (msg : 'b) : Choice<'a, 'b> = Choice2Of2 msg
-    
     let (|InvariantEqual|_|) (str : string) arg = 
         if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some()
         else None
@@ -386,10 +380,10 @@ module DataType =
         | true -> Some(str)
         | _ -> None
     
-    let inline isBoolean (value : string) = 
-        match Boolean.TryParse(value) with
-        | true, a -> ok (a)
-        | _ -> Choice2Of2()
+//    let inline isBoolean (value : string) = 
+//        match Boolean.TryParse(value) with
+//        | true, a -> Ok (a)
+//        | _ -> Fail()
     
     let inline pBool (failureDefault) (value : string) = 
         match Boolean.TryParse(value) with

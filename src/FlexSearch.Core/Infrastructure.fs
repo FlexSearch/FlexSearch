@@ -167,14 +167,24 @@ type IFreezable =
 [<AbstractClassAttribute>]
 type DtoBase() = 
     let mutable isFrozen = false
-    abstract Validate : unit -> Choice<unit, IMessage>
+    abstract Validate : unit -> Result<unit>
     interface IFreezable with
         member __.Freeze() = isFrozen <- true
 
 [<AutoOpen>]
 module Operators = 
     open System.Collections
+        
+    /// Wraps a value in a Success
+    let inline ok<'a> (x : 'a) = Ok(x)
     
+    /// Wraps a message in a Failure
+    let inline fail (msg : 'b) =
+        Fail (msg :> IMessage)
+
+    /// Wrap a unit value in success
+    let okUnit = Ok()
+
     let wrap f state = 
         f()
         state
@@ -193,18 +203,11 @@ module Operators =
         let r1 = f h
         let r2 = g h
         (r1, r2)
-    
-    /// Wraps a value in a Success
-    let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
-    
-    /// Wraps a message in a Failure
-    let inline fail<'a, 'b when 'b  :> IMessage> (msg : 'b) : Choice<'a, IMessage> =
-        Choice2Of2 (msg :> IMessage)
-    
+        
     /// Returns true if the result was not successful.
     let inline failed result = 
         match result with
-        | Choice2Of2 _ -> true
+        | Fail _ -> true
         | _ -> false
     
     /// Returns true if the result was successful.
@@ -213,15 +216,15 @@ module Operators =
     /// Takes a Result and maps it with fSuccess if it is a Success otherwise it maps it with fFailure.
     let inline either fSuccess fFailure trialResult = 
         match trialResult with
-        | Choice1Of2(x) -> fSuccess (x)
-        | Choice2Of2(msgs) -> fFailure (msgs)
+        | Ok(x) -> fSuccess (x)
+        | Fail(msgs) -> fFailure (msgs)
     
     /// If the given result is a Success the wrapped value will be returned. 
     ///Otherwise the function throws an exception with Failure message of the result.
     let inline returnOrFail result = 
         match result with
-        | Choice1Of2(x) -> x
-        | Choice2Of2(err) -> raise (ValidationException(err))
+        | Ok(x) -> x
+        | Fail(err) -> raise (ValidationException(err))
     
     /// Takes a bool value and returns ok for sucess and predefined error
     /// for failure
@@ -233,30 +236,14 @@ module Operators =
     /// Take a Choice result and return true for Choice1 and false for Choice2
     let inline resultToBool result = 
         match result with
-        | Choice1Of2(_) -> true
+        | Ok(_) -> true
         | _ -> false
-    
-    //    /// If the given result is a Success the wrapped value will be returned. 
-    //    ///Otherwise the function throws an exception with Failure message of the result.
-    //    let inline returnOrFail result = 
-    //        let inline raiseExn msgs = 
-    //            msgs
-    //            |> Seq.map (sprintf "%O")
-    //            |> String.concat (Environment.NewLine + "\t")
-    //            |> failwith
-    //        either fst raiseExn result
-    //    
-    /// Appends the given messages with the messages in the given result.
-    let inline mergeMessages msgs result = 
-        let inline fSuccess (x, msgs2) = Choice1Of2(x, msgs @ msgs2)
-        let inline fFailure errs = Choice2Of2(errs @ msgs)
-        either fSuccess fFailure result
-    
+        
     /// If the result is a Success it executes the given function on the value.
     /// Otherwise the exisiting failure is propagated.
     let inline bind f result = 
         let inline fSuccess (x) = f x
-        let inline fFailure (msg) = Choice2Of2 msg
+        let inline fFailure (msg) = fail msg
         either fSuccess fFailure result
     
     /// If the result is a Success it executes the given function on the value. 
@@ -268,15 +255,15 @@ module Operators =
     /// Otherwise the exisiting error messages are propagated.
     let inline apply wrappedFunction result = 
         match wrappedFunction, result with
-        | Choice1Of2 f, Choice1Of2 x -> Choice1Of2(f x)
-        | Choice2Of2 err, Choice1Of2 _ -> Choice2Of2(err)
-        | Choice1Of2 _, Choice2Of2 err -> Choice2Of2(err)
-        | Choice2Of2 err1, Choice2Of2 err2 -> Choice2Of2(err1)
+        | Ok f, Ok x -> ok(f x)
+        | Fail err, Ok _ -> fail(err)
+        | Ok _, Fail err -> fail(err)
+        | Fail err1, Fail err2 -> fail(err1)
     
     let inline extract result = 
         match result with
-        | Choice1Of2(a) -> a
-        | Choice2Of2(e) -> failwithf "%s" (e.ToString())
+        | Ok(a) -> a
+        | Fail(e) -> failwithf "%s" (e.ToString())
     
     /// If the wrapped function is a success and the given result is a success the function is applied on the value. 
     /// Otherwise the exisiting error messages are propagated.
@@ -319,25 +306,25 @@ module Operators =
         [<DebuggerStepThrough>]
         member inline __.Bind(v, f) = 
             match v with
-            | Choice1Of2(x) -> f x
-            | Choice2Of2(s) -> Choice2Of2(s)
+            | Ok(x) -> f x
+            | Fail(s) -> fail s
         
         [<DebuggerStepThrough>]
         member inline __.ReturnFrom v = v
         
         [<DebuggerStepThrough>]
-        member inline __.Return v = Choice1Of2(v)
+        member inline __.Return v = ok v
         
         [<DebuggerStepThrough>]
-        member inline __.Zero() = Choice1Of2()
+        member inline __.Zero() = ok ()
         
         [<DebuggerStepThrough>]
         member inline __.Combine(a, b) = 
             match a, b with
-            | Choice1Of2 a', Choice1Of2 b' -> Choice1Of2 b'
-            | Choice2Of2 a', Choice1Of2 b' -> Choice2Of2 a'
-            | Choice1Of2 a', Choice2Of2 b' -> Choice2Of2 b'
-            | Choice2Of2 a', Choice2Of2 b' -> Choice2Of2 a'
+            | Ok a', Ok b' -> ok b'
+            | Fail a', Ok b' -> fail a'
+            | Ok a', Fail b' -> fail b'
+            | Fail a', Fail b' -> fail a'
         
         [<DebuggerStepThrough>]
         member inline __.Delay(f) = f()
@@ -413,8 +400,8 @@ module Validators =
     /// Validates if the property name satisfies the naming rules
     let propertyNameRegex fieldName input = 
         match input |> regexMatch fieldName "^[a-z0-9_]*$" with
-        | Choice1Of2(_) -> ok()
-        | Choice2Of2(_) -> fail <| InvalidPropertyName(fieldName, input)
+        | Ok(_) -> ok()
+        | Fail(_) -> fail <| InvalidPropertyName(fieldName, input)
     
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 
@@ -458,17 +445,17 @@ module DictionaryHelpers =
     
     let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(value) with
-        | true, v -> Choice1Of2(v)
+        | true, v -> ok(v)
         | _ -> fail <| error (value)
     
     let inline keyExists2 (value, error) (dict : IReadOnlyDictionary<string, _>) = 
         match dict.TryGetValue(value) with
-        | true, v -> Choice1Of2(v)
+        | true, v -> ok(v)
         | _ -> fail <| error (value)
     
     let inline tryGet (key) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(key) with
-        | true, v -> Choice1Of2(v)
+        | true, v -> ok(v)
         | _ -> fail <| KeyNotFound(key)
     
     let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
@@ -567,10 +554,10 @@ type DtoStore<'T>(fileWriter : ThreadSafeFileWriter) =
     member __.GetItems() = store.Values.ToArray()
     member __.LoadItem<'T>(key : string) = 
         match fileWriter.ReadFile<'T>(folderPath +/ key) with
-        | Choice1Of2(item) -> 
+        | Ok(item) -> 
             tryAdd (key, item) |> ignore
             ok()
-        | Choice2Of2(error) -> fail <| error
+        | Fail(error) -> fail <| error
 
 type AtomicLong(value : int64) = 
     let refCell = ref value

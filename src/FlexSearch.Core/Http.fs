@@ -52,7 +52,7 @@ module Http =
               OwinContext = owinContext }
     
     type ResponseContext<'T> = 
-        | SomeResponse of responseBody : Choice<'T, IMessage> * successCode : HttpStatusCode * failureCode : HttpStatusCode
+        | SomeResponse of responseBody : Result<'T> * successCode : HttpStatusCode * failureCode : HttpStatusCode
         | SuccessResponse of responseBody : 'T * successCode : HttpStatusCode
         | FailureResponse of responseBody : IMessage * failureCode : HttpStatusCode
         | FailureOpMsgResponse of responseBody : OperationMessage * failureCode : HttpStatusCode
@@ -176,11 +176,11 @@ module Http =
             let instance = Response<'U>.WithError(response)
             owinContext |> writeResponse failureStatus instance
         
-        member this.Serialize (response : Choice<'U, IMessage>) (successStatus : HttpStatusCode) 
+        member this.Serialize (response : Result<'U>) (successStatus : HttpStatusCode) 
                (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
             match response with
-            | Choice1Of2(r) -> owinContext |> this.SerializeSuccess r successStatus
-            | Choice2Of2(r) -> owinContext |> this.SerializeFailure r failureStatus
+            | Ok(r) -> owinContext |> this.SerializeSuccess r successStatus
+            | Fail(r) -> owinContext |> this.SerializeFailure r failureStatus
         
         abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
         interface IHttpHandler with
@@ -190,8 +190,8 @@ module Http =
                         let! body = match handler.HasBody with
                                     | true -> 
                                         match handler.DeSerialize(request.OwinContext.Request) with
-                                        | Choice1Of2 a -> ok <| Some(a)
-                                        | Choice2Of2 b -> 
+                                        | Ok a -> ok <| Some(a)
+                                        | Fail b -> 
                                             if handler.FailOnMissingBody then fail <| b
                                             else ok <| None
                                     | false -> ok <| None
@@ -216,8 +216,8 @@ module Http =
                     | NoResponse -> ()
                 
                 match validateRequest() with
-                | Choice1Of2 body -> processHandler body
-                | Choice2Of2 error -> processFailure error
+                | Ok body -> processHandler body
+                | Fail error -> processFailure error
     
     let generateRoutingTable (modules : Dictionary<string, IHttpHandler>) = 
         let result = new Dictionary<string, IHttpHandler>(StringComparer.OrdinalIgnoreCase)

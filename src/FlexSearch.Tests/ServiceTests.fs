@@ -11,12 +11,12 @@ module IndexServiceTests =
         member __.``Newly created index should be online`` (indexService : IIndexService, index : Index) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Online) @>
+            test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Online) @>
         
         member __.``Newly created index should be offline`` (indexService : IIndexService, index : Index) = 
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
+            test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Offline) @>
         
         member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index) = 
             index.Online <- true
@@ -37,13 +37,13 @@ module IndexServiceTests =
             index.Online <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Online) @>
+            test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Online) @>
         
         member __.``Online index can be made offline`` (indexService : IIndexService, index : Index) = 
             index.Online <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
-            test <@ indexService.GetIndexState(index.IndexName) = Choice1Of2(IndexStatus.Offline) @>
+            test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Offline) @>
 
     type CommonTests() =
         member __.``Should return size of existing index`` (indexService: IIndexService, index : Index) =
@@ -66,7 +66,7 @@ module DocumentServiceTests =
             let document = new Document(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-            test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
+            test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
         
         member __.``Should be able to add and retrieve document after closing the index`` (index : Index, 
@@ -80,7 +80,7 @@ module DocumentServiceTests =
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
-            test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
+            test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
         
         member __.``Should be able to add and delete a document`` (index : Index, documentId : string, 
@@ -91,7 +91,7 @@ module DocumentServiceTests =
             let document = new Document(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-            test <@ documentService.TotalDocumentCount(index.IndexName) = Choice1Of2(1) @>
+            test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
             test <@ succeeded <| documentService.DeleteDocument(document.IndexName, documentId) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>

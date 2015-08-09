@@ -94,8 +94,8 @@ module Helpers =
     let data (response : Response<_> * HttpStatusCode) = (response |> fst).Data
     let isSuccessChoice choice = 
         match choice with
-        | Choice1Of2(_) -> true
-        | Choice2Of2(error) -> 
+        | Ok(_) -> true
+        | Fail(error) -> 
             printfn "Error: %A" error
             false
         =? true
@@ -103,11 +103,11 @@ module Helpers =
 
 type ``Index Creation Tests``() = 
 
-    member __.``Accessing server root should return 200`` () = 
-        owinServer()
-        |> request "GET" "/"
-        |> execute
-        |> responseStatusEquals HttpStatusCode.OK
+//    member __.``Accessing server root should return 200`` () = 
+//        owinServer()
+//        |> request "GET" "/"
+//        |> execute
+//        |> responseStatusEquals HttpStatusCode.OK
     
     [<Example("post-indices-id-1", "Creating an index without any data")>]
     member __.``Creating an index without any parameters should return 200`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 

@@ -34,7 +34,7 @@ type Predicate =
 /// FlexParser interface
 /// </summary>
 type IFlexParser = 
-    abstract Parse : string -> Choice<Predicate, IMessage>
+    abstract Parse : string -> Result<Predicate>
 
 [<AutoOpen>]
 module Parsers = 
