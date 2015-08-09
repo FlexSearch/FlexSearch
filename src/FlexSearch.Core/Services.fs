@@ -218,8 +218,8 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                     do! store
                         |> tryRemove (analyzerName)
                         |> boolToResult UnableToUpdateMemory
-                    return! ok()
-                | _ -> return! ok()
+                    return! okUnit
+                | _ -> return! okUnit
             }
         
         member __.GetAllAnalyzers() = store.Values.ToArray() |> Array.map fst
@@ -326,14 +326,14 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                             | Ok(script) -> 
                                 try 
                                     script.Invoke(sq, values)
-                                    ok()
+                                    okUnit
                                 with e -> 
                                     Logger.Log
                                         ("SearchProfile Query execution error", e, MessageKeyword.Search, 
                                          MessageLevel.Warning)
-                                    ok()
+                                    okUnit
                             | Fail(err) -> fail <| err
-                        else ok()
+                        else okUnit
                     return (p', Some(values))
                 | _ -> return! fail <| UnknownSearchProfile(search.IndexName, search.SearchProfile)
             else let! predicate = parser.Parse(search.QueryString)
@@ -500,7 +500,7 @@ type JobService() =
         member __.UpdateJob(job : Job) = 
             let item = new CacheItem(job.JobId, job)
             cache.Set(item, getCachePolicy())
-            ok()
+            okUnit
         
         member __.GetJob(jobId : string) = 
             assert (jobId <> null)

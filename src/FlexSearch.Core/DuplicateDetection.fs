@@ -137,7 +137,7 @@ type DuplicateDetectionRequest() =
     member val MaxRecordsToScan = Int16.MaxValue with get, set
     member val DuplicatesCount = Int16.MaxValue with get, set
     member val NextId = new AtomicLong(0L)
-    override this.Validate() = ok()
+    override this.Validate() = okUnit
 
 type DuplicateDetectionReportRequest() = 
     inherit DtoBase()
@@ -160,7 +160,7 @@ type DuplicateDetectionReportRequest() =
                 <| GenericError
                        ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
                         new ResizeArray<KeyValuePair<string, string>>())
-            else ok()
+            else okUnit
 
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]

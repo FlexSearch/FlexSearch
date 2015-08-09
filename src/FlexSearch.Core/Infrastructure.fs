@@ -230,7 +230,7 @@ module Operators =
     /// for failure
     let inline boolToResult err result = 
         match result with
-        | true -> ok()
+        | true -> okUnit
         | false -> fail (err)
     
     /// Take a Choice result and return true for Choice1 and false for Choice2
@@ -363,51 +363,51 @@ module Operators =
 module Validators = 
     /// Checks of the given input array has any duplicates    
     let hasDuplicates groupName fieldName (input : array<string>) = 
-        if input.Count() = input.Distinct().Count() then ok()
+        if input.Count() = input.Distinct().Count() then okUnit
         else fail <| DuplicateFieldValue(groupName, fieldName)
     
     /// Checks if a given value is greater than the lower limit
     let gt fieldName lowerLimit input = 
-        if input > lowerLimit then ok()
+        if input > lowerLimit then okUnit
         else fail <| GreaterThan(fieldName, lowerLimit.ToString(), input.ToString())
     
     /// Checks if the passed value is greater than or equal to the lower limit
     let gte fieldName lowerLimit input = 
-        if input >= lowerLimit then ok()
+        if input >= lowerLimit then okUnit
         else fail <| GreaterThanEqual(fieldName, lowerLimit.ToString(), input.ToString())
     
     /// Checks if a given value is less than the upper limit
     let lessThan fieldName upperLimit input = 
-        if input < upperLimit then ok()
+        if input < upperLimit then okUnit
         else fail <| LessThan(fieldName, upperLimit.ToString(), input.ToString())
     
     /// Checks if the passed value is less than or equal to the upper limit
     let lessThanEqual fieldName upperLimit input = 
-        if input <= upperLimit then ok()
+        if input <= upperLimit then okUnit
         else fail <| LessThanEqual(fieldName, upperLimit.ToString(), input.ToString())
     
     /// Checks if the given string is null or empty
     let notBlank fieldName input = 
-        if not (String.IsNullOrWhiteSpace(input)) then ok()
+        if not (String.IsNullOrWhiteSpace(input)) then okUnit
         else fail <| NotBlank(fieldName)
     
     /// Checks if a given value satisfies the provided regex expression 
     let regexMatch fieldName regexExpr input = 
         let m = System.Text.RegularExpressions.Regex.Match(input, regexExpr)
-        if m.Success then ok()
+        if m.Success then okUnit
         else fail <| RegexMatch(fieldName, regexExpr)
     
     /// Validates if the property name satisfies the naming rules
     let propertyNameRegex fieldName input = 
         match input |> regexMatch fieldName "^[a-z0-9_]*$" with
-        | Ok(_) -> ok()
+        | Ok(_) -> okUnit
         | Fail(_) -> fail <| InvalidPropertyName(fieldName, input)
     
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 
         if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
             fail <| InvalidPropertyName(fieldName, input)
-        else ok()
+        else okUnit
     
     /// Validates a given value against the property name rules
     let propertyNameValidator fieldName input = 
@@ -421,7 +421,7 @@ module Validators =
             |> Seq.map (fun x -> x.Validate())
             |> Seq.filter failed
             |> Seq.toArray
-        if res.Length = 0 then ok()
+        if res.Length = 0 then okUnit
         else res.[0]
 
 [<AutoOpenAttribute>]
@@ -499,7 +499,7 @@ type ThreadSafeFileWriter() =
         if File.Exists(path) then 
             use mutex = new Mutex(false, path.Replace("\\", ""))
             File.Delete(path)
-        ok()
+        okUnit
     
     member __.ReadFile<'T>(filePath) = 
         let path = getPathWithExtension (filePath)
@@ -518,7 +518,7 @@ type ThreadSafeFileWriter() =
             mutex.WaitOne(-1) |> ignore
             File.WriteAllText(path, JsonConvert.SerializeObject(content, Formatting.Indented, options))
             mutex.ReleaseMutex()
-            ok()
+            okUnit
         with e -> 
             mutex.ReleaseMutex()
             fail <| FileWriteError(filePath, exceptionPrinter e)
@@ -556,7 +556,7 @@ type DtoStore<'T>(fileWriter : ThreadSafeFileWriter) =
         match fileWriter.ReadFile<'T>(folderPath +/ key) with
         | Ok(item) -> 
             tryAdd (key, item) |> ignore
-            ok()
+            okUnit
         | Fail(error) -> fail <| error
 
 type AtomicLong(value : int64) = 

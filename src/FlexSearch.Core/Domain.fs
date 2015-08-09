@@ -380,7 +380,7 @@ type Field(fieldName : string, fieldType : FieldDataType) =
             || this.FieldType = FieldDataType.Custom) 
            && (String.IsNullOrWhiteSpace(this.SearchAnalyzer) || String.IsNullOrWhiteSpace(this.IndexAnalyzer)) then 
             fail (AnalyzerIsMandatory(this.FieldName))
-        else ok())
+        else okUnit)
 
 /// Used for configuring the settings for text highlighting in the search results
 [<ToString; Sealed>]
@@ -400,7 +400,7 @@ type HighlightOption(fields : string []) =
     member val PreTag = "<B>" with get, set
     
     new() = HighlightOption(Unchecked.defaultof<string []>)
-    override __.Validate() = ok()
+    override __.Validate() = okUnit
 
 /// Search query is used for searching over a FlexSearch index. This provides
 /// a consistent syntax to execute various types of queries. The syntax is similar
@@ -569,7 +569,7 @@ type Index() =
             // Query Name is not mandatory for normal Search Queries
             let missingQueryNames = this.SearchProfiles |> Seq.filter (fun x -> String.IsNullOrWhiteSpace(x.QueryName))
             if missingQueryNames.Count() <> 0 then fail (NotBlank("QueryName"))
-            else ok()
+            else okUnit
         this.IndexName
         |> propertyNameValidator "IndexName"
         >>= fun _ -> seqValidator (this.Fields.Cast<DtoBase>())
@@ -597,7 +597,7 @@ type SearchResults() =
     /// document count. 
     member val TotalAvailable = 0 with get, set
 
-    override this.Validate() = ok()
+    override this.Validate() = okUnit
 
 /// Used by long running processes. All long running FlexSearch operations create
 /// an instance of Job and return the Id to the caller. This Id can be used by the
@@ -626,7 +626,7 @@ type Job() =
     /// Any message that is associated with the job.
     member val Message = defString with get, set
     
-    override __.Validate() = ok()
+    override __.Validate() = okUnit
 
 /// <summary>
 /// Request to analyze a text against an analyzer. The reason to force
@@ -640,20 +640,20 @@ type AnalysisRequest() =
     member val Text = defString with get, set
     override this.Validate() = 
         if this.Text |> isBlank then MissingFieldValue "Text" |> fail
-        else ok()
+        else okUnit
 
 [<ToString; Sealed>]
 type CreateResponse(id : string) =
     inherit DtoBase() 
     member val Id = id with get, set
-    override this.Validate() = ok()
+    override this.Validate() = okUnit
     new() = CreateResponse("")
 
 [<ToString; Sealed>]
 type IndexExistsResponse() = 
     inherit DtoBase()
     member val Exists = Unchecked.defaultof<bool> with get, set
-    override this.Validate() = ok()
+    override this.Validate() = okUnit
 
 [<ToString; Sealed>]
 type MemoryDetailsResponse() = 
@@ -664,11 +664,11 @@ type MemoryDetailsResponse() =
     member val TotalMemory = 0UL with get, set
     // Percentage of memory used by FlexSearch
     member val Usage = defDouble with get, set
-    override this.Validate() = ok()
+    override this.Validate() = okUnit
 
 type NoBody() = 
     inherit DtoBase()
-    override __.Validate() = ok()
+    override __.Validate() = okUnit
 
 type SearchProfileTestDto() =
     inherit DtoBase()

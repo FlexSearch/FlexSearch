@@ -105,7 +105,7 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
 type IndexStatusResponse() = 
     inherit DtoBase()
     member val Status = IndexStatus.Undefined with get, set
-    override this.Validate() = ok()
+    override this.Validate() = okUnit
 
 /// Get index status
 [<Name("GET-/indices/:id/status")>]

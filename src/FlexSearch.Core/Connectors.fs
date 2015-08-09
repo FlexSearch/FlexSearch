@@ -71,7 +71,7 @@ type CsvIndexingRequest() =
     override __.Validate() = 
         if __.HasHeaderRecord = false && (__.Headers |> Seq.isEmpty) then 
             fail <| MissingFieldValue("HasHeaderRecord, Headers")
-        else ok()
+        else okUnit
 
 /// Connector for importing CSV file data into the system.
 [<Sealed>]
@@ -101,7 +101,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
     //                    |> Seq.skip 1
     //                    |> Seq.iteri (fun i header -> document.Fields.Add(header, reader.CurrentRecord.[i + 1]))
     //                    queueService.AddDocumentQueue(document)
-    //                ok()
+    //                okUnit
     let processFile (body : CsvIndexingRequest, path : string) = 
         use reader = new TextFieldParser(path)
         (!>) "Parsing CSV file at: %s" path
@@ -130,7 +130,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                     (!>) "CSV Parsing error: %A" e
                     Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
             (!>) "CSV Parsing finished. Processed Rows:%i File: %s" rows path
-            ok()
+            okUnit
     
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
@@ -198,7 +198,7 @@ type SqlIndexingRequest() =
     /// to check the status of the job.
     member val CreateJob = false with get, set
     
-    override __.Validate() = ok()
+    override __.Validate() = okUnit
 
 [<Sealed>]
 [<Name("POST-/indices/:id/sql")>]

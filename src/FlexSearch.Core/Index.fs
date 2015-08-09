@@ -985,21 +985,21 @@ module IndexManager =
         match t.Store.TryGetValue(newState.IndexDto.IndexName) with
         | true, state -> 
             match t.Store.TryUpdate(state.IndexDto.IndexName, newState, state) with
-            | true -> ok()
+            | true -> okUnit
             | false -> 
                 fail 
                 <| UnableToUpdateIndexStatus
                        (state.IndexDto.IndexName, state.IndexStatus.ToString(), newState.IndexStatus.ToString())
         | _ -> 
             match t.Store.TryAdd(newState.IndexDto.IndexName, newState) with
-            | true -> ok()
+            | true -> okUnit
             | false -> 
                 fail <| UnableToUpdateIndexStatus(newState.IndexDto.IndexName, "None", newState.IndexDto.ToString())
     
     /// Check if the given index exists
     let indexExists (indexName) (t : T) = 
         match t.Store.TryGetValue(indexName) with
-        | true, _ -> ok()
+        | true, _ -> okUnit
         | _ -> fail <| indexNotFound indexName
     
     /// Checks if a given index is online or not. If it is 

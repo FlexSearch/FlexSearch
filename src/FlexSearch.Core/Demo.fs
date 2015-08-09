@@ -166,8 +166,8 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     member this.GetDemoIndex() = GetDemoIndexInfo()
     member this.Setup() = 
         match indexService.IndexExists("country") with
-        | true -> ok()
+        | true -> okUnit
         | _ -> 
             match CreateIndex() with
-            | Ok(_) -> ok()
+            | Ok(_) -> okUnit
             | Fail(e) -> Fail(e)
