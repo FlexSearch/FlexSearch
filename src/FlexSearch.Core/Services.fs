@@ -38,7 +38,9 @@ type IFlexFactory<'T> =
 /// Index related operations
 type IIndexService = 
     abstract GetIndex : indexName:string -> Result<Index>
-    abstract UpdateIndexFields : fields:Field [] -> Result<unit>
+    abstract UpdateIndexFields : indexName:string * fields:Field [] -> Result<unit>
+    abstract UpdateSearchProfile : indexName:string * profile:SearchQuery -> Result<unit>
+    abstract UpdateIndexConfiguration : indexName:string * indexConfiguration:IndexConfiguration -> Result<unit>
     abstract DeleteIndex : indexName:string -> Result<unit>
     abstract AddIndex : index:Index -> Result<CreateResponse>
     abstract GetAllIndex : unit -> Index array
@@ -284,7 +286,9 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
         member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
-        member __.UpdateIndexFields(_ : Field []) = failwith "Not implemented yet"
+        member __.UpdateIndexFields(indexName:string, _ : Field []) = failwith "Not implemented yet"
+        member __.UpdateSearchProfile(indexName:string , profile:SearchQuery) = failwith "Not implemented yet"
+        member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) = failwith "Not implemented yet"
         member __.GetDiskUsage(indexName : string) = im |> IndexManager.getDiskUsage indexName
 
 [<Sealed>]
