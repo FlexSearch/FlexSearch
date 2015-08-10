@@ -9,45 +9,45 @@ module IndexServiceTests =
             test <@ succeeded <| indexService.AddIndex(index) @>
         
         member __.``Newly created index should be online`` (indexService : IIndexService, index : Index) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Online) @>
         
         member __.``Newly created index should be offline`` (indexService : IIndexService, index : Index) = 
-            index.Online <- false
+            index.Active <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Offline) @>
         
         member __.``It is not possible to open an opened index`` (indexService : IIndexService, index : Index) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.OpenIndex(index.IndexName) = fail(IndexIsAlreadyOnline(index.IndexName)) @>
         
         member __.``It is not possible to close an closed index`` (indexService : IIndexService, index : Index) = 
-            index.Online <- false
+            index.Active <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.CloseIndex(index.IndexName) = fail(IndexIsAlreadyOffline(index.IndexName)) @>
         
         member __.``Can not create the same index twice`` (indexService : IIndexService, index : Index) = 
-            index.Online <- false
+            index.Active <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ indexService.AddIndex(index) = fail(IndexAlreadyExists(index.IndexName)) @>
         
         member __.``Offline index can be made online`` (indexService : IIndexService, index : Index) = 
-            index.Online <- false
+            index.Active <- false
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Online) @>
         
         member __.``Online index can be made offline`` (indexService : IIndexService, index : Index) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Offline) @>
 
     type CommonTests() =
         member __.``Should return size of existing index`` (indexService: IIndexService, index : Index) =
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
             test <@ succeeded <| indexService.GetDiskUsage index.IndexName @>
@@ -61,7 +61,7 @@ module DocumentServiceTests =
         member __.``Should be able to add and retrieve simple document`` (index : Index, documentId : string, 
                                                                           indexService : IIndexService, 
                                                                           documentService : IDocumentService) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -73,7 +73,7 @@ module DocumentServiceTests =
                                                                                            documentId : string, 
                                                                                            indexService : IIndexService, 
                                                                                            documentService : IDocumentService) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -86,7 +86,7 @@ module DocumentServiceTests =
         member __.``Should be able to add and delete a document`` (index : Index, documentId : string, 
                                                                    indexService : IIndexService, 
                                                                    documentService : IDocumentService) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -100,7 +100,7 @@ module DocumentServiceTests =
         
         member __.``Should be able to update a document`` (index : Index, id : string, indexService : IIndexService, 
                                                            documentService : IDocumentService) = 
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, id)
             document.Fields.["t1"] <- "0"
@@ -117,7 +117,7 @@ module DocumentServiceTests =
 
         member __.``Should be able to delete all documents in an index``(index : Index, indexService : IIndexService, 
                                                                          documentService : IDocumentService) =
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             [1..10] |> Seq.iter (fun i ->
                 let d = new Document(index.IndexName, i.ToString())
@@ -135,7 +135,7 @@ module DocumentServiceTests =
 
         member __.``Should be able to delete documents returned by search query``(index: Index, indexService: IIndexService,
                                                                                   documentService: IDocumentService, searchService: ISearchService) =
-            index.Online <- true
+            index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             [1..10] |> Seq.iter (fun i ->
                 let d = new Document(index.IndexName, i.ToString())

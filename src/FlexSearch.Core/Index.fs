@@ -1022,7 +1022,7 @@ module IndexManager =
     let loadIndex (dto : Index) (t : T) = 
         maybe { 
             do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
-            if dto.Online then 
+            if dto.Active then 
                 let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
                 let indexWriter = IndexWriter.create (setting)
                 do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
@@ -1080,7 +1080,7 @@ module IndexManager =
             match indexState.IndexStatus with
             | IndexStatus.Closing | IndexStatus.Offline -> return! fail <| IndexIsAlreadyOffline(indexName)
             | _ -> 
-                indexState.IndexDto.Online <- false
+                indexState.IndexDto.Active <- false
                 do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto)
                 indexState.IndexWriter.Value |> IndexWriter.close
                 do! t |> updateState (createIndexState (indexState.IndexDto, IndexStatus.Offline))
@@ -1093,7 +1093,7 @@ module IndexManager =
             match indexState.IndexStatus with
             | IndexStatus.Opening | IndexStatus.Online -> return! fail <| IndexIsAlreadyOnline(indexName)
             | _ -> 
-                indexState.IndexDto.Online <- true
+                indexState.IndexDto.Active <- true
                 do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto)
                 do! t |> loadIndex indexState.IndexDto
         }

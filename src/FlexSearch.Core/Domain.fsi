@@ -864,7 +864,7 @@ Name of the index
 Signifies if the index is on-line or not? An index has to be on-line in order to 
 enable searching over it.
 #endif
-    member Online : bool with get, set
+    member Active : bool with get, set
 
 #if prop_SearchProfiles
 Search Profiles

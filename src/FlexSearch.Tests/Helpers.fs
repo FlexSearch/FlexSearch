@@ -43,7 +43,7 @@ module DataHelpers =
     let getTestIndex() = 
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
-        index.Online <- true
+        index.Active <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
         index.Fields <- [| new Field("b1", FieldDataType.Bool)
                            new Field("b2", FieldDataType.Bool)
@@ -96,7 +96,7 @@ module DataHelpers =
         let index = new Index()
         index.IndexName <- "contact"
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
-        index.Online <- true
+        index.Active <- true
         index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
         index.Fields <- 
          [| new Field("firstname", FieldDataType.Text)

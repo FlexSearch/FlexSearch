@@ -22,7 +22,7 @@ module CsvHandlerTests =
                                                                                 queueService : IQueueService, 
                                                                                 jobService : IJobService, 
                                                                                 indexService : IIndexService) = 
-            index.Online <- true
+            index.Active <- true
             let jobResponse = index |> generateCsvIndexJob queueService jobService indexService
             test <@ rSucceeded <| jobResponse @>
         
@@ -30,7 +30,7 @@ module CsvHandlerTests =
                                                                                 queueService : IQueueService, 
                                                                                 jobService : IJobService, 
                                                                                 indexService : IIndexService) = 
-            index.Online <- true
+            index.Active <- true
             let jobResponse = index |> generateCsvIndexJob queueService jobService indexService
             test <@ rSucceeded <| jobResponse @>
 

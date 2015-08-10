@@ -88,7 +88,7 @@ module DuplicateDetection =
         let index = new Index(IndexName = "duplicates")
         index.IndexConfiguration <- new IndexConfiguration()
         index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
-        index.Online <- true
+        index.Active <- true
         index.Fields <- [| new Field(sessionId, FieldDataType.ExactText)
                            new Field(recordType, FieldDataType.ExactText)
                            // Source record

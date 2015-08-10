@@ -556,7 +556,7 @@ type Index() =
     
     /// Signifies if the index is on-line or not? An index has to be 
     /// on-line in order to enable searching over it.
-    member val Online = true with get, set
+    member val Active = true with get, set
     
     override this.Validate() = 
         let checkDuplicateFieldName() = 

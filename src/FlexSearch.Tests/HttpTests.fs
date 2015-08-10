@@ -195,7 +195,7 @@ type ``Get Non existing Index Tests``() =
 type ``Index Other Services Tests``() = 
     [<Example("get-indices-id-status-1", "Get status of an index (offine)")>]
     member __.``Newly created index is always offline`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
-        index.Online <- false
+        index.Active <- false
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
         actual |> isSuccessful
@@ -204,7 +204,7 @@ type ``Index Other Services Tests``() =
     
     [<Example("put-indices-id-status-1", "")>]
     member __.``Set status of an index 'online'`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
-        index.Online <- false
+        index.Active <- false
         client.AddIndex(index).Result |> isCreated
         client.BringIndexOnline(index.IndexName).Result |> isSuccessful
         let actual = client.GetIndexStatus(index.IndexName).Result
@@ -237,7 +237,7 @@ type ``Index Other Services Tests``() =
 
 type ``Document Tests``() = 
     let testIndex indexName = 
-        let index = new Index(IndexName = indexName, Online = true)
+        let index = new Index(IndexName = indexName, Active = true)
         index.Fields <- [| new Field("firstname", FieldDataType.Text)
                            new Field("lastname") |]
         index

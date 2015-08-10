@@ -103,7 +103,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
         let index = new Index(IndexName = indexName)
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
-        index.Online <- true
+        index.Active <- true
         index.Fields <- [| new Field("countryname")
                            new Field("exports", FieldDataType.Long)
                            new Field("imports", FieldDataType.Text, IndexAnalyzer = "striptonumbersanalyzer")
