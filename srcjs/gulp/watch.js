@@ -8,7 +8,7 @@ function isOnlyChange(event) {
 }
 
 module.exports = function(options) {
-  gulp.task('watch', ['inject'], function () {
+  gulp.task('watch', ['inject', 'swagger'], function () {
 
     gulp.watch([options.src + '/*.html', 'bower.json'], ['inject']);
 

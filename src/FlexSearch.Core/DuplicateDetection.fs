@@ -29,10 +29,12 @@ open System.Linq
 open System.Web.UI
 open System.Xml.Linq
 open Microsoft.VisualBasic.FileIO
+open System.Runtime.Serialization
 
+[<Sealed>]
 type Session() = 
-    member val Id = Guid.NewGuid().ToString()
-    member val SessionId = Guid.NewGuid().ToString()
+    member val Id = Guid.NewGuid().ToString() with get
+    member val SessionId = Guid.NewGuid().ToString() with get
     member val IndexName = Unchecked.defaultof<string> with get, set
     member val ProfileName = Unchecked.defaultof<string> with get, set
     member val JobStartTime = Unchecked.defaultof<DateTime> with get, set
@@ -52,25 +54,13 @@ type TargetRecord(sessionId, sourceId) =
     member val TargetScore = 0.0f with get, set
 
 type SourceRecord(sessionId) = 
-    member val SessionId = sessionId
+    member val SessionId = sessionId with get
     member val SourceId = 0 with get, set
     member val SourceRecordId = "" with get, set
     member val SourceDisplayName = "" with get, set
     member val SourceStatus = "0" with get, set
     member val TotalDupes = 0 with get, set
     member val TargetRecords = new List<TargetRecord>() with get, set
-
-type DuplicateDetectionRequest() = 
-    inherit DtoBase()
-    member val SelectionQuery = defString with get, set
-    member val DisplayName = defString with get, set
-    member val ThreadCount = 1 with get, set
-    member val IndexName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val MaxRecordsToScan = Int16.MaxValue with get, set
-    member val DuplicatesCount = Int16.MaxValue with get, set
-    member val NextId = new AtomicLong(0L)
-    override this.Validate() = ok()
 
 [<AutoOpen>]
 module DuplicateDetection = 
@@ -92,38 +82,41 @@ module DuplicateDetection =
     let quality = "quality"
     let sessionProperties = "sessionproperties"
     let misc = "misc"
-    let formatter = new NewtonsoftJsonFormatter() :> IFormatter
+    let formatter = new NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
     
     let schema = 
-        let index = new Index.Dto(IndexName = "duplicates")
-        index.IndexConfiguration <- new IndexConfiguration.Dto()
-        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.MemoryMapped
-        index.Online <- true
-        index.Fields <- [| new Field.Dto(sessionId, FieldType.Dto.ExactText)
-                           new Field.Dto(recordType, FieldType.Dto.ExactText)
+        let index = new Index(IndexName = "duplicates")
+        index.IndexConfiguration <- new IndexConfiguration()
+        index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
+        index.Active <- true
+        index.Fields <- [| new Field(sessionId, FieldDataType.ExactText)
+                           new Field(recordType, FieldDataType.ExactText)
                            // Source record
-                           new Field.Dto(sourceId, FieldType.Dto.Int, AllowSort = true)
-                           new Field.Dto(sourceRecordId, FieldType.Dto.ExactText)
-                           new Field.Dto(sourceDisplayName, FieldType.Dto.Stored)
-                           new Field.Dto(totalDupesFound, FieldType.Dto.Int)
-                           new Field.Dto(sourceStatus, FieldType.Dto.Int, AllowSort = true)
-                           new Field.Dto(targetRecords, FieldType.Dto.Text)
+                           new Field(sourceId, FieldDataType.Int, AllowSort = true)
+                           new Field(sourceRecordId, FieldDataType.ExactText)
+                           new Field(sourceDisplayName, FieldDataType.Stored)
+                           new Field(totalDupesFound, FieldDataType.Int)
+                           new Field(sourceStatus, FieldDataType.Int, AllowSort = true)
+                           new Field(targetRecords, FieldDataType.Text)
                            // Session related
-                           new Field.Dto(sessionProperties, FieldType.Dto.Text)
-                           new Field.Dto(misc, FieldType.Dto.Text) |]
+                           new Field(sessionProperties, FieldDataType.Text)
+                           new Field(misc, FieldDataType.Text) |]
         index
     
     let getId() = Guid.NewGuid().ToString()
     
     let writeSessionRecord (session : Session, documentService : IDocumentService) = 
-        let doc = new Document.Dto(schema.IndexName, session.Id)
+        let doc = new Document(schema.IndexName, session.Id)
         doc.Fields.Add(sessionId, session.SessionId)
         doc.Fields.Add(recordType, sessionRecordType)
-        doc.Fields.Add(sessionProperties, formatter.SerializeToString(session))
-        documentService.AddOrUpdateDocument(doc) |> ignore
+        let sessionPropertiesJson = formatter.SerializeToString(session)
+        assert (sessionPropertiesJson <> "{}")
+        doc.Fields.Add(sessionProperties, sessionPropertiesJson)
+        documentService.AddOrUpdateDocument(doc) 
+        |> Log.logErrorChoice            
     
     let writeDuplicates (sourceRecord : SourceRecord, documentService : IDocumentService) = 
-        let sourceDoc = new Document.Dto(schema.IndexName, getId())
+        let sourceDoc = new Document(schema.IndexName, getId())
         sourceDoc.Fields.Add(sessionId, sourceRecord.SessionId)
         sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId.ToString())
         sourceDoc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
@@ -134,6 +127,41 @@ module DuplicateDetection =
         sourceDoc.Fields.Add(targetRecords, formatter.SerializeToString(sourceRecord.TargetRecords))
         documentService.AddDocument(sourceDoc) |> ignore
 
+type DuplicateDetectionRequest() = 
+    inherit DtoBase()
+    member val SelectionQuery = defString with get, set
+    member val DisplayName = defString with get, set
+    member val ThreadCount = 1 with get, set
+    member val IndexName = defString with get, set
+    member val ProfileName = defString with get, set
+    member val MaxRecordsToScan = Int16.MaxValue with get, set
+    member val DuplicatesCount = Int16.MaxValue with get, set
+    member val NextId = new AtomicLong(0L)
+    override this.Validate() = okUnit
+
+type DuplicateDetectionReportRequest() = 
+    inherit DtoBase()
+    member val SourceFileName = defString with get, set
+    member val ProfileName = defString with get, set
+    member val IndexName = defString with get, set
+    member val QueryString = defString with get, set
+    member val SelectionQuery = defString with get, set
+    member val CutOff = defDouble with get, set
+    override this.Validate() = 
+        this.IndexName
+        |> notBlank "IndexName"
+        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+        >>= fun _ -> 
+            let valid = this.SourceFileName
+                        |> isNotBlank
+                        || this.SelectionQuery |> isNotBlank
+            if not valid then 
+                fail 
+                <| GenericError
+                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
+                        new ResizeArray<KeyValuePair<string, string>>())
+            else okUnit
+
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
@@ -142,16 +170,16 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
     do 
         if not (indexService.IndexExists(schema.IndexName)) then 
             match indexService.AddIndex(schema) with
-            | Choice1Of2(_) -> ()
-            | Choice2Of2(error) -> Logger.Log(error)
+            | Ok(_) -> ()
+            | Fail(error) -> Logger.Log(error)
     
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
-        let query = new SearchQuery.Dto(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
+        let query = new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName)
         query.Columns <- [| session.DisplayFieldName |]
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
         match searchService.Search(query, record) with
-        | Choice1Of2(results) -> 
+        | Ok(results) -> 
             if results.Meta.RecordsReturned > 1 then 
                 !>"Duplicate Found"
                 let header = 
@@ -184,16 +212,16 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         session.SelectionQuery <- req.SelectionQuery
         let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
         let mainQuery = 
-            new SearchQuery.Dto(session.IndexName, req.SelectionQuery, Count = int req.MaxRecordsToScan, 
+            new SearchQuery(session.IndexName, req.SelectionQuery, Count = int req.MaxRecordsToScan, 
                                 ReturnFlatResult = true, Columns = [| "*" |])
         let resultC = searchService.Search(mainQuery)
         match resultC with
-        | Choice1Of2(result) -> 
+        | Ok(result) -> 
             (!>) "Main Query Records Returned:%i" result.Meta.RecordsReturned
             let records = result |> toFlatResults
             session.RecordsReturned <- result.Meta.RecordsReturned
             session.RecordsAvailable <- result.Meta.TotalAvailable
-            writeSessionRecord (session, documentService)
+            writeSessionRecord (session, documentService) |> ignore
             try 
                 let _ = 
                     Parallel.ForEach(records.Documents, parallelOptions, 
@@ -205,8 +233,8 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                 ()
             with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
             session.JobEndTime <- DateTime.Now
-            writeSessionRecord (session, documentService)
-        | Choice2Of2(err) -> Logger.Log(err)
+            writeSessionRecord (session, documentService) |> ignore
+        | Fail(err) -> Logger.Log(err)
         !>"Dedupe Session Finished."
     
     let requestProcessor = 
@@ -223,14 +251,14 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         body.Value.IndexName <- request.ResId.Value
         body.Value.ProfileName <- request.SubResId.Value
         match indexService.IsIndexOnline(request.ResId.Value) with
-        | Choice1Of2(writer) -> 
+        | Ok(writer) -> 
             match writer.Settings.SearchProfiles.TryGetValue(request.SubResId.Value) with
             | true, _ -> 
                 let jobId = Guid.NewGuid()
                 requestProcessor.Post(jobId, writer, body.Value)
                 SuccessResponse(jobId, Ok)
             | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
-        | Choice2Of2(error) -> FailureResponse(error, BadRequest)
+        | Fail(error) -> FailureResponse(error, BadRequest)
 
 // ----------------------------------------------------------------------------
 // Duplicate detection report related
@@ -247,29 +275,6 @@ type FileWriterCommands =
     | BeginTable of aggrResultHeader : bool * record : Dictionary<string, string>
     | AddRecord of recordType : RecordType * primaryRecord : Dictionary<string, string> * record : Dictionary<string, string>
     | EndTable
-
-type DuplicateDetectionReportRequest() = 
-    inherit DtoBase()
-    member val SourceFileName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val IndexName = defString with get, set
-    member val QueryString = defString with get, set
-    member val SelectionQuery = defString with get, set
-    member val CutOff = defDouble with get, set
-    override this.Validate() = 
-        this.IndexName
-        |> notBlank "IndexName"
-        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
-        >>= fun _ -> 
-            let valid = this.SourceFileName
-                        |> isNotBlank
-                        || this.SelectionQuery |> isNotBlank
-            if not valid then 
-                fail 
-                <| GenericError
-                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
-                        new ResizeArray<KeyValuePair<string, string>>())
-            else ok()
 
 type Stats() = 
     member val TotalRecords = 0 with get, set
@@ -327,7 +332,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             headers |> Array.iteri (fun i header -> p.Add(header, record.[i]))
             p
         
-        let query = new SearchQuery.Dto(request.IndexName, String.Empty, SearchProfile = request.ProfileName)
+        let query = new SearchQuery(request.IndexName, String.Empty, SearchProfile = request.ProfileName)
         query.Columns <- headers
         query.ReturnFlatResult <- true
         query.ReturnScore <- true
@@ -342,7 +347,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
         builder |> addElement (BeginTable(false, primaryRecord))
         builder |> addElement (AddRecord(Main, primaryRecord, primaryRecord))
         match searchService.Search(query, primaryRecord) with
-        | Choice1Of2(results) -> 
+        | Ok(results) -> 
             let docs = results |> toFlatResults
             match docs.Documents.Count() with
             | 0 -> 
@@ -361,7 +366,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
             for doc in docs.Documents do
                 builder |> addElement (AddRecord(Result, primaryRecord, doc))
             builder |> addElement (EndTable)
-        | Choice2Of2(error) -> 
+        | Fail(error) -> 
             builder.Append(sprintf """%A""" error) |> ignore
             builder |> addElement (EndTable)
         (builder.ToString(), aggrBuilder.ToString())
@@ -383,14 +388,14 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
     
     let getIndexDataSource (request : DuplicateDetectionReportRequest) = 
         let mainQuery = 
-            new SearchQuery.Dto(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
+            new SearchQuery(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
                                 ReturnFlatResult = true, Columns = [| "*" |])
         let result = searchService.Search(mainQuery)
         match result with
-        | Choice1Of2(result) -> 
+        | Ok(result) -> 
             let headers = 
                 searchService.Search
-                    (new SearchQuery.Dto(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, 
+                    (new SearchQuery(request.IndexName, request.SelectionQuery, Count = 1, ReturnFlatResult = true, 
                                          Columns = [| "*" |]))
                 |> extract
                 |> toFlatResults
@@ -406,7 +411,7 @@ type DuplicateDetectionReportHandler(indexService : IIndexService, searchService
                         yield record.Values.ToArray()
                 }
             (headers, d)
-        | Choice2Of2(err) -> 
+        | Fail(err) -> 
             Logger.Log(err)
             (Array.empty, Seq.empty)
     

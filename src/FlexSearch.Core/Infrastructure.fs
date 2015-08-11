@@ -152,6 +152,12 @@ type NameAttribute(name : string) =
     inherit Attribute()
     member this.Name = name
 
+/// Represents a class attribute that marks the class as internal, meaning
+/// it's not exposed to the documentation.
+[<MetadataAttribute>]
+[<Sealed>]
+type InternalAttribute() = inherit Attribute()
+
 /// Implements the Freezable pattern
 [<InterfaceAttribute>]
 type IFreezable = 
@@ -161,14 +167,24 @@ type IFreezable =
 [<AbstractClassAttribute>]
 type DtoBase() = 
     let mutable isFrozen = false
-    abstract Validate : unit -> Choice<unit, IMessage>
+    abstract Validate : unit -> Result<unit>
     interface IFreezable with
         member __.Freeze() = isFrozen <- true
 
 [<AutoOpen>]
 module Operators = 
     open System.Collections
+        
+    /// Wraps a value in a Success
+    let inline ok<'a> (x : 'a) = Ok(x)
     
+    /// Wraps a message in a Failure
+    let inline fail (msg : 'b) =
+        Fail (msg :> IMessage)
+
+    /// Wrap a unit value in success
+    let okUnit = Ok()
+
     let wrap f state = 
         f()
         state
@@ -187,18 +203,11 @@ module Operators =
         let r1 = f h
         let r2 = g h
         (r1, r2)
-    
-    /// Wraps a value in a Success
-    let inline ok<'a, 'b> (x : 'a) : Choice<'a, 'b> = Choice1Of2(x)
-    
-    /// Wraps a message in a Failure
-    let inline fail<'a, 'b when 'b  :> IMessage> (msg : 'b) : Choice<'a, IMessage> =
-        Choice2Of2 (msg :> IMessage)
-    
+        
     /// Returns true if the result was not successful.
     let inline failed result = 
         match result with
-        | Choice2Of2 _ -> true
+        | Fail _ -> true
         | _ -> false
     
     /// Returns true if the result was successful.
@@ -207,50 +216,34 @@ module Operators =
     /// Takes a Result and maps it with fSuccess if it is a Success otherwise it maps it with fFailure.
     let inline either fSuccess fFailure trialResult = 
         match trialResult with
-        | Choice1Of2(x) -> fSuccess (x)
-        | Choice2Of2(msgs) -> fFailure (msgs)
+        | Ok(x) -> fSuccess (x)
+        | Fail(msgs) -> fFailure (msgs)
     
     /// If the given result is a Success the wrapped value will be returned. 
     ///Otherwise the function throws an exception with Failure message of the result.
     let inline returnOrFail result = 
         match result with
-        | Choice1Of2(x) -> x
-        | Choice2Of2(err) -> raise (ValidationException(err))
+        | Ok(x) -> x
+        | Fail(err) -> raise (ValidationException(err))
     
     /// Takes a bool value and returns ok for sucess and predefined error
     /// for failure
     let inline boolToResult err result = 
         match result with
-        | true -> ok()
+        | true -> okUnit
         | false -> fail (err)
     
     /// Take a Choice result and return true for Choice1 and false for Choice2
     let inline resultToBool result = 
         match result with
-        | Choice1Of2(_) -> true
+        | Ok(_) -> true
         | _ -> false
-    
-    //    /// If the given result is a Success the wrapped value will be returned. 
-    //    ///Otherwise the function throws an exception with Failure message of the result.
-    //    let inline returnOrFail result = 
-    //        let inline raiseExn msgs = 
-    //            msgs
-    //            |> Seq.map (sprintf "%O")
-    //            |> String.concat (Environment.NewLine + "\t")
-    //            |> failwith
-    //        either fst raiseExn result
-    //    
-    /// Appends the given messages with the messages in the given result.
-    let inline mergeMessages msgs result = 
-        let inline fSuccess (x, msgs2) = Choice1Of2(x, msgs @ msgs2)
-        let inline fFailure errs = Choice2Of2(errs @ msgs)
-        either fSuccess fFailure result
-    
+        
     /// If the result is a Success it executes the given function on the value.
     /// Otherwise the exisiting failure is propagated.
     let inline bind f result = 
         let inline fSuccess (x) = f x
-        let inline fFailure (msg) = Choice2Of2 msg
+        let inline fFailure (msg) = fail msg
         either fSuccess fFailure result
     
     /// If the result is a Success it executes the given function on the value. 
@@ -262,15 +255,15 @@ module Operators =
     /// Otherwise the exisiting error messages are propagated.
     let inline apply wrappedFunction result = 
         match wrappedFunction, result with
-        | Choice1Of2 f, Choice1Of2 x -> Choice1Of2(f x)
-        | Choice2Of2 err, Choice1Of2 _ -> Choice2Of2(err)
-        | Choice1Of2 _, Choice2Of2 err -> Choice2Of2(err)
-        | Choice2Of2 err1, Choice2Of2 err2 -> Choice2Of2(err1)
+        | Ok f, Ok x -> ok(f x)
+        | Fail err, Ok _ -> fail(err)
+        | Ok _, Fail err -> fail(err)
+        | Fail err1, Fail err2 -> fail(err1)
     
     let inline extract result = 
         match result with
-        | Choice1Of2(a) -> a
-        | Choice2Of2(e) -> failwithf "%s" (e.ToString())
+        | Ok(a) -> a
+        | Fail(e) -> failwithf "%s" (e.ToString())
     
     /// If the wrapped function is a success and the given result is a success the function is applied on the value. 
     /// Otherwise the exisiting error messages are propagated.
@@ -313,25 +306,25 @@ module Operators =
         [<DebuggerStepThrough>]
         member inline __.Bind(v, f) = 
             match v with
-            | Choice1Of2(x) -> f x
-            | Choice2Of2(s) -> Choice2Of2(s)
+            | Ok(x) -> f x
+            | Fail(s) -> fail s
         
         [<DebuggerStepThrough>]
         member inline __.ReturnFrom v = v
         
         [<DebuggerStepThrough>]
-        member inline __.Return v = Choice1Of2(v)
+        member inline __.Return v = ok v
         
         [<DebuggerStepThrough>]
-        member inline __.Zero() = Choice1Of2()
+        member inline __.Zero() = okUnit
         
         [<DebuggerStepThrough>]
         member inline __.Combine(a, b) = 
             match a, b with
-            | Choice1Of2 a', Choice1Of2 b' -> Choice1Of2 b'
-            | Choice2Of2 a', Choice1Of2 b' -> Choice2Of2 a'
-            | Choice1Of2 a', Choice2Of2 b' -> Choice2Of2 b'
-            | Choice2Of2 a', Choice2Of2 b' -> Choice2Of2 a'
+            | Ok a', Ok b' -> ok b'
+            | Fail a', Ok b' -> fail a'
+            | Ok a', Fail b' -> fail b'
+            | Fail a', Fail b' -> fail a'
         
         [<DebuggerStepThrough>]
         member inline __.Delay(f) = f()
@@ -370,51 +363,51 @@ module Operators =
 module Validators = 
     /// Checks of the given input array has any duplicates    
     let hasDuplicates groupName fieldName (input : array<string>) = 
-        if input.Count() = input.Distinct().Count() then ok()
+        if input.Count() = input.Distinct().Count() then okUnit
         else fail <| DuplicateFieldValue(groupName, fieldName)
     
     /// Checks if a given value is greater than the lower limit
     let gt fieldName lowerLimit input = 
-        if input > lowerLimit then ok()
+        if input > lowerLimit then okUnit
         else fail <| GreaterThan(fieldName, lowerLimit.ToString(), input.ToString())
     
     /// Checks if the passed value is greater than or equal to the lower limit
     let gte fieldName lowerLimit input = 
-        if input >= lowerLimit then ok()
+        if input >= lowerLimit then okUnit
         else fail <| GreaterThanEqual(fieldName, lowerLimit.ToString(), input.ToString())
     
     /// Checks if a given value is less than the upper limit
     let lessThan fieldName upperLimit input = 
-        if input < upperLimit then ok()
+        if input < upperLimit then okUnit
         else fail <| LessThan(fieldName, upperLimit.ToString(), input.ToString())
     
     /// Checks if the passed value is less than or equal to the upper limit
     let lessThanEqual fieldName upperLimit input = 
-        if input <= upperLimit then ok()
+        if input <= upperLimit then okUnit
         else fail <| LessThanEqual(fieldName, upperLimit.ToString(), input.ToString())
     
     /// Checks if the given string is null or empty
     let notBlank fieldName input = 
-        if not (String.IsNullOrWhiteSpace(input)) then ok()
+        if not (String.IsNullOrWhiteSpace(input)) then okUnit
         else fail <| NotBlank(fieldName)
     
     /// Checks if a given value satisfies the provided regex expression 
     let regexMatch fieldName regexExpr input = 
         let m = System.Text.RegularExpressions.Regex.Match(input, regexExpr)
-        if m.Success then ok()
+        if m.Success then okUnit
         else fail <| RegexMatch(fieldName, regexExpr)
     
     /// Validates if the property name satisfies the naming rules
     let propertyNameRegex fieldName input = 
         match input |> regexMatch fieldName "^[a-z0-9_]*$" with
-        | Choice1Of2(_) -> ok()
-        | Choice2Of2(_) -> fail <| InvalidPropertyName(fieldName, input)
+        | Ok(_) -> okUnit
+        | Fail(_) -> fail <| InvalidPropertyName(fieldName, input)
     
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 
         if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
             fail <| InvalidPropertyName(fieldName, input)
-        else ok()
+        else okUnit
     
     /// Validates a given value against the property name rules
     let propertyNameValidator fieldName input = 
@@ -428,7 +421,7 @@ module Validators =
             |> Seq.map (fun x -> x.Validate())
             |> Seq.filter failed
             |> Seq.toArray
-        if res.Length = 0 then ok()
+        if res.Length = 0 then okUnit
         else res.[0]
 
 [<AutoOpenAttribute>]
@@ -452,17 +445,17 @@ module DictionaryHelpers =
     
     let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(value) with
-        | true, v -> Choice1Of2(v)
+        | true, v -> ok(v)
         | _ -> fail <| error (value)
     
     let inline keyExists2 (value, error) (dict : IReadOnlyDictionary<string, _>) = 
         match dict.TryGetValue(value) with
-        | true, v -> Choice1Of2(v)
+        | true, v -> ok(v)
         | _ -> fail <| error (value)
     
     let inline tryGet (key) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(key) with
-        | true, v -> Choice1Of2(v)
+        | true, v -> ok(v)
         | _ -> fail <| KeyNotFound(key)
     
     let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
@@ -506,7 +499,7 @@ type ThreadSafeFileWriter() =
         if File.Exists(path) then 
             use mutex = new Mutex(false, path.Replace("\\", ""))
             File.Delete(path)
-        ok()
+        okUnit
     
     member __.ReadFile<'T>(filePath) = 
         let path = getPathWithExtension (filePath)
@@ -525,7 +518,7 @@ type ThreadSafeFileWriter() =
             mutex.WaitOne(-1) |> ignore
             File.WriteAllText(path, JsonConvert.SerializeObject(content, Formatting.Indented, options))
             mutex.ReleaseMutex()
-            ok()
+            okUnit
         with e -> 
             mutex.ReleaseMutex()
             fail <| FileWriteError(filePath, exceptionPrinter e)
@@ -561,7 +554,26 @@ type DtoStore<'T>(fileWriter : ThreadSafeFileWriter) =
     member __.GetItems() = store.Values.ToArray()
     member __.LoadItem<'T>(key : string) = 
         match fileWriter.ReadFile<'T>(folderPath +/ key) with
-        | Choice1Of2(item) -> 
+        | Ok(item) -> 
             tryAdd (key, item) |> ignore
-            ok()
-        | Choice2Of2(error) -> fail <| error
+            okUnit
+        | Fail(error) -> fail <| error
+
+type AtomicLong(value : int64) = 
+    let refCell = ref value
+    
+    member __.Value 
+        with get () = Interlocked.Read(refCell)
+        and set (value) = Interlocked.Exchange(refCell, value) |> ignore
+    
+    /// Increments the ref cell and returns the incremented value
+    member __.Increment() = Interlocked.Increment(refCell)
+    
+    /// Decrements the ref cell and returns the decremented value
+    member __.Decrement() = Interlocked.Decrement(refCell)
+    
+    /// Reset the ref cell to initial value
+    member __.Reset() = Interlocked.Exchange(refCell, value) |> ignore
+    
+    static member Create() = new AtomicLong(0L)
+    static member Create(value) = new AtomicLong(value)

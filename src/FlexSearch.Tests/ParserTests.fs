@@ -12,8 +12,8 @@ let test p str =
 
 let test2 str = 
     match parser.Parse(str) with
-    | Choice1Of2(_) -> ()
-    | Choice2Of2(errorMsg) -> raise <| invalidOp (sprintf "%A" errorMsg)
+    | Ok(_) -> ()
+    | Fail(errorMsg) -> raise <| invalidOp (sprintf "%A" errorMsg)
 
 type SearchParserTests() = 
     member __.``Single escape character should be accepted``() = 
@@ -58,8 +58,8 @@ type SearchParserTests() =
     [<Ignore>]
     member __.``Search Profile QueryString should parse`` (sut : string, expected : int) = 
         match ParseQueryString(sut, false) with
-        | Choice1Of2(result) -> <@ result.Count = expected @>
-        | Choice2Of2(e) -> raise <| invalidOp (sprintf "%A" e)
+        | Ok(result) -> <@ result.Count = expected @>
+        | Fail(e) -> raise <| invalidOp (sprintf "%A" e)
     
     [<InlineData("abc ='1234'")>]
     [<InlineData("abc ='a1234'")>]
@@ -68,8 +68,8 @@ type SearchParserTests() =
 
 let test3 str = 
     match ParseFunctionCall(str) with
-    | Choice1Of2(ast) -> ast
-    | Choice2Of2(errorMsg) -> raise <| invalidOp (errorMsg.ToString())
+    | Ok(ast) -> ast
+    | Fail(errorMsg) -> raise <| invalidOp (errorMsg.ToString())
 
 open Swensen.Unquote
 

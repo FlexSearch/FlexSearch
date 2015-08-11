@@ -55,14 +55,14 @@ type Country() =
 type DemoIndexService(indexService : IIndexService, documentService : IDocumentService, analyzerService : IAnalyzerService) = 
     let indexName = "country"
     
-    let AddTestDataToIndex(index : Index.Dto, testData : string) = 
+    let AddTestDataToIndex(index : Index, testData : string) = 
         let lines = testData.Split([| "\r\n"; "\n" |], StringSplitOptions.RemoveEmptyEntries)
         if lines.Count() < 2 then failwithf "No data to index"
         let headers = lines.[0].Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
         for line in lines.Skip(1) do
             assert (lines.Count() = headers.Count())
             let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
-            let indexDocument = new Document.Dto(index.IndexName, items.[0].Trim())
+            let indexDocument = new Document(index.IndexName, items.[0].Trim())
             for i in 1..items.Length - 1 do
                 indexDocument.Fields.Add(headers.[i].Trim(), items.[i].Trim())
             documentService.AddDocument(indexDocument) |> ignore
@@ -72,7 +72,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     
     let IndexJsonData(data : List<Country>) = 
         for record in data do
-            let indexDocument = new Document.Dto(indexName, record.Id)
+            let indexDocument = new Document(indexName, record.Id)
             indexDocument.Fields.Add("countryname", record.CountryName)
             indexDocument.Fields.Add("exports", record.Exports)
             indexDocument.Fields.Add("imports", record.Imports)
@@ -95,36 +95,36 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             indexDocument.Fields.Add("nationality", record.Nationality)
             indexDocument.Fields.Add("coordinates", record.Coordinates)
             match documentService.AddDocument(indexDocument) with
-            | Choice1Of2(_) -> ()
-            | Choice2Of2(e) -> failwithf "%A" e
+            | Ok(_) -> ()
+            | Fail(e) -> failwithf "%A" e
         indexService.Refresh(indexName) |> ignore
     
     let GetDemoIndexInfo() = 
-        let index = new Index.Dto(IndexName = indexName)
-        index.IndexConfiguration <- new IndexConfiguration.Dto(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
-        index.IndexConfiguration.DirectoryType <- DirectoryType.Dto.Ram
-        index.Online <- true
-        index.Fields <- [| new Field.Dto("countryname")
-                           new Field.Dto("exports", FieldType.Dto.Long)
-                           new Field.Dto("imports", FieldType.Dto.Text, IndexAnalyzer = "striptonumbersanalyzer")
-                           new Field.Dto("independence", FieldType.Dto.Date)
-                           new Field.Dto("militaryexpenditure", FieldType.Dto.Double)
-                           new Field.Dto("netmigration", FieldType.Dto.Double)
-                           new Field.Dto("area", FieldType.Dto.Int)
-                           new Field.Dto("internetusers", FieldType.Dto.Long)
-                           new Field.Dto("labourforce", FieldType.Dto.Long)
-                           new Field.Dto("population", FieldType.Dto.Long)
-                           new Field.Dto("agriproducts", FieldType.Dto.Text, IndexAnalyzer = "foodsynonymsanalyzer")
-                           new Field.Dto("areacomparative")
-                           new Field.Dto("background", FieldType.Dto.Highlight)
-                           new Field.Dto("capital")
-                           new Field.Dto("climate")
-                           new Field.Dto("economy")
-                           new Field.Dto("governmenttype")
-                           new Field.Dto("memberof")
-                           new Field.Dto("countrycode", FieldType.Dto.ExactText)
-                           new Field.Dto("nationality")
-                           new Field.Dto("coordinates", FieldType.Dto.ExactText) |]
+        let index = new Index(IndexName = indexName)
+        index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
+        index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
+        index.Active <- true
+        index.Fields <- [| new Field("countryname")
+                           new Field("exports", FieldDataType.Long)
+                           new Field("imports", FieldDataType.Text, IndexAnalyzer = "striptonumbersanalyzer")
+                           new Field("independence", FieldDataType.Date)
+                           new Field("militaryexpenditure", FieldDataType.Double)
+                           new Field("netmigration", FieldDataType.Double)
+                           new Field("area", FieldDataType.Int)
+                           new Field("internetusers", FieldDataType.Long)
+                           new Field("labourforce", FieldDataType.Long)
+                           new Field("population", FieldDataType.Long)
+                           new Field("agriproducts", FieldDataType.Text, IndexAnalyzer = "foodsynonymsanalyzer")
+                           new Field("areacomparative")
+                           new Field("background", FieldDataType.Highlight)
+                           new Field("capital")
+                           new Field("climate")
+                           new Field("economy")
+                           new Field("governmenttype")
+                           new Field("memberof")
+                           new Field("countrycode", FieldDataType.ExactText)
+                           new Field("nationality")
+                           new Field("coordinates", FieldDataType.ExactText) |]
         index
     
     let buildSynonymFile fileName = 
@@ -136,21 +136,21 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
         maybe { 
             let index = GetDemoIndexInfo()
             // Custom analyzer for food synonym
-            let foodsynonymsanalyzer = new Analyzer.Dto(AnalyzerName = "foodsynonymsanalyzer")
-            foodsynonymsanalyzer.Tokenizer <- new Tokenizer.Dto(TokenizerName = "standard")
-            foodsynonymsanalyzer.Filters.Add(new TokenFilter.Dto(FilterName = "standard"))
-            foodsynonymsanalyzer.Filters.Add(new TokenFilter.Dto(FilterName = "lowercase"))
-            let synonymfilter = new TokenFilter.Dto(FilterName = "synonym")
+            let foodsynonymsanalyzer = new Analyzer(AnalyzerName = "foodsynonymsanalyzer")
+            foodsynonymsanalyzer.Tokenizer <- new Tokenizer(TokenizerName = "standard")
+            foodsynonymsanalyzer.Filters.Add(new TokenFilter(FilterName = "standard"))
+            foodsynonymsanalyzer.Filters.Add(new TokenFilter(FilterName = "lowercase"))
+            let synonymfilter = new TokenFilter(FilterName = "synonym")
             let synonymFileName = "foodsynonyms.txt"
             buildSynonymFile synonymFileName
             synonymfilter.Parameters.Add("synonyms", synonymFileName)
             foodsynonymsanalyzer.Filters.Add(synonymfilter)
             do! analyzerService.UpdateAnalyzer(foodsynonymsanalyzer)
             // Custom analyzer for strip to numbers
-            let striptonumbersanalyzer = new Analyzer.Dto(AnalyzerName = "striptonumbersanalyzer")
-            striptonumbersanalyzer.Tokenizer <- new Tokenizer.Dto(TokenizerName = "keyword")
-            striptonumbersanalyzer.Filters.Add(new TokenFilter.Dto(FilterName = "standard"))
-            let regexFilter = new TokenFilter.Dto(FilterName = "patternreplace")
+            let striptonumbersanalyzer = new Analyzer(AnalyzerName = "striptonumbersanalyzer")
+            striptonumbersanalyzer.Tokenizer <- new Tokenizer(TokenizerName = "keyword")
+            striptonumbersanalyzer.Filters.Add(new TokenFilter(FilterName = "standard"))
+            let regexFilter = new TokenFilter(FilterName = "patternreplace")
             regexFilter.Parameters.Add("pattern", @"[a-z$ ]")
             regexFilter.Parameters.Add("replacement", "")
             striptonumbersanalyzer.Filters.Add(regexFilter)
@@ -166,8 +166,8 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     member this.GetDemoIndex() = GetDemoIndexInfo()
     member this.Setup() = 
         match indexService.IndexExists("country") with
-        | true -> Choice1Of2()
+        | true -> okUnit
         | _ -> 
             match CreateIndex() with
-            | Choice1Of2(_) -> Choice1Of2()
-            | Choice2Of2(e) -> Choice2Of2(e)
+            | Ok(_) -> okUnit
+            | Fail(e) -> Fail(e)

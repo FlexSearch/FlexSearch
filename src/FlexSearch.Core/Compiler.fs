@@ -28,9 +28,9 @@ module Scripts =
     
     type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
     
-    type PostSearchDeletegate = Func<SearchQuery.Dto, string, float32, Dictionary<string, string>, bool * float32>
+    type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string, string>, bool * float32>
     
-    type SearchProfileDelegate = Action<SearchQuery.Dto, Dictionary<string, string>>
+    type SearchProfileDelegate = Action<SearchQuery, Dictionary<string, string>>
     
     type T = 
         /// Default signature which is used by computed scripts
@@ -42,6 +42,7 @@ module Scripts =
         /// Script to process search profile data
         | SearchProfileScript of script : SearchProfileDelegate
     
+    [<Internal>]
     type ScriptType = 
         | Computed = 1
         | PostSearch = 2
@@ -75,7 +76,7 @@ using System.Collections.Generic;
     let metaDataReference = 
         [| MetadataReference.CreateFromFile(typeof<System.Object>.Assembly.Location) :> MetadataReference
            
-           MetadataReference.CreateFromFile(typeof<FlexSearch.Core.SearchQuery.Dto>.Assembly.Location) :> MetadataReference |]
+           MetadataReference.CreateFromFile(typeof<SearchQuery>.Assembly.Location) :> MetadataReference |]
     
     let generateSyntaxTree (scriptName) (text : string) = 
         let syntax = 

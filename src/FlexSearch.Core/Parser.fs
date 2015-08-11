@@ -34,7 +34,7 @@ type Predicate =
 /// FlexParser interface
 /// </summary>
 type IFlexParser = 
-    abstract Parse : string -> Choice<Predicate, IMessage>
+    abstract Parse : string -> Result<Predicate>
 
 [<AutoOpen>]
 module Parsers = 
@@ -97,7 +97,7 @@ module Parsers =
         let parse (queryString) (parser) = 
             match run parser queryString with
             | Success(result, _, _) -> ok result
-            | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError(errorMsg)
+            | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError(errorMsg, queryString)
         assert (input <> null)
         if withBrackets then queryStringParserWithBracket |> parse input
         else queryStringParser |> parse input
@@ -155,7 +155,7 @@ module Parsers =
                 assert (input <> null)
                 match run Parser input with
                 | Success(result, _, _) -> ok result
-                | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError errorMsg
+                | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError (errorMsg, input)
 
     // ----------------------------------------------------------------------------
     // Function Parser 

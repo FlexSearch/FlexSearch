@@ -52,6 +52,11 @@ type IMessage =
     abstract OperationMessage : unit -> OperationMessage
     abstract LogProperty : unit -> MessageKeyword * MessageLevel
 
+/// Represents the result of a computation.
+type Result<'T> =
+    | Ok of 'T
+    | Fail of IMessage
+
 /// General purpose exception to be used. It is better to use
 /// DU based error than this exception.
 exception ValidationException of IMessage
@@ -189,7 +194,7 @@ type SearchMessage =
     | DataCannotBeParsed of fieldName : string * expectedDataType : string
     | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
-    | QueryStringParsingError of error : string
+    | QueryStringParsingError of error : string * queryString : string
     | MethodCallParsingError of error : string
     | UnknownSearchProfile of indexName : string * profileName : string
     | PurelyNegativeQueryNotSupported
@@ -208,7 +213,7 @@ type SearchMessage =
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
             | QueryOperatorFieldTypeNotSupported(f) -> 
                 sprintf "Query operator field type not supported for field '%s'" f
-            | QueryStringParsingError(e) -> sprintf "Query string parsing error: \n%s" e
+            | QueryStringParsingError(e,q) -> sprintf "Query string parsing error: \n%s\n\nQuery String:\n%s" e q
             | MethodCallParsingError(e) -> sprintf "Unable to parse the method call: \n%s" e
             | UnknownSearchProfile(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
             | PurelyNegativeQueryNotSupported -> "Purely negative queries (not top query) not supported"
@@ -397,9 +402,9 @@ module Log =
             let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
             logMethod(keyword, level)(om.ErrorCode, om.Message, properties)
 
-    let logErrorChoice (message : Choice<_, IMessage>) = 
+    let logErrorChoice (message : Result<_>) = 
         match message with
-        | Choice2Of2(error) -> log (error)
+        | Fail(error) -> log (error)
         | _ -> ()
         message
        
@@ -407,7 +412,7 @@ type Logger() =
     static member Log(msg : IMessage) =
         log(msg)
 
-    static member Log(message : Choice<_, IMessage>) =
+    static member Log(message : Result<_>) =
         logErrorChoice(message)
     
     static member Log(msg: string, keyword : MessageKeyword, level: MessageLevel) =

@@ -9,7 +9,7 @@ module CsvHandlerTests =
 
     type ImportCsvTests() = 
         
-        let generateCsvIndexJob queueService jobService (indexService : IIndexService) (index : Index.Dto) = 
+        let generateCsvIndexJob queueService jobService (indexService : IIndexService) (index : Index) = 
             let csvReq = 
                 new CsvIndexingRequest(IndexName = index.IndexName, HasHeaderRecord = true, Path = "..\\..\\test.csv") 
                 |> Some
@@ -18,25 +18,25 @@ module CsvHandlerTests =
             test <@ succeeded <| indexService.AddIndex(index) @>
             csvHandler.Process(reqCntxt, csvReq)
         
-        member __.``Should create a CSV Indexing job when file path is given`` (index : Index.Dto, 
+        member __.``Should create a CSV Indexing job when file path is given`` (index : Index, 
                                                                                 queueService : IQueueService, 
                                                                                 jobService : IJobService, 
                                                                                 indexService : IIndexService) = 
-            index.Online <- true
+            index.Active <- true
             let jobResponse = index |> generateCsvIndexJob queueService jobService indexService
             test <@ rSucceeded <| jobResponse @>
         
-        member __.``Should Change the job status to Completed when it's done`` (index : Index.Dto, 
+        member __.``Should Change the job status to Completed when it's done`` (index : Index, 
                                                                                 queueService : IQueueService, 
                                                                                 jobService : IJobService, 
                                                                                 indexService : IIndexService) = 
-            index.Online <- true
+            index.Active <- true
             let jobResponse = index |> generateCsvIndexJob queueService jobService indexService
             test <@ rSucceeded <| jobResponse @>
 
             let jobId = 
                 match jobResponse with
-                | SomeResponse(Choice1Of2(id),_,_) -> id
+                | SomeResponse(Ok(id),_,_) -> id
                 | _ -> defString
             
             let sw = new Stopwatch()

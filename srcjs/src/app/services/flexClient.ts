@@ -6,6 +6,7 @@ module flexportal {
 	import FieldDto = FlexSearch.Core.FieldDto;
 	import IndexConfigurationDto = FlexSearch.Core.IndexConfigurationDto;
 	import MemoryDetailsResponse = FlexSearch.Core.MemoryDetailsResponse;
+	import Analyzer = FlexSearch.Core.Analyzer;
 	
 	export class IndexResult {
 		Fields: FieldDto[]
@@ -21,12 +22,16 @@ module flexportal {
 		private $mdBottomSheet: any;
 		private $q: any;
 		private handleError: any;
+		public FlexSearchUrl: string;
+		public DuplicatesUrl: string;
 		
         /* @ngInject */
-		constructor($http: ng.IHttpService, $mdBottomSheet: any, $q: any) {
+		constructor($http: ng.IHttpService, $mdBottomSheet: any, $q: any, $location: any) {
 			 this.$http = $http;
 			 this.$mdBottomSheet = $mdBottomSheet;
 			 this.$q = $q;
+			 this.FlexSearchUrl = $location.protocol() + "://" + $location.host() + ":" + $location.port();
+			 this.DuplicatesUrl = this.FlexSearchUrl + "/indices/duplicates";
 			 this.handleError = 
 			 	function(bs, q) {
 					return errorHandler
@@ -58,7 +63,7 @@ module flexportal {
 		}
 		
 		public getRecordById(indexName, id) {
-			var url = FlexSearchUrl + "/indices/" + indexName + "/documents/" + id + "?c=*";
+			var url = this.FlexSearchUrl + "/indices/" + indexName + "/documents/" + id + "?c=*";
 			return this.$http.get(url)
 				.then(
 					response => <FlexSearch.Core.DocumentDto>(<any>response.data).Data,
@@ -69,7 +74,7 @@ module flexportal {
 			var idStr = ids
 				.reduce(function (acc, val) { return acc + ",'" + val + "'" }, "")
 				.substr(1);
-		  	return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/search", { params: 
+		  	return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/search", { params: 
 				  {
 					 q: "_id eq [" + idStr + "] {clausetype: 'or'}",
 					 c: "*",
@@ -80,7 +85,7 @@ module flexportal {
 		  
 	  	// Get the duplicate that needs to be displayed
 		public getDuplicateBySourceId(sessionId, sourceId) {
-			return this.$http.get(DuplicatesUrl + "/search", {params: {
+			return this.$http.get(this.DuplicatesUrl + "/search", {params: {
 				q: "type = 'source' and sessionid = '" + sessionId + "' and sourceid = '" + sourceId + "'",		
 				c: "*" }}
 			)
@@ -89,7 +94,7 @@ module flexportal {
 	  	}
 		  
 	  	public updateDuplicate(duplicate: Duplicate) {
-			return this.$http.put(DuplicatesUrl + "/documents/" + duplicate.FlexSearchId,
+			return this.$http.put(this.DuplicatesUrl + "/documents/" + duplicate.FlexSearchId,
 			{
 				Fields: {
 				  sessionid: duplicate.SessionId,
@@ -107,7 +112,7 @@ module flexportal {
 	  	}
 		  
 		public getSessionBySessionId(sessionId) {
-		  return this.$http.get(DuplicatesUrl + "/search", 
+		  return this.$http.get(this.DuplicatesUrl + "/search", 
 		        { params: { 
 		            q: "type = 'session' and sessionid = '" + sessionId + "'",
 		            c: "*" } }
@@ -117,7 +122,7 @@ module flexportal {
 		} 
 		
 		public getDuplicatesFromSession(sessionId, count, skip, sortby?, sortDirection?) {
-            return this.$http.get(DuplicatesUrl + "/search", 
+            return this.$http.get(this.DuplicatesUrl + "/search", 
                 { params: { 
                     q: "type = 'source' and sessionid = '" + sessionId + "'",
                     c: "*",
@@ -130,7 +135,7 @@ module flexportal {
 		
 		public getSessions(count, skip, sortby?, sortDirection?) {
 			
-			return this.$http.get(DuplicatesUrl + "/search", { params: {
+			return this.$http.get(this.DuplicatesUrl + "/search", { params: {
 	          c: "*",
 	          q: "type = 'session'",
 	          skip: skip,
@@ -142,16 +147,14 @@ module flexportal {
 		}
 		
 		public getIndices() {
-			
-			
-			return this.$http.get(FlexSearchUrl + "/indices")
+			return this.$http.get(this.FlexSearchUrl + "/indices")
 				.then(FlexClient.getData, this.handleError)
 				.then(result => <IndexResult []> result, this.handleError);
 		}
 		
 		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery,
 			threadCount?, maxRecordsToScan?, maxDupsToReturn?) {
-			return this.$http.post(FlexSearchUrl + "/indices/" + indexName + "/duplicatedetection/" + searchProfile, {
+			return this.$http.post(this.FlexSearchUrl + "/indices/" + indexName + "/duplicatedetection/" + searchProfile, {
 					DisplayName: displayFieldName,
 					SelectionQuery: selectionQuery,
 					ThreadCount: threadCount,
@@ -162,7 +165,7 @@ module flexportal {
 		
 		public submitSearchProfileTest(indexName, searchQueryString, searchProfileQueryString, 
 			columnsToRetrieve?: string[], count?, skip?) {
-			return this.$http.post(FlexSearchUrl + "/indices/" + indexName + "/searchprofiletest", {
+			return this.$http.post(this.FlexSearchUrl + "/indices/" + indexName + "/searchprofiletest", {
 				SearchQuery: {
 					QueryString: searchQueryString,
 					Columns: columnsToRetrieve || ["*"],
@@ -176,7 +179,7 @@ module flexportal {
 		
 		public submitSearch(indexName, searchQueryString, columnsToRetrieve?: string[], count?, skip?,
 			orderBy?, orderByDirection?) {
-			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/search", { params: {
+			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/search", { params: {
 				q: searchQueryString,
 				c: columnsToRetrieve || ["*"],
 				count: count,
@@ -188,7 +191,7 @@ module flexportal {
 		}
 		
 		public getDocsCount(indexName) {
-			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/documents", { params: {
+			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/documents", { params: {
 				count: 1
 			}})
 			.then(FlexClient.getData, this.handleError)
@@ -196,25 +199,39 @@ module flexportal {
 		}
 		
 		public getIndexSize(indexName) {
-			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/size")
+			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/size")
 			.then(FlexClient.getData, this.handleError)
 			.then(result => parseInt(result), this.handleError);
 		}
 		
 		public getMemoryDetails() {
-			return this.$http.get(FlexSearchUrl + "/memory")
+			return this.$http.get(this.FlexSearchUrl + "/memory")
 			.then(FlexClient.getData, this.handleError)
 			.then(result => <MemoryDetailsResponse>result, this.handleError);
 		}
 		
 		public setupDemoIndex() {
-			return this.$http.put(FlexSearchUrl + "/setupdemo", {});
+			return this.$http.put(this.FlexSearchUrl + "/setupdemo", {});
 		}
 		
 		public getIndexStatus(indexName) {
-			return this.$http.get(FlexSearchUrl + "/indices/" + indexName + "/status")
+			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/status")
 			.then(FlexClient.getData, this.handleError)
 			.then(result => <string>result.Status, this.handleError);
+		}
+		
+		public getAnalyzers() {
+			return this.$http.get(this.FlexSearchUrl + "/analyzers", {})
+			.then(FlexClient.getData, this.handleError)
+			.then(result => <Analyzer[]>result, this.handleError);
+		}
+		
+		public testAnalyzer(analyzerName, text) {
+			return this.$http.post(this.FlexSearchUrl + "/analyzers/" + analyzerName + "/analyze", {
+				"Text": text
+			})
+			.then(FlexClient.getData, this.handleError)
+			.then(result => <string[]>result, this.handleError);
 		}
 		
 		public newPromise(data) {

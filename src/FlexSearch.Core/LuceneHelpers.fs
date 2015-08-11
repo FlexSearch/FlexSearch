@@ -171,7 +171,7 @@ module QueryHelpers =
         | 0 -> getMatchAllDocsQuery()
         | 1 -> innerQueryProvider (terms |> Seq.head)
         | _ -> getBoolQueryFromTerms boolClause innerQueryProvider terms
-        |> Choice1Of2
+        |> ok
     
     // ------------------------
     // Range Queries
@@ -192,14 +192,14 @@ module QueryHelpers =
                 | true, value' -> 
                     NumericRangeQuery.NewIntRange
                         (fIdxFld.SchemaName, value' |> getJavaInt infiniteMin, value' |> getJavaInt infiniteMax, 
-                         includeLower, includeUpper) :> Query |> Choice1Of2
+                         includeLower, includeUpper) :> Query |> ok
                 | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Integer")
             | FieldType.Double -> 
                 match Double.TryParse(value) with
                 | true, value' -> 
                     NumericRangeQuery.NewDoubleRange
                         (fIdxFld.SchemaName, value' |> getJavaDouble infiniteMin, value' |> getJavaDouble infiniteMax, 
-                         includeLower, includeUpper) :> Query |> Choice1Of2
+                         includeLower, includeUpper) :> Query |> ok
                 | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Double")
             | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime, Integer, Double")
         | false -> fail <| ExpectingNumericData fIdxFld.FieldName

@@ -71,7 +71,7 @@ type CsvIndexingRequest() =
     override __.Validate() = 
         if __.HasHeaderRecord = false && (__.Headers |> Seq.isEmpty) then 
             fail <| MissingFieldValue("HasHeaderRecord, Headers")
-        else ok()
+        else okUnit
 
 /// Connector for importing CSV file data into the system.
 [<Sealed>]
@@ -101,7 +101,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
     //                    |> Seq.skip 1
     //                    |> Seq.iteri (fun i header -> document.Fields.Add(header, reader.CurrentRecord.[i + 1]))
     //                    queueService.AddDocumentQueue(document)
-    //                ok()
+    //                okUnit
     let processFile (body : CsvIndexingRequest, path : string) = 
         use reader = new TextFieldParser(path)
         (!>) "Parsing CSV file at: %s" path
@@ -120,7 +120,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                 try 
                     rows <- rows + 1L
                     let currentRow = reader.ReadFields()
-                    let document = new Document.Dto(body.IndexName, currentRow.[0])
+                    let document = new Document(body.IndexName, currentRow.[0])
                     document.TimeStamp <- 0L
                     // The first column is always id so skip it
                     for i = 1 to currentRow.Length - 1 do
@@ -130,7 +130,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                     (!>) "CSV Parsing error: %A" e
                     Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
             (!>) "CSV Parsing finished. Processed Rows:%i File: %s" rows path
-            ok()
+            okUnit
     
     let bulkRequestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
@@ -141,10 +141,10 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                     jobService.UpdateJob(job) |> ignore
                     let execFileJob filePath = 
                         match processFile (body, filePath) with
-                        | Choice1Of2() -> 
+                        | Ok() -> 
                             job.ProcessedItems <- job.ProcessedItems + 1
                             jobService.UpdateJob(job) |> ignore
-                        | Choice2Of2(error) -> 
+                        | Fail(error) -> 
                             job.FailedItems <- job.FailedItems + 1
                             jobService.UpdateJob(job) |> ignore
                     if isFolder then Directory.EnumerateFiles(path) |> Seq.iter execFileJob
@@ -172,8 +172,8 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
         
         body.IndexName <- index
         match indexService.IsIndexOnline(index) with
-        | Choice1Of2(_) -> body.Validate() >>= pathValidation >>= postBulkRequestMessage
-        | Choice2Of2(error) -> fail <| error
+        | Ok(_) -> body.Validate() >>= pathValidation >>= postBulkRequestMessage
+        | Fail(error) -> fail <| error
     
     override __.Process(request, body) = SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
 
@@ -198,7 +198,7 @@ type SqlIndexingRequest() =
     /// to check the status of the job.
     member val CreateJob = false with get, set
     
-    override __.Validate() = ok()
+    override __.Validate() = okUnit
 
 [<Sealed>]
 [<Name("POST-/indices/:id/sql")>]
@@ -219,7 +219,7 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
             use reader = command.ExecuteReader()
             if reader.HasRows then 
                 while reader.Read() do
-                    let document = new Document.Dto(IndexName = request.IndexName, Id = reader.[0].ToString())
+                    let document = new Document(IndexName = request.IndexName, Id = reader.[0].ToString())
                     for i = 1 to reader.FieldCount - 1 do
                         document.Fields.Add(reader.GetName(i), reader.GetValue(i).ToString())
                     if request.ForceCreate then queueService.AddDocumentQueue(document)
@@ -259,7 +259,7 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
             else 
                 ExecuteSql(body, "")
                 ""
-            |> Choice1Of2
+            |> ok
         body.IndexName <- index
         body.Validate() >>= createJob
     

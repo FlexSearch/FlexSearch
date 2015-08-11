@@ -13,8 +13,8 @@ let main argv =
     let settings = 
         match ServerSettings.createFromFile 
                   (Path.Combine(Constants.ConfFolder, "Config.json"), jsonFormatter) with
-        | Choice1Of2(s) -> s
-        | Choice2Of2(e) -> 
+        | Ok(s) -> s
+        | Fail(e) -> 
             //            logger.TraceError("Error parsing 'Config.yml' file.", e)
             failwithf "%s" (e.ToString())
     // Load all plug-in DLLs

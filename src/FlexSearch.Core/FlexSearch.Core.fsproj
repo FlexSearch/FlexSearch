@@ -13,7 +13,7 @@
     <Name>FlexSearch.Core</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>339785ba</NuGetPackageImportStamp>
   </PropertyGroup>
@@ -28,6 +28,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DocumentationFile>..\..\build-debug\FlexSearch.Core.xml</DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
+    <OtherFlags>--sig:$(OutputPath)\mysig.fsi</OtherFlags>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -86,8 +87,10 @@
     <Compile Include="Helpers.fs" />
     <Compile Include="Message.fs" />
     <Compile Include="Infrastructure.fs" />
-    <Compile Include="Http.fs" />
+    <Compile Include="Domain.fsi" />
     <Compile Include="Domain.fs" />
+    <Compile Include="Http.fs" />
+    <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Analysis.fs" />
@@ -97,8 +100,11 @@
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
     <Compile Include="Benchmark.fs" />
+    <Compile Include="HttpService.fsi" />
     <Compile Include="HttpService.fs" />
+    <Compile Include="Connectors.fsi" />
     <Compile Include="Connectors.fs" />
+    <Compile Include="DuplicateDetection.fsi" />
     <Compile Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />
     <Compile Include="AssemblyInfo.fs" />
@@ -120,7 +126,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">
-      <HintPath>..\packages\FlexLucene.5.1.0.0\lib\net40\FlexLucene.dll</HintPath>
+      <HintPath>..\packages\FlexLucene.5.2.1.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FParsec">
@@ -136,7 +142,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core">
-      <HintPath>..\packages\FSharp.Core.3.1.2.1\lib\net40\FSharp.Core.dll</HintPath>
+      <HintPath>..\packages\FSharp.Core.3.0.2\lib\net40\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharpx.Async">
@@ -272,11 +278,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0-rc3\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0-rc3\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />

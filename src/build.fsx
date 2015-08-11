@@ -36,6 +36,7 @@ let buildDir = @".\build\"
 let testDir = @".\build\"
 let deployDir = @".\deploy\"
 let portalDir = currentDirectory + @"\..\srcjs"
+let documentationDir = currentDirectory + @"\..\documentation"
 let webDir = buildDir + @"Web\"
 
 // Create necessary directories if they don't exist
@@ -136,6 +137,16 @@ Target "MovePortal" <| fun _ ->
     let source = portalDir + @"\dist"
     FileHelper.CopyRecursive source webDir true |> ignore
 
+// Documentation related
+Target "GenerateSwagger" <| fun _ ->
+    trace "Generating Swagger"
+    FileUtils.cd documentationDir
+    PowerShell.Create()
+        .AddScript(File.ReadAllText("build.ps1"))
+        .Invoke()
+        |> Seq.iter (sprintf "%A" >> trace)
+
+    FileUtils.cd @"..\src"
 
 // Dependencies
 "Clean" 
@@ -145,6 +156,7 @@ Target "MovePortal" <| fun _ ->
 // ==> "Test"
 ==> "Default" 
 ==> "MoveFiles" 
+==> "GenerateSwagger"
 ==> "MovePortal"
 ==> "Zip"
 

@@ -14,13 +14,11 @@
 /// <reference path="../app/views/search/searchSettings.ts" />
 /// <reference path="../app/views/dashboard/cluster.ts" />
 /// <reference path="../app/views/dashboard/indexDetails.ts" />
+/// <reference path="../app/views/swagger/swagger.ts" />
+/// <reference path="../app/views/analyzer/analyzerTest.ts" />
 
 module flexportal {
   'use strict';
-
-  // Constants
-  export var FlexSearchUrl = "http://localhost:9800"
-  export var DuplicatesUrl = FlexSearchUrl + "/indices/duplicates"
 
   // Functions that map Option Sets
   export function toSourceStatusName(value: number) {
@@ -40,7 +38,7 @@ module flexportal {
   }
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 
-    'ui.router', 'chart.js', 'jsonFormatter'])
+    'ui.router', 'chart.js', 'jsonFormatter', 'swaggerUi'])
     // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
@@ -55,6 +53,8 @@ module flexportal {
     .controller('ErrorController', ErrorController)
     .controller('ClusterController', ClusterController)
     .controller('IndexDetailsController', ["$scope", "$stateParams", IndexDetailsController])
+    .controller('SwaggerController', SwaggerController)
+    .controller('AnalyzerTestController', ["$scope", "flexClient", AnalyzerTestController])
     
     // Services
     .service('datePrinter', function() {
@@ -63,7 +63,7 @@ module flexportal {
         return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
       }; 
     })
-    .service('flexClient', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new FlexClient($http, $mdBottomSheet, $q);} ])
+    .service('flexClient', ["$http", "$mdBottomSheet", "$q", "$location", function($http, $mdBottomSheet, $q, $location) { return new FlexClient($http, $mdBottomSheet, $q, $location);} ])
     
     // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {
@@ -170,6 +170,22 @@ module flexportal {
           parent: 'dashboard',
           controller: 'IndexDetailsController',
           templateUrl: "app/views/dashboard/indexDetails.html"
+        })
+        
+        // Swagger
+        .state('swagger', {
+          url: "^/swagger",
+          parent: 'main',
+          controller: 'SwaggerController',
+          templateUrl: "app/views/swagger/swagger.html"
+        })
+        
+        // Analysis
+        .state('analyzerTest', {
+          url: "^/analyzertest",
+          parent: 'main',
+          controller: 'AnalyzerTestController',
+          templateUrl: "app/views/analyzer/analyzerTest.html"
         })
     });
 }

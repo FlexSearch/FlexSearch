@@ -237,7 +237,7 @@ module flexportal {
     /* @ngInject */
     constructor($scope: IClusterScope, $state: any, $timeout: ng.ITimeoutService, flexClient: FlexClient) {
       $scope.Rendering = null;
-      $scope.FlexSearchUrl = FlexSearchUrl;
+      $scope.FlexSearchUrl = flexClient.FlexSearchUrl;
       $scope.prettysize = ClusterController.getPrettySizeFunc();
       // First assume we have the demo index set up
       $scope.hasDemoIndex = true; 
