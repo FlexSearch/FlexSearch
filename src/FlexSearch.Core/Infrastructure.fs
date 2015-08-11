@@ -316,7 +316,7 @@ module Operators =
         member inline __.Return v = ok v
         
         [<DebuggerStepThrough>]
-        member inline __.Zero() = ok ()
+        member inline __.Zero() = okUnit
         
         [<DebuggerStepThrough>]
         member inline __.Combine(a, b) = 
