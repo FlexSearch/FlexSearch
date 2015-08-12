@@ -48,6 +48,14 @@ type SearchParserTests() =
     [<Ignore>]
     member __.``Simple expression should parse`` (sut : string) = test2 sut
     
+    [<InlineData("abc eq add('1','2')")>]
+    [<InlineData("abc eq add('1')")>]
+    [<InlineData("abc eq add(field1,field2)")>]
+    [<InlineData("abc eq add('1',max(field1,field2))")>]
+    [<InlineData("abc eq any(['true','false','false'])")>]
+    [<InlineData("abc > sqrt(add(haversin(delta),multiply(cos(fi1),cos(fi2))))")>]
+    member __.``Expression with function should parse`` (sut : string) = test2 sut
+
     [<InlineData("f1: 'v1',f2 : 'v2'", 2)>]
     [<InlineData(" f1:  'v1' , f2 : 'v2'", 2)>]
     [<InlineData("   f1           : 'v1'     ", 1)>]
