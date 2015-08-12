@@ -20,6 +20,8 @@ open System.Linq
 type Value = 
     | SingleValue of string
     | ValueList of string list
+    | Func of Name : string * Params : Value seq
+    | FieldName of string
 
 /// <summary>
 /// Acceptable Predicates for a query
@@ -62,16 +64,40 @@ module Parsers =
         
     let listOfValues = (str_ws "[" >>. sepBy1 stringLiteralAsString (str_ws ",") .>> str_ws "]") |>> ValueList .>> ws
     
-    /// Value parser
-    /// Note: THe order of choice is important as stringLiteral uses
-    /// character backtracking.This is done to avoid the use of attempt.
-    let value = choice [ stringLiteral; listOfValues ]
-    
     /// Identifier implementation. Alphanumeric character without spaces
     let identifier = 
         many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''') 
             "Field name should be alpha number without '(', ')' and ' '." .>> ws
-    
+
+    let anyCheck checks item = checks |> Seq.fold (fun acc value -> acc || value item) false
+
+    let func, funcImpl = createParserForwardedToRef<Value, unit>()
+
+    // E.g. average(cost)
+    //      upper_Case(firstname)
+    //      startsWith(firstname, 'V')
+    //      concat(firstname, lastname)
+    do funcImpl := 
+        let funcName = many1SatisfyL 
+                        (anyCheck [isLetter; isDigit; (=) '_']) 
+                        "Function name should only have letters, digits and underscores"
+        let fieldName = identifier .>> followedByL 
+                            (choice [str_ws ","; str_ws ")"])
+                            "The field name should be followed by either a comma or a closing round bracket"
+                        |>> FieldName
+        let parameters = sepBy 
+                            (choice [ stringLiteral; listOfValues; attempt func; fieldName ])
+                            (str_ws ",")
+        pipe2 
+            (ws >>. funcName )
+            (str_ws "(" >>. parameters .>> str_ws ")")
+            (fun name prms -> Func(name, prms))
+
+    /// Value parser
+    /// Note: THe order of choice is important as stringLiteral uses
+    /// character backtracking.This is done to avoid the use of attempt.
+    let value = choice [ stringLiteral; listOfValues; func ]
+
     let DictionaryOfList(elements : (string * string) list) = 
         let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         for (key, value) in elements do
@@ -111,7 +137,7 @@ module Parsers =
     // ----------------------------------------------------------------------------
     /// <summary>
     /// Method to implement predicate matching
-    /// Syntax: {FieldName} {Operator} {SingleValue|MultiFieldValue} {optional Boost}
+    /// Syntax: {FieldName} {Operator} {SingleValue|MultiFieldValue|Function} {optional Boost}
     /// Example: firstname eq 'a'
     /// </summary>
     let predicate = pipe4 identifier identifier value parameters (fun l o r b -> Condition(l, o, r, b))
