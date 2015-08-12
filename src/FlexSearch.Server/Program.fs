@@ -5,23 +5,22 @@ open Topshelf
 
 [<EntryPoint>]
 let main argv = 
-    //    // Capture all unhandled errors
-    //    AppDomain.CurrentDomain.UnhandledException.Subscribe
-    //        (fun x -> logger.TraceError(sprintf "Unhandled exception in application: %A" x.ExceptionObject)) 
-    //    |> ignore
-    //    // Load server settings
+    // Capture all unhandled errors
+    AppDomain.CurrentDomain.UnhandledException.Subscribe
+        (fun x -> Logger.Log(sprintf "%A" x.ExceptionObject, MessageKeyword.Node, MessageLevel.Critical)) |> ignore
+    // Load server settings
     let settings = 
-        match ServerSettings.createFromFile 
-                  (Path.Combine(Constants.ConfFolder, "Config.json"), jsonFormatter) with
+        match ServerSettings.createFromFile (Path.Combine(Constants.ConfFolder, "Config.json"), jsonFormatter) with
         | Ok(s) -> s
         | Fail(e) -> 
-            //            logger.TraceError("Error parsing 'Config.yml' file.", e)
+            Logger.Log
+                ("Error parsing 'Config.yml' file.", ValidationException(e), MessageKeyword.Node, MessageLevel.Critical)
             failwithf "%s" (e.ToString())
     // Load all plug-in DLLs
     for file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly) do
         try 
             System.Reflection.Assembly.LoadFile(file) |> ignore
-        with e -> () //logger.TraceError("Error loading plug-in library.", e)
+        with e -> Logger.Log("Error loading plug-in library.", e, MessageKeyword.Node, MessageLevel.Warning)
     let TopShelfConfiguration() = 
         HostFactory.Run(fun conf -> 
             conf.RunAsLocalSystem() |> ignore
@@ -31,8 +30,8 @@ let main argv =
             conf.StartAutomatically() |> ignore
             conf.EnableServiceRecovery(fun rc -> rc.RestartService(1) |> ignore) |> ignore
             conf.Service<NodeService>(fun factory -> 
-                ServiceConfiguratorExtensions.ConstructUsing
-                    (factory, fun () -> new NodeService(settings, false)) |> ignore
+                ServiceConfiguratorExtensions.ConstructUsing(factory, fun () -> new NodeService(settings, false)) 
+                |> ignore
                 ServiceConfiguratorExtensions.WhenStarted(factory, fun tc -> tc.Start()) |> ignore
                 ServiceConfiguratorExtensions.WhenStopped(factory, fun tc -> tc.Stop()) |> ignore)
             |> ignore)
