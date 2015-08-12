@@ -97,6 +97,7 @@
     <Compile Include="LuceneHelpers.fs" />
     <Compile Include="Index.fs" />
     <Compile Include="Search.fs" />
+    <Compile Include="Orm.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
     <Compile Include="Benchmark.fs" />
@@ -123,6 +124,10 @@
     </Reference>
     <Reference Include="Autofac.Integration.Mef">
       <HintPath>..\packages\Autofac.Mef.3.0.3\lib\net40\Autofac.Integration.Mef.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FastMember">
+      <HintPath>..\packages\FastMember.1.0.0.11\lib\net40\FastMember.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">
