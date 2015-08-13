@@ -192,5 +192,5 @@ module SigDocValidator =
 
     let validateDocumentation() =
         match validationSequence() with
-        | Choice1Of2(x) -> printfn "Validation Succeeded"
-        | Choice2Of2(x) -> Log.log x; failwith "Validation Failed. Check Operational logs in Event Viewer for details."
+        | Ok(x) -> printfn "Validation Succeeded"
+        | Fail(x) -> Log.log x; failwith "Validation Failed. Check Operational logs in Event Viewer for details."
