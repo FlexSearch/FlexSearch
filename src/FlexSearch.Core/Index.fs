@@ -171,6 +171,11 @@ module IndexSettingBuilder =
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
         let fieldArr = result.ToArray()
+        // Perf: Intern all the field names in the string pool. This is done as the field names will be
+        // used millions of times during execution.
+        fieldArr |> Array.iter(fun x  -> 
+            String.Intern x.FieldName |> ignore
+            String.Intern x.SchemaName |> ignore)
         { build with Setting = 
                          { build.Setting with FieldsLookup = resultLookup
                                               Fields = fieldArr
