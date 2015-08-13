@@ -132,9 +132,11 @@ module Main =
         builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings.T>() |> ignore
         // Interface scanning
         builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
+        builder |> FactoryService.registerInterfaceAssemblies<IFlexQueryFunction>
         builder |> FactoryService.registerInterfaceAssemblies<IHttpHandler>
         // Factory registration
         builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
+        builder |> FactoryService.registerSingleFactoryInstance<IFlexQueryFunction>
         builder |> FactoryService.registerSingleFactoryInstance<IHttpHandler>
         builder |> FactoryService.registerSingleInstance<NewtonsoftJsonFormatter, IFormatter>
         builder |> FactoryService.registerSingleInstance<ThreadSafeFileWriter, ThreadSafeFileWriter>

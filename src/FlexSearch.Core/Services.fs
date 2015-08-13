@@ -292,8 +292,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         member __.GetDiskUsage(indexName : string) = im |> IndexManager.getDiskUsage indexName
 
 [<Sealed>]
-type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, indexService : IIndexService) = 
-    
+type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, queryFunctionFactory : IFlexFactory<IFlexQueryFunction>,  indexService : IIndexService) = 
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
     let queryTypes = 
@@ -303,6 +302,13 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                 result.Add(queryName, pair.Value)
         result
     
+    // Generate query function types from factory. This is necessary when passing functions in the query string
+    let queryFunctionTypes =
+        let result = new Dictionary<string, IFlexQueryFunction>(StringComparer.OrdinalIgnoreCase)
+        for pair in queryFunctionFactory.GetAllModules() do
+            result.Add(pair.Value.GetType() |> getTypeNameFromAttribute, pair.Value)
+        result
+
     let getSearchPredicate (writers : IndexWriter.T, search : SearchQuery, 
                             inputValues : Dictionary<string, string> option) = 
         maybe { 
@@ -352,7 +358,8 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
             | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
             | _ -> 
                 return! SearchDsl.generateQuery 
-                            (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, queryTypes)
+                            (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, 
+                             queryTypes, queryFunctionTypes)
         }
     
     let searchWrapper (writers, query, searchQuery) = 
@@ -377,7 +384,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                 | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
                 | _ -> let! query = SearchDsl.generateQuery 
                                         (writers.Settings.FieldsLookup, predicate, searchQuery, Some(searchData), 
-                                         queryTypes)
+                                         queryTypes, queryFunctionTypes)
                        return! searchWrapper (writers, query, searchQuery)
             }
         

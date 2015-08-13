@@ -172,6 +172,13 @@ type DtoBase() =
         member __.Freeze() = isFrozen <- true
 
 [<AutoOpen>]
+module TypeHelpers =
+    // Retrieves the name of a type from the NameAttribute
+    let inline getTypeNameFromAttribute (typ : Type) =
+        Attribute.GetCustomAttribute(typ, typeof<NameAttribute>) :?> NameAttribute
+        |> (fun x -> x.Name)
+
+[<AutoOpen>]
 module Operators = 
     open System.Collections
         

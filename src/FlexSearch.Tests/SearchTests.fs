@@ -3,6 +3,7 @@
 open FlexSearch.Core
 open Swensen.Unquote
 open System.Linq
+open System
 
 /// General search related helpers
 let getQuery (indexName, queryString) = new SearchQuery(indexName, queryString)
@@ -75,7 +76,7 @@ let assertReturnedDocsCount (expected : int) (result : SearchResults) =
     test <@ result.RecordsReturned = expected @>
 
 let assertFieldValue (documentNo : int) (fieldName : string) (expectedFieldValue : string) (result : SearchResults) = 
-    test <@ result.Documents.Count >= documentNo @>
+    test <@ result.Documents.Count >= documentNo + 1 @>
     test <@ result.Documents.[documentNo].Fields.[fieldName] = expectedFieldValue @>
 
 /// Check if the total number of available document returned by the query matched the expected
@@ -728,3 +729,57 @@ CC,AA,FALSE
         searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = 'cc'"
 
 
+// ----------------------------------------------------------------------------
+// Queries with functions tests
+// ----------------------------------------------------------------------------
+type ``Queries with functions tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+
+    let testData = """
+id,et1,b1,i1
+1,A,TRUE,54
+2,aa,true,76
+3,Aa,True,3
+4,aA,False,87
+CC,AA,FALSE,40
+"""
+    do indexTestData (testData, index, indexService, documentService)
+
+    member __.``Searching for i1 = add('10','30') should return record CC which is equal to 40``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('10','30')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 = add( '10', '30' ) using spaces should return record CC which is equal to 40``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add( '10', '30' )")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 = add('10', add('10','20')) having nested functions should return record CC which is equal to 40``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('10', add('10','20'))")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 > add('10','30') should return 3 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 > add('10','30')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 3
+        result.Documents |> Seq.forall (fun d -> d.Fields.["i1"] |> Convert.ToInt32 > 40)
+
+    member __.``Searching for i1 = add('80', '-4') should support negative numbers``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('80', '-4')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "2"

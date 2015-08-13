@@ -31,6 +31,10 @@ type IFlexQuery =
     abstract QueryName : unit -> string []
     abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
 
+/// Interface for implementing query functions
+type IFlexQueryFunction = 
+    abstract GetResult : Value list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string>
+
 [<AutoOpenAttribute>]
 module SearchResultComponents = 
     /// Represents the search result format supported
@@ -106,10 +110,23 @@ module SearchResultComponents =
 module SearchDsl = 
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
-    
+
+    let handleFunctionValue 
+        fName 
+        parameters 
+        (queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) 
+        (source : Dictionary<string,string> option) =
+            match queryFunctionTypes.TryGetValue(fName) with
+            | true, func -> 
+                match func.GetResult(parameters, queryFunctionTypes, source) with
+                | Ok(r) -> ok <| r
+                | Fail(e) -> fail e
+            | _ -> fail <| FunctionNotFound (sprintf "%A" <| Func(fName, parameters))
+
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
-                       queryTypes : Dictionary<string, IFlexQuery>) = 
+                       queryTypes : Dictionary<string, IFlexQuery>,
+                       queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) = 
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
         
@@ -121,6 +138,9 @@ module SearchDsl =
             | ValueList(v) -> 
                 if v.Length = 0 then fail <| MissingFieldValue(fieldName)
                 else ok <| v.ToArray()
+            | Func(name,prms) -> handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
+                                 >>= (fun x -> ok [| x |])
+            | FieldName(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
         
         let getValueForSearchProfile (fieldName, v : string, source : Dictionary<string, string>) = 
             generateMatchAllQuery.Value <- false
@@ -177,6 +197,7 @@ module SearchDsl =
                     else ok <| [| x |> between '[' ']' |]
                 | _ -> ok <| [| x |> between '[' ']' |]
             // Constant value
+            // TODO: handle functions in search profiles
             | v1 -> ok <| [| v1 |]
         
         let getValue (fieldName, v : Value) = 
@@ -497,3 +518,53 @@ type FlexLessThanEqualQuery() =
         member __.QueryName() = [| "<=" |]
         member __.GetQuery(flexIndexField, values, _) = 
             getRangeQuery values.[0] (true, true) (MinInfinite, NoInfinite) flexIndexField
+
+// ----------------------------------------------------------------------------
+// Functions in queries
+// These functions are executed by the FlexSearch server before it goes to 
+// Lucene search.
+// ---------------------------------------------------------------------------- 
+[<Name("add"); Sealed>]
+type AddFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                // Convert the parameters to the expected type.
+                // We aren't expecting arrays
+                let rec handleParams  source queryFunctionTypes parameters=          
+                    match parameters with
+                    | [] -> ok []
+                    | SingleValue(v) :: rest -> handleParams source queryFunctionTypes rest
+                                                >>= (fun vs -> v :: vs |> ok)
+                    | ValueList(_) :: rest -> 
+                        fail <| FunctionParamTypeMismatch(
+                            __.GetType() |> getTypeNameFromAttribute,
+                            "Single values, functions or fieldnames",
+                            "Value list")
+                    | Func(n,ps) :: rest -> 
+                        handleParams source queryFunctionTypes rest >>= (fun vs -> 
+                            handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
+                            >>= (fun v -> v :: vs |> ok))
+                    | FieldName(name) :: rest ->
+                        match source with
+                        | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
+                                              | true, v -> handleParams source queryFunctionTypes rest
+                                                           >>= (fun vs -> v :: vs |> ok)
+                                              | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(
+                                                                __.GetType() |> getTypeNameFromAttribute,
+                                                                name)
+                        | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(
+                                            __.GetType() |> getTypeNameFromAttribute,
+                                            name)
+
+                parameters
+                |> handleParams source queryFunctionTypes
+                >>= (fun stringParams -> 
+                    stringParams
+                    |> Seq.map Convert.ToInt32
+                    // Calculate the sum
+                    |> Seq.sum
+                    // Bring back to string type
+                    |> (fun x -> x.ToString()) |> ok)
+
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
