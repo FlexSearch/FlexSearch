@@ -860,7 +860,7 @@ Name of the index
 #endif
     member IndexName : string with get, set
 
-#if prop_Online
+#if prop_Active
 Signifies if the index is on-line or not? An index has to be on-line in order to 
 enable searching over it.
 #endif
