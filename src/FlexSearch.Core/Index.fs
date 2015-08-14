@@ -316,6 +316,8 @@ module DocumentTemplate =
                     if field.GenerateDocValue then 
                         Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
                         i <- i + 1
+        // Release the dictionary back to the pool so that it could be recycled
+        dictionaryPool.Release(document.Fields)
         template.Template
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality
