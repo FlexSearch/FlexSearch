@@ -89,6 +89,7 @@
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Domain.fsi" />
     <Compile Include="Domain.fs" />
+    <Compile Include="Pools.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
