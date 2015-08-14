@@ -66,7 +66,7 @@ module Parsers =
     
     /// Identifier implementation. Alphanumeric character without spaces
     let identifier = 
-        many1SatisfyL (fun c -> c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''') 
+        many1SatisfyL (fun c -> " ():'," |> String.exists ((=)c) |> not) //c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''' && c <> ',') 
             "Field name should be alpha number without '(', ')' and ' '." .>> ws
 
     let anyCheck checks item = checks |> Seq.fold (fun acc value -> acc || value item) false
@@ -92,6 +92,11 @@ module Parsers =
             (ws >>. funcName )
             (str_ws "(" >>. parameters .>> str_ws ")")
             (fun name prms -> Func(name, prms))
+
+    let ParseFunction text =
+        match run (ws >>. func .>> eof) text with
+        | Success(result, _, _) -> ok result
+        | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
 
     /// Value parser
     /// Note: THe order of choice is important as stringLiteral uses

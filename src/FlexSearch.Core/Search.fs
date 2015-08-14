@@ -197,14 +197,16 @@ module SearchDsl =
                     else ok <| [| x |> between '[' ']' |]
                 | _ -> ok <| [| x |> between '[' ']' |]
             // Constant value
-            // TODO: handle functions in search profiles
-            | v1 -> ok <| [| v1 |]
+            | x -> ok [| x |]
         
         let getValue (fieldName, v : Value) = 
             match isProfileBased with
             | Some(source) -> 
                 match v with
                 | SingleValue(v1) -> getValueForSearchProfile (fieldName, v1, source)
+                | Func(funcName,parameters) -> 
+                    handleFunctionValue funcName (parameters |> Seq.toList) queryFunctionTypes (Some(source))
+                    >>= (fun result -> ok [| result |])
                 | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
             | None -> v |> getFieldValueAsArray fieldName
         

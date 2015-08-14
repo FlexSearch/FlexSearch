@@ -56,6 +56,7 @@ type SearchParserTests() =
     [<InlineData("abc eq add('1','2')")>]
     [<InlineData("abc eq add('1')")>]
     [<InlineData("abc eq add(field1,field2)")>]
+    [<InlineData("i1 = add(i2,i1,'-2')")>]
     [<InlineData("abc eq add('1',max(field1,field2))")>]
     [<InlineData("abc eq any(['true','false','false'])")>]
     [<InlineData("abc > sqrt(add(haversin(delta),multiply(cos(fi1),cos(fi2))))")>]
