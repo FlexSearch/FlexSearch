@@ -189,6 +189,8 @@ type SearchMessage =
     | InvalidFieldName of fieldName : string
     | StoredFieldCannotBeSearched of fieldName : string
     | MissingFieldValue of fieldName : string
+    | FunctionNotFound of context : string
+    | FunctionExecutionError of functionName : string * ``exception`` : Exception
     | UnknownMissingVauleOption of fieldName : string
     | SearchProfileUnsupportedFieldValue of fieldName : string
     | DataCannotBeParsed of fieldName : string * expectedDataType : string
@@ -198,6 +200,10 @@ type SearchMessage =
     | MethodCallParsingError of error : string
     | UnknownSearchProfile of indexName : string * profileName : string
     | PurelyNegativeQueryNotSupported
+    | FieldNamesNotSupportedOutsideSearchProfile of functionName : string * fieldName : string
+    | FunctionParamTypeMismatch of functionName : string * expectedType : string * actualType : string
+    | NumberOfFunctionParametersMismatch of functionName : string * expected : int * actual : int
+    | NotEnoughParameters of functionName : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Nothing)
         
@@ -208,6 +214,8 @@ type SearchMessage =
             | InvalidFieldName(f) -> sprintf "Invalid field name: %s" f
             | StoredFieldCannotBeSearched(f) -> sprintf "Stored field cannot be searched: %s" f
             | MissingFieldValue(f) -> sprintf "Missing field value: %s" f
+            | FunctionNotFound(f) -> sprintf "Function not found: %s" f
+            | FunctionExecutionError(n,e) -> sprintf "Error when executing function %s: %s" n e.Message
             | UnknownMissingVauleOption(f) -> sprintf "Unknown missing field value option: %s" f
             | DataCannotBeParsed(f, e) -> sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
@@ -218,6 +226,10 @@ type SearchMessage =
             | UnknownSearchProfile(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
             | PurelyNegativeQueryNotSupported -> "Purely negative queries (not top query) not supported"
             | SearchProfileUnsupportedFieldValue(fn) -> sprintf "Search Profile does not support array values as an input for field '%s'." fn
+            | FieldNamesNotSupportedOutsideSearchProfile(func,fld) -> sprintf "Field names not supported outside Search Profiles. Occured in function %s for field %s" func fld
+            | FunctionParamTypeMismatch(fn,e,a) -> sprintf "Function parameter type mismatch for function %s. Expected %s, but got %s." fn e a
+            | NumberOfFunctionParametersMismatch(fn,e,a) -> sprintf "Expected %d parameters for function %s, but got %d" e fn a
+            | NotEnoughParameters(fn) -> sprintf "Not enough parameters for function %s" fn
             |> caseToMsg this
 
 type IndexingMessage = 

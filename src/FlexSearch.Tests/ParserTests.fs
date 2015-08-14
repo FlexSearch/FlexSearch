@@ -15,6 +15,11 @@ let test2 str =
     | Ok(_) -> ()
     | Fail(errorMsg) -> raise <| invalidOp (sprintf "%A" errorMsg)
 
+let testFails str =
+    match parser.Parse str with
+    | Ok(_) -> raise <| invalidOp (sprintf "Parser shouldn't parse expression: %A" str)
+    | Fail(_) -> ()
+
 type SearchParserTests() = 
     member __.``Single escape character should be accepted``() = 
         test FlexSearch.Core.Parsers.stringLiteral "'abc \\' pqr'"
@@ -48,6 +53,19 @@ type SearchParserTests() =
     [<Ignore>]
     member __.``Simple expression should parse`` (sut : string) = test2 sut
     
+    [<InlineData("abc eq add('1','2')")>]
+    [<InlineData("abc eq add('1')")>]
+    [<InlineData("abc eq add(field1,field2)")>]
+    [<InlineData("i1 = add(i2,i1,'-2')")>]
+    [<InlineData("abc eq add('1',max(field1,field2))")>]
+    [<InlineData("abc eq any(['true','false','false'])")>]
+    [<InlineData("abc > sqrt(add(haversin(delta),multiply(cos(fi1),cos(fi2))))")>]
+    member __.``Expression with function should parse`` (sut : string) = test2 sut
+
+    [<InlineData("abc eq fieldName")>]
+    [<InlineData("abc eq [fieldName1, fieldName2]")>]
+    member __.``Expression with value as field name without quotes shouldn't parse`` (sut : string) = testFails sut
+
     [<InlineData("f1: 'v1',f2 : 'v2'", 2)>]
     [<InlineData(" f1:  'v1' , f2 : 'v2'", 2)>]
     [<InlineData("   f1           : 'v1'     ", 1)>]

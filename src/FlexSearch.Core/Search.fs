@@ -31,6 +31,10 @@ type IFlexQuery =
     abstract QueryName : unit -> string []
     abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
 
+/// Interface for implementing query functions
+type IFlexQueryFunction = 
+    abstract GetResult : Value list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string>
+
 [<AutoOpenAttribute>]
 module SearchResultComponents = 
     /// Represents the search result format supported
@@ -106,10 +110,23 @@ module SearchResultComponents =
 module SearchDsl = 
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
-    
+
+    let handleFunctionValue 
+        fName 
+        parameters 
+        (queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) 
+        (source : Dictionary<string,string> option) =
+            match queryFunctionTypes.TryGetValue(fName) with
+            | true, func -> 
+                match func.GetResult(parameters, queryFunctionTypes, source) with
+                | Ok(r) -> ok <| r
+                | Fail(e) -> fail e
+            | _ -> fail <| FunctionNotFound (sprintf "%A" <| Func(fName, parameters))
+
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
-                       queryTypes : Dictionary<string, IFlexQuery>) = 
+                       queryTypes : Dictionary<string, IFlexQuery>,
+                       queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) = 
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
         
@@ -121,6 +138,9 @@ module SearchDsl =
             | ValueList(v) -> 
                 if v.Length = 0 then fail <| MissingFieldValue(fieldName)
                 else ok <| v.ToArray()
+            | Func(name,prms) -> handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
+                                 >>= (fun x -> ok [| x |])
+            | FieldName(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
         
         let getValueForSearchProfile (fieldName, v : string, source : Dictionary<string, string>) = 
             generateMatchAllQuery.Value <- false
@@ -177,13 +197,16 @@ module SearchDsl =
                     else ok <| [| x |> between '[' ']' |]
                 | _ -> ok <| [| x |> between '[' ']' |]
             // Constant value
-            | v1 -> ok <| [| v1 |]
+            | x -> ok [| x |]
         
         let getValue (fieldName, v : Value) = 
             match isProfileBased with
             | Some(source) -> 
                 match v with
                 | SingleValue(v1) -> getValueForSearchProfile (fieldName, v1, source)
+                | Func(funcName,parameters) -> 
+                    handleFunctionValue funcName (parameters |> Seq.toList) queryFunctionTypes (Some(source))
+                    >>= (fun result -> ok [| result |])
                 | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
             | None -> v |> getFieldValueAsArray fieldName
         
@@ -497,3 +520,211 @@ type FlexLessThanEqualQuery() =
         member __.QueryName() = [| "<=" |]
         member __.GetQuery(flexIndexField, values, _) = 
             getRangeQuery values.[0] (true, true) (MinInfinite, NoInfinite) flexIndexField
+
+[<AutoOpen>]
+module QueryFunctionHelpers = 
+    // Convert the parameters to the integers.
+    // We aren't expecting arrays
+    let rec convertToInts typeName source queryFunctionTypes parameters =          
+        match parameters with
+        | [] -> ok []
+        | SingleValue(v) :: rest -> convertToInts typeName source queryFunctionTypes rest
+                                    >>= (fun vs -> v :: vs |> ok)
+        | ValueList(_) :: rest -> 
+            fail <| FunctionParamTypeMismatch(
+                typeName,
+                "Single values, functions or fieldnames",
+                "Value list")
+        | Func(n,ps) :: rest -> 
+            convertToInts typeName source queryFunctionTypes rest >>= (fun vs -> 
+                handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
+                >>= (fun v -> v :: vs |> ok))
+        | FieldName(name) :: rest ->
+            match source with
+            | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
+                                    | true, v -> convertToInts typeName source queryFunctionTypes rest
+                                                >>= (fun vs -> v :: vs |> ok)
+                                    | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
+            | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
+
+    // Convert the single parameter to a string
+    let getSingleStringParam typeName source queryFunctionTypes parameters =
+        match parameters with
+        | [] -> ok ""
+        | [SingleValue(v)] -> ok v
+        | [ValueList(_)] -> fail <| FunctionParamTypeMismatch(
+                                typeName,
+                                "Single values, functions or fieldnames",
+                                "Value list")
+        | [Func(n,ps)] -> handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
+                          >>= ok
+        | [FieldName(name)] ->
+            match source with
+            | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
+                                    | true, v -> ok v
+                                    | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
+            | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
+        | _ -> fail <| NumberOfFunctionParametersMismatch(typeName, 1, parameters.Length)
+
+    let getStringParam typeName source queryFunctionTypes parameters accumulatedResult =  
+        match parameters with
+        | [] -> fail <| NotEnoughParameters typeName
+        | SingleValue(v) :: rest -> ok (v :: accumulatedResult, rest)
+        | ValueList(_) :: rest -> fail <| FunctionParamTypeMismatch(
+                                    typeName,
+                                    "Single values, functions or fieldnames",
+                                    "Value list")
+        | Func(n,ps) :: rest -> handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
+                                >>= fun result -> ok (result :: accumulatedResult,rest)
+        | FieldName(name) :: rest ->
+            match source with
+            | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
+                                    | true, v -> ok (v :: accumulatedResult, rest)
+                                    | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
+            | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
+
+    // Applies the given folding function to the list of integers, after processing them 
+    // from a list of function parameter types
+    let doForParameters parameters typeName source queryFunctionTypes doFunction =
+        parameters
+        |> convertToInts typeName source queryFunctionTypes
+        >>= (fun stringParams -> 
+            stringParams
+            |> Seq.map Convert.ToDouble
+            // Calculate the sum
+            |> doFunction
+            // Bring back to string type
+            |> (fun x -> x.ToString()) |> ok)
+
+    // Applies the given function to the string value, after processing it from a list of 
+    // of function parameter types
+    let doForSingleParameter parameters typeName source queryFunctionTypes doFunction =
+        parameters
+        |> getSingleStringParam typeName source queryFunctionTypes
+        >>= (doFunction >> ok)
+
+// ----------------------------------------------------------------------------
+// Functions in queries
+// These functions are executed by the FlexSearch server before it goes to 
+// Lucene search.
+// ---------------------------------------------------------------------------- 
+[<Name("add"); Sealed>]
+type AddFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                Seq.sum
+                |> doForParameters parameters
+                                   (__.GetType() |> getTypeNameFromAttribute) 
+                                   source 
+                                   queryFunctionTypes 
+                                   
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("multiply"); Sealed>]
+type MultiplyFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                Seq.fold (*) 1.0
+                |> doForParameters parameters
+                                   (__.GetType() |> getTypeNameFromAttribute) 
+                                   source 
+                                   queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("max"); Sealed>]
+type MaxFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                Seq.max
+                |> doForParameters parameters
+                                   (__.GetType() |> getTypeNameFromAttribute) 
+                                   source 
+                                   queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("min"); Sealed>]
+type MinFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                Seq.min
+                |> doForParameters parameters
+                                   (__.GetType() |> getTypeNameFromAttribute) 
+                                   source 
+                                   queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("avg"); Sealed>]
+type AvgFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                Seq.average
+                |> doForParameters parameters
+                                   (__.GetType() |> getTypeNameFromAttribute) 
+                                   source 
+                                   queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("len"); Sealed>]
+type LenFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                String.length >> fun x -> x.ToString()
+                |> doForSingleParameter parameters
+                                        (__.GetType() |> getTypeNameFromAttribute) 
+                                        source 
+                                        queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("upper"); Sealed>]
+type UpperFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                fun (x : string) -> x.ToUpper()
+                |> doForSingleParameter parameters
+                                        (__.GetType() |> getTypeNameFromAttribute) 
+                                        source 
+                                        queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("lower"); Sealed>]
+type LowerFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                fun (x : string) -> x.ToLower()
+                |> doForSingleParameter parameters
+                                        (__.GetType() |> getTypeNameFromAttribute) 
+                                        source 
+                                        queryFunctionTypes 
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("substr"); Sealed>]
+type SubstrFunc() =
+    interface IFlexQueryFunction with
+        member __.GetResult(parameters, queryFunctionTypes, source) = 
+            try
+                let typeName = "substr"
+
+                let parsedParams =
+                    if parameters.Length <> 3 then 
+                        fail <| NumberOfFunctionParametersMismatch(typeName, 3, parameters.Length)
+                    else
+                        getStringParam typeName source queryFunctionTypes parameters []
+                        >>= fun (acc, rest) -> getStringParam typeName source queryFunctionTypes rest acc
+                        >>= fun (acc, rest) -> getStringParam typeName source queryFunctionTypes rest acc
+                        >>= fun (acc, rest) -> ok acc
+
+                parsedParams
+                >>= fun ps -> 
+                    match ps |> List.rev with
+                    | [inputString; startStr; lengthStr] -> 
+                        inputString.Substring(Convert.ToInt32 startStr, Convert.ToInt32 lengthStr) |> ok
+                    | _ -> fail <| NumberOfFunctionParametersMismatch(typeName, 3, ps.Length)
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)

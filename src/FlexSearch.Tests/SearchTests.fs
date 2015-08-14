@@ -3,6 +3,7 @@
 open FlexSearch.Core
 open Swensen.Unquote
 open System.Linq
+open System
 
 /// General search related helpers
 let getQuery (indexName, queryString) = new SearchQuery(indexName, queryString)
@@ -75,7 +76,7 @@ let assertReturnedDocsCount (expected : int) (result : SearchResults) =
     test <@ result.RecordsReturned = expected @>
 
 let assertFieldValue (documentNo : int) (fieldName : string) (expectedFieldValue : string) (result : SearchResults) = 
-    test <@ result.Documents.Count >= documentNo @>
+    test <@ result.Documents.Count >= documentNo + 1 @>
     test <@ result.Documents.[documentNo].Fields.[fieldName] = expectedFieldValue @>
 
 /// Check if the total number of available document returned by the query matched the expected
@@ -310,15 +311,15 @@ id,et1,h1
 
 type ``Search profile Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
-id,et1,et2
-1,a,h
-2,b,g
-3,c,f
-4,d,e
-5,e,d
-6,f,c
-7,g,b
-8,h,a"""
+id,et1,et2,i1,i2
+1,a,h,37,95
+2,b,g,49,31
+3,c,f,61,52
+4,d,e,84,2
+5,e,d,12,72
+6,f,c,60,30
+7,g,b,28,15
+8,h,a,41,56"""
     do 
         // Add test profiles
         index.SearchProfiles <- 
@@ -332,6 +333,10 @@ id,et1,et2
                 getQuery(index.IndexName, "et1 = '<et2>[*]'") |> withName "crossmatchignore"
                 getQuery(index.IndexName, "et1 = '<et2>[d]'") |> withName "crossmatchdefault"
                 getQuery(index.IndexName, "et1 = 'h'") |> withName "constantmatch"
+                getQuery(index.IndexName, "i1 = add(i2,i1,'-2')") |> withName "crossmatchwithfunc"
+                getQuery(index.IndexName, "i1 = add(i2,add(i1,'-2'))") |> withName "crossmatchwithnestedfunc"
+                getQuery(index.IndexName, "i1 = add('10','18')") |> withName "matchwithfuncconstonly"
+                getQuery(index.IndexName, "i1 = add(i2,i2)") |> withName "crossmatchwithfieldonlyfunc"
             |]
         indexTestData (testData, index, indexService, documentService)
     
@@ -488,6 +493,46 @@ id,et1,et2
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "h"
+
+    member __.``Matching with functions is possible by writing functions in javascript fashion``() =
+        let result = 
+            getQuery (index.IndexName, "i1:'40',i2:'23'")
+            |> withSearchProfile "crossmatchwithfunc"
+            |> withColumns [| "_id" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "3"
+
+    member __.``Matching with nested functions is possible by making a function parameter a function call``() =
+        let result = 
+            getQuery (index.IndexName, "i1:'40',i2:'23'")
+            |> withSearchProfile "crossmatchwithnestedfunc"
+            |> withColumns [| "_id" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "3"
+
+    member __.``Matching with functions having constant only parameters is possible``() =
+        let result = 
+            getQuery (index.IndexName, "i1:'40',i2:'23'")
+            |> withSearchProfile "matchwithfuncconstonly"
+            |> withColumns [| "_id" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "7"
+
+    member __.``Matching with functions having field only parameters is possible``() =
+        let result = 
+            getQuery (index.IndexName, "i1:'40',i2:'30'")
+            |> withSearchProfile "crossmatchwithfieldonlyfunc"
+            |> withColumns [| "_id" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "6"
 
 type ``DistinctBy Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -728,3 +773,73 @@ CC,AA,FALSE
         searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = 'cc'"
 
 
+// ----------------------------------------------------------------------------
+// Queries with functions tests
+// ----------------------------------------------------------------------------
+type ``Queries with functions tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+
+    let testData = """
+id,et1,b1,i1
+1,A,TRUE,54
+2,aa,true,76
+3,Aa,True,3
+4,aA,False,87
+CC,AA,FALSE,40
+"""
+    do indexTestData (testData, index, indexService, documentService)
+
+    member __.``Searching for i1 = add('10','30') should return record CC which is equal to 40``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('10','30')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 = add( '10', '30' ) using spaces should return record CC which is equal to 40``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add( '10', '30' )")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 = add('10', add('10','20')) having nested functions should return record CC which is equal to 40``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('10', add('10','20'))")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 > add('10','30') should return 3 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 > add('10','30')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 3
+        result.Documents |> Seq.forall (fun d -> d.Fields.["i1"] |> Convert.ToInt32 > 40)
+
+    member __.``Searching for i1 = add('80', '-4') should support negative numbers``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('80', '-4')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "2"
+
+    member __.``Searching for i1 = add('10', '10', '10', '10') should support more than 2 parameters``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('10', '10', '10', '10')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "CC"
+
+    member __.``Searching for i1 = add('3') should support only one parameter``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 = add('3')")
+            |> withColumns [| "_id"; "i1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "3"

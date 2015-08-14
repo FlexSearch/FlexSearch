@@ -106,14 +106,12 @@ module DocumentServiceTests =
             document.Fields.["t1"] <- "0"
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-            test 
-                <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = document.Fields.["t1"] @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = "0" @>
             // Update the document
             document.Fields.["t1"] <- "1"
             test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-            test 
-                <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = document.Fields.["t1"] @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = "1" @>
 
         member __.``Should be able to delete all documents in an index``(index : Index, indexService : IIndexService, 
                                                                          documentService : IDocumentService) =
