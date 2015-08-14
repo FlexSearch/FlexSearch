@@ -134,6 +134,7 @@ module DataHelpers =
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
+        fixture.Inject<IFlexFactory<IFlexQueryFunction>>(container.Resolve<IFlexFactory<IFlexQueryFunction>>()) |> ignore
         fixture.Register<FlexClient>(fun _ -> 
             let server = owinServer()
             fixture.Inject<LoggingHandler>(new LoggingHandler(server.Handler))

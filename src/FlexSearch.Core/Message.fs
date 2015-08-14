@@ -202,6 +202,8 @@ type SearchMessage =
     | PurelyNegativeQueryNotSupported
     | FieldNamesNotSupportedOutsideSearchProfile of functionName : string * fieldName : string
     | FunctionParamTypeMismatch of functionName : string * expectedType : string * actualType : string
+    | NumberOfFunctionParametersMismatch of functionName : string * expected : int * actual : int
+    | NotEnoughParameters of functionName : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Nothing)
         
@@ -226,6 +228,8 @@ type SearchMessage =
             | SearchProfileUnsupportedFieldValue(fn) -> sprintf "Search Profile does not support array values as an input for field '%s'." fn
             | FieldNamesNotSupportedOutsideSearchProfile(func,fld) -> sprintf "Field names not supported outside Search Profiles. Occured in function %s for field %s" func fld
             | FunctionParamTypeMismatch(fn,e,a) -> sprintf "Function parameter type mismatch for function %s. Expected %s, but got %s." fn e a
+            | NumberOfFunctionParametersMismatch(fn,e,a) -> sprintf "Expected %d parameters for function %s, but got %d" e fn a
+            | NotEnoughParameters(fn) -> sprintf "Not enough parameters for function %s" fn
             |> caseToMsg this
 
 type IndexingMessage = 

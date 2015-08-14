@@ -67,6 +67,7 @@
     <Compile Include="ScriptingTests.fs" />
     <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
+    <Compile Include="QueryFunctionTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="HandlerTests.fs" />
     <Compile Include="HttpTests.fs" />
