@@ -432,6 +432,16 @@ Lucene weights terms and Lucene interacts with Similarity at both index-time
 and query-time.
 #endif
     member DefaultFieldSimilarity : FieldSimilarity with get, set
+
+#if prop_AllowReads
+Signifies if reads are allowed on the index. Useful for creating write only index.
+#endif
+    member AllowReads : bool with get, set
+    
+#if prop_AllowWrites
+Signifies if writes are allowed on the index. Useful for creating read only index.
+#endif    
+    member AllowWrites : bool with get, set
 // ----------------------------------------------------------------------------
 
 #if dto_TokenFilter
@@ -860,7 +870,7 @@ Name of the index
 #endif
     member IndexName : string with get, set
 
-#if prop_Online
+#if prop_Active
 Signifies if the index is on-line or not? An index has to be on-line in order to 
 enable searching over it.
 #endif

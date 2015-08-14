@@ -226,7 +226,9 @@ type IndexConfiguration() =
     /// determines how Lucene weights terms and Lucene interacts with 
     /// Similarity at both index-time and query-time.
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
-    
+    member val AllowReads = true with get, set
+    member val AllowWrites = true with get, set
+
     override this.Validate() = this.CommitTimeSeconds
                                |> gte "CommitTimeSeconds" 30
                                >>= (fun _ -> this.MaxBufferedDocs |> gte "MaxBufferedDocs" 2)
