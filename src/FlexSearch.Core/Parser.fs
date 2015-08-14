@@ -66,7 +66,7 @@ module Parsers =
     
     /// Identifier implementation. Alphanumeric character without spaces
     let identifier = 
-        many1SatisfyL (fun c -> " ():'," |> String.exists ((=)c) |> not) //c <> ' ' && c <> '(' && c <> ')' && c <> ':' && c <> ''' && c <> ',') 
+        many1SatisfyL (fun c -> " ():'," |> String.exists ((=)c) |> not)
             "Field name should be alpha number without '(', ')' and ' '." .>> ws
 
     let anyCheck checks item = checks |> Seq.fold (fun acc value -> acc || value item) false
