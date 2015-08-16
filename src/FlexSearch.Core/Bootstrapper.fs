@@ -122,14 +122,14 @@ module Main =
     open System.Reflection
     
     /// Get a container with all dependencies setup
-    let getContainer (serverSettings : ServerSettings.T, testServer : bool) = 
+    let getContainer (serverSettings : Settings.T, testServer : bool) = 
         let builder = new ContainerBuilder()
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
         // so the meta-data attributes get read.
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
-        builder.RegisterInstance(serverSettings).SingleInstance().As<ServerSettings.T>() |> ignore
+        builder.RegisterInstance(serverSettings).SingleInstance().As<Settings.T>() |> ignore
         // Interface scanning
         builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
         builder |> FactoryService.registerInterfaceAssemblies<IFlexQueryFunction>
@@ -157,10 +157,11 @@ module Main =
     
     /// Used by windows service (top shelf) to start and stop windows service.
     [<Sealed>]
-    type NodeService(serverSettings : ServerSettings.T, testServer : bool) = 
+    type NodeService(serverSettings : Settings.T, testServer : bool) = 
         let container = getContainer (serverSettings, testServer)
         let mutable httpServer = Unchecked.defaultof<IServer>
-        
+        let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
+
         //        do 
         // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
         // To verify that this works, run `netsh http show servicestate`.
@@ -168,7 +169,7 @@ module Main =
         member __.Start() = 
             try 
                 let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
-                httpServer <- new OwinServer(generateRoutingTable handlerModules, serverSettings.HttpPort)
+                httpServer <- new OwinServer(generateRoutingTable handlerModules, port)
                 httpServer.Start()
             with e -> printfn "%A" e
         

@@ -10,11 +10,11 @@ let main argv =
         (fun x -> Logger.Log(sprintf "%A" x.ExceptionObject, MessageKeyword.Node, MessageLevel.Critical)) |> ignore
     // Load server settings
     let settings = 
-        match ServerSettings.createFromFile (Path.Combine(Constants.ConfFolder, "Config.json"), jsonFormatter) with
-        | Ok(s) -> s
+        match Settings.create(Constants.ConfFolder +/ "Config.ini") with
+        | Ok(s) -> new Settings.T(s)
         | Fail(e) -> 
             Logger.Log
-                ("Error parsing 'Config.yml' file.", ValidationException(e), MessageKeyword.Node, MessageLevel.Critical)
+                ("Error parsing 'Config.ini' file.", ValidationException(e), MessageKeyword.Node, MessageLevel.Critical)
             failwithf "%s" (e.ToString())
     // Load all plug-in DLLs
     for file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly) do

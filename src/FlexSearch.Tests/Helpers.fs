@@ -78,15 +78,15 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = Main.getContainer (ServerSettings.T.GetDefault(), true)
-    let serverSettings = container.Resolve<ServerSettings.T>()
+    let container = Main.getContainer (Settings.T.GetDefault(), true)
+    let serverSettings = container.Resolve<Settings.T>()
     let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
         
     // Create a single instance of the OWIN server that will be shared across all tests
     let owinServer() = 
         TestServer.Create(fun app -> 
                             let owinServer = 
-                                new OwinServer(generateRoutingTable handlerModules, serverSettings.HttpPort)
+                                new OwinServer(generateRoutingTable handlerModules, 9800)
                             owinServer.Configuration(app))
 
     /// <summary>
@@ -114,7 +114,7 @@ module DataHelpers =
 
     let createDemoIndex = 
         // Make sure the demo index folder is empty
-        let folder = ServerSettings.T.GetDefault().DataFolder + "/country"
+        let folder = Constants.DataFolder + "/country"
         if Directory.Exists(folder) then Directory.Delete(folder, true)
         // Create the demo index
         let client = new FlexClient(owinServer().HttpClient)

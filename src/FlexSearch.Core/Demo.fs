@@ -128,7 +128,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
         index
     
     let buildSynonymFile fileName = 
-        let synonymDirectory = ServerSettings.T.GetDefault().ConfFolder + "/Resources/"
+        let synonymDirectory = Constants.ConfFolder + "/Resources/"
         Directory.CreateDirectory(synonymDirectory) |> ignore
         File.WriteAllText(synonymDirectory + fileName, "grape => fruit")
     

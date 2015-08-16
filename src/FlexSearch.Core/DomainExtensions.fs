@@ -441,39 +441,3 @@ module SearchQuery =
         query.SearchProfile <- request.OwinContext |> stringFromQueryString "searchprofile" query.SearchProfile
         query.IndexName <- request.ResId.Value
         query
-
-module ServerSettings = 
-    [<CLIMutableAttribute>]
-    type T = 
-        { HttpPort : int
-          DataFolder : string
-          PluginFolder : string
-          ConfFolder : string
-          NodeName : string }
-        /// <summary>
-        /// Get default server configuration
-        /// </summary>
-        static member GetDefault() = 
-            let setting = 
-                { HttpPort = 9800
-                  DataFolder = Helpers.GenerateAbsolutePath("./data")
-                  PluginFolder = Constants.PluginFolder
-                  ConfFolder = Constants.ConfFolder
-                  NodeName = "FlexSearchNode" }
-            setting
-    
-    /// Reads server configuration from the given file
-    let createFromFile (path : string, formatter : IFormatter) = 
-        assert (String.IsNullOrWhiteSpace(path) <> true)
-        if File.Exists(path) then 
-            let fileStream = new FileStream(path, FileMode.Open)
-            let parsedResult = formatter.DeSerialize<T>(fileStream)
-            
-            let setting = 
-                { HttpPort = parsedResult.HttpPort
-                  DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
-                  PluginFolder = Constants.PluginFolder
-                  ConfFolder = Constants.ConfFolder
-                  NodeName = parsedResult.NodeName }
-            ok setting
-        else fail <| FileNotFound path
