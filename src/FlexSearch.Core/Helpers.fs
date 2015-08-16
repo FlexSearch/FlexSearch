@@ -284,31 +284,38 @@ module DataType =
         match String.IsNullOrWhiteSpace str with
         | true -> Some(str)
         | _ -> None
-    
-//    let inline isBoolean (value : string) = 
-//        match Boolean.TryParse(value) with
-//        | true, a -> Ok (a)
-//        | _ -> Fail()
-    
+        
     let inline pBool (failureDefault) (value : string) = 
-        match Boolean.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
+        if isNull value then
+            failureDefault
+        else
+            match Boolean.TryParse(value) with
+            | true, a -> a
+            | _ -> failureDefault
     
     let inline pLong (failureDefault) (value : string) = 
-        match Int64.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
+        if isNull value then
+            failureDefault
+        else
+            match Int64.TryParse(value) with
+            | true, a -> a
+            | _ -> failureDefault
     
     let inline pInt (failureDefault) (value : string) = 
-        match Int32.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
+        if isNull value then
+            failureDefault
+        else
+            match Int32.TryParse(value) with
+            | true, a -> a
+            | _ -> failureDefault
     
     let inline pDouble (failureDefault) (value : string) = 
-        match Double.TryParse(value) with
-        | true, a -> a
-        | _ -> failureDefault
+        if isNull value then
+            failureDefault
+        else
+            match Double.TryParse(value) with
+            | true, a -> a
+            | _ -> failureDefault
     
     /// Get a value from a dictionary and perform a parsing operation. In case the
     /// operation fails or there is any other error it returns the default value
