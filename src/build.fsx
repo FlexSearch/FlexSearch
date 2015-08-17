@@ -106,12 +106,11 @@ let runPsScript scriptText =
     if result.Count > 0 then
         // Last exit code
         if (result |> Seq.last).ToString() <> "0" then 
-            failwith "The powershell script exited with a non-success code"
+            failwith "The powershell script exited with a non-success code. Please check previous error messages for details."
 
     if (ps.Streams.Error.Count > 0) then
-        trace "PS Script Errors:\n"
+        trace "PS Script non-fatal errors:\n"
         ps.Streams.Error |> Seq.iter (sprintf "%A" >> trace)
-        failwith "An error occurred while running the PowerShell script. Please check previous error messages for details."
 
 // Targets
 Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web" ])
