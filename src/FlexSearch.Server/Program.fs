@@ -14,7 +14,7 @@ let main argv =
         | Ok(s) -> s
         | Fail(e) -> 
             Logger.Log
-                ("Error parsing 'Config.yml' file.", ValidationException(e), MessageKeyword.Node, MessageLevel.Critical)
+                ("Error parsing 'Config.json' file.", ValidationException(e), MessageKeyword.Node, MessageLevel.Critical)
             failwithf "%s" (e.ToString())
     // Load all plug-in DLLs
     for file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly) do
