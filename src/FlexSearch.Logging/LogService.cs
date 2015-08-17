@@ -19,7 +19,7 @@
 using System;
 using System.Reflection;
 using System.Text;
-using Microsoft.Diagnostics.Tracing;
+using System.Diagnostics.Tracing;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
@@ -42,9 +42,6 @@ namespace FlexSearch.Logging
 
         public static LogService GetLogger(bool testLogger)
         {
-            if (!testLogger || consoleEventListener != null) return Log;
-            consoleEventListener = new ConsoleEventListener();
-            consoleEventListener.EnableEvents(Log, EventLevel.LogAlways, EventKeywords.All);
             return Log;
         }
 
