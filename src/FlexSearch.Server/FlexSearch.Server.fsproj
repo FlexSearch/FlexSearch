@@ -15,7 +15,8 @@
     <Name>FlexSearch.Server</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <NuGetPackageImportStamp>bab5ba17</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -65,6 +66,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
     <Error Condition="!Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.1.25\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.1.25\build\Microsoft.Diagnostics.Tracing.EventRegister.targets'))" />
+    <Error Condition="!Exists('..\packages\FSharpLint.0.2.6\build\FSharpLint.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\FSharpLint.0.2.6\build\FSharpLint.targets'))" />
     <!--<Error Condition="!Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets'))" />-->
   </Target>
   <ItemGroup>
@@ -310,6 +312,7 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.1.25\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.1.25\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />
+  <Import Project="..\packages\FSharpLint.0.2.6\build\FSharpLint.targets" Condition="Exists('..\packages\FSharpLint.0.2.6\build\FSharpLint.targets')" />
   <!--<Import Project="..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />-->
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
