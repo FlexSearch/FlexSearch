@@ -38,6 +38,7 @@ type MessageKeyword =
     | Document 
     | Default
     | Plugin
+    | Startup
 
 type MessageLevel =
     | Critical
