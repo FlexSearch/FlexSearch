@@ -207,8 +207,8 @@ md-bottom-sheet.error md-content {
   min-height: 400px;
 }
 
-.cluster-container md-whiteframe {
-  margin: 7px;  
+.cluster-container md-whiteframe + md-whiteframe {
+  margin: 16px 8px 0px 8px;  
   background-color: white;
 }
 
@@ -232,9 +232,17 @@ md-toolbar.clickable:hover {
   cursor: pointer;
 }
 
+md-progress-linear {
+  margin-bottom: 10px !important;
+}
+
 .cluster-container .leftColumn {
   min-width: 300px;
-  padding-right: 15px;
+  margin-right: 20px;
+}
+
+.cluster-container .leftColumn md-whiteframe {
+  margin: 0px;
 }
 
 .cluster-container .rightColumn md-whiteframe md-toolbar {
