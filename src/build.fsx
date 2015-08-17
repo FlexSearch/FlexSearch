@@ -97,6 +97,22 @@ let AssemblyInfoCSharp path title =
                                                                                  Attribute.FileVersion version
                                                                                  Attribute.Version version ]
 
+let runPsScript scriptText =
+    let ps = PowerShell.Create()
+    let result = ps.AddScript(scriptText).Invoke()
+        
+    trace "PS Script Output:\n"
+    result |> Seq.iter (sprintf "%A" >> trace)
+    if result.Count > 0 then
+        // Last exit code
+        if (result |> Seq.last).ToString() <> "0" then 
+            failwith "The powershell script exited with a non-success code"
+
+    if (ps.Streams.Error.Count > 0) then
+        trace "PS Script Errors:\n"
+        ps.Streams.Error |> Seq.iter (sprintf "%A" >> trace)
+        failwith "An error occurred while running the PowerShell script. Please check previous error messages for details."
+
 // Targets
 Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web" ])
 // This is to ensure that the compiled weaver is copied to the correct folder so that Fody can pick it up
@@ -125,10 +141,8 @@ Target "Zip"
 // Portal related
 Target "BuildPortal" <| fun _ ->
     FileUtils.cd portalDir
-    PowerShell.Create()
-        .AddScript(File.ReadAllText("build.ps1"))
-        .Invoke()
-        |> Seq.iter (sprintf "%A" >> trace)
+
+    runPsScript <| File.ReadAllText "build.ps1"
 
     FileUtils.cd @"..\src"
 
@@ -141,10 +155,8 @@ Target "MovePortal" <| fun _ ->
 Target "GenerateSwagger" <| fun _ ->
     trace "Generating Swagger"
     FileUtils.cd documentationDir
-    PowerShell.Create()
-        .AddScript(File.ReadAllText("build.ps1"))
-        .Invoke()
-        |> Seq.iter (sprintf "%A" >> trace)
+
+    runPsScript <| File.ReadAllText "build.ps1"
 
     FileUtils.cd @"..\src"
 

@@ -10,3 +10,5 @@ echo "Installing gulp"
 Invoke-Expression gulp
 Invoke-Expression "gulp swagger"
 echo "Finished portal build script"
+
+$lastexitcode
