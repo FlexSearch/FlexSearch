@@ -9,7 +9,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>FlexSearch.Server</RootNamespace>
     <AssemblyName>FlexSearch Server</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <Name>FlexSearch.Server</Name>
