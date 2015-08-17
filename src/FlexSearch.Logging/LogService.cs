@@ -16,12 +16,7 @@
 //  You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
 
-using System;
-using System.Reflection;
-using System.Text;
 using System.Diagnostics.Tracing;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace FlexSearch.Logging
 {
@@ -33,7 +28,6 @@ namespace FlexSearch.Logging
     public sealed class LogService : EventSource
     {
         private static readonly LogService Log = new LogService();
-        private static ConsoleEventListener consoleEventListener = null;
 
         /// <summary>
         /// Default Log message format
@@ -79,7 +73,7 @@ namespace FlexSearch.Logging
         {
             WriteEvent(1002, errorCode, msg, data);
         }
-        
+
         [Event(1003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Node, Channel = EventChannel.Admin)]
         public void NodeInfo(string errorCode, string msg, string data)
         {
@@ -91,7 +85,7 @@ namespace FlexSearch.Logging
         {
             WriteEvent(1004, errorCode, msg, data);
         }
-        
+
         [Event(1005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Node, Channel = EventChannel.Operational)]
         public void NodeLogAlways(string errorCode, string msg, string data)
         {
