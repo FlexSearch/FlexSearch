@@ -32,21 +32,21 @@ type OperationMessage =
       ErrorCode : string }
 
 type MessageKeyword =
-    | Node 
-    | Index 
-    | Search 
-    | Document 
-    | Default
-    | Plugin
-    | Startup
+    | Node = 1
+    | Index = 2 
+    | Search = 3 
+    | Document = 4 
+    | Default = 5
+    | Plugin = 6
+    | Startup = 7
 
 type MessageLevel =
-    | Critical
-    | Error
-    | Warning
-    | Info
-    | Verbose
-    | Nothing
+    | Critical = 1
+    | Error = 2
+    | Warning = 3
+    | Info = 4
+    | Verbose = 5
+    | Nothing = 6
 
 /// Interface to expose internal message format
 type IMessage = 
