@@ -77,7 +77,7 @@ module Settings =
                 match source.[section].[key] with
                 | null -> defaultValue 
                 | v -> v
-            Helpers.GenerateAbsolutePath path
+            Helpers.generateAbsolutePath path
 
         static member GetDefault() =
             let parser = new FileIniDataParser()

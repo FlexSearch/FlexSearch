@@ -120,13 +120,11 @@ module Helpers =
     let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
     
     let emptyDir (path) = 
-        loopDir path |> Seq.iter (fun x -> 
-            loopFiles x |> Seq.iter (fun x -> File.Delete(x))    
-            Directory.Delete(x, true))
+        loopDir path |> Seq.iter (loopFiles >> Seq.iter File.Delete)
         
     let delDir (path) = 
         emptyDir path
-        Directory.Delete(path)
+        Directory.Delete(path, true)
     
     /// Check for null
     let inline isNull (x : ^a when ^a : not struct) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
@@ -162,11 +160,8 @@ module Helpers =
         else
             input.Substring(startingPos)
 
-    /// <summary>
     /// Simple exception formatter
     /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/
-    /// </summary>
-    /// <param name="e"></param>
     [<CompiledNameAttribute("ExceptionPrinter")>]
     let exceptionPrinter (e : Exception) = 
         let sb = StringBuilder()
@@ -197,28 +192,22 @@ module Helpers =
                 if (e.InnerException <> null) then printException e.InnerException (count + 1)
         printException e 1
         sb.ToString()
-//    
-//    let inline ParseDate(date : string) = 
-//        match DateTime.TryParseExact
-//                  (date, [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |], CultureInfo.InvariantCulture, 
-//                   DateTimeStyles.None) with
-//        | true, date -> Ok(date)
-//        | _ -> Fail <| Gener("UNABLE_TO_PARSE_DATETIME:The specified date time is not in a supported format.")
     
     /// Utility method to load a file into text string
-    let LoadFile(filePath : string) = 
-        if File.Exists(filePath) = false then failwithf "File does not exist: {0}" filePath
+    let loadFile(filePath : string) = 
+        if not <| File.Exists(filePath) then failwithf "File does not exist: %s" filePath
         File.ReadAllText(filePath)
     
     /// Deals with checking if the local admin privileges
-    let CheckIfAdministrator() = 
+    let checkIfAdministrator() = 
         let currentUser : WindowsIdentity = WindowsIdentity.GetCurrent()
         if currentUser <> null then 
             let wp = new WindowsPrincipal(currentUser)
             wp.IsInRole(WindowsBuiltInRole.Administrator)
         else false
     
-    let GenerateAbsolutePath(path : string) = 
+    /// Generates an absolute path for a given relative path
+    let generateAbsolutePath(path : string) = 
         if String.IsNullOrWhiteSpace(path) then failwith "internalmessage=No path is specified."
         else 
             let dataPath = 
@@ -336,7 +325,7 @@ module DataType =
         | None -> defaultValue
     
     /// Get a value from a readonly collection and perform a parsing operation. In case the
-    /// operation fails or there is any other error it returns the default value    
+    /// operation fails or there is any other error it returns the default value
     let inline getFromCollection<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
                (coll : IReadableStringCollection) = 
         match coll.Get key with
@@ -448,8 +437,8 @@ type YamlFormatter() =
     let deserializer = new YamlDotNet.Serialization.Deserializer(ignoreUnmatched = true)
     
     let serialize (body : obj, stream : Stream) = 
-        use TextWriter = new StreamWriter(stream)
-        serializer.Serialize(TextWriter, body)
+        use textWriter = new StreamWriter(stream)
+        serializer.Serialize(textWriter, body)
     
     interface IFormatter with
         
