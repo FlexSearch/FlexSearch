@@ -131,7 +131,7 @@ using System.Collections.Generic;
             |> generateDeletegate scriptType
             |> fun x -> (sprintf "%s%s" scriptName (string scriptType), x)
             |> ok
-        with e -> fail <| ScriptCannotBeCompiled(scriptName, exceptionPrinter e)
+        with e -> fail << Logger.LogR <| ScriptCannotBeCompiled(scriptName, exceptionPrinter e)
     
     /// Compiles a script from the file
     let compileFromFile (filePath, scriptType : ScriptType) = 
