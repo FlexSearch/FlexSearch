@@ -25,9 +25,13 @@ open Microsoft.Owin.Hosting
 open Owin
 open System
 open System.Collections.Generic
+open System.IO
 open System.Linq
 open System.Threading
 open System.Threading.Tasks
+open Microsoft.Practices.EnterpriseLibrary.SemanticLogging
+open FlexSearch.Logging
+open System.Diagnostics.Tracing
 
 // ----------------------------------------------------------------------------
 // Contains container and other factory implementation
@@ -155,25 +159,6 @@ module Main =
         builder |> FactoryService.registerSingleInstance<EventAggregrator, EventAggregrator>
         builder.Build()
     
-    /// Used by windows service (top shelf) to start and stop windows service.
-    [<Sealed>]
-    type NodeService(serverSettings : Settings.T, testServer : bool) = 
-        let container = getContainer (serverSettings, testServer)
-        let mutable httpServer = Unchecked.defaultof<IServer>
-        let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
-
-        //        do 
-        // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
-        // To verify that this works, run `netsh http show servicestate`.
-        //            if testServer <> true then MaximizeThreads() |> ignore
-        member __.Start() = 
-            try 
-                let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
-                httpServer <- new OwinServer(generateRoutingTable handlerModules, port)
-                httpServer.Start()
-            with e -> printfn "%A" e
-        
-        member __.Stop() = httpServer.Stop()
 //            let indexService = container.Resolve<IIndexService>()
 // Close all open indices
 //            match indexService.GetAllIndex() with
@@ -181,3 +166,147 @@ module Main =
 //                for registeration in regs do
 //                    indexService.CloseIndex(registeration.IndexName) |> ignore
 //            | _ -> ()
+
+module Interop =
+    open System
+    open System.Linq
+    open System.Runtime.InteropServices
+    open System.Reflection
+    open System.Threading
+
+    type HTTP_SERVER_PROPERTY =
+        | HttpServerAuthenticationProperty = 0
+        | HttpServerLoggingProperty = 1
+        | HttpServerQosProperty = 2
+        | HttpServerTimeoutsProperty = 3
+        | HttpServerQueueLengthProperty = 4
+        | HttpServerStateProperty = 5
+        | HttpServer503VerbosityProperty = 6
+        | HttpServerBindingProperty = 7
+        | HttpServerExtendedAuthenticationProperty = 8
+        | HttpServerListenEndpointProperty = 9
+        | HttpServerChannelBindProperty = 10
+        | HttpServerProtectionLevelProperty = 11
+
+    [<DllImport("httpapi.dll", CallingConvention = CallingConvention.StdCall)>]
+    extern uint32 HttpSetRequestQueueProperty(
+            CriticalHandle requestQueueHandle,
+            HTTP_SERVER_PROPERTY serverProperty,
+            uint32& pPropertyInfo,
+            uint32 propertyInfoLength,
+            uint32 reserved,
+            IntPtr pReserved)
+
+    // Adapted from:
+    // http://stackoverflow.com/questions/15417062/changing-http-sys-kernel-queue-limit-when-using-net-httplistener
+    /// Sets the request queue length of a HTTP listener
+    let setRequestQueueLength(listener: System.Net.HttpListener, len: uint32) =
+        let listenerType = typeof<System.Net.HttpListener>
+        let mutable length = len
+        let requestQueueHandleProperty = 
+            listenerType.GetProperties(BindingFlags.NonPublic ||| BindingFlags.Instance).First(fun p -> p.Name = "RequestQueueHandle")
+
+        let requestQueueHandle = requestQueueHandleProperty.GetValue(listener) :?> CriticalHandle
+        let result = HttpSetRequestQueueProperty(requestQueueHandle, HTTP_SERVER_PROPERTY.HttpServerQueueLengthProperty, &length, Marshal.SizeOf(len) |> uint32, 0u, IntPtr.Zero);
+
+        if result <> 0u then
+            failwithf ""
+
+/// Used by windows service (top shelf) to start and stop windows service.
+[<Sealed>]
+type NodeService(serverSettings : Settings.T, testServer : bool) = 
+    let container = getContainer (serverSettings, testServer)
+    let mutable httpServer = Unchecked.defaultof<IServer>
+    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
+    
+    // do 
+    // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
+    // To verify that this works, run `netsh http show servicestate`.
+    //            if testServer <> true then MaximizeThreads() |> ignore
+    member __.Start() = 
+        try 
+            let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
+            httpServer <- new OwinServer(generateRoutingTable handlerModules, port)
+            httpServer.Start()
+        with e -> printfn "%A" e
+        
+    member __.Stop() = httpServer.Stop()
+
+type EventTextFormatter() =
+    interface Formatters.IEventTextFormatter with
+        member __.WriteEvent(eventEntry, writer) =
+            writer.WriteLine(sprintf "[%s] %s" (eventEntry.Schema.Level.ToString()) eventEntry.FormattedMessage)
+
+module StartUp =
+    
+    let (!>) (msg: string) = Logger.Log(msg, MessageKeyword.Startup, MessageLevel.Verbose)
+
+    /// Checks if the application is in interactive user mode?
+    let isInteractive =
+        let args = Environment.GetCommandLineArgs()
+        Environment.UserInteractive || (notNull args && args.Length > 0)
+
+    let private consoleSink = ConsoleLog.CreateListener(new EventTextFormatter())
+    let private rollingFileSink = RollingFlatFileLog.CreateListener(Constants.LogsFolder +/ "Startup-Log.txt", 1024, "hh-mm", Sinks.RollFileExistsBehavior.Overwrite, Sinks.RollInterval.Day)
+
+    /// Initialize the listeners to be used across the application
+    let initializeListeners() =
+        if isInteractive then
+            // Only use console listener in user interactive mode
+            consoleSink.EnableEvents(LogService.GetLogger(), EventLevel.LogAlways)
+
+        // Write all start up events to a specific file. This is helpful in case ETW is not
+        // setup properly. The slight overhead of writing to two sinks is negligible.
+        rollingFileSink.EnableEvents(LogService.GetLogger(), EventLevel.LogAlways, LogService.Keywords.Startup)
+            
+    /// To improve CPU utilization, increase the number of threads that the .NET thread pool expands by when
+    /// a burst of requests come in. We could do this by editing machine.config/system.web/processModel/minWorkerThreads,
+    /// but that seems too global a change, so we do it in code for just our AppPool. More info: 
+    /// http://support.microsoft.com/kb/821268
+    /// http://blogs.msdn.com/b/tmarq/archive/2007/07/21/asp-net-thread-usage-on-iis-7-0-and-6-0.aspx
+    /// http://blogs.msdn.com/b/perfworld/archive/2010/01/13/how-can-i-improve-the-performance-of-asp-net-by-adjusting-the-clr-thread-throttling-properties.aspx
+    let maximizeThreads() =
+        let newMinWorkerThreads = 10
+        let (minWorkerThreads, minCompletionPortThreads) = ThreadPool.GetMinThreads()
+        ThreadPool.SetMinThreads(Environment.ProcessorCount * newMinWorkerThreads, minCompletionPortThreads)
+    
+    /// Capture all un-handled exceptions
+    let subscribeToUnhandledExceptions() =
+        AppDomain.CurrentDomain.UnhandledException.Subscribe(fun x -> 
+            Logger.Log(sprintf "%A" x.ExceptionObject, MessageKeyword.Node, MessageLevel.Critical)
+            if Environment.UserInteractive then
+                Console.WriteLine("The application has encountered a critical error and will shutdown. Please refer to the Startup-Log.txt under logs folder to get more information.")
+                Console.WriteLine("Press any key to exit")
+                Console.Read() |> ignore
+        ) |> ignore
+    
+    /// Load server settings
+    let loadSettings() =
+        match Settings.create(Constants.ConfFolder +/ "Config.ini") with
+        | Ok(s) -> new Settings.T(s)
+        | Fail(e) -> 
+            Logger.Log
+                ("Error parsing 'Config.ini' file.", ValidationException(e), MessageKeyword.Startup, MessageLevel.Critical)
+            failwithf "%s" (e.ToString())
+    
+    /// Load all plug-ins from the plug-ins folder
+    let loadAllPlugins() =
+        for file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly) do
+            try 
+                System.Reflection.Assembly.LoadFile(file) |> ignore
+            with e -> Logger.Log("Error loading plug-in library.", e, MessageKeyword.Startup, MessageLevel.Warning)
+    
+    /// Start the server
+    let start() =
+        // NOTE: The order of operations below is very important 
+        // It is important to initialize Listeners first otherwise logging services will not be available 
+        initializeListeners()
+        subscribeToUnhandledExceptions()
+        let settings = loadSettings()
+        loadAllPlugins()
+        new NodeService(settings, false)
+
+    /// Stop the server
+    let stop(container : IContainer) =
+        ()
+
