@@ -20,4 +20,3 @@ let topShelfConfiguration(conf : HostConfigurators.HostConfigurator) =
 [<EntryPoint>]
 let main argv = 
     HostFactory.Run(fun x -> topShelfConfiguration(x)) |> int
-    
