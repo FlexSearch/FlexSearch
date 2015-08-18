@@ -34,10 +34,15 @@ namespace FlexSearch.Logging
         /// </summary>
         private const string Message = "Code: {0} \n{1}";
 
-        public static LogService GetLogger(bool testLogger)
+        public static LogService GetLogger()
         {
             return Log;
         }
+
+        /// <summary>
+        /// Make constructor private
+        /// </summary>
+        private LogService() { }
 
         public class Keywords
         {
