@@ -8,7 +8,7 @@
     <ProjectGuid>0abe2f45-cf90-40ec-98cd-144eb0ae9bdd</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>FlexSearch.Server</RootNamespace>
-    <AssemblyName>FlexSearch Server</AssemblyName>
+    <AssemblyName>FlexSearch-Server</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
@@ -31,6 +31,7 @@
     <DocumentationFile>
     </DocumentationFile>
     <Prefer32Bit>false</Prefer32Bit>
+    <StartArguments>installx sdsds</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -300,6 +301,10 @@
     </Reference>
     <Reference Include="Topshelf">
       <HintPath>..\packages\Topshelf.3.2.0\lib\net40-full\Topshelf.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="UnionArgParser">
+      <HintPath>..\packages\UnionArgParser.0.9.0\lib\net40\UnionArgParser.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
