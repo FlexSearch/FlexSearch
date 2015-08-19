@@ -120,8 +120,16 @@ let main argv =
             | UnInstall -> topShelfCommand <- "uninstall"
             | Start -> topShelfCommand <- "start"
             | Stop -> topShelfCommand <- "stop"
-            | InstallManifest -> ()
-            | UnInstallManifest -> ()
+            | InstallManifest -> 
+                loadTopShelf <- false
+                if Helpers.isAdministrator() then
+                    Installers.installManifest()
+                else printfn "The ETW Manifest can only be installed as an administrator"
+            | UnInstallManifest -> 
+                loadTopShelf <- false
+                if Helpers.isAdministrator() then
+                    Installers.uninstallManifest()
+                else printfn "The ETW Manifest can only be un-installed as an administrator"
         with e -> printUsage()
     let result = runService()
     if StartUp.isInteractive then 
