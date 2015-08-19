@@ -38,6 +38,16 @@ module Installers =
     let uninstallManifest() = 
         printfn "Un-installing the ETW manifest..."
         exec "wevtutil.exe" <| "um " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString)
+    
+    let reservePort (port : int) = 
+        printfn "Reserving the port %i" port
+        exec "netsh.exe" <| sprintf "http add urlacl url=http://+:%i/ user=everyone listen=yes" port
+    
+    /// Gets executed after the service is installed by TopShelf
+    let afterInstall (settings : Settings.T) = 
+        new Action(fun _ -> 
+        installManifest()
+        reservePort (settings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)))
 
 let mutable topShelfCommand = Unchecked.defaultof<string>
 let mutable loadTopShelf = true
@@ -50,11 +60,13 @@ let topShelfConfiguration (settings : Settings.T, conf : HostConfigurators.HostC
     conf.SetServiceName("FlexSearch-Server")
     conf.StartAutomatically() |> ignore
     conf.EnableServiceRecovery(fun rc -> rc.RestartService(1) |> ignore) |> ignore
-    conf.Service<NodeService>
-        (fun (factory : ServiceConfigurators.ServiceConfigurator<_>) -> 
-        factory.ConstructUsing(new Func<_>(fun _ -> new NodeService(settings, false)))
-               .WhenStarted(fun tc -> tc.Start())
-               .WhenStopped(fun tc -> tc.Stop()) |> ignore) |> ignore
+    conf.Service<NodeService>(fun (factory : ServiceConfigurators.ServiceConfigurator<_>) -> 
+        factory.ConstructUsing(new Func<_>(fun _ -> new NodeService(settings, false))) |> ignore
+        factory.WhenStarted(fun tc -> tc.Start()) |> ignore
+        factory.WhenStopped(fun tc -> tc.Stop()) |> ignore)
+    |> ignore
+    conf.AfterInstall(Installers.afterInstall (settings)) |> ignore
+    conf.AfterUninstall(new Action(fun _ -> Installers.uninstallManifest())) |> ignore
 
 let runService() = 
     if loadTopShelf then 
