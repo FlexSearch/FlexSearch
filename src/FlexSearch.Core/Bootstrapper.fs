@@ -274,10 +274,10 @@ module StartUp =
     let subscribeToUnhandledExceptions() =
         AppDomain.CurrentDomain.UnhandledException.Subscribe(fun x -> 
             Logger.Log(sprintf "%A" x.ExceptionObject, MessageKeyword.Node, MessageLevel.Critical)
-            if Environment.UserInteractive then
-                Console.WriteLine("The application has encountered a critical error and will shutdown. Please refer to the Startup-Log.txt under logs folder to get more information.")
-                Console.WriteLine("Press any key to exit")
-                Console.Read() |> ignore
+            if isInteractive then
+                printfn "The application has encountered a critical error and will shutdown. Please refer to the Startup-Log.txt under logs folder to get more information."
+                printfn "Press any key to continue . . ."
+                Console.ReadKey() |> ignore
         ) |> ignore
     
     /// Load server settings
