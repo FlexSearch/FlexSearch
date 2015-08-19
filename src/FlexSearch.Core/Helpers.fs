@@ -199,12 +199,8 @@ module Helpers =
         File.ReadAllText(filePath)
     
     /// Deals with checking if the local admin privileges
-    let checkIfAdministrator() = 
-        let currentUser : WindowsIdentity = WindowsIdentity.GetCurrent()
-        if currentUser <> null then 
-            let wp = new WindowsPrincipal(currentUser)
-            wp.IsInRole(WindowsBuiltInRole.Administrator)
-        else false
+    let isAdministrator() = 
+        (new WindowsPrincipal(WindowsIdentity.GetCurrent())).IsInRole(WindowsBuiltInRole.Administrator)
     
     /// Generates an absolute path for a given relative path
     let generateAbsolutePath(path : string) = 
