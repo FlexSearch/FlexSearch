@@ -80,7 +80,7 @@ module Constants =
     let DateTimeDefaultValue = Int64.Parse("00010101000000")
     
     // Flex root folder path
-    let private rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
+    let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let createDir (directoryPath) = Directory.CreateDirectory(directoryPath).FullName
     
     /// Flex index folder
