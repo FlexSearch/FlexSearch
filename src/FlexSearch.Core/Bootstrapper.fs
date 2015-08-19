@@ -296,17 +296,11 @@ module StartUp =
                 System.Reflection.Assembly.LoadFile(file) |> ignore
             with e -> Logger.Log("Error loading plug-in library.", e, MessageKeyword.Startup, MessageLevel.Warning)
     
-    /// Start the server
-    let start() =
+    /// Load all the server components and return settings
+    let load() =
         // NOTE: The order of operations below is very important 
         // It is important to initialize Listeners first otherwise logging services will not be available 
         initializeListeners()
         subscribeToUnhandledExceptions()
-        let settings = loadSettings()
         loadAllPlugins()
-        new NodeService(settings, false)
-
-    /// Stop the server
-    let stop(container : IContainer) =
-        ()
-
+        loadSettings()
