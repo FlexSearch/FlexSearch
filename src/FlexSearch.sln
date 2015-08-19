@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{527581E3-C4E4-447D-918D-675C7D7FB9E5}"
 EndProject
@@ -18,8 +18,6 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.Server", "FlexSearch.Server\FlexSearch.Server.fsproj", "{0ABE2F45-CF90-40EC-98CD-144EB0AE9BDD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Logging", "FlexSearch.Logging\FlexSearch.Logging.csproj", "{B43636F8-D809-4B73-A1DA-C5F17DF05992}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.ControlPanel", "FlexSearch.ControlPanel\FlexSearch.ControlPanel.csproj", "{074409E5-778D-4D5C-8BC4-170D0D0C83B5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,16 +70,6 @@ Global
 		{B43636F8-D809-4B73-A1DA-C5F17DF05992}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{B43636F8-D809-4B73-A1DA-C5F17DF05992}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{B43636F8-D809-4B73-A1DA-C5F17DF05992}.Release|x64.ActiveCfg = Release|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{074409E5-778D-4D5C-8BC4-170D0D0C83B5}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
