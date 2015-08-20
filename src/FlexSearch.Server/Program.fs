@@ -140,6 +140,15 @@ type CLIArguments =
             | UnInstallManifest -> "Un-install the ETW manifest"
             | SystemInfo -> "Print basic information about the running system"
 
+/// Header text to be displayed at the beginning of the program
+let headerText = sprintf """
+ FlexSearch Server
+ Flexible and fast search engine for the .Net Platform
+------------------------------------------------------------------
+ Copyright (C) 2010 - """ + DateTime.Now.Year.ToString() + """ - FlexSearch
+------------------------------------------------------------------
+ """
+
 /// Standard text to prefix before the help statement
 let prefixUsageText = """
  Usage: FlexSearch-Server.exe [options]
@@ -154,6 +163,7 @@ let printUsage() =
 
 [<EntryPoint>]
 let main argv = 
+    printfn "%s" headerText
     // Only parse arguments in case of interactive mode
     if notNull argv && argv.Length > 0 && StartUp.isInteractive then 
         try 
