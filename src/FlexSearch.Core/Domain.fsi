@@ -575,6 +575,11 @@ If AllowSort is set to true then we will index the field with docmemberues.
 #endif
     member AllowSort : bool with get, set
 
+#if prop_AllowFaceting
+If AllowFaceting is set to true then we will index the field with sorted set docvalues
+#endif
+    member AllowFaceting : bool with get, set
+
 #if prop_IndexAnalyzer        
 Analyzer to be used while indexing.
 #endif

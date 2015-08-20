@@ -24,6 +24,7 @@ open FlexLucene.Index
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexLucene.Store
+open FlexLucene.Facet.Sortedset
 open System
 open System.Collections.Generic
 open System.IO
@@ -189,6 +190,7 @@ module Field =
           Similarity : FieldSimilarity
           FieldType : FieldType.T
           GenerateDocValue : bool
+          AllowFaceting : bool
           Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
@@ -245,17 +247,37 @@ module Field =
         new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
     
+    // Overwrite the faceting field because it does not allow updating
+    let inline updateFacetingField flexField (luceneFields : LuceneField array) luceneFieldIdx value =
+        luceneFields.[luceneFieldIdx] <- new SortedSetDocValuesFacetField(flexField.SchemaName, value)
+                                         :> LuceneField
+
+    let inline updateFacetingFieldToDefault flexField (luceneFields : LuceneField array) luceneFieldIdx =
+        let update = updateFacetingField flexField luceneFields luceneFieldIdx
+        match flexField.FieldType with
+        | FieldType.T.Custom(_, _, _) 
+        | FieldType.T.Stored
+        | FieldType.T.Highlight(_) 
+        | FieldType.T.ExactText(_)
+        | FieldType.T.Text(_) -> Constants.StringDefaultValue |> update
+        | FieldType.T.Bool(_) -> "false" |> update
+        | FieldType.T.Date -> DateDefaultValue.ToString() |> update
+        | FieldType.T.DateTime -> DateTimeDefaultValue.ToString() |> update
+        | FieldType.T.Int 
+        | FieldType.T.Long
+        | FieldType.T.Double -> "0" |> update
+
     /// Set the value of index field to the default value
     let inline updateLuceneFieldToDefault flexField (isDocValue : bool) (luceneField : LuceneField) = 
         match flexField.FieldType with
-        | FieldType.T.Custom(_, _, _) -> luceneField.SetStringValue(Constants.StringDefaultValue)
-        | FieldType.T.Stored -> luceneField.SetStringValue(Constants.StringDefaultValue)
+        | FieldType.T.Custom(_, _, _) 
+        | FieldType.T.Stored
+        | FieldType.T.Highlight(_) 
         | FieldType.T.Text(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.T.Bool(_) -> luceneField.SetStringValue("false")
         | FieldType.T.ExactText(_) -> 
             if isDocValue then luceneField.SetBytesValue(bytesForNullString)
             else luceneField.SetStringValue(Constants.StringDefaultValue)
-        | FieldType.T.Highlight(_) -> luceneField.SetStringValue(Constants.StringDefaultValue)
         | FieldType.T.Date -> luceneField.SetLongValue(DateDefaultValue)
         | FieldType.T.DateTime -> luceneField.SetLongValue(DateTimeDefaultValue)
         | FieldType.T.Int -> 
@@ -266,15 +288,15 @@ module Field =
         | FieldType.T.Long -> luceneField.SetLongValue(int64 0)
     
     /// Set the value of index field using the passed value
-    let inline updateLuceneField flexField (lucenceField : LuceneField) (isDocValue : bool) (value : string) = 
+    let inline updateLuceneField flexField (lucenceField : LuceneField) (isDocValue : bool) (value : string)= 
         if isBlank value then lucenceField |> updateLuceneFieldToDefault flexField isDocValue
         else 
             match flexField.FieldType with
-            | FieldType.T.Custom(_, _, _) -> lucenceField.SetStringValue(value)
-            | FieldType.T.Stored -> lucenceField.SetStringValue(value)
-            | FieldType.T.Text(_) -> lucenceField.SetStringValue(value)
+            | FieldType.T.Custom(_, _, _) 
+            | FieldType.T.Stored 
+            | FieldType.T.Text(_) 
             | FieldType.T.Highlight(_) -> lucenceField.SetStringValue(value)
-            | FieldType.T.ExactText(_) -> 
+            | FieldType.T.ExactText(_) ->
                 if isDocValue then lucenceField.SetBytesValue(System.Text.Encoding.Unicode.GetBytes(value))
                 else lucenceField.SetStringValue(value)
             | FieldType.T.Bool(_) -> (value |> pBool false).ToString() |> lucenceField.SetStringValue
@@ -302,6 +324,10 @@ module Field =
             Some <| (new NumericDocValuesField(flexField.SchemaName, 0L) :> LuceneField)
         | FieldType.T.Double -> Some <| (new DoubleDocValuesField(flexField.SchemaName, 0.0) :> LuceneField)
     
+    /// Create sorted set docvalue field used for faceting
+    let inline createFacetField flexField = 
+        new FlexLucene.Facet.Sortedset.SortedSetDocValuesFacetField(flexField.SchemaName, "dummy")
+
     /// Create docvalues field from 
     let inline requiresCustomDocValues (fieldType : FieldType.T) = 
         match fieldType with
@@ -342,12 +368,13 @@ module Field =
         | FieldType.T.Date | FieldType.T.DateTime | FieldType.T.Int | FieldType.T.Double | FieldType.T.Stored | FieldType.T.Long -> 
             None
     
-    let create (fieldName : string, fieldType : FieldType.T, generateDocValues) = 
+    let create (fieldName : string, fieldType : FieldType.T, generateDocValues, allowFaceting) = 
         { FieldName = fieldName
           SchemaName = fieldName
           IsStored = true
           FieldType = fieldType
           GenerateDocValue = generateDocValues
+          AllowFaceting = allowFaceting
           Source = None
           Searchable = FieldType.searchable (fieldType)
           Similarity = FieldSimilarity.TFIDF
@@ -362,10 +389,10 @@ module Field =
               FieldIndexOptions = FieldIndexOptions.DocsOnly }
         create 
             (Constants.IdField, 
-             FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false)
+             FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false, false)
     
     /// Field to be used by time stamp
-    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, false)
+    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, false, false)
     
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
@@ -414,6 +441,7 @@ module Field =
                      SchemaName = field.FieldName
                      FieldType = fieldType
                      GenerateDocValue = checkDocValuesSupport field fieldType
+                     AllowFaceting = field.AllowFaceting
                      Source = source
                      Similarity = field.Similarity
                      IsStored = field.Store

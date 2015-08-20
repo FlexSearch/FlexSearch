@@ -7,6 +7,8 @@ open FlexLucene.Document
 open FlexLucene.Index
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
+open FlexLucene.Facet.Sortedset
+open FlexLucene.Facet
 open FlexSearch.Core
 open FlexSearch.Core.DictionaryHelpers
 open System
@@ -262,11 +264,15 @@ module DocumentTemplate =
         for field in s.Fields do
             // Ignore these 4 fields here.
             if not (protectedFields (field.FieldName)) then 
+                // Add the Default field
                 add (Field.createDefaultLuceneField (field))
+                // Add field used for sorting
                 if field.GenerateDocValue then 
                     match Field.createDocValueField (field) with
                     | Some(docField) -> add (docField)
                     | _ -> ()
+                // Add field used for faceting
+                if field.AllowFaceting then Field.createFacetField field |> add
         { Setting = s
           TemplateFields = fields.ToArray()
           Template = template }
@@ -306,10 +312,16 @@ module DocumentTemplate =
                     if field.GenerateDocValue then 
                         v |> Field.updateLuceneField field template.TemplateFields.[i + 1] true
                         i <- i + 1
+                    if field.AllowFaceting then
+                        v |> Field.updateFacetingField field template.TemplateFields (i + 1)
+                        i <- i + 1
                 | None -> 
                     Field.updateLuceneFieldToDefault field false template.TemplateFields.[i]
                     if field.GenerateDocValue then 
                         Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
+                        i <- i + 1
+                    if field.AllowFaceting then
+                        Field.updateFacetingFieldToDefault field template.TemplateFields (i + 1)
                         i <- i + 1
         template.Template
 
@@ -799,6 +811,10 @@ module IndexWriter =
     
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     
+    /// This is the config used for converting faceting fields into normal fields.
+    /// See Lucene's FacetsConfig.java 'build' method
+    let facetConfig = new FacetsConfig()
+
     /// Add or update a document
     let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : T) = 
         maybe { 
@@ -809,7 +825,12 @@ module IndexWriter =
             do! s.Caches.[shardNo]
                 |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
                 |> boolToResult UnableToUpdateMemory
-            let doc = s.Template.Value |> DocumentTemplate.updateTempate document
+            let doc = 
+                s.Template.Value 
+                |> DocumentTemplate.updateTempate document
+                // We need to use this Facet Build method to convert faceting fields to 
+                // normal fields for indexing
+                |> facetConfig.Build
             let txId = s.ShardWriters.[shardNo].GetNextIndex()
             if addToTxLog then 
                 let opCode = 

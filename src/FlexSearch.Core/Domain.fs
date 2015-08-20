@@ -339,6 +339,9 @@ type Field(fieldName : string, fieldType : FieldDataType) =
     /// If AllowSort is set to true then we will index the field with docvalues.
     member val AllowSort = false with get, set
     
+    /// If AllowFaceting is set to true then we will index the field with sorted set docvalues
+    member val AllowFaceting = false with get, set
+
     /// Analyzer to be used while indexing.
     member val IndexAnalyzer = StandardAnalyzer with get, set
     
