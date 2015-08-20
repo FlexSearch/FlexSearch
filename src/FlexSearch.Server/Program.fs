@@ -1,8 +1,53 @@
 ﻿open FlexSearch.Core
 open Nessos.UnionArgParser
-open System
+open System.Text
 open System.IO
 open Topshelf
+open System.Collections.Generic
+open System
+
+module Management = 
+    open System.Management
+    
+    let getObj (className : string) = 
+        let query = "SELECT * FROM Win32_" + className
+        use mgmtObj = new ManagementObjectSearcher(query)
+        mgmtObj.Get()
+    
+    let private infoObjects = 
+        [| ("Processor", [| "Name"; "Description"; "NumberOfCores"; "NumberOfLogicalProcessors"; "MaxClockSpeed" |])
+           ("OperatingSystem", [| "Caption"; "TotalVisibleMemorySize" |])
+           ("ComputerSystem", [| "TotalPhysicalMemory" |])
+           ("PhysicalMemory", [| "ConfiguredClockSpeed" |])
+           ("DiskDrive", [| "Manufacturer"; "Model"; "Size" |]) |]
+    
+    /// Generates basic system info like CPU etc. It is useful to record this information
+    /// along with the performance test results    
+    let generateSystemInfo() = 
+        let info = new Dictionary<string, Dictionary<string, string>>()
+        for (className, props) in infoObjects do
+            let res = new Dictionary<string, string>()
+            let stmt = getObj className
+            let mutable i = 0
+            for s in stmt do
+                for p in props do
+                    let v = s.GetPropertyValue(p)
+                    
+                    let propName = 
+                        if i = 0 then p
+                        else p + i.ToString()
+                    if notNull v then res.[propName] <- v.ToString()
+                i <- i + 1
+            info.Add(className, res)
+        info
+    
+    /// Generate printable report of system information
+    let printSystemInfo() = 
+        let sb = new StringBuilder()
+        for className in generateSystemInfo() do
+            for prop in className.Value do
+                sb.AppendLine(sprintf "%s-%s : %s" className.Key prop.Key prop.Value) |> ignore
+        sb.ToString()
 
 module Installers = 
     open System.Diagnostics
@@ -83,6 +128,7 @@ type CLIArguments =
     | Stop
     | [<AltCommandLine("-im")>] InstallManifest
     | [<AltCommandLine("-um")>] UnInstallManifest
+    | SystemInfo
     interface IArgParserTemplate with
         member this.Usage = 
             match this with
@@ -92,6 +138,7 @@ type CLIArguments =
             | Stop -> "Stops the service if it is running"
             | InstallManifest -> "Install the ETW manifest"
             | UnInstallManifest -> "Un-install the ETW manifest"
+            | SystemInfo -> "Print basic information about the running system"
 
 /// Standard text to prefix before the help statement
 let prefixUsageText = """
@@ -122,14 +169,15 @@ let main argv =
             | Stop -> topShelfCommand <- "stop"
             | InstallManifest -> 
                 loadTopShelf <- false
-                if Helpers.isAdministrator() then
-                    Installers.installManifest()
+                if Helpers.isAdministrator() then Installers.installManifest()
                 else printfn "The ETW Manifest can only be installed as an administrator"
             | UnInstallManifest -> 
                 loadTopShelf <- false
-                if Helpers.isAdministrator() then
-                    Installers.uninstallManifest()
+                if Helpers.isAdministrator() then Installers.uninstallManifest()
                 else printfn "The ETW Manifest can only be un-installed as an administrator"
+            | SystemInfo -> 
+                loadTopShelf <- false
+                printf "%s" (Management.printSystemInfo())
         with e -> printUsage()
     let result = runService()
     if StartUp.isInteractive then 
