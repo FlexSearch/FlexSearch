@@ -247,7 +247,11 @@ module StartUp =
         Environment.UserInteractive || (notNull args && args.Length > 0)
 
     let private consoleSink = ConsoleLog.CreateListener(new EventTextFormatter())
-    let private rollingFileSink = RollingFlatFileLog.CreateListener(Constants.LogsFolder +/ "Startup-Log.txt", 1024, "hh-mm", Sinks.RollFileExistsBehavior.Overwrite, Sinks.RollInterval.Day)
+    let private rollingFileSink = 
+        let fileName = Constants.LogsFolder +/ "startup-log.txt" 
+        if File.Exists(fileName) then
+            File.Delete(fileName)
+        FlatFileLog.CreateListener(fileName, new EventTextFormatter())
 
     /// Initialize the listeners to be used across the application
     let initializeListeners() =
@@ -257,7 +261,7 @@ module StartUp =
 
         // Write all start up events to a specific file. This is helpful in case ETW is not
         // setup properly. The slight overhead of writing to two sinks is negligible.
-        rollingFileSink.EnableEvents(LogService.GetLogger(), EventLevel.LogAlways, LogService.Keywords.Startup)
+        rollingFileSink.EnableEvents(LogService.GetLogger(), EventLevel.LogAlways, LogService.Keywords.Startup ||| LogService.Keywords.Node)
             
     /// To improve CPU utilization, increase the number of threads that the .NET thread pool expands by when
     /// a burst of requests come in. We could do this by editing machine.config/system.web/processModel/minWorkerThreads,
