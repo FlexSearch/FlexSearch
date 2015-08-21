@@ -421,6 +421,11 @@ module Validators =
         notBlank fieldName input >>= fun _ -> propertyNameRegex fieldName input 
         >>= fun _ -> invalidPropertyName fieldName input
     
+    /// Validates that a given sequence is not empty
+    let notEmpty fieldName (sequence : 'a seq) =
+        if sequence |> Seq.isEmpty then fail <| NotEmpty(fieldName)
+        else okUnit
+
     /// Validates a given sequence in which each element implements IValidate    
     let seqValidator (input : seq<DtoBase>) = 
         let res = 

@@ -479,6 +479,46 @@ type SearchQuery(index : string, query : string) =
     new() = SearchQuery(defString, defString)
     override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
 
+/// Holds the configuration for a facet
+[<ToString; Sealed>]
+type FacetGroup(index) =
+    inherit DtoBase()
+
+    member val IndexName = index with get, set
+
+    /// The field to group against
+    member val FieldName = defString with get, set
+
+    /// Count of results to return
+    member val Count = 10 with get, set
+
+    /// The value of the field grouping against. Used for Drill Down Queries.
+    /// TODO
+    member val FieldValue = defString with get, set
+
+    new() = FacetGroup(defString)
+    override this.Validate() = this.IndexName |> propertyNameValidator "IndexName"
+
+/// FacetQuery is used for submitting faceted search requests.
+[<ToString; Sealed>]
+type FacetQuery(index) =
+    inherit DtoBase()
+    
+    member val IndexName = index with get, set
+
+    /// Used to filter the results on which faceting will occur
+    member val Query = defString with get, set
+
+    member val Count = 10 with get, set
+
+    /// Configures how the facets will apply. You can group by multiple fields,
+    /// thus the array of configurations. Order matters. 
+    member val GroupBy = Array.empty<FacetGroup> with get, set
+    
+    new() = FacetQuery(defString)
+    override this.Validate() = 
+        this.IndexName |> propertyNameValidator "IndexName"
+        >>= (fun _ -> this.GroupBy |> notEmpty "GroupBy")
     
 /// A document represents the basic unit of information which can be added or retrieved from the index. 
 /// A document consists of several fields. A field represents the actual data to be indexed. In database 

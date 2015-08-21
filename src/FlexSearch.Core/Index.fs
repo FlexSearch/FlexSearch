@@ -338,7 +338,12 @@ type RealTimeSearcher(searchManger : SearcherManager) =
     /// an index. Any changes made to the index via IndexWriter 
     /// will not be visible until a new IndexReader is opened. 
     member __.IndexReader = indexSearcher.GetIndexReader()
-    
+
+    /// Aggregates the facet counts
+    member __.FacetsCollector = new FacetsCollector()
+
+    member __.SortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(__.IndexReader)
+
     interface IDisposable with
         member __.Dispose() : unit = ()
 

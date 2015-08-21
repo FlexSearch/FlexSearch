@@ -470,6 +470,10 @@ module SearchQuery =
         query.IndexName <- request.ResId.Value
         query
 
+[<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module FacetQuery = 
+    let getQueryFromRequest request body = new FacetQuery() // TODO
+
 module ServerSettings = 
     [<CLIMutableAttribute>]
     type T = 

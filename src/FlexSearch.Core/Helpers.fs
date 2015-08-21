@@ -258,6 +258,16 @@ module Helpers =
         else
             input.Substring(startingPos)
 
+    /// Tries to take max elements, unless the given sequence has less than specified.
+    /// In that case it returns the given sequence
+    let tryTake max (s : 'a seq) = 
+        let enumerator = s.GetEnumerator()
+        let mutable index = 0
+        seq {
+            while (try enumerator.MoveNext() && index < max with _ -> false) do
+                 Interlocked.Increment(&index) |> ignore
+                 yield enumerator.Current }
+
     /// <summary>
     /// Simple exception formatter
     /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/

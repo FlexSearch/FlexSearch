@@ -112,6 +112,7 @@ type ValidationError =
     | NotBlank of fieldName : string
     | RegexMatch of fieldName : string * regexExpr : string
     | KeyNotFound of key : string
+    | NotEmpty of fieldName : string
     override this.ToString() = sprintf "%A" this
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Default, MessageLevel.Nothing)
@@ -126,6 +127,7 @@ type ValidationError =
             | NotBlank(fn) -> sprintf "Field '%s' must not be blank" fn
             | RegexMatch(fn, re) -> sprintf "Field '%s' must match Regex expression: %s" fn re
             | KeyNotFound(key) -> sprintf "Key not found: %s" key
+            | NotEmpty(f) -> sprintf "Sequence must not be empty for field: %s" f
             |> caseToMsg this
 
 type AnalysisMessage = 

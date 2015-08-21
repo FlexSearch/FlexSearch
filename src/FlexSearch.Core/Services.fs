@@ -75,6 +75,7 @@ type ISearchService =
     abstract Search : searchQuery:SearchQuery -> Result<SearchResults<SearchResultComponents.T>>
     abstract Search : searchQuery:SearchQuery * searchProfileString:string
      -> Result<SearchResults<SearchResultComponents.T>>
+    abstract Search : facetQuery : FacetQuery -> Result<string>
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
@@ -361,16 +362,32 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                             (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, 
                              queryTypes, queryFunctionTypes)
         }
+
+    let generateLuceneFacetQuery (writers : IndexWriter.T) facetQuery =
+        SearchDsl.generateFacetedQuery writers.Settings.FieldsLookup facetQuery
     
     let searchWrapper (writers, query, searchQuery) = 
         try 
             ok <| SearchDsl.search (writers, query, searchQuery)
         with e -> fail <| SearchError(exceptionPrinter e)
     
+    let facetedSearchWrapper writers flexQuery luceneQuery =
+        try
+            SearchDsl.facetedSearch writers luceneQuery flexQuery
+            |> Seq.fold (fun acc value -> acc + "--------\n" + value) ""
+            |> ok
+        with e -> fail <| SearchError(exceptionPrinter e)
+
     let search (searchQuery : SearchQuery, inputFields : Dictionary<string, string> option) = 
         maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
                 return! searchWrapper (writers, query, searchQuery) }
+
+    let facetedSearch (facetQuery : FacetQuery) =
+        facetQuery.IndexName |> indexService.IsIndexOnline
+        >>= (fun writers -> facetQuery |> generateLuceneFacetQuery writers
+                            >>= (fun luceneQuery -> ok (luceneQuery, writers)))
+        >>= (fun (luceneQuery, writers) -> luceneQuery |> facetedSearchWrapper writers facetQuery)
 
     interface ISearchService with
         
@@ -391,6 +408,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
         member __.Search(searchQuery : SearchQuery, inputFields : Dictionary<string, string>) = 
             search (searchQuery, Some <| inputFields)
         member __.Search(searchQuery : SearchQuery) = search (searchQuery, None)
+        member __.Search(facetQuery : FacetQuery) = facetedSearch facetQuery
 
         // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
         member __.GetLuceneQuery(searchQuery: SearchQuery) =

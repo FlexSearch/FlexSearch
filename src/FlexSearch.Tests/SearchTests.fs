@@ -53,7 +53,7 @@ let withSkip (skip : int) (query : SearchQuery) =
     query.Skip <- skip
     query
 
-let searchAndExtract (searchService : ISearchService) (query) = 
+let searchAndExtract (searchService : ISearchService) (query : SearchQuery) = 
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
     (extract <| result) |> toSearchResults

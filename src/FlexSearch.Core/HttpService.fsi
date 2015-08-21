@@ -275,6 +275,17 @@ type GetSearchHandler =
 
 // ----------------------------------------------------------------------------
 
+# ws_GetFacetedSearchHandler """
+"""
+[<Name("POST-/indices/:id/facetedsearch")>]
+[<Sealed>]
+type GetFacetedSearchHandler =
+    inherit Http.HttpHandlerBase<FacetQuery, string>
+    new : searchService:ISearchService -> GetFacetedSearchHandler
+    override Process : request:Http.RequestContext * body:FacetQuery option ->
+                Http.ResponseContext<string>
+    
+
 # ws_DeleteDocumentsFromSearchHandler """
 Deletes all document returned by the search query for the given index. Returns the records identified
 by the search query."""

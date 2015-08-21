@@ -772,6 +772,68 @@ the null constant
     member ReturnEmptyStringForNull : bool with get, set
 // ----------------------------------------------------------------------------
 
+#if dto_FacetGroup
+Holds the configuration for a facet
+#endif
+[<ToString; Sealed>]
+type FacetGroup =
+    inherit DtoBase
+    new : unit -> FacetGroup
+    new : index : string -> FacetGroup
+
+    #if prop_IndexName
+    #endif
+    member IndexName : string with get, set
+
+    #if prop_FieldName
+    The field to group against
+    #endif
+    member FieldName : string with get, set
+
+    #if prop_Count
+    Count of results to return
+    #endif
+    member Count : int with get, set
+
+    #if prop_FieldValue
+    The value of the field grouping against. Used for Drill Down Queries.
+    TODO
+    #endif
+    member FieldValue : string with get, set
+
+    override Validate : unit -> Result<unit>
+
+#if dto_FacetQuery
+FacetQuery is used for submitting faceted search requests.
+#endif
+[<ToString; Sealed>]
+type FacetQuery =
+    inherit DtoBase
+    new : unit -> FacetQuery
+    new : index : string -> FacetQuery
+    
+    #if prop_IndexName
+    #endif
+    member IndexName : string with get, set
+
+    #if prop_Query
+    Used to filter the results on which faceting will occur
+    #endif
+    member Query : string with get, set
+    
+    #if prop_Count
+    Used to count how many results to return
+    #endif
+    member Count : int with get, set
+
+    #if prop_GroupBy
+    Configures how the facets will apply. You can group by multiple fields,
+    thus the array of configurations. Order matters. 
+    #endif
+    member GroupBy : FacetGroup [] with get, set
+    
+    override Validate : unit -> Result<unit> 
+
 #if dto_Document
 A document represents the basic unit of information which can be added or 
 retrieved from the index. A document consists of several fields. A field represents 

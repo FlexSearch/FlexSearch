@@ -21,6 +21,8 @@ open FlexLucene.Document
 open FlexLucene.Index
 open FlexLucene.Search
 open FlexLucene.Search.Highlight
+open FlexLucene.Facet
+open FlexLucene.Facet.Sortedset
 open FlexSearch.Core
 open System
 open System.Collections.Generic
@@ -122,6 +124,10 @@ module SearchDsl =
                 | Ok(r) -> ok <| r
                 | Fail(e) -> fail e
             | _ -> fail <| FunctionNotFound (sprintf "%A" <| Func(fName, parameters))
+
+    let generateFacetedQuery (fields : IReadOnlyDictionary<string, Field.T>)
+                             (facetQuery : FacetQuery) =
+        ok <| getMatchAllDocsQuery()  // TODO handle drilldown
 
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
@@ -274,6 +280,44 @@ module SearchDsl =
                 | _ -> ()
         fields
     
+    let facetedSearch (indexWriter : IndexWriter.T)
+                      (luceneQuery : Query)
+                      (flexQuery : FacetQuery) =
+        (!>) "Input Query: %A\nGenerated Query: %s" flexQuery (luceneQuery.ToString())
+        let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
+        let facetsCollection : FacetResult array array = Array.zeroCreate indexSearchers.Length
+
+        let searchShard(x : ShardWriter.T) =
+            let is = indexSearchers.[x.ShardNo]
+            
+            // Do the search
+            FacetsCollector.Search(
+                is.IndexSearcher,
+                luceneQuery, 
+                flexQuery.Count,
+                is.FacetsCollector) |> ignore
+
+            // Retrieve the results
+            let facets = new SortedSetDocValuesFacetCounts(is.SortedSetDocValuesReaderState, is.FacetsCollector)
+
+            // Get top N results
+            facetsCollection.[x.ShardNo] <- 
+                flexQuery.GroupBy
+                |> Array.map (fun g -> facets.GetTopChildren(g.Count, g.FieldName))
+        
+        // Search through each shard    
+        indexWriter.ShardWriters |> Array.Parallel.iter searchShard
+        
+        // Start composing the search results
+        // TODO properly merge the results
+        let concatenated = facetsCollection |> Array.concat
+        flexQuery.GroupBy
+        |> Seq.map (fun g -> concatenated 
+                             |> Seq.filter (fun x -> x <> null && x.dim = g.FieldName)
+                             |> tryTake g.Count)
+        |> Seq.concat
+        |> Seq.map (fun fr -> fr.ToString())
+
     let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery) = 
         (!>) "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers

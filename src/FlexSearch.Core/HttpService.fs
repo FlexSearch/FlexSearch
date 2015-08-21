@@ -405,6 +405,16 @@ type GetSearchHandler(searchService : ISearchService) =
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
+[<Name("POST-/indices/:id/facetedsearch")>]
+[<Sealed>]
+type GetFacetedSearchHandler(searchService : ISearchService) =
+    inherit HttpHandlerBase<FacetQuery, string>()
+    override __.Process(request, body) = 
+        let query = FacetQuery.getQueryFromRequest request body
+
+        let result = searchService.Search(query)
+        SomeResponse(result, Ok, BadRequest)
+
 /// <summary>
 ///  Deletes documents returned by search query
 /// </summary>
