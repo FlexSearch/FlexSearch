@@ -247,26 +247,6 @@ module Field =
         new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
     
-    // Overwrite the faceting field because it does not allow updating
-    let inline updateFacetingField flexField (luceneFields : LuceneField array) luceneFieldIdx value =
-        luceneFields.[luceneFieldIdx] <- new SortedSetDocValuesFacetField(flexField.SchemaName, value)
-                                         :> LuceneField
-
-    let inline updateFacetingFieldToDefault flexField (luceneFields : LuceneField array) luceneFieldIdx =
-        let update = updateFacetingField flexField luceneFields luceneFieldIdx
-        match flexField.FieldType with
-        | FieldType.T.Custom(_, _, _) 
-        | FieldType.T.Stored
-        | FieldType.T.Highlight(_) 
-        | FieldType.T.ExactText(_)
-        | FieldType.T.Text(_) -> Constants.StringDefaultValue |> update
-        | FieldType.T.Bool(_) -> "false" |> update
-        | FieldType.T.Date -> DateDefaultValue.ToString() |> update
-        | FieldType.T.DateTime -> DateTimeDefaultValue.ToString() |> update
-        | FieldType.T.Int 
-        | FieldType.T.Long
-        | FieldType.T.Double -> "0" |> update
-
     /// Set the value of index field to the default value
     let inline updateLuceneFieldToDefault flexField (isDocValue : bool) (luceneField : LuceneField) = 
         match flexField.FieldType with
@@ -325,8 +305,34 @@ module Field =
         | FieldType.T.Double -> Some <| (new DoubleDocValuesField(flexField.SchemaName, 0.0) :> LuceneField)
     
     /// Create sorted set docvalue field used for faceting
-    let inline createFacetField flexField = 
-        new FlexLucene.Facet.Sortedset.SortedSetDocValuesFacetField(flexField.SchemaName, "dummy")
+    let inline createFacetField flexField value = new SortedSetDocValuesFacetField(flexField.SchemaName, value)
+
+    let inline createDefaultFacetingField flexField =
+        let create = createFacetField flexField
+        match flexField.FieldType with
+        | FieldType.T.Custom(_, _, _) 
+        | FieldType.T.Stored
+        | FieldType.T.Highlight(_) 
+        | FieldType.T.ExactText(_)
+        | FieldType.T.Text(_) -> Constants.StringDefaultValue |> create
+        | FieldType.T.Bool(_) -> "false" |> create
+        | FieldType.T.Date -> DateDefaultValue.ToString() |> create
+        | FieldType.T.DateTime -> DateTimeDefaultValue.ToString() |> create
+        | FieldType.T.Int 
+        | FieldType.T.Long
+        | FieldType.T.Double -> "0" |> create
+
+    /// Updates a facet field inside a given document by deleting it, then adding
+    /// it back.
+    /// TODO : improve the mechanism to eliminate iteration, deletion & addition and
+    /// use update instead
+    let updateFacetField flexField value (document : LuceneDocument) =
+        let it = document.Iterator()
+        while it.hasNext() do
+            match it.next() with
+            | :? SortedSetDocValuesFacetField as field -> if field.dim = flexField.SchemaName then it.remove()
+            | _ -> ()
+        document.Add value
 
     /// Create docvalues field from 
     let inline requiresCustomDocValues (fieldType : FieldType.T) = 

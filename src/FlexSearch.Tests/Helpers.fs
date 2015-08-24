@@ -76,6 +76,8 @@ module DataHelpers =
             for i in 1..items.Length - 1 do
                 document.Fields.Add(headers.[i].Trim(), items.[i].Trim())
             test <@ succeeded <| documentService.AddDocument(document) @>
+            let x = 1
+            ()
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
     let container = Main.getContainer (ServerSettings.T.GetDefault(), true)
@@ -134,6 +136,8 @@ module DataHelpers =
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
+        fixture.Inject<IAnalyzerService>(container.Resolve<IAnalyzerService>()) |> ignore
+        fixture.Inject<IScriptService>(container.Resolve<IScriptService>()) |> ignore
         fixture.Inject<IFlexFactory<IFlexQueryFunction>>(container.Resolve<IFlexFactory<IFlexQueryFunction>>()) |> ignore
         fixture.Register<FlexClient>(fun _ -> 
             let server = owinServer()

@@ -168,10 +168,25 @@ module IndexSettingBuilder =
         // Add system fields
         resultLookup.Add(Constants.IdField, Field.getIdField (ic.UseBloomFilterForId))
         resultLookup.Add(Constants.LastModifiedField, Field.getTimeStampField())
-        for field in fields do
+
+        let addField field =
             let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
+
+        // Add non-facet fields
+        fields 
+        |> Array.filter (fun f -> not f.AllowFaceting)
+        |> Array.iter addField
+
+        // Add facet fields
+        // The reason why we need to add facet fields last is that we remove
+        // then add them back again to the template on each document insert/update. 
+        // That's because facet fields cannot be updated.
+        fields 
+        |> Array.filter (fun f -> f.AllowFaceting)
+        |> Array.iter addField
+
         let fieldArr = result.ToArray()
         { build with Setting = 
                          { build.Setting with FieldsLookup = resultLookup
@@ -264,15 +279,19 @@ module DocumentTemplate =
         for field in s.Fields do
             // Ignore these 4 fields here.
             if not (protectedFields (field.FieldName)) then 
-                // Add the Default field
-                add (Field.createDefaultLuceneField (field))
-                // Add field used for sorting
-                if field.GenerateDocValue then 
-                    match Field.createDocValueField (field) with
-                    | Some(docField) -> add (docField)
-                    | _ -> ()
-                // Add field used for faceting
-                if field.AllowFaceting then Field.createFacetField field |> add
+                // Facet fields cannot be modified. Therefore, the approach to use
+                // will be to delete, then add new facet fields on each document
+                // create/update
+                if field.AllowFaceting then Field.createFacetField field field.FieldName |> template.Add
+                else
+                    // Add the Default field
+                    add (Field.createDefaultLuceneField (field))
+                    // Add field used for sorting
+                    if field.GenerateDocValue then 
+                        match Field.createDocValueField (field) with
+                        | Some(docField) -> add (docField)
+                        | _ -> ()
+                
         { Setting = s
           TemplateFields = fields.ToArray()
           Template = template }
@@ -308,21 +327,23 @@ module DocumentTemplate =
                         | _ -> None
                 match value with
                 | Some(v) -> 
-                    v |> Field.updateLuceneField field template.TemplateFields.[i] false
-                    if field.GenerateDocValue then 
-                        v |> Field.updateLuceneField field template.TemplateFields.[i + 1] true
-                        i <- i + 1
                     if field.AllowFaceting then
-                        v |> Field.updateFacetingField field template.TemplateFields (i + 1)
-                        i <- i + 1
+                        template.Template |> Field.updateFacetField field (Field.createFacetField field v)
+                    else
+                        v |> Field.updateLuceneField field template.TemplateFields.[i] false
+                        if field.GenerateDocValue then 
+                            v |> Field.updateLuceneField field template.TemplateFields.[i + 1] true
+                            i <- i + 1
+                    
                 | None -> 
-                    Field.updateLuceneFieldToDefault field false template.TemplateFields.[i]
-                    if field.GenerateDocValue then 
-                        Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
-                        i <- i + 1
                     if field.AllowFaceting then
-                        Field.updateFacetingFieldToDefault field template.TemplateFields (i + 1)
-                        i <- i + 1
+                        template.Template |> Field.updateFacetField field (Field.createDefaultFacetingField field)
+                    else
+                        Field.updateLuceneFieldToDefault field false template.TemplateFields.[i]
+                        if field.GenerateDocValue then 
+                            Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
+                            i <- i + 1
+                    
         template.Template
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality
