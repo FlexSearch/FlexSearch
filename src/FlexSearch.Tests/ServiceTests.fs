@@ -76,12 +76,15 @@ module DocumentServiceTests =
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, documentId)
+            document.Fields.Add("et1", "test")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
-            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
+            let doc = documentService.GetDocument(index.IndexName, documentId)
+            test <@ (extract <| doc).Id = documentId @>
+            test <@ (extract <| doc).Fields.["et1"] = "test" @>
         
         member __.``Should be able to add and delete a document`` (index : Index, documentId : string, 
                                                                    indexService : IIndexService, 
