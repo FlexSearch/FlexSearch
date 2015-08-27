@@ -316,8 +316,6 @@ module DocumentTemplate =
                     if field.GenerateDocValue then 
                         Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
                         i <- i + 1
-        // Release the dictionary back to the pool so that it could be recycled
-        dictionaryPool.Release(document.Fields)
         template.Template
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality
@@ -827,6 +825,10 @@ module IndexWriter =
                 use stream = memoryManager.GetStream()
                 TransactionLog.serializer (stream, txEntry)
                 s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
+
+            // Release the dictionary back to the pool so that it could be recycled
+            dictionaryPool.Release(document.Fields)
+
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
                else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
