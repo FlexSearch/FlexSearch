@@ -131,6 +131,48 @@ id,et1,et2,i1,i2
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "2" @>
 
+        member __.``Should be able to access old documents after adding new search profile``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            new SearchQuery(index.IndexName, "et1 = 'b'", QueryName = "profile2") 
+            |> setUpAndModifyProfile index indexService documentService searchService
+            
+            // Search using the new profile and check that the second record is returned
+            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile2")
+                         |> searchAndExtract searchService
+            test <@ result.TotalAvailable = 1 @>
+            test <@ result.Documents.[0].Id = "2" @>
+
+        member __.``Should be able to access old documents after changing index configuration``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+
+            let conf = index.IndexConfiguration
+            conf.AutoCommit <- true
+            indexService.UpdateIndexConfiguration(index.IndexName, conf) |> (?)
+            
+            documentService.GetDocument(index.IndexName, "1") |> (?)
+
+        member __.``Shouldn't be able modify Index Version``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+
+            let conf = new IndexConfiguration()
+            conf.IndexVersion <- IndexVersion.Lucene_4_x_x
+            test <@ failed <| indexService.UpdateIndexConfiguration(index.IndexName, conf) @>
+
     type CommonTests() =
         member __.``Should return size of existing index`` (indexService: IIndexService, index : Index) =
             index.Active <- true

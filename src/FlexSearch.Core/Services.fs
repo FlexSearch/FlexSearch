@@ -301,7 +301,18 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
                 
                 im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
-        member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) = failwith "Not implemented yet"
+
+        member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) =
+            match im.Store.TryGetValue indexName with
+            | true, state ->
+                let index = state.IndexDto
+                
+                // Don't allow for index version to be modified
+                if index.IndexConfiguration.IndexVersion <> indexConfiguration.IndexVersion
+                then fail <| UnSupportedIndexVersion(indexConfiguration.IndexVersion.ToString())
+                else index.IndexConfiguration <- indexConfiguration
+                     im |> IndexManager.updateIndex index
+            | _ -> fail <| IndexNotFound indexName
 
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
         member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
