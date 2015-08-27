@@ -134,6 +134,10 @@ md-sidenav.new-session {
   min-width: 400px;
 }
 
+md-content.session-base {
+  background-color: transparent;
+  padding: 10px;
+}
 
 /* -------------------- */
 /* Search Profiles Page */
