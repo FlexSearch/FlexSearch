@@ -364,7 +364,12 @@ module SearchDsl =
             else Array.empty<string>
         
         let processDocument (hit : ScoreDoc, document : LuceneDocument) = 
-            let timeStamp = int64 (document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField)))
+            let timeStamp = 
+                let t = document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField))
+                if isNull t then
+                    0L
+                else
+                    int64 t
             let fields = getDocument (indexWriter, searchQuery, document)
             if searchQuery.ReturnFlatResult then 
                 fields.[Constants.IdField] <- document.Get(indexWriter.GetSchemaName(Constants.IdField))

@@ -30,7 +30,11 @@ module flexportal {
 			 this.$http = $http;
 			 this.$mdBottomSheet = $mdBottomSheet;
 			 this.$q = $q;
-			 this.FlexSearchUrl = $location.protocol() + "://" + $location.host() + ":" + $location.port();
+			 this.FlexSearchUrl = "http://localhost:9800";
+			 // If the host is local then use the hard coded url as we might be testing
+			 // the ui
+			 if ($location.host() != "localhost")
+				 this.FlexSearchUrl = $location.protocol() + "://" + $location.host() + ":" + $location.port();
 			 this.DuplicatesUrl = this.FlexSearchUrl + "/indices/duplicates";
 			 this.handleError = 
 			 	function(bs, q) {
