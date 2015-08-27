@@ -1035,7 +1035,24 @@ module IndexManager =
                 do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
             else do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
         }
-    
+
+//    /// Update an index from the given index DTO
+//    let updateIndex (dto : Index) (t : T) =
+//        maybe {
+//            let! oldIndexWriter = t |> indexOnline dto.IndexName
+//            do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
+//            if dto.Active then
+//                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
+//                let indexWriter = IndexWriter.create setting
+//                
+//                // Keep the generation of the old ShardWriters
+//                if (oldIndexWriter.ShardWriters.Length < indexWriter.ShardWriters.Length) 
+//                then oldIndexWriter.ShardWriters
+//                else indexWriter.ShardWriters
+//                |> Array.iteri (fun i _ -> 
+//                    indexWriter.ShardWriters.[i].Generation <- oldIndexWriter.ShardWriters.[i].Generation)
+//                
+//        }
     /// Loads all indices from the given path
     let loadAllIndex (t : T) = 
         let loadFromFile (path) = 
@@ -1105,6 +1122,13 @@ module IndexManager =
                 do! t |> loadIndex indexState.IndexDto
         }
     
+    /// Update an existing index with the new provided details
+    let updateIndex (index : Index) (t : T) =
+        let wasActive = index.Active
+        t |> closeIndex index.IndexName
+        >>= fun _ -> index.Active <- wasActive
+                     t |> loadIndex index
+
     /// Deletes an existing index
     let deleteIndex (indexName : string) (t : T) = 
         maybe { 

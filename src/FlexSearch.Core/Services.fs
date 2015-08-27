@@ -39,7 +39,7 @@ type IFlexFactory<'T> =
 type IIndexService = 
     abstract GetIndex : indexName:string -> Result<Index>
     abstract UpdateIndexFields : indexName:string * fields:Field [] -> Result<unit>
-    abstract UpdateSearchProfile : indexName:string * profile:SearchQuery -> Result<unit>
+    abstract AddOrUpdateSearchProfile : indexName:string * profile:SearchQuery -> Result<unit>
     abstract UpdateIndexConfiguration : indexName:string * indexConfiguration:IndexConfiguration -> Result<unit>
     abstract DeleteIndex : indexName:string -> Result<unit>
     abstract AddIndex : index:Index -> Result<CreateResponse>
@@ -242,7 +242,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
     let im = 
         IndexManager.create 
             (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
-    
+
     do 
         if not testMode then im |> IndexManager.loadAllIndex
     
@@ -284,11 +284,27 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
             | Ok(state) -> ok <| state.IndexStatus
             | Fail(error) -> fail <| error
         
+        member __.UpdateIndexFields(indexName:string, fields : Field []) = 
+            match im.Store.TryGetValue(indexName) with
+            | true, state -> let index = state.IndexDto
+                             index.Fields <- fields
+                             im |> IndexManager.updateIndex index
+            | _ -> fail <| IndexNotFound indexName
+
+        member __.AddOrUpdateSearchProfile(indexName:string , profile:SearchQuery) = 
+            match im.Store.TryGetValue(indexName) with
+            | true, state -> 
+                let index = state.IndexDto
+                match index.SearchProfiles |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
+                | Some(spNo) -> index.SearchProfiles.[spNo] <- profile
+                | _ -> index.SearchProfiles <- [| profile |] |> Array.append index.SearchProfiles
+                
+                im |> IndexManager.updateIndex index
+            | _ -> fail <| IndexNotFound indexName
+        member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) = failwith "Not implemented yet"
+
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
         member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
-        member __.UpdateIndexFields(indexName:string, _ : Field []) = failwith "Not implemented yet"
-        member __.UpdateSearchProfile(indexName:string , profile:SearchQuery) = failwith "Not implemented yet"
-        member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) = failwith "Not implemented yet"
         member __.GetDiskUsage(indexName : string) = im |> IndexManager.getDiskUsage indexName
 
 [<Sealed>]

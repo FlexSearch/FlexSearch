@@ -13,6 +13,7 @@ open System.Reflection
 open Microsoft.Owin.Testing
 open Swensen.Unquote
 
+
 /// <summary>
 /// Represents the lookup name for the plug-in
 /// </summary>
@@ -187,3 +188,7 @@ type SingleInstancePerClassConvention() as self =
         //self.Methods.Where(fun m -> m.HasOrInherits<IgnoreAttribute>() |> not) |> ignore
         self.ClassExecution.CreateInstancePerClass().UsingFactory(fun typ -> fixtureFactory (typ)) |> ignore
         self.Parameters.Add<InputParameterSource>() |> ignore
+
+
+// Runs a test against the given result and checks if it succeeded
+let (?) r = test <@ succeeded r @>
