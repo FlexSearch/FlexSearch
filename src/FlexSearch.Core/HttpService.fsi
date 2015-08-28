@@ -93,7 +93,7 @@ type PutIndexSearchProfileHandler =
     override Process : request : RequestContext * SearchQuery option ->
         ResponseContext<unit>
 
-# ws_PutIndexSearchProfileHandler """
+# ws_PutIndexConfigurationHandler """
 Update the configuration of an index"""
 # description """
 {{note: The Index Version cannot be modified}}"""
