@@ -63,6 +63,48 @@ type DeleteIndexByIdHandler =
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
+#if dto_FieldsUpdateRequest
+Container to store the list of fields to be updated
+#endif
+type FieldsUpdateRequest =
+    inherit DtoBase
+    new : unit -> FieldsUpdateRequest
+    #if prop_Fields
+    #endif
+    member Fields : Field [] with get, set
+
+# ws_PutIndexFieldsHandler """
+Update the Index Fields"""
+[<Name("PUT-/indices/:id/fields")>]
+[<Sealed>]
+type PutIndexFieldsHandler =
+    inherit HttpHandlerBase<FieldsUpdateRequest, unit>
+    new : indexService : IIndexService -> PutIndexFieldsHandler
+    override Process : request : RequestContext * FieldsUpdateRequest option ->
+        ResponseContext<unit>
+
+# ws_PutIndexSearchProfileHandler """
+Adds or updates a search profile for the given index"""
+[<Name("PUT-/indices/:id/searchprofile")>]
+[<Sealed>]
+type PutIndexSearchProfileHandler = 
+    inherit HttpHandlerBase<SearchQuery, unit>
+    new : indexService : IIndexService -> PutIndexSearchProfileHandler
+    override Process : request : RequestContext * SearchQuery option ->
+        ResponseContext<unit>
+
+# ws_PutIndexSearchProfileHandler """
+Update the configuration of an index"""
+# description """
+{{note: The Index Version cannot be modified}}"""
+[<Name("PUT-/indices/:id/configuration")>]
+[<Sealed>]
+type PutIndexConfigurationHandler = 
+    inherit HttpHandlerBase<IndexConfiguration, unit>
+    new : indexService : IIndexService -> PutIndexConfigurationHandler
+    override Process : request : RequestContext * IndexConfiguration option ->
+        ResponseContext<unit>
+
 #if dto_IndexStatusResponse
 #endif
 type IndexStatusResponse =

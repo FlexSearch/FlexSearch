@@ -93,6 +93,33 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
     inherit HttpHandlerBase<NoBody, unit>()
     override __.Process(request, _) = SomeResponse(indexService.DeleteIndex(request.ResId.Value), Ok, BadRequest)
 
+type FieldsUpdateRequest() =
+    inherit DtoBase()
+    member val Fields = Array.empty<Field> with get, set
+    override this.Validate() = okUnit
+
+/// Update the Index Fields
+[<Name("PUT-/indices/:id/fields")>]
+[<Sealed>]
+type PutIndexFieldsHandler(indexService : IIndexService) =
+    inherit HttpHandlerBase<FieldsUpdateRequest, unit>()
+    override __.Process(request, body) = 
+        SomeResponse(indexService.UpdateIndexFields(request.ResId.Value, body.Value.Fields), Ok, Conflict)
+
+[<Name("PUT-/indices/:id/searchprofile")>]
+[<Sealed>]
+type PutIndexSearchProfileHandler(indexService : IIndexService) = 
+    inherit HttpHandlerBase<SearchQuery, unit>()
+    override __.Process(request, body) =
+        SomeResponse(indexService.AddOrUpdateSearchProfile(request.ResId.Value, body.Value), Ok, Conflict)
+
+[<Name("PUT-/indices/:id/configuration")>]
+[<Sealed>]
+type PutIndexConfigurationHandler(indexService : IIndexService) = 
+    inherit HttpHandlerBase<IndexConfiguration, unit>()
+    override __.Process(request, body) =
+        SomeResponse(indexService.UpdateIndexConfiguration(request.ResId.Value, body.Value), Ok, Conflict)
+
 ///// Update an index
 //[<Name("PUT-/indices/:id")>]
 //[<Sealed>]

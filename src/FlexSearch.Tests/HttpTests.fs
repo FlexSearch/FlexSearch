@@ -164,6 +164,24 @@ type ``Index Update Tests``() =
         actual  |> fst |> hasErrorCode "HttpNotSupported"
         actual |> hasHttpStatusCode HttpStatusCode.BadRequest
 
+    [<Example("put-indices-id-2", "")>]
+    member __.``Trying to update index fields should return success`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
+        client.AddIndex(index).Result |> isCreated
+        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldDataType.Text, Store = true) |])
+        isSuccessful <| client.UpdateIndexFields(index.IndexName, fields).Result
+
+    [<Example("put-indices-id-3", "")>]
+    member __.``Trying to update index search profile should return success`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
+        client.AddIndex(index).Result |> isCreated
+        let sp = new SearchQuery(index.IndexName, "et1 matchall 'x'", QueryName = "all")
+        isSuccessful <| client.UpdateIndexSearchProfile(index.IndexName, sp).Result
+
+    [<Example("put-indices-id-4", "")>]
+    member __.``Trying to update index configuration should return success`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
+        client.AddIndex(index).Result |> isCreated
+        let conf = new IndexConfiguration(CommitTimeSeconds = 100)
+        isSuccessful <| client.UpdateIndexConfiguration(index.IndexName, conf).Result
+
 type ``Delete Index Test 1``() = 
     [<Example("delete-indices-id-1", "")>]
     member __.``Delete an index by id`` (client : FlexClient, index : Index, handler : LoggingHandler) = 
