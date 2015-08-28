@@ -117,18 +117,21 @@ module SigDocValidator =
     let coreDtos = Assembly.GetAssembly(typeof<DtoBase>).GetTypes()
                    |> Seq.filter (fun t -> t.IsSubclassOf(typeof<DtoBase>))
                    |> Seq.filter isNotInternal
+                   |> Seq.filter (fun t -> Attribute.GetCustomAttribute(t, typeof<NotForDocumentation>) = null)
                    |> Seq.sortBy (fun t -> t.Name)
     let docWss = defs |> Seq.filter (fun x -> x.Type = "ws")
                       |> Seq.sortBy (fun x -> x.Name)
     let coreWss = Assembly.GetAssembly(typeof<Http.IHttpHandler>).GetTypes()
                   |> Seq.filter (fun t -> not t.IsAbstract && t.GetInterfaces() |> Seq.exists ((=) typeof<Http.IHttpHandler>))
                   |> Seq.filter isNotInternal
+                  |> Seq.filter (fun t -> Attribute.GetCustomAttribute(t, typeof<NotForDocumentation>) = null)
                   |> Seq.sortBy (fun t -> t.Name)
     let docEnums = defs |> Seq.filter (fun x -> x.Type = "enum")
                         |> Seq.sortBy (fun x -> x.Name)
     let coreEnums = Assembly.GetAssembly(typeof<Index>).GetTypes()
                     |> Seq.filter (fun t -> t.IsSubclassOf(typeof<Enum>))
                     |> Seq.filter isNotInternal
+                    |> Seq.filter (fun t -> Attribute.GetCustomAttribute(t, typeof<NotForDocumentation>) = null)
                     |> Seq.filter (fun t -> t.DeclaringType = null)
                     |> Seq.sortBy (fun t -> t.Name)
 

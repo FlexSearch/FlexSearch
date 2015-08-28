@@ -31,6 +31,7 @@ type OperationMessage =
       Message : string
       ErrorCode : string }
 
+[<NotForDocumentation>]
 type MessageKeyword =
     | Node = 1
     | Index = 2 
@@ -40,6 +41,7 @@ type MessageKeyword =
     | Plugin = 6
     | Startup = 7
 
+[<NotForDocumentation>]
 type MessageLevel =
     | Critical = 1
     | Error = 2

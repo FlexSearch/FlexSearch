@@ -456,3 +456,8 @@ module Debug =
     
     let inline (!>) msg = Printf.kprintf Debug.WriteLine msg
     //let inline fail msg = Printf.kprintf Debug.Fail msg
+
+/// Attribute used on types that are not needed in the Documentation
+[<AttributeUsage(AttributeTargets.Class)>]
+type NotForDocumentation() =
+    inherit Attribute()
