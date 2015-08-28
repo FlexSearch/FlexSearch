@@ -20,6 +20,12 @@ open FlexSearch.SigDocParser
 module SigDocValidator =
     open MessageHelpers
 
+    let printSeq sequence =
+        sequence
+        |> Seq.map (sprintf "%A")
+        |> Seq.fold (fun acc value -> acc + value + ";\n") ""
+        |> sprintf "[%s]"
+
     // Validation helpers
     type ValErr<'T,'U> =
         | IsEqual of expected : 'T * given : 'T * context : 'U
@@ -34,9 +40,9 @@ module SigDocValidator =
                 | SameLength(expected,given) -> 
                     sprintf 
                         "Expected length to be equal to %d, but found %d.\nGiven list:%A\nExpected List:%A" 
-                        (expected |> Seq.length) (given |> Seq.length) given expected
+                        (expected |> Seq.length) (given |> Seq.length) (printSeq given) (printSeq expected)
                 | NotEmpty(_,context) -> sprintf "The given string should not be empty:%A" context
-                | InList(item,list) -> sprintf "The given item '%A' is not in the list: %A" item list
+                | InList(item,list) -> sprintf "The given item '%A' is not in the list: %A" item (printSeq list)
                 |> caseToMsg this
 
     let isEqual given expected context = 
@@ -123,6 +129,7 @@ module SigDocValidator =
     let coreEnums = Assembly.GetAssembly(typeof<Index>).GetTypes()
                     |> Seq.filter (fun t -> t.IsSubclassOf(typeof<Enum>))
                     |> Seq.filter isNotInternal
+                    |> Seq.filter (fun t -> t.DeclaringType = null)
                     |> Seq.sortBy (fun t -> t.Name)
 
     // Execute the actual validation
@@ -193,4 +200,5 @@ module SigDocValidator =
     let validateDocumentation() =
         match validationSequence() with
         | Ok(x) -> printfn "Validation Succeeded"
-        | Fail(x) -> Log.log x; failwith "Validation Failed. Check Operational logs in Event Viewer for details."
+        | Fail(x) -> printfn "%s" <| x.OperationMessage().Message 
+                     failwith "Validation Failed. Check Error messages further up the stream."
