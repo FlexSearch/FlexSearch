@@ -1,49 +1,19 @@
-<md-sidenav class="md-sidenav-left md-whiteframe-z2 full-height site-sidenav" md-component-id="leftMenu" md-is-locked-open="$mdMedia('gt-md')" >
-  <md-toolbar class="md-theme-indigo">
-    <h1 class="md-toolbar-tools">
-      <a href="http://www.flexsearch.net">FlexSearch</a>
-    </h1>
-  </md-toolbar>
-  <md-toolbar class="md-theme-indigo">
-    <h1 class="md-toolbar-tools">
-      <a href="/#/dashboard">Dashboard</a>
-    </h1>
-  </md-toolbar>
-  <md-toolbar class="md-theme-indigo">
-    <h1 class="md-toolbar-tools">Duplicate Detection</h1>
-  </md-toolbar>
-  <md-content layout-padding layout="column" layout-align="start end">
-    <md-button ui-sref="sessions">Sessions</md-button>
-    <md-button ui-sref="search">Search</md-button>
-    <md-button ui-sref="searchProfile">Search Profiles</md-button>
-  </md-content>
-  <md-toolbar class="md-theme-indigo">
-    <h1 class="md-toolbar-tools">
-      <a href="/#/swagger">Swagger UI</a>
-    </h1>
-  </md-toolbar>
-  <md-toolbar class="md-theme-indigo">
-    <h1 class="md-toolbar-tools">
-      <a href="/#/analyzertest">Analyzer Testing</a>
-    </h1>
-  </md-toolbar>
-</md-sidenav>
-
-<!--[if lt IE 10]>
-  <p class="browsehappy">You are using an
-    <strong>outdated</strong>browser. Please
-    <a href="http://browsehappy.com/">upgrade your browser</a>to improve your experience.</p>
-<![endif]-->
-
-
-<md-content layout="column" flex class="nonSideNav">
-  <md-toolbar class="md-whiteframe-z2 md-default-theme site-content-toolbar">
-    <div class="md-toolbar-tools" ui-view="topMenuToolbar">
-      <md-button class="md-icon-button" hide-gt-md ng-click="toggleSideNav('leftMenu')" aria-label="side navigation">
-        <md-icon class="md-dark">menu</md-icon>
-      </md-button>
-      <h2 class="title"></h2>
-    </div>
-  </md-toolbar>
-  <md-content ui-view layout="column" class="main-content" flex></md-content>
+<md-content>
+  <md-whiteframe class="md-whiteframe-z4">
+    <md-toolbar class="md-default-theme site-content-toolbar">
+      <div class="md-toolbar-tools">
+        <a href="/#/home" class="brand-logo"><img src="app/assets/images/logo.png" style="height:20px; margin-left: 20px"></a>
+        <span flex></span>
+        <md-button href="https://github.com/FlexSearch" title="Launch FlexSearch Github repository in a new window" target="_blank"
+        aria-label="https://github.com/FlexSearch" class="launch">
+          Github
+        </md-button>
+        <md-button href="http://flexsearch.net" title="Launch FlexSearch documentation in a new window" target="_blank" aria-label="flexsearch.net"
+        class="launch">
+          Documentation
+        </md-button>
+      </div>
+    </md-toolbar>
+  </md-whiteframe-z2>
 </md-content>
+<md-content id="content-container" flex layout="column" layout-wrap ui-view style="height:100%;"></md-content>

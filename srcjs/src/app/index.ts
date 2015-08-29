@@ -16,6 +16,7 @@
 /// <reference path="../app/views/dashboard/indexDetails.ts" />
 /// <reference path="../app/views/swagger/swagger.ts" />
 /// <reference path="../app/views/analyzer/analyzerTest.ts" />
+/// <reference path="../app/views/home/home.ts" />
 
 module flexportal {
   'use strict';
@@ -31,15 +32,15 @@ module flexportal {
   }
 
   // Helpers
-  export function firstOrDefault(a: any [], fieldName, value) {
+  export function firstOrDefault(a: any[], fieldName, value) {
     var r = a.filter(x => x[fieldName] == value);
     if (r.length > 0) return r[0];
     return null;
   }
 
-  angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial', 
+  angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial',
     'ui.router', 'chart.js', 'jsonFormatter', 'swaggerUi'])
-    // Controllers
+  // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
     .controller('SessionsController', ["$scope", "$state", "$http", "datePrinter", "flexClient", "$mdSidenav", "$mdUtil", SessionsController])
@@ -52,52 +53,34 @@ module flexportal {
     .controller('SearchSettingsController', ["$scope", "$mdBottomSheet", SearchSettingsController])
     .controller('ErrorController', ErrorController)
     .controller('ClusterController', ClusterController)
+    .controller('HomeController', HomeController)
     .controller('IndexDetailsController', ["$scope", "$stateParams", IndexDetailsController])
     .controller('SwaggerController', SwaggerController)
     .controller('AnalyzerTestController', ["$scope", "flexClient", AnalyzerTestController])
-    
-    // Services
+
+  // Services
     .service('datePrinter', function() {
       this.toDateStr = function(dateStr: any) {
         var date = new Date(dateStr);
         return date.toLocaleDateString() + ", " + date.toLocaleTimeString();
-      }; 
+      };
     })
-    .service('flexClient', ["$http", "$mdBottomSheet", "$q", "$location", function($http, $mdBottomSheet, $q, $location) { return new FlexClient($http, $mdBottomSheet, $q, $location);} ])
+    .service('flexClient', ["$http", "$mdBottomSheet", "$q", "$location", function($http, $mdBottomSheet, $q, $location) { return new FlexClient($http, $mdBottomSheet, $q, $location); }])
     
-    // Theming
+  // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {
-      $mdThemingProvider.definePalette("docs-blue", $mdThemingProvider.extendPalette("blue", {
-          50: "#DCEFFF",
-          100: "#AAD1F9",
-          200: "#7BB8F5",
-          300: "#4C9EF1",
-          400: "#1C85ED",
-          500: "#106CC8",
-          600: "#0159A2",
-          700: "#025EE9",
-          800: "#014AB6",
-          900: "#013583",
-          contrastDefaultColor: "light",
-          contrastDarkColors: "50 100 200 A100",
-          contrastStrongLightColors: "300 400 A200 A400"
-      }));
-      $mdThemingProvider.definePalette("docs-red", 
-        $mdThemingProvider.extendPalette("red", { A100: "#DE3641" }
-      )); 
-      $mdThemingProvider.theme("docs-dark", "default")
-        .primaryPalette("light-blue").dark();
-      $mdThemingProvider.theme("default")
-        .primaryPalette("docs-blue").accentPalette("docs-red");
+      $mdThemingProvider.theme('default')
+        .primaryPalette('blue')
+        .accentPalette('grey');
     })
     
-    // Route configuration
+  // Route configuration
     .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider: angular.ui.IUrlRouterProvider) {
-      $urlRouterProvider.otherwise("/dashboard");
+      $urlRouterProvider.otherwise("/home");
 
       $stateProvider
-      
-        // Session URLs
+          
+      // Session URLs
         .state('main', {
           url: "/main",
           templateUrl: "app/partials/main.html",
@@ -137,7 +120,7 @@ module flexportal {
           }
         })
         
-        // Search Profile URLs
+      // Search Profile URLs
         .state('searchBase', {
           abstract: true,
           url: "^/searchBase",
@@ -157,13 +140,20 @@ module flexportal {
           controller: 'SearchController',
           templateUrl: "app/views/search/search.html"
         })
-
-        // Dashboard
+        
+      // Dashboard
         .state('dashboard', {
           url: "^/dashboard",
           parent: 'main',
           controller: 'ClusterController',
           templateUrl: "app/views/dashboard/cluster.html"
+        })
+      // Home controller
+        .state('home', {
+          url: "^/home",
+          parent: 'main',
+          controller: 'HomeController',
+          templateUrl: "app/views/home/home.html"
         })
         .state('indexDetails', {
           url: "/:indexName",
@@ -172,7 +162,7 @@ module flexportal {
           templateUrl: "app/views/dashboard/indexDetails.html"
         })
         
-        // Swagger
+      // Swagger
         .state('swagger', {
           url: "^/swagger",
           parent: 'main',
@@ -180,7 +170,7 @@ module flexportal {
           templateUrl: "app/views/swagger/swagger.html"
         })
         
-        // Analysis
+      // Analysis
         .state('analyzerTest', {
           url: "^/analyzertest",
           parent: 'main',
