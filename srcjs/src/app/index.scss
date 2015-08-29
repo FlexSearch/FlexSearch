@@ -1,0 +1,195 @@
+/*
+Global Variables
+*/
+/*** Tables ***/
+$table-border-color: #d0d0d0 !default;
+$table-striped-color: #f2f2f2 !default;
+
+/*
+Import dependencies
+*/
+@import "views/sessions/sessions";
+@import "bower_components/material-shadows/material-shadows";
+
+.full-height {
+    height: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.no-padding {
+  padding: 0px !important;
+}
+
+.material-icons.md-48, .material-icons .md-48 {
+  font-size: 48px;
+}
+
+.duplicate-list md-icon.md-secondary {
+  margin-top: 0px;  
+}
+
+md-content.main-content {
+  background: transparent;
+  padding: 20px 30px 10px 30px;
+}
+
+.site-content-toolbar .md-icon-button:first-child{
+  margin-top: -10px;
+}
+
+.md-toolbar-tools {
+  padding: 0 25px;
+}
+
+.md-toolbar-tools .md-button md-icon {
+  margin-right: 5px;
+}
+
+/* -------------------- */
+/* Site Content Toolbar */
+/* -------------------- */
+.site-content-toolbar {
+  position: relative;
+  background-color: rgb(228, 228, 228);
+  margin-bottom: 15px;
+  color: #202020 !important;
+  z-index: 2;
+  @include z-depth-bottom(2.5);  
+}
+
+#content-container {
+  background-color: rgb(238,238,238);
+  margin-top: -15px;
+  z-index: 1;
+}
+
+/* -------------------- */
+/* Global table styles */
+/* -------------------- */
+table {
+    td.negative {
+      background: #fff0f0 !important;
+      color: #cd2929 !important;
+    }
+
+  tr{
+    td{ padding: .6em; }
+
+  th{
+    color: rgba(0, 0, 0, 0.8);
+    padding: 1em;
+    background-color: rgb(200,200,200);
+    }
+  }
+
+  width:100%;
+  display: table;
+  border-collapse: collapse;
+  
+  &.bordered > thead > tr,
+  &.bordered > tbody > tr {
+    border-bottom: 1px solid $table-border-color;
+  }
+
+  &.striped > tbody {
+    > tr:nth-child(odd) {
+      background-color: $table-striped-color;
+    }
+
+    > tr > td {
+      border-radius: 0px;
+    }
+  }
+
+  &.hoverable > tbody > tr {
+    &:hover {
+      background-color: $table-striped-color;
+    }
+  }
+
+  &.centered {
+    thead tr th, tbody tr td {
+      text-align: center;
+
+    }
+  }
+
+}
+
+thead {
+  border-bottom: 1px solid $table-border-color;
+}
+
+td, th{
+  padding: 15px 5px;
+  display: table-cell;
+  text-align: left;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+/* -------------------- */
+/* Search Profiles Page */
+/* -------------------- */
+
+md-content.leftColumn {
+  min-width: 300px;
+}
+
+.leftColumn md-select md-select-label:first-child {
+  border-bottom: none;
+}
+
+.rightColumn {
+  background: transparent;
+}
+
+.rightColumn md-whiteframe.comparison-page {
+  background: white;
+}
+
+.search-results {
+  margin: 0px 0px 0px 30px;
+}
+
+/* Material CSS */
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
+.material-icons.Processed { color: #5bbd72 !important; }		
+.material-icons.Reviewed { color: rgb(33, 150, 243); }		
+.material-icons.Proposed { color: #FB8C00; }		
+
+md-icon span.large, md-icon.large {
+  font-size: 36px;
+  height: 36px;
+  width: 36px;
+}
+
+md-icon.transparent {
+  opacity: 0.5;
+}
+
+/* Go back to original Material font */
+button, select, html, textarea, body, input, h1, h2, h3, h4, h5  {
+  font-family: Roboto, 'Helvetica Neue', sans-serif; }
+
+
+/* ----------- */
+/* Error sheet */
+/* ----------- */
+
+md-bottom-sheet.error {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+md-bottom-sheet.error md-content {
+  padding: 20px;
+}
