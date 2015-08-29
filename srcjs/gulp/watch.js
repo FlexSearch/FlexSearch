@@ -8,13 +8,16 @@ function isOnlyChange(event) {
 }
 
 module.exports = function(options) {
-  gulp.task('watch', ['inject', 'swagger'], function () {
+  gulp.task('watch', ['inject'], function () {
 
     gulp.watch([options.src + '/*.html', 'bower.json'], ['inject']);
 
-    gulp.watch(options.src + '/app/**/*.css', function(event) {
+    gulp.watch([
+      options.src + '/app/**/*.css',
+      options.src + '/app/**/*.scss'
+    ], function(event) {
       if(isOnlyChange(event)) {
-        browserSync.reload(event.path);
+        gulp.start('styles');
       } else {
         gulp.start('inject');
       }

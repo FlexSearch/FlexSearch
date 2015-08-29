@@ -7,9 +7,10 @@ var $ = require('gulp-load-plugins')();
 var wiredep = require('wiredep').stream;
 
 module.exports = function(options) {
-  gulp.task('inject', ['scripts'], function () {
+  gulp.task('inject', ['scripts', 'styles'], function () {
     var injectStyles = gulp.src([
-      options.src + '/app/**/*.css'
+      options.tmp + '/serve/app/**/*.css',
+      '!' + options.tmp + '/serve/app/vendor.css'
     ], { read: false });
 
     var sortOutput = require('../' + options.tmp + '/sortOutput.json');
@@ -17,8 +18,7 @@ module.exports = function(options) {
     var injectScripts = gulp.src([
       '{' + options.src + ',' + options.tmp + '/serve}/app/**/*.js',
       '!' + options.src + '/app/**/*.spec.js',
-      '!' + options.src + '/app/**/*.mock.js',
-      '!' + options.src + '/app/references/process.js'
+      '!' + options.src + '/app/**/*.mock.js'
     ], { read: false })
     .pipe($.order(sortOutput, {base: options.tmp + '/serve/app'}));
 

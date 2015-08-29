@@ -9,6 +9,10 @@
           "module": "ngAnimate"
         },
         {
+          "key": "cookies",
+          "module": "ngCookies"
+        },
+        {
           "key": "touch",
           "module": "ngTouch"
         },
@@ -21,20 +25,20 @@
         "key": "jquery2"
       },
       "resource": {
-        "key": "restangular",
-        "module": "restangular"
+        "key": "angular-resource",
+        "module": "ngResource"
       },
       "router": {
-        "key": "angular-route",
-        "module": "ngRoute"
+        "key": "ui-router",
+        "module": "ui.router"
       },
       "ui": {
         "key": "angular-material",
         "module": "ngMaterial"
       },
       "cssPreprocessor": {
-        "key": "none",
-        "extension": "css"
+        "key": "node-sass",
+        "extension": "scss"
       },
       "jsPreprocessor": {
         "key": "typescript",
