@@ -1,0 +1,61 @@
+/* ---------- */
+/* Dashboards */
+/* ---------- */
+
+.cluster-container {
+  min-height: 400px;
+}
+
+.cluster-container md-whiteframe {
+  margin: 7px;  
+  background-color: white;
+}
+
+.opacity-60 {
+  opacity: 0.6;
+}
+
+.font-weight-100 {
+  font-weight: 100;
+}
+
+md-whiteframe.stat p {
+  margin: 0px;
+}
+
+md-whiteframe md-content canvas {
+  height: 200px;
+}
+
+md-toolbar.clickable:hover {
+  cursor: pointer;
+}
+
+.cluster-container .leftColumn {
+  min-width: 300px;
+  padding-right: 15px;
+}
+
+.cluster-container .rightColumn md-whiteframe md-toolbar {
+  padding: 15px 10px;
+}
+
+.cluster-container canvas {
+  width: auto !important;
+  max-height: 250px;
+  height: 100% !important;
+}
+
+.overall {
+  margin-top: 30px;
+  min-height: 460px;
+}
+
+.overall .canvas-holder {
+  min-height: 420px;
+  min-width: 600px;
+}
+
+.rightColumn md-whiteframe md-content {
+  min-height: 270px;
+}
