@@ -1,45 +1,46 @@
-<div layout="row" class="full-height">
-	<md-content flex="25" class="duplicate-list md-whiteframe-z2" layout="column">
-		<md-progress-linear md-mode="indeterminate"></md-progress-linear>
-		<div class="ui basic center aligned segment">
-			<div class="ui pagination menu">
-				<a ng-click="getPage(1)" class="icon item back">
-			        <i class="angle double left icon"></i>
-				</a>
-			    <a class="item" ng-click="getPage(ActivePage - 1)">
-			        <i class="angle left icon"></i>
-			    </a>
-			    <a class="item">
-			        {{ActivePage}} of {{PageCount}}
-			    </a>
-			    <a class="item" ng-click="getPage(ActivePage + 1)">
-			        <i class="angle right icon"></i>
-			    </a>
-			    <a ng-click="getPage(PageCount)" class="icon item back">
-			        <i class="angle double right icon"></i>
-				</a>
+<md-content flex layout-wrap layout="row" style="height:100%">
+	<md-content id="session-sidebar" flex="30" flex-sm="40" flex-gt-sm="40" flex-md="30" flex-gt-md="40" flex-lg="20" flex-gt-lg="15"
+	layout="column" class="md-whiteframe-z2">
+		<md-toolbar>
+			<div class="md-toolbar-tools">
+				<h3>Potential Matches</h3>
+			<span flex></span>
+			<md-button href="/#/sessions">
+				<md-icon>keyboard_backspace</md-icon>
+				<md-tooltip>Go back to Sessions</md-tooltip>
+			</md-button>
 			</div>
+		</md-toolbar>
+		<md-subheader>{{title}}</md-subheader>
+		<md-divider></md-divider>
+		<md-subheader>Page Selector</md-subheader>
+		<div class="pagination">
+			<span ng-click="getPage(1)"><i class="material-icons">arrow_backward</i><md-tooltip>First Page</md-tooltip></span>
+			<span ng-class="ActivePage == 1 ? 'disabled' : ''" ng-click="getPage(ActivePage - 1)"><i class="material-icons">chevron_left</i><md-tooltip>Previous Page</md-tooltip></span>
+			<input class="active" required type="number" step="any" name="rate" ng-model="ActivePage" min="1" max="{{PageCount}}" ng-change="getPage(ActivePage)">
+			<span ng-click="getPage(ActivePage)">of {{PageCount}}</span>
+			<span ng-class="ActivePage == PageCount ? 'disabled' : ''" ng-click="getPage(ActivePage + 1)"><i class="material-icons">chevron_right</i><md-tooltip>Next Page</md-tooltip></span>
+			<span ng-click="getPage(PageCount)"><i class="material-icons">arrow_forward</i><md-tooltip>Last Page</md-tooltip></span>
 		</div>
-		
-		<md-content>
-			<md-subheader>
-				Records {{(ActivePage - 1) * PageSize}} - {{(ActivePage - 1) * PageSize + duplicates.length}} of {{DupesCount}}
-			</md-subheader>
-			<md-list class="full-width">
-				<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
-					<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
-					<div class="md-list-item-text">
-						<h3>{{dup.SourceDisplayName}}</h3>
-						<p ng-if="dup.TotalDupes == 1">{{dup.TotalDupes}} Match</p>
-						<p ng-if="dup.TotalDupes != 1">{{dup.TotalDupes}} Matches</p>
-					</div>
-					<md-divider ng-hide="$last"></md-divider>
-				</md-list-item>
-			</md-list>
+		<md-divider></md-divider>
+		<md-subheader>Records {{((ActivePage - 1) * PageSize) + 1}} - {{(ActivePage - 1) * PageSize + duplicates.length}} of {{DupesCount}}</md-subheader>
+		<md-divider></md-divider>
+		<md-content flex layout="row" layout-align="center">
+			<md-content flex>
+				<md-list>
+					<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
+						<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
+						<div class="md-list-item-text">
+							<h3>{{dup.SourceDisplayName}}</h3>
+							<p ng-if="dup.TotalDupes == 1">{{dup.TotalDupes}} Match</p>
+							<p ng-if="dup.TotalDupes != 1">{{dup.TotalDupes}} Matches</p>
+						</div>
+						<md-divider ng-hide="$last"></md-divider>
+					</md-list-item>
+				</md-list>
+			</md-content>
 		</md-content>
 	</md-content>
-	
-	<md-whiteframe layout="column" layout-align="top center" layout-padding flex ui-view="comparison" 
-		class="comparison-page md-whiteframe-z2">
+	<md-whiteframe id="session-comparison-box" flex layout="column" ui-view="comparison">
 	</md-whiteframe>
-</div>
+</md-content>

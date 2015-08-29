@@ -18,6 +18,7 @@ module flexportal {
         openMatches(dup: Duplicate) : void
         duplicatesPromise: ng.IPromise<Duplicate[]> 
         sessionPromise: ng.IPromise<Session>
+        title : string
         
         // Pagination specific
         getPage(pageNumber: number): void
@@ -71,12 +72,11 @@ module flexportal {
                     $scope.session = <Session>JSON.parse(document.Fields["sessionproperties"]);
                       
                     // Display the session details on the top toolbar
-                    var title = 
+                    $scope.title = 
                         "Session for " + $scope.session.IndexName 
                         + " using " + $scope.session.ProfileName + " profile"
                         + " started at " + datePrinter.toDateStr($scope.session.JobStartTime)
-                    $scope.setTitle(title);
-                  
+                    
                     return $scope.session;
                 });
             })(sessionId);
