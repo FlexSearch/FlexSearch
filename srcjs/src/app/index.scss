@@ -1,52 +1,48 @@
 /*
-Global Variables
+Import dependencies
 */
+@import "assets/scss/prefixer";
+@import "assets/scss/mixins";
+@import "assets/scss/color";
+@import "assets/scss/variables";
+@import "assets/scss/grid";
+
+// Z-levels
+.z-depth-0 {
+  box-shadow: none !important;
+}
+.z-depth-1{
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+.z-depth-1-half{
+  box-shadow: 0 5px 11px 0 rgba(0, 0, 0, 0.18), 0 4px 15px 0 rgba(0, 0, 0, 0.15);
+}
+.z-depth-2{
+  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.z-depth-3{
+  box-shadow: 0 12px 15px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+}
+.z-depth-4{
+  box-shadow: 0 16px 28px 0 rgba(0, 0, 0, 0.22), 0 25px 55px 0 rgba(0, 0, 0, 0.21);
+}
+.z-depth-5{
+  box-shadow: 0 27px 24px 0 rgba(0, 0, 0, 0.2), 0 40px 77px 0 rgba(0, 0, 0, 0.22);
+}
+
+@import "assets/scss/cards";
+
 /*** Tables ***/
 $table-border-color: #d0d0d0 !default;
 $table-striped-color: #f2f2f2 !default;
 
-/*
-Import dependencies
-*/
-@import "views/sessions/sessions";
 @import "bower_components/material-shadows/material-shadows";
 
-.full-height {
-    height: 100%;
-}
+/*
+Other page dependencies
+*/
+@import "views/sessions/sessions";
 
-.full-width {
-  width: 100%;
-}
-
-.no-padding {
-  padding: 0px !important;
-}
-
-.material-icons.md-48, .material-icons .md-48 {
-  font-size: 48px;
-}
-
-.duplicate-list md-icon.md-secondary {
-  margin-top: 0px;  
-}
-
-md-content.main-content {
-  background: transparent;
-  padding: 20px 30px 10px 30px;
-}
-
-.site-content-toolbar .md-icon-button:first-child{
-  margin-top: -10px;
-}
-
-.md-toolbar-tools {
-  padding: 0 25px;
-}
-
-.md-toolbar-tools .md-button md-icon {
-  margin-right: 5px;
-}
 
 /* -------------------- */
 /* Site Content Toolbar */
