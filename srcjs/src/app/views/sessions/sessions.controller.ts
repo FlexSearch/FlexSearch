@@ -33,8 +33,15 @@ module flexportal {
         new DataGrid.ColumnDef("RecordsAvailable")
       ]
       
+      // Initialize paging
+      $scope.PageSize = 50;
+      $scope.ActivePage = 1;
+      
       // Get data from the server
       $scope.GridOptions.useExternalPagination = true;
+      $scope.GridOptions.paginationCurrentPage = $scope.ActivePage;
+      $scope.GridOptions.paginationPageSize = $scope.PageSize;
+      $scope.GridOptions.paginationPageSizes = [];
       
       $scope.GridOptions.onRegisterApi = function(gridApi) {
         gridApi.selection.on.rowSelectionChanged($scope, function(row) {
@@ -43,7 +50,7 @@ module flexportal {
           $state.go('session', { sessionId: r.entity.SessionId });
         });
         gridApi.pagination.on.paginationChanged($scope, function (newPage, pageSize) {
-        $scope.getPage(newPage);
+          $scope.getPage(newPage);
       });
       }
       
@@ -75,9 +82,6 @@ module flexportal {
             $state.go('sessions');
         });
       
-      // Initialize paging
-      $scope.PageSize = 50;
-      $scope.ActivePage = 1;
       $scope.getPage = function(pageNumber) {
         // Display progress bar
         var progress = $('.sessions-page md-progress-linear');
@@ -91,7 +95,7 @@ module flexportal {
         flexClient.getSessions(
           $scope.PageSize,
           ($scope.ActivePage - 1) * $scope.PageSize,
-          "timestamp", "desc")
+          "_lastmodified", "desc")
           .then(results => {
             $scope.Sessions = results.Documents
               .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
@@ -104,6 +108,12 @@ module flexportal {
             $scope.GridOptions.data = $scope.Sessions;
             // Set the number of pages
             $scope.PageCount = Math.ceil(results.TotalAvailable / $scope.PageSize);
+            // Set the grid total items, otherwise it will display it to be 1
+            $scope.GridOptions.totalItems = results.TotalAvailable;
+            
+            console.debug("Scope Sessions", $scope.Sessions);
+            console.debug('Fetched page:' + pageNumber);
+            console.debug('Total page count:' + $scope.PageCount);
           })
           .then(() => progress.hide());
       };
