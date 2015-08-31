@@ -12,6 +12,7 @@
 /// <reference path="../app/views/search/searchBase.ts" />
 /// <reference path="../app/views/search/search.ts" />
 /// <reference path="../app/views/search/searchSettings.ts" />
+/// <reference path="../app/views/searchstudio/searchstudio.ts" />
 /// <reference path="../app/views/dashboard/cluster.ts" />
 /// <reference path="../app/views/dashboard/indexDetails.ts" />
 /// <reference path="../app/views/swagger/swagger.ts" />
@@ -39,7 +40,7 @@ module flexportal {
   }
 
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial',
-    'ui.router', 'chart.js', 'jsonFormatter', 'swaggerUi', 'ui.grid', 'ui.grid.selection', 'ui.grid.pagination', 'ui.grid.exporter'])
+    'ui.router', 'chart.js', 'jsonFormatter', 'swaggerUi', 'ui.grid', 'ui.grid.selection', 'ui.grid.pagination', 'ui.grid.exporter', 'ui.ace'])
   // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('SessionController', ["$scope", "$stateParams", "$http", "$state", "datePrinter", "flexClient", SessionController])
@@ -57,7 +58,7 @@ module flexportal {
     .controller('IndexDetailsController', ["$scope", "$stateParams", IndexDetailsController])
     .controller('SwaggerController', SwaggerController)
     .controller('AnalyzerTestController', ["$scope", "flexClient", AnalyzerTestController])
-
+    .controller('SearchStudioController', ["$scope", "flexClient", SearchStudioController])
   // Services
     .service('datePrinter', function() {
       this.toDateStr = function(dateStr: any) {
@@ -176,6 +177,13 @@ module flexportal {
           parent: 'main',
           controller: 'AnalyzerTestController',
           templateUrl: "app/views/analyzer/analyzerTest.html"
+        })
+      // Search Studio
+        .state('searchStudio', {
+          url: "^/searchstudio",
+          parent: 'main',
+          controller: 'SearchStudioController',
+          templateUrl: "app/views/searchstudio/searchstudio.html"
         })
     });
 }

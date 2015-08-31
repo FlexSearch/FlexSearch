@@ -12,6 +12,8 @@
     "angular-sanitize": "~1.4.0",
     "angular-swagger-ui": "~0.1.6",
     "angular-touch": "~1.4.0",
+    "angular-ui-ace": "bower",
+    "angular-ui-grid": "~3.0.5",
     "angular-ui-router": "~0.2.15",
     "jquery": "~2.1.1",
     "json-formatter": "~0.3.0",
@@ -25,5 +27,14 @@
   "resolutions": {
     "angular-material": "~0.10.1",
     "angular": "~1.4.0"
-  }
+  },
+  "overrides": {
+    "ace-builds": {
+      "main": [
+        "src-min-noconflict/ace.js",
+        "src-min-noconflict/mode-sql.js",
+        "src-min-noconflict/ext-language_tools.js"
+      ]
+    }
+}
 }
