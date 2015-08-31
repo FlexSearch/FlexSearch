@@ -365,7 +365,7 @@ module Field =
              FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false)
     
     /// Field to be used by time stamp
-    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, false)
+    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, true)
     
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
