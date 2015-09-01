@@ -30,6 +30,7 @@ module flexportal {
       
       // Set the default values for the parameters
       $scope.ThreadCount = 1;
+      $scope.SelectionQuery = "_id matchall '*'";
       
       // Get the available indices
       flexClient.getIndices()
