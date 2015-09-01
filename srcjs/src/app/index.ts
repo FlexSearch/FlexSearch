@@ -87,11 +87,6 @@ module flexportal {
           templateUrl: "app/partials/main.html",
           controller: 'MainCtrl'
         })
-        .state('todo', {
-          url: "/todo",
-          template: "<h1>To be implemented</h1>",
-          parent: 'main'
-        })
         .state('sessions', {
           url: "^/sessions",
           templateUrl: "app/views/sessions/sessions.html",
@@ -120,28 +115,6 @@ module flexportal {
             }
           }
         })
-        
-      // Search Profile URLs
-        .state('searchBase', {
-          abstract: true,
-          url: "^/searchBase",
-          parent: 'main',
-          controller: 'SearchBaseController',
-          templateUrl: "app/views/search/searchBase.html"
-        })
-        .state('searchProfile', {
-          url: "^/searchProfile",
-          parent: 'searchBase',
-          controller: 'SearchProfileController',
-          templateUrl: "app/views/search/searchProfile.html"
-        })
-        .state('search', {
-          url: "^/search",
-          parent: 'searchBase',
-          controller: 'SearchController',
-          templateUrl: "app/views/search/search.html"
-        })
-        
       // Dashboard
         .state('dashboard', {
           url: "^/dashboard",
