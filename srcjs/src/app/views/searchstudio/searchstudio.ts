@@ -56,7 +56,8 @@ module flexportal {
     /* @ngInject */
     constructor($scope: ISearchStudioScope, flexClient: FlexClient) {
       $scope.Criteria = "normal";
-      $scope.SearchQuery = "-- DO NOT MODIFY THIS LINE \n";
+      var queryComments = "-- DO NOT MODIFY THIS LINE _id _lastmodified _score matchall like fuzzy eq match regex "
+      $scope.SearchQuery = queryComments + '\n';
       $scope.RecordsToRetrieve = 100;
       
       $scope.GridOptions = new DataGrid.GridOptions();
@@ -94,7 +95,7 @@ module flexportal {
       $scope.updatePage = function () {
         $scope.ActiveIndex = $scope.Indices[$scope.IndexNumber];
         // Auto Complete Setup
-        var fieldList = '-- DO NOT MODIFY THIS LINE';
+        var fieldList = queryComments;
         $scope.ActiveIndex.Fields.forEach(f => fieldList += ' ' + f.Name);
         $scope.SearchQuery = fieldList + '\n';
       }
