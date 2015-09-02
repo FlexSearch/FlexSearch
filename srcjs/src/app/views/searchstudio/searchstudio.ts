@@ -27,6 +27,8 @@ module flexportal {
     DocumentsInPage: string[][]
     showSearchProfileDropDown: boolean
     Criteria : string
+    ProfileMode : boolean
+    
     // Pagination specific
     getPage(pageNumber: number): void
     ActivePage: number
@@ -103,7 +105,9 @@ module flexportal {
       // Function for telling if there is at least one input on the left
       // navigation that is filled in
       $scope.atLeastOneFieldIsPopulated = function() {
-        return true;
+        return !$scope.ProfileMode || $scope.ActiveIndex.Fields
+          .filter(f => f.Value != undefined)
+          .length > 0;
       };
       
       
@@ -149,19 +153,45 @@ module flexportal {
       .then(() => $scope.mainProgressBar = false);
       console.log($scope);
     
-    // Function that submits the Search Profile test to FlexSearch
+    // Function that submits the Search test to FlexSearch
       $scope.submit = function(index: Index) {
+        var flexQuery = null;
+        
+        // Search Profile test
+        if($scope.ProfileMode) {
+          // Build the Search Query String
+          var searchQueryString = index.Fields
+            .filter(f => f.Value != undefined && f.Value != "")
+            .map(f => f.Name + ":'" + f.Value + "'")
+            .join(",");
+          
+         // Colate the columns to retrieve
+         var columns = index.Fields
+            .filter(f => f.Show)
+            .map(f => f.Name);
+            
+         flexQuery = flexClient.submitSearchProfileTest(index.Name, 
+           searchQueryString || "_id matchall 'x'", 
+           $scope.SearchQuery,
+           columns.length == 0 ? undefined : columns, $scope.RecordsToRetrieve);
+        }
+        // Plain Search test
+        else {
          // Colate the columns to retrieve
          var columns = index.Fields
             .filter(f => f.Show)
             .map(f => f.Name);
          var query = $scope.SearchQuery.split('\n').filter(ln => ln.charAt(0) != '-').join(' ');
          console.log("Generated Query:", query);
-         flexClient.submitSearch(index.Name, query,
+         flexQuery = flexClient.submitSearch(index.Name, query,
            columns.length == 0 ? undefined : columns, $scope.RecordsToRetrieve,
            undefined,
            $scope.OrderBy,
-           $scope.OrderByDirection)
+           $scope.OrderByDirection);
+        }
+         
+         // Get the response of the query
+         flexQuery  
            .then(result => {
              var r = new SearchResponse();
              r.RecordsReturned = result.RecordsReturned;
@@ -188,5 +218,6 @@ module flexportal {
              $scope.getPage(1);
            });
       };
+    }
   }
-  }}
+}
