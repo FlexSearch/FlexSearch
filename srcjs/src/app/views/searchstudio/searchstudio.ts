@@ -21,8 +21,8 @@ module flexportal {
     IndexNumber: number
     ActiveIndex: SearchIndex
     spQueryString: string
-    atLeastOneFieldIsPopulated(): boolean
     submit(index: SearchIndex): void
+    validateSubmit(): boolean
     Response: SearchResponse
     DocumentsInPage: string[][]
     showSearchProfileDropDown: boolean
@@ -52,14 +52,27 @@ module flexportal {
     
     // Ace Options
     AceOptions : any
-    SearchQuery : string
+    SearchQuery : string 
   }
   export class SearchStudioController {
     /* @ngInject */
     constructor($scope: ISearchStudioScope, flexClient: FlexClient) {
       $scope.Criteria = "normal";
-      var queryComments = "-- DO NOT MODIFY THIS LINE _id _lastmodified _score matchall like fuzzy eq match regex "
-      $scope.SearchQuery = queryComments + '\n';
+      
+      // Function to help in Autocomplete
+      var generateQueryComments = function() {
+        var queryComments = "-- DO NOT MODIFY THIS LINE _id _lastmodified _score matchall like fuzzy eq match regex ";
+        if($scope.ActiveIndex)
+          queryComments += $scope.ActiveIndex.Fields.map(f => f.Name).join(' ');
+        return queryComments + '\n'; 
+      };
+      
+      // Gets the actual Search Query, skipping the intellisense metadata
+      var extractSearchQueryFromACE = function() {
+        return $scope.SearchQuery.split('\n').filter(ln => ln.charAt(0) != '-').join(' ');
+      }
+      
+      $scope.SearchQuery = generateQueryComments();
       $scope.RecordsToRetrieve = 100;
       
       $scope.GridOptions = new DataGrid.GridOptions();
@@ -74,42 +87,43 @@ module flexportal {
         console.log("Search Result Grid initialized successfully.");
       }
       
-      
       // Setup ace options
       $scope.AceOptions =
         {
           mode : "sql",
           useWrapMode : true,
-  	     showGutter: true,
-  	     firstLineNumber: 0,
-	       require: ['ace/ext/language_tools'],
- 	      advanced: {
-          enableBasicAutocompletion: true,
-          enableLiveAutocompletion: true
-        },
-        onLoad : function(editor) {
-          //TODO : Can use custom completer to push auto complete items in future
-        }
+          showGutter: true,
+          firstLineNumber: 0,
+          require: ['ace/ext/language_tools'],
+          advanced: {
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true
+          },
+          onLoad : function(editor) {
+            //TODO : Can use custom completer to push auto complete items in future
+          }
         };
-        
         
       // Update the whole UI everytime index is changed
       $scope.updatePage = function () {
-        $scope.ActiveIndex = $scope.Indices[$scope.IndexNumber];
-        // Auto Complete Setup
-        var fieldList = queryComments;
-        $scope.ActiveIndex.Fields.forEach(f => fieldList += ' ' + f.Name);
-        $scope.SearchQuery = fieldList + '\n';
-      }
-      
-      // Function for telling if there is at least one input on the left
-      // navigation that is filled in
-      $scope.atLeastOneFieldIsPopulated = function() {
-        return !$scope.ProfileMode || $scope.ActiveIndex.Fields
-          .filter(f => f.Value != undefined)
-          .length > 0;
+        if($scope.IndexNumber)
+          $scope.ActiveIndex = $scope.Indices[$scope.IndexNumber];
+        $scope.SearchQuery = generateQueryComments();
       };
       
+      $scope.validateSubmit = function() {
+        // At least one input on the left navigation should be filled in
+        // during Search Profile Mode
+        var c1 = !$scope.ProfileMode || ($scope.ActiveIndex && 
+          $scope.ActiveIndex.Fields
+          .filter(f => f.Value != undefined)
+          .length > 0);
+          
+        // The Search Query shouldn't be empty during Search Mode
+        var c2 = $scope.ProfileMode || !!(extractSearchQueryFromACE());
+        
+        return c1 && c2;
+      };
       
       // Pagination
       $scope.ActivePage = 1;
@@ -128,9 +142,6 @@ module flexportal {
           .slice(($scope.ActivePage - 1) * $scope.PageSize, 
             $scope.ActivePage * $scope.PageSize);
       }
-      
-      // Function that submits the Search Profile test to FlexSearch
-      // $scope.submit = function(index: Index) { }
       
       // Get the available indices
       flexClient.getIndices()
@@ -172,7 +183,7 @@ module flexportal {
             
          flexQuery = flexClient.submitSearchProfileTest(index.Name, 
            searchQueryString || "_id matchall 'x'", 
-           $scope.SearchQuery,
+           extractSearchQueryFromACE(),
            columns.length == 0 ? undefined : columns, $scope.RecordsToRetrieve);
         }
         // Plain Search test
@@ -181,7 +192,7 @@ module flexportal {
          var columns = index.Fields
             .filter(f => f.Show)
             .map(f => f.Name);
-         var query = $scope.SearchQuery.split('\n').filter(ln => ln.charAt(0) != '-').join(' ');
+         var query = extractSearchQueryFromACE();
          console.log("Generated Query:", query);
          flexQuery = flexClient.submitSearch(index.Name, query,
            columns.length == 0 ? undefined : columns, $scope.RecordsToRetrieve,
