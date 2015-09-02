@@ -150,6 +150,7 @@ module flexportal {
       }
       
       // Get the available indices
+      $scope.mainProgressBar = true;
       flexClient.getIndices()
       .then(response => {
         $scope.Indices = response.map(i => {
@@ -173,6 +174,7 @@ module flexportal {
     // Function that submits the Search test to FlexSearch
       $scope.submit = function(index: Index) {
         var flexQuery = null;
+        $scope.mainProgressBar = true;
         
         // Search Profile test
         if($scope.ProfileMode) {
@@ -233,7 +235,8 @@ module flexportal {
            .then(() => {
              $scope.PageCount = Math.ceil($scope.Response.RecordsReturned / $scope.PageSize);
              $scope.getPage(1);
-           });
+           })
+           .then(() => $scope.mainProgressBar = false);
       };
     }
   }

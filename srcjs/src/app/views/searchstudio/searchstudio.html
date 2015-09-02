@@ -1,80 +1,81 @@
 <form name="form" flex layout-wrap layout="row" class="searchstudio">
-<md-content flex layout-wrap layout="row">
-	<md-content id="session-sidebar" flex="25" layout="column" class="md-whiteframe-z2">
-		<md-toolbar>
-			<div class="md-toolbar-tools">
-				<md-select placeholder="Select index" ng-model="IndexNumber" required ng-change="updatePage()">
-					<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' index</md-option>
-				</md-select>
-			</div>
-		</md-toolbar>
-		<md-subheader ng-show="ActiveIndex">{{ProfileMode ? "Populate fields from the below list to be used in the Search Profile test" : "Select the fields from the below list to output in the search result"}}</md-subheader>
-		<md-content flex layout="row" layout-align="center">
-			<md-content flex layout="column">
-				<div ng-show="ActiveIndex">
-					<md-checkbox class="md-primary" ng-model="ReturnAllColumns" ng-init="ReturnAllColumns=true" ng-click="onReturnAllColumnsClick()">Return all columns</md-checkbox>
-					<md-divider></md-divider>
+	<div flex layout-wrap layout="row">
+		<md-content id="session-sidebar" flex="25" layout="column" class="md-whiteframe-z2">
+			<md-toolbar>
+				<div class="md-toolbar-tools">
+					<md-select placeholder="Select index" ng-model="IndexNumber" required ng-change="updatePage()">
+						<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' index</md-option>
+					</md-select>
 				</div>
-				<!-- Fields for Search page -->
-				<div ng-repeat="field in ActiveIndex.Fields" ng-show="!ProfileMode">
-					<md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results">{{field.Name}}</md-checkbox>
-				</div>
-				<!-- Fields for Search profile page -->
-				<div layout="row" class="profile-fields" layout-align="space-between center" ng-repeat="field in ActiveIndex.Fields" ng-show="ProfileMode">
-					<div><md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results" /></div>
-					<div flex layout="row" layout-align="center">
-						<md-input-container layout-fill ng-show="ProfileMode">
-							<label>{{field.Name}}</label>
-							<input ng-model="field.Value">
-						</md-input-container>
+			</md-toolbar>
+			<md-subheader ng-show="ActiveIndex">{{ProfileMode ? "Populate fields from the below list to be used in the Search Profile test" : "Select the fields from the below list to output in the search result"}}</md-subheader>
+			<md-content flex layout="row" layout-align="center">
+				<md-content flex layout="column">
+					<div ng-show="ActiveIndex">
+						<md-checkbox class="md-primary" ng-model="ReturnAllColumns" ng-init="ReturnAllColumns=true" ng-click="onReturnAllColumnsClick()">Return all columns</md-checkbox>
+						<md-divider></md-divider>
 					</div>
-				</div>
+					<!-- Fields for Search page -->
+					<div ng-repeat="field in ActiveIndex.Fields" ng-show="!ProfileMode">
+						<md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results">{{field.Name}}</md-checkbox>
+					</div>
+					<!-- Fields for Search profile page -->
+					<div layout="row" class="profile-fields" layout-align="space-between center" ng-repeat="field in ActiveIndex.Fields" ng-show="ProfileMode">
+						<div><md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results" /></div>
+						<div flex layout="row" layout-align="center">
+							<md-input-container layout-fill ng-show="ProfileMode">
+								<label>{{field.Name}}</label>
+								<input ng-model="field.Value">
+							</md-input-container>
+						</div>
+					</div>
+				</md-content>
 			</md-content>
 		</md-content>
-	</md-content>
-	<md-whiteframe id="session-comparison-box" flex layout="column">
-		<md-toolbar>
-			<div class="md-toolbar-tools">
-				<h3>Search Studio</h3>
-				<div flex></div>
-				<md-switch class="md-primary md-warn" ng-model="ProfileMode" ng-click="updatePage()" aria-label="Profile Mode">
-					Profile Mode
-				</md-switch>
-				<md-button ng-click="submit(Indices[IndexNumber])" type="submit" ng-disabled="form.$invalid || !validateSubmit()">
-					<md-icon ng-class="md-light">send</md-icon>Submit</md-button>
+		<md-whiteframe id="session-comparison-box" flex layout="column">
+			<md-toolbar>
+				<div class="md-toolbar-tools">
+					<h3>Search Studio</h3>
+					<div flex></div>
+					<md-switch class="md-primary md-warn" ng-model="ProfileMode" ng-click="updatePage()" aria-label="Profile Mode">
+						Profile Mode
+					</md-switch>
+					<md-button ng-click="submit(Indices[IndexNumber])" type="submit" ng-disabled="form.$invalid || !validateSubmit()">
+						<md-icon ng-class="md-light">send</md-icon>Submit</md-button>
+				</div>
+			</md-toolbar>
+			<md-content>
+				<md-progress-linear layout-fill md-mode="indeterminate" ng-show="mainProgressBar"></md-progress-linear>
+				<div ui-ace="AceOptions" ng-model="SearchQuery" style="height:350px; font-size:1.1em;"></div>
+			</md-content>
+			<div style="background:#c8c8c8;padding:1em">
+				<div layout="row" style="margin-top:0px;padding-top:0px">
+					<md-input-container flex style="margin-top:0px;padding-top:0px" ng-show="ProfileMode">
+						<label>Search Profiles</label>
+						<md-select placeholder="Select a profile" ng-model="SearchQuery" required>
+							<md-option ng-repeat="profile in ActiveIndex.SearchProfiles" value="{{profile.QueryString}}">{{profile.Name}}</md-option>
+						</md-select>
+					</md-input-container>
+					<md-input-container flex style="margin-top:0px;padding-top:0px">
+						<label>Records to retrieve</label>
+						<input ng-model="RecordsToRetrieve">
+					</md-input-container>
+					<md-input-container flex style="margin-top:0px;padding-top:0px">
+						<label>Order By</label>
+						<md-select placeholder="Select Order by field" ng-model="OrderBy">
+							<md-option ng-repeat="field in ActiveIndex.Fields" value="{{$index}}">{{field.Name}}</md-option>
+						</md-select>
+					</md-input-container>
+					<md-input-container flex style="margin-top:0px;padding-top:0px">
+						<label>Order Direction</label>
+						<md-select placeholder="Select Order Direction" ng-model="OrderByDirection">
+							<md-option value="asc">Ascending</md-option>
+							<md-option value="desc">Descending</md-option>
+						</md-select>
+					</md-input-container>
+				</div>
 			</div>
-		</md-toolbar>
-		<md-content>
-			<div ui-ace="AceOptions" ng-model="SearchQuery" style="height:350px; font-size:1.1em;"></div>
-		</md-content>
-		<div style="background:#c8c8c8;padding:1em">
-			<div layout="row" style="margin-top:0px;padding-top:0px">
-				<md-input-container flex style="margin-top:0px;padding-top:0px" ng-show="ProfileMode">
-					<label>Search Profiles</label>
-					<md-select placeholder="Select a profile" ng-model="SearchQuery" required>
-						<md-option ng-repeat="profile in ActiveIndex.SearchProfiles" value="{{profile.QueryString}}">{{profile.Name}}</md-option>
-					</md-select>
-				</md-input-container>
-				<md-input-container flex style="margin-top:0px;padding-top:0px">
-					<label>Records to retrieve</label>
-					<input ng-model="RecordsToRetrieve">
-				</md-input-container>
-				<md-input-container flex style="margin-top:0px;padding-top:0px">
-					<label>Order By</label>
-					<md-select placeholder="Select Order by field" ng-model="OrderBy">
-						<md-option ng-repeat="field in ActiveIndex.Fields" value="{{$index}}">{{field.Name}}</md-option>
-					</md-select>
-				</md-input-container>
-				<md-input-container flex style="margin-top:0px;padding-top:0px">
-					<label>Order Direction</label>
-					<md-select placeholder="Select Order Direction" ng-model="OrderByDirection">
-						<md-option value="asc">Ascending</md-option>
-						<md-option value="desc">Descending</md-option>
-					</md-select>
-				</md-input-container>
-			</div>
-		</div>
-		<div flex ui-grid="GridOptions" ui-grid-pagination ui-grid-exporter ui-grid-selection class="grid" style="height:100%"></div>
-	</md-whiteframe>
-</md-content>
+			<div flex ui-grid="GridOptions" ui-grid-pagination ui-grid-exporter ui-grid-selection class="grid" style="height:100%"></div>
+		</md-whiteframe>
+	</div>
 </form>
