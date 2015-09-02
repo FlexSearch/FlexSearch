@@ -11,6 +11,10 @@
 		<md-subheader ng-show="ActiveIndex">{{ProfileMode ? "Populate fields from the below list to be used in the Search Profile test" : "Select the fields from the below list to output in the search result"}}</md-subheader>
 		<md-content flex layout="row" layout-align="center">
 			<md-content flex layout="column">
+				<div ng-show="ActiveIndex">
+					<md-checkbox class="md-primary" ng-model="ReturnAllColumns" ng-init="ReturnAllColumns=true" ng-click="onReturnAllColumnsClick()">Return all columns</md-checkbox>
+					<md-divider></md-divider>
+				</div>
 				<!-- Fields for Search page -->
 				<div ng-repeat="field in ActiveIndex.Fields" ng-show="!ProfileMode">
 					<md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results">{{field.Name}}</md-checkbox>

@@ -28,6 +28,8 @@ module flexportal {
     showSearchProfileDropDown: boolean
     Criteria : string
     ProfileMode : boolean
+    ReturnAllColumns : boolean
+    onReturnAllColumnsClick(): void
     
     // Pagination specific
     getPage(pageNumber: number): void
@@ -71,6 +73,10 @@ module flexportal {
       var extractSearchQueryFromACE = function() {
         return $scope.SearchQuery.split('\n').filter(ln => ln.charAt(0) != '-').join(' ');
       }
+      
+      $scope.onReturnAllColumnsClick = function() {
+        $scope.ActiveIndex.Fields.forEach(f => f.Show = !$scope.ReturnAllColumns);
+      };
       
       $scope.SearchQuery = generateQueryComments();
       $scope.RecordsToRetrieve = 100;
@@ -152,7 +158,7 @@ module flexportal {
           idx.Fields = i.Fields.map(f => { return {
             Name: f.FieldName,
             Value: undefined,
-            Show: false }; 
+            Show: true }; 
           });
           idx.SearchProfiles = i.SearchProfiles.map(sp => { 
             return {
