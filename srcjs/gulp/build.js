@@ -6,6 +6,8 @@ var $ = require('gulp-load-plugins')({
   pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
 });
 
+var swaggerDir = __dirname + '\\..\\..\\documentation\\';
+
 module.exports = function(options) {
   gulp.task('partials', function () {
     return gulp.src([
@@ -80,9 +82,26 @@ module.exports = function(options) {
       .pipe(gulp.dest(options.dist + '/'));
   });
 
+  // Task for copying over js libraries that should remain untouched
+  gulp.task('pure-libs', function() {
+    return gulp.src(options.src + '/app/references/*')
+      .pipe($.filter('process.js'))
+      .pipe(gulp.dest(options.tmp + '/serve/scripts'))
+      .pipe(gulp.dest(options.dist + '/scripts'))
+  });
+
   gulp.task('clean', ['tsd:purge'], function (done) {
     $.del([options.dist + '/', options.tmp + '/'], done);
   });
 
-  gulp.task('build', ['html', 'fonts', 'other']);
+  gulp.task('swagger', function() {
+    $.util.log("Building swagger...");
+    
+    return gulp.src(swaggerDir + "swagger.json")
+      .pipe(gulp.dest(options.src))
+      .pipe(gulp.dest(options.tmp))
+      .pipe(gulp.dest(options.dist))
+  });
+
+  gulp.task('build', ['html', 'fonts', 'other', 'swagger']);
 };
