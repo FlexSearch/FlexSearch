@@ -247,5 +247,16 @@ module flexportal {
 		public resolveAllPromises(promises) {
 			return this.$q.all(promises);
 		}
+		
+		public indexExists(indexName) {
+			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/exists")
+			.then(FlexClient.getData)
+			.then(result => <boolean>result.Exists, this.handleError);
+		}
+		
+		public deleteIndex(indexName) {
+			return this.$http.delete(this.FlexSearchUrl + "/indices/" + indexName)
+			.then(r => r, this.handleError);
+		}
 	}
 }

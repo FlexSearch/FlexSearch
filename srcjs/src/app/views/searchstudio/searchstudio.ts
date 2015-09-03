@@ -231,7 +231,7 @@ module flexportal {
              $scope.GridApi.core.notifyDataChange('column');
              $scope.GridOptions.data = r.Documents;
              console.debug("Received data:", r);
-           })
+           }, () => $scope.mainProgressBar = false)
            .then(() => {
              $scope.PageCount = Math.ceil($scope.Response.RecordsReturned / $scope.PageSize);
              $scope.getPage(1);

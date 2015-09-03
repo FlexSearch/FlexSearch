@@ -18,6 +18,7 @@
 /// <reference path="../app/views/swagger/swagger.ts" />
 /// <reference path="../app/views/analyzer/analyzerTest.ts" />
 /// <reference path="../app/views/home/home.ts" />
+/// <reference path="../app/views/demoindex/demoindex.ts" />
 
 module flexportal {
   'use strict';
@@ -59,6 +60,7 @@ module flexportal {
     .controller('SwaggerController', SwaggerController)
     .controller('AnalyzerTestController', ["$scope", "flexClient", AnalyzerTestController])
     .controller('SearchStudioController', ["$scope", "flexClient", SearchStudioController])
+    .controller('DemoIndexController', ["$scope", "$state", "flexClient", DemoIndexController])
   // Services
     .service('datePrinter', function() {
       this.toDateStr = function(dateStr: any) {
@@ -151,12 +153,21 @@ module flexportal {
           controller: 'AnalyzerTestController',
           templateUrl: "app/views/analyzer/analyzerTest.html"
         })
+        
       // Search Studio
         .state('searchStudio', {
           url: "^/searchstudio",
           parent: 'main',
           controller: 'SearchStudioController',
           templateUrl: "app/views/searchstudio/searchstudio.html"
+        })
+        
+      // DemoIndex
+        .state('demoindex', {
+          url: "^/demoindex",
+          parent: 'main',
+          controller: 'DemoIndexController',
+          templateUrl: "app/views/demoindex/demoindex.html"
         })
     });
 }
