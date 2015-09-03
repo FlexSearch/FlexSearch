@@ -93,7 +93,7 @@ module flexportal {
 				q: "type = 'source' and sessionid = '" + sessionId + "' and sourceid = '" + sourceId + "'",		
 				c: "*" }}
 			)
-			.then(FlexClient.getSearchResults, this.handleError)
+			.then(FlexClient.getSearchResults)
 	      	.then(this.getFirstResponse, this.handleError);
 	  	}
 		  
@@ -121,7 +121,7 @@ module flexportal {
 		            q: "type = 'session' and sessionid = '" + sessionId + "'",
 		            c: "*" } }
 		    )
-		    .then(FlexClient.getSearchResults, this.handleError)
+		    .then(FlexClient.getSearchResults)
 			.then(this.getFirstResponse, this.handleError);
 		} 
 		
@@ -152,7 +152,7 @@ module flexportal {
 		
 		public getIndices() {
 			return this.$http.get(this.FlexSearchUrl + "/indices")
-				.then(FlexClient.getData, this.handleError)
+				.then(FlexClient.getData)
 				.then(result => <IndexResult []> result, this.handleError);
 		}
 		
@@ -198,19 +198,19 @@ module flexportal {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/documents", { params: {
 				count: 1
 			}})
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => parseInt(result.TotalAvailable), this.handleError)
 		}
 		
 		public getIndexSize(indexName) {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/size")
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => parseInt(result), this.handleError);
 		}
 		
 		public getMemoryDetails() {
 			return this.$http.get(this.FlexSearchUrl + "/memory")
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <MemoryDetailsResponse>result, this.handleError);
 		}
 		
@@ -220,13 +220,13 @@ module flexportal {
 		
 		public getIndexStatus(indexName) {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/status")
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <string>result.Status, this.handleError);
 		}
 		
 		public getAnalyzers() {
 			return this.$http.get(this.FlexSearchUrl + "/analyzers", {})
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <Analyzer[]>result, this.handleError);
 		}
 		
@@ -234,7 +234,7 @@ module flexportal {
 			return this.$http.post(this.FlexSearchUrl + "/analyzers/" + analyzerName + "/analyze", {
 				"Text": text
 			})
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <string[]>result, this.handleError);
 		}
 		
