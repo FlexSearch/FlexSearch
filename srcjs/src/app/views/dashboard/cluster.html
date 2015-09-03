@@ -1,33 +1,31 @@
-<md-progress-linear layout-fill md-mode="indeterminate" layout-padding ng-show="showProgress"></md-progress-linear>
+<md-progress-linear layout-fill md-mode="indeterminate" ng-show="showProgress"></md-progress-linear>
 <div layout-gt-sm="row" layout-sm="column" class="cluster-container">
-	<div layout="column" class="leftColumn" flex="35">
-		<md-whiteframe class="md-whiteframe-z1" layout="column">
-			<md-toolbar class="md-whiteframe-z1">
-				<div class="md-toolbar-tools">
-					<h2>List of Indices</h2>
-				</div>
-			</md-toolbar>
-			<md-content>
-				<md-list>
-					<md-list-item class="md-2-line" ng-repeat="index in Indices track by $index" ng-click="showDetails(index.IndexName)">
-						<md-icon class="large transparent">blur_on</md-icon>
-						<div class="md-list-item-text">
-							<h3>{{$index+1}}. {{ index.IndexName }}</h3>
-							<p>{{ index.Online ? "Online" : "Offline" }}</p>
-						</div>
-						<md-divider ng-hide="$last && hasDemoIndex"></md-divider>
-					</md-list-item>
-					<md-list-item class="md-2-line" ng-click="setupDemoIndex()" ng-hide="hasDemoIndex">
-						<md-icon class="large transparent">build</md-icon>
-						<div class="md-list-item-text">
-							<h3>country</h3>
-							<p>Click to set up demo index</p>
-						</div>
-					</md-list-item>
-				</md-list>
-			</md-content>
-		</md-whiteframe>
-	</div>
+	<md-whiteframe class="md-whiteframe-z1 leftColumn" layout="column" flex="35">
+		<md-toolbar class="md-whiteframe-z1">
+			<div class="md-toolbar-tools">
+				<h2>List of Indices</h2>
+			</div>
+		</md-toolbar>
+		<md-content>
+			<md-list>
+				<md-list-item class="md-2-line" ng-repeat="index in Indices track by $index" ng-click="showDetails(index.IndexName)">
+					<md-icon class="large transparent">blur_on</md-icon>
+					<div class="md-list-item-text">
+						<h3>{{$index+1}}. {{ index.IndexName }}</h3>
+						<p>{{ index.Online ? "Online" : "Offline" }}</p>
+					</div>
+					<md-divider ng-hide="$last && hasDemoIndex"></md-divider>
+				</md-list-item>
+				<md-list-item class="md-2-line" ng-click="setupDemoIndex()" ng-hide="hasDemoIndex">
+					<md-icon class="large transparent">build</md-icon>
+					<div class="md-list-item-text">
+						<h3>country</h3>
+						<p>Click to set up demo index</p>
+					</div>
+				</md-list-item>
+			</md-list>
+		</md-content>
+	</md-whiteframe>
 	<md-content layout="column" flex layout-align="space-between center" class="rightColumn" ui-view>
 		<md-whiteframe class="md-whiteframe-z1 stat" layout="column" layout-margin layout-fill ng-show="!Rendering">
 			<md-toolbar layout="row" layout-align="space-between center" layout-padding>

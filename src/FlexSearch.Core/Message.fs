@@ -475,3 +475,7 @@ type Logger() =
     /// where there is no specific message available to log the error.
     static member Log(msg: string, ex: Exception, keyword : MessageKeyword, level: MessageLevel) =
         logMethod(keyword, level)("Generic", sprintf "%s \n%s" msg (exceptionPrinter ex), String.Empty)
+
+    static member LogR(msg : IMessage) = Logger.Log msg; msg
+
+    static member LogR(msg : 'a :> IMessage) = Logger.LogR (msg :> IMessage)

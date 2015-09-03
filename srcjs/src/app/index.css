@@ -1,0 +1,274 @@
+.full-height {
+    height: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.no-padding {
+  padding: 0px !important;
+}
+
+md-sidenav[md-component-id='leftMenu'] {
+    width: 250px;
+    min-width: 200px;
+}
+
+md-content.duplicate-list{
+  min-width: 320px;
+}
+
+.site-content-toolbar {
+  background: #f6f6f6 !important;
+  background-image: initial;
+  background-position-x: initial;
+  background-position-y: initial;
+  background-size: initial;
+  background-repeat-x: initial;
+  background-repeat-y: initial;
+  background-attachment: initial;
+  background-origin: initial;
+  background-clip: initial;
+  background-color: rgb(246, 246, 246);
+  color: #202020 !important;
+  z-index: 3;
+}
+
+.material-icons.md-48, .material-icons .md-48 {
+  font-size: 48px;
+}
+
+.duplicate-list md-icon.md-secondary {
+  margin-top: 0px;  
+}
+
+.nonSideNav {
+  background-color: rgba(0, 0, 0, 0.0470588);
+}
+
+md-content.main-content {
+  background: transparent;
+  padding: 20px 30px 10px 30px;
+}
+
+.site-content-toolbar .md-icon-button:first-child{
+  margin-top: -10px;
+}
+
+.md-toolbar-tools {
+  padding: 0 25px;
+}
+
+.md-toolbar-tools .md-button md-icon {
+  margin-right: 5px;
+}
+
+/* -------------------- */
+/* Site Content Toolbar */
+/* -------------------- */
+.site-content-toolbar .md-icon-button:first-child{
+  margin-top: -10px;
+}
+
+
+/* --------------- */
+/* Comparison Page */
+/* --------------- */
+
+md-whiteframe.comparison-page {
+  margin: 0px 0px 30px 30px;
+  padding: 0px;
+}
+
+.comparison-page md-progress-linear {
+  display: none;
+}
+
+md-card.comparison {
+  margin: 30px 30px 15px 30px;
+ 
+}
+
+th .ui.checkbox {
+  margin-left: 20px;
+}
+
+.md-subheader .ui.segment {
+  padding: 0px;
+}
+
+.md-subheader.pagination .md-subheader-inner {
+  padding: 16px 1px 16px 1px;
+}
+
+h2[sticky-state='active'] ~ div md-card.comparison {
+  margin-top: 60px;
+}
+
+.md-subheader.pagination {
+  display: none;
+}
+
+div.activeDuplicate {
+  padding-left: 30px;
+}
+
+i.checkmark.icon {
+  margin-right: 10px;
+}
+
+/* ------------- */
+/* Sessions Page */
+/* ------------- */
+
+md-whiteframe.sessions-page {
+  margin: 30px;
+}
+
+.sessions-page .ui.table tr {
+  cursor: pointer;
+}
+
+md-sidenav.new-session {
+  min-width: 400px;
+}
+
+md-content.session-base {
+  background-color: transparent;
+  padding: 10px;
+}
+
+/* -------------------- */
+/* Search Profiles Page */
+/* -------------------- */
+
+md-content.leftColumn {
+  min-width: 300px;
+}
+
+.leftColumn md-select md-select-label:first-child {
+  border-bottom: none;
+}
+
+.rightColumn {
+  background: transparent;
+}
+
+.rightColumn md-whiteframe.comparison-page {
+  background: white;
+}
+
+.search-results {
+  margin: 0px 0px 0px 30px;
+}
+
+/* Material CSS */
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
+.material-icons.Processed { color: #5bbd72 !important; }		
+.material-icons.Reviewed { color: rgb(33, 150, 243); }		
+.material-icons.Proposed { color: #FB8C00; }		
+
+md-icon span.large, md-icon.large {
+  font-size: 36px;
+  height: 36px;
+  width: 36px;
+}
+
+md-icon.transparent {
+  opacity: 0.5;
+}
+
+/* Go back to original Material font */
+button, select, html, textarea, body, input, h1, h2, h3, h4, h5  {
+  font-family: RobotoDraft, Roboto, 'Helvetica Neue', sans-serif; }
+
+
+/* ----------- */
+/* Error sheet */
+/* ----------- */
+
+md-bottom-sheet.error {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+md-bottom-sheet.error md-content {
+  padding: 20px;
+}
+
+
+/* ---------- */
+/* Dashboards */
+/* ---------- */
+
+.cluster-container {
+  min-height: 400px;
+}
+
+.cluster-container md-whiteframe + md-whiteframe {
+  margin: 16px 8px 0px 8px;  
+  background-color: white;
+}
+
+.opacity-60 {
+  opacity: 0.6;
+}
+
+.font-weight-100 {
+  font-weight: 100;
+}
+
+md-whiteframe.stat p {
+  margin: 0px;
+}
+
+md-whiteframe md-content canvas {
+  height: 200px;
+}
+
+md-toolbar.clickable:hover {
+  cursor: pointer;
+}
+
+md-progress-linear {
+  margin-bottom: 10px !important;
+}
+
+.cluster-container .leftColumn {
+  min-width: 300px;
+  margin-right: 20px;
+}
+
+.cluster-container .leftColumn md-whiteframe {
+  margin: 0px;
+}
+
+.cluster-container .rightColumn md-whiteframe md-toolbar {
+  padding: 15px 10px;
+}
+
+.cluster-container canvas {
+  width: auto !important;
+  max-height: 250px;
+  height: 100% !important;
+}
+
+.overall {
+  margin-top: 30px;
+  min-height: 460px;
+}
+
+.overall .canvas-holder {
+  min-height: 420px;
+  min-width: 600px;
+}
+
+.rightColumn md-whiteframe md-content {
+  min-height: 270px;
+}
