@@ -80,6 +80,7 @@ module DuplicateDetection =
     let targetDisplayName = "targetdisplayname"
     let targetScore = "targetscore"
     let quality = "quality"
+    let notes = "notes"
     let sessionProperties = "sessionproperties"
     let misc = "misc"
     let formatter = new NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
@@ -98,6 +99,7 @@ module DuplicateDetection =
                            new Field(totalDupesFound, FieldDataType.Int)
                            new Field(sourceStatus, FieldDataType.Int, AllowSort = true)
                            new Field(targetRecords, FieldDataType.Text)
+                           new Field(notes, FieldDataType.Text)
                            // Session related
                            new Field(sessionProperties, FieldDataType.Text)
                            new Field(misc, FieldDataType.Text) |]

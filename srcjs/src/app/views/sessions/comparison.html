@@ -39,7 +39,7 @@
               </md-input-container>
               <md-input-container style="width:70%">
                 <label>Notes</label>
-                <textarea maxlength="1000" ng-model="user.title"></textarea>
+                <textarea maxlength="1000" ng-disabled="ActiveDuplicate.SourceStatus == 2" ng-model="ActiveDuplicate.Notes"></textarea>
               </md-input-container>
             </md-content>
           </td>

@@ -107,6 +107,7 @@ module flexportal {
 				  sourcerecordid: duplicate.SourceRecordId,
 				  totaldupesfound: duplicate.TotalDupes,
 				  type: "source",
+				  notes: duplicate.Notes,
 				  sourcestatus: duplicate.SourceStatus,
 				  targetrecords: JSON.stringify(duplicate.Targets)
 				},

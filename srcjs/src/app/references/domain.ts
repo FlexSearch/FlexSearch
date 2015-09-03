@@ -262,6 +262,7 @@ module FlexSearch.DuplicateDetection {
         SourceDisplayName: string;
         SourceStatus: string;
         TotalDupes: number;
+        Notes: string;
     }
 
     export class Stats {
