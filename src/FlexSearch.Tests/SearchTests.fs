@@ -240,12 +240,12 @@ id,et1,t2,i1,i2
             |> withOrderByDesc Constants.LastModifiedField
 
             |> searchAndExtract searchService
+        
         result |> assertReturnedDocsCount 5
-        result |> assertFieldValue 0 "_id" "5"
-        result |> assertFieldValue 1 "_id" "4"
-        result |> assertFieldValue 2 "_id" "3"
-        result |> assertFieldValue 3 "_id" "2"
-        result |> assertFieldValue 4 "_id" "1"
+        test <@ result.Documents.[0].TimeStamp >= result.Documents.[1].TimeStamp @>
+        test <@ result.Documents.[1].TimeStamp >= result.Documents.[2].TimeStamp @>
+        test <@ result.Documents.[2].TimeStamp >= result.Documents.[3].TimeStamp @>
+        test <@ result.Documents.[3].TimeStamp >= result.Documents.[4].TimeStamp @>
     
     member __.``Searching for 'i1 = 1' with orderby et1 should return 5 records``() = 
         let result = 
