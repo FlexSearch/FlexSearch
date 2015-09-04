@@ -434,6 +434,7 @@ type QueueServiceTests() =
         test <@ succeeded <| indexService.AddIndex(index) @>
         let document = new Document(index.IndexName, "1")
         queueService.AddDocumentQueue(document)
+        // TODO wait for the action block to actually finish adding the document to Lucene
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         
