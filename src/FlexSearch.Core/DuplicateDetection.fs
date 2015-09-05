@@ -144,24 +144,24 @@ type DuplicateDetectionRequest() =
     member val NextId = new AtomicLong(0L)
     override this.Validate() = okUnit
 
-type DuplicateDetectionReportRequest() = 
-    inherit DtoBase()
-    member val SourceFileName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val IndexName = defString with get, set
-    member val QueryString = defString with get, set
-    member val SelectionQuery = defString with get, set
-    member val CutOff = defDouble with get, set
-    override this.Validate() = 
-        this.IndexName |> notBlank "IndexName"
-        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
-        >>= fun _ -> 
-            if this.SourceFileName |> isNotBlank
-               || this.SelectionQuery |> isNotBlank 
-            then okUnit
-            else fail <| GenericError
-                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
-                        new ResizeArray<KeyValuePair<string, string>>())
+//type DuplicateDetectionReportRequest() = 
+//    inherit DtoBase()
+//    member val SourceFileName = defString with get, set
+//    member val ProfileName = defString with get, set
+//    member val IndexName = defString with get, set
+//    member val QueryString = defString with get, set
+//    member val SelectionQuery = defString with get, set
+//    member val CutOff = defDouble with get, set
+//    override this.Validate() = 
+//        this.IndexName |> notBlank "IndexName"
+//        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+//        >>= fun _ -> 
+//            if this.SourceFileName |> isNotBlank
+//               || this.SelectionQuery |> isNotBlank 
+//            then okUnit
+//            else fail <| GenericError
+//                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
+//                        new ResizeArray<KeyValuePair<string, string>>())
 
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]

@@ -1,0 +1,1262 @@
+
+Microsoft (R) F# Interactive version 14.0.23020.0
+Copyright (c) Microsoft Corporation. All Rights Reserved.
+
+For help type #help;;
+
+> #I "../src/build"
+#I "../src/build/Lib"
+#load "validator.fsx"
+#r "../src/build/FlexSearch.Core.dll"
+#r "../src/build/lib/newtonsoft.json.dll"
+#r "lib/Handlebars.dll"
+
+open System
+open System.IO
+open System.Collections.Generic
+open System.Collections
+open System.Linq
+open System.Reflection
+open FlexSearch.SigDocValidator
+open FlexSearch.SigDocParser
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
+open Newtonsoft.Json.Serialization
+open HandlebarsDotNet
+
+// ----------------------------------------------------------------------------
+// This script generates the DTO and web service documentation
+// ----------------------------------------------------------------------------
+type MemberType =
+    | SimpleType of string
+    | ComplexType of string
+    | ListType of string
+    | DictionaryType of string * string
+
+type TypeMember() =
+    member val Name = "" with get, set
+    member val PropertyType : MemberType = Unchecked.defaultof<_> with get, set
+    member val Type = "" with get, set
+    member val TypeDescription = "" with get, set
+    member val IsBasicType = false with get, set
+    member val IsEnum = false with get, set
+    member val IsRequired = false with get, set
+    member val DefaultValue = "" with get, set
+    member val Description = "" with get, set
+
+type TypeDefinition() =
+    member val Name = "" with get, set
+    member val Description = "" with get, set
+    member val Properties = new List<TypeMember>() with get, set
+    member val IsEnum = false with get, set
+    member val YamlDefault = "" with get, set
+    member val JsonDefault = "" with get, set
+
+module Docs =
+    /// Output folder where dto information should be written
+    printfn "SourceDirectory : %s" __SOURCE_DIRECTORY__
+    let dtoFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/dto/").FullName
+    let exampleFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/data/").FullName
+
+    let jsonSettings = new JsonSerializerSettings()
+
+    jsonSettings.Converters.Add(new StringEnumConverter())
+    jsonSettings.Formatting <- Formatting.Indented
+    jsonSettings.ContractResolver <- new CamelCasePropertyNamesContractResolver()
+
+    // Helper methods
+    let propVal instance propName (typ : Type) = typ.GetProperty(propName).GetValue(instance).ToString()
+
+    let valFromKey (key : 'a) context (dict : Dictionary<'a, _>) =
+        if dict.ContainsKey(key) then dict.[key]
+        else failwithf "Couldn't find key '%A' in the dictionary:\n%A\nContext:\n%A" key dict context
+
+    let typeToSchema (def : Definition) (coreType : Type) =
+        let tDef = new TypeDefinition()
+        tDef.Name <- def.Name
+        tDef.Description <- def.Summary
+        if coreType.IsEnum then
+            tDef.IsEnum <- true
+            coreType.GetFields()
+            |> Seq.map (fun f ->
+                   let typeMember = new TypeMember()
+                   typeMember.Name <- f.Name
+                   typeMember.IsEnum <- true
+                   typeMember.IsRequired <- false
+                   typeMember.IsBasicType <- true
+                   typeMember.Description <- match def.Options.TryGetValue(f.Name) with
+                                             | true, v -> v
+                                             | _ -> ""
+                   if f.Name.StartsWith("value__") <> true then Some(typeMember)
+                   else None)
+            |> Seq.filter (fun x -> x.IsSome)
+            |> Seq.map (fun x -> x.Value)
+            |> Seq.iter (fun x -> tDef.Properties.Add(x))
+        else
+            // Initialize a core type to get the default values
+            let instance = coreType.GetConstructor([||]).Invoke([||])
+            tDef.JsonDefault <- JsonConvert.SerializeObject(instance, jsonSettings)
+            for prop in coreType.GetProperties() do
+                let typeMember = new TypeMember()
+                typeMember.Name <- prop.Name
+                if prop.PropertyType.IsEnum then typeMember.IsEnum <- true
+                typeMember.Description <- def.Properties |> valFromKey typeMember.Name def
+
+                match prop.PropertyType with
+                | p when p.IsGenericType ->
+                    let param = prop.PropertyType.GetGenericArguments()
+                    if prop.PropertyType.Name.StartsWith("List") then
+                        typeMember.PropertyType <- ListType(param.[0].Name)
+                        typeMember.TypeDescription <- "list of"
+                        typeMember.Type <- param.[0].Name
+                    else
+                        typeMember.PropertyType <- DictionaryType(param.[0].Name, param.[1].Name)
+                        typeMember.TypeDescription <- "map of"
+                        // The first param is alway a string
+                        typeMember.Type <- param.[1].Name
+                | p when p.IsValueType || p.Name = "String" ->
+                    typeMember.PropertyType <- SimpleType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    typeMember.IsBasicType <- true
+                    // Check if field is required
+                    if typeMember.Type = "String" && (string) typeMember.DefaultValue = String.Empty then
+                        typeMember.IsRequired <- true
+                    // Default values are only applicable for simple types
+                    typeMember.DefaultValue <- coreType |> propVal instance typeMember.Name
+                | _ ->
+                    typeMember.PropertyType <- ComplexType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    printfn "%s - %s" prop.Name (prop.PropertyType.Name)
+                tDef.Properties.Add(typeMember)
+        tDef
+
+    let dtoDefinitions() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/properties.html"))
+
+        /// Reads the core types using reflection and augments that with the information from the fsi file.
+        /// The final result is written to a markdown file to be used as part of documentation
+        let processDto coreTypes docTypes =
+            coreTypes
+            |> Seq.zip docTypes
+            |> Seq.map (fun x -> typeToSchema (fst x) (snd x))
+            |> Seq.iter (fun x ->
+                   let filePath = Path.Combine(dtoFolderPath, x.Name + ".md")
+                   printfn "Writing DTO information to file: %s" filePath
+                   File.WriteAllText(filePath, handleBar.Invoke(x)))
+        processDto coreDtos docDtos
+        processDto coreEnums docEnums
+
+    let generateSearchResults() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/search_result.html"))
+        Directory.EnumerateFiles(__SOURCE_DIRECTORY__ + @"/docs/data", "*.json")
+        |> Seq.iter(fun x ->
+            let filePath = Path.Combine(exampleFolderPath, Path.GetFileNameWithoutExtension(x) + ".md")
+            File.WriteAllText(filePath, handleBar.Invoke(x)))
+
+Docs.dtoDefinitions()
+Docs.generateSearchResults()
+;;
+>
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build' to library include path
+
+
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib' to library include path
+
+[Loading D:\\Github\\FlexSearch\\documentation\\parser.fsx
+ Loading D:\\Github\\FlexSearch\\documentation\\validator.fsx]
+Binding session to 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib\\Microsoft.Owin.StaticFiles.dll'...
+Binding session to 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib\\IKVM.OpenJDK.Core.dll'...
+Binding session to 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib\\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll'...
+Binding session to 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib\\Microsoft.CodeAnalysis.dll'...
+
+namespace FSI_0002.FlexSearch
+  val corePath : string
+  val buildPath : string
+  val defString : string
+  val defStringDict :
+    unit -> System.Collections.Generic.Dictionary<string,string>
+  type Definition =
+    class
+      new : typ:string -> Definition
+      override ToString : unit -> string
+      member Description : string
+      member Examples : System.Collections.Generic.List<string>
+      member Method : string
+      member Name : string
+      member Options : System.Collections.Generic.Dictionary<string,string>
+      member Params : System.Collections.Generic.Dictionary<string,string>
+      member Properties : System.Collections.Generic.Dictionary<string,string>
+      member Summary : string
+      member Type : string
+      member UriParams : System.Collections.Generic.Dictionary<string,string>
+      member Description : string with set
+      member Examples : System.Collections.Generic.List<string> with set
+      member Method : string with set
+      member Name : string with set
+      member
+        Options : System.Collections.Generic.Dictionary<string,string>
+                    with set
+      member
+        Params : System.Collections.Generic.Dictionary<string,string> with set
+      member
+        Properties : System.Collections.Generic.Dictionary<string,string>
+                       with set
+      member Summary : string with set
+      member Type : string with set
+      member
+        UriParams : System.Collections.Generic.Dictionary<string,string>
+                      with set
+    end
+  val tryAdd :
+    dict:System.Collections.Generic.Dictionary<string,string> ->
+      string * string -> unit
+  val ws : FParsec.Primitives.Parser<unit,'a>
+  val fignore : 'a -> ('b -> unit)
+  val tripleQuote : FParsec.Primitives.Parser<string,unit>
+  val singleQuote : FParsec.Primitives.Parser<string,unit>
+  val tripleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val singleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val quote3Text : FParsec.Primitives.Parser<string,unit>
+  val quote1Text : FParsec.Primitives.Parser<string,unit>
+  val endDef : (FParsec.CharStream<unit> -> FParsec.Reply<unit>)
+  val endif : FParsec.Primitives.Parser<string,unit>
+  val ifContent : FParsec.Primitives.Parser<string,unit>
+  val ifMap : FParsec.Primitives.Parser<(string * string),unit>
+  val summary : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val meth : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val uriparam : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val param : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val description : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val examples : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val dtoProps : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val enumOpt : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val infoCode : FParsec.Primitives.Parser<(Definition -> unit),unit> list
+  val ignoredContent : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val props :
+    (FParsec.CharStream<unit> -> FParsec.Reply<(Definition -> unit)>)
+  val defParser :
+    FParsec.Primitives.Parser<((Definition -> unit) *
+                               (Definition -> unit) list),unit>
+  val toDefinition :
+    defType:string ->
+      f:(Definition -> unit) * fs:seq<(Definition -> unit)> -> Definition
+  val enum_def : FParsec.Primitives.Parser<Definition,unit>
+  val dto_def : FParsec.Primitives.Parser<Definition,unit>
+  val ws_def : FParsec.Primitives.Parser<Definition,unit>
+  val definitions : FParsec.Primitives.Parser<Definition list,unit>
+  val exec : p:FParsec.Primitives.Parser<'a,unit> -> text:string -> 'a
+
+
+namespace FSI_0002.FlexSearch
+  val printSeq : sequence:seq<'a> -> string
+  type ValErr<'T,'U> =
+    | IsEqual of expected: 'T * given: 'T * context: 'U
+    | SameLength of expected: seq<'T> * given: seq<'U>
+    | NotEmpty of given: string * context: 'U
+    | InList of item: 'T * list: seq<'T>
+    with
+      interface FlexSearch.Core.IMessage
+    end
+  val isEqual :
+    given:'a -> expected:'a -> context:'b -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val notEmpty : given:string -> context:'a -> FlexSearch.Core.Result<unit>
+  val sameLen :
+    givenList:seq<'a> -> expectedList:seq<'b> -> FlexSearch.Core.Result<unit>
+  val isInList :
+    item:'a -> list:seq<'a> -> FlexSearch.Core.Result<unit> when 'a : equality
+  val areEqual :
+    givenList:'a list -> expectedList:'a list -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val compareLists :
+    l1:seq<'a> ->
+      l2:seq<'b> ->
+        compareFunc:('a -> 'b -> FlexSearch.Core.Result<unit>) ->
+          FlexSearch.Core.Result<unit>
+  val getMethodAndUriFromType : typ:System.Type -> string * string
+  val getUriParams : uri:string -> seq<string>
+  val isNotInternal : t:System.Type -> bool
+  val printDefsVsCores :
+    defs:seq<SigDocParser.Definition> -> cores:seq<System.Type> -> unit
+  val defs : seq<SigDocParser.Definition>
+  val docDtos : seq<SigDocParser.Definition>
+  val coreDtos : seq<System.Type>
+  val docWss : seq<SigDocParser.Definition>
+  val coreWss : seq<System.Type>
+  val docEnums : seq<SigDocParser.Definition>
+  val coreEnums : seq<System.Type>
+  val validateDtos : unit -> FlexSearch.Core.Result<unit>
+  val validateWss : unit -> FlexSearch.Core.Result<unit>
+  val validateEnums : unit -> FlexSearch.Core.Result<unit>
+  val validationSequence : unit -> FlexSearch.Core.Result<unit>
+  val validateDocumentation : unit -> unit
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/FlexSearch.Core.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/lib/newtonsoft.json.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\lib/Handlebars.dll' (file may be locked by F# Interactive process)
+
+SourceDirectory : D:\\Github\\FlexSearch\\documentation
+Binding session to 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib\\IKVM.OpenJDK.Text.dll'...
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\AnalysisRequest.md
+Tokenizer - Tokenizer
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\Analyzer.md
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\CreateResponse.md
+Headers - String[]
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\CsvIndexingRequest.md
+Highlights - String[]
+Default - Document
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\Document.md
+System.Exception: Couldn't find key '"SourceFileName"' in the dictionary:
+seq [[SelectionQuery, ]; [DisplayName, ]; [ThreadCount, ]; [IndexName, ]; ...]
+Context:
+"dto";
+"DuplicateDetectionRequest";
+"";
+"";
+seq [];
+seq [];
+"";
+seq [];
+seq [];
+seq [[SelectionQuery, ]; [DisplayName, ]; [ThreadCount, ]; [IndexName, ]; ...]
+   at FSI_0003.Docs.valFromKey@67.Invoke(String message)
+   at FSI_0003.Docs.typeToSchema(Definition def, Type coreType)
+   at FSI_0003.Docs.processDto@136-2.Invoke(Tuple`2 x)
+   at Microsoft.FSharp.Collections.IEnumerator.map@111.DoMoveNext(b& )
+   at Microsoft.FSharp.Collections.IEnumerator.MapEnumerator`1.System-Collections-IEnumerator-MoveNext()
+   at Microsoft.FSharp.Collections.SeqModule.Iterate[T](FSharpFunc`2 action, IEnumerable`1 source)
+   at FSI_0003.Docs.dtoDefinitions()
+   at <StartupCode$FSI_0003>.$FSI_0003.main@()
+Stopped due to error
+> #I "../src/build"
+#I "../src/build/Lib"
+#load "validator.fsx"
+#r "../src/build/FlexSearch.Core.dll"
+#r "../src/build/lib/newtonsoft.json.dll"
+#r "lib/Handlebars.dll"
+
+open System
+open System.IO
+open System.Collections.Generic
+open System.Collections
+open System.Linq
+open System.Reflection
+open FlexSearch.SigDocValidator
+open FlexSearch.SigDocParser
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
+open Newtonsoft.Json.Serialization
+open HandlebarsDotNet
+
+// ----------------------------------------------------------------------------
+// This script generates the DTO and web service documentation
+// ----------------------------------------------------------------------------
+type MemberType =
+    | SimpleType of string
+    | ComplexType of string
+    | ListType of string
+    | DictionaryType of string * string
+
+type TypeMember() =
+    member val Name = "" with get, set
+    member val PropertyType : MemberType = Unchecked.defaultof<_> with get, set
+    member val Type = "" with get, set
+    member val TypeDescription = "" with get, set
+    member val IsBasicType = false with get, set
+    member val IsEnum = false with get, set
+    member val IsRequired = false with get, set
+    member val DefaultValue = "" with get, set
+    member val Description = "" with get, set
+
+type TypeDefinition() =
+    member val Name = "" with get, set
+    member val Description = "" with get, set
+    member val Properties = new List<TypeMember>() with get, set
+    member val IsEnum = false with get, set
+    member val YamlDefault = "" with get, set
+    member val JsonDefault = "" with get, set
+
+module Docs =
+    /// Output folder where dto information should be written
+    printfn "SourceDirectory : %s" __SOURCE_DIRECTORY__
+    let dtoFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/dto/").FullName
+    let exampleFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/data/").FullName
+
+    let jsonSettings = new JsonSerializerSettings()
+
+    jsonSettings.Converters.Add(new StringEnumConverter())
+    jsonSettings.Formatting <- Formatting.Indented
+    jsonSettings.ContractResolver <- new CamelCasePropertyNamesContractResolver()
+
+    // Helper methods
+    let propVal instance propName (typ : Type) = typ.GetProperty(propName).GetValue(instance).ToString()
+
+    let valFromKey (key : 'a) context (dict : Dictionary<'a, _>) =
+        if dict.ContainsKey(key) then dict.[key]
+        else failwithf "Couldn't find key '%A' in the dictionary:\n%A\nContext:\n%A" key dict context
+
+    let typeToSchema (def : Definition) (coreType : Type) =
+        let tDef = new TypeDefinition()
+        tDef.Name <- def.Name
+        tDef.Description <- def.Summary
+        if coreType.IsEnum then
+            tDef.IsEnum <- true
+            coreType.GetFields()
+            |> Seq.map (fun f ->
+                   let typeMember = new TypeMember()
+                   typeMember.Name <- f.Name
+                   typeMember.IsEnum <- true
+                   typeMember.IsRequired <- false
+                   typeMember.IsBasicType <- true
+                   typeMember.Description <- match def.Options.TryGetValue(f.Name) with
+                                             | true, v -> v
+                                             | _ -> ""
+                   if f.Name.StartsWith("value__") <> true then Some(typeMember)
+                   else None)
+            |> Seq.filter (fun x -> x.IsSome)
+            |> Seq.map (fun x -> x.Value)
+            |> Seq.iter (fun x -> tDef.Properties.Add(x))
+        else
+            // Initialize a core type to get the default values
+            let instance = coreType.GetConstructor([||]).Invoke([||])
+            tDef.JsonDefault <- JsonConvert.SerializeObject(instance, jsonSettings)
+            for prop in coreType.GetProperties() do
+                let typeMember = new TypeMember()
+                typeMember.Name <- prop.Name
+                if prop.PropertyType.IsEnum then typeMember.IsEnum <- true
+                typeMember.Description <- def.Properties |> valFromKey typeMember.Name def
+
+                match prop.PropertyType with
+                | p when p.IsGenericType ->
+                    let param = prop.PropertyType.GetGenericArguments()
+                    if prop.PropertyType.Name.StartsWith("List") then
+                        typeMember.PropertyType <- ListType(param.[0].Name)
+                        typeMember.TypeDescription <- "list of"
+                        typeMember.Type <- param.[0].Name
+                    else
+                        typeMember.PropertyType <- DictionaryType(param.[0].Name, param.[1].Name)
+                        typeMember.TypeDescription <- "map of"
+                        // The first param is alway a string
+                        typeMember.Type <- param.[1].Name
+                | p when p.IsValueType || p.Name = "String" ->
+                    typeMember.PropertyType <- SimpleType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    typeMember.IsBasicType <- true
+                    // Check if field is required
+                    if typeMember.Type = "String" && (string) typeMember.DefaultValue = String.Empty then
+                        typeMember.IsRequired <- true
+                    // Default values are only applicable for simple types
+                    typeMember.DefaultValue <- coreType |> propVal instance typeMember.Name
+                | _ ->
+                    typeMember.PropertyType <- ComplexType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    printfn "%s - %s" prop.Name (prop.PropertyType.Name)
+                tDef.Properties.Add(typeMember)
+        tDef
+
+    let dtoDefinitions() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/properties.html"))
+
+        /// Reads the core types using reflection and augments that with the information from the fsi file.
+        /// The final result is written to a markdown file to be used as part of documentation
+        let processDto coreTypes docTypes =
+            coreTypes
+            |> Seq.zip docTypes
+            |> Seq.map (fun x -> typeToSchema (fst x) (snd x))
+            |> Seq.iter (fun x ->
+                   let filePath = Path.Combine(dtoFolderPath, x.Name + ".md")
+                   printfn "Writing DTO information to file: %s" filePath
+                   File.WriteAllText(filePath, handleBar.Invoke(x)))
+        processDto coreDtos docDtos
+        processDto coreEnums docEnums
+
+    let generateSearchResults() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/search_result.html"))
+        Directory.EnumerateFiles(__SOURCE_DIRECTORY__ + @"/docs/data", "*.json")
+        |> Seq.iter(fun x ->
+            let filePath = Path.Combine(exampleFolderPath, Path.GetFileNameWithoutExtension(x) + ".md")
+            File.WriteAllText(filePath, handleBar.Invoke(x)))
+
+Docs.dtoDefinitions()
+Docs.generateSearchResults()
+;;
+>
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build' to library include path
+
+
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib' to library include path
+
+[Loading D:\\Github\\FlexSearch\\documentation\\parser.fsx
+ Loading D:\\Github\\FlexSearch\\documentation\\validator.fsx]
+
+namespace FSI_0004.FlexSearch
+  val corePath : string
+  val buildPath : string
+  val defString : string
+  val defStringDict :
+    unit -> System.Collections.Generic.Dictionary<string,string>
+  type Definition =
+    class
+      new : typ:string -> Definition
+      override ToString : unit -> string
+      member Description : string
+      member Examples : System.Collections.Generic.List<string>
+      member Method : string
+      member Name : string
+      member Options : System.Collections.Generic.Dictionary<string,string>
+      member Params : System.Collections.Generic.Dictionary<string,string>
+      member Properties : System.Collections.Generic.Dictionary<string,string>
+      member Summary : string
+      member Type : string
+      member UriParams : System.Collections.Generic.Dictionary<string,string>
+      member Description : string with set
+      member Examples : System.Collections.Generic.List<string> with set
+      member Method : string with set
+      member Name : string with set
+      member
+        Options : System.Collections.Generic.Dictionary<string,string>
+                    with set
+      member
+        Params : System.Collections.Generic.Dictionary<string,string> with set
+      member
+        Properties : System.Collections.Generic.Dictionary<string,string>
+                       with set
+      member Summary : string with set
+      member Type : string with set
+      member
+        UriParams : System.Collections.Generic.Dictionary<string,string>
+                      with set
+    end
+  val tryAdd :
+    dict:System.Collections.Generic.Dictionary<string,string> ->
+      string * string -> unit
+  val ws : FParsec.Primitives.Parser<unit,'a>
+  val fignore : 'a -> ('b -> unit)
+  val tripleQuote : FParsec.Primitives.Parser<string,unit>
+  val singleQuote : FParsec.Primitives.Parser<string,unit>
+  val tripleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val singleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val quote3Text : FParsec.Primitives.Parser<string,unit>
+  val quote1Text : FParsec.Primitives.Parser<string,unit>
+  val endDef : (FParsec.CharStream<unit> -> FParsec.Reply<unit>)
+  val endif : FParsec.Primitives.Parser<string,unit>
+  val ifContent : FParsec.Primitives.Parser<string,unit>
+  val ifMap : FParsec.Primitives.Parser<(string * string),unit>
+  val summary : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val meth : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val uriparam : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val param : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val description : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val examples : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val dtoProps : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val enumOpt : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val infoCode : FParsec.Primitives.Parser<(Definition -> unit),unit> list
+  val ignoredContent : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val props :
+    (FParsec.CharStream<unit> -> FParsec.Reply<(Definition -> unit)>)
+  val defParser :
+    FParsec.Primitives.Parser<((Definition -> unit) *
+                               (Definition -> unit) list),unit>
+  val toDefinition :
+    defType:string ->
+      f:(Definition -> unit) * fs:seq<(Definition -> unit)> -> Definition
+  val enum_def : FParsec.Primitives.Parser<Definition,unit>
+  val dto_def : FParsec.Primitives.Parser<Definition,unit>
+  val ws_def : FParsec.Primitives.Parser<Definition,unit>
+  val definitions : FParsec.Primitives.Parser<Definition list,unit>
+  val exec : p:FParsec.Primitives.Parser<'a,unit> -> text:string -> 'a
+
+
+namespace FSI_0004.FlexSearch
+  val printSeq : sequence:seq<'a> -> string
+  type ValErr<'T,'U> =
+    | IsEqual of expected: 'T * given: 'T * context: 'U
+    | SameLength of expected: seq<'T> * given: seq<'U>
+    | NotEmpty of given: string * context: 'U
+    | InList of item: 'T * list: seq<'T>
+    with
+      interface FlexSearch.Core.IMessage
+    end
+  val isEqual :
+    given:'a -> expected:'a -> context:'b -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val notEmpty : given:string -> context:'a -> FlexSearch.Core.Result<unit>
+  val sameLen :
+    givenList:seq<'a> -> expectedList:seq<'b> -> FlexSearch.Core.Result<unit>
+  val isInList :
+    item:'a -> list:seq<'a> -> FlexSearch.Core.Result<unit> when 'a : equality
+  val areEqual :
+    givenList:'a list -> expectedList:'a list -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val compareLists :
+    l1:seq<'a> ->
+      l2:seq<'b> ->
+        compareFunc:('a -> 'b -> FlexSearch.Core.Result<unit>) ->
+          FlexSearch.Core.Result<unit>
+  val getMethodAndUriFromType : typ:System.Type -> string * string
+  val getUriParams : uri:string -> seq<string>
+  val isNotInternal : t:System.Type -> bool
+  val printDefsVsCores :
+    defs:seq<SigDocParser.Definition> -> cores:seq<System.Type> -> unit
+  val defs : seq<SigDocParser.Definition>
+  val docDtos : seq<SigDocParser.Definition>
+  val coreDtos : seq<System.Type>
+  val docWss : seq<SigDocParser.Definition>
+  val coreWss : seq<System.Type>
+  val docEnums : seq<SigDocParser.Definition>
+  val coreEnums : seq<System.Type>
+  val validateDtos : unit -> FlexSearch.Core.Result<unit>
+  val validateWss : unit -> FlexSearch.Core.Result<unit>
+  val validateEnums : unit -> FlexSearch.Core.Result<unit>
+  val validationSequence : unit -> FlexSearch.Core.Result<unit>
+  val validateDocumentation : unit -> unit
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/FlexSearch.Core.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/lib/newtonsoft.json.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\lib/Handlebars.dll' (file may be locked by F# Interactive process)
+
+SourceDirectory : D:\\Github\\FlexSearch\\documentation
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\AnalysisRequest.md
+Tokenizer - Tokenizer
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\Analyzer.md
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\CreateResponse.md
+Headers - String[]
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\CsvIndexingRequest.md
+Highlights - String[]
+Default - Document
+Writing DTO information to file: D:\\Github\\FlexSearch\\documentation\\docs\\dto\\Document.md
+System.Exception: Couldn't find key '"SourceFileName"' in the dictionary:
+seq [[SelectionQuery, ]; [DisplayName, ]; [ThreadCount, ]; [IndexName, ]; ...]
+Context:
+"dto";
+"DuplicateDetectionRequest";
+"";
+"";
+seq [];
+seq [];
+"";
+seq [];
+seq [];
+seq [[SelectionQuery, ]; [DisplayName, ]; [ThreadCount, ]; [IndexName, ]; ...]
+   at FSI_0005.Docs.valFromKey@220-4.Invoke(String message)
+   at FSI_0005.Docs.typeToSchema(Definition def, Type coreType)
+   at FSI_0005.Docs.processDto@289-5.Invoke(Tuple`2 x)
+   at Microsoft.FSharp.Collections.IEnumerator.map@111.DoMoveNext(b& )
+   at Microsoft.FSharp.Collections.IEnumerator.MapEnumerator`1.System-Collections-IEnumerator-MoveNext()
+   at Microsoft.FSharp.Collections.SeqModule.Iterate[T](FSharpFunc`2 action, IEnumerable`1 source)
+   at FSI_0005.Docs.dtoDefinitions()
+   at <StartupCode$FSI_0005>.$FSI_0005.main@()
+Stopped due to error
+> #I "../src/build"
+#I "../src/build/Lib"
+#load "validator.fsx"
+#r "../src/build/FlexSearch.Core.dll"
+#r "../src/build/lib/newtonsoft.json.dll"
+#r "lib/Handlebars.dll"
+
+open System
+open System.IO
+open System.Collections.Generic
+open System.Collections
+open System.Linq
+open System.Reflection
+open FlexSearch.SigDocValidator
+open FlexSearch.SigDocParser
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
+open Newtonsoft.Json.Serialization
+open HandlebarsDotNet
+
+// ----------------------------------------------------------------------------
+// This script generates the DTO and web service documentation
+// ----------------------------------------------------------------------------
+type MemberType =
+    | SimpleType of string
+    | ComplexType of string
+    | ListType of string
+    | DictionaryType of string * string
+
+type TypeMember() =
+    member val Name = "" with get, set
+    member val PropertyType : MemberType = Unchecked.defaultof<_> with get, set
+    member val Type = "" with get, set
+    member val TypeDescription = "" with get, set
+    member val IsBasicType = false with get, set
+    member val IsEnum = false with get, set
+    member val IsRequired = false with get, set
+    member val DefaultValue = "" with get, set
+    member val Description = "" with get, set
+
+type TypeDefinition() =
+    member val Name = "" with get, set
+    member val Description = "" with get, set
+    member val Properties = new List<TypeMember>() with get, set
+    member val IsEnum = false with get, set
+    member val YamlDefault = "" with get, set
+    member val JsonDefault = "" with get, set
+
+module Docs =
+    /// Output folder where dto information should be written
+    printfn "SourceDirectory : %s" __SOURCE_DIRECTORY__
+    let dtoFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/dto/").FullName
+    let exampleFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/data/").FullName
+
+    let jsonSettings = new JsonSerializerSettings()
+
+    jsonSettings.Converters.Add(new StringEnumConverter())
+    jsonSettings.Formatting <- Formatting.Indented
+    jsonSettings.ContractResolver <- new CamelCasePropertyNamesContractResolver()
+
+    // Helper methods
+    let propVal instance propName (typ : Type) = typ.GetProperty(propName).GetValue(instance).ToString()
+
+    let valFromKey (key : 'a) context (dict : Dictionary<'a, _>) =
+        if dict.ContainsKey(key) then dict.[key]
+        else failwithf "Couldn't find key '%A' in the dictionary:\n%A\nContext:\n%A" key dict context
+
+    let typeToSchema (def : Definition) (coreType : Type) =
+        let tDef = new TypeDefinition()
+        tDef.Name <- def.Name
+        tDef.Description <- def.Summary
+        if coreType.IsEnum then
+            tDef.IsEnum <- true
+            coreType.GetFields()
+            |> Seq.map (fun f ->
+                   let typeMember = new TypeMember()
+                   typeMember.Name <- f.Name
+                   typeMember.IsEnum <- true
+                   typeMember.IsRequired <- false
+                   typeMember.IsBasicType <- true
+                   typeMember.Description <- match def.Options.TryGetValue(f.Name) with
+                                             | true, v -> v
+                                             | _ -> ""
+                   if f.Name.StartsWith("value__") <> true then Some(typeMember)
+                   else None)
+            |> Seq.filter (fun x -> x.IsSome)
+            |> Seq.map (fun x -> x.Value)
+            |> Seq.iter (fun x -> tDef.Properties.Add(x))
+        else
+            // Initialize a core type to get the default values
+            let instance = coreType.GetConstructor([||]).Invoke([||])
+            tDef.JsonDefault <- JsonConvert.SerializeObject(instance, jsonSettings)
+            for prop in coreType.GetProperties() do
+                let typeMember = new TypeMember()
+                typeMember.Name <- prop.Name
+                if prop.PropertyType.IsEnum then typeMember.IsEnum <- true
+                typeMember.Description <- def.Properties |> valFromKey typeMember.Name def
+
+                match prop.PropertyType with
+                | p when p.IsGenericType ->
+                    let param = prop.PropertyType.GetGenericArguments()
+                    if prop.PropertyType.Name.StartsWith("List") then
+                        typeMember.PropertyType <- ListType(param.[0].Name)
+                        typeMember.TypeDescription <- "list of"
+                        typeMember.Type <- param.[0].Name
+                    else
+                        typeMember.PropertyType <- DictionaryType(param.[0].Name, param.[1].Name)
+                        typeMember.TypeDescription <- "map of"
+                        // The first param is alway a string
+                        typeMember.Type <- param.[1].Name
+                | p when p.IsValueType || p.Name = "String" ->
+                    typeMember.PropertyType <- SimpleType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    typeMember.IsBasicType <- true
+                    // Check if field is required
+                    if typeMember.Type = "String" && (string) typeMember.DefaultValue = String.Empty then
+                        typeMember.IsRequired <- true
+                    // Default values are only applicable for simple types
+                    typeMember.DefaultValue <- coreType |> propVal instance typeMember.Name
+                | _ ->
+                    typeMember.PropertyType <- ComplexType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    printfn "%s - %s" prop.Name (prop.PropertyType.Name)
+                tDef.Properties.Add(typeMember)
+        tDef
+
+    let dtoDefinitions() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/properties.html"))
+
+        /// Reads the core types using reflection and augments that with the information from the fsi file.
+        /// The final result is written to a markdown file to be used as part of documentation
+        let processDto coreTypes docTypes =
+            coreTypes
+            |> Seq.zip docTypes
+            |> Seq.map (fun x -> typeToSchema (fst x) (snd x))
+            |> Seq.iter (fun x ->
+                   let filePath = Path.Combine(dtoFolderPath, x.Name + ".md")
+                   printfn "Writing DTO information to file: %s" filePath
+                   File.WriteAllText(filePath, handleBar.Invoke(x)))
+        processDto coreDtos docDtos
+        processDto coreEnums docEnums
+
+    let generateSearchResults() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/search_result.html"))
+        Directory.EnumerateFiles(__SOURCE_DIRECTORY__ + @"/docs/data", "*.json")
+        |> Seq.iter(fun x ->
+            let filePath = Path.Combine(exampleFolderPath, Path.GetFileNameWithoutExtension(x) + ".md")
+            File.WriteAllText(filePath, handleBar.Invoke(x)))
+
+//Docs.dtoDefinitions()
+Docs.generateSearchResults()
+;;
+>
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build' to library include path
+
+
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib' to library include path
+
+[Loading D:\\Github\\FlexSearch\\documentation\\parser.fsx
+ Loading D:\\Github\\FlexSearch\\documentation\\validator.fsx]
+
+namespace FSI_0006.FlexSearch
+  val corePath : string
+  val buildPath : string
+  val defString : string
+  val defStringDict :
+    unit -> System.Collections.Generic.Dictionary<string,string>
+  type Definition =
+    class
+      new : typ:string -> Definition
+      override ToString : unit -> string
+      member Description : string
+      member Examples : System.Collections.Generic.List<string>
+      member Method : string
+      member Name : string
+      member Options : System.Collections.Generic.Dictionary<string,string>
+      member Params : System.Collections.Generic.Dictionary<string,string>
+      member Properties : System.Collections.Generic.Dictionary<string,string>
+      member Summary : string
+      member Type : string
+      member UriParams : System.Collections.Generic.Dictionary<string,string>
+      member Description : string with set
+      member Examples : System.Collections.Generic.List<string> with set
+      member Method : string with set
+      member Name : string with set
+      member
+        Options : System.Collections.Generic.Dictionary<string,string>
+                    with set
+      member
+        Params : System.Collections.Generic.Dictionary<string,string> with set
+      member
+        Properties : System.Collections.Generic.Dictionary<string,string>
+                       with set
+      member Summary : string with set
+      member Type : string with set
+      member
+        UriParams : System.Collections.Generic.Dictionary<string,string>
+                      with set
+    end
+  val tryAdd :
+    dict:System.Collections.Generic.Dictionary<string,string> ->
+      string * string -> unit
+  val ws : FParsec.Primitives.Parser<unit,'a>
+  val fignore : 'a -> ('b -> unit)
+  val tripleQuote : FParsec.Primitives.Parser<string,unit>
+  val singleQuote : FParsec.Primitives.Parser<string,unit>
+  val tripleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val singleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val quote3Text : FParsec.Primitives.Parser<string,unit>
+  val quote1Text : FParsec.Primitives.Parser<string,unit>
+  val endDef : (FParsec.CharStream<unit> -> FParsec.Reply<unit>)
+  val endif : FParsec.Primitives.Parser<string,unit>
+  val ifContent : FParsec.Primitives.Parser<string,unit>
+  val ifMap : FParsec.Primitives.Parser<(string * string),unit>
+  val summary : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val meth : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val uriparam : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val param : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val description : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val examples : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val dtoProps : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val enumOpt : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val infoCode : FParsec.Primitives.Parser<(Definition -> unit),unit> list
+  val ignoredContent : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val props :
+    (FParsec.CharStream<unit> -> FParsec.Reply<(Definition -> unit)>)
+  val defParser :
+    FParsec.Primitives.Parser<((Definition -> unit) *
+                               (Definition -> unit) list),unit>
+  val toDefinition :
+    defType:string ->
+      f:(Definition -> unit) * fs:seq<(Definition -> unit)> -> Definition
+  val enum_def : FParsec.Primitives.Parser<Definition,unit>
+  val dto_def : FParsec.Primitives.Parser<Definition,unit>
+  val ws_def : FParsec.Primitives.Parser<Definition,unit>
+  val definitions : FParsec.Primitives.Parser<Definition list,unit>
+  val exec : p:FParsec.Primitives.Parser<'a,unit> -> text:string -> 'a
+
+
+namespace FSI_0006.FlexSearch
+  val printSeq : sequence:seq<'a> -> string
+  type ValErr<'T,'U> =
+    | IsEqual of expected: 'T * given: 'T * context: 'U
+    | SameLength of expected: seq<'T> * given: seq<'U>
+    | NotEmpty of given: string * context: 'U
+    | InList of item: 'T * list: seq<'T>
+    with
+      interface FlexSearch.Core.IMessage
+    end
+  val isEqual :
+    given:'a -> expected:'a -> context:'b -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val notEmpty : given:string -> context:'a -> FlexSearch.Core.Result<unit>
+  val sameLen :
+    givenList:seq<'a> -> expectedList:seq<'b> -> FlexSearch.Core.Result<unit>
+  val isInList :
+    item:'a -> list:seq<'a> -> FlexSearch.Core.Result<unit> when 'a : equality
+  val areEqual :
+    givenList:'a list -> expectedList:'a list -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val compareLists :
+    l1:seq<'a> ->
+      l2:seq<'b> ->
+        compareFunc:('a -> 'b -> FlexSearch.Core.Result<unit>) ->
+          FlexSearch.Core.Result<unit>
+  val getMethodAndUriFromType : typ:System.Type -> string * string
+  val getUriParams : uri:string -> seq<string>
+  val isNotInternal : t:System.Type -> bool
+  val printDefsVsCores :
+    defs:seq<SigDocParser.Definition> -> cores:seq<System.Type> -> unit
+  val defs : seq<SigDocParser.Definition>
+  val docDtos : seq<SigDocParser.Definition>
+  val coreDtos : seq<System.Type>
+  val docWss : seq<SigDocParser.Definition>
+  val coreWss : seq<System.Type>
+  val docEnums : seq<SigDocParser.Definition>
+  val coreEnums : seq<System.Type>
+  val validateDtos : unit -> FlexSearch.Core.Result<unit>
+  val validateWss : unit -> FlexSearch.Core.Result<unit>
+  val validateEnums : unit -> FlexSearch.Core.Result<unit>
+  val validationSequence : unit -> FlexSearch.Core.Result<unit>
+  val validateDocumentation : unit -> unit
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/FlexSearch.Core.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/lib/newtonsoft.json.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\lib/Handlebars.dll' (file may be locked by F# Interactive process)
+
+SourceDirectory : D:\\Github\\FlexSearch\\documentation
+HandlebarsDotNet.HandlebarsCompilerException: Reached end of template before block #I "../src/build"
+#I "../src/build/Lib"
+#load "validator.fsx"
+#r "../src/build/FlexSearch.Core.dll"
+#r "../src/build/lib/newtonsoft.json.dll"
+#r "lib/Handlebars.dll"
+
+open System
+open System.IO
+open System.Collections.Generic
+open System.Collections
+open System.Linq
+open System.Reflection
+open FlexSearch.SigDocValidator
+open FlexSearch.SigDocParser
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
+open Newtonsoft.Json.Serialization
+open HandlebarsDotNet
+
+// ----------------------------------------------------------------------------
+// This script generates the DTO and web service documentation
+// ----------------------------------------------------------------------------
+type MemberType =
+    | SimpleType of string
+    | ComplexType of string
+    | ListType of string
+    | DictionaryType of string * string
+
+type TypeMember() =
+    member val Name = "" with get, set
+    member val PropertyType : MemberType = Unchecked.defaultof<_> with get, set
+    member val Type = "" with get, set
+    member val TypeDescription = "" with get, set
+    member val IsBasicType = false with get, set
+    member val IsEnum = false with get, set
+    member val IsRequired = false with get, set
+    member val DefaultValue = "" with get, set
+    member val Description = "" with get, set
+
+type TypeDefinition() =
+    member val Name = "" with get, set
+    member val Description = "" with get, set
+    member val Properties = new List<TypeMember>() with get, set
+    member val IsEnum = false with get, set
+    member val YamlDefault = "" with get, set
+    member val JsonDefault = "" with get, set
+
+module Docs =
+    /// Output folder where dto information should be written
+    printfn "SourceDirectory : %s" __SOURCE_DIRECTORY__
+    let dtoFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/dto/").FullName
+    let exampleFolderPath = Directory.CreateDirectory(__SOURCE_DIRECTORY__ + @"/docs/data/").FullName
+
+    let jsonSettings = new JsonSerializerSettings()
+
+    jsonSettings.Converters.Add(new StringEnumConverter())
+    jsonSettings.Formatting <- Formatting.Indented
+    jsonSettings.ContractResolver <- new CamelCasePropertyNamesContractResolver()
+
+    // Helper methods
+    let propVal instance propName (typ : Type) = typ.GetProperty(propName).GetValue(instance).ToString()
+
+    let valFromKey (key : 'a) context (dict : Dictionary<'a, _>) =
+        if dict.ContainsKey(key) then dict.[key]
+        else failwithf "Couldn't find key '%A' in the dictionary:\n%A\nContext:\n%A" key dict context
+
+    let typeToSchema (def : Definition) (coreType : Type) =
+        let tDef = new TypeDefinition()
+        tDef.Name <- def.Name
+        tDef.Description <- def.Summary
+        if coreType.IsEnum then
+            tDef.IsEnum <- true
+            coreType.GetFields()
+            |> Seq.map (fun f ->
+                   let typeMember = new TypeMember()
+                   typeMember.Name <- f.Name
+                   typeMember.IsEnum <- true
+                   typeMember.IsRequired <- false
+                   typeMember.IsBasicType <- true
+                   typeMember.Description <- match def.Options.TryGetValue(f.Name) with
+                                             | true, v -> v
+                                             | _ -> ""
+                   if f.Name.StartsWith("value__") <> true then Some(typeMember)
+                   else None)
+            |> Seq.filter (fun x -> x.IsSome)
+            |> Seq.map (fun x -> x.Value)
+            |> Seq.iter (fun x -> tDef.Properties.Add(x))
+        else
+            // Initialize a core type to get the default values
+            let instance = coreType.GetConstructor([||]).Invoke([||])
+            tDef.JsonDefault <- JsonConvert.SerializeObject(instance, jsonSettings)
+            for prop in coreType.GetProperties() do
+                let typeMember = new TypeMember()
+                typeMember.Name <- prop.Name
+                if prop.PropertyType.IsEnum then typeMember.IsEnum <- true
+                typeMember.Description <- def.Properties |> valFromKey typeMember.Name def
+
+                match prop.PropertyType with
+                | p when p.IsGenericType ->
+                    let param = prop.PropertyType.GetGenericArguments()
+                    if prop.PropertyType.Name.StartsWith("List") then
+                        typeMember.PropertyType <- ListType(param.[0].Name)
+                        typeMember.TypeDescription <- "list of"
+                        typeMember.Type <- param.[0].Name
+                    else
+                        typeMember.PropertyType <- DictionaryType(param.[0].Name, param.[1].Name)
+                        typeMember.TypeDescription <- "map of"
+                        // The first param is alway a string
+                        typeMember.Type <- param.[1].Name
+                | p when p.IsValueType || p.Name = "String" ->
+                    typeMember.PropertyType <- SimpleType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    typeMember.IsBasicType <- true
+                    // Check if field is required
+                    if typeMember.Type = "String" && (string) typeMember.DefaultValue = String.Empty then
+                        typeMember.IsRequired <- true
+                    // Default values are only applicable for simple types
+                    typeMember.DefaultValue <- coreType |> propVal instance typeMember.Name
+                | _ ->
+                    typeMember.PropertyType <- ComplexType(prop.PropertyType.Name)
+                    typeMember.Type <- prop.PropertyType.Name
+                    printfn "%s - %s" prop.Name (prop.PropertyType.Name)
+                tDef.Properties.Add(typeMember)
+        tDef
+
+    let dtoDefinitions() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/properties.html"))
+
+        /// Reads the core types using reflection and augments that with the information from the fsi file.
+        /// The final result is written to a markdown file to be used as part of documentation
+        let processDto coreTypes docTypes =
+            coreTypes
+            |> Seq.zip docTypes
+            |> Seq.map (fun x -> typeToSchema (fst x) (snd x))
+            |> Seq.iter (fun x ->
+                   let filePath = Path.Combine(dtoFolderPath, x.Name + ".md")
+                   printfn "Writing DTO information to file: %s" filePath
+                   File.WriteAllText(filePath, handleBar.Invoke(x)))
+        processDto coreDtos docDtos
+        processDto coreEnums docEnums
+
+    let generateSearchResults() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/search_result.html"))
+        Directory.EnumerateFiles(__SOURCE_DIRECTORY__ + @"/docs/data", "*.json")
+        |> Seq.iter(fun x ->
+            let filePath = Path.Combine(exampleFolderPath, Path.GetFileNameWithoutExtension(x) + ".md")
+            File.WriteAllText(filePath, handleBar.Invoke(JsonConvert.DeserializeAnonymousType(x))))
+
+//Docs.dtoDefinitions()
+Docs.generateSearchResults()
+;;
+>
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build' to library include path
+
+
+--> Added 'D:\\Github\\FlexSearch\\documentation\\../src/build/Lib' to library include path
+
+[Loading D:\\Github\\FlexSearch\\documentation\\parser.fsx
+ Loading D:\\Github\\FlexSearch\\documentation\\validator.fsx]
+
+namespace FSI_0008.FlexSearch
+  val corePath : string
+  val buildPath : string
+  val defString : string
+  val defStringDict :
+    unit -> System.Collections.Generic.Dictionary<string,string>
+  type Definition =
+    class
+      new : typ:string -> Definition
+      override ToString : unit -> string
+      member Description : string
+      member Examples : System.Collections.Generic.List<string>
+      member Method : string
+      member Name : string
+      member Options : System.Collections.Generic.Dictionary<string,string>
+      member Params : System.Collections.Generic.Dictionary<string,string>
+      member Properties : System.Collections.Generic.Dictionary<string,string>
+      member Summary : string
+      member Type : string
+      member UriParams : System.Collections.Generic.Dictionary<string,string>
+      member Description : string with set
+      member Examples : System.Collections.Generic.List<string> with set
+      member Method : string with set
+      member Name : string with set
+      member
+        Options : System.Collections.Generic.Dictionary<string,string>
+                    with set
+      member
+        Params : System.Collections.Generic.Dictionary<string,string> with set
+      member
+        Properties : System.Collections.Generic.Dictionary<string,string>
+                       with set
+      member Summary : string with set
+      member Type : string with set
+      member
+        UriParams : System.Collections.Generic.Dictionary<string,string>
+                      with set
+    end
+  val tryAdd :
+    dict:System.Collections.Generic.Dictionary<string,string> ->
+      string * string -> unit
+  val ws : FParsec.Primitives.Parser<unit,'a>
+  val fignore : 'a -> ('b -> unit)
+  val tripleQuote : FParsec.Primitives.Parser<string,unit>
+  val singleQuote : FParsec.Primitives.Parser<string,unit>
+  val tripleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val singleQuoteContent : FParsec.Primitives.Parser<string,unit>
+  val quote3Text : FParsec.Primitives.Parser<string,unit>
+  val quote1Text : FParsec.Primitives.Parser<string,unit>
+  val endDef : (FParsec.CharStream<unit> -> FParsec.Reply<unit>)
+  val endif : FParsec.Primitives.Parser<string,unit>
+  val ifContent : FParsec.Primitives.Parser<string,unit>
+  val ifMap : FParsec.Primitives.Parser<(string * string),unit>
+  val summary : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val meth : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val uriparam : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val param : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val description : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val examples : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val dtoProps : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val enumOpt : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val infoCode : FParsec.Primitives.Parser<(Definition -> unit),unit> list
+  val ignoredContent : FParsec.Primitives.Parser<(Definition -> unit),unit>
+  val props :
+    (FParsec.CharStream<unit> -> FParsec.Reply<(Definition -> unit)>)
+  val defParser :
+    FParsec.Primitives.Parser<((Definition -> unit) *
+                               (Definition -> unit) list),unit>
+  val toDefinition :
+    defType:string ->
+      f:(Definition -> unit) * fs:seq<(Definition -> unit)> -> Definition
+  val enum_def : FParsec.Primitives.Parser<Definition,unit>
+  val dto_def : FParsec.Primitives.Parser<Definition,unit>
+  val ws_def : FParsec.Primitives.Parser<Definition,unit>
+  val definitions : FParsec.Primitives.Parser<Definition list,unit>
+  val exec : p:FParsec.Primitives.Parser<'a,unit> -> text:string -> 'a
+
+
+namespace FSI_0008.FlexSearch
+  val printSeq : sequence:seq<'a> -> string
+  type ValErr<'T,'U> =
+    | IsEqual of expected: 'T * given: 'T * context: 'U
+    | SameLength of expected: seq<'T> * given: seq<'U>
+    | NotEmpty of given: string * context: 'U
+    | InList of item: 'T * list: seq<'T>
+    with
+      interface FlexSearch.Core.IMessage
+    end
+  val isEqual :
+    given:'a -> expected:'a -> context:'b -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val notEmpty : given:string -> context:'a -> FlexSearch.Core.Result<unit>
+  val sameLen :
+    givenList:seq<'a> -> expectedList:seq<'b> -> FlexSearch.Core.Result<unit>
+  val isInList :
+    item:'a -> list:seq<'a> -> FlexSearch.Core.Result<unit> when 'a : equality
+  val areEqual :
+    givenList:'a list -> expectedList:'a list -> FlexSearch.Core.Result<unit>
+      when 'a : equality
+  val compareLists :
+    l1:seq<'a> ->
+      l2:seq<'b> ->
+        compareFunc:('a -> 'b -> FlexSearch.Core.Result<unit>) ->
+          FlexSearch.Core.Result<unit>
+  val getMethodAndUriFromType : typ:System.Type -> string * string
+  val getUriParams : uri:string -> seq<string>
+  val isNotInternal : t:System.Type -> bool
+  val printDefsVsCores :
+    defs:seq<SigDocParser.Definition> -> cores:seq<System.Type> -> unit
+  val defs : seq<SigDocParser.Definition>
+  val docDtos : seq<SigDocParser.Definition>
+  val coreDtos : seq<System.Type>
+  val docWss : seq<SigDocParser.Definition>
+  val coreWss : seq<System.Type>
+  val docEnums : seq<SigDocParser.Definition>
+  val coreEnums : seq<System.Type>
+  val validateDtos : unit -> FlexSearch.Core.Result<unit>
+  val validateWss : unit -> FlexSearch.Core.Result<unit>
+  val validateEnums : unit -> FlexSearch.Core.Result<unit>
+  val validationSequence : unit -> FlexSearch.Core.Result<unit>
+  val validateDocumentation : unit -> unit
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/FlexSearch.Core.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\../src/build/lib/newtonsoft.json.dll' (file may be locked by F# Interactive process)
+
+
+--> Referenced 'D:\\Github\\FlexSearch\\documentation\\lib/Handlebars.dll' (file may be locked by F# Interactive process)
+
+
+              File.WriteAllText(filePath, handleBar.Invoke(JsonConvert.DeserializeAnonymousType(x))))
+  ---------------------------------------------------------^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>
+stdin(608,58): error FS0505: The member or object constructor 'DeserializeAnonymousType' does not take 1 argument(s). An overload was found taking 2 arguments.
+expression was closed
+   at HandlebarsDotNet.Compiler.BlockAccumulator.AccumulateBlock(IEnumerator`1 enumerator, BlockAccumulatorContext context)
+   at HandlebarsDotNet.Compiler.BlockAccumulator.<ConvertTokens>c__Iterator0.MoveNext()
+   at System.Collections.Generic.List`1..ctor(IEnumerable`1 collection)
+   at System.Linq.Enumerable.ToList[TSource](IEnumerable`1 source)
+   at HandlebarsDotNet.Compiler.BlockAccumulator.Accumulate(IEnumerable`1 tokens, HandlebarsConfiguration configuration)
+   at HandlebarsDotNet.Compiler.ExpressionBuilder.ConvertTokensToExpressions(IEnumerable`1 tokens)
+   at HandlebarsDotNet.Compiler.HandlebarsCompiler.Compile(TextReader source)
+   at HandlebarsDotNet.Handlebars.HandlebarsEnvironment.Compile(String template)
+   at FSI_0007.Docs.generateSearchResults()
+   at <StartupCode$FSI_0007>.$FSI_0007.main@()
+Stopped due to error
+>
