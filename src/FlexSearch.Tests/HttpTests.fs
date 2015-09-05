@@ -119,11 +119,11 @@ module Helpers =
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
     let query (queryString : string) (recordsReturned : int) (available : int) (client : FlexClient) = 
         let searchQuery = new SearchQuery("country", queryString)
-        searchQuery.Count <- 300
+        searchQuery.Count <- 10
         searchQuery.Columns <- [| "countryname"; "agriproducts"; "governmenttype"; "population" |]
         let response = client.Search(searchQuery).Result
         response |> isSuccessful
-        (response |> data).RecordsReturned =? recordsReturned
+        (response |> data).TotalAvailable =? recordsReturned
         /// Log the result if log path is defined
         if Global.RequestLogPath <> String.Empty && Directory.Exists(Global.RequestLogPath) then 
             let frame = new System.Diagnostics.StackFrame(1)
