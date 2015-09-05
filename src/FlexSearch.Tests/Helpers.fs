@@ -27,6 +27,9 @@ type ExampleAttribute(fileName : string, title : string) =
 [<AttributeUsage(AttributeTargets.Method)>]
 type IgnoreAttribute() = inherit Attribute()
 
+module Global =
+    let mutable RequestLogPath = String.Empty
+
 [<AutoOpenAttribute>]
 module DataHelpers = 
     open Autofac
@@ -181,7 +184,11 @@ type SingleInstancePerClassConvention() as self =
         let fixture = fixtureCustomization()
         (new SpecimenContext(fixture)).Resolve(typ)
     
-    do 
+    do
+        printfn "RequestLogPath: %A" self.Options.["requestlogpath"]
+        if self.Options.["requestlogpath"].Count = 1 then
+            Global.RequestLogPath <- self.Options.["requestlogpath"].[0]
+
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         // Temporarily ignore parametric tests because Fixie doesn't handle them in VS 2015
         // Comment out this line if you want to also execute ignored tests
