@@ -241,3 +241,4 @@ bower_components
 node_modules
 dto
 data
+/documentation/F# Interactive
