@@ -1,0 +1,46 @@
+<h2>{{Name}}</h2>
+<p>
+    {{Description}}
+</p>
+<table class="ui celled striped table">
+    <thead>
+        <tr>
+            <th class="five wide">Property Name</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#Properties}}
+        <tr>
+            {{#if IsBasicType}}
+            <td>
+                <p>
+                    {{else}}
+            <td colspan="2">
+                <p>
+                    <images src="/assets/images/icons/linedpaperplus32.png" alt="Optional" width="16" height="16" title="Complex Object">
+                    {{/if}}
+                    [
+                    {{#if IsRequired }}
+                    <images src="/assets/images/icons/star32.png" alt="Required" width="16" height="16" title="Required">
+                    {{else}}
+                    <images src="/assets/images/icons/undefined.png" alt="Optional" width="16" height="16" title="Optional">
+                    {{/if}}
+                    ]
+                    {{Name}} : <em>{{TypeDescription}} </em> <a class="property-type" href='/docs/glossary/{{Type}}'><code> {{Type}}</code></a>
+                </p>
+            </td>
+            {{#if IsBasicType}}
+            <td><p>{{Description}}</p></td>
+            {{/if}}
+        </tr>
+        {{/Properties}}
+    </tbody>
+</table>
+
+<div class="jsonDefault ui segment">
+    <div class="ui top attached label">JSON Default</div>
+    <br/>
+    <code class="source">{{JsonDefault}}</code>
+    <div class="json"></div>
+</div>
