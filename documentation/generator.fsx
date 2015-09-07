@@ -157,7 +157,7 @@ module SwaggerGenerator =
                     opBuilder.OperationId (handler.Name.Replace("Handler", "")) |> ignore
                     opBuilder.Response (fun rBuilder -> 
                         let retType = handler |> getReturnType
-                        rBuilder.Description (retType |> getTypeDescription)  |> ignore
+                        rBuilder.Description retType.Name  |> ignore
                         rBuilder.Schema (retType |> typeToSwaggerSchema |> snd) |> ignore)
                     |> ignore
 
