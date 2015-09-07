@@ -189,6 +189,7 @@ type DeleteAnalyzerByIdHandler =
 
 # ws_CreateOrUpdateAnalyzerByIdHandler """
 """
+# category "analyzer"
 [<NameAttribute ("PUT-/analyzers/:id"); SealedAttribute ()>]
 type CreateOrUpdateAnalyzerByIdHandler =
     inherit Http.HttpHandlerBase<Analyzer,unit>
@@ -244,6 +245,7 @@ type DeleteDocumentByIdHandler =
 
 # ws_PutDocumentByIdHandler """
 """
+# category "document"
 [<NameAttribute ("PUT-/indices/:id/documents/:id"); SealedAttribute ()>]
 type PutDocumentByIdHandler =
     inherit Http.HttpHandlerBase<Document,unit>
