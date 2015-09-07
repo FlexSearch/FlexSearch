@@ -66,6 +66,10 @@ module SwaggerGenerator =
         let tag = if parts.[1] = "" then "root" else parts.[1]
         if allTags |> Seq.exists ((=)tag) |> not then allTags.Add tag
         tag
+    let getTagFromDef (def : Definition) =
+        let tag = if def.WsCategory == "" then "common" else def.WsCategory
+        if allTags |> Seq.exists ((=)tag) |> not then allTags.Add tag
+        tag
 
 
     let typeToSwaggerSchema (def : Definition) (coreType : Type) =  
@@ -126,7 +130,7 @@ module SwaggerGenerator =
                 let piBuilder = new PathItemBuilder(httpMethod |> nameToHttpMethod)
                 piBuilder.Operation(fun opBuilder -> 
                     //opBuilder.Tag "All" |> ignore
-                    opBuilder.Tag (uri |> getTagFromUri) |> ignore
+                    opBuilder.Tag (ws |> getTagFromDef) |> ignore
                     opBuilder.Summary ws.Summary |> ignore
                     opBuilder.Description ws.Description |> ignore
                     opBuilder.OperationId (handler.Name.Replace("Handler", "")) |> ignore
