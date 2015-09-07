@@ -9,6 +9,7 @@
 open System
 open System.IO
 open System.Collections.Generic
+open System.Collections.Concurrent
 open System.Collections
 open System.Linq
 open System.Reflection
@@ -25,6 +26,7 @@ open FlexSearch.SigDocParser
 [<AutoOpen>]
 module SwaggerGenerator =
     let swaggerPath = __SOURCE_DIRECTORY__ + @"\swagger.json"
+    let swaggerSchemaCache = new ConcurrentDictionary<string, Schema>()
 
     // Helper methods
     let propVal instance propName (typ : Type) = typ.GetProperty(propName).GetValue(instance)
@@ -71,42 +73,70 @@ module SwaggerGenerator =
         if allTags |> Seq.exists ((=)tag) |> not then allTags.Add tag
         tag
 
+    let rec typeToSwaggerSchema (coreType : Type) =  
+        // First check if we already converted this type
+        match swaggerSchemaCache.TryGetValue(coreType.Name) with
+        | (true, schema) -> (coreType.Name, schema)
+        | _ -> 
+            printfn "Generating swagger schema for %s" coreType.Name
+            // First try and find a definition we can use to complement the schema
+            let def = defs |> Seq.tryFind (fun x -> x.Name = coreType.Name)
+            try
+                let sBuilderType = (typedefof<SchemaBuilder<_>>).MakeGenericType(coreType)
+                let sBuilder = sBuilderType.GetConstructor([||]).Invoke([||])
 
-    let typeToSwaggerSchema (def : Definition) (coreType : Type) =  
-        try
-            // Initialize a core type to get the default values
-            let instance = coreType.GetConstructor([||]).Invoke([||])
+                // Set the default value if the type can be initialized. Don't bother
+                // with System types.
+                // Return the instance of the current type
+                let instance = 
+                    if coreType.Namespace.StartsWith("System") then None
+                    else 
+                        match coreType.GetConstructor([||]) with
+                        | null -> None
+                        | ctor -> let typInstance = ctor.Invoke([||])
+                                  sBuilderType.GetMethod("Default").Invoke(sBuilder, [| typInstance |]) |> ignore
+                                  Some(typInstance)
 
-            let sBuilderType = (typedefof<SchemaBuilder<_>>).MakeGenericType(coreType)
-            let sBuilder = sBuilderType.GetConstructor([||]).Invoke([||])
+                // Build the schema
+                let schema = sBuilderType.GetMethod("Build").Invoke(sBuilder, [||]) :?> Schema
 
-            // Set the default value if the type can be initialized
-            match coreType.GetConstructor([||]) with
-            | null -> ()
-            | ctor -> let typInstance = ctor.Invoke([||])
-                      sBuilderType.GetMethod("Default").Invoke(sBuilder, [| typInstance |]) |> ignore
+                // Populate the other fields of the schema only if we were able to generate an instance
+                match instance with
+                | Some (inst) -> 
+                    // Populate the properties 
+                    coreType.GetProperties(BindingFlags.Public ||| BindingFlags.Instance ||| BindingFlags.Static)
+                    |> Seq.iter (fun prop ->
+                        // Handle recursive properties
+                        if prop.PropertyType = coreType 
+                        then schema.Properties.Add(prop.Name, schema)
+                        else schema.Properties.Add(prop.Name, 
+                                                   typeToSwaggerSchema prop.PropertyType |> snd))
 
-            // Build the schema
-            let schema = sBuilderType.GetMethod("Build").Invoke(sBuilder, [||]) :?> Schema
+                    // Populate the description of the type and the properties
+                    match def with
+                    | Some(d) -> 
+                        schema.Description <- d.Summary
+                        schema.Properties
+                        |> Seq.iter (fun kv -> 
+                            kv.Value.Description <- d.Properties |> valFromKey kv.Key d)
 
-            // Populate the description
-            schema.Description <- def.Summary
+                        // This is an exception for the Document dto that has a circular 
+                        // reference to itself. Swagger UI does not support this, therefore
+                        // I will remove that property
+                        if d.Name = "Document" then
+                            schema.Properties.Remove("Default") |> ignore
+                    | None -> ()
 
-            // Populate the other fields
-            schema.Properties
-            |> Seq.iter (fun kv -> 
-                kv.Value.Description <- def.Properties |> valFromKey kv.Key def
-                kv.Value.Default <- coreType |> propVal instance kv.Key)
+                    // Populate the defaults of the properties
+                    schema.Properties
+                    |> Seq.iter (fun kv -> kv.Value.Default <- coreType |> propVal inst kv.Key)
+                | None -> ()
 
-            // This is an exception for the Document dto that has a circular 
-            // reference to itself. Swagger UI does not support this, therefore
-            // I will remove that property
-            if def.Name = "Document" then
-                schema.Properties.Remove("Default") |> ignore
-
-            (def.Name, schema)
-        with
-        | e -> failwithf "An error occurred while converting type %s to Swagger model:\n%s" def.Name (e |> exceptionPrinter)
+                // Add the result to the cache, then return it
+                swaggerSchemaCache.TryAdd(coreType.Name, schema) |> ignore
+                (coreType.Name, schema)
+            with
+            | e -> failwithf "An error occurred while converting type %s to Swagger model:\n%s" coreType.Name (e |> exceptionPrinter)
 
     let enumToSwaggerSchema (def : Definition) (coreEnum : Type) =
         try
@@ -177,9 +207,9 @@ module SwaggerGenerator =
         | e -> failwithf "An error occurred while converting Web Service %s to Swagger operation:\n%s" ws.Name (e |> exceptionPrinter)
 
     let dtoDefinitions() = coreDtos |> Seq.zip docDtos
-                           |> Seq.map (fun x -> typeToSwaggerSchema (fst x) (snd x))
+                           |> Seq.map (fun (doc, core) -> typeToSwaggerSchema core)
     let enumDefinitions() = coreEnums |> Seq.zip docEnums
-                            |> Seq.map (fun x -> enumToSwaggerSchema (fst x) (snd x))
+                            |> Seq.map (fun (doc, core) -> enumToSwaggerSchema doc core)
     let wsApis() = coreWss |> Seq.zip docWss
                    |> Seq.map (fun (def, core) -> wsToSwaggerPath def core)
                    |> Seq.concat
