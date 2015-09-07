@@ -67,7 +67,7 @@ module SwaggerGenerator =
         if allTags |> Seq.exists ((=)tag) |> not then allTags.Add tag
         tag
     let getTagFromDef (def : Definition) =
-        let tag = if def.WsCategory == "" then "common" else def.WsCategory
+        let tag = if def.WsCategory = "" then "common" else def.WsCategory
         if allTags |> Seq.exists ((=)tag) |> not then allTags.Add tag
         tag
 
