@@ -181,19 +181,20 @@ module SwaggerGenerator =
     let enumDefinitions() = coreEnums |> Seq.zip docEnums
                             |> Seq.map (fun x -> enumToSwaggerSchema (fst x) (snd x))
     let wsApis() = coreWss |> Seq.zip docWss
-                 |> Seq.map (fun x -> wsToSwaggerPath (fst x) (snd x))
-                 |> Seq.concat
-                 // Concatenate the operations of the webservices that have the same uri
-                 |> Seq.groupBy fst
-                 |> Seq.map (fun (key,wss) ->
+                   |> Seq.map (fun (def, core) -> wsToSwaggerPath def core)
+                   |> Seq.concat
+                   // Concatenate the operations of the webservices that have the same uri
+                   |> Seq.groupBy fst
+                   |> Seq.map (fun (key,wss) ->
                         let pathItem1 = wss |> Seq.head |> snd
-                        wss
-                        |> Seq.skip 1
-                        |> Seq.map snd
-                        |> Seq.fold (fun (acc : PathItem) value -> acc.Combine value) pathItem1
-                        |> ignore
-                        pathItem1.Parameters <- null
-                        (key, pathItem1))
+                        let combined = 
+                            wss
+                            |> Seq.skip 1
+                            |> Seq.map snd
+                            |> Seq.fold (fun (acc : PathItem) value -> acc.Combine value) pathItem1
+                            
+                        combined.Parameters <- null
+                        (key, combined))
 
     let generateApiDeclaration() =
         let rb = new SwaggerRootBuilder()
