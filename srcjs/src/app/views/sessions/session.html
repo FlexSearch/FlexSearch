@@ -26,7 +26,7 @@
 		<md-subheader>Records {{((ActivePage - 1) * PageSize) + 1}} - {{(ActivePage - 1) * PageSize + duplicates.length}} of {{DupesCount}}</md-subheader>
 		<md-divider></md-divider>
 		<md-content flex layout="row" layout-align="center">
-			<md-content flex>
+			<md-content flex class="scrollable">
 				<md-list>
 					<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
 						<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>

@@ -17,6 +17,7 @@
     "angular-ui-router": "~0.2.15",
     "jquery": "~2.1.1",
     "json-formatter": "~0.3.0",
+    "perfect-scrollbar": "~0.6.5",
     "restangular": "~1.4.0",
     "underscore": "~1.8.3"
   },
@@ -36,5 +37,5 @@
         "src-min-noconflict/ext-language_tools.js"
       ]
     }
-}
+  }
 }

@@ -113,7 +113,8 @@ module flexportal {
                         progress.hide();
                             
                         return $scope.duplicates;
-                    });
+                    })
+                    .then(() => (<any>$('.scrollable')).perfectScrollbar());
                 })(sessionId);
             };
             

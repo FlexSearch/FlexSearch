@@ -168,7 +168,8 @@ module flexportal {
               }
               
               console.log($scope);
-            });
+            })
+            .then(() => (<any>$('.scrollable')).perfectScrollbar());
             
             // Enable the checkboxes
             // Since the HTML elements haven't loaded yet, I'm waiting for 1 sec.
