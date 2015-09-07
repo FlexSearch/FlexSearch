@@ -48,14 +48,6 @@ module SwaggerGenerator =
                                          then "{" + (x.Substring(1)) + "}" 
                                          else x)
         String.Join("/",parts)
-    let generateSchemaFromType (typ : Type) = 
-        let sBuilderType = (typedefof<SchemaBuilder<_>>).MakeGenericType(typ)
-        let sBuilder = sBuilderType.GetConstructor([||]).Invoke([||])
-        match typ.GetConstructor([||]) with
-        | null -> ()
-        | ctor -> let typInstance = ctor.Invoke([||])
-                  sBuilderType.GetMethod("Default").Invoke(sBuilder, [| typInstance |]) |> ignore
-        sBuilderType.GetMethod("Build").Invoke(sBuilder, [||]) :?> Schema
     let getTypeDescription (typ : Type) =
         match defs |> Seq.tryFind (fun d -> d.Name = typ.Name) with
         | Some(d) -> if String.IsNullOrWhiteSpace d.Summary 
@@ -78,7 +70,6 @@ module SwaggerGenerator =
         match swaggerSchemaCache.TryGetValue(coreType.Name) with
         | (true, schema) -> (coreType.Name, schema)
         | _ -> 
-            printfn "Generating swagger schema for %s" coreType.Name
             // First try and find a definition we can use to complement the schema
             let def = defs |> Seq.tryFind (fun x -> x.Name = coreType.Name)
             try
@@ -167,7 +158,7 @@ module SwaggerGenerator =
                     opBuilder.Response (fun rBuilder -> 
                         let retType = handler |> getReturnType
                         rBuilder.Description (retType |> getTypeDescription)  |> ignore
-                        rBuilder.Schema (retType |> generateSchemaFromType) |> ignore)
+                        rBuilder.Schema (retType |> typeToSwaggerSchema |> snd) |> ignore)
                     |> ignore
 
                     // Generate the POST or query parameters
@@ -177,7 +168,7 @@ module SwaggerGenerator =
                         let bpb = new BodyParameterBuilder()
                         bpb.Name bodyType.Name |> ignore
                         // TODO add description
-                        bpb.Schema (bodyType |> generateSchemaFromType) |> ignore
+                        bpb.Schema (bodyType |> typeToSwaggerSchema |> snd) |> ignore
                         bpb.Build() |> opBuilder.Parameter |> ignore
                     else
                         ws.Params 
