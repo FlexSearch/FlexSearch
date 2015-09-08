@@ -23,21 +23,41 @@ module flexportal {
     Source: ComparisonItem
     Targets: ComparisonItem []
     areEqual(fieldNumber: number, targetNumber: number): boolean
+    syncSwitches(masterTargetId) : void
+    atLeastOneMaster() : boolean
 
     // Toolbar specific    
     doProcessing(): void
     doReview(): void
     doItemClick(itemId) : void
-    selectedTarget: string
   }
 
   export class ComparisonController {
+    private static getTrueDuplicate($scope : IComparisonScope) {
+      var filtered = $scope.Targets.filter(t => t.TrueDuplicate);
+      if (filtered.length == 1) return filtered[0];
+      else $scope.showError("A single true duplicate hasn't been selected");
+      
+      return null;
+    }
+    
     /* @ngInject */
     constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any, flexClient: FlexClient) {
       // Function to check if two field values from source vs target are equal
       $scope.areEqual = function(fieldNumber, targetNumber) {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
       }
+      
+      $scope.atLeastOneMaster = () => $scope.Targets && $scope.Targets.some((t,i) => t.TrueDuplicate);
+      
+      // Function that synchronizez all the switches within the same group. MasterTargetId is the 
+      // target that's currently active
+      $scope.syncSwitches = function(masterTargetId) {
+        // All targets except the master aren't true duplicates
+        $scope.Targets
+          .filter(t => t.Id != masterTargetId)
+          .forEach((target, i) => target.TrueDuplicate = false);
+      };
       
       // Function that will be executed whenever a comparison item header is clicked
       $scope.doItemClick = function(itemId) { onMatchItemClick(itemId); }
@@ -46,11 +66,13 @@ module flexportal {
       $scope.doProcessing = function() {
         // Show the progress bar
         $('.comparison-page md-progress-linear').show();
+        
         var duplicate = $scope.ActiveDuplicate,
-            selectedTargetIdx = parseInt($scope.selectedTarget);
+          masterTarget = ComparisonController.getTrueDuplicate($scope);
+        if(masterTarget == null) return;
         
         var sourceId = duplicate.SourceRecordId,
-            targetId = duplicate.Targets[selectedTargetIdx].TargetRecordId,
+            targetId = masterTarget.ExternalId,
             indexName = $scope.session.IndexName;
         
         // Do the user specified processing
@@ -74,8 +96,9 @@ module flexportal {
           duplicate.SourceStatus = "2";
           
           // Set the selected target record to be a True Duplicate
-          $scope.Targets[selectedTargetIdx].TrueDuplicate = true;
-          duplicate.Targets[selectedTargetIdx].TrueDuplicate = true;
+          duplicate.Targets.forEach((t, i) => { 
+            if(t.TargetId == masterTarget.Id) t.TrueDuplicate = true;
+          });
           
           flexClient.updateDuplicate(duplicate)
           .then(function() {

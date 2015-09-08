@@ -6,8 +6,8 @@
       <md-icon ng-class="[md-light, review, {'md-inactive': ActiveDuplicate.SourceStatus > 0}]">check_circle</md-icon>
       {{ActiveDuplicate.SourceStatus == 1 ? 'Reviewed' : 'Review'}}
     </md-button>
-    <md-button ng-click="doProcessing()" ng-disabled="selectedTarget == null || ActiveDuplicate.SourceStatus == 2">
-      <md-icon ng-class="[md-light, process, {'md-inactive': selectedTarget == null || ActiveDuplicate.SourceStatus == 2}]">send</md-icon>
+    <md-button ng-click="doProcessing()" ng-disabled="!atLeastOneMaster() || ActiveDuplicate.SourceStatus == 2">
+      <md-icon ng-class="[md-light, process]">send</md-icon>
       {{ActiveDuplicate.SourceStatus == 2 ? 'Processed' : 'Process'}}
     </md-button>
   </div>
@@ -18,13 +18,20 @@
       <thead>
         <tr>
           <th>Field Name</th>
-          <th>Source: <md-button class="md-primary" ng-click="doItemClick(Source.ExternalId)">{{Source.Name}}</md-button></th>
+          <th>
+            <div layout="row" layout-align="space-between center">
+              <span class="centered">
+                Source: <md-button class="md-primary" ng-click="doItemClick(Source.ExternalId)">{{Source.Name}}</md-button>
+              </span>
+            </div>
+          </th>
 
           <th ng-repeat="target in Targets" class="target">
             <div layout="row" layout-align="space-between center">
-              <span>
+              <span class="centered">
                 Match {{$index + 1}}: <md-button class="md-primary" ng-click="doItemClick(target.ExternalId)">{{target.Name}}</md-button>
               </span>
+              <md-switch class="md-primary" ng-change="syncSwitches(target.Id)" ng-model="target.TrueDuplicate" aria-label="{{target.Name}}"></md-switch>
             </div>
           </th>
         </tr>
@@ -33,13 +40,7 @@
         <tr>
           <td colspan="{{Targets.length + 2}}">
             <md-content layout="row">
-              <md-input-container style="width:30%">
-                <label>Select a target record for processing</label>
-                <md-select ng-model="selectedTarget">
-                  <md-option ng-repeat="target in Targets" value="{{$index}}">Match {{$index + 1}}: {{target.Name}}</md-option>
-                </md-select>
-              </md-input-container>
-              <md-input-container style="width:70%">
+              <md-input-container class="full-width">
                 <label>Notes</label>
                 <textarea maxlength="1000" ng-disabled="ActiveDuplicate.SourceStatus == 2" ng-model="ActiveDuplicate.Notes"></textarea>
               </md-input-container>
