@@ -14,6 +14,12 @@
 </md-toolbar>
 <md-content id="session-comparison-result-box" flex layout="row" layout-align="center">
   <md-content flex class="scrollable">
+    <md-content layout="row" layout-padding>
+      <md-input-container class="full-width no-bottom-padding">
+        <label>Notes</label>
+        <textarea maxlength="1000" ng-disabled="ActiveDuplicate.SourceStatus == 2" ng-model="ActiveDuplicate.Notes"></textarea>
+      </md-input-container>
+    </md-content>
     <table class="bordered" id="session-comparison-table">
       <thead>
         <tr>
@@ -37,16 +43,6 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td colspan="{{Targets.length + 2}}">
-            <md-content layout="row">
-              <md-input-container class="full-width no-bottom-padding">
-                <label>Notes</label>
-                <textarea maxlength="1000" ng-disabled="ActiveDuplicate.SourceStatus == 2" ng-model="ActiveDuplicate.Notes"></textarea>
-              </md-input-container>
-            </md-content>
-          </td>
-        </tr>
         <tr ng-repeat="field in FieldNames">
           <td>{{field}}</td>
           <td>{{Source.Values[$index]}}</td>
