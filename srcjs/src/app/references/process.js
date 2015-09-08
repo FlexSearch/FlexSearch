@@ -15,7 +15,7 @@ function onMatchItemClick(itemId) {
 		// Start writing your code here.
 		// Call resolve() to signal that the processing has finished.
 		// Call reject() to signal that something went wrong.
-		console.log("Clicked on item", itemId);
+		alert("Clicked on item with ID " +  itemId);
 		setTimeout(function () {
 			resolve("Finished the onclick event.");
 		}, 1500);
