@@ -37,6 +37,7 @@ let testDir = @".\build\"
 let deployDir = @".\deploy\"
 let portalDir = currentDirectory + @"\..\srcjs"
 let documentationDir = currentDirectory + @"\..\documentation"
+let dataDir = currentDirectory + @"\..\documentation\docs\data"
 let webDir = buildDir + @"Web\"
 
 // Create necessary directories if they don't exist
@@ -125,13 +126,8 @@ Target "BuildApp" (fun _ ->
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
     MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: ")
 Target "Test" (fun _ -> 
-    let errorCode = 
-        [ Path.Combine(testDir, "FlexSearch.Tests.exe") ]
-        |> Seq.map (fun p -> asyncShellExec { defaultParams with Program = p })
-        |> Async.Parallel
-        |> Async.RunSynchronously
-        |> Array.sum
-    if errorCode <> 0 then failwith "Error in tests")
+        !! (testDir @@ "FlexSearch.Tests.dll") 
+        |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["requestlogpath", dataDir :> obj;] }))
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
@@ -164,7 +160,7 @@ Target "GenerateSwagger" <| fun _ ->
 ==> "RestorePackages" 
 ==> "BuildWeaver" 
 ==> "BuildApp" 
-// ==> "Test"
+//==> "Test"
 ==> "Default" 
 ==> "MoveFiles" 
 ==> "GenerateSwagger"

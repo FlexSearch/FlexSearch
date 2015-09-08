@@ -32,10 +32,18 @@
   * [Configuring FlexSearch](server-setup/configuring.md)
 
 * Concepts
+  * Analysis
+  * Scripting
+
 * REST API
+    * Index Services
+    * Document Services
+    * Search
+    * Analyzers
 * Indexing
 * Search
-  * Search Profiles
+  * Basic Concept
+  * [Search Profile]
   * Search DSL
     * [Term Match](search-dsl/operator-types/term-match.md)
     * [Phrase Match](search-dsl/operator-types/phrase-match.md)
@@ -45,7 +53,12 @@
     * [Numeric range](search-dsl/operator-types/numeric-range.md)
     * [Match all](search-dsl/operator-types/matchall.md)
 * Import Handlers
+    * CSV
+    * SQL
 * Extending FlexSearch
+    * Understanding Services
+    * Writing HTTP Endpoints
+    * Writing Query operators
 * FAQ
 * Glossary
 * Credits
