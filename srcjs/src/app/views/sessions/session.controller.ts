@@ -19,6 +19,7 @@ module flexportal {
         duplicatesPromise: ng.IPromise<Duplicate[]> 
         sessionPromise: ng.IPromise<Session>
         title : string
+        selectedDuplicate : string
         
         // Pagination specific
         getPage(pageNumber: number): void
@@ -57,9 +58,7 @@ module flexportal {
             
             // Configure what to do when a match card is clicked
             $scope.openMatches = function(dup: Duplicate) {
-                // Set the subheader for the list to show the clicked item
-                (<any>$(".pagination .md-subheader-content")).html("<div class='activeDuplicate'>" + dup.SourceDisplayName + " (" + dup.SourceId + ")</div>");
-                (<any>$(".md-subheader.pagination").show());
+                $scope.selectedDuplicate = dup.FlexSearchId;
                 
                 // Display the comparison table
                 $state.go('comparison', {sessionId: dup.SessionId, sourceId: dup.SourceId});
