@@ -140,11 +140,6 @@ module Docs =
         processDto coreDtos docDtos
         processDto coreEnums docEnums
 
-    let generateWebservice() =
-        docWss
-        coreWss
-
-
     let generateSearchResults() =
         let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/search_result.html"))
         Directory.EnumerateFiles(__SOURCE_DIRECTORY__ + @"/docs/data", "*.json")
@@ -153,5 +148,26 @@ module Docs =
             let data = JsonConvert.DeserializeObject<System.Dynamic.ExpandoObject>(File.ReadAllText(x))
             File.WriteAllText(filePath, handleBar.Invoke(data)))
 
+    let wsObjectGenerator (def : Definition) (coreType : Type) =
+        let (httpMethod, httpUri) = getMethodAndUriFromType(coreType)
+        def.HttpMethod <- httpMethod
+        def.Uri <- httpUri
+        def.HttpInputDto <-  coreType.BaseType.GenericTypeArguments.[0].Name
+        def.HttpOutputDto <- coreType.BaseType.GenericTypeArguments.[1].Name
+        def
+
+    let generateWSDocs() =
+        let handleBar = Handlebars.Compile(File.ReadAllText(__SOURCE_DIRECTORY__ + @"/partials/api.html"))
+        coreWss
+        |> Seq.zip docWss
+        |> Seq.map (fun x -> wsObjectGenerator (fst x) (snd x))
+        |> Seq.iter (fun x ->
+            let filePath = Path.Combine(dtoFolderPath, x.Name + ".md")
+            printfn "Writing WSS information to file: %s" filePath
+            printfn "Passed Object: %s" (JsonConvert.SerializeObject(x))
+            File.WriteAllText(filePath, handleBar.Invoke(x))
+            )
+
 Docs.dtoDefinitions()
 Docs.generateSearchResults()
+Docs.generateWSDocs()
