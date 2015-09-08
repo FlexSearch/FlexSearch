@@ -97,7 +97,7 @@ module flexportal {
                         sId,
                         $scope.PageSize,
                         ($scope.ActivePage - 1) * $scope.PageSize,
-                        "sourceid"
+                        "sourcestatus"
                     ) 
                     .then(results => {
                         $scope.duplicates = results.Documents.map(fromDocumentToDuplicate);
