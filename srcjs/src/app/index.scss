@@ -46,6 +46,16 @@ Other page dependencies
 @import "views/searchstudio/searchstudio";
 @import "views/demoindex/demoindex";
 
+/* ------- */
+/* Generic */
+/* ------- */
+.full-width {
+  width: 100%;
+}
+md-input-container.no-bottom-padding {
+  padding-bottom: 0px;
+}
+
 /* -------------------- */
 /* Site Content Toolbar */
 /* -------------------- */
@@ -78,8 +88,9 @@ table {
 
   th{
     color: rgba(0, 0, 0, 0.8);
-    padding: 1em;
+    padding: 0 1em;
     background-color: rgb(200,200,200);
+    border-left: solid thin rgb(177,177,177);
     }
   }
 

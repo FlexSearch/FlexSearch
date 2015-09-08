@@ -28,7 +28,9 @@
 		<md-content flex layout="row" layout-align="center">
 			<md-content flex class="scrollable">
 				<md-list>
-					<md-list-item class="md-2-line" ng-repeat="dup in duplicates" ng-click="openMatches(dup)" id="{{dup.SourceId}}">
+					<md-list-item ng-repeat="dup in duplicates" class="md-2-line" 
+								  ng-class="{'selected' : dup.FlexSearchId == selectedDuplicate}" 
+								  ng-click="openMatches(dup)" id="{{dup.SourceId}}">
 						<i class="material-icons {{dup.SourceStatusName.Name}}" style="padding-right:15px">{{dup.SourceStatusName.Icon}}</i>
 						<div class="md-list-item-text">
 							<h3>{{dup.SourceDisplayName}}</h3>
