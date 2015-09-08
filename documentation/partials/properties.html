@@ -1,4 +1,4 @@
-<h2>{{Name}}</h2>
+<h3>{{Name}}</h3>
 <p>
     {{Description}}
 </p>
@@ -16,23 +16,21 @@
             <td>
                 <p>
                     {{else}}
-            <td colspan="2">
+            <td>
                 <p>
-                    <images src="/assets/images/icons/linedpaperplus32.png" alt="Optional" width="16" height="16" title="Complex Object">
+                    <img src="../assets/images/icons/linedpaperplus32.png" alt="Optional" width="16" height="16" title="Complex Object">
                     {{/if}}
                     [
                     {{#if IsRequired }}
-                    <images src="/assets/images/icons/star32.png" alt="Required" width="16" height="16" title="Required">
+                    <img src="../assets/images/icons/star32.png" alt="Required" width="16" height="16" title="Required">
                     {{else}}
-                    <images src="/assets/images/icons/undefined.png" alt="Optional" width="16" height="16" title="Optional">
+                    <img src="../assets/images/icons/undefined.png" alt="Optional" width="16" height="16" title="Optional">
                     {{/if}}
                     ]
                     {{Name}} : <em>{{TypeDescription}} </em> <a class="property-type" href='/docs/glossary/{{Type}}'><code> {{Type}}</code></a>
                 </p>
             </td>
-            {{#if IsBasicType}}
             <td><p>{{Description}}</p></td>
-            {{/if}}
         </tr>
         {{/Properties}}
     </tbody>
