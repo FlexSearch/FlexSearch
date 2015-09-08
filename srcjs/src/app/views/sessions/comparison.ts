@@ -6,9 +6,13 @@ module flexportal {
   // The processing function supplied by the user
   declare function process(sourceId, targetId, indexName) : ng.IPromise<{}>
   
+  // The function that handles the click event of the Source / Match
+  declare function onMatchItemClick(itemId) : ng.IPromise<{}>
+  
   class ComparisonItem {
     Name: string
     Id: string
+    ExternalId: string
     TrueDuplicate: boolean
     Values: any[]
   }
@@ -23,6 +27,7 @@ module flexportal {
     // Toolbar specific    
     doProcessing(): void
     doReview(): void
+    doItemClick(itemId) : void
     selectedTarget: string
   }
 
@@ -33,6 +38,9 @@ module flexportal {
       $scope.areEqual = function(fieldNumber, targetNumber) {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
       }
+      
+      // Function that will be executed whenever a comparison item header is clicked
+      $scope.doItemClick = function(itemId) { onMatchItemClick(itemId); }
       
       // Function that will be executed when the Process button is pressed
       $scope.doProcessing = function() {
@@ -139,7 +147,8 @@ module flexportal {
               // Instantiate the Source Record
               $scope.Source = {
                 Name: $scope.ActiveDuplicate.SourceDisplayName, 
-                Id: $scope.ActiveDuplicate.SourceId, 
+                Id: $scope.ActiveDuplicate.SourceId,
+                ExternalId: $scope.ActiveDuplicate.SourceRecordId, 
                 TrueDuplicate: false,
                 Values: []};
               
@@ -156,6 +165,7 @@ module flexportal {
                 var target = {
                   Name: flexTarget.TargetDisplayName, 
                   Id: flexTarget.TargetId, 
+                  ExternalId: flexTarget.TargetRecordId,
                   TrueDuplicate: flexTarget.TrueDuplicate,
                   Values: [] };
                 
@@ -170,27 +180,6 @@ module flexportal {
               console.log($scope);
             })
             .then(() => (<any>$('.scrollable')).perfectScrollbar());
-            
-            // Enable the checkboxes
-            // Since the HTML elements haven't loaded yet, I'm waiting for 1 sec.
-            // This should be replaced by some sort of onLoad event. TODO
-            window.setTimeout(function(){
-              (<any>$('.ui.checkbox')).checkbox({
-                onChange: function() {
-                  // Initialization
-                  $scope.selectedTarget = null;
-                  
-                  // Check which checkbox changed
-                  var cb = $(".ui.checkbox").each(function(i, item){
-                    if((<any>$(item)).checkbox('is checked')) {
-                      $scope.selectedTarget = $(item).find("input").attr('value');
-                    }
-                  });
-                  
-                  $scope.$digest();
-                }
-              });
-            }, 1000);
           });
       });
     }

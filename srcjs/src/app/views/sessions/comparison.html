@@ -18,11 +18,13 @@
       <thead>
         <tr>
           <th>Field Name</th>
-          <th>Source: {{Source.Name}}</th>
+          <th>Source: <md-button class="md-primary" ng-click="doItemClick(Source.ExternalId)">{{Source.Name}}</md-button></th>
 
           <th ng-repeat="target in Targets" class="target">
             <div layout="row" layout-align="space-between center">
-              <div>Match {{$index + 1}}: {{target.Name}}</div>
+              <span>
+                Match {{$index + 1}}: <md-button class="md-primary" ng-click="doItemClick(target.ExternalId)">{{target.Name}}</md-button>
+              </span>
             </div>
           </th>
         </tr>
