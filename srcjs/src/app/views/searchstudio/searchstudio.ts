@@ -30,6 +30,7 @@ module flexportal {
     ProfileMode : boolean
     ReturnAllColumns : boolean
     onReturnAllColumnsClick(): void
+    updateSearchQuery(value): void    
     
     // Pagination specific
     getPage(pageNumber: number): void
@@ -60,6 +61,10 @@ module flexportal {
     /* @ngInject */
     constructor($scope: ISearchStudioScope, flexClient: FlexClient) {
       $scope.Criteria = "normal";
+      
+      // Function to update the Search query with the given value. It makes sure
+      // that the query comments are appended.
+      $scope.updateSearchQuery = value => $scope.SearchQuery = generateQueryComments() + value;
       
       // Function to help in Autocomplete
       var generateQueryComments = function() {
