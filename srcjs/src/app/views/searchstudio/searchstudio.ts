@@ -168,7 +168,8 @@ module flexportal {
           return idx; 
           });
       })
-      .then(() => $scope.mainProgressBar = false);
+      .then(() => $scope.mainProgressBar = false)
+      .then(() => (<any>$('.scrollable, .ui-grid-viewport')).perfectScrollbar());
       console.log($scope);
     
     // Function that submits the Search test to FlexSearch

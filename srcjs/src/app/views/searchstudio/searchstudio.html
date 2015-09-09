@@ -10,7 +10,7 @@
 			</md-toolbar>
 			<md-subheader ng-show="ActiveIndex">{{ProfileMode ? "Populate fields from the below list to be used in the Search Profile test" : "Select the fields from the below list to output in the search result"}}</md-subheader>
 			<md-content flex layout="row" layout-align="center">
-				<md-content flex layout="column">
+				<md-content flex layout="column" class="scrollable">
 					<div ng-show="ActiveIndex">
 						<md-checkbox class="md-primary" ng-model="ReturnAllColumns" ng-init="ReturnAllColumns=true" ng-click="onReturnAllColumnsClick()">Return all columns</md-checkbox>
 						<md-divider></md-divider>
