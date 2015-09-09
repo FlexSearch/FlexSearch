@@ -27,10 +27,12 @@
 	</md-input-container>
 	<md-input-container layout-fill>
 	  <label>File Path</label>
+	  <md-tooltip>Specify the file path of the CSV you want to submit for this session. Field is only available when Selection Query is empty</md-tooltip>
 	  <input ng-model="FileName" ng-required="!SelectionQuery" ng-disabled="!!SelectionQuery">
 	</md-input-container>
 	<md-input-container layout-fill>
 	  <label>Selection Query</label>
+	  <md-tooltip>Specify the selection query to use when gathering records from the index. Field is only available when File Path is empty</md-tooltip>
 	  <input ng-model="SelectionQuery" ng-required="!FileName" ng-disabled="!!FileName">
 	</md-input-container>
 	
