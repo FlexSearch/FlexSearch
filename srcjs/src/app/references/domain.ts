@@ -224,16 +224,9 @@ module FlexSearch.Core {
 
 module FlexSearch.DuplicateDetection {
 
-    export class DuplicateDetectionReportRequest {
-        SourceFileName: string;
-        ProfileName: string;
-        IndexName: string;
-        QueryString: string;
-        CutOff: number;
-    }
-
     export class DuplicateDetectionRequest {
         SelectionQuery: string;
+        FileName: string;
         DisplayName: string;
         ThreadCount: number;
         IndexName: string;

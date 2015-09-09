@@ -14,6 +14,7 @@ module flexportal {
     ProfileNumber: number
 	  FieldName: string
 	  SelectionQuery: string
+    FileName: string
     ThreadCount: number
     MaxRecordsToScan: number
     MaxDupsToReturn: number
@@ -57,6 +58,7 @@ module flexportal {
           index.SearchProfiles[$scope.ProfileNumber].Name,
           $scope.FieldName,
           $scope.SelectionQuery,
+          $scope.FileName,
           $scope.ThreadCount,
           $scope.MaxRecordsToScan,
           $scope.MaxDupsToReturn

@@ -157,11 +157,12 @@ module flexportal {
 				.then(result => <IndexResult []> result, this.handleError);
 		}
 		
-		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery,
+		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery, fileName,
 			threadCount?, maxRecordsToScan?, maxDupsToReturn?) {
 			return this.$http.post(this.FlexSearchUrl + "/indices/" + indexName + "/duplicatedetection/" + searchProfile, {
 					DisplayName: displayFieldName,
 					SelectionQuery: selectionQuery,
+					FileName: fileName,
 					ThreadCount: threadCount,
 					MaxRecordsToScan: maxRecordsToScan,
 					DuplicatesCount: maxDupsToReturn

@@ -26,8 +26,12 @@
 	  <textarea columns="1" ng-model="Indices[IndexNumber].SearchProfiles[ProfileNumber].QueryString" disabled></textarea>
 	</md-input-container>
 	<md-input-container layout-fill>
+	  <label>File Path</label>
+	  <input ng-model="FileName" ng-required="!SelectionQuery" ng-disabled="!!SelectionQuery">
+	</md-input-container>
+	<md-input-container layout-fill>
 	  <label>Selection Query</label>
-	  <input ng-model="SelectionQuery" required>
+	  <input ng-model="SelectionQuery" ng-required="!FileName" ng-disabled="!!FileName">
 	</md-input-container>
 	
 	<h2 class="md-title">Optional parameters</h2>
