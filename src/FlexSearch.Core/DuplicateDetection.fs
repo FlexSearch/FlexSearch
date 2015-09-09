@@ -33,8 +33,8 @@ open System.Runtime.Serialization
 
 [<Sealed>]
 type Session() = 
-    member val Id = Guid.NewGuid().ToString() with get
-    member val SessionId = Guid.NewGuid().ToString() with get
+    member val Id = Guid.NewGuid().ToString()
+    member val SessionId = Guid.NewGuid().ToString()
     member val IndexName = Unchecked.defaultof<string> with get, set
     member val ProfileName = Unchecked.defaultof<string> with get, set
     member val JobStartTime = Unchecked.defaultof<DateTime> with get, set
@@ -54,9 +54,10 @@ type TargetRecord() =
     member val TargetScore = 0.0f with get, set
 
 type SourceRecord(sessionId) = 
-    member val SessionId = sessionId with get
+    member val SessionId = sessionId
     member val SourceId = 0 with get, set
     member val SourceRecordId = "" with get, set
+    member val SourceContent = "" with get, set
     member val SourceDisplayName = "" with get, set
     member val SourceStatus = "0" with get, set
     member val TotalDupes = 0 with get, set
@@ -72,6 +73,7 @@ module DuplicateDetection =
     let sourceRecordType = "source"
     let targetRecordType = "target"
     let sourceRecordId = "sourcerecordid"
+    let sourceContent = "sourcecontent"
     let sourceDisplayName = "sourcedisplayname"
     let totalDupesFound = "totaldupesfound"
     let sourceStatus = "sourcestatus"
@@ -95,13 +97,14 @@ module DuplicateDetection =
                            // Source record
                            new Field(sourceId, FieldDataType.Int, AllowSort = true)
                            new Field(sourceRecordId, FieldDataType.ExactText)
+                           new Field(sourceContent, FieldDataType.Stored)
                            new Field(sourceDisplayName, FieldDataType.Stored)
                            new Field(totalDupesFound, FieldDataType.Int)
                            new Field(sourceStatus, FieldDataType.Int, AllowSort = true)
-                           new Field(targetRecords, FieldDataType.Text)
+                           new Field(targetRecords, FieldDataType.Stored)
                            new Field(notes, FieldDataType.Text)
                            // Session related
-                           new Field(sessionProperties, FieldDataType.Text)
+                           new Field(sessionProperties, FieldDataType.Stored)
                            new Field(misc, FieldDataType.Text) |]
         index
     
@@ -114,27 +117,31 @@ module DuplicateDetection =
         let sessionPropertiesJson = formatter.SerializeToString(session)
         assert (sessionPropertiesJson <> "{}")
         doc.Fields.Add(sessionProperties, sessionPropertiesJson)
-        
-        documentService.AddOrUpdateDocument(doc) 
-        |> Log.logErrorChoice
-        
+        documentService.AddOrUpdateDocument(doc) |> Log.logErrorChoice
+    
     let writeDuplicates (sourceRecord : SourceRecord) (documentService : IDocumentService) = 
         let sourceDoc = new Document(schema.IndexName, getId())
         sourceDoc.Fields.Add(sessionId, sourceRecord.SessionId)
         sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId.ToString())
         sourceDoc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)
+        sourceDoc.Fields.Add(sourceContent, sourceRecord.SourceContent)
         sourceDoc.Fields.Add(sourceDisplayName, sourceRecord.SourceDisplayName)
         sourceDoc.Fields.Add(sourceStatus, sourceRecord.SourceStatus)
         sourceDoc.Fields.Add(totalDupesFound, (sourceRecord.TargetRecords |> Seq.length).ToString())
         sourceDoc.Fields.Add(recordType, sourceRecordType)
         sourceDoc.Fields.Add(targetRecords, formatter.SerializeToString(sourceRecord.TargetRecords))
-
-        documentService.AddDocument(sourceDoc) 
-        |> Log.logErrorChoice |> ignore
+        documentService.AddDocument(sourceDoc)
+        |> Log.logErrorChoice
+        |> ignore
 
 type DuplicateDetectionRequest() = 
     inherit DtoBase()
     member val SelectionQuery = defString with get, set
+    member val FileName = defString with get, set
+    
+    /// Helper field to determine if the session uses file based input
+    member val FileBasedSession = false with get, set
+    
     member val DisplayName = defString with get, set
     member val ThreadCount = 1 with get, set
     member val IndexName = defString with get, set
@@ -142,7 +149,26 @@ type DuplicateDetectionRequest() =
     member val MaxRecordsToScan = Int16.MaxValue with get, set
     member val DuplicatesCount = Int16.MaxValue with get, set
     member val NextId = new AtomicLong(0L)
-    override this.Validate() = okUnit
+    override this.Validate() = 
+        this.IndexName
+        |> notBlank "IndexName"
+        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+        >>= fun _ -> 
+            if this.FileName |> isNotBlank then 
+                this.FileBasedSession <- true
+                okUnit
+            else if this.SelectionQuery |> isNotBlank then okUnit
+            else 
+                fail 
+                <| GenericError
+                       ("Either one of the field 'FileName or 'SelectionQuery' is required", 
+                        new ResizeArray<KeyValuePair<string, string>>())
+
+/// Represents the datasources used by a duplicate detection
+type DataSource = 
+    { AvailableRecords : int
+      ReturnedRecords : int
+      Records : seq<Dictionary<string, string>> }
 
 //type DuplicateDetectionReportRequest() = 
 //    inherit DtoBase()
@@ -162,7 +188,6 @@ type DuplicateDetectionRequest() =
 //            else fail <| GenericError
 //                       ("Either one of the field 'SourceFileName or 'SelectionQuery' is required", 
 //                        new ResizeArray<KeyValuePair<string, string>>())
-
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
@@ -175,81 +200,121 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             | Fail(error) -> Logger.Log error
     
     let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
-        let query = new SearchQuery(session.IndexName, String.Empty, 
-                                    SearchProfile = session.ProfileName,
-                                    Columns = [| session.DisplayFieldName |],
-                                    ReturnFlatResult = true,
-                                    ReturnScore = true)
-        
+        let query = 
+            new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName, 
+                            Columns = [| session.DisplayFieldName |], ReturnFlatResult = true, ReturnScore = true)
         // Search for the records that match the current one using the search profile
         match searchService.Search(query, record) with
         | Ok(results) when results.Meta.RecordsReturned > 1 -> 
-            !> "Duplicate Found"
-            let header = new SourceRecord(session.SessionId, 
-                                            SourceRecordId = record.[Constants.IdField], 
-                                            SourceDisplayName = record.[session.DisplayFieldName],
-                                            SourceId = (int <| req.NextId.Increment()))
-            let docs = results |> toFlatResults
+            !>"Duplicate Found"
+            let header = 
+                new SourceRecord(session.SessionId,  
+                    SourceDisplayName = record.[session.DisplayFieldName], 
+                    SourceId = (int <| req.NextId.Increment()))
+            // Set the content in case of a file based session as there is no other way to
+            // retrieve the source record
+            if req.FileBasedSession then
+                header.SourceContent <- formatter.SerializeToString(record)
+            else
+                header.SourceRecordId <- record.[Constants.IdField]
 
+            let docs = results |> toFlatResults
             // Map each document to a TargetRecord
-            header.TargetRecords <-
-                docs.Documents
-                |> Seq.filter (fun r -> r.[Constants.IdField] <> header.SourceRecordId)
-                |> Seq.mapi (fun i result ->
-                    new TargetRecord(TargetId = i + 1, 
-                                        TargetDisplayName = result.[session.DisplayFieldName],
-                                        TargetScore = float32 result.[Constants.Score] / docs.Meta.BestScore * 100.0f, 
-                                        TargetRecordId = result.[Constants.IdField]))
-                |> Seq.toArray
-            
+            header.TargetRecords <- docs.Documents
+                                    |> Seq.filter (fun r -> r.[Constants.IdField] <> header.SourceRecordId)
+                                    |> Seq.mapi 
+                                           (fun i result -> 
+                                           new TargetRecord(TargetId = i + 1, 
+                                                            TargetDisplayName = result.[session.DisplayFieldName], 
+                                                            TargetScore = float32 result.[Constants.Score] 
+                                                                          / docs.Meta.BestScore * 100.0f, 
+                                                            TargetRecordId = result.[Constants.IdField]))
+                                    |> Seq.toArray
             // We can have less actual documents returned by the search because of
             // filtering being ran further down the search stream. Therefore it is 
             // worth checking once again that we actually have target records
-            if header.TargetRecords |> Array.length > 0 then
+            if header.TargetRecords
+               |> Array.length
+               > 0 then 
                 // Store the duplicates in Lucene
                 documentService |> writeDuplicates header
         | Fail(error) -> Logger.Log error
         | _ -> ()
     
-    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest) = 
-        let session = new Session( IndexName = req.IndexName,
-                                   ProfileName = req.ProfileName,
-                                   DisplayFieldName = req.DisplayName,
-                                   JobStartTime = DateTime.Now,
-                                   ThreadCount = req.ThreadCount,
-                                   SelectionQuery = req.SelectionQuery)
-        let mainQuery = new SearchQuery(session.IndexName, req.SelectionQuery, 
-                                        Count = int req.MaxRecordsToScan, 
-                                        ReturnFlatResult = true, Columns = [| "*" |])
-
-        match searchService.Search(mainQuery) with
+    /// Returns a data source based on a csv file
+    let getFileDataSource (request : DuplicateDetectionRequest) = 
+        let reader = new TextFieldParser(request.FileName)
+        reader.TextFieldType <- FieldType.Delimited
+        reader.SetDelimiters([| "," |])
+        reader.TrimWhiteSpace <- true
+        let headers = reader.ReadFields()
+        
+        let data = 
+            seq { 
+                while not reader.EndOfData do
+                    yield reader.ReadFields()
+                          |> Seq.zip headers
+                          |> (fun x -> x.ToDictionary(fst, snd))
+            }
+        { AvailableRecords = 0
+          ReturnedRecords = 0
+          Records = data }
+    
+    /// Returns a search query based data source
+    let getSearchQueryDataSource (request : DuplicateDetectionRequest) = 
+        let mainQuery = 
+            new SearchQuery(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
+                            ReturnFlatResult = true, Columns = [| "*" |])
+        let result = searchService.Search(mainQuery)
+        match result with
         | Ok(result) -> 
-            !> "Main Query Records Returned: %i" result.Meta.RecordsReturned
-            // Update session record with search results
-            session.RecordsReturned <- result.Meta.RecordsReturned
-            session.RecordsAvailable <- result.Meta.TotalAvailable
-            writeSessionRecord (session, documentService) |> ignore
-
-            // Create Duplicate/Source records
-            try 
-                let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
-                let records = result |> toFlatResults
-                Parallel.ForEach(
-                    records.Documents, parallelOptions, 
-                    fun record loopState -> 
-                        match (loopState.IsStopped, req.NextId.Value) with
-                        | (true, _) -> ()
-                        | (_, nextId) when nextId >= int64 req.DuplicatesCount -> loopState.Stop()
-                        | _ -> duplicateRecordCheck (req, record, session))
-                |> ignore
-            with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
+            (!>) "Main Query Records Returned:%i" result.Meta.RecordsReturned
+            let records = result |> toFlatResults
             
-            // Update session record with job end time
-            session.JobEndTime <- DateTime.Now
-            writeSessionRecord (session, documentService) |> ignore
-        | Fail(err) -> Logger.Log err
-
-        !> "Dedupe Session Finished."
+            let d = 
+                seq { 
+                    for record in records.Documents do
+                        yield record
+                }
+            { AvailableRecords = result.Meta.TotalAvailable
+              ReturnedRecords = result.Meta.RecordsReturned
+              Records = d }
+        | Fail(err) -> 
+            Logger.Log(err)
+            { AvailableRecords = 0
+              ReturnedRecords = 0
+              Records = Array.empty }
+    
+    let getDataSource (req : DuplicateDetectionRequest) = 
+        if isNotBlank req.FileName then getFileDataSource (req)
+        else getSearchQueryDataSource (req)
+    
+    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest) = 
+        let session = 
+            new Session(IndexName = req.IndexName, ProfileName = req.ProfileName, DisplayFieldName = req.DisplayName, 
+                        JobStartTime = DateTime.Now, ThreadCount = req.ThreadCount, 
+                        SelectionQuery = if isNotBlank req.SelectionQuery then req.SelectionQuery
+                                         else req.FileName)
+        
+        let dataSource = getDataSource (req)
+        // Update session record with search results
+        session.RecordsReturned <- dataSource.ReturnedRecords
+        session.RecordsAvailable <- dataSource.AvailableRecords
+        writeSessionRecord (session, documentService) |> ignore
+        // Create Duplicate/Source records
+        try 
+            let parallelOptions = new ParallelOptions(MaxDegreeOfParallelism = session.ThreadCount)
+            Parallel.ForEach(dataSource.Records, parallelOptions, 
+                             fun record loopState -> 
+                                 match (loopState.IsStopped, req.NextId.Value) with
+                                 | (true, _) -> ()
+                                 | (_, nextId) when nextId >= int64 req.DuplicatesCount -> loopState.Stop()
+                                 | _ -> duplicateRecordCheck (req, record, session))
+            |> ignore
+        with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
+        // Update session record with job end time
+        session.JobEndTime <- DateTime.Now
+        writeSessionRecord (session, documentService) |> ignore
     
     let requestProcessor = 
         MailboxProcessor.Start(fun inbox -> 
@@ -261,15 +326,22 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                 }
             loop())
     
+    let processRequest indexName (body : DuplicateDetectionRequest) = 
+        maybe { 
+            do! body.Validate()
+            let! writer = indexService.IsIndexOnline(indexName)
+            match indexService.IsIndexOnline(indexName) with
+            | Ok(writer) -> 
+                match writer.Settings.SearchProfiles.TryGetValue(body.ProfileName) with
+                | true, _ -> 
+                    let jobId = Guid.NewGuid()
+                    requestProcessor.Post(jobId, writer, body)
+                    return jobId
+                | _ -> return! fail <| UnknownSearchProfile(indexName, body.ProfileName)
+            | Fail(error) -> return! fail error
+        }
+    
     override __.Process(request, body) = 
         body.Value.IndexName <- request.ResId.Value
         body.Value.ProfileName <- request.SubResId.Value
-        match indexService.IsIndexOnline(request.ResId.Value) with
-        | Ok(writer) -> 
-            match writer.Settings.SearchProfiles.TryGetValue(request.SubResId.Value) with
-            | true, _ -> 
-                let jobId = Guid.NewGuid()
-                requestProcessor.Post(jobId, writer, body.Value)
-                SuccessResponse(jobId, Ok)
-            | _ -> FailureResponse(UnknownSearchProfile(request.ResId.Value, request.SubResId.Value), BadRequest)
-        | Fail(error) -> FailureResponse(error, BadRequest)
+        SomeResponse(processRequest request.ResId.Value body.Value, Ok, BadRequest)
