@@ -82,6 +82,7 @@ module flexportal {
       $scope.RecordsToRetrieve = 100;
       
       $scope.GridOptions = new DataGrid.GridOptions();
+      $scope.GridOptions.enableSorting = true;
       $scope.GridOptions.columnDefs = $scope.FieldNames;
       $scope.GridOptions.data =[];
       // Get data from the server
