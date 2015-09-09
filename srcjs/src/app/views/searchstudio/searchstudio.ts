@@ -30,6 +30,7 @@ module flexportal {
     ProfileMode : boolean
     ReturnAllColumns : boolean
     onReturnAllColumnsClick(): void
+    updateSearchQuery(value): void    
     
     // Pagination specific
     getPage(pageNumber: number): void
@@ -61,6 +62,10 @@ module flexportal {
     constructor($scope: ISearchStudioScope, flexClient: FlexClient) {
       $scope.Criteria = "normal";
       
+      // Function to update the Search query with the given value. It makes sure
+      // that the query comments are appended.
+      $scope.updateSearchQuery = value => $scope.SearchQuery = generateQueryComments() + value;
+      
       // Function to help in Autocomplete
       var generateQueryComments = function() {
         var queryComments = "-- DO NOT MODIFY THIS LINE _id _lastmodified _score matchall like fuzzy eq match regex ";
@@ -82,6 +87,7 @@ module flexportal {
       $scope.RecordsToRetrieve = 100;
       
       $scope.GridOptions = new DataGrid.GridOptions();
+      $scope.GridOptions.enableSorting = true;
       $scope.GridOptions.columnDefs = $scope.FieldNames;
       $scope.GridOptions.data =[];
       // Get data from the server
