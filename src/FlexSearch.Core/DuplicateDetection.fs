@@ -243,22 +243,33 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
     
     /// Returns a data source based on a csv file
     let getFileDataSource (request : DuplicateDetectionRequest) = 
-        let reader = new TextFieldParser(request.FileName)
-        reader.TextFieldType <- FieldType.Delimited
-        reader.SetDelimiters([| "," |])
-        reader.TrimWhiteSpace <- true
-        let headers = reader.ReadFields()
+        !> "Reading file %s" request.FileName
+        try
+            let reader = new TextFieldParser(request.FileName)
+            reader.TextFieldType <- FieldType.Delimited
+            reader.SetDelimiters([| "," |])
+            reader.TrimWhiteSpace <- true
+            let headers = reader.ReadFields()
         
-        let data = 
-            seq { 
-                while not reader.EndOfData do
-                    yield reader.ReadFields()
-                          |> Seq.zip headers
-                          |> (fun x -> x.ToDictionary(fst, snd))
-            }
-        { AvailableRecords = 0
-          ReturnedRecords = 0
-          Records = data }
+            let data = 
+                seq { 
+                    while not reader.EndOfData do
+                        yield reader.ReadFields()
+                              |> Seq.zip headers
+                              |> (fun x -> x.ToDictionary(fst, snd))
+                }
+                // Get the list of records so that we don't execute the sequence twice
+                |> Seq.toList
+        
+            { AvailableRecords = data.Length
+              ReturnedRecords = data.Length
+              Records = data }
+        with e -> 
+            !> "Error parsing CSV: %s" e.Message
+            Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Error)
+            { AvailableRecords = -1
+              ReturnedRecords = -1
+              Records = Array.empty }
     
     /// Returns a search query based data source
     let getSearchQueryDataSource (request : DuplicateDetectionRequest) = 
@@ -281,8 +292,8 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
               Records = d }
         | Fail(err) -> 
             Logger.Log(err)
-            { AvailableRecords = 0
-              ReturnedRecords = 0
+            { AvailableRecords = -1
+              ReturnedRecords = -1
               Records = Array.empty }
     
     let getDataSource (req : DuplicateDetectionRequest) = 
