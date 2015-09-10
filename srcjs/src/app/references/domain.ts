@@ -252,6 +252,7 @@ module FlexSearch.DuplicateDetection {
         SessionId: string;
         SourceId: string;
         SourceRecordId: string;
+        SourceContent: string;
         SourceDisplayName: string;
         SourceStatus: string;
         TotalDupes: number;

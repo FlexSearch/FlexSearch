@@ -40,6 +40,7 @@ module flexportal {
         dup.SourceId = d.Fields["sourceid"];
         dup.SourceRecordId = d.Fields["sourcerecordid"];
         dup.TotalDupes = d.Fields["totaldupesfound"];
+        dup.SourceContent = d.Fields["sourcecontent"];
         dup.SourceStatus = d.Fields["sourcestatus"];
         dup.Notes = d.Fields["notes"];
         dup.SourceStatusName = toSourceStatusName(parseInt(dup.SourceStatus));

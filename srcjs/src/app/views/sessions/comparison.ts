@@ -175,9 +175,20 @@ module flexportal {
                 TrueDuplicate: false,
                 Values: []};
               
-              var sourceFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.SourceRecordId);
-              for (var i in sourceFields)
-                $scope.Source.Values.push(sourceFields[i]);
+              // If this is a source record that came from a CSV dedupe session, then the contents
+              // will be available in the sourcecontent field
+              if(!!$scope.ActiveDuplicate.SourceContent) {
+                var contents = JSON.parse($scope.ActiveDuplicate.SourceContent);
+                $scope.Source.ExternalId = contents.id;
+                $scope.FieldNames = Object.keys(contents);
+                for (var i in $scope.FieldNames)
+                  $scope.Source.Values.push(contents[$scope.FieldNames[i]]);
+              }
+              else {
+                var sourceFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.SourceRecordId);
+                for (var i in $scope.FieldNames)
+                  $scope.Source.Values.push(sourceFields[$scope.FieldNames[i]]);
+              }
               
               // Populate the Targets
               $scope.Targets = [];
@@ -193,8 +204,8 @@ module flexportal {
                   Values: [] };
                 
                 var targetFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.Targets[i].TargetRecordId);
-                for (var j in targetFields)
-                  target.Values.push(targetFields[j]);
+                for (var j in $scope.FieldNames)
+                  target.Values.push(targetFields[$scope.FieldNames[j]]);
                 
                 // Add the target to the list of Targets
                 $scope.Targets.push(target);
