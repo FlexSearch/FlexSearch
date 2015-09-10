@@ -61,6 +61,9 @@ type DuplicateDetectionRequest =
     #if prop_DuplicatesCount
     #endif
     member DuplicatesCount : int16 with get, set
+    #if prop_FileName
+    #endif
+    member FileName : string with get, set
 
 # ws_DuplicateDetectionHandler """
 Duplicate Detection Handler
