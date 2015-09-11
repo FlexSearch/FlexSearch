@@ -160,7 +160,7 @@ Target "GenerateSwagger" <| fun _ ->
 ==> "RestorePackages" 
 ==> "BuildWeaver" 
 ==> "BuildApp" 
-//==> "Test"
+==> "Test"
 ==> "Default" 
 ==> "MoveFiles" 
 ==> "GenerateSwagger"
