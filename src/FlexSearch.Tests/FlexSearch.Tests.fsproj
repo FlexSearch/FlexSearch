@@ -74,7 +74,9 @@
     <Compile Include="HttpTests.fs" />
     <Content Include="packages.config" />
     <Content Include="app.config" />
-    <None Include="test.csv" />
+    <None Include="test.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Compile Include="AnalysisTests.fs" />
   </ItemGroup>
   <ItemGroup>
