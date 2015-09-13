@@ -30,7 +30,7 @@ let patchLevel = 2
 let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
 let version = sprintf "%i.%i.%i-alpha+%s" majorVersion minorVersion patchLevel buildVersion
 let productName = "FlexSearch"
-let copyright = "(c) Seemant Rajvanshi, 2012 - 2014"
+let copyright = sprintf "Copyright (C) 2010 - %i - FlexSearch" DateTime.Now.Year
 // Properties
 let buildDir = @".\build\"
 let testDir = @".\build-test\"
