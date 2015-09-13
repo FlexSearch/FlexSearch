@@ -115,11 +115,6 @@ let runPsScript scriptText =
 
 // Targets
 Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web" ])
-// This is to ensure that the compiled weaver is copied to the correct folder so that Fody can pick it up
-Target "BuildWeaver" (fun _ -> 
-    !!"weavers/weavers.fsproj"
-    |> MSBuildRelease "weavers/bin/release" "Build"
-    |> Log "BuildWeaver-Output: ")
 Target "BuildApp" (fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
@@ -158,7 +153,6 @@ Target "GenerateSwagger" <| fun _ ->
 // Dependencies
 "Clean" 
 ==> "RestorePackages" 
-==> "BuildWeaver" 
 ==> "BuildApp" 
 ==> "Test"
 ==> "Default" 
