@@ -242,3 +242,4 @@ node_modules
 dto
 data
 /documentation/F# Interactive
+src/TestResult.xml

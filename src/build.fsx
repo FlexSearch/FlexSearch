@@ -126,7 +126,7 @@ Target "BuildApp" (fun _ ->
     )
 Target "Test" (fun _ -> 
         !! (testDir @@ "FlexSearch.Tests.dll") 
-        |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["requestlogpath", dataDir :> obj;] }))
+        |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["xUnitXml", "TestResult.xml" :> obj; "requestlogpath", dataDir :> obj;] }))
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
