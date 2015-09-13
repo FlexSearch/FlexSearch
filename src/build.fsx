@@ -127,7 +127,7 @@ Target "Test" (fun _ ->
         !! (testDir @@ "FlexSearch.Tests.dll") 
         |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["xUnitXml", "TestResult.xml" :> obj; "requestlogpath", dataDir :> obj;] })
         // Upload test results to Appveyor
-        AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit "TestResult.xml")
+        AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__)
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
