@@ -122,11 +122,12 @@ Target "BuildApp" (fun _ ->
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
     MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
     MSBuildDebug testDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
-    
     )
 Target "Test" (fun _ -> 
         !! (testDir @@ "FlexSearch.Tests.dll") 
-        |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["xUnitXml", "TestResult.xml" :> obj; "requestlogpath", dataDir :> obj;] }))
+        |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["xUnitXml", "TestResult.xml" :> obj; "requestlogpath", dataDir :> obj;] })
+        // Upload test results to Appveyor
+        AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit "TestResult.xml")
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
