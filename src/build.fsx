@@ -33,7 +33,7 @@ let productName = "FlexSearch"
 let copyright = "(c) Seemant Rajvanshi, 2012 - 2014"
 // Properties
 let buildDir = @".\build\"
-let testDir = @".\build\"
+let testDir = @".\build-test\"
 let deployDir = @".\deploy\"
 let portalDir = currentDirectory + @"\..\srcjs"
 let documentationDir = currentDirectory + @"\..\documentation"
@@ -42,6 +42,7 @@ let webDir = buildDir + @"Web\"
 
 // Create necessary directories if they don't exist
 Directory.CreateDirectory(buildDir)
+Directory.CreateDirectory(testDir)
 Directory.CreateDirectory(deployDir)
 
 /// <summary>
@@ -119,7 +120,10 @@ Target "BuildApp" (fun _ ->
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
-    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: ")
+    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
+    MSBuildDebug testDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
+    
+    )
 Target "Test" (fun _ -> 
         !! (testDir @@ "FlexSearch.Tests.dll") 
         |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["requestlogpath", dataDir :> obj;] }))
