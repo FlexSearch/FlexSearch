@@ -64,7 +64,7 @@ module Installers =
         let psi = new ProcessStartInfo()
         psi.FileName <- path
         psi.Arguments <- argument
-        psi.WorkingDirectory <- __SOURCE_DIRECTORY__
+        psi.WorkingDirectory <- Constants.rootFolder
         psi.RedirectStandardOutput <- false
         psi.UseShellExecute <- false
         use p = Process.Start(psi)
