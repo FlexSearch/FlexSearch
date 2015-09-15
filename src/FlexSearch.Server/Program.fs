@@ -98,7 +98,7 @@ let mutable topShelfCommand = Unchecked.defaultof<string>
 let mutable loadTopShelf = true
 
 let topShelfConfiguration (settings : Settings.T, conf : HostConfigurators.HostConfigurator) = 
-    if notNull topShelfCommand then conf.ApplyCommandLine(topShelfCommand)
+    //if isNotBlank topShelfCommand then conf.ApplyCommandLine(topShelfCommand)
     conf.RunAsLocalSystem() |> ignore
     conf.SetDescription("FlexSearch Server")
     conf.SetDisplayName("FlexSearch Server")

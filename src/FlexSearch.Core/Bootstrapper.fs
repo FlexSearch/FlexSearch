@@ -251,8 +251,7 @@ Copyright (C) 2010 - {year} - FlexSearch
     
     /// Checks if the application is in interactive user mode?
     let isInteractive = 
-        let args = Environment.GetCommandLineArgs()
-        Environment.UserInteractive || (notNull args && args.Length > 0)
+        Environment.UserInteractive
     
     let private consoleSink = ConsoleLog.CreateListener(new EventTextFormatter())
     
