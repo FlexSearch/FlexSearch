@@ -7,7 +7,7 @@ module flexportal {
   declare function process(sourceId, targetId, indexName) : ng.IPromise<{}>
   
   // The function that handles the click event of the Source / Match
-  declare function onMatchItemClick(itemId) : ng.IPromise<{}>
+  declare function onMatchItemClick(item, indexName) : ng.IPromise<{}>
   
   class ComparisonItem {
     Name: string
@@ -41,6 +41,12 @@ module flexportal {
       return null;
     }
     
+    private static keyValuePair(fieldNames : string[], comparisonRecord : ComparisonItem){
+      var result = [];
+      fieldNames.forEach((t, i) => result[t] = comparisonRecord.Values[i]);
+      return result;
+    }
+    
     /* @ngInject */
     constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any, flexClient: FlexClient) {
       // Function to check if two field values from source vs target are equal
@@ -60,7 +66,9 @@ module flexportal {
       };
       
       // Function that will be executed whenever a comparison item header is clicked
-      $scope.doItemClick = function(itemId) { onMatchItemClick(itemId); }
+      $scope.doItemClick = function(item : ComparisonItem) { 
+        onMatchItemClick(ComparisonController.keyValuePair($scope.FieldNames, item), $scope.session.IndexName); 
+        }
       
       // Function that will be executed when the Process button is pressed
       $scope.doProcessing = function() {
@@ -71,12 +79,12 @@ module flexportal {
           masterTarget = ComparisonController.getTrueDuplicate($scope);
         if(masterTarget == null) return;
         
-        var sourceId = duplicate.SourceRecordId,
-            targetId = masterTarget.ExternalId,
+        var source = ComparisonController.keyValuePair($scope.FieldNames, $scope.Source),
+            target = ComparisonController.keyValuePair($scope.FieldNames, masterTarget),
             indexName = $scope.session.IndexName;
         
         // Do the user specified processing
-        process(sourceId, targetId, indexName)
+        process(source, target, indexName)
         .then(function(response) {
           $mdToast.show(
             $mdToast.simple()

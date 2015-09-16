@@ -27,7 +27,7 @@
           <th>
             <div layout="row" layout-align="space-between center">
               <span class="centered">
-                Source: <md-button class="md-primary" ng-click="doItemClick(Source.ExternalId)">{{Source.Name}}</md-button>
+                Source: <md-button class="md-primary" ng-click="doItemClick(Source)">{{Source.Name}}</md-button>
               </span>
             </div>
           </th>
@@ -35,7 +35,7 @@
           <th ng-repeat="target in Targets" class="target">
             <div layout="row" layout-align="space-between center">
               <span class="centered">
-                Match {{$index + 1}}: <md-button class="md-primary" ng-click="doItemClick(target.ExternalId)">{{target.Name}}</md-button>
+                Match {{$index + 1}}: <md-button class="md-primary" ng-click="doItemClick(target)">{{target.Name}}</md-button>
               </span>
               <md-switch class="md-primary" ng-change="syncSwitches(target.Id)" ng-model="target.TrueDuplicate" aria-label="{{target.Name}}"></md-switch>
             </div>
