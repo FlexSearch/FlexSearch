@@ -52,7 +52,7 @@
 				<div layout="row" style="margin-top:0px;padding-top:0px">
 					<md-input-container flex style="margin-top:0px;padding-top:0px" ng-show="ProfileMode">
 						<label>Search Profiles</label>
-						<md-select placeholder="Select a profile" ng-model="spQueryString" md-on-close="updateSearchQuery(spQueryString)" required>
+						<md-select placeholder="Select a profile" ng-model="spQueryString" md-on-close="updateSearchQuery(spQueryString)">
 							<md-option ng-repeat="profile in ActiveIndex.SearchProfiles" value="{{profile.QueryString}}">{{profile.Name}}</md-option>
 						</md-select>
 					</md-input-container>
