@@ -145,6 +145,9 @@ Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
     let source = portalDir + @"\dist"
     FileHelper.CopyRecursive source webDir true |> ignore
+    trace "Move Font files to styles folder"
+    File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.ttf", webDir + @"\styles\ui-grid.ttf")
+    File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.woff", webDir + @"\styles\ui-grid.woff")
 
 // Documentation related
 Target "GenerateSwagger" <| fun _ ->
