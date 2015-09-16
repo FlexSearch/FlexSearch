@@ -19,7 +19,8 @@
     "json-formatter": "~0.3.0",
     "perfect-scrollbar": "~0.6.5",
     "restangular": "~1.4.0",
-    "underscore": "~1.8.3"
+    "underscore": "~1.8.3",
+    "native-promise-only": "~0.8.0-a"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0",
@@ -35,6 +36,11 @@
         "src-min-noconflict/ace.js",
         "src-min-noconflict/mode-sql.js",
         "src-min-noconflict/ext-language_tools.js"
+      ]
+    },
+    "native-promise-only" :{
+      "main" : [
+        "lib/npo.src.js"
       ]
     }
   }
