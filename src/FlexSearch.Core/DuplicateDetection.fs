@@ -199,7 +199,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             | Ok(_) -> ()
             | Fail(error) -> Logger.Log error
     
-    let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session) = 
+    let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session, profileQuery : SearchQuery) = 
         let query = 
             new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName, 
                             Columns = [| session.DisplayFieldName |], ReturnFlatResult = true, ReturnScore = true)
@@ -220,6 +220,14 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             // Map each document to a TargetRecord
             header.TargetRecords <- docs.Documents
                                     |> Seq.filter (fun r -> r.[Constants.IdField] <> header.SourceRecordId)
+                                    |> Seq.filter (fun r -> 
+                                        // If duplicate detection is used with DistinctBy then do a second pass filtering to ensure
+                                        // that the source record is not picked up. This can happen when source record is not the 
+                                        // best match for the search profile
+                                        if isNotBlank profileQuery.DistinctBy then
+                                            r.[profileQuery.DistinctBy] <> record.[profileQuery.DistinctBy]
+                                        else true
+                                    )
                                     |> Seq.mapi 
                                            (fun i result -> 
                                            new TargetRecord(TargetId = i + 1, 
@@ -234,6 +242,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             if header.TargetRecords
                |> Array.length
                > 0 then 
+
                 // Only assign the id after the record is confirmed to have a duplicate otherwise 
                 // the DuplicateCount will be wrong
                 header.SourceId <- (int <| req.NextId.Increment())
@@ -301,7 +310,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         if isNotBlank req.FileName then getFileDataSource (req)
         else getSearchQueryDataSource (req)
     
-    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest) = 
+    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest, profileQuery : SearchQuery) = 
         let session = 
             new Session(IndexName = req.IndexName, ProfileName = req.ProfileName, DisplayFieldName = req.DisplayName, 
                         JobStartTime = DateTime.Now, ThreadCount = req.ThreadCount, 
@@ -321,7 +330,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                                  match (loopState.IsStopped, req.NextId.Value) with
                                  | (true, _) -> ()
                                  | (_, nextId) when nextId >= int64 req.DuplicatesCount -> loopState.Stop()
-                                 | _ -> duplicateRecordCheck (req, record, session))
+                                 | _ -> duplicateRecordCheck (req, record, session, profileQuery))
             |> ignore
         with :? AggregateException as e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Warning)
         // Update session record with job end time
@@ -332,8 +341,8 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         MailboxProcessor.Start(fun inbox -> 
             let rec loop() = 
                 async { 
-                    let! (jobId, indexWriter, request) = inbox.Receive()
-                    performDuplicateDetection (jobId, indexWriter, request) |> ignore
+                    let! (jobId, indexWriter, request, profileQuery) = inbox.Receive()
+                    performDuplicateDetection (jobId, indexWriter, request, profileQuery) |> ignore
                     return! loop()
                 }
             loop())
@@ -345,9 +354,9 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             match indexService.IsIndexOnline(indexName) with
             | Ok(writer) -> 
                 match writer.Settings.SearchProfiles.TryGetValue(body.ProfileName) with
-                | true, _ -> 
+                | true, profileQuery -> 
                     let jobId = Guid.NewGuid()
-                    requestProcessor.Post(jobId, writer, body)
+                    requestProcessor.Post(jobId, writer, body, snd profileQuery)
                     return jobId
                 | _ -> return! fail <| UnknownSearchProfile(indexName, body.ProfileName)
             | Fail(error) -> return! fail error
