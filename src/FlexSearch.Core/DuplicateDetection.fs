@@ -208,9 +208,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         | Ok(results) when results.Meta.RecordsReturned > 1 -> 
             !>"Duplicate Found"
             let header = 
-                new SourceRecord(session.SessionId,  
-                    SourceDisplayName = record.[session.DisplayFieldName], 
-                    SourceId = (int <| req.NextId.Increment()))
+                new SourceRecord(session.SessionId, SourceDisplayName = record.[session.DisplayFieldName])
             // Set the content in case of a file based session as there is no other way to
             // retrieve the source record
             if req.FileBasedSession then
@@ -236,6 +234,9 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             if header.TargetRecords
                |> Array.length
                > 0 then 
+                // Only assign the id after the record is confirmed to have a duplicate otherwise 
+                // the DuplicateCount will be wrong
+                header.SourceId <- (int <| req.NextId.Increment())
                 // Store the duplicates in Lucene
                 documentService |> writeDuplicates header
         | Fail(error) -> Logger.Log error
