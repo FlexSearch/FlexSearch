@@ -274,7 +274,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
     /// Returns a search query based data source
     let getSearchQueryDataSource (request : DuplicateDetectionRequest) = 
         let mainQuery = 
-            new SearchQuery(request.IndexName, request.SelectionQuery, Count = int Int16.MaxValue, 
+            new SearchQuery(request.IndexName, request.SelectionQuery, Count = int request.MaxRecordsToScan, 
                             ReturnFlatResult = true, Columns = [| "*" |])
         let result = searchService.Search(mainQuery)
         match result with
