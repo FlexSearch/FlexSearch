@@ -121,13 +121,19 @@ Target "BuildApp" (fun _ ->
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
     MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
-    MSBuildDebug testDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
-    )
+    // Copy the files from build to build-test necessary for Testing
+    FileHelper.CopyRecursive buildDir testDir true |> ignore)
 Target "Test" (fun _ -> 
-        !! (testDir @@ "FlexSearch.Tests.dll") 
-        |> FixieHelper.Fixie (fun p -> { p with CustomOptions = ["xUnitXml", "TestResult.xml" :> obj; "requestlogpath", dataDir :> obj;] })
-        // Upload test results to Appveyor
-        AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__)
+    !! (testDir @@ "FlexSearch.Tests.dll") 
+    |> (fun includes ->
+            try FixieHelper.Fixie 
+                    (fun p -> { p with CustomOptions = [ "xUnitXml", "TestResult.xml" :> obj 
+                                                         "requestlogpath", dataDir :> obj ] })
+                    includes
+            // Upload test results to Appveyor even if tests failed
+            finally AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__
+                    trace "Uploaded to AppVeyor"))
+            
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
@@ -162,15 +168,15 @@ Target "GenerateSwagger" <| fun _ ->
 "Clean" 
 ==> "RestorePackages" 
 ==> "BuildApp" 
-==> "Test"
 ==> "Default" 
 ==> "MoveFiles" 
 ==> "GenerateSwagger"
 ==> "MovePortal"
 ==> "Zip"
+==> "Test"
 
 "BuildPortal"
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "Zip"
+RunTargetOrDefault "Test"
