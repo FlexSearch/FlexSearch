@@ -26,7 +26,9 @@ module flexportal {
         }
 
         $scope.currentIndex = filtered[0];
-      });
+      })
+      // Display the pretty scrollbar for the list of indices
+      .then(() => (<any>$('.scrollable')).perfectScrollbar());
     }
   }
 }

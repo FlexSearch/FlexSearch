@@ -8,6 +8,7 @@
     "angular-chart.js": "~0.7.2",
     "angular-material": "~0.10.1",
     "angular-material-data-table": "*",
+    "angular-material-icons": "~0.6.0",
     "angular-route": "~1.4.0",
     "angular-sanitize": "~1.4.0",
     "angular-swagger-ui": "~0.1.6",
@@ -17,10 +18,10 @@
     "angular-ui-router": "~0.2.15",
     "jquery": "~2.1.1",
     "json-formatter": "~0.3.0",
+    "native-promise-only": "~0.8.0-a",
     "perfect-scrollbar": "~0.6.5",
     "restangular": "~1.4.0",
-    "underscore": "~1.8.3",
-    "native-promise-only": "~0.8.0-a"
+    "underscore": "~1.8.3"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0",
@@ -38,8 +39,8 @@
         "src-min-noconflict/ext-language_tools.js"
       ]
     },
-    "native-promise-only" :{
-      "main" : [
+    "native-promise-only": {
+      "main": [
         "lib/npo.src.js"
       ]
     }

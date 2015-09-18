@@ -45,6 +45,7 @@ Other page dependencies
 @import "views/sessions/sessions";
 @import "views/searchstudio/searchstudio";
 @import "views/demoindex/demoindex";
+@import "views/dashboard/dashboard";
 
 /* ------- */
 /* Generic */
@@ -238,13 +239,12 @@ md-content.leftColumn {
 .material-icons.Reviewed { color: rgb(33, 150, 243); }		
 .material-icons.Proposed { color: #FB8C00; }		
 
-md-icon span.large, md-icon.large {
-  font-size: 36px;
+ng-md-icon span.large, ng-md-icon.large {
   height: 36px;
   width: 36px;
 }
 
-md-icon.transparent {
+ng-md-icon.transparent {
   opacity: 0.5;
 }
 
