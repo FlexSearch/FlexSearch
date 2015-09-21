@@ -18,12 +18,6 @@ open java.util
 open System.Diagnostics
 open System.Threading.Tasks
 
-/// Interface to be used by the services which require pre-notification
-/// of server shutdown so that they can start performing there interal 
-/// cleanup
-type IRequireNotificationForShutdown = 
-    abstract shutdown : unit -> Task
-
 /// The types of events which can be raised on the event aggregrator
 type EventType = 
     | ShardStatusChange of indexName : string * shardNo : int * shardStatus : ShardStatus
