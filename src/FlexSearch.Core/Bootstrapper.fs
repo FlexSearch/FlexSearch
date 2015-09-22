@@ -212,6 +212,17 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
     let mutable httpServer = Unchecked.defaultof<IServer>
     let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
     
+    /// Perform all the clean up tasks to be run just before a shutdown request is 
+    /// received by the server
+    let shutdown() = 
+        httpServer.Stop()
+        // Get all types which implements IRequireNotificationForShutdown and issue shutdown command
+        container.ComponentRegistry.Registrations
+        |> Seq.where (fun x -> typeof<IRequireNotificationForShutdown>.IsAssignableFrom(x.Activator.LimitType))
+        |> Seq.map (fun x -> x.Activator.LimitType |> container.Resolve :?> IRequireNotificationForShutdown)
+        |> Seq.toArray
+        |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
+    
     // do 
     // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
     // To verify that this works, run `netsh http show servicestate`.
@@ -223,7 +234,7 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
             httpServer.Start()
         with e -> printfn "%A" e
     
-    member __.Stop() = httpServer.Stop()
+    member __.Stop() = shutdown()
 
 type EventTextFormatter() = 
     interface Formatters.IEventTextFormatter with
@@ -250,8 +261,7 @@ Copyright (C) 2010 - {year} - FlexSearch
     let (!>) (msg : string) = Logger.Log(msg, MessageKeyword.Startup, MessageLevel.Verbose)
     
     /// Checks if the application is in interactive user mode?
-    let isInteractive = 
-        Environment.UserInteractive
+    let isInteractive = Environment.UserInteractive
     
     let private consoleSink = ConsoleLog.CreateListener(new EventTextFormatter())
     
