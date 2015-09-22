@@ -167,9 +167,9 @@ module IndexSettingBuilder =
         let fieldArr = result.ToArray()
         // Perf: Intern all the field names in the string pool. This is done as the field names will be
         // used millions of times during execution.
-        fieldArr |> Array.iter(fun x  -> 
-            String.Intern x.FieldName |> ignore
-            String.Intern x.SchemaName |> ignore)
+        fieldArr |> Array.iter (fun x -> 
+                        String.Intern x.FieldName |> ignore
+                        String.Intern x.SchemaName |> ignore)
         { build with Setting = 
                          { build.Setting with FieldsLookup = resultLookup
                                               Fields = fieldArr
@@ -375,31 +375,24 @@ module TransactionLog =
     let deSerializer (stream) = msgPackSerializer.Unpack(stream)
     
     type TxWriter(path : string, gen : int64) = 
+        inherit SingleConsumerQueue<byte [] * int64>()
         let mutable currentGen = gen
         let mutable fileStream = Unchecked.defaultof<_>
         let populateFS() = 
             fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, 
-                                         FileShare.ReadWrite)
+                                         FileShare.ReadWrite, 1024, true)
+        do populateFS()
         
-        let processor = 
-            MailboxProcessor.Start(fun inbox -> 
-                let rec loop() = 
-                    async { 
-                        let! (data : byte [], gen) = inbox.Receive()
-                        if gen <> currentGen then 
-                            fileStream.Close()
-                            currentGen <- gen
-                            populateFS()
-                        // TODO: Test writing async
-                        fileStream.Write(data, 0, data.Length)
-                        fileStream.Flush()
-                        //fileStream.Write(newline, 0, newline.Length)
-                        return! loop()
-                    }
+        override __.Process(item : byte [] * int64) = 
+            let (data, gen) = item
+            if gen <> currentGen then 
+                fileStream.Close()
+                currentGen <- gen
                 populateFS()
-                loop())
+            await <| fileStream.WriteAsync(data, 0, data.Length)
+            fileStream.Flush()
         
-        /// Reads exitisting Tx Log and returns all the entries
+        /// Reads existing Transaction Log and returns all the entries
         member __.ReadLog(gen : int64) = 
             if File.Exists(path +/ gen.ToString()) then 
                 try 
@@ -414,8 +407,8 @@ module TransactionLog =
                     Seq.empty
             else Seq.empty
         
-        /// Append a new entry to TxLog        
-        member __.Append(data, gen) = processor.Post(data, gen)
+        /// Append a new entry to TxLog
+        member this.Append(data, gen) = this.Post(data, gen) |> ignore
         
         interface IDisposable with
             member __.Dispose() : unit = 
@@ -677,7 +670,7 @@ module VersionCache =
             let reader = readerContext.Reader()
             let terms = reader.Terms(cache.IdFieldName)
             assert (terms <> null)
-            let termsEnum = terms.iterator ()
+            let termsEnum = terms.iterator()
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
                 let docsEnums = termsEnum.Docs(null, null, 0)
@@ -819,10 +812,8 @@ module IndexWriter =
                 use stream = memoryManager.GetStream()
                 TransactionLog.serializer (stream, txEntry)
                 s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
-
             // Release the dictionary back to the pool so that it could be recycled
             dictionaryPool.Release(document.Fields)
-
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
                else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
@@ -1031,24 +1022,24 @@ module IndexManager =
                 do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
             else do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
         }
-
-//    /// Update an index from the given index DTO
-//    let updateIndex (dto : Index) (t : T) =
-//        maybe {
-//            let! oldIndexWriter = t |> indexOnline dto.IndexName
-//            do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
-//            if dto.Active then
-//                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
-//                let indexWriter = IndexWriter.create setting
-//                
-//                // Keep the generation of the old ShardWriters
-//                if (oldIndexWriter.ShardWriters.Length < indexWriter.ShardWriters.Length) 
-//                then oldIndexWriter.ShardWriters
-//                else indexWriter.ShardWriters
-//                |> Array.iteri (fun i _ -> 
-//                    indexWriter.ShardWriters.[i].Generation <- oldIndexWriter.ShardWriters.[i].Generation)
-//                
-//        }
+    
+    //    /// Update an index from the given index DTO
+    //    let updateIndex (dto : Index) (t : T) =
+    //        maybe {
+    //            let! oldIndexWriter = t |> indexOnline dto.IndexName
+    //            do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
+    //            if dto.Active then
+    //                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
+    //                let indexWriter = IndexWriter.create setting
+    //                
+    //                // Keep the generation of the old ShardWriters
+    //                if (oldIndexWriter.ShardWriters.Length < indexWriter.ShardWriters.Length) 
+    //                then oldIndexWriter.ShardWriters
+    //                else indexWriter.ShardWriters
+    //                |> Array.iteri (fun i _ -> 
+    //                    indexWriter.ShardWriters.[i].Generation <- oldIndexWriter.ShardWriters.[i].Generation)
+    //                
+    //        }
     /// Loads all indices from the given path
     let loadAllIndex (t : T) = 
         let loadFromFile (path) = 
@@ -1119,12 +1110,14 @@ module IndexManager =
         }
     
     /// Update an existing index with the new provided details
-    let updateIndex (index : Index) (t : T) =
+    let updateIndex (index : Index) (t : T) = 
         let wasActive = index.Active
-        t |> closeIndex index.IndexName
-        >>= fun _ -> index.Active <- wasActive
-                     t |> loadIndex index
-
+        t
+        |> closeIndex index.IndexName
+        >>= fun _ -> 
+            index.Active <- wasActive
+            t |> loadIndex index
+    
     /// Deletes an existing index
     let deleteIndex (indexName : string) (t : T) = 
         maybe { 
