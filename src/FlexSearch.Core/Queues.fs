@@ -79,6 +79,15 @@ type SingleConsumerQueue<'T>(?capacity0 : int) as self =
     
     do Async.Start(processItem())
     abstract Process : 'T -> unit
+    member __.Capacity = capacity
+    member __.Count = buffer.Count
+    
+    member __.Send(item : 'T) = 
+        Async.AwaitTask <| buffer.SendAsync(item)
+        |> Async.RunSynchronously
+        |> ignore
+    
+    member __.Post(item : 'T) = buffer.Post(item)
     
     interface IQueue<'T> with
         member __.Capacity = capacity
