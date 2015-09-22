@@ -242,7 +242,8 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
     let im = 
         IndexManager.create 
             (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
-
+    
+    let getAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
     do 
         if not testMode then im |> IndexManager.loadAllIndex
     
@@ -315,9 +316,18 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
             | _ -> fail <| IndexNotFound indexName
 
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
-        member __.GetAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
+        member __.GetAllIndex() = getAllIndex()
         member __.GetDiskUsage(indexName : string) = im |> IndexManager.getDiskUsage indexName
-
+    
+    interface IRequireNotificationForShutdown with
+        member __.Shutdown() = 
+            async { 
+                getAllIndex() |> Array.Parallel.iter (fun i -> 
+                                     im
+                                     |> IndexManager.closeIndex i.IndexName
+                                     |> ignore)
+            }
+                
 [<Sealed>]
 type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, queryFunctionFactory : IFlexFactory<IFlexQueryFunction>,  indexService : IIndexService) = 
     // Generate query types from query factory. This is necessary as a single query can support multiple
