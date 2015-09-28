@@ -30,7 +30,11 @@ module flexportal {
 			 this.$http = $http;
 			 this.$mdBottomSheet = $mdBottomSheet;
 			 this.$q = $q;
-			 this.FlexSearchUrl = $location.protocol() + "://" + $location.host() + ":" + $location.port();
+			 this.FlexSearchUrl = "http://localhost:9800";
+			 // If the host is local then use the hard coded url as we might be testing
+			 // the ui
+			 if ($location.host() != "localhost")
+				 this.FlexSearchUrl = $location.protocol() + "://" + $location.host() + ":" + $location.port();
 			 this.DuplicatesUrl = this.FlexSearchUrl + "/indices/duplicates";
 			 this.handleError = 
 			 	function(bs, q) {
@@ -89,7 +93,7 @@ module flexportal {
 				q: "type = 'source' and sessionid = '" + sessionId + "' and sourceid = '" + sourceId + "'",		
 				c: "*" }}
 			)
-			.then(FlexClient.getSearchResults, this.handleError)
+			.then(FlexClient.getSearchResults)
 	      	.then(this.getFirstResponse, this.handleError);
 	  	}
 		  
@@ -103,6 +107,7 @@ module flexportal {
 				  sourcerecordid: duplicate.SourceRecordId,
 				  totaldupesfound: duplicate.TotalDupes,
 				  type: "source",
+				  notes: duplicate.Notes,
 				  sourcestatus: duplicate.SourceStatus,
 				  targetrecords: JSON.stringify(duplicate.Targets)
 				},
@@ -117,7 +122,7 @@ module flexportal {
 		            q: "type = 'session' and sessionid = '" + sessionId + "'",
 		            c: "*" } }
 		    )
-		    .then(FlexClient.getSearchResults, this.handleError)
+		    .then(FlexClient.getSearchResults)
 			.then(this.getFirstResponse, this.handleError);
 		} 
 		
@@ -148,15 +153,16 @@ module flexportal {
 		
 		public getIndices() {
 			return this.$http.get(this.FlexSearchUrl + "/indices")
-				.then(FlexClient.getData, this.handleError)
+				.then(FlexClient.getData)
 				.then(result => <IndexResult []> result, this.handleError);
 		}
 		
-		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery,
+		public submitDuplicateDetection(indexName, searchProfile, displayFieldName, selectionQuery, fileName,
 			threadCount?, maxRecordsToScan?, maxDupsToReturn?) {
 			return this.$http.post(this.FlexSearchUrl + "/indices/" + indexName + "/duplicatedetection/" + searchProfile, {
 					DisplayName: displayFieldName,
 					SelectionQuery: selectionQuery,
+					FileName: fileName,
 					ThreadCount: threadCount,
 					MaxRecordsToScan: maxRecordsToScan,
 					DuplicatesCount: maxDupsToReturn
@@ -194,19 +200,19 @@ module flexportal {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/documents", { params: {
 				count: 1
 			}})
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => parseInt(result.TotalAvailable), this.handleError)
 		}
 		
 		public getIndexSize(indexName) {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/size")
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => parseInt(result), this.handleError);
 		}
 		
 		public getMemoryDetails() {
 			return this.$http.get(this.FlexSearchUrl + "/memory")
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <MemoryDetailsResponse>result, this.handleError);
 		}
 		
@@ -216,13 +222,13 @@ module flexportal {
 		
 		public getIndexStatus(indexName) {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/status")
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <string>result.Status, this.handleError);
 		}
 		
 		public getAnalyzers() {
 			return this.$http.get(this.FlexSearchUrl + "/analyzers", {})
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <Analyzer[]>result, this.handleError);
 		}
 		
@@ -230,7 +236,7 @@ module flexportal {
 			return this.$http.post(this.FlexSearchUrl + "/analyzers/" + analyzerName + "/analyze", {
 				"Text": text
 			})
-			.then(FlexClient.getData, this.handleError)
+			.then(FlexClient.getData)
 			.then(result => <string[]>result, this.handleError);
 		}
 		
@@ -242,6 +248,17 @@ module flexportal {
 		
 		public resolveAllPromises(promises) {
 			return this.$q.all(promises);
+		}
+		
+		public indexExists(indexName) {
+			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/exists")
+			.then(FlexClient.getData)
+			.then(result => <boolean>result.Exists, this.handleError);
+		}
+		
+		public deleteIndex(indexName) {
+			return this.$http.delete(this.FlexSearchUrl + "/indices/" + indexName)
+			.then(r => r, this.handleError);
 		}
 	}
 }

@@ -11,7 +11,7 @@ module CsvHandlerTests =
         
         let generateCsvIndexJob queueService jobService (indexService : IIndexService) (index : Index) = 
             let csvReq = 
-                new CsvIndexingRequest(IndexName = index.IndexName, HasHeaderRecord = true, Path = "..\\..\\test.csv") 
+                new CsvIndexingRequest(IndexName = index.IndexName, HasHeaderRecord = true, Path = Constants.rootFolder +/ "test.csv") 
                 |> Some
             let reqCntxt = RequestContext.Create(new OwinContext(), defString, index.IndexName, defString, defString)
             let csvHandler = new CsvHandler(queueService, indexService, jobService)

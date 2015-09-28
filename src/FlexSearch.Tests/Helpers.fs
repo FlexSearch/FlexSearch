@@ -13,6 +13,7 @@ open System.Reflection
 open Microsoft.Owin.Testing
 open Swensen.Unquote
 
+
 /// <summary>
 /// Represents the lookup name for the plug-in
 /// </summary>
@@ -25,6 +26,9 @@ type ExampleAttribute(fileName : string, title : string) =
 
 [<AttributeUsage(AttributeTargets.Method)>]
 type IgnoreAttribute() = inherit Attribute()
+
+module Global =
+    let mutable RequestLogPath = String.Empty
 
 [<AutoOpenAttribute>]
 module DataHelpers = 
@@ -80,15 +84,15 @@ module DataHelpers =
             ()
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = Main.getContainer (ServerSettings.T.GetDefault(), true)
-    let serverSettings = container.Resolve<ServerSettings.T>()
+    let container = Main.getContainer (Settings.T.GetDefault(), true)
+    let serverSettings = container.Resolve<Settings.T>()
     let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
         
     // Create a single instance of the OWIN server that will be shared across all tests
     let owinServer() = 
         TestServer.Create(fun app -> 
                             let owinServer = 
-                                new OwinServer(generateRoutingTable handlerModules, serverSettings.HttpPort)
+                                new OwinServer(generateRoutingTable handlerModules, 9800)
                             owinServer.Configuration(app))
 
     /// <summary>
@@ -116,7 +120,7 @@ module DataHelpers =
 
     let createDemoIndex = 
         // Make sure the demo index folder is empty
-        let folder = ServerSettings.T.GetDefault().DataFolder + "/country"
+        let folder = Constants.DataFolder + "/country"
         if Directory.Exists(folder) then Directory.Delete(folder, true)
         // Create the demo index
         let client = new FlexClient(owinServer().HttpClient)
@@ -184,10 +188,18 @@ type SingleInstancePerClassConvention() as self =
         let fixture = fixtureCustomization()
         (new SpecimenContext(fixture)).Resolve(typ)
     
-    do 
+    do
+        printfn "RequestLogPath: %A" self.Options.["requestlogpath"]
+        if self.Options.["requestlogpath"].Count = 1 then
+            Global.RequestLogPath <- self.Options.["requestlogpath"].[0]
+
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         // Temporarily ignore parametric tests because Fixie doesn't handle them in VS 2015
         // Comment out this line if you want to also execute ignored tests
         //self.Methods.Where(fun m -> m.HasOrInherits<IgnoreAttribute>() |> not) |> ignore
         self.ClassExecution.CreateInstancePerClass().UsingFactory(fun typ -> fixtureFactory (typ)) |> ignore
         self.Parameters.Add<InputParameterSource>() |> ignore
+
+
+// Runs a test against the given result and checks if it succeeded
+let (?) r = test <@ succeeded r @>

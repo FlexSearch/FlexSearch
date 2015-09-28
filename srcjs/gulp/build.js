@@ -1,7 +1,7 @@
 'use strict';
 
 var gulp = require('gulp');
-var fs = require('fs');
+
 var $ = require('gulp-load-plugins')({
   pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
 });
@@ -73,11 +73,11 @@ module.exports = function(options) {
       .pipe($.flatten())
       .pipe(gulp.dest(options.dist + '/fonts/'));
   });
-  
+
   gulp.task('other', function () {
     return gulp.src([
       options.src + '/**/*',
-      '!' + options.src + '/**/*.{html,js,css,ts}'
+      '!' + options.src + '/**/*.{html,css,js,scss,ts}'
     ])
       .pipe(gulp.dest(options.dist + '/'));
   });
@@ -88,7 +88,7 @@ module.exports = function(options) {
       .pipe($.filter('process.js'))
       .pipe(gulp.dest(options.tmp + '/serve/scripts'))
       .pipe(gulp.dest(options.dist + '/scripts'))
-  })
+  });
 
   gulp.task('clean', ['tsd:purge'], function (done) {
     $.del([options.dist + '/', options.tmp + '/'], done);
@@ -103,5 +103,5 @@ module.exports = function(options) {
       .pipe(gulp.dest(options.dist))
   });
 
-  gulp.task('build', ['html', 'fonts', 'other', 'pure-libs', 'swagger']);
+  gulp.task('build', ['html', 'fonts', 'other', 'swagger']);
 };

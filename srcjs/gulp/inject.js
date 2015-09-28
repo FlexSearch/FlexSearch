@@ -7,9 +7,10 @@ var $ = require('gulp-load-plugins')();
 var wiredep = require('wiredep').stream;
 
 module.exports = function(options) {
-  gulp.task('inject', ['scripts'], function () {
+  gulp.task('inject', ['scripts', 'styles'], function () {
     var injectStyles = gulp.src([
-      options.src + '/app/**/*.css'
+      options.tmp + '/serve/app/**/*.css',
+      '!' + options.tmp + '/serve/app/vendor.css'
     ], { read: false });
 
     var sortOutput = require('../' + options.tmp + '/sortOutput.json');

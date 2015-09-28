@@ -276,7 +276,7 @@ module Field =
             | FieldType.T.Stored 
             | FieldType.T.Text(_) 
             | FieldType.T.Highlight(_) -> lucenceField.SetStringValue(value)
-            | FieldType.T.ExactText(_) ->
+            | FieldType.T.ExactText(_) -> 
                 if isDocValue then lucenceField.SetBytesValue(System.Text.Encoding.Unicode.GetBytes(value))
                 else lucenceField.SetStringValue(value)
             | FieldType.T.Bool(_) -> (value |> pBool false).ToString() |> lucenceField.SetStringValue
@@ -398,7 +398,7 @@ module Field =
              FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false, false)
     
     /// Field to be used by time stamp
-    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, false, false)
+    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, true, false)
     
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
@@ -479,39 +479,3 @@ module SearchQuery =
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FacetQuery = 
     let getQueryFromRequest request body = new FacetQuery() // TODO
-
-module ServerSettings = 
-    [<CLIMutableAttribute>]
-    type T = 
-        { HttpPort : int
-          DataFolder : string
-          PluginFolder : string
-          ConfFolder : string
-          NodeName : string }
-        /// <summary>
-        /// Get default server configuration
-        /// </summary>
-        static member GetDefault() = 
-            let setting = 
-                { HttpPort = 9800
-                  DataFolder = Helpers.GenerateAbsolutePath("./data")
-                  PluginFolder = Constants.PluginFolder
-                  ConfFolder = Constants.ConfFolder
-                  NodeName = "FlexSearchNode" }
-            setting
-    
-    /// Reads server configuration from the given file
-    let createFromFile (path : string, formatter : IFormatter) = 
-        assert (String.IsNullOrWhiteSpace(path) <> true)
-        if File.Exists(path) then 
-            let fileStream = new FileStream(path, FileMode.Open)
-            let parsedResult = formatter.DeSerialize<T>(fileStream)
-            
-            let setting = 
-                { HttpPort = parsedResult.HttpPort
-                  DataFolder = Helpers.GenerateAbsolutePath(parsedResult.DataFolder)
-                  PluginFolder = Constants.PluginFolder
-                  ConfFolder = Constants.ConfFolder
-                  NodeName = parsedResult.NodeName }
-            ok setting
-        else fail <| FileNotFound path

@@ -1,0 +1,30 @@
+<pre><code>{{Query.QueryString}}</code></pre>
+
+<table>
+    <thead>
+        <tr>
+            <th>countryname</th>
+            <th>agriproducts</th>
+            <th>governmenttype</th>
+            <th>population</th>
+        </tr>
+    </thead>
+    <tfoot>
+        <tr>
+            <td>Records Returned</td>
+            <td>{{Result.RecordsReturned}}</td>
+            <td>Total Available</td>
+            <td>{{Result.TotalAvailable}}</td>
+        </tr>
+    </tfoot>
+    <tbody>
+        {{#Result.Documents}}
+        <tr>
+            <td>{{Fields.countryname}}</td>
+            <td>{{Fields.agriproducts}}</td>
+            <td>{{Fields.governmenttype}}</td>
+            <td>{{Fields.population}}</td>
+        </tr>
+        {{/Result.Documents}}
+    </tbody>
+</table>

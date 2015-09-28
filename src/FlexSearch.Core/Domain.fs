@@ -226,7 +226,9 @@ type IndexConfiguration() =
     /// determines how Lucene weights terms and Lucene interacts with 
     /// Similarity at both index-time and query-time.
     member val DefaultFieldSimilarity = FieldSimilarity.TFIDF with get, set
-    
+    member val AllowReads = true with get, set
+    member val AllowWrites = true with get, set
+
     override this.Validate() = this.CommitTimeSeconds
                                |> gte "CommitTimeSeconds" 30
                                >>= (fun _ -> this.MaxBufferedDocs |> gte "MaxBufferedDocs" 2)
@@ -529,7 +531,7 @@ type Document(indexName : string, id : string) =
     inherit DtoBase()
     
     /// Fields to be added to the document for indexing.
-    member val Fields = defStringDict() with get, set
+    member val Fields = dictionaryPool.Acquire() with get, set
     
     /// Unique Id of the document
     member val Id = id with get, set
@@ -562,9 +564,9 @@ type Document(indexName : string, id : string) =
     override this.Validate() = this.IndexName
                                |> notBlank "IndexName"
                                >>= fun _ -> this.Id |> notBlank "Id"
-    new(indexName, id) = Document(indexName, id)
-    new() = Document(defString, defString)
-
+    new(indexName, id) = new Document(indexName, id)
+    new() = new Document(defString, defString)
+    
 /// FlexSearch index is a logical index built on top of Lucene’s index in a manner 
 /// to support features like schema and sharding. So in this sense a FlexSearch 
 /// index consists of multiple Lucene’s index. Also, each FlexSearch shard is a valid 

@@ -1,0 +1,15 @@
+<div class="demo-index">
+	<md-progress-linear layout-fill md-mode="indeterminate" layout-padding ng-show="showProgress"></md-progress-linear>
+	<md-card>
+		<img src="app/assets/images/country.PNG" class="md-card-image" alt="countries">
+		<md-card-content>
+			<h2 class="md-title">Country Index</h2>
+			<p>Demo index is {{hasDemoIndex ? '' : 'not '}}set up.</p>
+			<p>Setting up the country index will give you a base index to start from.</p>
+		</md-card-content>
+		<div class="md-actions" layout="row" layout-padding layout-align="end center">
+			<md-button class="md-raised md-primary" ng-click="setupDemoIndex()">Set up</md-button>
+			<md-button class="md-raised md-primary" ng-click="deleteDemoIndex()">Delete</md-button>
+		</div>
+	</md-card>
+</div>

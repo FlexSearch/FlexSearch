@@ -181,6 +181,12 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
         this.PostHelper<Index, CreateResponse>("/indices", index)
     member this.UpdateIndex(index : Index) = 
         this.PutHelper<Index, unit>(sprintf "/indices/%s" index.IndexName, index)
+    member this.UpdateIndexFields(indexName : string, fields : FieldsUpdateRequest) = 
+        this.PutHelper<FieldsUpdateRequest, unit>(sprintf "/indices/%s/fields" indexName, fields)
+    member this.UpdateIndexSearchProfile(indexName : string, profile : SearchQuery) = 
+        this.PutHelper<SearchQuery, unit>(sprintf "/indices/%s/searchprofile" indexName, profile)
+    member this.UpdateIndexConfiguration(indexName : string, conf : IndexConfiguration) = 
+        this.PutHelper<IndexConfiguration, unit>(sprintf "/indices/%s/configuration" indexName, conf)
     member this.DeleteIndex(indexName : string) = 
         this.DeleteHelper<unit>(sprintf "/indices/%s" indexName)
     member this.GetIndex(indexName : string) = 

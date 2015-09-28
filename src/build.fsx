@@ -30,17 +30,19 @@ let patchLevel = 2
 let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
 let version = sprintf "%i.%i.%i-alpha+%s" majorVersion minorVersion patchLevel buildVersion
 let productName = "FlexSearch"
-let copyright = "(c) Seemant Rajvanshi, 2012 - 2014"
+let copyright = sprintf "Copyright (C) 2010 - %i - FlexSearch" DateTime.Now.Year
 // Properties
 let buildDir = @".\build\"
-let testDir = @".\build\"
+let testDir = @".\build-test\"
 let deployDir = @".\deploy\"
 let portalDir = currentDirectory + @"\..\srcjs"
 let documentationDir = currentDirectory + @"\..\documentation"
+let dataDir = currentDirectory + @"\..\documentation\docs\data"
 let webDir = buildDir + @"Web\"
 
 // Create necessary directories if they don't exist
 Directory.CreateDirectory(buildDir)
+Directory.CreateDirectory(testDir)
 Directory.CreateDirectory(deployDir)
 
 /// <summary>
@@ -114,24 +116,24 @@ let runPsScript scriptText =
 
 // Targets
 Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web" ])
-// This is to ensure that the compiled weaver is copied to the correct folder so that Fody can pick it up
-Target "BuildWeaver" (fun _ -> 
-    !!"weavers/weavers.fsproj"
-    |> MSBuildRelease "weavers/bin/release" "Build"
-    |> Log "BuildWeaver-Output: ")
 Target "BuildApp" (fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
     AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
-    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: ")
+    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
+    // Copy the files from build to build-test necessary for Testing
+    FileHelper.CopyRecursive buildDir testDir true |> ignore)
 Target "Test" (fun _ -> 
-    let errorCode = 
-        [ Path.Combine(testDir, "FlexSearch.Tests.exe") ]
-        |> Seq.map (fun p -> asyncShellExec { defaultParams with Program = p })
-        |> Async.Parallel
-        |> Async.RunSynchronously
-        |> Array.sum
-    if errorCode <> 0 then failwith "Error in tests")
+    !! (testDir @@ "FlexSearch.Tests.dll") 
+    |> (fun includes ->
+            try FixieHelper.Fixie 
+                    (fun p -> { p with CustomOptions = [ "xUnitXml", "TestResult.xml" :> obj 
+                                                         "requestlogpath", dataDir :> obj ] })
+                    includes
+            // Upload test results to Appveyor even if tests failed
+            finally AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__
+                    trace "Uploaded to AppVeyor"))
+            
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
@@ -149,6 +151,9 @@ Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
     let source = portalDir + @"\dist"
     FileHelper.CopyRecursive source webDir true |> ignore
+    trace "Move Font files to styles folder"
+    File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.ttf", webDir + @"\styles\ui-grid.ttf")
+    File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.woff", webDir + @"\styles\ui-grid.woff")
 
 // Documentation related
 Target "GenerateSwagger" <| fun _ ->
@@ -162,17 +167,16 @@ Target "GenerateSwagger" <| fun _ ->
 // Dependencies
 "Clean" 
 ==> "RestorePackages" 
-==> "BuildWeaver" 
 ==> "BuildApp" 
-// ==> "Test"
 ==> "Default" 
 ==> "MoveFiles" 
 ==> "GenerateSwagger"
 ==> "MovePortal"
 ==> "Zip"
+==> "Test"
 
 "BuildPortal"
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "Zip"
+RunTargetOrDefault "Test"

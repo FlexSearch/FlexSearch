@@ -16,12 +16,7 @@
 //  You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
 
-using System;
-using System.Reflection;
-using System.Text;
-using Microsoft.Diagnostics.Tracing;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Diagnostics.Tracing;
 
 namespace FlexSearch.Logging
 {
@@ -32,28 +27,22 @@ namespace FlexSearch.Logging
     [EventSource(Name = "FlexSearch")]
     public sealed class LogService : EventSource
     {
-        private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings();
         private static readonly LogService Log = new LogService();
-        private static ConsoleEventListener consoleEventListener = null;
 
         /// <summary>
         /// Default Log message format
         /// </summary>
         private const string Message = "Code: {0} \n{1}";
 
-        private LogService()
+        public static LogService GetLogger()
         {
-            JsonSerializerSettings.Converters.Add(new StringEnumConverter());
-            JsonSerializerSettings.Formatting = Formatting.Indented;
-        }
-
-        public static LogService GetLogger(bool testLogger)
-        {
-            if (!testLogger || consoleEventListener != null) return Log;
-            consoleEventListener = new ConsoleEventListener();
-            consoleEventListener.EnableEvents(Log, EventLevel.LogAlways, EventKeywords.All);
             return Log;
         }
+
+        /// <summary>
+        /// Make constructor private
+        /// </summary>
+        private LogService() { }
 
         public class Keywords
         {
@@ -63,6 +52,7 @@ namespace FlexSearch.Logging
             public const EventKeywords Document = (EventKeywords)8;
             public const EventKeywords Default = (EventKeywords)16;
             public const EventKeywords Plugin = (EventKeywords)32;
+            public const EventKeywords Startup = (EventKeywords)64;
         }
 
         /// <summary>
@@ -88,7 +78,7 @@ namespace FlexSearch.Logging
         {
             WriteEvent(1002, errorCode, msg, data);
         }
-        
+
         [Event(1003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Node, Channel = EventChannel.Admin)]
         public void NodeInfo(string errorCode, string msg, string data)
         {
@@ -100,7 +90,7 @@ namespace FlexSearch.Logging
         {
             WriteEvent(1004, errorCode, msg, data);
         }
-        
+
         [Event(1005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Node, Channel = EventChannel.Operational)]
         public void NodeLogAlways(string errorCode, string msg, string data)
         {
@@ -293,6 +283,44 @@ namespace FlexSearch.Logging
 
         [Event(6005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Plugin, Channel = EventChannel.Operational)]
         public void PluginLogAlways(string errorCode, string msg, string data)
+        {
+            WriteEvent(6005, errorCode, msg, data);
+        }
+        #endregion
+
+        #region Startup events
+        [Event(7000, Message = Message, Level = EventLevel.Critical, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void StartupCritical(string errorCode, string msg, string data)
+        {
+            WriteEvent(7000, errorCode, msg, data);
+        }
+
+        [Event(7001, Message = Message, Level = EventLevel.Error, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void StartupError(string errorCode, string msg, string data)
+        {
+            WriteEvent(7001, errorCode, msg, data);
+        }
+
+        [Event(7002, Message = Message, Level = EventLevel.Warning, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void StartupWarning(string errorCode, string msg, string data)
+        {
+            WriteEvent(7002, errorCode, msg, data);
+        }
+
+        [Event(7003, Message = Message, Level = EventLevel.Informational, Keywords = Keywords.Plugin, Channel = EventChannel.Admin)]
+        public void StartupInfo(string errorCode, string msg, string data)
+        {
+            WriteEvent(7003, errorCode, msg, data);
+        }
+
+        [Event(7004, Message = Message, Level = EventLevel.Verbose, Keywords = Keywords.Plugin, Channel = EventChannel.Operational)]
+        public void StartupVerbose(string errorCode, string msg, string data)
+        {
+            WriteEvent(6004, errorCode, msg, data);
+        }
+
+        [Event(7005, Message = Message, Level = EventLevel.LogAlways, Keywords = Keywords.Plugin, Channel = EventChannel.Operational)]
+        public void StartupLogAlways(string errorCode, string msg, string data)
         {
             WriteEvent(6005, errorCode, msg, data);
         }

@@ -1,0 +1,66 @@
+@import "bower_components/material-shadows/material-shadows";
+
+.pagination {
+    margin-bottom: 1em;
+    text-align: center;
+    line-height: 2em;
+    font-size: 1.2em;
+    height: 2em;
+  
+  i {
+    width : 1em;
+  }
+  
+  i.material-icons{
+    font-size: 1.5em;
+    cursor: pointer;
+    }
+    
+  input {
+    vertical-align: top;
+    width:2em;
+    font-size: 1.1em;
+    color: #2196F3;
+  }
+  
+  span {
+    vertical-align: top;
+    color: rgba(0,0,0,.5);
+    transition: color 2s;
+    display: inline-block;
+  }
+}
+
+span.centered {
+  text-align: center;
+}
+
+#session-sidebar {
+  min-width: 250px;
+}
+
+/* --------------- */
+/* Comparison Page */
+/* --------------- */
+#session-comparison-box{
+    @include z-depth(2.5);
+    z-index: 5;
+}
+
+#session-comparison-result-box {
+}
+
+#session-comparison-table {
+    margin-bottom: 3em; 
+    border: 1px solid #d4d4d5;
+         
+    tr {    
+      td {
+     border: 1px solid #d4d4d5;
+    }
+  }
+}
+
+md-list-item.selected {
+  background-color: rgba(0,0,0,0.0980392);
+}

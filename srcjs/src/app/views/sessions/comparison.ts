@@ -6,9 +6,13 @@ module flexportal {
   // The processing function supplied by the user
   declare function process(sourceId, targetId, indexName) : ng.IPromise<{}>
   
+  // The function that handles the click event of the Source / Match
+  declare function onMatchItemClick(item, indexName) : ng.IPromise<{}>
+  
   class ComparisonItem {
     Name: string
     Id: string
+    ExternalId: string
     TrueDuplicate: boolean
     Values: any[]
   }
@@ -19,14 +23,30 @@ module flexportal {
     Source: ComparisonItem
     Targets: ComparisonItem []
     areEqual(fieldNumber: number, targetNumber: number): boolean
+    syncSwitches(masterTargetId) : void
+    atLeastOneMaster() : boolean
 
     // Toolbar specific    
     doProcessing(): void
     doReview(): void
-    selectedTarget: string
+    doItemClick(itemId) : void
   }
 
   export class ComparisonController {
+    private static getTrueDuplicate($scope : IComparisonScope) {
+      var filtered = $scope.Targets.filter(t => t.TrueDuplicate);
+      if (filtered.length == 1) return filtered[0];
+      else $scope.showError("A single true duplicate hasn't been selected");
+      
+      return null;
+    }
+    
+    private static keyValuePair(fieldNames : string[], comparisonRecord : ComparisonItem){
+      var result = [];
+      fieldNames.forEach((t, i) => result[t] = comparisonRecord.Values[i]);
+      return result;
+    }
+    
     /* @ngInject */
     constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any, flexClient: FlexClient) {
       // Function to check if two field values from source vs target are equal
@@ -34,19 +54,37 @@ module flexportal {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
       }
       
+      $scope.atLeastOneMaster = () => $scope.Targets && $scope.Targets.some((t,i) => t.TrueDuplicate);
+      
+      // Function that synchronizez all the switches within the same group. MasterTargetId is the 
+      // target that's currently active
+      $scope.syncSwitches = function(masterTargetId) {
+        // All targets except the master aren't true duplicates
+        $scope.Targets
+          .filter(t => t.Id != masterTargetId)
+          .forEach((target, i) => target.TrueDuplicate = false);
+      };
+      
+      // Function that will be executed whenever a comparison item header is clicked
+      $scope.doItemClick = function(item : ComparisonItem) { 
+        onMatchItemClick(ComparisonController.keyValuePair($scope.FieldNames, item), $scope.session.IndexName); 
+        }
+      
       // Function that will be executed when the Process button is pressed
       $scope.doProcessing = function() {
         // Show the progress bar
         $('.comparison-page md-progress-linear').show();
-        var duplicate = $scope.ActiveDuplicate,
-            selectedTargetIdx = parseInt($scope.selectedTarget);
         
-        var sourceId = duplicate.SourceRecordId,
-            targetId = duplicate.Targets[selectedTargetIdx].TargetRecordId,
+        var duplicate = $scope.ActiveDuplicate,
+          masterTarget = ComparisonController.getTrueDuplicate($scope);
+        if(masterTarget == null) return;
+        
+        var source = ComparisonController.keyValuePair($scope.FieldNames, $scope.Source),
+            target = ComparisonController.keyValuePair($scope.FieldNames, masterTarget),
             indexName = $scope.session.IndexName;
         
         // Do the user specified processing
-        process(sourceId, targetId, indexName)
+        process(source, target, indexName)
         .then(function(response) {
           $mdToast.show(
             $mdToast.simple()
@@ -66,8 +104,9 @@ module flexportal {
           duplicate.SourceStatus = "2";
           
           // Set the selected target record to be a True Duplicate
-          $scope.Targets[selectedTargetIdx].TrueDuplicate = true;
-          duplicate.Targets[selectedTargetIdx].TrueDuplicate = true;
+          duplicate.Targets.forEach((t, i) => { 
+            if(t.TargetId == masterTarget.Id) t.TrueDuplicate = true;
+          });
           
           flexClient.updateDuplicate(duplicate)
           .then(function() {
@@ -139,13 +178,25 @@ module flexportal {
               // Instantiate the Source Record
               $scope.Source = {
                 Name: $scope.ActiveDuplicate.SourceDisplayName, 
-                Id: $scope.ActiveDuplicate.SourceId, 
+                Id: $scope.ActiveDuplicate.SourceId,
+                ExternalId: $scope.ActiveDuplicate.SourceRecordId, 
                 TrueDuplicate: false,
                 Values: []};
               
-              var sourceFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.SourceRecordId);
-              for (var i in sourceFields)
-                $scope.Source.Values.push(sourceFields[i]);
+              // If this is a source record that came from a CSV dedupe session, then the contents
+              // will be available in the sourcecontent field
+              if(!!$scope.ActiveDuplicate.SourceContent) {
+                var contents = JSON.parse($scope.ActiveDuplicate.SourceContent);
+                $scope.Source.ExternalId = contents.id;
+                $scope.FieldNames = Object.keys(contents);
+                for (var i in $scope.FieldNames)
+                  $scope.Source.Values.push(contents[$scope.FieldNames[i]]);
+              }
+              else {
+                var sourceFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.SourceRecordId);
+                for (var i in $scope.FieldNames)
+                  $scope.Source.Values.push(sourceFields[$scope.FieldNames[i]]);
+              }
               
               // Populate the Targets
               $scope.Targets = [];
@@ -156,40 +207,21 @@ module flexportal {
                 var target = {
                   Name: flexTarget.TargetDisplayName, 
                   Id: flexTarget.TargetId, 
+                  ExternalId: flexTarget.TargetRecordId,
                   TrueDuplicate: flexTarget.TrueDuplicate,
                   Values: [] };
                 
                 var targetFields = firstOrDefault(documents, "_id", $scope.ActiveDuplicate.Targets[i].TargetRecordId);
-                for (var j in targetFields)
-                  target.Values.push(targetFields[j]);
+                for (var j in $scope.FieldNames)
+                  target.Values.push(targetFields[$scope.FieldNames[j]]);
                 
                 // Add the target to the list of Targets
                 $scope.Targets.push(target);
               }
               
               console.log($scope);
-            });
-            
-            // Enable the checkboxes
-            // Since the HTML elements haven't loaded yet, I'm waiting for 1 sec.
-            // This should be replaced by some sort of onLoad event. TODO
-            window.setTimeout(function(){
-              (<any>$('.ui.checkbox')).checkbox({
-                onChange: function() {
-                  // Initialization
-                  $scope.selectedTarget = null;
-                  
-                  // Check which checkbox changed
-                  var cb = $(".ui.checkbox").each(function(i, item){
-                    if((<any>$(item)).checkbox('is checked')) {
-                      $scope.selectedTarget = $(item).find("input").attr('value');
-                    }
-                  });
-                  
-                  $scope.$digest();
-                }
-              });
-            }, 1000);
+            })
+            .then(() => (<any>$('.scrollable')).perfectScrollbar());
           });
       });
     }

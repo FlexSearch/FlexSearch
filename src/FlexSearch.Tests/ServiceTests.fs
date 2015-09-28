@@ -45,6 +45,134 @@ module IndexServiceTests =
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Offline) @>
 
+    type UpdateIndexTests() =
+        let modifyFirstField (index : Index) =
+            let fields = index.Fields
+            fields.[0].Store <- false
+            index
+
+        let modifyFirstFieldName (index : Index) =
+            let fields = index.Fields
+            fields.[0].FieldName <- "modified"
+            index
+
+        let searchAndExtract (searchService : ISearchService) (query : SearchQuery) = 
+            let result = searchService.Search(query)
+            test <@ succeeded <| result @>
+            (extract <| result) |> toSearchResults
+
+        let setUpAndModifyProfile (index : Index) indexService documentService searchService newProfile =
+            let testData = """
+id,et1,et2,i1,i2
+1,a,h,37,95
+2,b,g,49,31"""
+            index.SearchProfiles <- [| new SearchQuery(index.IndexName, "et1 = 'a'", QueryName = "profile") |]
+            indexTestData (testData, index, indexService, documentService)
+
+            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile")
+                         |> searchAndExtract searchService
+            test <@ result.TotalAvailable = 1 @>
+            test <@ result.Documents.[0].Id = "1" @>
+
+            indexService.AddOrUpdateSearchProfile(index.IndexName, newProfile) |> (?)
+    
+        
+
+        member __.``Should allow updating index fields`` (indexService : IIndexService, index : Index) =
+            index.Active <- true
+            test <@ succeeded <| indexService.AddIndex(index) @>
+            
+            let modified = index |> modifyFirstField
+            test <@ succeeded <| indexService.UpdateIndexFields(index.IndexName, modified.Fields) @>
+            
+            let updated = indexService.GetIndex index.IndexName
+            test <@ succeeded updated @>
+            test <@ (extract updated).Fields.[0].Store = false @>
+
+        member __.``Should be able to access old documents after updating index fields``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+
+            let modified = index |> modifyFirstField
+            indexService.UpdateIndexFields(index.IndexName, modified.Fields) |> (?)
+            
+            documentService.GetDocument(index.IndexName, "1") |> (?)
+
+        member __.``Should be able to access old documents after changing index field name``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+
+            let modified = index |> modifyFirstFieldName
+            indexService.UpdateIndexFields(index.IndexName, modified.Fields) |> (?)
+            
+            let doc = documentService.GetDocument(index.IndexName, "1") 
+            (?) doc
+            test <@ (extract doc).Fields.ContainsKey("modified") @>
+
+        member __.``Should be able to access old documents after modifying search profile``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            new SearchQuery(index.IndexName, "et1 = 'b'", QueryName = "profile") 
+            |> setUpAndModifyProfile index indexService documentService searchService
+            
+            // Search using the new profile and check that the second record is returned
+            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile")
+                         |> searchAndExtract searchService
+            test <@ result.TotalAvailable = 1 @>
+            test <@ result.Documents.[0].Id = "2" @>
+
+        member __.``Should be able to access old documents after adding new search profile``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            new SearchQuery(index.IndexName, "et1 = 'b'", QueryName = "profile2") 
+            |> setUpAndModifyProfile index indexService documentService searchService
+            
+            // Search using the new profile and check that the second record is returned
+            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile2")
+                         |> searchAndExtract searchService
+            test <@ result.TotalAvailable = 1 @>
+            test <@ result.Documents.[0].Id = "2" @>
+
+        member __.``Should be able to access old documents after changing index configuration``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+
+            let conf = index.IndexConfiguration
+            conf.AutoCommit <- true
+            indexService.UpdateIndexConfiguration(index.IndexName, conf) |> (?)
+            
+            documentService.GetDocument(index.IndexName, "1") |> (?)
+
+        member __.``Shouldn't be able modify Index Version``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService,
+                    searchService : ISearchService) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+
+            let conf = new IndexConfiguration()
+            conf.IndexVersion <- IndexVersion.Lucene_4_x_x
+            test <@ failed <| indexService.UpdateIndexConfiguration(index.IndexName, conf) @>
+
     type CommonTests() =
         member __.``Should return size of existing index`` (indexService: IIndexService, index : Index) =
             index.Active <- true
@@ -76,12 +204,15 @@ module DocumentServiceTests =
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             let document = new Document(index.IndexName, documentId)
+            document.Fields.Add("et1", "test")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
-            test <@ (extract <| documentService.GetDocument(index.IndexName, documentId)).Id = documentId @>
+            let doc = documentService.GetDocument(index.IndexName, documentId)
+            test <@ (extract <| doc).Id = documentId @>
+            test <@ (extract <| doc).Fields.["et1"] = "test" @>
         
         member __.``Should be able to add and delete a document`` (index : Index, documentId : string, 
                                                                    indexService : IIndexService, 
@@ -106,14 +237,12 @@ module DocumentServiceTests =
             document.Fields.["t1"] <- "0"
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-            test 
-                <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = document.Fields.["t1"] @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = "0" @>
             // Update the document
             document.Fields.["t1"] <- "1"
             test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-            test 
-                <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = document.Fields.["t1"] @>
+            test <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = "1" @>
 
         member __.``Should be able to delete all documents in an index``(index : Index, indexService : IIndexService, 
                                                                          documentService : IDocumentService) =
@@ -305,6 +434,7 @@ type QueueServiceTests() =
         test <@ succeeded <| indexService.AddIndex(index) @>
         let document = new Document(index.IndexName, "1")
         queueService.AddDocumentQueue(document)
+        // TODO wait for the action block to actually finish adding the document to Lucene
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         

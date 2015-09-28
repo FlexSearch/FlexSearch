@@ -1,0 +1,42 @@
+<table id="{{id}}" class="ui celled striped table">
+    <thead>
+        <tr>
+            <th>{{method}}</th>
+            <th><code>{{uri}}</code></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td colspan="2">
+                <p>{{description}}</p>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <p><strong>URL Parameters : {{parameters.length}}</strong></p>
+            </td>
+        </tr>
+        {{#parameters}}
+        <tr>
+            <td>
+                <p>
+                    [
+                    {{#if isRequired }}
+                    <img src="/assets/img/icons/star32.png" alt="Required" width="16" height="16" title="Required">
+                    {{else}}
+                    <img src="/assets/img/icons/undefined.png" alt="Optional" width="16" height="16" title="Optional">
+                    {{/if}}
+                    ]
+                    {{name}}
+                    {{#if defaultValue}}
+                    <em><code>(default: {{defaultValue}})</code></em>
+                    {{/if}}
+                </p>
+            </td>
+            <td>
+                <p>{{description}}</p>
+            </td>
+        </tr>
+        {{/parameters}}
+    </tbody>
+</table>

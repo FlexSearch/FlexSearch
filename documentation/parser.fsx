@@ -31,14 +31,19 @@ module SigDocParser =
         member val Name = defString with get, set
         member val Summary = defString with get, set
         member val Method = defString with get, set
+        member val HttpMethod = defString with get, set
+        member val Uri = defString with get, set
+        member val HttpInputDto = defString with get, set
+        member val HttpOutputDto = defString with get, set
         member val UriParams = defStringDict() with get, set
         member val Params = defStringDict() with get, set
         member val Description = defString with get, set
         member val Examples = new List<string>() with get, set
         member val Options = defStringDict() with get, set
         member val Properties = defStringDict() with get, set
+        member val WsCategory = defString with get, set
         override this.ToString() = 
-            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.UriParams this.Params this.Description this.Examples this.Options this.Properties
+            sprintf "%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A;\n%A" this.Type this.Name this.Summary this.Method this.UriParams this.Params this.Description this.Examples this.Options this.Properties this.WsCategory
 
     let tryAdd (dict : Dictionary<string,string>) item = 
         try dict.Add item
@@ -100,9 +105,12 @@ module SigDocParser =
         pstring "#if opt_" 
         >>. ifMap
         |>> fun x -> fun (def: Definition) -> x |> tryAdd def.Options
+    let wsCategory = 
+        pstring "# category" >>. ws >>. quote1Text
+        |>> fun x -> fun (def : Definition) -> def.WsCategory <- x
 
     // Combine the parsers into a choice
-    let infoCode = [meth; uriparam; param; description; examples; dtoProps; enumOpt]
+    let infoCode = [meth; uriparam; param; description; wsCategory; examples; dtoProps; enumOpt ]
     let ignoredContent : Parser<Definition -> unit, unit> = 
         manyCharsTill anyChar ((followedBy <| (pstring "#")) <|> eof)
         |>> fignore

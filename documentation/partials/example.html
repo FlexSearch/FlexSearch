@@ -1,0 +1,24 @@
+<div class="title">
+    <i class="dropdown icon"></i>{{title}}
+</div>
+<div class="content terminal-example">
+    
+    <div class="request">
+        <code>$ http {{request.method.method}} {{request.requestUri}}{{#if requestBody}}<span>&nbsp;-d</span>{{/if}}</code>
+        {{#if requestBody}}
+        <code class="source">{{requestBody}}</code>
+        <div class="json"></div>
+        <br />
+        {{/if}}
+        <code>
+            HTTP/{{response.version.major}}.{{response.version.minor}} {{response.statusCode}}
+            {{#response.content.headers}}
+            | {{key}} : {{value.[0]}}
+            {{/response.content.headers}}
+        </code>
+    </div>
+    <div class="response">
+        <code class="source">{{responseBody}}</code>
+        <div class="json"></div>
+    </div>
+</div>

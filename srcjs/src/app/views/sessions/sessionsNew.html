@@ -11,7 +11,7 @@
 	  <md-progress-linear md-mode="indeterminate" ng-show="false"></md-progress-linear>
 </md-toolbar>
 	
-<md-content layout="column" layout-padding layout-align="space-around start">
+<md-content layout="column" layout-padding>
 	<md-select placeholder="Index Name" ng-model="IndexNumber" md-on-open="clearDependencies()" required>
 		<md-option ng-repeat="index in Indices" value="{{$index}}">'{{index.Name}}' index</md-option>
 	</md-select>
@@ -26,8 +26,14 @@
 	  <textarea columns="1" ng-model="Indices[IndexNumber].SearchProfiles[ProfileNumber].QueryString" disabled></textarea>
 	</md-input-container>
 	<md-input-container layout-fill>
+	  <label>File Path</label>
+	  <md-tooltip>Specify the file path of the CSV you want to submit for this session. Field is only available when Selection Query is empty</md-tooltip>
+	  <input ng-model="FileName" ng-required="!SelectionQuery" ng-disabled="!!SelectionQuery">
+	</md-input-container>
+	<md-input-container layout-fill>
 	  <label>Selection Query</label>
-	  <input ng-model="SelectionQuery" required>
+	  <md-tooltip>Specify the selection query to use when gathering records from the index. Field is only available when File Path is empty</md-tooltip>
+	  <input ng-model="SelectionQuery" ng-required="!FileName" ng-disabled="!!FileName">
 	</md-input-container>
 	
 	<h2 class="md-title">Optional parameters</h2>

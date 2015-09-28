@@ -1,40 +1,188 @@
 ﻿open FlexSearch.Core
-open System
+open Nessos.UnionArgParser
+open System.Text
 open System.IO
 open Topshelf
+open System.Collections.Generic
+open System
+
+module Management = 
+    open System.Management
+    
+    let getObj (className : string) = 
+        let query = "SELECT * FROM Win32_" + className
+        use mgmtObj = new ManagementObjectSearcher(query)
+        mgmtObj.Get()
+    
+    let private infoObjects = 
+        [| ("Processor", [| "Name"; "Description"; "NumberOfCores"; "NumberOfLogicalProcessors"; "MaxClockSpeed" |])
+           ("OperatingSystem", [| "Caption"; "TotalVisibleMemorySize" |])
+           ("ComputerSystem", [| "TotalPhysicalMemory" |])
+           ("PhysicalMemory", [| "ConfiguredClockSpeed" |])
+           ("DiskDrive", [| "Manufacturer"; "Model"; "Size" |]) |]
+    
+    /// Generates basic system info like CPU etc. It is useful to record this information
+    /// along with the performance test results    
+    let generateSystemInfo() = 
+        let info = new Dictionary<string, Dictionary<string, string>>()
+        for (className, props) in infoObjects do
+            let res = new Dictionary<string, string>()
+            let stmt = getObj className
+            let mutable i = 0
+            for s in stmt do
+                for p in props do
+                    let v = s.GetPropertyValue(p)
+                    
+                    let propName = 
+                        if i = 0 then p
+                        else p + i.ToString()
+                    if notNull v then res.[propName] <- v.ToString()
+                i <- i + 1
+            info.Add(className, res)
+        info
+    
+    /// Generate printable report of system information
+    let printSystemInfo() = 
+        let sb = new StringBuilder()
+        for className in generateSystemInfo() do
+            for prop in className.Value do
+                sb.AppendLine(sprintf "%s-%s : %s" className.Key prop.Key prop.Value) |> ignore
+        sb.ToString()
+
+module Installers = 
+    open System.Diagnostics
+    
+    let out s = printfn "[FlexSearch.Install] %s" s
+    
+    let toQuotedString (s : string) = 
+        if System.String.IsNullOrEmpty s then s
+        elif s.Chars 0 = '"' then s
+        else "\"" + s + "\""
+    
+    // Executes a given exe along with the passed argument 
+    let exec path argument = 
+        let psi = new ProcessStartInfo()
+        psi.FileName <- path
+        psi.Arguments <- argument
+        psi.WorkingDirectory <- Constants.rootFolder
+        psi.RedirectStandardOutput <- false
+        psi.UseShellExecute <- false
+        use p = Process.Start(psi)
+        p.WaitForExit()
+    
+    let private manifestManFileName = "FlexSearch.Logging.FlexSearch.etwManifest.man"
+    let private manifestFileName = "FlexSearch.Logging.FlexSearch.etwManifest.dll"
+    
+    let installManifest() = 
+        printfn "Installing the ETW manifest..."
+        exec "wevtutil.exe" 
+        <| "im " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString) + " /rf:" 
+           + (Constants.rootFolder +/ manifestFileName |> toQuotedString) + " /mf:" 
+           + (Constants.rootFolder +/ manifestFileName |> toQuotedString)
+    
+    let uninstallManifest() = 
+        printfn "Un-installing the ETW manifest..."
+        exec "wevtutil.exe" <| "um " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString)
+    
+    let reservePort (port : int) = 
+        printfn "Reserving the port %i" port
+        exec "netsh.exe" <| sprintf "http add urlacl url=http://+:%i/ user=everyone listen=yes" port
+    
+    /// Gets executed after the service is installed by TopShelf
+    let afterInstall (settings : Settings.T) = 
+        new Action(fun _ -> 
+        installManifest()
+        reservePort (settings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)))
+
+let mutable topShelfCommand = Unchecked.defaultof<string>
+let mutable loadTopShelf = true
+
+let topShelfConfiguration (settings : Settings.T, conf : HostConfigurators.HostConfigurator) = 
+    if isNotBlank topShelfCommand then conf.ApplyCommandLine(topShelfCommand)
+    conf.RunAsLocalSystem() |> ignore
+    conf.SetDescription("FlexSearch Server")
+    conf.SetDisplayName("FlexSearch Server")
+    conf.SetServiceName("FlexSearch-Server")
+    conf.StartAutomatically() |> ignore
+    conf.EnableServiceRecovery(fun rc -> rc.RestartService(1) |> ignore) |> ignore
+    conf.Service<NodeService>(fun (factory : ServiceConfigurators.ServiceConfigurator<_>) -> 
+        factory.ConstructUsing(new Func<_>(fun _ -> new NodeService(settings, false))) |> ignore
+        factory.WhenStarted(fun tc -> tc.Start()) |> ignore
+        factory.WhenStopped(fun tc -> tc.Stop()) |> ignore)
+    |> ignore
+    conf.AfterInstall(Installers.afterInstall (settings)) |> ignore
+    conf.AfterUninstall(new Action(fun _ -> Installers.uninstallManifest())) |> ignore
+
+let runService() = 
+    if loadTopShelf then 
+        HostFactory.Run(fun configurator -> 
+            let settings = StartUp.load()
+            topShelfConfiguration (settings, configurator))
+        |> int
+    else 0
+
+type CLIArguments = 
+    | [<AltCommandLine("-i")>] Install
+    | [<AltCommandLine("-u")>] UnInstall
+    | Start
+    | Stop
+    | [<AltCommandLine("-im")>] InstallManifest
+    | [<AltCommandLine("-um")>] UnInstallManifest
+    | SystemInfo
+    interface IArgParserTemplate with
+        member this.Usage = 
+            match this with
+            | Install -> "Installs the Windows Service"
+            | UnInstall -> "Un-install the Windows Service"
+            | Start -> "Starts the service if it is not already running"
+            | Stop -> "Stops the service if it is running"
+            | InstallManifest -> "Install the ETW manifest"
+            | UnInstallManifest -> "Un-install the ETW manifest"
+            | SystemInfo -> "Print basic information about the running system"
+
+/// Standard text to prefix before the help statement
+let prefixUsageText = """
+ Usage: FlexSearch-Server.exe [options]
+ ------------------------------------------------------------------
+ Options:"""
+
+let parser = UnionArgParser.Create<CLIArguments>(usageText = prefixUsageText)
+
+let printUsage() = 
+    loadTopShelf <- false
+    printfn "%s" (parser.Usage(prefixUsageText))
 
 [<EntryPoint>]
 let main argv = 
-    //    // Capture all unhandled errors
-    //    AppDomain.CurrentDomain.UnhandledException.Subscribe
-    //        (fun x -> logger.TraceError(sprintf "Unhandled exception in application: %A" x.ExceptionObject)) 
-    //    |> ignore
-    //    // Load server settings
-    let settings = 
-        match ServerSettings.createFromFile 
-                  (Path.Combine(Constants.ConfFolder, "Config.json"), jsonFormatter) with
-        | Ok(s) -> s
-        | Fail(e) -> 
-            //            logger.TraceError("Error parsing 'Config.yml' file.", e)
-            failwithf "%s" (e.ToString())
-    // Load all plug-in DLLs
-    for file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly) do
+    
+    printfn "%s" StartUp.headerText
+    // Only parse arguments in case of interactive mode
+    if notNull argv && argv.Length > 0 && StartUp.isInteractive then 
         try 
-            System.Reflection.Assembly.LoadFile(file) |> ignore
-        with e -> () //logger.TraceError("Error loading plug-in library.", e)
-    let TopShelfConfiguration() = 
-        HostFactory.Run(fun conf -> 
-            conf.RunAsLocalSystem() |> ignore
-            conf.SetDescription("FlexSearch Server")
-            conf.SetDisplayName("FlexSearch Server")
-            conf.SetServiceName("FlexSearch-Server")
-            conf.StartAutomatically() |> ignore
-            conf.EnableServiceRecovery(fun rc -> rc.RestartService(1) |> ignore) |> ignore
-            conf.Service<NodeService>(fun factory -> 
-                ServiceConfiguratorExtensions.ConstructUsing
-                    (factory, fun () -> new NodeService(settings, false)) |> ignore
-                ServiceConfiguratorExtensions.WhenStarted(factory, fun tc -> tc.Start()) |> ignore
-                ServiceConfiguratorExtensions.WhenStopped(factory, fun tc -> tc.Stop()) |> ignore)
-            |> ignore)
-        |> int
-    TopShelfConfiguration()
+            let results = parser.Parse(argv).GetAllResults()
+            // We don't want TopShelf to process the incoming arguments.
+            // TopShelf will only be used to process certain arguments
+            // supported by it.
+            topShelfCommand <- String.Empty
+            match results.Head with
+            | Install -> topShelfCommand <- "install"
+            | UnInstall -> topShelfCommand <- "uninstall"
+            | Start -> topShelfCommand <- "start"
+            | Stop -> topShelfCommand <- "stop"
+            | InstallManifest -> 
+                loadTopShelf <- false
+                if Helpers.isAdministrator() then Installers.installManifest()
+                else printfn "The ETW Manifest can only be installed as an administrator"
+            | UnInstallManifest -> 
+                loadTopShelf <- false
+                if Helpers.isAdministrator() then Installers.uninstallManifest()
+                else printfn "The ETW Manifest can only be un-installed as an administrator"
+            | SystemInfo -> 
+                loadTopShelf <- false
+                printf "%s" (Management.printSystemInfo())
+        with e -> printUsage()
+    let result = runService()
+    if StartUp.isInteractive then 
+        printfn "Press any key to continue . . ."
+        Console.ReadKey() |> ignore
+    result

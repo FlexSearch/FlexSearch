@@ -1,0 +1,90 @@
+@import url('http://fonts.googleapis.com/css?family=Roboto:400,300,700');
+
+/*
+Adominitions section
+tip, note, info, important
+*/
+.note, .important, .info, .tip {
+    padding: 20px 20px 20px 60px;
+    margin-bottom: 15px;
+    border-style: solid;
+    border-width: 1px;
+    font-size: .9em;
+    position: relative;;
+}
+
+.important {
+    background-color: #f5dfdf;
+    border-color: #ce9e9e;
+}
+
+.note {
+    background-color: #f8fad5;
+    border-color: #e5d35b;
+}
+
+.info {
+    background-color: #dfeff5;
+    border-color: #9ebcce;
+}
+
+.tip {
+    background-color: #e8f5df;
+    border-color: #9ece9e;
+}
+
+.important:before, .note:before, .info:before, .tip:before {
+	font-family: FontAwesome;
+  position: absolute;
+  top: 0;
+  left: 10px;
+  font-size: 2.5em;
+}
+
+.important:before {
+	content: "\f06a";
+}
+
+.note:before {
+	content: "\f06a";
+}
+
+.info:before{
+  content: "\f05a";
+}
+
+.tip::before{
+  content: "\f058";
+}
+/*
+Adominitions section ends
+*/
+
+/*
+Default Font override
+*/
+h1, h2, h3, h4, body, p , a {
+ font-family: 'Roboto', 'Open Sans', sans-serif;
+}
+
+/*
+Styling foe edit me link in the toolbar
+*/
+#edit-link {
+  font-family: 'Roboto', 'Open Sans', sans-serif;
+}
+
+/*
+Override to make buttons behave with the white theme
+*/
+a.btn {
+  background-color: #fff;
+}
+
+/*
+Material CSS set the list style to none. So using a more
+specific style to override it.
+*/
+#section- > ul li {
+    list-style: square outside none;
+}

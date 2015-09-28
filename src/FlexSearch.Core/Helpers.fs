@@ -33,102 +33,6 @@ open System.Security.Principal
 open System.Text
 open System.Threading
 open Newtonsoft.Json
-open Newtonsoft.Json
-
-/// Abstract base class to be implemented by all pool able object
-[<AbstractClass>]
-type PooledObject() as self = 
-    let mutable disposed = false
-    
-    /// Internal method to cleanup resources
-    let cleanup (reRegisterForFinalization : bool) = 
-        if not disposed then 
-            if self.AllowRegeneration = true then 
-                if reRegisterForFinalization then GC.ReRegisterForFinalize(self)
-                self.ReturnToPool(self)
-            else disposed <- true
-    
-    /// Responsible for returning object back to the pool. This will be set automatically by the
-    /// object pool
-    member val ReturnToPool = Unchecked.defaultof<_> with get, set
-    
-    /// This should be set to true to allow automatic return to the pool in case dispose is called
-    member val AllowRegeneration = false with get, set
-    
-    // implementation of IDisposable
-    interface IDisposable with
-        member this.Dispose() = cleanup (false)
-    
-    // override of finalizer
-    override this.Finalize() = cleanup (true)
-    member this.Release() = cleanup (false)
-
-/// A generic object pool which can be used for connection pooling etc.
-[<Sealed>]
-type ObjectPool<'T when 'T :> PooledObject>(factory : unit -> 'T, poolSize : int, ?onAcquire : 'T -> bool, ?onRelease : 'T -> bool) as self = 
-    let pool = new ConcurrentQueue<'T>()
-    let mutable disposed = false
-    let mutable itemCount = 0L
-    
-    let createNewItem() = 
-        // Since this method will be passed to the pool able object we have to pass the reference 
-        // to the underlying queue for the items to be returned back cleanly
-        let returnToPool (item : PooledObject) = pool.Enqueue(item :?> 'T)
-        let instance = factory()
-        instance.ReturnToPool <- returnToPool
-        instance.AllowRegeneration <- true
-        Interlocked.Increment(&itemCount) |> ignore
-        instance
-    
-    let getItem() = 
-        match pool.TryDequeue() with
-        | true, a -> a
-        | _ -> createNewItem()
-    
-    /// Internal method to cleanup resources
-    let cleanup (disposing : bool) = 
-        if not disposed then 
-            if disposing then 
-                disposed <- true
-                while not pool.IsEmpty do
-                    match pool.TryDequeue() with
-                    // This will stop the regeneration of the pooled items
-                    | true, a -> 
-                        a.AllowRegeneration <- false
-                        (a :> IDisposable).Dispose()
-                        Interlocked.Decrement(&itemCount) |> ignore
-                    | _ -> ()
-    
-    do 
-        for i = 1 to poolSize do
-            pool.Enqueue(createNewItem())
-    
-    // implementation of IDisposable
-    interface IDisposable with
-        member this.Dispose() = 
-            cleanup (true)
-            GC.SuppressFinalize(self)
-    
-    // override of finalizer
-    override this.Finalize() = cleanup (false)
-    member this.Available() = pool.Count
-    member this.Total() = itemCount
-    /// Acquire an instance of 'T
-    member this.Acquire() = 
-        // if onAcquire id defined then keep on finding the pool able object till onAcquire is satisfied
-        match onAcquire with
-        | Some(a) -> 
-            let mutable item = getItem()
-            let mutable success = a (item)
-            while success <> true do
-                item <- getItem()
-                success <- a (item)
-                // Dispose the item which failed the onAcquire condition
-                if not success then 
-                    item.AllowRegeneration <- false
-                    (item :> IDisposable).Dispose()
-            item
-        | None -> getItem()
 
 [<Sealed>]
 /// <summary>
@@ -216,13 +120,11 @@ module Helpers =
     let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
     
     let emptyDir (path) = 
-        loopDir path |> Seq.iter (fun x -> 
-            loopFiles x |> Seq.iter (fun x -> File.Delete(x))    
-            Directory.Delete(x, true))
+        loopDir path |> Seq.iter (loopFiles >> Seq.iter File.Delete)
         
     let delDir (path) = 
         emptyDir path
-        Directory.Delete(path)
+        Directory.Delete(path, true)
     
     /// Check for null
     let inline isNull (x : ^a when ^a : not struct) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
@@ -271,8 +173,6 @@ module Helpers =
     /// <summary>
     /// Simple exception formatter
     /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/
-    /// </summary>
-    /// <param name="e"></param>
     [<CompiledNameAttribute("ExceptionPrinter")>]
     let exceptionPrinter (e : Exception) = 
         let sb = StringBuilder()
@@ -303,28 +203,18 @@ module Helpers =
                 if (e.InnerException <> null) then printException e.InnerException (count + 1)
         printException e 1
         sb.ToString()
-//    
-//    let inline ParseDate(date : string) = 
-//        match DateTime.TryParseExact
-//                  (date, [| "yyyyMMdd"; "yyyyMMddHHmm"; "yyyyMMddHHmmss" |], CultureInfo.InvariantCulture, 
-//                   DateTimeStyles.None) with
-//        | true, date -> Ok(date)
-//        | _ -> Fail <| Gener("UNABLE_TO_PARSE_DATETIME:The specified date time is not in a supported format.")
     
     /// Utility method to load a file into text string
-    let LoadFile(filePath : string) = 
-        if File.Exists(filePath) = false then failwithf "File does not exist: {0}" filePath
+    let loadFile(filePath : string) = 
+        if not <| File.Exists(filePath) then failwithf "File does not exist: %s" filePath
         File.ReadAllText(filePath)
     
     /// Deals with checking if the local admin privileges
-    let CheckIfAdministrator() = 
-        let currentUser : WindowsIdentity = WindowsIdentity.GetCurrent()
-        if currentUser <> null then 
-            let wp = new WindowsPrincipal(currentUser)
-            wp.IsInRole(WindowsBuiltInRole.Administrator)
-        else false
+    let isAdministrator() = 
+        (new WindowsPrincipal(WindowsIdentity.GetCurrent())).IsInRole(WindowsBuiltInRole.Administrator)
     
-    let GenerateAbsolutePath(path : string) = 
+    /// Generates an absolute path for a given relative path
+    let generateAbsolutePath(path : string) = 
         if String.IsNullOrWhiteSpace(path) then failwith "internalmessage=No path is specified."
         else 
             let dataPath = 
@@ -391,27 +281,34 @@ module DataType =
         | true -> Some(str)
         | _ -> None
     
-//    let inline isBoolean (value : string) = 
-//        match Boolean.TryParse(value) with
-//        | true, a -> Ok (a)
-//        | _ -> Fail()
-    
     let inline pBool (failureDefault) (value : string) = 
+        if isNull value then
+            failureDefault
+        else
         match Boolean.TryParse(value) with
         | true, a -> a
         | _ -> failureDefault
     
     let inline pLong (failureDefault) (value : string) = 
+        if isNull value then
+            failureDefault
+        else
         match Int64.TryParse(value) with
         | true, a -> a
         | _ -> failureDefault
     
     let inline pInt (failureDefault) (value : string) = 
+        if isNull value then
+            failureDefault
+        else
         match Int32.TryParse(value) with
         | true, a -> a
         | _ -> failureDefault
     
     let inline pDouble (failureDefault) (value : string) = 
+        if isNull value then
+            failureDefault
+        else
         match Double.TryParse(value) with
         | true, a -> a
         | _ -> failureDefault
@@ -547,8 +444,8 @@ type YamlFormatter() =
     let deserializer = new YamlDotNet.Serialization.Deserializer(ignoreUnmatched = true)
     
     let serialize (body : obj, stream : Stream) = 
-        use TextWriter = new StreamWriter(stream)
-        serializer.Serialize(TextWriter, body)
+        use textWriter = new StreamWriter(stream)
+        serializer.Serialize(textWriter, body)
     
     interface IFormatter with
         
@@ -570,3 +467,8 @@ module Debug =
     
     let inline (!>) msg = Printf.kprintf Debug.WriteLine msg
     //let inline fail msg = Printf.kprintf Debug.Fail msg
+
+/// Attribute used on types that are not needed in the Documentation
+[<AttributeUsage(AttributeTargets.Class)>]
+type NotForDocumentation() =
+    inherit Attribute()

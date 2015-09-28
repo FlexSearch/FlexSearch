@@ -31,21 +31,24 @@ type OperationMessage =
       Message : string
       ErrorCode : string }
 
+[<NotForDocumentation>]
 type MessageKeyword =
-    | Node 
-    | Index 
-    | Search 
-    | Document 
-    | Default
-    | Plugin
+    | Node = 1
+    | Index = 2 
+    | Search = 3 
+    | Document = 4 
+    | Default = 5
+    | Plugin = 6
+    | Startup = 7
 
+[<NotForDocumentation>]
 type MessageLevel =
-    | Critical
-    | Error
-    | Warning
-    | Info
-    | Verbose
-    | Nothing
+    | Critical = 1
+    | Error = 2
+    | Warning = 3
+    | Info = 4
+    | Verbose = 5
+    | Nothing = 6
 
 /// Interface to expose internal message format
 type IMessage = 
@@ -102,88 +105,119 @@ module MessageHelpers =
     /// Converts any object to a pretty printed string
     let toFormattedString (x : 'a) = sprintf "%A" x
             
+    let sf1 = Printf.StringFormat<string -> string>
+    let sf2 = Printf.StringFormat<string -> string -> string>
+    let sf3 = Printf.StringFormat<string -> string -> string -> string>
+    let sf4 = Printf.StringFormat<string -> string -> string -> string -> string>
+ 
 open MessageHelpers
 
-type ValidationError = 
-    | GreaterThan of fieldName : string * lowerLimit : string * value : string
-    | LessThan of fieldName : string * upperLimit : string * value : string
-    | GreaterThanEqual of fieldName : string * lowerLimit : string * value : string
-    | LessThanEqual of fieldName : string * lowerLimit : string * value : string
-    | NotBlank of fieldName : string
-    | RegexMatch of fieldName : string * regexExpr : string
-    | KeyNotFound of key : string
-    | NotEmpty of fieldName : string
-    override this.ToString() = sprintf "%A" this
-    interface IMessage with
-        member this.LogProperty() = (MessageKeyword.Default, MessageLevel.Nothing)
-            
-        member this.OperationMessage() = 
-            match this with
-            | GreaterThan(fn, ll, v) -> sprintf "Field '%s' must be greater than %s, but found %s" fn ll v
-            | LessThan(fn, ul, v) -> sprintf "Field '%s' must be less than %s, but found %s" fn ul v
-            | GreaterThanEqual(fn, ll, v) -> 
-                sprintf "Field '%s' must be greater than or equal to %s, but found %s" fn ll v
-            | LessThanEqual(fn, ul, v) -> sprintf "Field '%s' must be less than or equal to %s, but found %s" fn ul v
-            | NotBlank(fn) -> sprintf "Field '%s' must not be blank" fn
-            | RegexMatch(fn, re) -> sprintf "Field '%s' must match Regex expression: %s" fn re
-            | KeyNotFound(key) -> sprintf "Key not found: %s" key
-            | NotEmpty(f) -> sprintf "Sequence must not be empty for field: %s" f
-            |> caseToMsg this
+[<AutoOpen>]
+module ValidationError =
+    
+    let private greaterThan = sf3 "Field '%s' must be greater than %s, but found %s"
+    let private lessThan = sf3 "Field '%s' must be less than %s, but found %s"
+    let private greaterThanEqual = sf3 "Field '%s' must be greater than or equal to %s, but found %s"
+    let private lessThanEqual = sf3 "Field '%s' must be less than or equal to %s, but found %s"
+    let private notBlank = sf1 "Field '%s' must not be blank"
+    let private regexMatch = sf2 "Field '%s' must match Regex expression: %s"
+    let private keyNotFound = sf1 "Key not found: %s"
+    let private notEmpty = sf1 "Sequence must not be empty for field: %s"
+    
+    type T = 
+        | GreaterThan of fieldName : string * lowerLimit : string * value : string
+        | LessThan of fieldName : string * upperLimit : string * value : string
+        | GreaterThanEqual of fieldName : string * lowerLimit : string * value : string
+        | LessThanEqual of fieldName : string * lowerLimit : string * value : string
+        | NotBlank of fieldName : string
+        | RegexMatch of fieldName : string * regexExpr : string
+        | KeyNotFound of key : string
+        | NotEmpty of fieldName : string
+        override this.ToString() = sprintf "%A" this
+        interface IMessage with
+            member this.LogProperty() = (MessageKeyword.Default, MessageLevel.Nothing)
+            member this.OperationMessage() = 
+                match this with
+                    | GreaterThan(fn, ll, v) -> sprintf greaterThan fn ll v
+                    | LessThan(fn, ul, v) -> sprintf lessThan fn ul v
+                    | GreaterThanEqual(fn, ll, v) -> sprintf greaterThanEqual fn ll v
+                    | LessThanEqual(fn, ul, v) -> sprintf lessThanEqual fn ul v
+                    | NotBlank(fn) -> sprintf notBlank fn
+                    | RegexMatch(fn, re) -> sprintf regexMatch fn re
+                    | KeyNotFound(key) -> sprintf keyNotFound key
+                    | NotEmpty(f) -> sprintf notEmpty f
+                |> caseToMsg this
 
-type AnalysisMessage = 
-    | TokenizerNotFound of analyzerName : string * tokenizerName : string
-    | UnableToInitializeTokenizer of analyzerName : string * tokenizerName : string * message : string * ``exception`` : string
-    | FilterNotFound of analyzerName : string * filterName : string
-    | UnableToInitializeFilter of analyzerName : string * filterName : string * message : string * ``exception`` : string
-    | AnalyzerBuilder of analyzerName : string * message : string * ``exception`` : string
-    | AnalyzerNotFound of analyzerName : string
-    interface IMessage with
-        member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Verbose)
-        
-        member this.OperationMessage() = 
-            match this with
-            | TokenizerNotFound(an, tn) -> sprintf "Tokenizer with the name %s does not exist. Analyzer Name: %s" tn an
-            | UnableToInitializeTokenizer(an, tn, m, exp) -> 
-                sprintf "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" 
-                    tn an m exp
-            | FilterNotFound(an, fn) -> sprintf "Filter with the name %s does not exist. Analyzer Name: %s" fn an
-            | UnableToInitializeFilter(an, fn, m, exp) -> 
-                sprintf "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s" fn 
-                    an m exp
-            | AnalyzerBuilder(an, m, e) -> 
-                sprintf "The analyzer '%s' threw an exception while building: %s; \n%s" an m e
-            | AnalyzerNotFound(a) -> sprintf "The analyzer '%s' was not found" a
-            |> caseToMsg this
+[<AutoOpen>]
+module AnalysisMessage =
+    let private tokenizerNotFound = sf2 "Tokenizer with the name %s does not exist. Analyzer Name: %s"
+    let private unableToInitializeTokenizer = sf4 "Tokenizer with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s"
+    let private filterNotFound = sf2 "Filter with the name %s does not exist. Analyzer Name: %s"
+    let private unableToInitializeFilter = sf4 "Filter with the name %s cannot be initialized. Analyzer Name: %s. Error: %s. Exception: %s"
+    let private analyzerBuilder = sf3 "The analyzer '%s' threw an exception while building: %s; \n%s"
+    let private analyzerNotFound = sf1 "The analyzer '%s' was not found"
 
-type BuilderError = 
-    | InvalidPropertyName of fieldName : string * value : string
-    | AnalyzerIsMandatory of fieldName : string
-    | DuplicateFieldValue of groupName : string * fieldName : string
-    | ScriptNotFound of scriptName : string * fieldName : string
-    | ResourceNotFound of resourceName : string * resourceType : string
-    | UnSupportedSimilarity of similarityName : string
-    | UnSupportedIndexVersion of indexVersion : string
-    | UnsupportedDirectoryType of directoryType : string
-    | UnSupportedFieldType of fieldName : string * fieldType : string
-    | ScriptCannotBeCompiled of scriptName : string * error : string
-    | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
-    interface IMessage with
-        member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Error)
-        
-        member this.OperationMessage() = 
-            match this with
-            | InvalidPropertyName(fn, v) -> sprintf "Property name is invalid. Expected '%s' but found '%s'" fn v
-            | AnalyzerIsMandatory(fn) -> sprintf "Analyzer is mandatory for field '%s'" fn
-            | DuplicateFieldValue(gn, fn) -> sprintf "A duplicate entry (%s) has been found in the group '%s'" fn gn
-            | ScriptNotFound(sn, fn) -> sprintf "The script '%s' was not found against the field '%s'" sn fn
-            | ResourceNotFound(rn, rt) -> sprintf "The resource '%s' of type %s was not found" rn rt
-            | UnSupportedSimilarity(s) -> sprintf "Unsupported similarity: %s" s
-            | UnSupportedIndexVersion(i) -> sprintf "Unsupported index version: %s" i
-            | UnsupportedDirectoryType(d) -> sprintf "Unsupported directory type: %s" d
-            | UnSupportedFieldType(fn, ft) -> sprintf "Unsupported field type '%s' for field '%s'" fn ft
-            | ScriptCannotBeCompiled(sn, e) -> sprintf "Script '%s' cannot be compiled: \n%s" sn e
-            | AnalyzerNotSupportedForFieldType(f, a) -> sprintf "Analyzer '%s' not supported for field '%s'" f a
-            |> caseToMsg this
+    type T = 
+        | TokenizerNotFound of analyzerName : string * tokenizerName : string
+        | UnableToInitializeTokenizer of analyzerName : string * tokenizerName : string * message : string * ``exception`` : string
+        | FilterNotFound of analyzerName : string * filterName : string
+        | UnableToInitializeFilter of analyzerName : string * filterName : string * message : string * ``exception`` : string
+        | AnalyzerBuilder of analyzerName : string * message : string * ``exception`` : string
+        | AnalyzerNotFound of analyzerName : string
+        interface IMessage with
+            member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Verbose)
+            member this.OperationMessage() = 
+                match this with
+                    | TokenizerNotFound(an, tn) -> sprintf tokenizerNotFound tn an
+                    | UnableToInitializeTokenizer(an, tn, m, exp) -> sprintf unableToInitializeTokenizer tn an m exp
+                    | FilterNotFound(an, fn) -> sprintf filterNotFound fn an
+                    | UnableToInitializeFilter(an, fn, m, exp) -> sprintf unableToInitializeFilter fn an m exp
+                    | AnalyzerBuilder(an, m, e) -> sprintf analyzerBuilder an m e
+                    | AnalyzerNotFound(a) -> sprintf analyzerNotFound a
+                |> caseToMsg this
+
+[<AutoOpen>]
+module BuilderError =
+    let private invalidPropertyName = sf2 "Property name is invalid. Expected '%s' but found '%s'"
+    let private analyzerIsMandatory = sf1 "Analyzer is mandatory for field '%s'"
+    let private duplicateFieldValue = sf2 "A duplicate entry (%s) has been found in the group '%s'"
+    let private scriptNotFound = sf2 "The script '%s' was not found against the field '%s'"
+    let private resourceNotFound = sf2 "The resource '%s' of type %s was not found"
+    let private unSupportedSimilarity = sf1 "Unsupported similarity: %s"
+    let private unSupportedIndexVersion = sf1 "Unsupported index version: %s"
+    let private unsupportedDirectoryType = sf1 "Unsupported directory type: %s"
+    let private unSupportedFieldType = sf2 "Unsupported field type '%s' for field '%s'"
+    let private scriptCannotBeCompiled = sf2 "Script '%s' cannot be compiled: \n%s"
+    let private analyzerNotSupportedForFieldType = sf2 "Analyzer '%s' not supported for field '%s'"
+    
+    type T = 
+        | InvalidPropertyName of fieldName : string * value : string
+        | AnalyzerIsMandatory of fieldName : string
+        | DuplicateFieldValue of groupName : string * fieldName : string
+        | ScriptNotFound of scriptName : string * fieldName : string
+        | ResourceNotFound of resourceName : string * resourceType : string
+        | UnSupportedSimilarity of similarityName : string
+        | UnSupportedIndexVersion of indexVersion : string
+        | UnsupportedDirectoryType of directoryType : string
+        | UnSupportedFieldType of fieldName : string * fieldType : string
+        | ScriptCannotBeCompiled of scriptName : string * error : string
+        | AnalyzerNotSupportedForFieldType of fieldName : string * analyzerName : string
+        interface IMessage with
+            member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Error)
+            member this.OperationMessage() = 
+                match this with
+                    | InvalidPropertyName(fn, v) -> sprintf invalidPropertyName fn v
+                    | AnalyzerIsMandatory(fn) -> sprintf analyzerIsMandatory fn
+                    | DuplicateFieldValue(gn, fn) -> sprintf duplicateFieldValue fn gn
+                    | ScriptNotFound(sn, fn) -> sprintf scriptNotFound sn fn
+                    | ResourceNotFound(rn, rt) -> sprintf resourceNotFound rn rt
+                    | UnSupportedSimilarity(s) -> sprintf unSupportedSimilarity s
+                    | UnSupportedIndexVersion(i) -> sprintf unSupportedIndexVersion i
+                    | UnsupportedDirectoryType(d) -> sprintf unsupportedDirectoryType d
+                    | UnSupportedFieldType(fn, ft) -> sprintf unSupportedFieldType fn ft
+                    | ScriptCannotBeCompiled(sn, e) -> sprintf scriptCannotBeCompiled sn e
+                    | AnalyzerNotSupportedForFieldType(f, a) -> sprintf analyzerNotSupportedForFieldType f a
+                |> caseToMsg this
 
 type SearchMessage = 
     | SearchError of ``exception`` : string
@@ -363,54 +397,59 @@ type IndexMessage =
             | TransactionLogReadFailure(p, _) -> sprintf "Unable to read the transaction logs from the path: %s" p
             |> caseToMsg this
 
-
 // ----------------------------------------------------------------------------
 // Logging Section
 // ----------------------------------------------------------------------------
-
 [<AutoOpen; RequireQualifiedAccess>]
 module Log = 
     open System.Diagnostics
-    let private logger = FlexSearch.Logging.LogService.GetLogger(false)
     
+    let private logger = FlexSearch.Logging.LogService.GetLogger()
     let logNothing(a, b, c) = ()
+
     let logMethod (keyword, level) =
         match (keyword, level) with
-        | Node, Critical -> logger.NodeCritical
-        | Node, Error -> logger.NodeError
-        | Node, Warning -> logger.NodeWarning      
-        | Node, Info -> logger.NodeInfo
-        | Node, Verbose -> logger.NodeVerbose
-        | Index, Critical -> logger.IndexCritical
-        | Index, Error -> logger.IndexError
-        | Index, Warning -> logger.IndexWarning      
-        | Index, Info -> logger.IndexInfo
-        | Index, Verbose -> logger.IndexVerbose
-        | Search, Critical -> logger.SearchCritical
-        | Search, Error -> logger.SearchError
-        | Search, Warning -> logger.SearchWarning      
-        | Search, Info -> logger.SearchInfo
-        | Search, Verbose -> logger.SearchVerbose
-        | Document, Critical -> logger.DocumentCritical
-        | Document, Error -> logger.DocumentError
-        | Document, Warning -> logger.DocumentWarning      
-        | Document, Info -> logger.DocumentInfo
-        | Document, Verbose -> logger.DocumentVerbose
-        | Default, Critical -> logger.DefaultCritical
-        | Default, Error -> logger.DefaultError
-        | Default, Warning -> logger.DefaultWarning      
-        | Default, Info -> logger.DefaultInfo
-        | Default, Verbose -> logger.DefaultVerbose
-        | Plugin, Critical -> logger.PluginCritical
-        | Plugin, Error -> logger.PluginError
-        | Plugin, Warning -> logger.PluginWarning      
-        | Plugin, Info -> logger.PluginInfo
-        | Plugin, Verbose -> logger.PluginVerbose
-        | _, Nothing -> logNothing 
+        | MessageKeyword.Startup, MessageLevel.Critical -> logger.StartupCritical
+        | MessageKeyword.Startup, MessageLevel.Error -> logger.StartupError
+        | MessageKeyword.Startup, MessageLevel.Warning -> logger.StartupWarning
+        | MessageKeyword.Startup, MessageLevel.Info -> logger.StartupInfo
+        | MessageKeyword.Startup, MessageLevel.Verbose -> logger.StartupVerbose
+        | MessageKeyword.Node, MessageLevel.Critical -> logger.NodeCritical
+        | MessageKeyword.Node, MessageLevel.Error -> logger.NodeError
+        | MessageKeyword.Node, MessageLevel.Warning -> logger.NodeWarning
+        | MessageKeyword.Node, MessageLevel.Info -> logger.NodeInfo
+        | MessageKeyword.Node, MessageLevel.Verbose -> logger.NodeVerbose
+        | MessageKeyword.Index, MessageLevel.Critical -> logger.IndexCritical
+        | MessageKeyword.Index, MessageLevel.Error -> logger.IndexError
+        | MessageKeyword.Index, MessageLevel.Warning -> logger.IndexWarning
+        | MessageKeyword.Index, MessageLevel.Info -> logger.IndexInfo
+        | MessageKeyword.Index, MessageLevel.Verbose -> logger.IndexVerbose
+        | MessageKeyword.Search, MessageLevel.Critical -> logger.SearchCritical
+        | MessageKeyword.Search, MessageLevel.Error -> logger.SearchError
+        | MessageKeyword.Search, MessageLevel.Warning -> logger.SearchWarning
+        | MessageKeyword.Search, MessageLevel.Info -> logger.SearchInfo
+        | MessageKeyword.Search, MessageLevel.Verbose -> logger.SearchVerbose
+        | MessageKeyword.Document, MessageLevel.Critical -> logger.DocumentCritical
+        | MessageKeyword.Document, MessageLevel.Error -> logger.DocumentError
+        | MessageKeyword.Document, MessageLevel.Warning -> logger.DocumentWarning
+        | MessageKeyword.Document, MessageLevel.Info -> logger.DocumentInfo
+        | MessageKeyword.Document, MessageLevel.Verbose -> logger.DocumentVerbose
+        | MessageKeyword.Default, MessageLevel.Critical -> logger.DefaultCritical
+        | MessageKeyword.Default, MessageLevel.Error -> logger.DefaultError
+        | MessageKeyword.Default, MessageLevel.Warning -> logger.DefaultWarning
+        | MessageKeyword.Default, MessageLevel.Info -> logger.DefaultInfo
+        | MessageKeyword.Default, MessageLevel.Verbose -> logger.DefaultVerbose
+        | MessageKeyword.Plugin, MessageLevel.Critical -> logger.PluginCritical
+        | MessageKeyword.Plugin, MessageLevel.Error -> logger.PluginError
+        | MessageKeyword.Plugin, MessageLevel.Warning -> logger.PluginWarning
+        | MessageKeyword.Plugin, MessageLevel.Info -> logger.PluginInfo
+        | MessageKeyword.Plugin, MessageLevel.Verbose -> logger.PluginVerbose
+        | _, MessageLevel.Nothing -> logNothing 
+        | _, _ -> logNothing
        
     let log (message: IMessage) =
         match message.LogProperty() with
-        | _, Nothing -> ()
+        | _, MessageLevel.Nothing -> ()
         | keyword, level ->
             let om = message.OperationMessage()
             let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
@@ -423,11 +462,9 @@ module Log =
         message
        
 type Logger() =
-    static member Log(msg : IMessage) =
-        log(msg)
+    static member Log(msg : IMessage) = log(msg)
 
-    static member Log(message : Result<_>) =
-        logErrorChoice(message)
+    static member Log(message : Result<_>) = logErrorChoice(message)
     
     static member Log(msg: string, keyword : MessageKeyword, level: MessageLevel) =
         logMethod(keyword, level)(String.Empty, msg, String.Empty)

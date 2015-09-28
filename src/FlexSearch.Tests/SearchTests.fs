@@ -219,6 +219,34 @@ id,et1,t2,i1,i2
 4,e,Garner,1,4
 5,d,jhonson,1,5"""
     do indexTestData (testData, index, indexService, documentService)
+
+    member __.``Searching for 'i1 = 1' with orderby _lastmodified should return 5 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "_id" |]
+            |> withOrderBy Constants.LastModifiedField
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 5
+        result |> assertFieldValue 0 "_id" "1"
+        result |> assertFieldValue 1 "_id" "2"
+        result |> assertFieldValue 2 "_id" "3"
+        result |> assertFieldValue 3 "_id" "4"
+        result |> assertFieldValue 4 "_id" "5"
+
+    member __.``Searching for 'i1 = 1' with orderby _lastmodified and direction desc should return 5 records``() = 
+        let result = 
+            getQuery (index.IndexName, "i1 eq '1'")
+            |> withColumns [| "_id" |]
+            |> withOrderByDesc Constants.LastModifiedField
+
+            |> searchAndExtract searchService
+        
+        result |> assertReturnedDocsCount 5
+        test <@ result.Documents.[0].TimeStamp >= result.Documents.[1].TimeStamp @>
+        test <@ result.Documents.[1].TimeStamp >= result.Documents.[2].TimeStamp @>
+        test <@ result.Documents.[2].TimeStamp >= result.Documents.[3].TimeStamp @>
+        test <@ result.Documents.[3].TimeStamp >= result.Documents.[4].TimeStamp @>
+    
     member __.``Searching for 'i1 = 1' with orderby et1 should return 5 records``() = 
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")

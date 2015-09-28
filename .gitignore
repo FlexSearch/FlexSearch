@@ -236,3 +236,10 @@ src/.fake
 swagger-ui
 documentation/.fake/
 documentation/swagger*
+_book
+bower_components
+node_modules
+dto
+data
+/documentation/F# Interactive
+src/TestResult.xml

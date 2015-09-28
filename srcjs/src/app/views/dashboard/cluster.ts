@@ -133,6 +133,9 @@ module flexportal {
       return flexClient.getIndices()
         .then(response => $scope.Indices = <IndexDetailedResult[]>response)
         
+        // Display the pretty scrollbar for the list of indices
+        .then(() => (<any>$('.scrollable')).perfectScrollbar())
+        
         // Get the status of each index
         .then(() => flexClient.resolveAllPromises(
             $scope.Indices.map(i => flexClient.getIndexStatus(i.IndexName))))

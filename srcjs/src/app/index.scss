@@ -1,0 +1,267 @@
+/*
+Import dependencies
+*/
+@import "assets/scss/prefixer";
+@import "assets/scss/mixins";
+@import "assets/scss/color";
+@import "assets/scss/variables";
+@import "assets/scss/grid";
+
+// Z-levels
+.z-depth-0 {
+  box-shadow: none !important;
+}
+.z-depth-1{
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
+}
+.z-depth-1-half{
+  box-shadow: 0 5px 11px 0 rgba(0, 0, 0, 0.18), 0 4px 15px 0 rgba(0, 0, 0, 0.15);
+}
+.z-depth-2{
+  box-shadow: 0 8px 17px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.z-depth-3{
+  box-shadow: 0 12px 15px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+}
+.z-depth-4{
+  box-shadow: 0 16px 28px 0 rgba(0, 0, 0, 0.22), 0 25px 55px 0 rgba(0, 0, 0, 0.21);
+}
+.z-depth-5{
+  box-shadow: 0 27px 24px 0 rgba(0, 0, 0, 0.2), 0 40px 77px 0 rgba(0, 0, 0, 0.22);
+}
+
+@import "assets/scss/cards";
+
+/*** Tables ***/
+$table-border-color: #d0d0d0 !default;
+$table-striped-color: #f2f2f2 !default;
+$table-header-background:#c8c8c8;
+
+@import "bower_components/material-shadows/material-shadows";
+
+/*
+Other page dependencies
+*/
+@import "views/sessions/sessions";
+@import "views/searchstudio/searchstudio";
+@import "views/demoindex/demoindex";
+@import "views/dashboard/dashboard";
+
+/* ------- */
+/* Generic */
+/* ------- */
+.full-width {
+  width: 100%;
+}
+md-input-container.no-bottom-padding {
+  padding-bottom: 0px;
+}
+
+/* -------------------- */
+/* Site Content Toolbar */
+/* -------------------- */
+.site-content-toolbar {
+  position: relative;
+  background-color: rgb(228, 228, 228);
+  margin-bottom: 15px;
+  color: #202020 !important;
+  z-index: 2;
+  @include z-depth-bottom(2.5);  
+}
+
+#content-container {
+  background-color: rgb(238,238,238);
+  margin-top: -15px;
+  z-index: 1;
+}
+
+/* -------------------- */
+/* Global table styles */
+/* -------------------- */
+table {
+    td.negative {
+      background: #fff0f0 !important;
+      color: #cd2929 !important;
+    }
+
+  tr{
+    td{ padding: .6em; }
+
+  th{
+    color: rgba(0, 0, 0, 0.8);
+    padding: 0 1em;
+    background-color: rgba(0,0,0,0.0980392);
+    border-left: solid thin #D4D4D5;
+    }
+  }
+
+  width:100%;
+  display: table;
+  border-collapse: collapse;
+  
+  &.bordered > thead > tr,
+  &.bordered > tbody > tr {
+    border-bottom: 1px solid $table-border-color;
+  }
+
+  &.striped > tbody {
+    > tr:nth-child(odd) {
+      background-color: $table-striped-color;
+    }
+
+    > tr > td {
+      border-radius: 0px;
+    }
+  }
+
+  &.hoverable > tbody > tr {
+    &:hover {
+      background-color: $table-striped-color;
+    }
+  }
+
+  &.centered {
+    thead tr th, tbody tr td {
+      text-align: center;
+
+    }
+  }
+
+}
+
+thead {
+  border-bottom: 1px solid $table-border-color;
+}
+
+td, th{
+  padding: 15px 5px;
+  display: table-cell;
+  text-align: left;
+  vertical-align: middle;
+  border-radius: 2px;
+}
+
+/* ----------------------------------------------- */
+/* Data grid theme to match material design
+/* ----------------------------------------------- */
+.ui-grid-top-panel {
+  background-color: $table-header-background;
+  height: 2em;
+}
+.ui-grid-pager-row-count-label{
+  vertical-align: -webkit-baseline-middle;
+  line-height: inherit;
+  font-size: inherit;
+}
+.ui-grid-pager-row-count-picker select {
+    /* display: block; */
+    width: 100px;
+    height: inherit; 
+    /* padding: 6px 12px; */
+    /* font-size: 14px; */
+    /* line-height: 1.42857143; */
+    color: #555555;
+    background-color: #ffffff;
+    background-image: none;
+    border: 1px solid #cccccc;
+    /* border-radius: 4px; */
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+    /* -webkit-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s; */
+    -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+    padding: 5px 10px;
+    font-size: inherit;
+    line-height: inherit;
+    border-radius: 3px;
+  }
+ .ui-grid-pager-panel {
+   height: 40px;
+ }
+.ui-grid-pager-control {
+  height: 2.5em;
+  
+  .ui-grid-pager-max-pages-number {
+    vertical-align: inherit;
+  }
+  button{
+    height: 2.5em;
+  }
+  input {
+    height: 1.9em;
+  }
+  
+}
+
+/* -------------------- */
+/* Sidenav width adjustment */
+/* -------------------- */
+md-sidenav, 
+md-sidenav.md-locked-open, 
+md-sidenav.md-closed.md-locked-open-add-active {
+    min-width: 400px !important;
+    width: auto;
+    max-width: none !important;
+}
+
+/* -------------------- */
+/* Search Profiles Page */
+/* -------------------- */
+
+md-content.leftColumn {
+  min-width: 300px;
+}
+
+.leftColumn md-select md-select-label:first-child {
+  border-bottom: none;
+}
+
+.rightColumn {
+  background: transparent;
+}
+
+.rightColumn md-whiteframe.comparison-page {
+  background: white;
+}
+
+.search-results {
+  margin: 0px 0px 0px 30px;
+}
+
+/* Material CSS */
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54); }
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26); }
+
+.material-icons.md-light { color: rgba(255, 255, 255, 1); }
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3); }
+
+.material-icons.Processed { color: #5bbd72 !important; }		
+.material-icons.Reviewed { color: rgb(33, 150, 243); }		
+.material-icons.Proposed { color: #FB8C00; }		
+
+ng-md-icon span.large, ng-md-icon.large {
+  height: 36px;
+  width: 36px;
+}
+
+ng-md-icon.transparent {
+  opacity: 0.5;
+}
+
+/* Go back to original Material font */
+button, select, html, textarea, body, input, h1, h2, h3, h4, h5  {
+  font-family: Roboto, 'Helvetica Neue', sans-serif; }
+
+
+/* ----------- */
+/* Error sheet */
+/* ----------- */
+
+md-bottom-sheet.error {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+md-bottom-sheet.error md-content {
+  padding: 20px;
+}
