@@ -77,34 +77,30 @@ type SingleConsumerQueue<'T>(?capacity0 : int) as self =
                 cont <- cont1
         }
     
-    do Async.Start(processItem())
+    let processTask = processItem() |> Async.StartAsTask
+
     abstract Process : 'T -> unit
+
     member __.Capacity = capacity
     member __.Count = buffer.Count
-    
     member __.Send(item : 'T) = 
         Async.AwaitTask <| buffer.SendAsync(item)
         |> Async.RunSynchronously
         |> ignore
-    
     member __.Post(item : 'T) = buffer.Post(item)
     
     interface IQueue<'T> with
-        member __.Capacity = capacity
-        member __.Count = buffer.Count
-        
-        member __.Send(item : 'T) = 
-            Async.AwaitTask <| buffer.SendAsync(item)
-            |> Async.RunSynchronously
-            |> ignore
-        
-        member __.Post(item : 'T) = buffer.Post(item)
+        member __.Capacity = self.Capacity
+        member __.Count = self.Count
+        member __.Send(item : 'T) = self.Send item
+        member __.Post(item : 'T) = self.Post item
     
     interface IRequireNotificationForShutdown with
         member __.Shutdown() = 
             async { 
                 buffer.Complete()
-                do! Async.AwaitTask(buffer.Completion)
+                do! Async.AwaitTask buffer.Completion
+                return! Async.AwaitTask processTask
             }
 
 /// Queue which supports processing of items in parallel. The degree of parallelism can be
