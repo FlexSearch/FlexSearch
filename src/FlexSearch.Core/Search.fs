@@ -31,9 +31,19 @@ type IFlexQuery =
     abstract QueryName : unit -> string []
     abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
 
-/// Interface for implementing query functions
+/// Interface for implementing query functions.
+/// Query functions can be of two types: constant and variable.
+///
+/// Constant query functions don't have any field names in them. They ultimately 
+/// compute to a constant value.
+///
+/// In variable query functions, the first parameter is a field name. Any other parameter
+/// should be a constant value. Variable query functions modify the given SearchQuery so 
+/// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
-    abstract GetResult : Value list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string>
+    abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string>
+    abstract GetVariableResult : FieldName * SearchQuery * Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<SearchQuery>
+
 
 [<AutoOpenAttribute>]
 module SearchResultComponents = 
@@ -118,10 +128,10 @@ module SearchDsl =
         (source : Dictionary<string,string> option) =
             match queryFunctionTypes.TryGetValue(fName) with
             | true, func -> 
-                match func.GetResult(parameters, queryFunctionTypes, source) with
+                match func.GetConstantResult(parameters, queryFunctionTypes, source) with
                 | Ok(r) -> ok <| r
                 | Fail(e) -> fail e
-            | _ -> fail <| FunctionNotFound (sprintf "%A" <| Func(fName, parameters))
+            | _ -> fail <| FunctionNotFound (sprintf "%A" <| Constant.Function(fName, parameters))
 
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
@@ -130,7 +140,7 @@ module SearchDsl =
         assert (queryTypes.Count > 0)
         let generateMatchAllQuery = ref false
         
-        let getFieldValueAsArray (fieldName : string) (v : Value) = 
+        let getFieldValueAsArray (fieldName : string) (v : Constant) = 
             match v with
             | SingleValue(v) -> 
                 if String.IsNullOrWhiteSpace(v) then fail <| MissingFieldValue(fieldName)
@@ -138,80 +148,32 @@ module SearchDsl =
             | ValueList(v) -> 
                 if v.Length = 0 then fail <| MissingFieldValue(fieldName)
                 else ok <| v.ToArray()
-            | Func(name,prms) -> handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
-                                 >>= (fun x -> ok [| x |])
-            | FieldName(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
+            | Constant.Function(name,prms) -> 
+                handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
+                >>= (fun x -> ok [| x |])
+            | SearchProfileField(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
         
-        let getValueForSearchProfile (fieldName, v : string, source : Dictionary<string, string>) = 
-            generateMatchAllQuery.Value <- false
-            match v with
-            // Match self but fail if value is not found
-            | "" | "[!]" -> 
-                match source.TryGetValue(fieldName) with
-                | true, v1 -> 
-                    if isNotBlank v1 then ok <| [| v1 |]
-                    else fail <| MissingFieldValue fieldName
-                | _ -> fail <| MissingFieldValue fieldName
-            // Match self but ignore clause if value is not found
-            | "[*]" -> 
-                match source.TryGetValue(fieldName) with
-                | true, v1 -> 
-                    if isNotBlank v1 then ok <| [| v1 |]
-                    else 
-                        generateMatchAllQuery.Value <- true
-                        ok <| Array.empty
-                | _ -> 
-                    generateMatchAllQuery.Value <- true
-                    ok <| Array.empty
-            // Match self but use a default value if value is not found
-            | x when x.StartsWith("[") && x.EndsWith("]") -> 
-                match source.TryGetValue(fieldName) with
-                | true, v1 -> 
-                    if isNotBlank v1 then ok <| [| v1 |]
-                    else ok <| [| x |> between '[' ']' |]
-                | _ -> ok <| [| x |> between '[' ']' |]
-            // Cross matching cases
-            // Default cross matching case
-            | x when x.StartsWith("<") && (x.EndsWith(">") || x.EndsWith(">[!]")) -> 
-                match source.TryGetValue(x |> between '<' '>') with
-                | true, v1 -> 
-                    if isNotBlank v1 then ok <| [| v1 |]
-                    else fail <| MissingFieldValue fieldName
-                | _ -> fail <| MissingFieldValue fieldName
-            // Cross matching and ignore clause if value is not found
-            | x when x.StartsWith("<") && x.EndsWith(">[*]") -> 
-                match source.TryGetValue(x |> between '<' '>') with
-                | true, v1 -> 
-                    if isNotBlank v1 then ok <| [| v1 |]
-                    else 
-                        generateMatchAllQuery.Value <- true
-                        ok <| Array.empty
-                | _ -> 
-                    generateMatchAllQuery.Value <- true
-                    ok <| Array.empty
-            // Cross matching and use default if value is not found
-            | x when x.StartsWith("<") && x.EndsWith("]") -> 
-                match source.TryGetValue(x |> between '<' '>') with
-                | true, v1 -> 
-                    if isNotBlank v1 then ok <| [| v1 |]
-                    else ok <| [| x |> between '[' ']' |]
-                | _ -> ok <| [| x |> between '[' ']' |]
-            // Constant value
-            | x -> ok [| x |]
-        
-        let getValue (fieldName, v : Value) = 
+        let getFieldFromSource (source : Dictionary<string, string>) fieldName =
+            match source.TryGetValue(fieldName) with
+            | true, v1 -> 
+                if isNotBlank v1 then ok <| [| v1 |]
+                else fail <| MissingFieldValue fieldName
+            | _ -> fail <| MissingFieldValue fieldName
+
+        let getValue (fieldName, v : Constant) = 
             match isProfileBased with
             | Some(source) -> 
                 match v with
-                | SingleValue(v1) -> getValueForSearchProfile (fieldName, v1, source)
-                | Func(funcName,parameters) -> 
+                | SingleValue(v1) -> ok [| v1 |]
+                | SearchProfileField(spfn) -> spfn |> getFieldFromSource source
+                | Constant.Function(funcName,parameters) -> 
                     handleFunctionValue funcName (parameters |> Seq.toList) queryFunctionTypes (Some(source))
                     >>= (fun result -> ok [| result |])
                 | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
             | None -> v |> getFieldValueAsArray fieldName
         
-        /// Generate the query from the condition
-        let getCondition (fieldName, operator, v : Value, p) = 
+        /// Generate the query from the CONSTANT condition
+        let getConstantCondition (fieldName, operator, v : Constant, p) = 
             maybe { 
                 let! field = fields |> keyExists2 (fieldName, fieldNotFound)
                 do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
@@ -230,7 +192,10 @@ module SearchDsl =
                 match pred with
                 | NotPredicate(pr) -> let! notQuery = generateQuery (pr)
                                       return getBooleanQuery() |> addMustNotClause notQuery :> Query
-                | Condition(f, o, v, p) -> return! getCondition (f, o, v, p)
+                | Condition(var, o, cnst, p) -> 
+                    match var with
+                    | Field(f) -> return! getConstantCondition (f, o, cnst, p)
+                    //| Function(f) -> return! getVariableCondition f o cnst p TODO
                 | OrPredidate(lhs, rhs) -> 
                     let! lhsQuery = generateQuery (lhs)
                     let! rhsQuery = generateQuery (rhs)
@@ -540,11 +505,11 @@ module QueryFunctionHelpers =
                 typeName,
                 "Single values, functions or fieldnames",
                 "Value list")
-        | Func(n,ps) :: rest -> 
+        | Constant.Function(n,ps) :: rest -> 
             convertToInts typeName source queryFunctionTypes rest >>= (fun vs -> 
                 handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
                 >>= (fun v -> v :: vs |> ok))
-        | FieldName(name) :: rest ->
+        | SearchProfileField(name) :: rest ->
             match source with
             | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
                                     | true, v -> convertToInts typeName source queryFunctionTypes rest
@@ -561,9 +526,10 @@ module QueryFunctionHelpers =
                                 typeName,
                                 "Single values, functions or fieldnames",
                                 "Value list")
-        | [Func(n,ps)] -> handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
-                          >>= ok
-        | [FieldName(name)] ->
+        | [Constant.Function(n,ps)] -> 
+            handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
+            //>>= ok TODO
+        | [SearchProfileField(name)] ->
             match source with
             | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
                                     | true, v -> ok v
@@ -579,9 +545,10 @@ module QueryFunctionHelpers =
                                     typeName,
                                     "Single values, functions or fieldnames",
                                     "Value list")
-        | Func(n,ps) :: rest -> handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
-                                >>= fun result -> ok (result :: accumulatedResult,rest)
-        | FieldName(name) :: rest ->
+        | Constant.Function(n,ps) :: rest -> 
+            handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
+            >>= fun result -> ok (result :: accumulatedResult,rest)
+        | SearchProfileField(name) :: rest ->
             match source with
             | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
                                     | true, v -> ok (v :: accumulatedResult, rest)
@@ -616,20 +583,23 @@ module QueryFunctionHelpers =
 [<Name("add"); Sealed>]
 type AddFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.sum
                 |> doForParameters parameters
                                    (__.GetType() |> getTypeNameFromAttribute) 
                                    source 
                                    queryFunctionTypes 
-                                   
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("multiply"); Sealed>]
 type MultiplyFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.fold (*) 1.0
                 |> doForParameters parameters
@@ -641,7 +611,9 @@ type MultiplyFunc() =
 [<Name("max"); Sealed>]
 type MaxFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.max
                 |> doForParameters parameters
@@ -653,7 +625,9 @@ type MaxFunc() =
 [<Name("min"); Sealed>]
 type MinFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.min
                 |> doForParameters parameters
@@ -665,7 +639,9 @@ type MinFunc() =
 [<Name("avg"); Sealed>]
 type AvgFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.average
                 |> doForParameters parameters
@@ -677,7 +653,9 @@ type AvgFunc() =
 [<Name("len"); Sealed>]
 type LenFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 String.length >> fun x -> x.ToString()
                 |> doForSingleParameter parameters
@@ -689,7 +667,9 @@ type LenFunc() =
 [<Name("upper"); Sealed>]
 type UpperFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 fun (x : string) -> x.ToUpper()
                 |> doForSingleParameter parameters
@@ -701,7 +681,9 @@ type UpperFunc() =
 [<Name("lower"); Sealed>]
 type LowerFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 fun (x : string) -> x.ToLower()
                 |> doForSingleParameter parameters
@@ -713,7 +695,9 @@ type LowerFunc() =
 [<Name("substr"); Sealed>]
 type SubstrFunc() =
     interface IFlexQueryFunction with
-        member __.GetResult(parameters, queryFunctionTypes, source) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 let typeName = "substr"
 

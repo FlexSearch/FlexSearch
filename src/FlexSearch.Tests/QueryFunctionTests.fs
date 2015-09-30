@@ -20,15 +20,15 @@ type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>)
                                   Some(dict)
 
     let isEqualTo expected sourceList inputText = 
-        match ParseFunction inputText with
-        | Ok(Func(fn, ps)) -> 
+        match ParseConstFunction inputText with
+        | Ok(Constant.Function(fn, ps)) -> 
             let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
             test <@ result = ok expected @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
     let fails sourceList inputText =
-        match ParseFunction inputText with
-        | Ok(Func(fn, ps)) -> 
+        match ParseConstFunction inputText with
+        | Ok(Constant.Function(fn, ps)) -> 
             let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
             test <@ match result with Fail(_) -> true | _ -> false @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
@@ -40,7 +40,7 @@ type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>)
         "Add('1','2')" |> isEqualTo "3" []
 
     member __.``Adding 1 to a numeric field should return field + 1``() =
-        "add('1',field)" |> isEqualTo "3" ["field","2"]
+        "add('1',#field)" |> isEqualTo "3" ["field","2"]
 
     member __.``Adding 1 to a function that adds 1 to 1 should return 3``() =
         "add('1',add('1','1'))" |> isEqualTo "3" []

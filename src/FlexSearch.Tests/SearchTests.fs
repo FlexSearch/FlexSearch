@@ -352,8 +352,8 @@ id,et1,et2,i1,i2
         // Add test profiles
         index.SearchProfiles <- 
             [| 
-                getQuery(index.IndexName, "et1 = ''") |> withName "matchself"
-                getQuery(index.IndexName, "et1 = '[!]'") |> withName "matchselferror"
+                getQuery(index.IndexName, "et1 = #et1") |> withName "matchself"
+                getQuery(index.IndexName, "et1 = #et1") |> withName "matchselferror"
                 getQuery(index.IndexName, "et1 = '[*]'") |> withName "matchselfignore"
                 getQuery(index.IndexName, "et1 = '[d]'") |> withName "matchselfdefault"
                 getQuery(index.IndexName, "et1 = '<et2>'") |> withName "crossmatch"
@@ -361,10 +361,10 @@ id,et1,et2,i1,i2
                 getQuery(index.IndexName, "et1 = '<et2>[*]'") |> withName "crossmatchignore"
                 getQuery(index.IndexName, "et1 = '<et2>[d]'") |> withName "crossmatchdefault"
                 getQuery(index.IndexName, "et1 = 'h'") |> withName "constantmatch"
-                getQuery(index.IndexName, "i1 = add(i2,i1,'-2')") |> withName "crossmatchwithfunc"
-                getQuery(index.IndexName, "i1 = add(i2,add(i1,'-2'))") |> withName "crossmatchwithnestedfunc"
+                getQuery(index.IndexName, "i1 = add(#i2,#i1,'-2')") |> withName "crossmatchwithfunc"
+                getQuery(index.IndexName, "i1 = add(#i2,add(#i1,'-2'))") |> withName "crossmatchwithnestedfunc"
                 getQuery(index.IndexName, "i1 = add('10','18')") |> withName "matchwithfuncconstonly"
-                getQuery(index.IndexName, "i1 = add(i2,i2)") |> withName "crossmatchwithfieldonlyfunc"
+                getQuery(index.IndexName, "i1 = add(#i2,#i2)") |> withName "crossmatchwithfieldonlyfunc"
             |]
         indexTestData (testData, index, indexService, documentService)
     

@@ -55,12 +55,16 @@ type SearchParserTests() =
     
     [<InlineData("abc eq add('1','2')")>]
     [<InlineData("abc eq add('1')")>]
-    [<InlineData("abc eq add(field1,field2)")>]
-    [<InlineData("i1 = add(i2,i1,'-2')")>]
-    [<InlineData("abc eq add('1',max(field1,field2))")>]
+    [<InlineData("abc eq add(#field1,#field2)")>]
+    [<InlineData("i1 = add(#i2,#i1,'-2')")>]
+    [<InlineData("abc eq add('1',max(#field1,#field2))")>]
     [<InlineData("abc eq any(['true','false','false'])")>]
-    [<InlineData("abc > sqrt(add(haversin(delta),multiply(cos(fi1),cos(fi2))))")>]
+    [<InlineData("abc > sqrt(add(haversin(#delta),multiply(cos(#fi1),cos(#fi2))))")>]
     member __.``Expression with function should parse`` (sut : string) = test2 sut
+
+    [<InlineData("abc eq isnull(fieldName)")>]
+    [<InlineData("abc eq add('2', fieldName)")>]
+    member __.``Expression with function that has field name without hashtag shouldn't parse`` (sut : string) = testFails sut
 
     [<InlineData("abc eq fieldName")>]
     [<InlineData("abc eq [fieldName1, fieldName2]")>]

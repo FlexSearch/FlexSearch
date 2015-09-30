@@ -14,21 +14,25 @@ open System
 open System.Collections.Generic
 open System.Linq
 
-/// <summary>
-/// Represents the Values which can be used in the query string
-/// </summary>
-type Value = 
+// Represents the parts/items which can be used in the query string
+type FieldName = string
+type Constant = 
     | SingleValue of string
     | ValueList of string list
-    | Func of Name : string * Params : Value seq
-    | FieldName of string
+    | SearchProfileField of FieldName
+    | Function of Name : string * Params : Constant seq
+type FieldFunction = FieldFunction of Name : string * FieldName : FieldName * Params : Constant seq
+type Variable =
+    | Field of FieldName
+    | Function of FieldFunction
 
 /// <summary>
 /// Acceptable Predicates for a query
 /// </summary>
 type Predicate = 
     | NotPredicate of Predicate
-    | Condition of FieldName : string * Operator : string * Value : Value * Parameters : Dictionary<string, string> option
+    | Condition of Variable : Variable * Operator : string * Constant : Constant * Parameters : Dictionary<string, string> option
+    | FuncCondition of FieldFunction
     | OrPredidate of Lhs : Predicate * Rhs : Predicate
     | AndPredidate of Lhs : Predicate * Rhs : Predicate
 
@@ -71,37 +75,67 @@ module Parsers =
 
     let anyCheck checks item = checks |> Seq.fold (fun acc value -> acc || value item) false
 
-    let func, funcImpl = createParserForwardedToRef<Value, unit>()
-
-    // E.g. average(cost)
-    //      upper_Case(firstname)
-    //      startsWith(firstname, 'V')
-    //      concat(firstname, lastname)
-    do funcImpl := 
-        let funcName = many1SatisfyL 
+    let funcName = many1SatisfyL 
                         (anyCheck [isLetter; isDigit; (=) '_']) 
                         "Function name should only have letters, digits and underscores"
-        let fieldName = identifier .>> followedByL 
-                            (choice [str_ws ","; str_ws ")"])
-                            "The field name should be followed by either a comma or a closing round bracket"
-                        |>> FieldName
-        let parameters = sepBy 
-                            (choice [ stringLiteral; listOfValues; attempt func; fieldName ])
-                            (str_ws ",")
-        pipe2 
-            (ws >>. funcName )
-            (str_ws "(" >>. parameters .>> str_ws ")")
-            (fun name prms -> Func(name, prms))
+    // Field parser
+    let field : Parser<FieldName, unit> = identifier
+    
+    // Search profile field parser
+    let spField = str_ws "#" >>. identifier |>> SearchProfileField
 
-    let ParseFunction text =
-        match run (ws >>. func .>> eof) text with
+    let constFunc, constFuncImpl = createParserForwardedToRef<Constant, unit>()
+    let fieldFunc, fieldFuncImpl = createParserForwardedToRef<FieldFunction, unit>()
+
+    // Constant function parser
+    // E.g. average('24')
+    //      upper_Case('lower')
+    //      concat('T', lower('HIS'))
+    //      concat(#firstname, ' is a badass')
+    do constFuncImpl := 
+        let searchProfileField = 
+            spField .>> followedByL 
+                (choice [str_ws ","; str_ws ")"])
+                "The field name should be followed by either a comma or a closing round bracket" 
+        let parameters = sepBy (choice [ stringLiteral; listOfValues; attempt constFunc; searchProfileField ])
+                               (str_ws ",")
+        pipe2 (ws >>. funcName )
+              (str_ws "(" >>. parameters .>> str_ws ")")
+              (fun name prms -> Constant.Function(name, prms))
+
+    // FieldFunction parser
+    // E.g. average(cost)
+    //      upper_Case(firstname)
+    //      endswith(firstname, 'Luke')
+    do fieldFuncImpl :=
+        let fieldName : Parser<FieldName, unit> = 
+            field .>> followedByL 
+                (choice [str_ws ","; str_ws ")"])
+                "The field name should be followed by either a comma or a closing round bracket"
+        let parameters = sepBy (choice [ stringLiteral; listOfValues; attempt constFunc ])
+                               (str_ws ",")
+
+        pipe2 (ws >>. funcName )
+              (str_ws "(" >>. field .>>.? parameters .>> str_ws ")")
+              (fun funcName (fldName,prms) -> FieldFunction(funcName, fldName, prms))
+
+    let ParseConstFunction text =
+        match run (ws >>. constFunc .>> eof) text with
+        | Success(result, _, _) -> ok result
+        | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
+    
+    let ParseFieldFunction text =
+        match run (ws >>. constFunc .>> eof) text with
         | Success(result, _, _) -> ok result
         | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
 
-    /// Value parser
-    /// Note: THe order of choice is important as stringLiteral uses
-    /// character backtracking.This is done to avoid the use of attempt.
-    let value = choice [ stringLiteral; listOfValues; func ]
+    // Constant parser
+    // Note: THe order of choice is important as stringLiteral uses
+    // character backtracking.This is done to avoid the use of attempt.
+    let constant = choice [ spField; stringLiteral; listOfValues; constFunc ]
+
+    // Variable parser
+    let variable = choice [ field |>> Field; fieldFunc |>> Function ]
 
     let DictionaryOfList(elements : (string * string) list) = 
         let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -139,13 +173,15 @@ module Parsers =
     //let boost = opt (str_ws "boost" >>. pint32 .>> ws)
     let parameters = opt (ws >>. keyValuePairsBetweenBracket .>> ws)
     
-    // ----------------------------------------------------------------------------
-    /// <summary>
-    /// Method to implement predicate matching
-    /// Syntax: {FieldName} {Operator} {SingleValue|MultiFieldValue|Function} {optional Boost}
-    /// Example: firstname eq 'a'
-    /// </summary>
-    let predicate = pipe4 identifier identifier value parameters (fun l o r b -> Condition(l, o, r, b))
+    // Method to implement predicate matching
+    // Syntax: {FieldName|FieldFunction} {Operator} {SingleValue|MultiFieldValue|Function} {optional Boost}
+    //         OR 
+    //         {FieldFunction}
+    // Example: firstname eq 'a'
+    //          endswith(firstname, 'blue')
+    let predicate = 
+        choice [ pipe4 variable identifier constant parameters (fun v o c b -> Condition(v, o, c, b));
+                 fieldFunc |>> FuncCondition ]
     
     type Assoc = Associativity
     
@@ -189,7 +225,7 @@ module Parsers =
                 | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError (errorMsg, input)
 
     // ----------------------------------------------------------------------------
-    // Function Parser 
+    // Function Parser for Computed Scripts
     // Format: functionName('param1','param2','param3')
     // ----------------------------------------------------------------------------
     let private funParameter = stringLiteralAsString .>> ws
