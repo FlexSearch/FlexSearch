@@ -42,7 +42,7 @@ type IFlexQuery =
 /// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
     abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
-    abstract GetVariableResult : FieldName * SearchQuery * Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<SearchQuery>
+    abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] -> Result<Query>
 
 
 [<AutoOpenAttribute>]
@@ -121,17 +121,20 @@ module SearchDsl =
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
 
-    let handleFunctionValue 
-        fName 
-        parameters 
-        (queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) 
-        (source : Dictionary<string,string> option) =
-            match queryFunctionTypes.TryGetValue(fName) with
-            | true, func -> 
+    let getQueryFunction (functions : Dictionary<string, IFlexQueryFunction>) funcName =
+        match functions.TryGetValue(funcName) with
+        | true, func -> ok func
+        | _ -> fail <| FunctionNotFound funcName
+
+    let handleFunctionValue fName 
+                            parameters 
+                            (queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) 
+                            (source : Dictionary<string,string> option) =
+        fName |> getQueryFunction queryFunctionTypes
+        >>= fun func ->
                 match func.GetConstantResult(parameters, queryFunctionTypes, source) with
                 | Ok(r) -> ok <| r
                 | Fail(e) -> fail e
-            | _ -> fail <| FunctionNotFound (sprintf "%A" <| Constant.Function(fName, parameters))
 
     // Gets a field from the given search profile.
     // Empty/blank values are considered an error
@@ -142,14 +145,22 @@ module SearchDsl =
                 else fail <| MissingFieldValue fieldName
             | _ -> fail <| MissingFieldValue fieldName
 
+    let validateSearchField (fields : IReadOnlyDictionary<string, Field.T>)  fieldName =
+            maybe {
+                let! field = fields |> keyExists2 (fieldName, fieldNotFound)
+                do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
+                return field
+            }
+
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
                        queryTypes : Dictionary<string, IFlexQuery>,
                        queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) = 
         assert (queryTypes.Count > 0)
+        assert (queryFunctionTypes.Count > 0)
         let generateMatchAllQuery = ref false
         
-        let getFieldValueAsArray (fieldName : string) (v : Constant) = 
+        let computeFieldValueAsArray (fieldName : string) (v : Constant) = 
             match v with
             | SingleValue(v) -> 
                 if String.IsNullOrWhiteSpace(v) then fail <| MissingFieldValue(fieldName)
@@ -164,7 +175,7 @@ module SearchDsl =
                               | None -> fail <| ValueCouldntBeRetrieved(fieldName))
             | SearchProfileField(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
         
-        let getValue (fieldName, v : Constant) = 
+        let computeConstant (fieldName, v : Constant) = 
             match isProfileBased with
             | Some(source) -> 
                 match v with
@@ -180,22 +191,50 @@ module SearchDsl =
                                        // we can ignore this condition, thus generate a matchall query
                                        | None -> generateMatchAllQuery := true; ok [||])
                 | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
-            | None -> v |> getFieldValueAsArray fieldName
+            | None -> v |> computeFieldValueAsArray fieldName
         
+        let queryGenerationWrapper fieldName operator constant parameters 
+                                   (queryGetter : Field.T -> IFlexQuery -> string[] -> Result<Query>) =
+            maybe {
+                    // First validate the field
+                    let! field = fieldName |> validateSearchField fields
+                    // Then get the type of query operator being used
+                    let! query = queryTypes |> keyExists (operator, queryNotFound)
+                    // Then calculate the value of the constant expression on the RHS of the query
+                    let! computedConstant = computeConstant (fieldName, constant)
+                    
+                    if generateMatchAllQuery.Value = true then return! ok <| getMatchAllDocsQuery()
+                    else 
+                        let! q = queryGetter field query computedConstant
+
+                        // Apply boost if given
+                        q.SetBoost(float32 <| doubleFromOptDict "boost" 1.0 parameters)
+                        return q
+                }
+
         /// Generate the query from the CONSTANT condition
-        let getConstantCondition (fieldName, operator, v : Constant, p) = 
-            maybe { 
-                let! field = fields |> keyExists2 (fieldName, fieldNotFound)
-                do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
-                let! query = queryTypes |> keyExists (operator, queryNotFound)
-                let! value = getValue (fieldName, v)
-                if generateMatchAllQuery.Value = true then return! ok <| getMatchAllDocsQuery()
-                else 
-                    let! q = query.GetQuery(field, value.ToArray(), p)
-                    q.SetBoost(float32 <| doubleFromOptDict "boost" 1.0 p)
-                    return q
-            }
-        
+        /// This happens when the LHS of the query only has a field and no functions
+        let getConstantCondition (fieldName, operator, constant : Constant, p) = 
+            fun field (query : IFlexQuery) (computedConstant : string []) -> 
+                query.GetQuery(field, computedConstant.ToArray(), p)
+            |> queryGenerationWrapper fieldName operator constant p
+            
+        /// Generate the query from the VARIABLE condition
+        /// This happens when the LHS of the query has a function
+        let getVariableCondition (fieldFunction : FieldFunction) operator constant p =
+            match fieldFunction with 
+            | FieldFunction(funcName, fieldName, prms) ->
+                let queryGetter field query computedConstant =
+                    maybe {
+                        // Get the appropriate LHS query function
+                        let! fieldQueryFunc = funcName |> getQueryFunction queryFunctionTypes
+                        // Compute the final query by analyzing the variable, operator and constant
+                        return! fieldQueryFunc.GetVariableResult(field, fieldFunction, query, computedConstant)
+                    }
+
+                queryGetter
+                |> queryGenerationWrapper fieldName operator constant p
+
         /// Main rec function responsible for generating predicate
         let rec generateQuery (pred : Predicate) = 
             maybe { 
@@ -205,7 +244,7 @@ module SearchDsl =
                 | Condition(var, o, cnst, p) -> 
                     match var with
                     | Field(f) -> return! getConstantCondition (f, o, cnst, p)
-                    //| Function(f) -> return! getVariableCondition f o cnst p TODO
+                    | Function(f) -> return! getVariableCondition f o cnst p
                 | OrPredidate(lhs, rhs) -> 
                     let! lhsQuery = generateQuery (lhs)
                     let! rhsQuery = generateQuery (rhs)
@@ -616,7 +655,7 @@ module QueryFunctionHelpers =
 [<Name("add"); Sealed>]
 type AddFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -632,7 +671,7 @@ type AddFunc() =
 [<Name("multiply"); Sealed>]
 type MultiplyFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -648,7 +687,7 @@ type MultiplyFunc() =
 [<Name("max"); Sealed>]
 type MaxFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -664,7 +703,7 @@ type MaxFunc() =
 [<Name("min"); Sealed>]
 type MinFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -680,7 +719,7 @@ type MinFunc() =
 [<Name("avg"); Sealed>]
 type AvgFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -696,7 +735,7 @@ type AvgFunc() =
 [<Name("len"); Sealed>]
 type LenFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -712,7 +751,7 @@ type LenFunc() =
 [<Name("upper"); Sealed>]
 type UpperFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -728,7 +767,7 @@ type UpperFunc() =
 [<Name("lower"); Sealed>]
 type LowerFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -744,7 +783,7 @@ type LowerFunc() =
 [<Name("substr"); Sealed>]
 type SubstrFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -764,7 +803,7 @@ type SubstrFunc() =
 [<Name("isblank"); Sealed>]
 type IsBlankFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
