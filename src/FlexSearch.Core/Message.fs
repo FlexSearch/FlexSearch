@@ -238,6 +238,8 @@ type SearchMessage =
     | NumberOfFunctionParametersMismatch of functionName : string * expected : int * actual : int
     | NotEnoughParameters of functionName : string
     | VariableFunctionNotSupported of functionName : string
+    | ValueCouldntBeRetrieved of fieldName : string
+    | ExpectingSearchProfile of context: string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Nothing)
         
@@ -265,6 +267,8 @@ type SearchMessage =
             | NumberOfFunctionParametersMismatch(fn,e,a) -> sprintf "Expected %d parameters for function %s, but got %d" e fn a
             | NotEnoughParameters(fn) -> sprintf "Not enough parameters for function %s" fn
             | VariableFunctionNotSupported(fn) -> sprintf "Function %s is not supported on the LHS of a predicate (cannot be variable)." fn
+            | ValueCouldntBeRetrieved(fn) -> sprintf "The value of the field %s couldn't be retrieved" fn
+            | ExpectingSearchProfile(c) -> sprintf "Expected to have a search profile. Further context: %s" c
             |> caseToMsg this
 
 type IndexingMessage = 

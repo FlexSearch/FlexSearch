@@ -41,7 +41,7 @@ type IFlexQuery =
 /// should be a constant value. Variable query functions modify the given SearchQuery so 
 /// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
-    abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string>
+    abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
     abstract GetVariableResult : FieldName * SearchQuery * Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<SearchQuery>
 
 
@@ -133,6 +133,15 @@ module SearchDsl =
                 | Fail(e) -> fail e
             | _ -> fail <| FunctionNotFound (sprintf "%A" <| Constant.Function(fName, parameters))
 
+    // Gets a field from the given search profile.
+    // Empty/blank values are considered an error
+    let getFieldFromSource (source : Dictionary<string, string>) fieldName =
+            match source.TryGetValue(fieldName) with
+            | true, v1 -> 
+                if isNotBlank v1 then ok <| v1
+                else fail <| MissingFieldValue fieldName
+            | _ -> fail <| MissingFieldValue fieldName
+
     let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
                        queryTypes : Dictionary<string, IFlexQuery>,
@@ -150,25 +159,26 @@ module SearchDsl =
                 else ok <| v.ToArray()
             | Constant.Function(name,prms) -> 
                 handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
-                >>= (fun x -> ok [| x |])
+                >>= (fun x -> match x with 
+                              | Some(value) -> ok [| value |]
+                              | None -> fail <| ValueCouldntBeRetrieved(fieldName))
             | SearchProfileField(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
         
-        let getFieldFromSource (source : Dictionary<string, string>) fieldName =
-            match source.TryGetValue(fieldName) with
-            | true, v1 -> 
-                if isNotBlank v1 then ok <| [| v1 |]
-                else fail <| MissingFieldValue fieldName
-            | _ -> fail <| MissingFieldValue fieldName
-
         let getValue (fieldName, v : Constant) = 
             match isProfileBased with
             | Some(source) -> 
                 match v with
                 | SingleValue(v1) -> ok [| v1 |]
-                | SearchProfileField(spfn) -> spfn |> getFieldFromSource source
+                | SearchProfileField(spfn) -> 
+                    spfn |> getFieldFromSource source 
+                    >>= fun x -> ok [| x |] 
                 | Constant.Function(funcName,parameters) -> 
                     handleFunctionValue funcName (parameters |> Seq.toList) queryFunctionTypes (Some(source))
-                    >>= (fun result -> ok [| result |])
+                    >>= (fun result -> match result with 
+                                       | Some(value) -> ok [| value |]
+                                       // If None is returned and we're in a Search Profile search, then
+                                       // we can ignore this condition, thus generate a matchall query
+                                       | None -> generateMatchAllQuery := true; ok [||])
                 | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
             | None -> v |> getFieldValueAsArray fieldName
         
@@ -499,7 +509,7 @@ module QueryFunctionHelpers =
         match parameters with
         | [] -> ok []
         | SingleValue(v) :: rest -> convertToInts typeName source queryFunctionTypes rest
-                                    >>= (fun vs -> v :: vs |> ok)
+                                    >>= (fun vs -> Some v :: vs |> ok)
         | ValueList(_) :: rest -> 
             fail <| FunctionParamTypeMismatch(
                 typeName,
@@ -513,34 +523,33 @@ module QueryFunctionHelpers =
             match source with
             | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
                                     | true, v -> convertToInts typeName source queryFunctionTypes rest
-                                                >>= (fun vs -> v :: vs |> ok)
+                                                >>= (fun vs -> Some v :: vs |> ok)
                                     | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
             | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
 
     // Convert the single parameter to a string
     let getSingleStringParam typeName source queryFunctionTypes parameters =
         match parameters with
-        | [] -> ok ""
-        | [SingleValue(v)] -> ok v
+        | [] -> ok <| Some ""
+        | [SingleValue(v)] -> ok <| Some v
         | [ValueList(_)] -> fail <| FunctionParamTypeMismatch(
                                 typeName,
                                 "Single values, functions or fieldnames",
                                 "Value list")
         | [Constant.Function(n,ps)] -> 
             handleFunctionValue n (ps |> Seq.toList) queryFunctionTypes source
-            //>>= ok TODO
         | [SearchProfileField(name)] ->
             match source with
             | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
-                                    | true, v -> ok v
+                                    | true, v -> ok <| Some v
                                     | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
             | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
         | _ -> fail <| NumberOfFunctionParametersMismatch(typeName, 1, parameters.Length)
 
-    let getStringParam typeName source queryFunctionTypes parameters accumulatedResult =  
+    let private getStringParam typeName source queryFunctionTypes parameters accumulatedResult =  
         match parameters with
         | [] -> fail <| NotEnoughParameters typeName
-        | SingleValue(v) :: rest -> ok (v :: accumulatedResult, rest)
+        | SingleValue(v) :: rest -> ok (Some v :: accumulatedResult, rest)
         | ValueList(_) :: rest -> fail <| FunctionParamTypeMismatch(
                                     typeName,
                                     "Single values, functions or fieldnames",
@@ -551,29 +560,53 @@ module QueryFunctionHelpers =
         | SearchProfileField(name) :: rest ->
             match source with
             | Some(sourceDict) -> match sourceDict.TryGetValue(name) with
-                                    | true, v -> ok (v :: accumulatedResult, rest)
+                                    | true, v -> ok (Some v :: accumulatedResult, rest)
                                     | _ -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
             | None -> fail <| FieldNamesNotSupportedOutsideSearchProfile(typeName,name)
 
     // Applies the given folding function to the list of integers, after processing them 
     // from a list of function parameter types
-    let doForParameters parameters typeName source queryFunctionTypes doFunction =
+    let doForNumericParameters parameters typeName source queryFunctionTypes (optionHandler : string option -> string) doFunction =
         parameters
         |> convertToInts typeName source queryFunctionTypes
-        >>= (fun stringParams -> 
-            stringParams
-            |> Seq.map Convert.ToDouble
-            // Calculate the sum
-            |> doFunction
-            // Bring back to string type
-            |> (fun x -> x.ToString()) |> ok)
+        >>= (fun stringParams -> stringParams
+                                 |> Seq.map optionHandler
+                                 |> Seq.map Convert.ToDouble
+                                 // Calculate the sum
+                                 |> doFunction
+                                 // Bring back to string type
+                                 |> (fun x -> x.ToString()) |> ok)
 
     // Applies the given function to the string value, after processing it from a list of 
     // of function parameter types
-    let doForSingleParameter parameters typeName source queryFunctionTypes doFunction =
+    let doForSingleParameter parameters typeName source queryFunctionTypes optionHandler doFunction =
         parameters
         |> getSingleStringParam typeName source queryFunctionTypes
-        >>= (doFunction >> ok)
+        >>= (optionHandler >> doFunction >> ok)
+
+    let getFirstNStringParams paramCount typeName source queryFunctionTypes (parameters : Constant list) =
+        if parameters.Length <> paramCount then 
+            fail <| NumberOfFunctionParametersMismatch(typeName, paramCount, parameters.Length)
+        else
+            let computeParam = getStringParam typeName source queryFunctionTypes
+            
+            parameters
+            // Get the first N parameters
+            |> Seq.take paramCount
+            // Compute the value of each parameter
+            |> Seq.fold 
+                (fun acc param -> acc 
+                                  >>= computeParam [param] 
+                                  >>= (fst >> ok)) 
+                (ok [])
+
+    let getSomeValue (value : 'a option) = match value with
+                                           | Some(v) -> v
+                                           | None -> Unchecked.defaultof<'a>
+
+    let getSomeString str = match str with
+                            | Some(s) -> s
+                            | None -> ""
 
 // ----------------------------------------------------------------------------
 // Functions in queries
@@ -588,10 +621,12 @@ type AddFunc() =
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.sum
-                |> doForParameters parameters
+                |> doForNumericParameters parameters
                                    (__.GetType() |> getTypeNameFromAttribute) 
                                    source 
-                                   queryFunctionTypes 
+                                   queryFunctionTypes
+                                   getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("multiply"); Sealed>]
@@ -602,10 +637,12 @@ type MultiplyFunc() =
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.fold (*) 1.0
-                |> doForParameters parameters
+                |> doForNumericParameters parameters
                                    (__.GetType() |> getTypeNameFromAttribute) 
                                    source 
-                                   queryFunctionTypes 
+                                   queryFunctionTypes
+                                   getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("max"); Sealed>]
@@ -616,10 +653,12 @@ type MaxFunc() =
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.max
-                |> doForParameters parameters
+                |> doForNumericParameters parameters
                                    (__.GetType() |> getTypeNameFromAttribute) 
                                    source 
                                    queryFunctionTypes 
+                                   getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("min"); Sealed>]
@@ -630,10 +669,12 @@ type MinFunc() =
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.min
-                |> doForParameters parameters
+                |> doForNumericParameters parameters
                                    (__.GetType() |> getTypeNameFromAttribute) 
                                    source 
                                    queryFunctionTypes 
+                                   getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("avg"); Sealed>]
@@ -644,10 +685,12 @@ type AvgFunc() =
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 Seq.average
-                |> doForParameters parameters
+                |> doForNumericParameters parameters
                                    (__.GetType() |> getTypeNameFromAttribute) 
                                    source 
                                    queryFunctionTypes 
+                                   getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("len"); Sealed>]
@@ -662,6 +705,8 @@ type LenFunc() =
                                         (__.GetType() |> getTypeNameFromAttribute) 
                                         source 
                                         queryFunctionTypes 
+                                        getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("upper"); Sealed>]
@@ -676,6 +721,8 @@ type UpperFunc() =
                                         (__.GetType() |> getTypeNameFromAttribute) 
                                         source 
                                         queryFunctionTypes 
+                                        getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("lower"); Sealed>]
@@ -690,6 +737,8 @@ type LowerFunc() =
                                         (__.GetType() |> getTypeNameFromAttribute) 
                                         source 
                                         queryFunctionTypes 
+                                        getSomeValue
+                >>= (Some >> ok)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
 
 [<Name("substr"); Sealed>]
@@ -701,19 +750,46 @@ type SubstrFunc() =
             try
                 let typeName = "substr"
 
-                let parsedParams =
-                    if parameters.Length <> 3 then 
-                        fail <| NumberOfFunctionParametersMismatch(typeName, 3, parameters.Length)
-                    else
-                        getStringParam typeName source queryFunctionTypes parameters []
-                        >>= fun (acc, rest) -> getStringParam typeName source queryFunctionTypes rest acc
-                        >>= fun (acc, rest) -> getStringParam typeName source queryFunctionTypes rest acc
-                        >>= fun (acc, rest) -> ok acc
+                let parsedParams = getFirstNStringParams 3 typeName source queryFunctionTypes parameters
 
                 parsedParams
                 >>= fun ps -> 
-                    match ps |> List.rev with
+                    match ps |> List.map getSomeString |> List.rev with
                     | [inputString; startStr; lengthStr] -> 
-                        inputString.Substring(Convert.ToInt32 startStr, Convert.ToInt32 lengthStr) |> ok
+                        inputString.Substring(Convert.ToInt32 startStr, Convert.ToInt32 lengthStr) 
+                        |> (Some >> ok)
                     | _ -> fail <| NumberOfFunctionParametersMismatch(typeName, 3, ps.Length)
+            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
+
+[<Name("isblank"); Sealed>]
+type IsBlankFunc() =
+    interface IFlexQueryFunction with
+        member __.GetVariableResult(_,_,_,_,_) = 
+            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
+            try
+                let typeName = "isblank"
+
+                if parameters.Length <> 2 then 
+                    fail <| NumberOfFunctionParametersMismatch(typeName, 2, parameters.Length)
+                else
+                    let getDefaultValue() : Result<string option> = 
+                        match parameters.[1] with
+                        | SearchProfileField(fn) -> 
+                            if fn = "IGNORE" then ok None
+                            else getFirstNStringParams 1 typeName source queryFunctionTypes [SearchProfileField(fn)]
+                                 >>= (Seq.head >> ok)
+                        | x -> getFirstNStringParams 1 typeName source queryFunctionTypes [x]
+                               >>= (Seq.head >> ok)
+
+                    // The first parameter of the function must be a field name. If the field name
+                    // cannot be retrieved, then use the default value
+                    match parameters.[0] with
+                    | SearchProfileField(fn) -> match source with 
+                                                | Some (src) -> 
+                                                    match fn |> getFieldFromSource src with
+                                                    | Ok(value) -> ok <| Some value
+                                                    | Fail(_) -> getDefaultValue()
+                                                | None -> fail <| ExpectingSearchProfile("If first parameter of isblank function is a field, then a search profile query is needed")
+                    | x -> fail <| FunctionParamTypeMismatch(typeName, "Search profile field", sprintf "%A" x)
             with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)

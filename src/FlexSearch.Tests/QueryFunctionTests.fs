@@ -23,7 +23,7 @@ type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>)
         match ParseConstFunction inputText with
         | Ok(Constant.Function(fn, ps)) -> 
             let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
-            test <@ result = ok expected @>
+            test <@ result = (ok <| Some expected) @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
     let fails sourceList inputText =

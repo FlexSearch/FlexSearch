@@ -354,12 +354,12 @@ id,et1,et2,i1,i2
             [| 
                 getQuery(index.IndexName, "et1 = #et1") |> withName "matchself"
                 getQuery(index.IndexName, "et1 = #et1") |> withName "matchselferror"
-                getQuery(index.IndexName, "et1 = '[*]'") |> withName "matchselfignore"
-                getQuery(index.IndexName, "et1 = '[d]'") |> withName "matchselfdefault"
-                getQuery(index.IndexName, "et1 = '<et2>'") |> withName "crossmatch"
-                getQuery(index.IndexName, "et1 = '<et2>[!]'") |> withName "crossmatcherror"
-                getQuery(index.IndexName, "et1 = '<et2>[*]'") |> withName "crossmatchignore"
-                getQuery(index.IndexName, "et1 = '<et2>[d]'") |> withName "crossmatchdefault"
+                getQuery(index.IndexName, "et1 = isblank(#et1, #IGNORE)") |> withName "matchselfignore"
+                getQuery(index.IndexName, "et1 = isblank(#et1, 'd')") |> withName "matchselfdefault"
+                getQuery(index.IndexName, "et1 = #et2") |> withName "crossmatch"
+                getQuery(index.IndexName, "et1 = #et2") |> withName "crossmatcherror"
+                getQuery(index.IndexName, "et1 = isblank(#et2, #IGNORE)") |> withName "crossmatchignore"
+                getQuery(index.IndexName, "et1 = isblank(#et2, 'd')") |> withName "crossmatchdefault"
                 getQuery(index.IndexName, "et1 = 'h'") |> withName "constantmatch"
                 getQuery(index.IndexName, "i1 = add(#i2,#i1,'-2')") |> withName "crossmatchwithfunc"
                 getQuery(index.IndexName, "i1 = add(#i2,add(#i1,'-2'))") |> withName "crossmatchwithnestedfunc"
@@ -454,7 +454,7 @@ id,et1,et2,i1,i2
             getQuery (index.IndexName, "et2:''")
             |> withSearchProfile "crossmatch"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingFieldValue("et2")) @>
 
     member __.``When the cross matched field is not passed then the search will fail as the default behaviour is to throw error``() =
         let result = 
@@ -462,21 +462,21 @@ id,et1,et2,i1,i2
             getQuery (index.IndexName, "et1:''")
             |> withSearchProfile "crossmatch"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingFieldValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will fail for cross match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
             |> withSearchProfile "crossmatcherror"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingFieldValue("et2")) @>
 
     member __.``When the required field value is not passed then the search will fail for cross match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
             |> withSearchProfile "crossmatcherror"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingFieldValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will ignore the clause for cross match configuration of [*]``() =
         let result = 
