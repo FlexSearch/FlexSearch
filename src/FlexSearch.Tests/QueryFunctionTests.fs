@@ -91,3 +91,6 @@ type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>)
 
     member __.``Field function should parse field names without hashtag`` () =
         "lower(field)" |> parsesTo (FieldFunction("lower", "field", []))
+
+    member __.``endswith('fsharp', 'sharp') should return true``() =
+        "endswith('fsharp', 'sharp')" |> isEqualTo "true" []

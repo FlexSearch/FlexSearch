@@ -61,6 +61,7 @@ type SearchParserTests() =
     [<InlineData("abc eq any(['true','false','false'])")>]
     [<InlineData("abc > sqrt(add(haversin(#delta),multiply(cos(#fi1),cos(#fi2))))")>]
     [<InlineData("lower(field) eq 'aa'")>]
+    [<InlineData("endswith(field, 'value')")>]
     member __.``Expression with function should parse`` (sut : string) = test2 sut
 
     [<InlineData("abc eq isnull(fieldName)")>]

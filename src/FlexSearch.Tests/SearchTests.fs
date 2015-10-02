@@ -824,6 +824,7 @@ id,et1,b1,i1
 3,Aa,True,3
 4,aA,False,87
 CC,AA,FALSE,40
+5,fsharp,true,0
 """
     do indexTestData (testData, index, indexService, documentService)
 
@@ -903,3 +904,27 @@ CC,AA,FALSE,40
             |> withColumns [| "_id" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 4
+
+    member __.``Function-only conditions shouldn't be allowed for all functions``() =
+        let result =
+            getQuery (index.IndexName, "upper(et1)")
+            |> withColumns [| "_id" |]
+            |> searchService.Search
+        
+        test <@ result = (fail <| RhsValueNotFound("upper")) @>
+
+    member __.``endswith should be allowed in function-only conditions``() =
+        let result = 
+            getQuery (index.IndexName, "endswith(et1, 'sharp')")
+            |> withColumns [| "_id" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "5"
+
+    member __.``startsswith should be allowed in function-only conditions``() =
+        let result = 
+            getQuery (index.IndexName, "startswith(et1, 'fs')")
+            |> withColumns [| "et1" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "et1" "fsharp"

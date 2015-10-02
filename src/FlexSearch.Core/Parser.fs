@@ -108,12 +108,8 @@ module Parsers =
     //      upper_Case(firstname)
     //      endswith(firstname, 'Luke')
     do fieldFuncImpl :=
-        let fieldName : Parser<FieldName, unit> = 
-            field .>> followedByL 
-                (choice [str_ws ","; str_ws ")"])
-                "The field name should be followed by either a comma or a closing round bracket"
-        let parameters = sepBy (choice [ stringLiteral; listOfValues; attempt constFunc ])
-                               (str_ws ",")
+        let parameters = optional (str_ws ",") >>. sepBy (choice [ stringLiteral; listOfValues; attempt constFunc ])
+                                      (str_ws ",")
 
         pipe2 (ws >>. funcName )
               (str_ws "(" >>. field .>>. parameters .>> str_ws ")")
@@ -181,8 +177,9 @@ module Parsers =
     // Example: firstname eq 'a'
     //          endswith(firstname, 'blue')
     let predicate = 
-        choice [ pipe4 variable identifier constant parameters (fun v o c b -> Condition(v, o, c, b));
-                 fieldFunc |>> FuncCondition ]
+        let normalCond = pipe4 variable identifier constant parameters (fun v o c b -> Condition(v, o, c, b))
+        let funcCond = fieldFunc |>> FuncCondition
+        choice [ attempt normalCond; funcCond]
     
     type Assoc = Associativity
     
