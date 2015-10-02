@@ -365,6 +365,7 @@ id,et1,et2,i1,i2
                 getQuery(index.IndexName, "i1 = add(#i2,add(#i1,'-2'))") |> withName "crossmatchwithnestedfunc"
                 getQuery(index.IndexName, "i1 = add('10','18')") |> withName "matchwithfuncconstonly"
                 getQuery(index.IndexName, "i1 = add(#i2,#i2)") |> withName "crossmatchwithfieldonlyfunc"
+                getQuery(index.IndexName, "et1 = isblank(#et1, #et2)") |> withName "nestedcrossmatch"
             |]
         indexTestData (testData, index, indexService, documentService)
     
@@ -561,6 +562,16 @@ id,et1,et2,i1,i2
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "6"
+
+    member __.``Nested crossmatching is possible by matching a different field if the main one is blank``() =
+        let result =
+            getQuery (index.IndexName, "et2: 'b'")
+            |> withSearchProfile "nestedcrossmatch"
+            |> withColumns [| "_id" |]
+            |> withProfileOverride
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        result |> assertFieldValue 0 "_id" "2"
 
 type ``DistinctBy Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
