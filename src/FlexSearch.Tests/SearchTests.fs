@@ -882,3 +882,24 @@ CC,AA,FALSE,40
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "3"
+
+    member __.``Searching using lower on the LHS of the operation is supported``() =
+        let result =
+            getQuery (index.IndexName, "lower(et1) = 'aa'")
+            |> withColumns [| "_id" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 4
+
+    member __.``Searching using upper on the LHS of the operation is supported``() =
+        let result =
+            getQuery (index.IndexName, "upper(et1) = 'AA'")
+            |> withColumns [| "_id" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 4
+
+    member __.``Searching using upper on the LHS of a 'regex' operation is supported``() =
+        let result =
+            getQuery (index.IndexName, "upper(et1) regex 'A.'")
+            |> withColumns [| "_id" |]
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 4

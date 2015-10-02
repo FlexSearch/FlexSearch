@@ -42,7 +42,7 @@ type IFlexQuery =
 /// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
     abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
-    abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] -> Result<Query>
+    abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] * Dictionary<string, string> option -> Result<Query>
 
 
 [<AutoOpenAttribute>]
@@ -229,7 +229,7 @@ module SearchDsl =
                         // Get the appropriate LHS query function
                         let! fieldQueryFunc = funcName |> getQueryFunction queryFunctionTypes
                         // Compute the final query by analyzing the variable, operator and constant
-                        return! fieldQueryFunc.GetVariableResult(field, fieldFunction, query, computedConstant)
+                        return! fieldQueryFunc.GetVariableResult(field, fieldFunction, query, computedConstant, p)
                     }
 
                 queryGetter
@@ -655,7 +655,7 @@ module QueryFunctionHelpers =
 [<Name("add"); Sealed>]
 type AddFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -671,7 +671,7 @@ type AddFunc() =
 [<Name("multiply"); Sealed>]
 type MultiplyFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -687,7 +687,7 @@ type MultiplyFunc() =
 [<Name("max"); Sealed>]
 type MaxFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -703,7 +703,7 @@ type MaxFunc() =
 [<Name("min"); Sealed>]
 type MinFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -719,7 +719,7 @@ type MinFunc() =
 [<Name("avg"); Sealed>]
 type AvgFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -735,7 +735,7 @@ type AvgFunc() =
 [<Name("len"); Sealed>]
 type LenFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -751,8 +751,11 @@ type LenFunc() =
 [<Name("upper"); Sealed>]
 type UpperFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
-            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        // Since all matches are case insensitive matches, it makes no difference if
+        // we do a toUpper or toLower on the indexed data.
+        member __.GetVariableResult(flexField,fieldFunction,flexQuery,constant,p) = 
+            flexQuery.GetQuery(flexField, constant, p)
+
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 fun (x : string) -> x.ToUpper()
@@ -767,8 +770,10 @@ type UpperFunc() =
 [<Name("lower"); Sealed>]
 type LowerFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
-            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
+        // Since all matches are case insensitive matches, it makes no difference if
+        // we do a toUpper or toLower on the indexed data.
+        member __.GetVariableResult(flexField,fieldFunction,flexQuery,constant,p) = 
+            flexQuery.GetQuery(flexField, constant, p)
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
                 fun (x : string) -> x.ToLower()
@@ -783,7 +788,7 @@ type LowerFunc() =
 [<Name("substr"); Sealed>]
 type SubstrFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try
@@ -803,7 +808,7 @@ type SubstrFunc() =
 [<Name("isblank"); Sealed>]
 type IsBlankFunc() =
     interface IFlexQueryFunction with
-        member __.GetVariableResult(_,_,_,_) = 
+        member __.GetVariableResult(_,_,_,_,_) = 
             fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
         member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
             try

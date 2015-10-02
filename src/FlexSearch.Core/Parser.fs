@@ -116,7 +116,7 @@ module Parsers =
                                (str_ws ",")
 
         pipe2 (ws >>. funcName )
-              (str_ws "(" >>. field .>>.? parameters .>> str_ws ")")
+              (str_ws "(" >>. field .>>. parameters .>> str_ws ")")
               (fun funcName (fldName,prms) -> FieldFunction(funcName, fldName, prms))
 
     let ParseConstFunction text =
@@ -125,7 +125,7 @@ module Parsers =
         | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
     
     let ParseFieldFunction text =
-        match run (ws >>. constFunc .>> eof) text with
+        match run (ws >>. fieldFunc .>> eof) text with
         | Success(result, _, _) -> ok result
         | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
 
@@ -135,7 +135,8 @@ module Parsers =
     let constant = choice [ spField; stringLiteral; listOfValues; constFunc ]
 
     // Variable parser
-    let variable = choice [ field |>> Field; fieldFunc |>> Function ]
+    let variable = choice [ attempt (field .>> notFollowedBy (pstring "(") |>> Field)
+                            fieldFunc |>> Function ]
 
     let DictionaryOfList(elements : (string * string) list) = 
         let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

@@ -26,6 +26,11 @@ type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>)
             test <@ result = (ok <| Some expected) @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
+    let parsesTo expected inputText =
+        match ParseFieldFunction inputText with
+        | Ok(ff) -> test <@ ff = expected @>
+        | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
+
     let fails sourceList inputText =
         match ParseConstFunction inputText with
         | Ok(Constant.Function(fn, ps)) -> 
@@ -83,3 +88,6 @@ type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>)
 
     member __.``Substr(2,5) should get the first 5 characters starting from position 2``() =
         "substr('THIS IS SPARTA!!','2','5')" |> isEqualTo "IS IS" []
+
+    member __.``Field function should parse field names without hashtag`` () =
+        "lower(field)" |> parsesTo (FieldFunction("lower", "field", []))
