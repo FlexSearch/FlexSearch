@@ -95,6 +95,7 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
         | _ -> defaultAnalyzer
 
 module Codec = 
+    open FlexLucene.Codecs.Lucene53
     open FlexLucene.Codecs.Lucene50
     open FlexLucene.Codecs.Lucene410
     open FlexLucene.Codecs.Lucene41
@@ -109,7 +110,7 @@ module Codec =
         match version with
         | IndexVersion.Lucene_5_0_0 -> 
             let postingsFormat = new Lucene50PostingsFormat()
-            { new Lucene50Codec() with
+            { new Lucene53Codec() with
                   member this.getPostingsFormatForField (fieldName) = 
                       getPostingsFormat (fieldName, enableBloomFilter, postingsFormat) } :> Codec
             |> ok

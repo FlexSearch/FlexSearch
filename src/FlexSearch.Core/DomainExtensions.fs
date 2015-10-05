@@ -73,7 +73,6 @@ module DirectoryType =
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module IndexVersion = 
     open FlexLucene.Codecs
-    open FlexLucene.Codecs.FlexSearch
     open FlexLucene.Util
     
     /// Build Lucene index version from FlexSearch index version    
