@@ -84,8 +84,9 @@ module IndexWriter =
             do! s.Caches.[shardNo]
                 |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
                 |> boolToResult UnableToUpdateMemory
-            let doc = s.Template.Value |> DocumentTemplate.updateTempate document
             let txId = s.ShardWriters.[shardNo].GetNextIndex()
+            let doc = s.Template.Value |> DocumentTemplate.updateTempate document txId
+            
             if addToTxLog then 
                 let opCode = 
                     if create then TransactionLog.Operation.Create
@@ -173,7 +174,7 @@ module IndexWriter =
             for entry in logEntries do
                 match entry.Operation with
                 | TransactionLog.Operation.Create | TransactionLog.Operation.Update -> 
-                    let doc = indexWriter.Template.Value |> DocumentTemplate.updateTempate entry.Document
+                    let doc = indexWriter.Template.Value |> DocumentTemplate.updateTempate entry.Document entry.TransactionId
                     shardWriter 
                     |> ShardWriter.updateDocument (entry.Id, indexWriter.GetSchemaName(Constants.IdField), doc)
                 | TransactionLog.Operation.Delete -> 

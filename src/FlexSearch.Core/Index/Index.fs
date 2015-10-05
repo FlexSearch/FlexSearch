@@ -177,6 +177,7 @@ module IndexSettingBuilder =
         // Add system fields
         resultLookup.Add(Constants.IdField, Field.getIdField (ic.UseBloomFilterForId))
         resultLookup.Add(Constants.LastModifiedField, Field.getTimeStampField())
+        resultLookup.Add(Constants.ModifyIndex, Field.getModifyIndexField())
         for field in fields do
             let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)

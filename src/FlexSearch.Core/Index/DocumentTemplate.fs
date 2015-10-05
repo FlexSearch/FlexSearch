@@ -40,8 +40,10 @@ module DocumentTemplate =
             template.Add(field)
             fields.Add(field)
         add (Field.getTextField (s.FieldsLookup.[Constants.IdField].SchemaName, "", Field.store))
-        add (Field.getLongField (s.FieldsLookup.[Constants.LastModifiedField].SchemaName, int64 0, Field.store))
-        add (new NumericDocValuesField(s.FieldsLookup.[Constants.LastModifiedField].SchemaName, int64 0))
+        add (Field.getLongField (s.FieldsLookup.[Constants.LastModifiedField].SchemaName, 0L, Field.store))
+        add (new NumericDocValuesField(s.FieldsLookup.[Constants.LastModifiedField].SchemaName, 0L))
+        add (Field.getLongField (s.FieldsLookup.[Constants.ModifyIndex].SchemaName, 0L, Field.store))
+        add (new NumericDocValuesField(s.FieldsLookup.[Constants.ModifyIndex].SchemaName, 0L))
         for field in s.Fields do
             // Ignore these 4 fields here.
             if not (protectedFields (field.FieldName)) then 
@@ -56,15 +58,17 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let updateTempate (document : Document) (template : T) = 
+    let updateTempate (document : Document) (modifyIndex : int64) (template : T) = 
         // Update meta fields
         // Id Field
         template.TemplateFields.[0].SetStringValue(document.Id)
         // Timestamp fields
         template.TemplateFields.[1].SetLongValue(document.TimeStamp)
         template.TemplateFields.[2].SetLongValue(document.TimeStamp)
+        template.TemplateFields.[3].SetLongValue(modifyIndex)
+        template.TemplateFields.[4].SetLongValue(modifyIndex)
         // Performance of F# iter is very slow here.
-        let mutable i = 2
+        let mutable i = 4
         for field in template.Setting.Fields do
             i <- i + 1
             // Ignore these 3 fields here.

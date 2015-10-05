@@ -367,6 +367,9 @@ module Field =
     /// Field to be used by time stamp
     let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, true)
     
+    /// Field to be used to store modfiy index
+    let getModifyIndexField() = create (Constants.ModifyIndex, FieldType.Long, true)
+
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
                analyzerFactory : string -> Result<FlexLucene.Analysis.Analyzer>, scriptService) = 
