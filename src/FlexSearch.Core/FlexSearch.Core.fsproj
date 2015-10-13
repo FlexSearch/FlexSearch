@@ -90,6 +90,7 @@
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Pools.fs" />
     <Compile Include="Settings.fs" />
+    <Compile Include="Protocols.fs" />
     <Compile Include="Queues.fs" />
     <Compile Include="Domain.fsi" />
     <Compile Include="Domain.fs" />
