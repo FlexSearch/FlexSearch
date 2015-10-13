@@ -16,6 +16,7 @@
 //  You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
+
 open System
 open System.Collections.Concurrent
 open System.Threading
@@ -117,7 +118,7 @@ type ObjectPool<'T when 'T :> PooledObject>(factory : unit -> 'T, poolSize : int
 
 /// An alternative implementation of object pool which does not require the pooled item to implement
 /// any interface. So, this pool requires the caller to explicitly release items back to the pool.
-/// Failing to return objects back to the pool won't affect the perfomance but would be counter
+/// Failing to return objects back to the pool won't affect the performance but would be counter
 /// productive.
 /// TODO: We can improve this design further by using array as an backing store as done by Roslyn 
 /// pools but that should be confirmed by CPU/Memory profiling
@@ -129,6 +130,7 @@ type SimpleObjectPool<'T>(factory : unit -> 'T, poolSize : int, onRelease : 'T -
         let instance = factory()
         Interlocked.Increment(&itemCount) |> ignore
         instance
+    
     do 
         for i = 1 to poolSize do
             pool.Enqueue(createNewItem())
@@ -144,22 +146,53 @@ type SimpleObjectPool<'T>(factory : unit -> 'T, poolSize : int, onRelease : 'T -
         match pool.TryDequeue() with
         | true, a -> a
         | _ -> createNewItem()
-
+    
     /// Release an instance of 'T
-    member this.Release(instance : 'T) =
+    member this.Release(instance : 'T) = 
         // Ignore the failed item as it wasn't released successfully
-        if onRelease(instance) then
-            pool.Enqueue(instance)
+        if onRelease (instance) then pool.Enqueue(instance)
 
 [<AutoOpen>]
-module Pools =
+module Pools = 
     open System.Collections.Generic
     open System
-
+    
     /// A reusable dictionary pool
     let dictionaryPool = 
         let initialCapacity = 50
         let itemsInPool = 300
-        let factory () = new Dictionary<string, string>(initialCapacity, StringComparer.OrdinalIgnoreCase)
-        let onRelease(dict : Dictionary<string, string>) = dict.Clear(); true
-        new SimpleObjectPool<Dictionary<string, string>>(factory, itemsInPool, onRelease)     
+        let factory() = new Dictionary<string, string>(initialCapacity, StringComparer.OrdinalIgnoreCase)
+        
+        let onRelease (dict : Dictionary<string, string>) = 
+            dict.Clear()
+            true
+        new SimpleObjectPool<Dictionary<string, string>>(factory, itemsInPool, onRelease)
+
+[<AutoOpen>]
+module BytePool = 
+    type BufferSize = 
+        | Small = 0
+        | Large = 1
+    
+    let utf = Text.UTF8Encoding.UTF8
+    
+    let private generatePool (sizeInKB : int, itemsInPool : int) = 
+        let factory() = Array.create (sizeInKB * 1024) (0uy)
+        let onRelease (item : _) = true
+        new SimpleObjectPool<byte array>(factory, itemsInPool, onRelease)
+    
+    let smallPoolSize = 128
+    let largePoolSize = 4096
+    let private smallPool = generatePool (smallPoolSize, Environment.ProcessorCount * 2)
+    let private largePool = generatePool (largePoolSize, Environment.ProcessorCount * 2)
+    
+    let requestBuffer (bufferSize : BufferSize) = 
+        match bufferSize with
+        | BufferSize.Small -> smallPool.Acquire()
+        | BufferSize.Large -> largePool.Acquire()
+        | _ -> failwithf "Internal : Unsupported buffer size requested."
+    
+    let releaseBuffer (item : array<byte>) = 
+        if item.Length = smallPoolSize then smallPool.Release(item)
+        else 
+            if item.Length = largePoolSize then largePool.Release(item)
