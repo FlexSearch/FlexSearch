@@ -81,7 +81,6 @@ module DocumentBuffer =
     /// Decode Int64 value from the buffer
     let decodeInt64 (t : T) = 
         assert (t.Buffer.Length >= t.Position + 8)
-        // Transaction ID is always at the beginning of the array
         let res = 
             int64 t.Buffer.[t.Position] ||| (int64 t.Buffer.[t.Position + 1] <<< 8) 
             ||| (int64 t.Buffer.[t.Position + 2] <<< 16) ||| (int64 t.Buffer.[t.Position + 3] <<< 24) 
@@ -90,9 +89,23 @@ module DocumentBuffer =
         t.Position <- t.Position + 8
         res
     
-    let addInt32 (value : int32) (t : T) = 
-        let src = BitConverter.GetBytes(value)
-        append src t
+    /// Encode Int32 value into the buffer
+    let encodeInt32 (value : int32) (t : T) = 
+        assert (t.Buffer.Length >= t.Position + 4)
+        t.Buffer.[t.Position] <- value |> byte
+        t.Buffer.[t.Position + 1] <- value >>> 8 |> byte
+        t.Buffer.[t.Position + 2] <- value >>> 16 |> byte
+        t.Buffer.[t.Position + 3] <- value >>> 24 |> byte
+        t.Position <- t.Position + 4
+    
+    /// Decode Int32 value from the buffer
+    let decodeInt32 (t : T) = 
+        assert (t.Buffer.Length >= t.Position + 4)
+        let res = 
+            int32 t.Buffer.[t.Position] ||| (int32 t.Buffer.[t.Position + 1] <<< 8) 
+            ||| (int32 t.Buffer.[t.Position + 2] <<< 16) ||| (int32 t.Buffer.[t.Position + 3] <<< 24)
+        t.Position <- t.Position + 4
+        res
     
     /// Move the position to the start of next word boundary
     let align (t : T) = 
@@ -132,7 +145,7 @@ module DocumentProtocol =
     let intialize (txId : int64) (fieldCount : int32) (t : T) = 
         // Add the transaction log id
         encodeInt64 txId t
-        addInt32 fieldCount t
+        encodeInt32 fieldCount t
         // Add a default location for each field
         for i = 0 to fieldCount do
             append ZeroIntEncoded t
