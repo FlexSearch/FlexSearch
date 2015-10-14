@@ -131,15 +131,18 @@ module DocumentBuffer =
         res
 
 (*
-+-------+----------+----------+--- ... ---+--------------+--- ...... ---+
-| TxID  | F Count  | F(1) Loc | F(n) Loc  | F(1) Content | F(n) Content |
-+-------+----------+----------+--- ... ---+--------------+--- ...... ---+
-<- 8B ->|<-- 4B -->|<-- 4B -->|           |<- Variable ->|
+                                                                       |<- 8 byte aligned
++------+-------+-------+------------+----------+-- ................ ---+---------+- ..... -+
+| Size | TxID  | Field | F(0) Start | F(0) End | F(n) Start | F(n) End | F(0)    | F(n)    |
+|      |       | Count | Position   | Position | Position   | Position | Content | Content |
++------+-------+-------+------------+----------+-- ................ ---+---------+- ..... -+
+<- 4B->|<- 8B ->|<- 4B->|<--- 4B --->|<-- 4B -->|                       |<- Var ->|
 
   TxID = Transaction ID
   F Count = Total no of Field
-  F(n) Loc = Nth Field location
+  F(n) Location = Nth Field location
   F(n) Content = Nth Field Content
+  Var = Variable length
 *)
 module DocumentProtocol = 
     /// Encode the transaction Id
