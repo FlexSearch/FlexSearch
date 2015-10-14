@@ -41,22 +41,23 @@ module DocumentBuffer =
         let bounds = t.Position + src.Length
         /// It doesn't make sense to upgrade to large buffer from the pool
         /// if it is still smaller then the required size
-        if bounds > t.Buffer.Length && bounds <= BytePool.largePoolSize then 
+        if bounds >= t.Buffer.Length && bounds <= BytePool.largePoolSizeBytes then 
             let newBuffer = requestBuffer BufferSize.Large
             Buffer.BlockCopy(t.Buffer, 0, newBuffer, 0, t.Buffer.Length)
             releaseBuffer t.Buffer
             t.Buffer <- newBuffer
         else 
-            // Allocate a new byte array outside the buffer pool
-            // Make it twice the size of the current bound to cater
-            // for future
-            let newBuffer = Array.create (bounds * 2 * 1024) (0uy)
-            Buffer.BlockCopy(t.Buffer, 0, newBuffer, 0, t.Buffer.Length)
-            releaseBuffer t.Buffer
-            t.Buffer <- newBuffer
+            if bounds > BytePool.largePoolSizeBytes then 
+                // Allocate a new byte array outside the buffer pool
+                // Make it twice the size of the current bound to cater
+                // for future
+                let newBuffer = Array.create (bounds * 2 * 1024) (0uy)
+                Buffer.BlockCopy(t.Buffer, 0, newBuffer, 0, t.Buffer.Length)
+                releaseBuffer t.Buffer
+                t.Buffer <- newBuffer
         /// PERF: Don't use BlockCopy for a copying single element array
         if src.Length = 1 then t.Buffer.[bounds] <- src.[0]
-        else Buffer.BlockCopy(src, 0, t.Buffer, 0, src.Length)
+        else Buffer.BlockCopy(src, 0, t.Buffer, t.Position, src.Length)
         t.Position <- bounds
     
     let ZeroIntEncoded = BitConverter.GetBytes(0)
@@ -64,9 +65,30 @@ module DocumentBuffer =
     let utf = Text.UTF8Encoding.UTF8
     let nullByteArray = [| Byte.MinValue |]
     
-    let addInt64 (value : int64) (t : T) = 
-        let src = BitConverter.GetBytes(value)
-        append src t
+    /// Encode Int64 value into the buffer
+    let encodeInt64 (value : int64) (t : T) = 
+        assert (t.Buffer.Length >= t.Position + 8)
+        t.Buffer.[t.Position] <- value |> byte
+        t.Buffer.[t.Position + 1] <- value >>> 8 |> byte
+        t.Buffer.[t.Position + 2] <- value >>> 16 |> byte
+        t.Buffer.[t.Position + 3] <- value >>> 24 |> byte
+        t.Buffer.[t.Position + 4] <- value >>> 32 |> byte
+        t.Buffer.[t.Position + 5] <- value >>> 40 |> byte
+        t.Buffer.[t.Position + 6] <- value >>> 48 |> byte
+        t.Buffer.[t.Position + 7] <- value >>> 56 |> byte
+        t.Position <- t.Position + 8
+    
+    /// Decode Int64 value from the buffer
+    let decodeInt64 (t : T) = 
+        assert (t.Buffer.Length >= t.Position + 8)
+        // Transaction ID is always at the beginning of the array
+        let res = 
+            int64 t.Buffer.[t.Position] ||| (int64 t.Buffer.[t.Position + 1] <<< 8) 
+            ||| (int64 t.Buffer.[t.Position + 2] <<< 16) ||| (int64 t.Buffer.[t.Position + 3] <<< 24) 
+            ||| (int64 t.Buffer.[t.Position + 4] <<< 32) ||| (int64 t.Buffer.[t.Position + 5] <<< 40) 
+            ||| (int64 t.Buffer.[t.Position + 6] <<< 48) ||| (int64 t.Buffer.[t.Position + 7] <<< 56)
+        t.Position <- t.Position + 8
+        res
     
     let addInt32 (value : int32) (t : T) = 
         let src = BitConverter.GetBytes(value)
@@ -96,15 +118,20 @@ module DocumentBuffer =
   F(n) Content = Nth Field Content
 *)
 module DocumentProtocol = 
-    let inline appendToStream (arr : byte []) (stream : MemoryStream) = 
-        if BitConverter.IsLittleEndian then 
-            stream.Write(arr, 0, arr.Length)
-            stream
-        else failwithf "FlexSearch only works with systems which support Little Endian encoding."
+    /// Encode the transaction Id
+    let encodeTransactionId (txId : int64) (t : T) = 
+        // Transaction ID should always be at the beginning of the message
+        t.Position <- 0
+        encodeInt64 txId t
     
-    let intialize (fieldCount : int32) (t : T) = 
+    /// Returns the Transaction ID encoded in the message
+    let decodeTransactionId (t : T) = 
+        t.Position <- 0
+        decodeInt64 t
+    
+    let intialize (txId : int64) (fieldCount : int32) (t : T) = 
         // Add the transaction log id
-        addInt64 0L t
+        encodeInt64 txId t
         addInt32 fieldCount t
         // Add a default location for each field
         for i = 0 to fieldCount do
@@ -118,7 +145,7 @@ module DocumentProtocol =
     
     let encodeDocument (txId : int64, document : Dictionary<string, string>) = 
         let message = DocumentBuffer.create (BufferSize.Small)
-        intialize document.Count message
+        intialize txId document.Count message
         let mutable count = 1
         for pair in document do
             // Align the position before writing to the array
@@ -126,3 +153,4 @@ module DocumentProtocol =
             // write the current position as the starting position for the value in memory
             updatePos count message.Position message
             addString pair.Value message
+        message
