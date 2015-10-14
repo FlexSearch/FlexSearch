@@ -110,8 +110,8 @@ module DocumentBuffer =
     
     /// Move the position to the start of next word boundary
     let align (t : T) = 
-        // Add padding to ensure correct 16 byte alignment
-        let mutable alignment = t.Position % 16
+        // Add padding to ensure correct 8 byte alignment
+        let mutable alignment = t.Position % 8
         while alignment <> 0 do
             append nullByteArray t
             alignment <- alignment - 1
