@@ -21,6 +21,7 @@ open System
 open System.IO
 open System.Collections.Generic
 open System.Linq
+open System.Text
 
 [<AutoOpen>]
 module DocumentBuffer = 
@@ -56,13 +57,13 @@ module DocumentBuffer =
                 releaseBuffer t.Buffer
                 t.Buffer <- newBuffer
         /// PERF: Don't use BlockCopy for a copying single element array
-        if src.Length = 1 then t.Buffer.[bounds] <- src.[0]
+        if src.Length = 1 then t.Buffer.[t.Position] <- src.[0]
         else Buffer.BlockCopy(src, 0, t.Buffer, t.Position, src.Length)
         t.Position <- bounds
     
     let ZeroIntEncoded = BitConverter.GetBytes(0)
     
-    let utf = Text.UTF8Encoding.UTF8
+    let utf8 = System.Text.Encoding.UTF8
     let nullByteArray = [| Byte.MinValue |]
     
     /// Encode Int64 value into the buffer
@@ -115,9 +116,19 @@ module DocumentBuffer =
             append nullByteArray t
             alignment <- alignment - 1
     
-    let addString (value : string) (t : T) = 
-        let src = utf.GetBytes(value)
+    /// Encode a string value into the buffer
+    let encodeString (value : string) (t : T) = 
+        assert (notNull value)
+        let src = utf8.GetBytes(value)
         append src t
+        src.Length
+
+    /// Decode a string value from the buffer
+    let decodeString (length : int) (t : T) = 
+        assert (t.Buffer.Length >= t.Position + length)
+        let res = utf8.GetString(t.Buffer, t.Position, length)
+        t.Position <- t.Position + length
+        res
 
 (*
 +-------+----------+----------+--- ... ---+--------------+--- ...... ---+
@@ -165,5 +176,5 @@ module DocumentProtocol =
             align message
             // write the current position as the starting position for the value in memory
             updatePos count message.Position message
-            addString pair.Value message
+            encodeString pair.Value message
         message
