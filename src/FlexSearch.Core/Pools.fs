@@ -183,6 +183,8 @@ module BytePool =
     
     let smallPoolSize = 128
     let largePoolSize = 4096
+    let smallPoolSizeBytes = smallPoolSize * 1024
+    let largePoolSizeBytes = largePoolSize * 1024
     let private smallPool = generatePool (smallPoolSize, Environment.ProcessorCount * 2)
     let private largePool = generatePool (largePoolSize, Environment.ProcessorCount * 2)
     
@@ -193,6 +195,6 @@ module BytePool =
         | _ -> failwithf "Internal : Unsupported buffer size requested."
     
     let releaseBuffer (item : array<byte>) = 
-        if item.Length = smallPoolSize then smallPool.Release(item)
+        if item.Length = smallPoolSizeBytes then smallPool.Release(item)
         else 
-            if item.Length = largePoolSize then largePool.Release(item)
+            if item.Length = largePoolSizeBytes then largePool.Release(item)
