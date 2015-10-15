@@ -51,6 +51,14 @@ type DocumentProtocolTests() =
         d.Add("f3", "v3")
         d
     
+    let anyDocumentCanBeEncoded (txId : int64, document : NonNull<Dictionary<string, string>>) = 
+        let sut = DocumentProtocol.encodeDocument (txId, document.Get)
+        test <@ DocumentProtocol.decodeVersion sut = 1 @>
+        // Even an empty document should be this long
+        test <@ DocumentProtocol.decodeSize sut >= DocumentProtocol.infoFieldPosition - 1 @>
+        test <@ DocumentProtocol.decodeFieldCount sut = document.Get.Count @>
+        true
+    
     let anyInt64CanBeEncodedAsTxId (num : int64) = 
         use buffer = DocumentBuffer.create (BufferSize.Small)
         DocumentProtocol.encodeTransactionId num buffer
@@ -60,3 +68,4 @@ type DocumentProtocolTests() =
     member __.``Int64 max value can be encoded as TxId``() = test <@ anyInt64CanBeEncodedAsTxId Int64.MaxValue @>
     member __.``Int64 min value can be encoded as TxId``() = test <@ anyInt64CanBeEncodedAsTxId Int64.MinValue @>
     member __.``Any Int64 number can be encoded as TxId``() = Check.VerboseThrowOnFailure anyInt64CanBeEncodedAsTxId
+    member __.``Any document number can be encoded``() = Check.VerboseThrowOnFailure anyDocumentCanBeEncoded

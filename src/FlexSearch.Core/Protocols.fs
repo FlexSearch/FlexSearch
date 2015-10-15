@@ -131,12 +131,12 @@ module DocumentBuffer =
         res
 
 (*
-                                                                       |<- 8 byte aligned
-+------+-------+-------+------------+--------- -+-- ................ ---+---------+- ..... -+
-| Size | TxID  | Field | F(0) Start | F(0)      | F(n) Start | F(n)     | F(0)    | F(n)    |
-|      |       | Count | Position   | Length    | Position   | Length   | Content | Content |
-+------+-------+-------+------------+-----------+-- ................ ---+---------+- ..... -+
-<- 4B->|<- 8B ->|<- 4B->|<--- 4B --->|<-- 4B -->|                       |<- Var ->|
+                                                                                  |<- 8 byte aligned
++----------+------+-------+-------+------------+----------+-- ................ ---+---------+- ..... -+
+| Version  | Size | TxID  | Field | F(0) Start | F(0)     | F(n) Start | F(n)     | F(0)    | F(n)    |
+|          |      |       | Count | Position   | Length   | Position   | Length   | Content | Content |
++----------+------+-------+-------+------------+----------+-- ................ ---+---------+- ..... -+
+|<-- 4B -->|< 4B >|<  8B >|<- 4B->|<--- 4B --->|<-- 4B -->|                       |<- Var ->|
 
   TxID = Transaction ID
   F Count = Total no of Field
@@ -145,38 +145,52 @@ module DocumentBuffer =
   Var = Variable length
 *)
 module DocumentProtocol = 
-    let txIdPosition = 0
-    let fieldCountPosition = 8
-    let fieldInfoStartPosition = 12
-    let fieldInfoWidth = 8
+    let versionFieldPos = 0
+    let versionFieldLen = 4
+    let sizeFieldPos = versionFieldPos + versionFieldLen
+    let sizeFieldLen = 4
+    let txIdFieldPos = sizeFieldPos + sizeFieldLen
+    let txIdFieldLen = 8
+    let countFieldPos = txIdFieldPos + txIdFieldLen
+    let countFieldLen = 4
+    let infoFieldPosition = countFieldPos + countFieldLen
+    let infoFieldLen = 4
+    
+    let encodeVersion (t : T) = 
+        t.Position <- versionFieldPos
+        encodeInt32 1 t
+    
+    let decodeVersion (t : T) = 
+        t.Position <- versionFieldPos
+        decodeInt32 t
     
     /// Encode the transaction Id
     let encodeTransactionId (txId : int64) (t : T) = 
-        t.Position <- txIdPosition
+        t.Position <- txIdFieldPos
         encodeInt64 txId t
     
     /// Returns the Transaction ID encoded in the message
     let decodeTransactionId (t : T) = 
-        t.Position <- txIdPosition
+        t.Position <- txIdFieldPos
         decodeInt64 t
     
     let encodeFieldCount (count : int32) (t : T) = 
-        t.Position <- fieldCountPosition
+        t.Position <- countFieldPos
         encodeInt32 count t
     
     let decodeFieldCount (t : T) = 
-        t.Position <- fieldCountPosition
+        t.Position <- countFieldPos
         decodeInt32 t
     
     /// Encode a field information like the message start and end position
     let encodeFieldInfo (pos : int32) (t : T) (startPosition : int, length : int) = 
-        t.Position <- fieldInfoStartPosition + pos * fieldInfoWidth
+        t.Position <- infoFieldPosition + pos * infoFieldLen
         encodeInt32 startPosition t
         encodeInt32 length t
     
     /// Decode a field information like the message start and end position
     let decodeFieldInfo (pos : int32) (t : T) = 
-        t.Position <- fieldInfoStartPosition + pos * fieldInfoWidth
+        t.Position <- infoFieldPosition + pos * infoFieldLen
         let startPos = decodeInt32 t
         let length = decodeInt32 t
         (startPos, length)
@@ -190,25 +204,42 @@ module DocumentProtocol =
     // Decode field data
     let decodeFieldData (pos : int) (t : T) = 
         let startPos, len = decodeFieldInfo pos t
-        t.Position <- startPos
-        decodeString len t
+        if startPos <> 0 then
+            t.Position <- startPos
+            decodeString len t
+        else String.Empty
+    
+    let encodeSize (t : T) = 
+        let count = decodeFieldCount t
+        let (pos, len) = decodeFieldInfo count t
+        t.Position <- sizeFieldPos
+        assert (pos + len > 0)
+        encodeInt32 (pos + len - 1) t
+    
+    let decodeSize (t : T) = 
+        t.Position <- sizeFieldPos
+        decodeInt32 t
     
     let intialize (txId : int64) (fieldCount : int32) (t : T) = 
-        // Add the transaction log id
-        encodeInt64 txId t
-        encodeInt32 fieldCount t
+        encodeVersion t
+        encodeTransactionId txId t
+        encodeFieldCount fieldCount t
         // Add a default start position and length for each field
         for i = 0 to fieldCount do
-            append ZeroIntEncoded t
-            append ZeroIntEncoded t
+            encodeFieldInfo i t (0, 0)
     
     /// Encode a document to a byte array
     let encodeDocument (txId : int64, document : Dictionary<string, string>) = 
         let message = DocumentBuffer.create (BufferSize.Small)
         intialize txId document.Count message
-        let mutable count = 1
+        let mutable count = 0
         for pair in document do
-            message 
-            |> encodeFieldData pair.Value 
-            |> encodeFieldInfo count message
+            // The start position and length of 0 signify that the value is null
+            // which is the default encoded value
+            if notNull pair.Value then 
+                message
+                |> encodeFieldData pair.Value
+                |> encodeFieldInfo count message
+            count <- count + 1
+        encodeSize message
         message
