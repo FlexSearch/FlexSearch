@@ -122,7 +122,7 @@ module DocumentBuffer =
         let src = utf8.GetBytes(value)
         append src t
         src.Length
-
+    
     /// Decode a string value from the buffer
     let decodeString (length : int) (t : T) = 
         assert (t.Buffer.Length >= t.Position + length)
@@ -132,10 +132,10 @@ module DocumentBuffer =
 
 (*
                                                                        |<- 8 byte aligned
-+------+-------+-------+------------+----------+-- ................ ---+---------+- ..... -+
-| Size | TxID  | Field | F(0) Start | F(0) End | F(n) Start | F(n) End | F(0)    | F(n)    |
-|      |       | Count | Position   | Position | Position   | Position | Content | Content |
-+------+-------+-------+------------+----------+-- ................ ---+---------+- ..... -+
++------+-------+-------+------------+--------- -+-- ................ ---+---------+- ..... -+
+| Size | TxID  | Field | F(0) Start | F(0)      | F(n) Start | F(n)     | F(0)    | F(n)    |
+|      |       | Count | Position   | Length    | Position   | Length   | Content | Content |
++------+-------+-------+------------+-----------+-- ................ ---+---------+- ..... -+
 <- 4B->|<- 8B ->|<- 4B->|<--- 4B --->|<-- 4B -->|                       |<- Var ->|
 
   TxID = Transaction ID
@@ -145,39 +145,70 @@ module DocumentBuffer =
   Var = Variable length
 *)
 module DocumentProtocol = 
+    let txIdPosition = 0
+    let fieldCountPosition = 8
+    let fieldInfoStartPosition = 12
+    let fieldInfoWidth = 8
+    
     /// Encode the transaction Id
     let encodeTransactionId (txId : int64) (t : T) = 
-        // Transaction ID should always be at the beginning of the message
-        t.Position <- 0
+        t.Position <- txIdPosition
         encodeInt64 txId t
     
     /// Returns the Transaction ID encoded in the message
     let decodeTransactionId (t : T) = 
-        t.Position <- 0
+        t.Position <- txIdPosition
         decodeInt64 t
+    
+    let encodeFieldCount (count : int32) (t : T) = 
+        t.Position <- fieldCountPosition
+        encodeInt32 count t
+    
+    let decodeFieldCount (t : T) = 
+        t.Position <- fieldCountPosition
+        decodeInt32 t
+    
+    /// Encode a field information like the message start and end position
+    let encodeFieldInfo (pos : int32) (t : T) (startPosition : int, length : int) = 
+        t.Position <- fieldInfoStartPosition + pos * fieldInfoWidth
+        encodeInt32 startPosition t
+        encodeInt32 length t
+    
+    /// Decode a field information like the message start and end position
+    let decodeFieldInfo (pos : int32) (t : T) = 
+        t.Position <- fieldInfoStartPosition + pos * fieldInfoWidth
+        let startPos = decodeInt32 t
+        let length = decodeInt32 t
+        (startPos, length)
+    
+    /// Encode field data
+    let encodeFieldData (data : string) (t : T) = 
+        let startPos = t.Position
+        align t
+        (startPos, encodeString data t)
+    
+    // Decode field data
+    let decodeFieldData (pos : int) (t : T) = 
+        let startPos, len = decodeFieldInfo pos t
+        t.Position <- startPos
+        decodeString len t
     
     let intialize (txId : int64) (fieldCount : int32) (t : T) = 
         // Add the transaction log id
         encodeInt64 txId t
         encodeInt32 fieldCount t
-        // Add a default location for each field
+        // Add a default start position and length for each field
         for i = 0 to fieldCount do
             append ZeroIntEncoded t
+            append ZeroIntEncoded t
     
-    /// Update the starting position of an item in the document
-    let updatePos (fieldPos : int) (location : int) (t : T) = 
-        let src = BitConverter.GetBytes(location)
-        // Copy the 4 bytes directly rather than using buffer copy
-        src |> Array.iteri (fun i value -> t.Buffer.[8 + 4 * fieldPos + i] <- value)
-    
+    /// Encode a document to a byte array
     let encodeDocument (txId : int64, document : Dictionary<string, string>) = 
         let message = DocumentBuffer.create (BufferSize.Small)
         intialize txId document.Count message
         let mutable count = 1
         for pair in document do
-            // Align the position before writing to the array
-            align message
-            // write the current position as the starting position for the value in memory
-            updatePos count message.Position message
-            encodeString pair.Value message
+            message 
+            |> encodeFieldData pair.Value 
+            |> encodeFieldInfo count message
         message
