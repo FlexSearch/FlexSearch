@@ -54,19 +54,22 @@ type DocumentProtocolTests() =
     
     let anyDocumentCanBeEncoded (document : NonNull<Dictionary<string, string>>) = 
         let doc = document.Get
-        let sut = DocumentProtocol.encodeDocument (1L, document.Get)
-        let size = sut.Size
+        let result = DocumentProtocol.encodeDocument (1L, document.Get)
+        let sutArray : byte [] = Array.zeroCreate result.Size
+        // Copy the result buffer to a new array with size equal
+        // to the result size. This will ensure that we have encoded the
+        // size field correctly.
+        Array.Copy(result.Buffer, sutArray, result.Size)
+        let sut = { result with Buffer = sutArray }
         test <@ DocumentProtocol.decodeVersion sut = 1 @>
         // Even an empty document should be this long
-        test <@ DocumentProtocol.decodeSize sut = size @>
+        test <@ DocumentProtocol.decodeSize sut = sut.Size @>
         test <@ DocumentProtocol.decodeFieldCount sut = document.Get.Count @>
         let values = doc.Values.ToArray()
         // Ensure that all the doc values are consistent
         for i = 0 to values.Length - 1 do
-            if isBlank (values.[i]) then
-                test <@ DocumentProtocol.decodeFieldData i sut = String.Empty @>
-            else
-                test <@ DocumentProtocol.decodeFieldData i sut = values.[i] @>
+            if isBlank (values.[i]) then test <@ DocumentProtocol.decodeFieldData i sut = String.Empty @>
+            else test <@ DocumentProtocol.decodeFieldData i sut = values.[i] @>
         true
     
     let anyInt64CanBeEncodedAsTxId (num : int64) = 
@@ -96,6 +99,6 @@ type DocumentProtocolTests() =
         dict.Add("|", "")
         dict.Add("", "")
         test <@ anyDocumentCanBeEncoded (NonNull(dict)) @>
-
+    
     member __.``Prop: Any document can be encoded``() = 
         Check.One({ Config.VerboseThrowOnFailure with MaxTest = 1000 }, anyDocumentCanBeEncoded)

@@ -43,7 +43,7 @@ module DocumentBuffer =
     ///  Set the size of the encoded message. The size
     /// is basically the highest position encountered so far
     let inline setSize (t : T) = 
-        if t.Position > t.Size then t.Size <- t.Position - 1
+        if t.Position > t.Size then t.Size <- t.Position
     
     let append (src : byte []) (t : T) = 
         let bounds = t.Position + src.Length
@@ -252,6 +252,7 @@ module DocumentProtocol =
         for i = 0 to fieldCount - 1 do
             encodeFieldInfo i t (0, 0)
             t.Position <- t.Position + 8
+        setSize t
     
     /// Encode a document to a byte array
     let encodeDocument (txId : int64, document : Dictionary<string, string>) = 
