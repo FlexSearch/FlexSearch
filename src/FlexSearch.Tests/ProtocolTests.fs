@@ -102,3 +102,21 @@ type DocumentProtocolTests() =
     
     member __.``Prop: Any document can be encoded``() = 
         Check.One({ Config.VerboseThrowOnFailure with MaxTest = 1000 }, anyDocumentCanBeEncoded)
+
+    member __.``Large document can be encoded``() = 
+        let dict = new Dictionary<string, string>()
+        // Keep it under large pool
+        dict.Add("|", new String('*', BytePool.largePoolSizeBytes - 100))
+        test <@ anyDocumentCanBeEncoded (NonNull(dict)) @>
+
+    member __.``Extremely large document can be encoded - 1``() = 
+        let dict = new Dictionary<string, string>()
+        // Keep it under large pool
+        dict.Add("|", new String('*', BytePool.largePoolSizeBytes * 2))
+        test <@ anyDocumentCanBeEncoded (NonNull(dict)) @>
+
+    member __.``Extremely large document can be encoded - 2``() = 
+        let dict = new Dictionary<string, string>()
+        // Make it go over large pool nearly 40 MB
+        dict.Add("|", new String('*', BytePool.largePoolSizeBytes * 10))
+        test <@ anyDocumentCanBeEncoded (NonNull(dict)) @>

@@ -59,7 +59,7 @@ module DocumentBuffer =
                 // Allocate a new byte array outside the buffer pool
                 // Make it twice the size of the current bound to cater
                 // for future
-                let newBuffer = Array.create (bounds * 2 * 1024) (0uy)
+                let newBuffer = Array.create (bounds * 2) (0uy)
                 Buffer.BlockCopy(t.Buffer, 0, newBuffer, 0, t.Buffer.Length)
                 releaseBuffer t.Buffer
                 t.Buffer <- newBuffer
@@ -146,6 +146,7 @@ module DocumentBuffer =
     
     /// Encode a string value into the buffer
     let encodeString (value : string) (t : T) = 
+        // TODO: Find a way to handle very large strings
         assert (notNull value)
         let src = utf8.GetBytes(value)
         append src t
