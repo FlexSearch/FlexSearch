@@ -27,7 +27,8 @@ open System.Text
 module DocumentBuffer = 
     type T = 
         { mutable Buffer : byte array
-          mutable Position : int32 }
+          mutable Position : int32
+          mutable Size : int32 }
         interface IDisposable with
             member this.Dispose() = 
                 if notNull this.Buffer then releaseBuffer this.Buffer
@@ -36,7 +37,13 @@ module DocumentBuffer =
         if not BitConverter.IsLittleEndian then 
             failwithf "FlexSearch only works with systems which support Little Endian encoding."
         { Buffer = requestBuffer bufferSize
-          Position = 0 }
+          Position = 0
+          Size = 0 }
+    
+    ///  Set the size of the encoded message. The size
+    /// is basically the highest position encountered so far
+    let inline setSize (t : T) = 
+        if t.Position > t.Size then t.Size <- t.Position - 1
     
     let append (src : byte []) (t : T) = 
         let bounds = t.Position + src.Length
@@ -60,51 +67,71 @@ module DocumentBuffer =
         if src.Length = 1 then t.Buffer.[t.Position] <- src.[0]
         else Buffer.BlockCopy(src, 0, t.Buffer, t.Position, src.Length)
         t.Position <- bounds
+        setSize t
     
     let ZeroIntEncoded = BitConverter.GetBytes(0)
     
     let utf8 = System.Text.Encoding.UTF8
     let nullByteArray = [| Byte.MinValue |]
     
+    /// Encode Int64 value at the specified location into the buffer
+    let encodeInt64At (value : int64) (pos : int32) (buffer : byte []) = 
+        assert (buffer.Length >= pos + 8)
+        buffer.[pos] <- value |> byte
+        buffer.[pos + 1] <- value >>> 8 |> byte
+        buffer.[pos + 2] <- value >>> 16 |> byte
+        buffer.[pos + 3] <- value >>> 24 |> byte
+        buffer.[pos + 4] <- value >>> 32 |> byte
+        buffer.[pos + 5] <- value >>> 40 |> byte
+        buffer.[pos + 6] <- value >>> 48 |> byte
+        buffer.[pos + 7] <- value >>> 56 |> byte
+    
     /// Encode Int64 value into the buffer
     let encodeInt64 (value : int64) (t : T) = 
-        assert (t.Buffer.Length >= t.Position + 8)
-        t.Buffer.[t.Position] <- value |> byte
-        t.Buffer.[t.Position + 1] <- value >>> 8 |> byte
-        t.Buffer.[t.Position + 2] <- value >>> 16 |> byte
-        t.Buffer.[t.Position + 3] <- value >>> 24 |> byte
-        t.Buffer.[t.Position + 4] <- value >>> 32 |> byte
-        t.Buffer.[t.Position + 5] <- value >>> 40 |> byte
-        t.Buffer.[t.Position + 6] <- value >>> 48 |> byte
-        t.Buffer.[t.Position + 7] <- value >>> 56 |> byte
+        encodeInt64At value t.Position t.Buffer
         t.Position <- t.Position + 8
+        setSize t
+    
+    /// Decode Int64 value at specified position from the buffer
+    let decodeInt64At (pos : int32) (buffer : byte []) = 
+        assert (buffer.Length >= pos + 8)
+        let res = 
+            int64 buffer.[pos] ||| (int64 buffer.[pos + 1] <<< 8) ||| (int64 buffer.[pos + 2] <<< 16) 
+            ||| (int64 buffer.[pos + 3] <<< 24) ||| (int64 buffer.[pos + 4] <<< 32) ||| (int64 buffer.[pos + 5] <<< 40) 
+            ||| (int64 buffer.[pos + 6] <<< 48) ||| (int64 buffer.[pos + 7] <<< 56)
+        res
     
     /// Decode Int64 value from the buffer
     let decodeInt64 (t : T) = 
-        assert (t.Buffer.Length >= t.Position + 8)
-        let res = 
-            int64 t.Buffer.[t.Position] ||| (int64 t.Buffer.[t.Position + 1] <<< 8) 
-            ||| (int64 t.Buffer.[t.Position + 2] <<< 16) ||| (int64 t.Buffer.[t.Position + 3] <<< 24) 
-            ||| (int64 t.Buffer.[t.Position + 4] <<< 32) ||| (int64 t.Buffer.[t.Position + 5] <<< 40) 
-            ||| (int64 t.Buffer.[t.Position + 6] <<< 48) ||| (int64 t.Buffer.[t.Position + 7] <<< 56)
+        let res = decodeInt64At t.Position t.Buffer
         t.Position <- t.Position + 8
         res
     
+    /// Encode Int32 value at the given position
+    let encodeInt32At (value : int32) (pos : int32) (buffer : byte []) = 
+        assert (buffer.Length >= pos + 4)
+        buffer.[pos] <- value |> byte
+        buffer.[pos + 1] <- value >>> 8 |> byte
+        buffer.[pos + 2] <- value >>> 16 |> byte
+        buffer.[pos + 3] <- value >>> 24 |> byte
+    
     /// Encode Int32 value into the buffer
     let encodeInt32 (value : int32) (t : T) = 
-        assert (t.Buffer.Length >= t.Position + 4)
-        t.Buffer.[t.Position] <- value |> byte
-        t.Buffer.[t.Position + 1] <- value >>> 8 |> byte
-        t.Buffer.[t.Position + 2] <- value >>> 16 |> byte
-        t.Buffer.[t.Position + 3] <- value >>> 24 |> byte
+        encodeInt32At value t.Position t.Buffer
         t.Position <- t.Position + 4
+        setSize t
+    
+    /// Decode Int32 value from the buffer
+    let decodeInt32At (pos : int32) (buffer : byte []) = 
+        assert (buffer.Length >= pos + 4)
+        let res = 
+            int32 buffer.[pos] ||| (int32 buffer.[pos + 1] <<< 8) ||| (int32 buffer.[pos + 2] <<< 16) 
+            ||| (int32 buffer.[pos + 3] <<< 24)
+        res
     
     /// Decode Int32 value from the buffer
     let decodeInt32 (t : T) = 
-        assert (t.Buffer.Length >= t.Position + 4)
-        let res = 
-            int32 t.Buffer.[t.Position] ||| (int32 t.Buffer.[t.Position + 1] <<< 8) 
-            ||| (int32 t.Buffer.[t.Position + 2] <<< 16) ||| (int32 t.Buffer.[t.Position + 3] <<< 24)
+        let res = decodeInt32At t.Position t.Buffer
         t.Position <- t.Position + 4
         res
     
@@ -112,9 +139,10 @@ module DocumentBuffer =
     let align (t : T) = 
         // Add padding to ensure correct 8 byte alignment
         let mutable alignment = t.Position % 8
-        while alignment <> 0 do
-            append nullByteArray t
-            alignment <- alignment - 1
+        if alignment <> 0 then
+            for i = 0 to 8 - alignment - 1 do
+                append nullByteArray t
+        setSize t
     
     /// Encode a string value into the buffer
     let encodeString (value : string) (t : T) = 
@@ -124,10 +152,9 @@ module DocumentBuffer =
         src.Length
     
     /// Decode a string value from the buffer
-    let decodeString (length : int) (t : T) = 
-        assert (t.Buffer.Length >= t.Position + length)
-        let res = utf8.GetString(t.Buffer, t.Position, length)
-        t.Position <- t.Position + length
+    let decodeStringAt (pos : int) (length : int) (buffer : byte []) = 
+        assert (buffer.Length >= pos + length)
+        let res = utf8.GetString(buffer, pos, length)
         res
 
 (*
@@ -154,7 +181,7 @@ module DocumentProtocol =
     let countFieldPos = txIdFieldPos + txIdFieldLen
     let countFieldLen = 4
     let infoFieldPosition = countFieldPos + countFieldLen
-    let infoFieldLen = 4
+    let infoFieldLen = 8
     
     let encodeVersion (t : T) = 
         t.Position <- versionFieldPos
@@ -184,49 +211,47 @@ module DocumentProtocol =
     
     /// Encode a field information like the message start and end position
     let encodeFieldInfo (pos : int32) (t : T) (startPosition : int, length : int) = 
-        t.Position <- infoFieldPosition + pos * infoFieldLen
-        encodeInt32 startPosition t
-        encodeInt32 length t
-    
+        encodeInt32At startPosition (infoFieldPosition + pos * infoFieldLen) t.Buffer
+        encodeInt32At length (infoFieldPosition + pos * infoFieldLen + 4) t.Buffer
+
     /// Decode a field information like the message start and end position
     let decodeFieldInfo (pos : int32) (t : T) = 
-        t.Position <- infoFieldPosition + pos * infoFieldLen
-        let startPos = decodeInt32 t
-        let length = decodeInt32 t
+        let startPos = decodeInt32At (infoFieldPosition + pos * infoFieldLen) t.Buffer
+        let length = decodeInt32At (infoFieldPosition + pos * infoFieldLen + 4) t.Buffer
         (startPos, length)
     
     /// Encode field data
     let encodeFieldData (data : string) (t : T) = 
-        let startPos = t.Position
         align t
-        (startPos, encodeString data t)
+        let startPos = t.Position
+        let len = encodeString data t
+        (startPos, len)
     
     // Decode field data
     let decodeFieldData (pos : int) (t : T) = 
         let startPos, len = decodeFieldInfo pos t
-        if startPos <> 0 then
+        if startPos <> 0 then 
             t.Position <- startPos
-            decodeString len t
+            decodeStringAt startPos len t.Buffer
         else String.Empty
     
     let encodeSize (t : T) = 
-        let count = decodeFieldCount t
-        let (pos, len) = decodeFieldInfo count t
         t.Position <- sizeFieldPos
-        assert (pos + len > 0)
-        encodeInt32 (pos + len - 1) t
+        encodeInt32 t.Size t
     
     let decodeSize (t : T) = 
         t.Position <- sizeFieldPos
-        decodeInt32 t
+        t.Size <- decodeInt32 t
+        t.Size
     
     let intialize (txId : int64) (fieldCount : int32) (t : T) = 
         encodeVersion t
         encodeTransactionId txId t
         encodeFieldCount fieldCount t
         // Add a default start position and length for each field
-        for i = 0 to fieldCount do
+        for i = 0 to fieldCount - 1 do
             encodeFieldInfo i t (0, 0)
+            t.Position <- t.Position + 8
     
     /// Encode a document to a byte array
     let encodeDocument (txId : int64, document : Dictionary<string, string>) = 
@@ -236,10 +261,9 @@ module DocumentProtocol =
         for pair in document do
             // The start position and length of 0 signify that the value is null
             // which is the default encoded value
-            if notNull pair.Value then 
-                message
-                |> encodeFieldData pair.Value
-                |> encodeFieldInfo count message
+            if isNotBlank pair.Value then
+                let pos, len = encodeFieldData pair.Value message
+                encodeFieldInfo count message (pos, len)
             count <- count + 1
         encodeSize message
         message
