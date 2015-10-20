@@ -27,8 +27,8 @@ module ShardWriter =
     /// Returns the user commit data to be stored with the index
     let getCommitData (gen : int64) (modifyIndex : int64) = 
         hashMap()
-        |> putC (Constants.generationLabel, gen)
-        |> putC (Constants.modifyIndex, modifyIndex)
+//        |> putC (MetaFields.generationLabel, gen)
+//        |> putC (MetaFields.modifyIndex, modifyIndex)
     
     type FileWriter(directory, config) = 
         inherit IndexWriter(directory, config)
@@ -81,7 +81,7 @@ module ShardWriter =
         for i = 0 to r.Leaves().size() - 1 do
             let ctx = r.Leaves().get(i) :?> LeafReaderContext
             let reader = ctx.Reader()
-            let nDocs = reader.getNumericDocValues (Constants.ModifyIndex)
+            let nDocs = reader.getNumericDocValues (MetaFields.ModifyIndex)
             let liveDocs = reader.getLiveDocs()
             for j = 0 to reader.maxDoc() do
                 if (liveDocs <> null || liveDocs.get (j)) then max <- Math.Max(max, nDocs.get (j))
@@ -181,7 +181,7 @@ module ShardWriter =
         let commitData = iw.GetCommitData()
         
         let generation = 
-            let gen = pLong 1L (commitData.getOrDefault (Constants.generationLabel, "1") :?> string)
+            let gen = 1L//pLong 1L (commitData.getOrDefault (MetaFields.generationLabel, "1") :?> string)
             // It is a newly created index. 
             if gen = 1L then 
                 // Add a dummy commit so that searcher Manager could be initialized
@@ -193,7 +193,7 @@ module ShardWriter =
         
         let trackingWriter = new TrackingIndexWriter(iw)
         let searcherManager = new SearcherManager(iw, true, new SearcherFactory())
-        let modifyIndex = pLong 1L (commitData.getOrDefault (Constants.modifyIndex, "1") :?> string)
+        let modifyIndex = pLong 1L (commitData.getOrDefault (MetaFields.ModifyIndex, "1") :?> string)
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         Directory.CreateDirectory(logPath) |> ignore
         let state = 

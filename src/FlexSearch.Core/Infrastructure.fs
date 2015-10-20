@@ -33,35 +33,43 @@ open System.Threading
 [<RequireQualifiedAccess>]
 /// Contains all the flex constants which do not change per instance
 module Constants = 
+    [<AutoOpen>]
+    module MetaFields = 
+        /// Represents the ID field in an index
+        [<Literal>]
+        let IdField = "_id"
+        
+        /// Represents the date of last modification of a particular 
+        /// document
+        [<Literal>]
+        let LastModifiedField = "_lastmodified"
+        
+        /// This field is used to add causal ordering to the events in 
+        /// the index. A document with lower modify index was created/updated before
+        /// a document with the higher index.
+        /// This is also used for concurrency updates.
+        [<Literal>]
+        let ModifyIndex = "_modifyindex"
+        
+        /// Represents the state of a document in the index. A document is never truly
+        /// deleted from the index and it is kept around with a status of Deleted. This
+        /// is done to simplify the replication.
+        [<Literal>]
+        let State = "_state"
+        
+        /// Field which contains the actual content of a document
+        [<Literal>]
+        let Source = "_source"
+        
+        /// Represents the score of the search result document
+        [<Literal>]
+        let Score = "_score"
     
     [<Literal>]
-    let BloomFilter = "<bloom>"
-
-    [<Literal>]
-    let generationLabel = "generation"
+    let StateIsActive = "active"
     
     [<Literal>]
-    let modifyIndex = "modifyIndex"
-    
-    [<Literal>]
-    let IdField = "_id"
-    
-    [<Literal>]
-    let LastModifiedField = "_lastmodified"
-    
-    //[<Literal>]
-    //let LastModifiedFieldDv = "_lastmodifieddv"
-    [<Literal>]
-    let ModifyIndex = "_modifyindex"
-    
-    [<Literal>]
-    let VersionField = "_version"
-    
-    [<Literal>]
-    let DocumentField = "_document"
-    
-    [<Literal>]
-    let Score = "_score"
+    let StateIsDeleted = "deleted"
     
     [<Literal>]
     let DotNetFrameWork = "4.5.1"
@@ -156,7 +164,8 @@ type NameAttribute(name : string) =
 /// it's not exposed to the documentation.
 [<MetadataAttribute>]
 [<Sealed>]
-type InternalAttribute() = inherit Attribute()
+type InternalAttribute() = 
+    inherit Attribute()
 
 /// Implements the Freezable pattern
 [<InterfaceAttribute>]
@@ -172,26 +181,24 @@ type DtoBase() =
         member __.Freeze() = isFrozen <- true
 
 [<AutoOpen>]
-module TypeHelpers =
+module TypeHelpers = 
     // Retrieves the name of a type from the NameAttribute
-    let inline getTypeNameFromAttribute (typ : Type) =
-        Attribute.GetCustomAttribute(typ, typeof<NameAttribute>) :?> NameAttribute
-        |> (fun x -> x.Name)
+    let inline getTypeNameFromAttribute (typ : Type) = 
+        Attribute.GetCustomAttribute(typ, typeof<NameAttribute>) :?> NameAttribute |> (fun x -> x.Name)
 
 [<AutoOpen>]
 module Operators = 
     open System.Collections
-        
+    
     /// Wraps a value in a Success
     let inline ok<'a> (x : 'a) = Ok(x)
     
     /// Wraps a message in a Failure
-    let inline fail (msg : 'b) =
-        Fail (msg :> IMessage)
-
+    let inline fail (msg : 'b) = Fail(msg :> IMessage)
+    
     /// Wrap a unit value in success
     let okUnit = Ok()
-
+    
     let wrap f state = 
         f()
         state
@@ -210,7 +217,7 @@ module Operators =
         let r1 = f h
         let r2 = g h
         (r1, r2)
-        
+    
     /// Returns true if the result was not successful.
     let inline failed result = 
         match result with
@@ -245,7 +252,7 @@ module Operators =
         match result with
         | Ok(_) -> true
         | _ -> false
-        
+    
     /// If the result is a Success it executes the given function on the value.
     /// Otherwise the exisiting failure is propagated.
     let inline bind f result = 
@@ -262,10 +269,10 @@ module Operators =
     /// Otherwise the exisiting error messages are propagated.
     let inline apply wrappedFunction result = 
         match wrappedFunction, result with
-        | Ok f, Ok x -> ok(f x)
-        | Fail err, Ok _ -> fail(err)
-        | Ok _, Fail err -> fail(err)
-        | Fail err1, Fail err2 -> fail(err1)
+        | Ok f, Ok x -> ok (f x)
+        | Fail err, Ok _ -> fail (err)
+        | Ok _, Fail err -> fail (err)
+        | Fail err1, Fail err2 -> fail (err1)
     
     let inline extract result = 
         match result with
@@ -412,13 +419,14 @@ module Validators =
     
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 
-        if String.Equals(input, Constants.IdField) || String.Equals(input, Constants.LastModifiedField) then 
+        if String.Equals(input, MetaFields.IdField) || String.Equals(input, MetaFields.LastModifiedField) then 
             fail <| InvalidPropertyName(fieldName, input)
         else okUnit
     
     /// Validates a given value against the property name rules
     let propertyNameValidator fieldName input = 
-        notBlank fieldName input >>= fun _ -> propertyNameRegex fieldName input 
+        notBlank fieldName input
+        >>= fun _ -> propertyNameRegex fieldName input
         >>= fun _ -> invalidPropertyName fieldName input
     
     /// Validates a given sequence in which each element implements IValidate    
@@ -452,17 +460,17 @@ module DictionaryHelpers =
     
     let inline keyExists (value, error) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(value) with
-        | true, v -> ok(v)
+        | true, v -> ok (v)
         | _ -> fail <| error (value)
     
     let inline keyExists2 (value, error) (dict : IReadOnlyDictionary<string, _>) = 
         match dict.TryGetValue(value) with
-        | true, v -> ok(v)
+        | true, v -> ok (v)
         | _ -> fail <| error (value)
     
     let inline tryGet (key) (dict : IDictionary<string, _>) = 
         match dict.TryGetValue(key) with
-        | true, v -> ok(v)
+        | true, v -> ok (v)
         | _ -> fail <| KeyNotFound(key)
     
     let inline remove (value) (dict : ConcurrentDictionary<string, _>) = dict.TryRemove(value) |> ignore
@@ -494,9 +502,8 @@ module DictionaryHelpers =
 [<Sealed>]
 type ThreadSafeFileWriter() = 
     let options = new JsonSerializerSettings()
-    do 
-        options.Converters.Add(new StringEnumConverter())
-
+    do options.Converters.Add(new StringEnumConverter())
+    
     let getPathWithExtension (path) = 
         if Path.GetExtension(path) <> Constants.SettingsFileExtension then path + Constants.SettingsFileExtension
         else path

@@ -64,8 +64,8 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
     /// indexing rather than the individual field analyzer
     member __.BuildAnalyzer(fields : Field.T [], isIndexAnalyzer : bool) = 
         let analyzerMap = conDict<LuceneAnalyzer>()
-        analyzerMap.[Constants.IdField] <- CaseInsensitiveKeywordAnalyzer
-        analyzerMap.[Constants.LastModifiedField] <- CaseInsensitiveKeywordAnalyzer
+        analyzerMap.[MetaFields.IdField] <- CaseInsensitiveKeywordAnalyzer
+        analyzerMap.[MetaFields.LastModifiedField] <- CaseInsensitiveKeywordAnalyzer
         fields 
         |> Array.iter 
                (fun x -> 
@@ -104,7 +104,7 @@ module Codec =
     /// Get the default codec associated with the index version
     let getCodec (enableBloomFilter : bool) (version : IndexVersion) = 
         let getPostingsFormat (fieldName : string, enableBloomFilter, defaultFormat) = 
-            if fieldName.Equals(Constants.IdField) && enableBloomFilter then 
+            if fieldName.Equals(MetaFields.IdField) && enableBloomFilter then 
                 new BloomFilteringPostingsFormat(defaultFormat) :> PostingsFormat
             else defaultFormat
         match version with
@@ -176,9 +176,9 @@ module IndexSettingBuilder =
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new ResizeArray<Field.T>()
         // Add system fields
-        resultLookup.Add(Constants.IdField, Field.getIdField (ic.UseBloomFilterForId))
-        resultLookup.Add(Constants.LastModifiedField, Field.getTimeStampField())
-        resultLookup.Add(Constants.ModifyIndex, Field.getModifyIndexField())
+        resultLookup.Add(MetaFields.IdField, Field.getIdField (ic.UseBloomFilterForId))
+        resultLookup.Add(MetaFields.LastModifiedField, Field.getTimeStampField())
+        resultLookup.Add(MetaFields.ModifyIndex, Field.getModifyIndexField())
         for field in fields do
             let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)

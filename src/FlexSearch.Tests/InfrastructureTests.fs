@@ -38,8 +38,8 @@ type ValidatorTests() =
     
     [<InlineData("TEST")>]
     [<InlineData("Test")>]
-    [<InlineData(Constants.IdField)>]
-    [<InlineData(Constants.LastModifiedField)>]
+    [<InlineData(MetaFields.IdField)>]
+    [<InlineData(MetaFields.LastModifiedField)>]
     [<InlineData("<test>")>]
     [<Ignore>]
     member __.PropertyValidatorFailureTests(sut : string) = 

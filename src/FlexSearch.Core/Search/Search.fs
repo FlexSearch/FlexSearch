@@ -285,7 +285,7 @@ module SearchDsl =
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
-                if field.FieldName = Constants.IdField || field.FieldName = Constants.LastModifiedField then ()
+                if field.FieldName = MetaFields.IdField || field.FieldName = MetaFields.LastModifiedField then ()
                 else getValue(field)
         // Return only the requested columns
         | _ -> 
@@ -386,20 +386,20 @@ module SearchDsl =
         
         let processDocument (hit : ScoreDoc, document : LuceneDocument) = 
             let timeStamp = 
-                let t = document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField))
+                let t = document.Get(indexWriter.GetSchemaName(MetaFields.LastModifiedField))
                 if isNull t then
                     0L
                 else
                     int64 t
             let fields = getDocument (indexWriter, searchQuery, document)
             if searchQuery.ReturnFlatResult then 
-                fields.[Constants.IdField] <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
-                fields.[Constants.LastModifiedField] <- document.Get(indexWriter.GetSchemaName(Constants.LastModifiedField))
-                if searchQuery.ReturnScore then fields.[Constants.Score] <- hit.Score.ToString()
+                fields.[MetaFields.IdField] <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
+                fields.[MetaFields.LastModifiedField] <- document.Get(indexWriter.GetSchemaName(MetaFields.LastModifiedField))
+                if searchQuery.ReturnScore then fields.[MetaFields.Score] <- hit.Score.ToString()
                 SearchResultComponents.FlatResult(fields)
             else 
                 let resultDoc = new Document()
-                resultDoc.Id <- document.Get(indexWriter.GetSchemaName(Constants.IdField))
+                resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
                 resultDoc.IndexName <- indexWriter.Settings.IndexName
                 resultDoc.TimeStamp <- timeStamp
                 resultDoc.Fields <- fields

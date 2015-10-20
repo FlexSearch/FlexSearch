@@ -360,14 +360,14 @@ module Field =
               FieldTermVector = FieldTermVector.DoNotStoreTermVector
               FieldIndexOptions = FieldIndexOptions.DocsOnly }
         create 
-            (Constants.IdField, 
+            (MetaFields.IdField, 
              FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false)
     
     /// Field to be used by time stamp
-    let getTimeStampField() = create (Constants.LastModifiedField, FieldType.DateTime, true)
+    let getTimeStampField() = create (MetaFields.LastModifiedField, FieldType.DateTime, true)
     
     /// Field to be used to store modfiy index
-    let getModifyIndexField() = create (Constants.ModifyIndex, FieldType.Long, true)
+    let getModifyIndexField() = create (MetaFields.ModifyIndex, FieldType.Long, true)
 
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 

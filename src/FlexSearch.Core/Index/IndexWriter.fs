@@ -100,7 +100,7 @@ module IndexWriter =
             dictionaryPool.Release(document.Fields)
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
-               else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(Constants.IdField)), doc)
+               else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(MetaFields.IdField)), doc)
         }
     
     /// Add a document to the index
@@ -128,7 +128,7 @@ module IndexWriter =
             use stream = memoryManager.GetStream()
             TransactionLog.serializer (stream, txEntry)
             s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
-            s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(Constants.IdField))
+            s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(MetaFields.IdField))
         }
     
     let getRealTimeSearchers (s : T) = 
@@ -176,9 +176,9 @@ module IndexWriter =
                 | TransactionLog.Operation.Create | TransactionLog.Operation.Update -> 
                     let doc = indexWriter.Template.Value |> DocumentTemplate.updateTempate entry.Document entry.TransactionId
                     shardWriter 
-                    |> ShardWriter.updateDocument (entry.Id, indexWriter.GetSchemaName(Constants.IdField), doc)
+                    |> ShardWriter.updateDocument (entry.Id, indexWriter.GetSchemaName(MetaFields.IdField), doc)
                 | TransactionLog.Operation.Delete -> 
-                    shardWriter |> ShardWriter.deleteDocument entry.Id (indexWriter.GetSchemaName(Constants.IdField))
+                    shardWriter |> ShardWriter.deleteDocument entry.Id (indexWriter.GetSchemaName(MetaFields.IdField))
                 | _ -> ()
             // Just refresh the index so that the changes are picked up
             // in subsequent searches. We can also commit here but it will

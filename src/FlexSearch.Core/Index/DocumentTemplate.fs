@@ -29,7 +29,7 @@ module DocumentTemplate =
           TemplateFields : array<LuceneField>
           Template : LuceneDocument }
     
-    let inline protectedFields (fieldName) = fieldName = Constants.IdField || fieldName = Constants.LastModifiedField
+    let inline protectedFields (fieldName) = fieldName = MetaFields.IdField || fieldName = MetaFields.LastModifiedField
     
     /// Create a new document template            
     let create (s : IndexSetting.T) = 
@@ -39,11 +39,11 @@ module DocumentTemplate =
         let add (field) = 
             template.Add(field)
             fields.Add(field)
-        add (Field.getTextField (s.FieldsLookup.[Constants.IdField].SchemaName, "", Field.store))
-        add (Field.getLongField (s.FieldsLookup.[Constants.LastModifiedField].SchemaName, 0L, Field.store))
-        add (new NumericDocValuesField(s.FieldsLookup.[Constants.LastModifiedField].SchemaName, 0L))
-        add (Field.getLongField (s.FieldsLookup.[Constants.ModifyIndex].SchemaName, 0L, Field.store))
-        add (new NumericDocValuesField(s.FieldsLookup.[Constants.ModifyIndex].SchemaName, 0L))
+        add (Field.getTextField (s.FieldsLookup.[MetaFields.IdField].SchemaName, "", Field.store))
+        add (Field.getLongField (s.FieldsLookup.[MetaFields.LastModifiedField].SchemaName, 0L, Field.store))
+        add (new NumericDocValuesField(s.FieldsLookup.[MetaFields.LastModifiedField].SchemaName, 0L))
+        add (Field.getLongField (s.FieldsLookup.[MetaFields.ModifyIndex].SchemaName, 0L, Field.store))
+        add (new NumericDocValuesField(s.FieldsLookup.[MetaFields.ModifyIndex].SchemaName, 0L))
         for field in s.Fields do
             // Ignore these 4 fields here.
             if not (protectedFields (field.FieldName)) then 

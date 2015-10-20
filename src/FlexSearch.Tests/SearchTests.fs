@@ -136,14 +136,14 @@ id,et1,t1,i1,s1
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "et1"; "t1" |]
             |> searchForFlatAndExtract searchService
-        test <@ result.[0].ContainsKey(Constants.IdField) @>
+        test <@ result.[0].ContainsKey(MetaFields.IdField) @>
     
     member __.``SearchAsDictionarySeq will return the lastmodified column populated in Fields``() = 
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "et1"; "t1" |]
             |> searchForFlatAndExtract searchService
-        test <@ result.[0].ContainsKey(Constants.LastModifiedField) @>
+        test <@ result.[0].ContainsKey(MetaFields.LastModifiedField) @>
     
     //    member __.``SearchAsDictionarySeq will return the type column populated in Fields``() = 
     //        let result = 
@@ -153,7 +153,7 @@ id,et1,t1,i1,s1
     //        test <@ result.[0].ContainsKey(Constants.Type) @>
     member __.``SearchAsDictionarySeq will return the _score column populated in Fields``() = 
         let result = getQuery (index.IndexName, "i1 eq '1'") |> searchForFlatAndExtract searchService
-        test <@ result.[0].ContainsKey(Constants.Score) @>
+        test <@ result.[0].ContainsKey(MetaFields.Score) @>
     
     member __.``No score will be returned if ReturnScore is set to false``() = 
         let result = 
@@ -224,7 +224,7 @@ id,et1,t2,i1,i2
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "_id" |]
-            |> withOrderBy Constants.LastModifiedField
+            |> withOrderBy MetaFields.LastModifiedField
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 5
         result |> assertFieldValue 0 "_id" "1"
@@ -237,7 +237,7 @@ id,et1,t2,i1,i2
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "_id" |]
-            |> withOrderByDesc Constants.LastModifiedField
+            |> withOrderByDesc MetaFields.LastModifiedField
 
             |> searchAndExtract searchService
         
