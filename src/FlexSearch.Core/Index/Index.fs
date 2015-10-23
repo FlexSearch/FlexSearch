@@ -281,7 +281,7 @@ type RealTimeSearcher(searchManger : SearcherManager) =
     member __.IndexReader = indexSearcher.GetIndexReader()
     
     /// Aggregates the facet counts
-    member __.FacetsCollector = new FacetsCollector()
+    member __.FacetsCollector() = new FacetsCollector()
 
     member __.SortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(__.IndexReader)
 

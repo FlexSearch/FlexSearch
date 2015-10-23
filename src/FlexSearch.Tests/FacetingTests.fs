@@ -65,7 +65,7 @@ id,category,t1
             |> searchAndExtractFacet searchService
         test <@ not << String.IsNullOrEmpty <| result @>
         printfn "%s" result
-
+        
     member __.``Low level facet test``(analyzerService : IAnalyzerService, scriptService : IScriptService) =
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)

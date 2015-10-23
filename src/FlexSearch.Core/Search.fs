@@ -289,16 +289,17 @@ module SearchDsl =
 
         let searchShard(x : ShardWriter.T) =
             let is = indexSearchers.[x.ShardNo]
-            
+            let fc = is.FacetsCollector()
+
             // Do the search
             FacetsCollector.Search(
                 is.IndexSearcher,
                 luceneQuery, 
                 flexQuery.Count,
-                is.FacetsCollector) |> ignore
+                fc) |> ignore
 
             // Retrieve the results
-            let facets = new SortedSetDocValuesFacetCounts(is.SortedSetDocValuesReaderState, is.FacetsCollector)
+            let facets = new SortedSetDocValuesFacetCounts(is.SortedSetDocValuesReaderState, fc)
 
             // Get top N results
             facetsCollection.[x.ShardNo] <- 
