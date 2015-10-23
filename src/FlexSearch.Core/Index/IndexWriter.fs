@@ -145,7 +145,7 @@ module IndexWriter =
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
     
     let getRealTimeSearcher (shardNo : int) (s : T) = 
-        assert (s.ShardWriters.Length <= shardNo)
+        assert (s.ShardWriters.Length >= shardNo)
         ShardWriter.getRealTimeSearcher <| s.ShardWriters.[shardNo]
     
     /// Returns the total number of docs present in the index
