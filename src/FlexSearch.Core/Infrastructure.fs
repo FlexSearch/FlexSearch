@@ -33,37 +33,6 @@ open System.Threading
 [<RequireQualifiedAccess>]
 /// Contains all the flex constants which do not change per instance
 module Constants = 
-    [<AutoOpen>]
-    module MetaFields = 
-        /// Represents the ID field in an index
-        [<Literal>]
-        let IdField = "_id"
-        
-        /// Represents the date of last modification of a particular 
-        /// document
-        [<Literal>]
-        let LastModifiedField = "_lastmodified"
-        
-        /// This field is used to add causal ordering to the events in 
-        /// the index. A document with lower modify index was created/updated before
-        /// a document with the higher index.
-        /// This is also used for concurrency updates.
-        [<Literal>]
-        let ModifyIndex = "_modifyindex"
-        
-        /// Represents the state of a document in the index. A document is never truly
-        /// deleted from the index and it is kept around with a status of Deleted. This
-        /// is done to simplify the replication.
-        [<Literal>]
-        let State = "_state"
-        
-        /// Field which contains the actual content of a document
-        [<Literal>]
-        let Source = "_source"
-        
-        /// Represents the score of the search result document
-        [<Literal>]
-        let Score = "_score"
     
     [<Literal>]
     let StateIsActive = "active"
@@ -417,9 +386,12 @@ module Validators =
         | Ok(_) -> okUnit
         | Fail(_) -> fail <| InvalidPropertyName(fieldName, input)
     
+    /// Contains the list of all valid meta fields
+    let metaFields = new HashSet<string>()
+
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 
-        if String.Equals(input, MetaFields.IdField) || String.Equals(input, MetaFields.LastModifiedField) then 
+        if metaFields.Contains(input) then 
             fail <| InvalidPropertyName(fieldName, input)
         else okUnit
     

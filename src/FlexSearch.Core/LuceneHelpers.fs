@@ -96,9 +96,6 @@ module QueryHelpers =
         
         /// Get term for the given field
         member this.Term(fld : string) = new Term(fld, this)
-        
-        /// Get a term for the IdField
-        member this.IdTerm() = new Term(MetaFields.IdField, this)
     
     /// Get term for the given fieldname and value
     let inline getTerm (fieldName : string) (text : string) = new Term(fieldName, text)
