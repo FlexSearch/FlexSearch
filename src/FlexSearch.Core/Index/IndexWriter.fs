@@ -32,14 +32,14 @@ module IndexWriter =
     
     /// An IndexWriter creates and maintains an index. It contains a list of ShardWriters,
     /// each of which encapsulating the functionality of IndexWriter, TrackingIndexWriter and
-    /// SearcherManger through an easy to manage abstraction.    
+    /// SearcherManger through an easy to manage abstraction.
     type T = 
         { Template : ThreadLocal<DocumentTemplate.T>
           Caches : VersionCache.T array
           ShardWriters : ShardWriter.T array
           Settings : IndexSetting.T
           Token : CancellationTokenSource }
-        member this.GetSchemaName(fieldName) = this.Settings.FieldsLookup.[fieldName].SchemaName
+        member this.GetSchemaName(fieldName : string) = this.Settings.Fields.Item(fieldName).SchemaName
     
     /// Create index settings from the Index DTO
     let createIndexSetting (index : Index, analyzerService, scriptService) = 
@@ -80,11 +80,15 @@ module IndexWriter =
             let shardNo = document.Id |> mapToShard s.ShardWriters.Length
             let newVersion = GetCurrentTimeAsLong()
             let! existingVersion = s.Caches.[shardNo] |> VersionCache.versionCheck (document, newVersion)
+            // After version check is passed update the cache
             document.TimeStamp <- newVersion
             do! s.Caches.[shardNo]
                 |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
                 |> boolToResult UnableToUpdateMemory
+
             let txId = s.ShardWriters.[shardNo].GetNextIndex()
+            // Create new binary document
+            s.Settings.Fields
             let doc = s.Template.Value |> DocumentTemplate.updateTempate document txId
             
             if addToTxLog then 

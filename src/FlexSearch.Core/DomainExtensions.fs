@@ -207,6 +207,7 @@ module Field =
         inherit KeyedCollection<string, T>(StringComparer.OrdinalIgnoreCase)
         override __.GetKeyForItem(t : T) = t.FieldName
         member this.TryGetValue(key : string) = this.Dictionary.TryGetValue(key)
+        member this.ReadOnlyDictionary = new ReadOnlyDictionary<string, T>(this.Dictionary) 
             
     /// Field info to be used by flex highlight field
     let flexHighLightFieldType = 

@@ -199,12 +199,8 @@ module IndexSetting =
         { IndexName : string
           IndexAnalyzer : AnalyzerWrapper
           SearchAnalyzer : AnalyzerWrapper
-          /// Contains all the meta data related internal 
-          /// fields used in the index
-          // MetaFields : Field.T []
           /// Contains all the fields used in the index
           Fields : Field.FieldCollection
-          //FieldsLookup : IReadOnlyDictionary<string, Field.T>
           SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery>
           IndexConfiguration : IndexConfiguration
           BaseFolder : string

@@ -290,7 +290,7 @@ module SearchDsl =
         // Return only the requested columns
         | _ -> 
             for fieldName in search.Columns do
-                match indexWriter.Settings.FieldsLookup.TryGetValue(fieldName) with
+                match indexWriter.Settings.Fields.TryGetValue(fieldName) with
                 | (true, field) -> getValue(field)
                 | _ -> ()
         fields
@@ -312,7 +312,7 @@ module SearchDsl =
             match searchQuery.OrderBy with
             | null -> Sort.RELEVANCE
             | _ -> 
-                match indexWriter.Settings.FieldsLookup.TryGetValue(searchQuery.OrderBy) with
+                match indexWriter.Settings.Fields.TryGetValue(searchQuery.OrderBy) with
                 | (true, field) -> 
                     if field.GenerateDocValue then
                         new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType, sortOrder))
@@ -322,7 +322,7 @@ module SearchDsl =
         
         let distinctBy = 
             if not <| String.IsNullOrWhiteSpace(searchQuery.DistinctBy) then 
-                match indexWriter.Settings.FieldsLookup.TryGetValue(searchQuery.DistinctBy) with
+                match indexWriter.Settings.Fields.TryGetValue(searchQuery.DistinctBy) with
                 | true, field -> 
                     match field.FieldType with
                     | FieldType.ExactText(_) -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
@@ -357,7 +357,7 @@ module SearchDsl =
             if notNull searchQuery.Highlights then 
                 match searchQuery.Highlights.HighlightedFields with
                 | x when x.Length = 1 -> 
-                    match indexWriter.Settings.FieldsLookup.TryGetValue(x.First()) with
+                    match indexWriter.Settings.Fields.TryGetValue(x.First()) with
                     | (true, field) -> 
                         let htmlFormatter = 
                             new SimpleHTMLFormatter(searchQuery.Highlights.PreTag, searchQuery.Highlights.PostTag)

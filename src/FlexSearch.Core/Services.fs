@@ -395,7 +395,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
             | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
             | _ -> 
                 return! SearchDsl.generateQuery 
-                            (writers.Settings.FieldsLookup, predicate, searchQuery, searchProfile, 
+                            (writers.Settings.Fields.ReadOnlyDictionary, predicate, searchQuery, searchProfile, 
                              queryTypes, queryFunctionTypes)
         }
     
@@ -420,7 +420,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
                 match predicate with
                 | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
                 | _ -> let! query = SearchDsl.generateQuery 
-                                        (writers.Settings.FieldsLookup, predicate, searchQuery, Some(searchData), 
+                                        (writers.Settings.Fields.ReadOnlyDictionary, predicate, searchQuery, Some(searchData), 
                                          queryTypes, queryFunctionTypes)
                        return! searchWrapper (writers, query, searchQuery)
             }
