@@ -48,6 +48,77 @@ type EventAggregrator() =
     member __.Event() = event.Publish
     member __.Push(e : EventType) = event.Trigger(e)
 
+/// This module contains all the meta data related fields used throughout the system
+[<AutoOpen>]
+module MetaFields = 
+    /// Represents the ID field in an index
+    [<Literal>]
+    let IdField = "_id"
+    
+    Validators.metaFields.Add(IdField) |> ignore
+    
+    let private idFieldInfo = 
+        { Index = true
+          Tokenize = false
+          FieldTermVector = FieldTermVector.DoNotStoreTermVector
+          FieldIndexOptions = FieldIndexOptions.DocsOnly }
+    
+    /// Field to be used by the Id field
+    let getIdField (bloomEnabled) = 
+        let fieldType = FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, idFieldInfo)
+        Field.create (IdField, fieldType, false)
+    
+    type String with
+        /// Get a term for the IdField
+        member this.IdTerm() = new Term(IdField, this)
+    
+    /// Represents the date of last modification of a particular 
+    /// document
+    [<Literal>]
+    let LastModifiedField = "_lastmodified"
+    
+    Validators.metaFields.Add(LastModifiedField) |> ignore
+    
+    /// Field to be used by time stamp
+    let getTimeStampField() = Field.create (LastModifiedField, FieldType.DateTime, true)
+    
+    /// This field is used to add causal ordering to the events in 
+    /// the index. A document with lower modify index was created/updated before
+    /// a document with the higher index.
+    /// This is also used for concurrency updates.
+    [<Literal>]
+    let ModifyIndex = "_modifyindex"
+    
+    Validators.metaFields.Add(ModifyIndex) |> ignore
+    
+    /// Field to be used to store modify index
+    let getModifyIndexField() = Field.create (ModifyIndex, FieldType.Long, true)
+    
+    /// Represents the state of a document in the index. A document is never truly
+    /// deleted from the index and it is kept around with a status of Deleted. This
+    /// is done to simplify the replication.
+    [<Literal>]
+    let State = "_state"
+    
+    Validators.metaFields.Add(State) |> ignore
+    
+    /// Field to be used by the Id field
+    let getStateField() = 
+        let fieldType = FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, idFieldInfo)
+        Field.create (IdField, fieldType, false)
+    
+    /// Field which contains the actual content of a document
+    [<Literal>]
+    let Source = "_source"
+    
+    Validators.metaFields.Add(Source) |> ignore
+    
+    /// Represents the score of the search result document
+    [<Literal>]
+    let Score = "_score"
+    
+    Validators.metaFields.Add(Score) |> ignore
+
 type FieldsMeta = 
     { IdField : Field.T
       TimeStampField : Field.T
@@ -62,12 +133,12 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
     
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer
-    member __.BuildAnalyzer(fields : Field.T [], isIndexAnalyzer : bool) = 
+    member __.BuildAnalyzer(fields : Field.FieldCollection, isIndexAnalyzer : bool) = 
         let analyzerMap = conDict<LuceneAnalyzer>()
         analyzerMap.[MetaFields.IdField] <- CaseInsensitiveKeywordAnalyzer
         analyzerMap.[MetaFields.LastModifiedField] <- CaseInsensitiveKeywordAnalyzer
         fields 
-        |> Array.iter 
+        |> Seq.iter 
                (fun x -> 
                if isIndexAnalyzer then 
                    match x.FieldType with
@@ -128,133 +199,16 @@ module IndexSetting =
         { IndexName : string
           IndexAnalyzer : AnalyzerWrapper
           SearchAnalyzer : AnalyzerWrapper
-          Fields : Field.T []
-          FieldsLookup : IReadOnlyDictionary<string, Field.T>
+          /// Contains all the meta data related internal 
+          /// fields used in the index
+          // MetaFields : Field.T []
+          /// Contains all the fields used in the index
+          Fields : Field.FieldCollection
+          //FieldsLookup : IReadOnlyDictionary<string, Field.T>
           SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery>
           IndexConfiguration : IndexConfiguration
           BaseFolder : string
           ShardConfiguration : ShardConfiguration }
-
-/// Builder related to creating Index Settings
-[<AutoOpenAttribute>]
-module IndexSettingBuilder = 
-    open IndexSetting
-    
-    /// Builder object which will be passed around to build
-    /// index setting
-    type BuilderObject = 
-        { Setting : IndexSetting.T }
-    
-    let withIndexName (indexName, path) = 
-        Directory.CreateDirectory(path) |> ignore
-        let setting = 
-            { IndexName = indexName
-              IndexAnalyzer = Unchecked.defaultof<_>
-              SearchAnalyzer = Unchecked.defaultof<_>
-              Fields = Unchecked.defaultof<_>
-              FieldsLookup = Unchecked.defaultof<_>
-              SearchProfiles = Unchecked.defaultof<_>
-              IndexConfiguration = Unchecked.defaultof<_>
-              BaseFolder = path
-              ShardConfiguration = Unchecked.defaultof<_> }
-        { Setting = setting }
-    
-    let withShardConfiguration (conf) (build) = 
-        { build with Setting = { build.Setting with ShardConfiguration = conf } }
-    let withIndexConfiguration (conf) (build) = 
-        { build with Setting = { build.Setting with IndexConfiguration = conf } }
-    
-    /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
-    /// indexing rather than the individual field analyzer
-    let buildAnalyzer (fields : Field.T [], isIndexAnalyzer : bool) = 
-        let analyzer = new AnalyzerWrapper()
-        analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
-        analyzer
-    
-    let withFields (fields : Field array, analyzerService, scriptService) (build) = 
-        let ic = build.Setting.IndexConfiguration
-        let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
-        let result = new ResizeArray<Field.T>()
-        // Add system fields
-        resultLookup.Add(MetaFields.IdField, Field.getIdField (ic.UseBloomFilterForId))
-        resultLookup.Add(MetaFields.LastModifiedField, Field.getTimeStampField())
-        resultLookup.Add(MetaFields.ModifyIndex, Field.getModifyIndexField())
-        for field in fields do
-            let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
-            resultLookup.Add(field.FieldName, fieldObject)
-            result.Add(fieldObject)
-        let fieldArr = result.ToArray()
-        // Perf: Intern all the field names in the string pool. This is done as the field names will be
-        // used millions of times during execution.
-        fieldArr |> Array.iter (fun x -> 
-                        String.Intern x.FieldName |> ignore
-                        String.Intern x.SchemaName |> ignore)
-        { build with Setting = 
-                         { build.Setting with FieldsLookup = resultLookup
-                                              Fields = fieldArr
-                                              SearchAnalyzer = buildAnalyzer (fieldArr, false)
-                                              IndexAnalyzer = buildAnalyzer (fieldArr, true) } }
-    
-    /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : SearchQuery array, parser : IFlexParser) (build) = 
-        let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
-        for profile in profiles do
-            let predicate = returnOrFail <| parser.Parse profile.QueryString
-            result.Add(profile.QueryName, (predicate, profile))
-        { build with Setting = { build.Setting with SearchProfiles = result } }
-    
-    /// Build the final index setting object
-    let build (build) = 
-        assert (notNull build.Setting.SearchProfiles)
-        assert (notNull build.Setting.Fields)
-        assert (notNull build.Setting.FieldsLookup)
-        assert (notNull build.Setting.IndexConfiguration)
-        assert (notNull build.Setting.ShardConfiguration)
-        assert (notNull build.Setting.IndexAnalyzer)
-        assert (notNull build.Setting.SearchAnalyzer)
-        build.Setting
-
-/// Builders related to creating Lucene IndexWriterConfig
-module IndexWriterConfigBuilder = 
-    /// Returns an instance of per field similarity provider 
-    let getSimilarityProvider (s : IndexSetting.T) = 
-        let defaultSimilarity = 
-            s.IndexConfiguration.DefaultFieldSimilarity
-            |> FieldSimilarity.getLuceneT
-            |> extract
-        
-        let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
-        for field in s.FieldsLookup do
-            // Only add if the format is not same as default postings format
-            if field.Value.Similarity <> s.IndexConfiguration.DefaultFieldSimilarity then 
-                let similarity = 
-                    field.Value.Similarity
-                    |> FieldSimilarity.getLuceneT
-                    |> extract
-                mappings.Add(field.Key, similarity)
-        new FieldSimilarity.Provider(mappings, defaultSimilarity)
-    
-    /// Build Index writer settings with the given index settings
-    let buildWithSettings (s : IndexSetting.T) = 
-        let iwc = new IndexWriterConfig(s.IndexAnalyzer)
-        
-        let codec = 
-            s.IndexConfiguration.IndexVersion
-            |> Codec.getCodec s.IndexConfiguration.UseBloomFilterForId
-            |> extract
-        
-        let similarityProvider = s |> getSimilarityProvider
-        iwc.SetCommitOnClose(s.IndexConfiguration.CommitOnClose) |> ignore
-        iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
-        iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb) |> ignore
-        iwc.SetMaxBufferedDocs(s.IndexConfiguration.MaxBufferedDocs) |> ignore
-        iwc.SetCodec(codec) |> ignore
-        iwc.SetSimilarity(similarityProvider) |> ignore
-        iwc
-    
-    /// Used for updating real time Index writer settings
-    let updateWithSettings (s : IndexSetting.T) (iwc : LiveIndexWriterConfig) = 
-        iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb)
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality
 type RealTimeSearcher(searchManger : SearcherManager) = 

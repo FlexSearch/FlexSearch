@@ -101,6 +101,7 @@
     <Compile Include="Analysis.fs" />
     <Compile Include="LuceneHelpers.fs" />
     <Compile Include="Index\Index.fs" />
+    <Compile Include="Index\Builder.fs" />
     <Compile Include="Index\TransactionLog.fs" />
     <Compile Include="Index\DocumentTemplate.fs" />
     <Compile Include="Index\ShardWriter.fs" />

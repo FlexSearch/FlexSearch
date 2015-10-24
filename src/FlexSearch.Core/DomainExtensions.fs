@@ -30,8 +30,11 @@ open System.IO
 
 // type mappings to avoid name conflict
 type LuceneAnalyzer = FlexLucene.Analysis.Analyzer
+
 type LuceneDocument = FlexLucene.Document.Document
+
 type LuceneField = FlexLucene.Document.Field
+
 type LuceneFieldType = FlexLucene.Document.FieldType
 
 [<RequireQualifiedAccess; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -179,11 +182,14 @@ module IndexConfiguration =
 
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module Field = 
+    open System.Collections.ObjectModel
     
     /// General Field which represents the basic properties for the field to be indexed
     type T = 
         { FieldName : string
           SchemaName : string
+          // Signifies the position of the field in the index
+          Ordinal : int
           IsStored : bool
           Similarity : FieldSimilarity
           FieldType : FieldType.T
@@ -192,10 +198,16 @@ module Field =
           /// Computed Information - Mostly helpers to avoid matching over Field type
           /// Helper property to determine if the field needs any analyzer.
           RequiresAnalyzer : bool
-          /// Signifies if the field is searchable. Stored Field types are not
-          /// searchable.
+          /// Signifies if the field is search-able. Stored Field types are not
+          /// search-able.
           Searchable : bool }
     
+    /// KeyedCollection wrapper for Field collections
+    type FieldCollection() = 
+        inherit KeyedCollection<string, T>(StringComparer.OrdinalIgnoreCase)
+        override __.GetKeyForItem(t : T) = t.FieldName
+        member this.TryGetValue(key : string) = this.Dictionary.TryGetValue(key)
+            
     /// Field info to be used by flex highlight field
     let flexHighLightFieldType = 
         lazy (let fieldType = new LuceneFieldType()
@@ -227,7 +239,8 @@ module Field =
     /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
     /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
     /// intend to use for sorting or access through the field cache.
-    let getStringField (fieldName, value: string, store : LuceneField.Store) = new StringField(fieldName, value, store) :> LuceneField
+    let getStringField (fieldName, value : string, store : LuceneField.Store) = 
+        new StringField(fieldName, value, store) :> LuceneField
     
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
@@ -240,6 +253,7 @@ module Field =
     let getDoubleField (fieldName, value : float, store : LuceneField.Store) = 
         new DoubleField(fieldName, value, store) :> LuceneField
     let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> LuceneField
+    let getBinaryField (fieldName) = new StoredField(fieldName, [||]) :> LuceneField
     let getField (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
         new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
@@ -344,6 +358,7 @@ module Field =
     let create (fieldName : string, fieldType : FieldType.T, generateDocValues) = 
         { FieldName = fieldName
           SchemaName = fieldName
+          Ordinal = 0
           IsStored = true
           FieldType = fieldType
           GenerateDocValue = generateDocValues
@@ -352,23 +367,6 @@ module Field =
           Similarity = FieldSimilarity.TFIDF
           RequiresAnalyzer = FieldType.requiresAnalyzer (fieldType) }
     
-    /// Field to be used by the Id field
-    let getIdField (bloomEnabled) = 
-        let indexInformation = 
-            { Index = true
-              Tokenize = false
-              FieldTermVector = FieldTermVector.DoNotStoreTermVector
-              FieldIndexOptions = FieldIndexOptions.DocsOnly }
-        create 
-            (MetaFields.IdField, 
-             FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, indexInformation), false)
-    
-    /// Field to be used by time stamp
-    let getTimeStampField() = create (MetaFields.LastModifiedField, FieldType.DateTime, true)
-    
-    /// Field to be used to store modfiy index
-    let getModifyIndexField() = create (MetaFields.ModifyIndex, FieldType.Long, true)
-
     /// Build FlexField from field
     let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
                analyzerFactory : string -> Result<FlexLucene.Analysis.Analyzer>, scriptService) = 
@@ -414,6 +412,7 @@ module Field =
             let! fieldType = getFieldType (field)
             return { FieldName = field.FieldName
                      SchemaName = field.FieldName
+                     Ordinal = 0
                      FieldType = fieldType
                      GenerateDocValue = checkDocValuesSupport field fieldType
                      Source = source
