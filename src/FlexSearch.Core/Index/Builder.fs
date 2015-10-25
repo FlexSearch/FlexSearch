@@ -76,9 +76,7 @@ module IndexSettingBuilder =
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new Field.FieldCollection()
         // Add system fields
-        result.Add(MetaFields.getIdField (ic.UseBloomFilterForId))
-        result.Add(MetaFields.getTimeStampField())
-        result.Add(MetaFields.getModifyIndexField())
+        MetaFields.getMetaFields (ic.UseBloomFilterForId) |> Seq.iter (fun x -> result.Add(x))
         for field in fields do
             let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)

@@ -105,7 +105,7 @@ module MetaFields =
     /// Field to be used by the Id field
     let getStateField() = 
         let fieldType = FieldType.Custom(CaseInsensitiveKeywordAnalyzer, CaseInsensitiveKeywordAnalyzer, idFieldInfo)
-        Field.create (IdField, fieldType, false)
+        Field.create (State, fieldType, false)
     
     /// Field which contains the actual content of a document
     [<Literal>]
@@ -113,18 +113,39 @@ module MetaFields =
     
     Validators.metaFields.Add(Source) |> ignore
     
+    /// Field to be used for storing binary document content
+    let getSourceField() = 
+        let fieldType = FieldType.Stored
+        Field.create (Source, fieldType, false)
+    
     /// Represents the score of the search result document
     [<Literal>]
     let Score = "_score"
     
     Validators.metaFields.Add(Score) |> ignore
-
-type FieldsMeta = 
-    { IdField : Field.T
-      TimeStampField : Field.T
-      ModifyIndex : Field.T
-      Fields : Field.T []
-      Lookup : IReadOnlyDictionary<string, Field.T> }
+    
+    type TemplateField = 
+        { LuceneField : LuceneField
+          DocValue : LuceneField option }
+    
+    let getMetaFields (useBloomFilter : bool) = 
+        [| getIdField (useBloomFilter)
+           getTimeStampField()
+           getModifyIndexField()
+           getStateField()
+           getSourceField() |]
+    
+    let getLuceneMetaFields() = 
+        [| { LuceneField = Field.getTextField (IdField, "", Field.store)
+             DocValue = None }
+           { LuceneField = Field.getLongField (LastModifiedField, 0L, Field.store)
+             DocValue = Some(new NumericDocValuesField(LastModifiedField, 0L) :> LuceneField) }
+           { LuceneField = Field.getLongField (ModifyIndex, 0L, Field.store)
+             DocValue = Some(new NumericDocValuesField(ModifyIndex, 0L) :> LuceneField) }
+           { LuceneField = Field.getStringField (State, "", Field.store)
+             DocValue = None }
+           { LuceneField = Field.getBinaryField Source
+             DocValue = None } |]
 
 type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) = 
     inherit DelegatingAnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY)
