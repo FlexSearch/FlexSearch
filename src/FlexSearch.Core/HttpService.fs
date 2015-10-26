@@ -435,7 +435,7 @@ type GetSearchHandler(searchService : ISearchService) =
 [<Name("POST-/indices/:id/facetedsearch")>]
 [<Sealed>]
 type GetFacetedSearchHandler(searchService : ISearchService) =
-    inherit HttpHandlerBase<FacetQuery, string>()
+    inherit HttpHandlerBase<FacetQuery, Group[]>()
     override __.Process(request, body) = 
         let query = FacetQuery.getQueryFromRequest request body
 

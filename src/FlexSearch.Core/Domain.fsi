@@ -844,6 +844,50 @@ type FacetQuery =
     
     override Validate : unit -> Result<unit> 
 
+#if dto_FacetQuery
+GroupItem is used to hold information about an item within a facet result
+Example: There are 3 'Fish' within this category of the facet
+#endif
+[<ToString; Sealed>]
+type GroupItem =
+    inherit DtoBase
+    new : unit -> GroupItem
+    new : name : string * count : int -> GroupItem
+
+    #if prop_Name
+    Holds the name of the category set
+    #endif
+    member Name : string with get, set
+    #if prop_Count
+    Holds the number of such items within this set
+    #endif
+    member Count : int with get, set
+
+    override Validate : unit -> Result<unit>
+
+#if dto_FacetSearchResult
+/// FacetSearchResult is used to capture the result of a facet query
+#endif
+[<ToString; Sealed>]
+type Group =
+    inherit DtoBase
+    new : unit -> Group
+
+    #if prop_GroupedBy
+    Used to hold the value by which the results were grouped
+    #endif
+    member GroupedBy : string with get, set
+
+    #if prop_GroupSize
+    #endif
+    member GroupSize : int with get, set
+
+    #if prop_GroupItems
+    #endif
+    member GroupItems : GroupItem [] with get, set
+
+    override Validate : unit -> Result<unit>
+
 #if dto_Document
 A document represents the basic unit of information which can be added or 
 retrieved from the index. A document consists of several fields. A field represents 

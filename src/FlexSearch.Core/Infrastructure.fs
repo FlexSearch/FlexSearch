@@ -258,6 +258,13 @@ module Operators =
     /// This is the infix operator version of ErrorHandling.bind
     let inline (>>=) result f = bind f result
     
+    /// Pipes a list of result items into a Result of list items.
+    /// Creates a chain from the list of Results.
+    let inline (>=>>) results = 
+        Seq.fold (fun rAcc rValue -> rAcc >>= (fun acc -> rValue >>= (fun value -> value :: acc |> ok)))
+                 (ok [])
+                 results
+
     /// If the wrapped function is a success and the given result is a success the function is applied on the value. 
     /// Otherwise the exisiting error messages are propagated.
     let inline apply wrappedFunction result = 

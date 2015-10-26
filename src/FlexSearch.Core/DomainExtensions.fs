@@ -330,7 +330,7 @@ module Field =
         let it = document.Iterator()
         while it.hasNext() do
             match it.next() with
-            | :? SortedSetDocValuesFacetField as field -> if field.dim = flexField.SchemaName then it.remove()
+            | :? SortedSetDocValuesFacetField as field when field.dim = flexField.SchemaName -> it.remove()
             | _ -> ()
         document.Add value
 

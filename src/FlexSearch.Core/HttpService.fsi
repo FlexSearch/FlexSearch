@@ -406,10 +406,10 @@ type GetSearchHandler =
 [<Name("POST-/indices/:id/facetedsearch")>]
 [<Sealed>]
 type GetFacetedSearchHandler =
-    inherit Http.HttpHandlerBase<FacetQuery, string>
+    inherit Http.HttpHandlerBase<FacetQuery, Group []>
     new : searchService:ISearchService -> GetFacetedSearchHandler
     override Process : request:Http.RequestContext * body:FacetQuery option ->
-                Http.ResponseContext<string>
+                Http.ResponseContext<Group []>
     
 
 # ws_DeleteDocumentsFromSearchHandler """

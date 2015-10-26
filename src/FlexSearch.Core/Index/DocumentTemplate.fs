@@ -45,18 +45,17 @@ module DocumentTemplate =
         for field in s.Fields do
             // Ignore these 4 fields here.
             if not (protectedFields (field.FieldName)) then 
+                // Add the Default field
+                add (Field.createDefaultLuceneField (field))
                 // Facet fields cannot be modified. Therefore, the approach to use
                 // will be to delete, then add new facet fields on each document
                 // create/update
                 if field.AllowFaceting then Field.createFacetField field field.FieldName |> template.Add
-                else
-                    // Add the Default field
-                    add (Field.createDefaultLuceneField (field))
-                    // Add field used for sorting
-                    if field.GenerateDocValue then 
-                        match Field.createDocValueField (field) with
-                        | Some(docField) -> add (docField)
-                        | _ -> ()
+                // Add field used for sorting
+                else if field.GenerateDocValue then 
+                    match Field.createDocValueField (field) with
+                    | Some(docField) -> add (docField)
+                    | _ -> ()
                 
         { Setting = s
           TemplateFields = fields.ToArray()
@@ -93,21 +92,23 @@ module DocumentTemplate =
                         | _ -> None
                 match value with
                 | Some(v) -> 
+                    v |> Field.updateLuceneField field template.TemplateFields.[i] false
                     if field.AllowFaceting then
+                        i <- i + 1
                         template.Template |> Field.updateFacetField field (Field.createFacetField field v)
-                    else
-                        v |> Field.updateLuceneField field template.TemplateFields.[i] false
-                        if field.GenerateDocValue then 
-                            v |> Field.updateLuceneField field template.TemplateFields.[i + 1] true
-                            i <- i + 1
+                    else if field.GenerateDocValue then 
+                        i <- i + 1
+                        v |> Field.updateLuceneField field template.TemplateFields.[i] true
+                            
                     
-                | None -> 
+                | None ->
+                    Field.updateLuceneFieldToDefault field false template.TemplateFields.[i]
                     if field.AllowFaceting then
+                        i <- i + 1
                         template.Template |> Field.updateFacetField field (Field.createDefaultFacetingField field)
-                    else
-                        Field.updateLuceneFieldToDefault field false template.TemplateFields.[i]
-                        if field.GenerateDocValue then 
-                            Field.updateLuceneFieldToDefault field true template.TemplateFields.[i + 1]
-                            i <- i + 1
+                    else if field.GenerateDocValue then 
+                        i <- i + 1
+                        Field.updateLuceneFieldToDefault field true template.TemplateFields.[i]
+                            
                     
         template.Template

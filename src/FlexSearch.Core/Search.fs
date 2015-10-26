@@ -306,18 +306,25 @@ module SearchDsl =
                 flexQuery.GroupBy
                 |> Array.map (fun g -> facets.GetTopChildren(g.Count, g.FieldName))
         
-        // Search through each shard    
+        // Search through each shard
         indexWriter.ShardWriters |> Array.Parallel.iter searchShard
         
         // Start composing the search results
-        // TODO properly merge the results
         let concatenated = facetsCollection |> Array.concat
         flexQuery.GroupBy
-        |> Seq.map (fun g -> concatenated 
-                             |> Seq.filter (fun x -> x <> null && x.dim = g.FieldName)
-                             |> tryTake g.Count)
-        |> Seq.concat
-        |> Seq.map (fun fr -> fr.ToString())
+        |> Array.map (fun g -> 
+            match concatenated |> Seq.tryFind (fun x -> (not << isNull) x && x.dim = g.FieldName) with
+            | Some(fr) -> 
+                let groupItems = fr.labelValues
+                                    |> Array.map (fun lv -> new GroupItem(lv.label, lv.value.intValue()))
+                new Group(GroupedBy = fr.dim, GroupSize = fr.value.intValue(), GroupItems = groupItems)
+                |> ok
+            | None -> fail <| GroupNotFound(g.FieldName, flexQuery.IndexName))
+        // Instead of a List of Results, I want a Result of a List
+        |> (>=>>) 
+        // Convert the List to an Array
+        |> fun groupList -> groupList >>= (List.toArray >> ok)
+
 
     let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery) = 
         (!>) "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())

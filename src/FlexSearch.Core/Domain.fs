@@ -522,6 +522,34 @@ type FacetQuery(index) =
         this.IndexName |> propertyNameValidator "IndexName"
         >>= (fun _ -> this.GroupBy |> notEmpty "GroupBy")
     
+/// GroupItem is used to hold information about an item within a facet result
+/// Example: There are 3 'Fish' within this category of the facet
+[<ToString; Sealed>]
+type GroupItem(name, count) =
+    inherit DtoBase()
+
+    /// Holds the name of the category set
+    member val Name = name with get, set
+    /// Holds the number of such items within this set
+    member val Count = count with get, set
+
+    new() = GroupItem(defString,0)
+    override this.Validate() = this.Name |> notEmpty "Name"
+
+/// FacetSearchResult is used to capture the result of a facet query
+[<ToString; Sealed>]
+type Group() =
+    inherit DtoBase()
+
+    /// Used to hold the value by which the results were grouped
+    member val GroupedBy = defString with get, set
+
+    member val GroupSize = 0 with get, set
+
+    member val GroupItems = Array.empty<GroupItem> with get, set
+
+    override this.Validate() = this.GroupedBy |> notEmpty "GroupedBy"
+
 /// A document represents the basic unit of information which can be added or retrieved from the index. 
 /// A document consists of several fields. A field represents the actual data to be indexed. In database 
 /// analogy an index can be considered as a table while a document is a row of that table. Like a table a 

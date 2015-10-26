@@ -63,8 +63,8 @@ id,category,t1
             getFacetQuery index.IndexName
             |> addGroup ("category", defString, 10)
             |> searchAndExtractFacet searchService
-        test <@ not << String.IsNullOrEmpty <| result @>
-        printfn "%s" result
+        test <@ not << String.IsNullOrEmpty <| (sprintf "%A" result) @>
+        printfn "%A" result
         
     member __.``Low level facet test``(analyzerService : IAnalyzerService, scriptService : IScriptService) =
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))

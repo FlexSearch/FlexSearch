@@ -268,6 +268,16 @@ type SearchMessage =
             | NotEnoughParameters(fn) -> sprintf "Not enough parameters for function %s" fn
             |> caseToMsg this
 
+type FacetedSearchMessage =
+    | GroupNotFound of groupName : string * indexName : string
+    interface IMessage with
+        member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Info)
+
+        member this.OperationMessage() =
+            match this with
+            | GroupNotFound(g,i) -> sprintf "Couldn't find the group '%s' in the result. Most probably the group name doesn't match any of the FlexSearch fields of index %s." g i
+            |> caseToMsg this
+
 type IndexingMessage = 
     | IndexAlreadyExists of indexName : string
     | IndexShouldBeOnline of indexName : string

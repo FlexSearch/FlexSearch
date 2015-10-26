@@ -75,7 +75,7 @@ type ISearchService =
     abstract Search : searchQuery:SearchQuery -> Result<SearchResults<SearchResultComponents.T>>
     abstract Search : searchQuery:SearchQuery * searchProfileString:string
      -> Result<SearchResults<SearchResultComponents.T>>
-    abstract Search : facetQuery : FacetQuery -> Result<string>
+    abstract Search : facetQuery : FacetQuery -> Result<Group []>
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
@@ -411,8 +411,6 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
     let facetedSearchWrapper writers flexQuery luceneQuery =
         try
             SearchDsl.facetedSearch writers luceneQuery flexQuery
-            |> Seq.fold (fun acc value -> acc + "--------\n" + value) ""
-            |> ok
         with e -> fail <| SearchError(exceptionPrinter e)
 
     let search (searchQuery : SearchQuery, inputFields : Dictionary<string, string> option) = 
