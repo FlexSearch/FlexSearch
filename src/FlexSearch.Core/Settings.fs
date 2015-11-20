@@ -16,74 +16,67 @@
 //  You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
+
 open IniParser
+open Microsoft.Framework.Configuration
+open Microsoft.Framework.Configuration.Ini
 open System
 open System.Text
 
 /// This module provides abstraction for settings to be used across the 
-/// project. Both internal and third party plugins can rely on this
+/// project. Both internal and third party plug-ins can rely on this
 /// abstraction to load system level settings in a consistent manner.
 [<RequireQualifiedAccess; AutoOpen>]
-module Settings =
+module Settings = 
     let defaultSettingsFilePath = Constants.ConfFolder +/ "settings.ini"
     
     [<Literal>]
     let ServerKey = "Server"
-
+    
     [<Literal>]
     let HttpPort = "HttpPort"
-
+    
     /// Create settings from the path 
-    let create(path : string) =
-        let parser = new FileIniDataParser()
-        parser.Parser.Configuration.CaseInsensitive <- true
-        parser.Parser.Configuration.SkipInvalidLines <- true
-        parser.Parser.Configuration.ThrowExceptionsOnError <- false
-        let source = parser.ReadFile(path)
-        if parser.Parser.HasError then
-            let sb = new StringBuilder()
-            parser.Parser.Errors 
-            |> Seq.iter (exceptionPrinter >> sb.AppendLine >> ignore)
-            fail <| UnableToParseConfig(path,  sb.ToString())
-        else
-            ok <| source
-
-    type T(source : Model.IniData) =
-        member  __.Get(section : string, key : string, defaultValue : string) =
-            match source.[section].[key] with
+    let create (path : string) = 
+        let configBuilder = new ConfigurationBuilder()
+        configBuilder.AddIniFile(path, false) |> ignore
+        try 
+            ok <| configBuilder.Build()
+        with e -> fail <| UnableToParseConfig(path, exceptionPrinter e)
+    
+    type T(source : IConfigurationRoot) = 
+        
+        member __.Get(section : string, key : string, defaultValue : string) = 
+            match source.[sprintf "%s:%s" section key] with
             | null -> defaultValue
             | v -> v
-
+        
         /// Get key value as int from a section 
-        member  __.GetInt(section : string, key : string, defaultValue) =
-            source.[section].[key] |> pInt defaultValue
-
+        member __.GetInt(section : string, key : string, defaultValue) = 
+            source.[sprintf "%s:%s" section key] |> pInt defaultValue
+        
         /// Get key value as long from a section
-        member  __.GetLong(section : string, key : string, defaultValue) =
-            source.[section].[key] |> pLong defaultValue
-
+        member __.GetLong(section : string, key : string, defaultValue) = 
+            source.[sprintf "%s:%s" section key] |> pLong defaultValue
+        
         /// Get key value as double from a section
-        member  __.GetDouble(section : string, key : string, defaultValue) =
-            source.[section].[key] |> pDouble defaultValue
-
+        member __.GetDouble(section : string, key : string, defaultValue) = 
+            source.[sprintf "%s:%s" section key] |> pDouble defaultValue
+        
         /// Get key value as bool from a section
-        member  __.GetBool(section : string, key : string, defaultValue) =
-            source.[section].[key] |> pBool defaultValue
-
+        member __.GetBool(section : string, key : string, defaultValue) = 
+            source.[sprintf "%s:%s" section key] |> pBool defaultValue
+        
         /// Get an absolute path from a section. If the path starts with . then
         /// it will be automatically converted to an absolute path
-        member __.GetPath(section : string, key : string, defaultValue) =
+        member __.GetPath(section : string, key : string, defaultValue) = 
             let path = 
-                match source.[section].[key] with
-                | null -> defaultValue 
+                match source.[sprintf "%s:%s" section key] with
+                | null -> defaultValue
                 | v -> v
             Helpers.generateAbsolutePath path
-
-        static member GetDefault() =
-            let parser = new FileIniDataParser()
-            parser.Parser.Configuration.CaseInsensitive <- true
-            parser.Parser.Configuration.SkipInvalidLines <- true
-            parser.Parser.Configuration.ThrowExceptionsOnError <- false
-            let source = parser.Parser.Parse("")
-            new T(source)
-                
+        
+        static member GetDefault() = 
+            let configBuilder = new ConfigurationBuilder()
+            configBuilder.AddInMemoryCollection() |> ignore
+            new T(configBuilder.Build())
