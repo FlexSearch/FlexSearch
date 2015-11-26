@@ -152,6 +152,7 @@ Target "MovePortal" <| fun _ ->
     let source = portalDir + @"\dist"
     FileHelper.CopyRecursive source webDir true |> ignore
     trace "Move Font files to styles folder"
+    CreateDir(webDir + @"\styles")
     File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.ttf", webDir + @"\styles\ui-grid.ttf")
     File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.woff", webDir + @"\styles\ui-grid.woff")
 
