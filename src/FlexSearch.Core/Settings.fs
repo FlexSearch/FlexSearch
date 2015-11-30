@@ -17,7 +17,6 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open IniParser
 open Microsoft.Framework.Configuration
 open Microsoft.Framework.Configuration.Ini
 open System
