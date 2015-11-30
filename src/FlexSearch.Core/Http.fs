@@ -32,6 +32,9 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.Owin.StaticFiles
 open Microsoft.Owin.FileSystems
+open Microsoft.AspNet.Hosting
+open Microsoft.AspNet.Builder
+open Microsoft.Extensions.Configuration
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -259,8 +262,8 @@ type ExtendedContentTypeProvider() as this =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(httpModule : Dictionary<string, IHttpHandler>, ?port0 : int) = 
-    let port = defaultArg port0 9800
+type OwinServer(httpModule : Dictionary<string, IHttpHandler>, serverSettings: Settings.T) = 
+    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
     let _httpModule = httpModule
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
@@ -298,6 +301,13 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
     member __.Configuration(app : IAppBuilder) = 
+        let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
+        builder.UseServer("Microsoft.AspNet.Server.Kestrel") |> ignore
+        builder.UseStartup(fun appBuilder -> 
+                                appBuilder.UseStaticFiles(new PhysicalFileSystem(Constants.WebFolder))
+                                appBuilder.Use(handler))
+
+
         // Setup CORS
         app.UseCors(Cors.CorsOptions.AllowAll) |> ignore
         let fileServerOptions = new FileServerOptions()

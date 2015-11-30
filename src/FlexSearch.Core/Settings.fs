@@ -17,8 +17,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open Microsoft.Framework.Configuration
-open Microsoft.Framework.Configuration.Ini
+open Microsoft.Extensions.Configuration
+
 open System
 open System.Text
 
@@ -45,6 +45,8 @@ module Settings =
     
     type T(source : IConfigurationRoot) = 
         
+        member val ConfigurationSource = source
+
         member __.Get(section : string, key : string, defaultValue : string) = 
             match source.[sprintf "%s:%s" section key] with
             | null -> defaultValue

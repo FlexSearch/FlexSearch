@@ -210,7 +210,6 @@ module Interop =
 type NodeService(serverSettings : Settings.T, testServer : bool) = 
     let container = getContainer (serverSettings, testServer)
     let mutable httpServer = Unchecked.defaultof<IServer>
-    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
     
     /// Perform all the clean up tasks to be run just before a shutdown request is 
     /// received by the server
@@ -230,7 +229,7 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
     member __.Start() = 
         try 
             let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
-            httpServer <- new OwinServer(generateRoutingTable handlerModules, port)
+            httpServer <- new OwinServer(generateRoutingTable handlerModules, serverSettings)
             httpServer.Start()
         with e -> printfn "%A" e
     

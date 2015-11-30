@@ -249,14 +249,6 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.Framework.Configuration">
-      <HintPath>..\packages\Microsoft.Framework.Configuration.1.0.0-beta8\lib\net45\Microsoft.Framework.Configuration.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.Framework.Configuration.Abstractions">
-      <HintPath>..\packages\Microsoft.Framework.Configuration.Abstractions.1.0.0-beta8\lib\net45\Microsoft.Framework.Configuration.Abstractions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.Owin">
       <HintPath>..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
       <Private>True</Private>
@@ -279,10 +271,6 @@
     </Reference>
     <Reference Include="Microsoft.Owin.StaticFiles">
       <HintPath>..\packages\Microsoft.Owin.StaticFiles.3.0.1\lib\net45\Microsoft.Owin.StaticFiles.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.Practices.EnterpriseLibrary.SemanticLogging">
-      <HintPath>..\packages\EnterpriseLibrary.SemanticLogging.2.0.1406.1\lib\net45\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
