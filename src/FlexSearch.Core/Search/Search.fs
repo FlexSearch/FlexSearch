@@ -285,7 +285,9 @@ module SearchDsl =
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
-                if field.FieldName = MetaFields.IdField || field.FieldName = MetaFields.LastModifiedField then ()
+                if [MetaFields.IdField; MetaFields.LastModifiedField; MetaFields.ModifyIndex; MetaFields.State]
+                   |> Seq.contains field.FieldName
+                then ()
                 else getValue(field)
         // Return only the requested columns
         | _ -> 

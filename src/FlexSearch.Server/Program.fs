@@ -60,12 +60,12 @@ module Installers =
         else "\"" + s + "\""
     
     // Executes a given exe along with the passed argument 
-    let exec path argument = 
+    let exec path argument showOutput = 
         let psi = new ProcessStartInfo()
         psi.FileName <- path
         psi.Arguments <- argument
         psi.WorkingDirectory <- Constants.rootFolder
-        psi.RedirectStandardOutput <- false
+        psi.RedirectStandardOutput <- not showOutput
         psi.UseShellExecute <- false
         use p = Process.Start(psi)
         p.WaitForExit()
@@ -79,15 +79,22 @@ module Installers =
         <| "im " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString) + " /rf:" 
            + (Constants.rootFolder +/ manifestFileName |> toQuotedString) + " /mf:" 
            + (Constants.rootFolder +/ manifestFileName |> toQuotedString)
+        <| true
     
     let uninstallManifest() = 
         printfn "Un-installing the ETW manifest..."
         exec "wevtutil.exe" <| "um " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString)
+                            <| true
     
     let reservePort (port : int) = 
         printfn "Reserving the port %i" port
         exec "netsh.exe" <| sprintf "http add urlacl url=http://+:%i/ user=everyone listen=yes" port
+                         <| true
     
+    let resetPerformanceCounters () =
+        try exec "lodctr" "/r" false
+        with e -> printfn "Failed to reset performance counters: %s" e.Message
+
     /// Gets executed after the service is installed by TopShelf
     let afterInstall (settings : Settings.T) = 
         new Action(fun _ -> 
@@ -156,6 +163,13 @@ let printUsage() =
 let main argv = 
     
     printfn "%s" StartUp.headerText
+
+    // The reason we need to reset the performance counters is that sometimes 
+    // the counters cache in the registry becomes corrupted.
+    // http://stackoverflow.com/questions/17980178/cannot-load-counter-name-data-because-an-invalid-index-exception
+    // The performance counters are used for the /memory endpoint.
+    Installers.resetPerformanceCounters()
+
     // Only parse arguments in case of interactive mode
     if notNull argv && argv.Length > 0 && StartUp.isInteractive then 
         try 
