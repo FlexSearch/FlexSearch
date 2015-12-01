@@ -90,13 +90,6 @@ module Http =
         if String.IsNullOrWhiteSpace(request.ContentType) then "application/json"
         else request.ContentType
     
-    /// Gets the first string of a collection of StringValues that matches the given item. 
-    /// Returns null if not found
-    let getFirstStringValue item (collection : IEnumerable<KeyValuePair<string,StringValues>>) =
-        match collection |> Seq.filter (fun x -> x.Key = item) |> Seq.toList with
-        | [] -> null
-        | h::t -> if h.Value.Count > 0 then h.Value.Item 0 else null
-
     /// Get response format from the OWIN context
     /// Defaults to JSON
     let private getResponseFormat (ctxt : HttpContext) = 
@@ -257,9 +250,9 @@ type IServer =
     abstract Start : unit -> unit
     abstract Stop : unit -> unit
 
-type ExtendedContentTypeProvider() as this = 
-    inherit Microsoft.Owin.StaticFiles.ContentTypes.FileExtensionContentTypeProvider()
-    do this.Mappings.Add(".json", "application/json")
+//type ExtendedContentTypeProvider() as this = 
+//    inherit Microsoft.Owin.StaticFiles.ContentTypes.FileExtensionContentTypeProvider()
+//    do this.Mappings.Add(".json", "application/json")
 
 /// Owin katana server
 [<Sealed>]

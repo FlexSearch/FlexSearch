@@ -32,7 +32,6 @@ open System.Security.AccessControl
 open System.Security.Principal
 open System.Text
 open System.Threading
-open Newtonsoft.Json
 
 [<Sealed>]
 /// <summary>
@@ -228,13 +227,14 @@ module Helpers =
             |> Seq.sum
             |> (+) (dir.EnumerateDirectories() |> Seq.sumBy (getFolderSizeRec sum))
         getFolderSizeRec 0 (new DirectoryInfo(path))
-   
+  
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module DataType = 
-    open Microsoft.Owin
+    open Microsoft.AspNet.Http
+    open Microsoft.Extensions.Primitives
     
     let (|InvariantEqual|_|) (str : string) arg = 
         if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0 then Some()
@@ -302,6 +302,13 @@ module DataType =
             | true, a -> a
             | _ -> failureDefault
     
+    /// Gets the first string of a collection of StringValues that matches the given item. 
+    /// Returns null if not found
+    let getFirstStringValue item (collection : IEnumerable<KeyValuePair<string,StringValues>>) =
+        match collection |> Seq.filter (fun x -> x.Key = item) |> Seq.toList with
+        | [] -> null
+        | h::t -> if h.Value.Count > 0 then h.Value.Item 0 else null
+
     /// Get a value from a dictionary and perform a parsing operation. In case the
     /// operation fails or there is any other error it returns the default value
     let inline getFromDict<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
@@ -324,13 +331,13 @@ module DataType =
     /// operation fails or there is any other error it returns the default value
     let inline getFromCollection<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
                (coll : IReadableStringCollection) = 
-        match coll.Get key with
+        match coll |> getFirstStringValue key with
         | null -> defaultValue
         | value -> value |> existsCase defaultValue
     
     /// Get string from string collection
-    let inline stringFromQueryString key defaultValue (owin : IOwinContext) =
-        match owin.Request.Query.Get key with
+    let inline stringFromQueryString key defaultValue (ctx : HttpContext) =
+        match ctx.Request.Query |> getFirstStringValue key with
         | null -> defaultValue
         | value -> value
 
@@ -343,8 +350,8 @@ module DataType =
         dict |> getFromOptDict key pInt defaultValue
     
     /// Get integer from string collection
-    let inline intFromQueryString key defaultValue (owin : IOwinContext) = 
-        owin.Request.Query |> getFromCollection key pInt defaultValue
+    let inline intFromQueryString key defaultValue (ctx : HttpContext) = 
+        ctx.Request.Query |> getFromCollection key pInt defaultValue
     
     /// Get long from dictionary
     let inline longFromDict key defaultValue (dict : Dictionary<string, string>) = 
@@ -355,8 +362,8 @@ module DataType =
         dict |> getFromOptDict key pLong defaultValue
     
     /// Get long from string collection
-    let inline longFromQueryString key defaultValue (owin : IOwinContext) = 
-        owin.Request.Query |> getFromCollection key pLong defaultValue
+    let inline longFromQueryString key defaultValue (ctx : HttpContext) = 
+        ctx.Request.Query |> getFromCollection key pLong defaultValue
     
     /// Get double from dictionary
     let inline doubleFromDict key defaultValue (dict : Dictionary<string, string>) = 
@@ -367,8 +374,8 @@ module DataType =
         dict |> getFromOptDict key pDouble defaultValue
     
     /// Get double from string collection
-    let inline doubleFromQueryString key defaultValue (owin : IOwinContext) = 
-        owin.Request.Query |> getFromCollection key pDouble defaultValue
+    let inline doubleFromQueryString key defaultValue (ctx : HttpContext) = 
+        ctx.Request.Query |> getFromCollection key pDouble defaultValue
     
     /// Get bool from dictionary
     let inline boolFromDict key defaultValue (dict : Dictionary<string, string>) = 
@@ -379,8 +386,8 @@ module DataType =
         dict |> getFromOptDict key pBool defaultValue
     
     /// Get integer from string collection
-    let inline boolFromQueryString key defaultValue (owin : IOwinContext) = 
-        owin.Request.Query |> getFromCollection key pBool defaultValue
+    let inline boolFromQueryString key defaultValue (ctx : HttpContext) = 
+        ctx.Request.Query |> getFromCollection key pBool defaultValue
 
 // ----------------------------------------------------------------------------
 // Formatter section : All the various media formatter to be used in 

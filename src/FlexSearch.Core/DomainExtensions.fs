@@ -432,7 +432,7 @@ module SearchQuery =
             | Some(q) -> q
             | None -> new SearchQuery()
         query.QueryString <- request.HttpContext |> stringFromQueryString "q" query.QueryString
-        query.Columns <- match request.HttpContext.Request.Query.Get("c") with
+        query.Columns <- match request.HttpContext.Request.Query |> getFirstStringValue "c" with
                          | null -> query.Columns
                          | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
         query.Count <- request.HttpContext |> intFromQueryString "count" query.Count

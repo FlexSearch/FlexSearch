@@ -17,7 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open Microsoft.Owin
+open Microsoft.Extensions.Primitives
 open System.Net
 open System.IO
 
@@ -426,8 +426,8 @@ type GetSearchHandler(searchService : ISearchService) =
         | Ok(result) -> 
             if query.ReturnFlatResult then 
                 request.HttpContext.Response.Headers.Add
-                    ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
-                request.HttpContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                    ("RecordsReturned", result.Meta.RecordsReturned.ToString() |> StringValues)
+                request.HttpContext.Response.Headers.Add("TotalAvailable", result.Meta.TotalAvailable.ToString() |> StringValues)
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
@@ -461,8 +461,8 @@ type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) =
         | Ok(result) -> 
             if query.ReturnFlatResult then 
                 request.HttpContext.Response.Headers.Add
-                    ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
-                request.HttpContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                    ("RecordsReturned", result.Meta.RecordsReturned.ToString() |> StringValues)
+                request.HttpContext.Response.Headers.Add("TotalAvailable", result.Meta.TotalAvailable.ToString() |> StringValues)
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
@@ -477,8 +477,8 @@ type PostSearchProfileTestHandler(searchService : ISearchService) =
         | Ok(result) -> 
             if body.Value.SearchQuery.ReturnFlatResult then 
                 request.HttpContext.Response.Headers.Add
-                    ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
-                request.HttpContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                    ("RecordsReturned", result.Meta.RecordsReturned.ToString() |> StringValues)
+                request.HttpContext.Response.Headers.Add("TotalAvailable", result.Meta.TotalAvailable.ToString() |> StringValues)
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)

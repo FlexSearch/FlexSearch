@@ -20,9 +20,6 @@ namespace FlexSearch.Core
 open Autofac
 open Autofac.Features.Metadata
 open FlexSearch.Core
-open Microsoft.Owin
-open Microsoft.Owin.Hosting
-open Owin
 open System
 open System.Collections.Generic
 open System.IO
