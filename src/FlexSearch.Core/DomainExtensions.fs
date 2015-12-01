@@ -431,15 +431,15 @@ module SearchQuery =
             match body with
             | Some(q) -> q
             | None -> new SearchQuery()
-        query.QueryString <- request.OwinContext |> stringFromQueryString "q" query.QueryString
-        query.Columns <- match request.OwinContext.Request.Query.Get("c") with
+        query.QueryString <- request.HttpContext |> stringFromQueryString "q" query.QueryString
+        query.Columns <- match request.HttpContext.Request.Query.Get("c") with
                          | null -> query.Columns
                          | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
-        query.Count <- request.OwinContext |> intFromQueryString "count" query.Count
-        query.Skip <- request.OwinContext |> intFromQueryString "skip" query.Skip
-        query.OrderBy <- request.OwinContext |> stringFromQueryString "orderby" query.OrderBy
-        query.OrderByDirection <- request.OwinContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
-        query.ReturnFlatResult <- request.OwinContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
-        query.SearchProfile <- request.OwinContext |> stringFromQueryString "searchprofile" query.SearchProfile
+        query.Count <- request.HttpContext |> intFromQueryString "count" query.Count
+        query.Skip <- request.HttpContext |> intFromQueryString "skip" query.Skip
+        query.OrderBy <- request.HttpContext |> stringFromQueryString "orderby" query.OrderBy
+        query.OrderByDirection <- request.HttpContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
+        query.ReturnFlatResult <- request.HttpContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
+        query.SearchProfile <- request.HttpContext |> stringFromQueryString "searchprofile" query.SearchProfile
         query.IndexName <- request.ResId.Value
         query

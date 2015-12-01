@@ -18,11 +18,8 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
-open Microsoft.Owin
-open Microsoft.Owin.Hosting
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
-open Owin
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -30,11 +27,13 @@ open System.IO
 open System.Net
 open System.Threading
 open System.Threading.Tasks
-open Microsoft.Owin.StaticFiles
-open Microsoft.Owin.FileSystems
 open Microsoft.AspNet.Hosting
 open Microsoft.AspNet.Builder
 open Microsoft.Extensions.Configuration
+open Microsoft.AspNet.StaticFiles
+open Microsoft.AspNet.Http
+open Microsoft.AspNet.Cors
+open Microsoft.Extensions.Primitives
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -46,13 +45,13 @@ module Http =
           ResId : string option
           SubResName : string option
           SubResId : string option
-          OwinContext : IOwinContext }
+          HttpContext : HttpContext }
         static member Create(owinContext, resName, ?resId, ?subResName, ?subResId) = 
             { ResName = resName
               ResId = resId
               SubResName = subResName
               SubResId = subResId
-              OwinContext = owinContext }
+              HttpContext = owinContext }
     
     type ResponseContext<'T> = 
         | SomeResponse of responseBody : Result<'T> * successCode : HttpStatusCode * failureCode : HttpStatusCode
@@ -87,46 +86,54 @@ module Http =
     
     /// Get request format from the request object
     /// Defaults to JSON
-    let private getRequestFormat (request : IOwinRequest) = 
+    let private getRequestFormat (request : HttpRequest) = 
         if String.IsNullOrWhiteSpace(request.ContentType) then "application/json"
         else request.ContentType
     
+    /// Gets the first string of a collection of StringValues that matches the given item. 
+    /// Returns null if not found
+    let getFirstStringValue item (collection : IEnumerable<KeyValuePair<string,StringValues>>) =
+        match collection |> Seq.filter (fun x -> x.Key = item) |> Seq.toList with
+        | [] -> null
+        | h::t -> if h.Value.Count > 0 then h.Value.Item 0 else null
+
     /// Get response format from the OWIN context
     /// Defaults to JSON
-    let private getResponseFormat (owin : IOwinContext) = 
-        match owin.Request.Accept with
+    let private getResponseFormat (ctxt : HttpContext) = 
+        let acceptHeader = ctxt.Request.Headers |> getFirstStringValue "Accept"
+        match acceptHeader with
         | null | "*/*" -> 
-            match owin.Request.Query.Get("callback") with
+            match ctxt.Request.Query |> getFirstStringValue "callback" with
             | null -> "application/json"
             | _ -> "application/javascript"
-        | x when x.Contains(",") -> owin.Request.Accept.Substring(0, owin.Request.Accept.IndexOf(","))
-        | _ -> owin.Request.Accept
+        | x when x.Contains(",") -> acceptHeader.Split(',').[0]
+        | x -> x
     
     /// Write HTTP response
-    let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (owin : IOwinContext) = 
-        owin.Response.StatusCode <- int statusCode
-        let format = getResponseFormat owin
-        owin.Response.ContentType <- format
+    let writeResponse (statusCode : System.Net.HttpStatusCode) (response : obj) (ctxt : HttpContext) = 
+        ctxt.Response.StatusCode <- int statusCode
+        let format = getResponseFormat ctxt
+        ctxt.Response.ContentType <- format
         if response <> Unchecked.defaultof<_> then 
             match Formatters.TryGetValue(format) with
             | true, formatter -> 
                 match format with
                 // Handle the special jsonp case
                 | "application/javascript" -> 
-                    use streamWriter = new StreamWriter(owin.Response.Body)
-                    streamWriter.Write(owin.Request.Query.Get("callback"))
-                    streamWriter.Write("(")
+                    use streamWriter = new StreamWriter(ctxt.Response.Body)
+                    streamWriter.Write((ctxt.Request.Query.Item "callback").Item 0)
+                    streamWriter.Write "("
                     streamWriter.Flush()
                     jsonFormatter.Serialize(response, streamWriter.BaseStream)
-                    streamWriter.Write(");")
-                | _ -> formatter.Serialize(response, owin.Response.Body)
+                    streamWriter.Write ");"
+                | _ -> formatter.Serialize(response, ctxt.Response.Body)
                 // *Try* flushing the stream as opposed to always doing it because
                 // the stream might have already been closed by the serializer.
-                try owin.Response.Body.Flush() with _ -> ()
-            | _ -> owin.Response.StatusCode <- int HttpStatusCode.InternalServerError
+                try ctxt.Response.Body.Flush() with _ -> ()
+            | _ -> ctxt.Response.StatusCode <- int HttpStatusCode.InternalServerError
     
     /// Write HTTP response
-    let getRequestBody<'T> (request : IOwinRequest) = 
+    let getRequestBody<'T> (request : HttpRequest) = 
         let contentType = getRequestFormat request
         if request.Body.CanRead then 
             match Formatters.TryGetValue(contentType) with
@@ -145,19 +152,12 @@ module Http =
     let NotFound = HttpStatusCode.NotFound
     let BadRequest = HttpStatusCode.BadRequest
     let Conflict = HttpStatusCode.Conflict
-    let BAD_REQUEST (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.BadRequest value owin
-    let NOT_FOUND (value : obj) (owin : IOwinContext) = writeResponse HttpStatusCode.NotFound value owin
-    
-    let inline CheckIdPresent(owin : IOwinContext) = 
-        if owin.Request.Uri.Segments.Length >= 4 then Some(owin.Request.Uri.Segments.[3])
-        else None
+    let BAD_REQUEST (value : obj) (ctx : HttpContext) = writeResponse HttpStatusCode.BadRequest value ctx
+    let NOT_FOUND (value : obj) (ctx : HttpContext) = writeResponse HttpStatusCode.NotFound value ctx
     
     let inline removeTrailingSlash (input : string) = 
         if input.EndsWith("/") then input.Substring(0, (input.Length - 1))
         else input
-    
-    let inline getIndexName (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[2]
-    let inline subId (owin : IOwinContext) = removeTrailingSlash owin.Request.Uri.Segments.[4]
     
     /// A helper interface to dynamically find all the HttpHandlerBase classes
     type IHttpHandler = 
@@ -169,21 +169,21 @@ module Http =
         member __.HasBody = typeof<'T> <> typeof<NoBody>
         member this.FailOnMissingBody = defaultArg failOnMissingBody this.HasBody
         member __.ValidateBody = defaultArg validateBody false
-        member __.DeSerialize(request : IOwinRequest) = getRequestBody<'T> (request)
+        member __.DeSerialize(request : HttpRequest) = getRequestBody<'T> (request)
         
-        member __.SerializeSuccess (response : 'U) (successStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        member __.SerializeSuccess (response : 'U) (successStatus : HttpStatusCode) (httpContext : HttpContext) = 
             let instance = Response<'U>.WithData(response)
-            owinContext |> writeResponse successStatus instance
+            httpContext |> writeResponse successStatus instance
         
-        member __.SerializeFailure (response : IMessage) (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+        member __.SerializeFailure (response : IMessage) (failureStatus : HttpStatusCode) (httpContext : HttpContext) = 
             let instance = Response<'U>.WithError(response)
-            owinContext |> writeResponse failureStatus instance
+            httpContext |> writeResponse failureStatus instance
         
         member this.Serialize (response : Result<'U>) (successStatus : HttpStatusCode) 
-               (failureStatus : HttpStatusCode) (owinContext : IOwinContext) = 
+               (failureStatus : HttpStatusCode) (httpContext : HttpContext) = 
             match response with
-            | Ok(r) -> owinContext |> this.SerializeSuccess r successStatus
-            | Fail(r) -> owinContext |> this.SerializeFailure r failureStatus
+            | Ok(r) -> httpContext |> this.SerializeSuccess r successStatus
+            | Fail(r) -> httpContext |> this.SerializeFailure r failureStatus
         
         abstract Process : request:RequestContext * body:'T option -> ResponseContext<'U>
         interface IHttpHandler with
@@ -192,7 +192,7 @@ module Http =
                     maybe { 
                         let! body = match handler.HasBody with
                                     | true -> 
-                                        match handler.DeSerialize(request.OwinContext.Request) with
+                                        match handler.DeSerialize(request.HttpContext.Request) with
                                         | Ok a -> ok <| Some(a)
                                         | Fail b -> 
                                             if handler.FailOnMissingBody then fail <| b
@@ -204,18 +204,18 @@ module Http =
                     }
                 
                 let processFailure (error) = 
-                    request.OwinContext |> handler.SerializeFailure error HttpStatusCode.BadRequest
+                    request.HttpContext |> handler.SerializeFailure error HttpStatusCode.BadRequest
                 
                 let processHandler (body) = 
                     match handler.Process(request, body) with
                     | SomeResponse(body, successCode, failureCode) -> 
-                        request.OwinContext |> handler.Serialize body successCode failureCode
+                        request.HttpContext |> handler.Serialize body successCode failureCode
                     | SuccessResponse(body, successCode) -> 
-                        request.OwinContext |> handler.SerializeSuccess body successCode
+                        request.HttpContext |> handler.SerializeSuccess body successCode
                     | FailureResponse(body, failureCode) -> 
-                        request.OwinContext |> handler.SerializeFailure body failureCode
+                        request.HttpContext |> handler.SerializeFailure body failureCode
                     | FailureOpMsgResponse(opMsg, failureCode) ->
-                        request.OwinContext |> writeResponse failureCode { Data = Unchecked.defaultof<'U>; Error = opMsg }
+                        request.HttpContext |> writeResponse failureCode { Data = Unchecked.defaultof<'U>; Error = opMsg }
                     | NoResponse -> ()
                 
                 match validateRequest() with
@@ -239,17 +239,18 @@ module Http =
                 result.Add(v + valueWithoutSlash, m.Value)
         result
     
-    type IOwinContext with
-        member this.Segment(segNo : int) = this.Request.Uri.Segments.[segNo]
-        member this.SegmentWithOutSlash(segNo : int) = removeTrailingSlash this.Request.Uri.Segments.[segNo]
-        member this.HttpMethod = this.Request.Method
+    type HttpContext with
         member this.RequestContext = 
-            match this.Request.Uri.Segments.Length with
+            let uri = new Uri(this.Request.Path.ToUriComponent())
+            let seg n = uri.Segments.[n]
+            let segWithoutSlash n = seg n |> removeTrailingSlash
+
+            match uri.Segments.Length with
             | 1 -> RequestContext.Create(this, "/")
-            | 2 -> RequestContext.Create(this, this.Segment(1))
-            | 3 -> RequestContext.Create(this, this.SegmentWithOutSlash(1), this.Segment(2))
-            | 4 -> RequestContext.Create(this, this.Segment(1), this.SegmentWithOutSlash(2), this.Segment(3))
-            | 5 -> RequestContext.Create(this, this.Segment(1), this.SegmentWithOutSlash(2), this.Segment(3), this.Segment(4))
+            | 2 -> RequestContext.Create(this, seg 1)
+            | 3 -> RequestContext.Create(this, segWithoutSlash 1, seg 2)
+            | 4 -> RequestContext.Create(this, seg 1, segWithoutSlash 2, seg 3)
+            | 5 -> RequestContext.Create(this, seg 1, segWithoutSlash 2, seg 3, seg 4)
             | _ -> failwithf "Internal Error: FlexSearch does not support URI more than 5 segments."
 
 type IServer = 
@@ -274,62 +275,69 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 """
     
     /// Default OWIN method to process request
-    let exec (owin : IOwinContext) = 
+    let exec (ctxt : HttpContext) = 
         async { 
             let findHandler lookupValue = 
                 match _httpModule.TryGetValue(lookupValue) with
                 | (true, x) -> Some x
                 | _ -> None
             try 
+                let uri = new Uri(ctxt.Request.Path.ToUriComponent())
                 let httpHandler = 
-                    match owin.Request.Uri.Segments.Length with
-                    | 1 -> findHandler (owin.HttpMethod + "/") // Server root
-                    | 2 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1)) // /Resource
-                    | 3 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id") // /Resource/:Id
-                    | 4 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id/" + owin.Segment(3)) // /Resource/:Id/command
-                    | 5 -> findHandler (owin.HttpMethod + "/" + owin.Segment(1) + ":id/" + owin.Segment(3) + ":id") // /Resource/:Id/SubResouce/:Id
+                    match uri.Segments.Length with
+                    | 1 -> findHandler (ctxt.Request.Method + "/") // Server root
+                    | 2 -> findHandler (ctxt.Request.Method + "/" + uri.Segments.[1]) // /Resource
+                    | 3 -> findHandler (ctxt.Request.Method + "/" + uri.Segments.[1] + ":id") // /Resource/:Id
+                    | 4 -> findHandler (ctxt.Request.Method + "/" + uri.Segments.[1] + ":id/" + uri.Segments.[3]) // /Resource/:Id/command
+                    | 5 -> findHandler (ctxt.Request.Method + "/" + uri.Segments.[1] + ":id/" + uri.Segments.[3] + ":id") // /Resource/:Id/SubResouce/:Id
                     | _ -> None
                 match httpHandler with
-                | Some(handler) -> handler.Execute(owin.RequestContext)
-                | None -> owin |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
+                | Some(handler) -> handler.Execute(ctxt.RequestContext)
+                | None -> ctxt |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
             with __ -> ()
         }
     
     /// Default OWIN handler to transform C# function to F#
-    let handler = Func<IOwinContext, Func<Task>, Tasks.Task>(fun owin _ -> Async.StartAsTask(exec (owin)) :> Task)
+    let handler = Func<HttpContext, Func<Task>, Tasks.Task>(fun ctx _ -> Async.StartAsTask(exec ctx) :> Task)
     
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-    member __.Configuration(app : IAppBuilder) = 
-        let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
-        builder.UseServer("Microsoft.AspNet.Server.Kestrel") |> ignore
-        builder.UseStartup(fun appBuilder -> 
-                                appBuilder.UseStaticFiles(new PhysicalFileSystem(Constants.WebFolder))
-                                appBuilder.Use(handler))
 
-
-        // Setup CORS
-        app.UseCors(Cors.CorsOptions.AllowAll) |> ignore
+    member __.Configuration(app : IApplicationBuilder) = 
         let fileServerOptions = new FileServerOptions()
         fileServerOptions.EnableDirectoryBrowsing <- true
         fileServerOptions.EnableDefaultFiles <- true
-        fileServerOptions.StaticFileOptions.ContentTypeProvider <- new ExtendedContentTypeProvider()
-        fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder)
+        //fileServerOptions.StaticFileOptions.ContentTypeProvider <- new ExtendedContentTypeProvider() // TODO
+        //fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder) // TODO
         fileServerOptions.RequestPath <- new PathString(@"/portal")
-        app.UseFileServer(fileServerOptions) |>  ignore
         
-        // This should always be the last middleware in the pipeline as this is
-        // resposible for handling our REST requests
-        app.Use(handler) |> ignore
+        app.UseStaticFiles(Constants.WebFolder) 
+           .UseDefaultFiles()
+           .UseDirectoryBrowser()
+           .UseFileServer(fileServerOptions) 
+           .UseCors(fun builder -> builder.AllowAnyOrigin()
+                                          .AllowAnyHeader()
+                                          .AllowAnyMethod()
+                                          .AllowCredentials() |> ignore)
+           // This should always be the last middleware in the pipeline as this is
+           // resposible for handling our REST requests
+           .Use(handler)
+        |> ignore
 
     interface IServer with
         
         member this.Start() = 
             let startServer() = 
                 try 
+                    let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
+                    let engine = builder.UseServer("Microsoft.AspNet.Server.Kestrel")
+                                        .UseStartup(this.Configuration)
+                                        .Build()
+                    server <- engine.Start()
+
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
-                    let startOptions = new StartOptions(sprintf "http://+:%i/" port)
-                    server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
+                    //let startOptions = new StartOptions(sprintf "http://+:%i/" port)
+                    //server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
                 with e -> 
                     if e.InnerException <> null then 
                         let innerException = e.InnerException :?> System.Net.HttpListenerException

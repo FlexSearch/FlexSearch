@@ -29,7 +29,6 @@ open System.IO
 open System.Linq
 open System.Threading
 open System.Threading.Tasks
-open Microsoft.Practices.EnterpriseLibrary.SemanticLogging
 open FlexSearch.Logging
 open System.Diagnostics.Tracing
 

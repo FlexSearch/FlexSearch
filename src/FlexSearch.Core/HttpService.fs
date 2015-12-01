@@ -39,7 +39,7 @@ type GetRootHandler() =
     
     override __.Process(request, _) = 
         if pageExists then
-            request.OwinContext.Response.Redirect("/portal/index.html");
+            request.HttpContext.Response.Redirect("/portal/index.html");
             NoResponse
         else
             FailureResponse(FileNotFound(filePath), NotFound)
@@ -55,7 +55,7 @@ type GetFaviconHandler() =
     
     override __.Process(request, _) = 
         if pageExists then
-            request.OwinContext.Response.Redirect("/portal/favicon.ico");
+            request.HttpContext.Response.Redirect("/portal/favicon.ico");
             NoResponse
         else
             FailureResponse(FileNotFound(filePath), NotFound)
@@ -270,7 +270,7 @@ type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 type GetDocumentsHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, SearchResults>()
     override __.Process(request, _) = 
-        let count = request.OwinContext |> intFromQueryString "count" 10
+        let count = request.HttpContext |> intFromQueryString "count" 10
         SomeResponse(documentService.GetDocuments(request.ResId.Value, count), Ok, BadRequest)
 
 /// <summary>
@@ -425,9 +425,9 @@ type GetSearchHandler(searchService : ISearchService) =
         match searchService.Search(query) with
         | Ok(result) -> 
             if query.ReturnFlatResult then 
-                request.OwinContext.Response.Headers.Add
+                request.HttpContext.Response.Headers.Add
                     ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
-                request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                request.HttpContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
@@ -460,9 +460,9 @@ type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) =
         match documentService.DeleteDocumentsFromSearch(request.ResId.Value, query) with
         | Ok(result) -> 
             if query.ReturnFlatResult then 
-                request.OwinContext.Response.Headers.Add
+                request.HttpContext.Response.Headers.Add
                     ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
-                request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                request.HttpContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
@@ -476,9 +476,9 @@ type PostSearchProfileTestHandler(searchService : ISearchService) =
         match searchService.Search(body.Value.SearchQuery, body.Value.SearchProfile) with
         | Ok(result) -> 
             if body.Value.SearchQuery.ReturnFlatResult then 
-                request.OwinContext.Response.Headers.Add
+                request.HttpContext.Response.Headers.Add
                     ("RecordsReturned", [| result.Meta.RecordsReturned.ToString() |])
-                request.OwinContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
+                request.HttpContext.Response.Headers.Add("TotalAvailable", [| result.Meta.TotalAvailable.ToString() |])
                 SuccessResponse((toFlatResults result).Documents :> obj, Ok)
             else SuccessResponse(toSearchResults (result) :> obj, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
