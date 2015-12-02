@@ -4,7 +4,7 @@ open FlexSearch.Core
 open Swensen.Unquote
 
 module CsvHandlerTests = 
-    open Microsoft.Owin
+    open Microsoft.AspNet.Http
     open System.Diagnostics
 
     type ImportCsvTests() = 
@@ -13,7 +13,7 @@ module CsvHandlerTests =
             let csvReq = 
                 new CsvIndexingRequest(IndexName = index.IndexName, HasHeaderRecord = true, Path = Constants.rootFolder +/ "test.csv") 
                 |> Some
-            let reqCntxt = RequestContext.Create(new OwinContext(), defString, index.IndexName, defString, defString)
+            let reqCntxt = RequestContext.Create(null, defString, index.IndexName, defString, defString)
             let csvHandler = new CsvHandler(queueService, indexService, jobService)
             test <@ succeeded <| indexService.AddIndex(index) @>
             csvHandler.Process(reqCntxt, csvReq)

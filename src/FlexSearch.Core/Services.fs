@@ -187,7 +187,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                                               match threadSafeWriter.ReadFile<Analyzer>(x) with
                                               | Ok(dto) -> 
                                                   updateAnalyzer (dto)
-                                                  |> logErrorChoice
+                                                  |> Logger.Log
                                                   |> ignore
                                               | Fail(error) -> Logger.Log(error))
     

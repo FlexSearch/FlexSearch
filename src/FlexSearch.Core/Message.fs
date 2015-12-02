@@ -22,6 +22,7 @@ open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Reflection
+open Microsoft.Extensions.Logging
 
 /// Extrenal representation of messages which will be send to
 /// the end user. 
@@ -407,85 +408,65 @@ type IndexMessage =
 // ----------------------------------------------------------------------------
 // Logging Section
 // ----------------------------------------------------------------------------
-[<AutoOpen; RequireQualifiedAccess>]
-module Log = 
-    open System.Diagnostics
-    
-    let private logger = FlexSearch.Logging.LogService.GetLogger()
-    let logNothing(a, b, c) = ()
-
-    let logMethod (keyword, level) =
-        match (keyword, level) with
-        | MessageKeyword.Startup, MessageLevel.Critical -> logger.StartupCritical
-        | MessageKeyword.Startup, MessageLevel.Error -> logger.StartupError
-        | MessageKeyword.Startup, MessageLevel.Warning -> logger.StartupWarning
-        | MessageKeyword.Startup, MessageLevel.Info -> logger.StartupInfo
-        | MessageKeyword.Startup, MessageLevel.Verbose -> logger.StartupVerbose
-        | MessageKeyword.Node, MessageLevel.Critical -> logger.NodeCritical
-        | MessageKeyword.Node, MessageLevel.Error -> logger.NodeError
-        | MessageKeyword.Node, MessageLevel.Warning -> logger.NodeWarning
-        | MessageKeyword.Node, MessageLevel.Info -> logger.NodeInfo
-        | MessageKeyword.Node, MessageLevel.Verbose -> logger.NodeVerbose
-        | MessageKeyword.Index, MessageLevel.Critical -> logger.IndexCritical
-        | MessageKeyword.Index, MessageLevel.Error -> logger.IndexError
-        | MessageKeyword.Index, MessageLevel.Warning -> logger.IndexWarning
-        | MessageKeyword.Index, MessageLevel.Info -> logger.IndexInfo
-        | MessageKeyword.Index, MessageLevel.Verbose -> logger.IndexVerbose
-        | MessageKeyword.Search, MessageLevel.Critical -> logger.SearchCritical
-        | MessageKeyword.Search, MessageLevel.Error -> logger.SearchError
-        | MessageKeyword.Search, MessageLevel.Warning -> logger.SearchWarning
-        | MessageKeyword.Search, MessageLevel.Info -> logger.SearchInfo
-        | MessageKeyword.Search, MessageLevel.Verbose -> logger.SearchVerbose
-        | MessageKeyword.Document, MessageLevel.Critical -> logger.DocumentCritical
-        | MessageKeyword.Document, MessageLevel.Error -> logger.DocumentError
-        | MessageKeyword.Document, MessageLevel.Warning -> logger.DocumentWarning
-        | MessageKeyword.Document, MessageLevel.Info -> logger.DocumentInfo
-        | MessageKeyword.Document, MessageLevel.Verbose -> logger.DocumentVerbose
-        | MessageKeyword.Default, MessageLevel.Critical -> logger.DefaultCritical
-        | MessageKeyword.Default, MessageLevel.Error -> logger.DefaultError
-        | MessageKeyword.Default, MessageLevel.Warning -> logger.DefaultWarning
-        | MessageKeyword.Default, MessageLevel.Info -> logger.DefaultInfo
-        | MessageKeyword.Default, MessageLevel.Verbose -> logger.DefaultVerbose
-        | MessageKeyword.Plugin, MessageLevel.Critical -> logger.PluginCritical
-        | MessageKeyword.Plugin, MessageLevel.Error -> logger.PluginError
-        | MessageKeyword.Plugin, MessageLevel.Warning -> logger.PluginWarning
-        | MessageKeyword.Plugin, MessageLevel.Info -> logger.PluginInfo
-        | MessageKeyword.Plugin, MessageLevel.Verbose -> logger.PluginVerbose
-        | _, MessageLevel.Nothing -> logNothing 
-        | _, _ -> logNothing
-         
-    let log (message: IMessage) =
-        match message.LogProperty() with
-        | _, MessageLevel.Nothing -> ()
-        | keyword, level ->
-            let om = message.OperationMessage()
-            let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
-            logMethod(keyword, level)(om.ErrorCode, om.Message, properties)
-
-    let logErrorChoice (message : Result<_>) = 
-        match message with
-        | Fail(error) -> log (error)
-        | _ -> ()
-        message
+//[<AutoOpen; RequireQualifiedAccess>]
+//module Log = 
+//    open System.Diagnostics
+//    
+//    let private logger = FlexSearch.Logging.LogService.GetLogger()
+//    let logNothing(a, b, c) = ()
+//
+//    let logMethod (keyword, level) =
+//        match (keyword, level) with
+//        | MessageKeyword.Startup, MessageLevel.Critical -> logger.StartupCritical
+//        | MessageKeyword.Startup, MessageLevel.Error -> logger.StartupError
+//        | MessageKeyword.Startup, MessageLevel.Warning -> logger.StartupWarning
+//        | MessageKeyword.Startup, MessageLevel.Info -> logger.StartupInfo
+//        | MessageKeyword.Startup, MessageLevel.Verbose -> logger.StartupVerbose
+//        | MessageKeyword.Node, MessageLevel.Critical -> logger.NodeCritical
+//        | MessageKeyword.Node, MessageLevel.Error -> logger.NodeError
+//        | MessageKeyword.Node, MessageLevel.Warning -> logger.NodeWarning
+//        | MessageKeyword.Node, MessageLevel.Info -> logger.NodeInfo
+//        | MessageKeyword.Node, MessageLevel.Verbose -> logger.NodeVerbose
+//        | MessageKeyword.Index, MessageLevel.Critical -> logger.IndexCritical
+//        | MessageKeyword.Index, MessageLevel.Error -> logger.IndexError
+//        | MessageKeyword.Index, MessageLevel.Warning -> logger.IndexWarning
+//        | MessageKeyword.Index, MessageLevel.Info -> logger.IndexInfo
+//        | MessageKeyword.Index, MessageLevel.Verbose -> logger.IndexVerbose
+//        | MessageKeyword.Search, MessageLevel.Critical -> logger.SearchCritical
+//        | MessageKeyword.Search, MessageLevel.Error -> logger.SearchError
+//        | MessageKeyword.Search, MessageLevel.Warning -> logger.SearchWarning
+//        | MessageKeyword.Search, MessageLevel.Info -> logger.SearchInfo
+//        | MessageKeyword.Search, MessageLevel.Verbose -> logger.SearchVerbose
+//        | MessageKeyword.Document, MessageLevel.Critical -> logger.DocumentCritical
+//        | MessageKeyword.Document, MessageLevel.Error -> logger.DocumentError
+//        | MessageKeyword.Document, MessageLevel.Warning -> logger.DocumentWarning
+//        | MessageKeyword.Document, MessageLevel.Info -> logger.DocumentInfo
+//        | MessageKeyword.Document, MessageLevel.Verbose -> logger.DocumentVerbose
+//        | MessageKeyword.Default, MessageLevel.Critical -> logger.DefaultCritical
+//        | MessageKeyword.Default, MessageLevel.Error -> logger.DefaultError
+//        | MessageKeyword.Default, MessageLevel.Warning -> logger.DefaultWarning
+//        | MessageKeyword.Default, MessageLevel.Info -> logger.DefaultInfo
+//        | MessageKeyword.Default, MessageLevel.Verbose -> logger.DefaultVerbose
+//        | MessageKeyword.Plugin, MessageLevel.Critical -> logger.PluginCritical
+//        | MessageKeyword.Plugin, MessageLevel.Error -> logger.PluginError
+//        | MessageKeyword.Plugin, MessageLevel.Warning -> logger.PluginWarning
+//        | MessageKeyword.Plugin, MessageLevel.Info -> logger.PluginInfo
+//        | MessageKeyword.Plugin, MessageLevel.Verbose -> logger.PluginVerbose
+//        | _, MessageLevel.Nothing -> logNothing 
+//        | _, _ -> logNothing
+//         
+//    let log (message: IMessage) =
+//        match message.LogProperty() with
+//        | _, MessageLevel.Nothing -> ()
+//        | keyword, level ->
+//            let om = message.OperationMessage()
+//            let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
+//            logMethod(keyword, level)(om.ErrorCode, om.Message, properties)
+//
+//    let logErrorChoice (message : Result<_>) = 
+//        match message with
+//        | Fail(error) -> log (error)
+//        | _ -> ()
+//        message
        
-type Logger() =
-    static member Log(msg : IMessage) = log(msg)
 
-    static member Log(message : Result<_>) = logErrorChoice(message)
-    
-    static member Log(msg: string, keyword : MessageKeyword, level: MessageLevel) =
-        logMethod(keyword, level)(String.Empty, msg, String.Empty)
-    
-    /// This is an general exception logging method. This should only be used in limited cases
-    /// where there is no specific message available to log the error.
-    static member Log(ex: Exception, keyword : MessageKeyword, level: MessageLevel) =
-        logMethod(keyword, level)("Generic", sprintf "%s \n%s" ex.Message (exceptionPrinter ex), String.Empty)
-
-    /// This is an general exception logging method. This should only be used in limited cases
-    /// where there is no specific message available to log the error.
-    static member Log(msg: string, ex: Exception, keyword : MessageKeyword, level: MessageLevel) =
-        logMethod(keyword, level)("Generic", sprintf "%s \n%s" msg (exceptionPrinter ex), String.Empty)
-
-    static member LogR(msg : IMessage) = Logger.Log msg; msg
-
-    static member LogR(msg : 'a :> IMessage) = Logger.LogR (msg :> IMessage)

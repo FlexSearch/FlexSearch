@@ -130,7 +130,7 @@ module IndexManager =
                 try 
                     t
                     |> loadIndex dto
-                    |> logErrorChoice
+                    |> Logger.Log
                     |> ignore
                 with e -> 
                     Logger.Log

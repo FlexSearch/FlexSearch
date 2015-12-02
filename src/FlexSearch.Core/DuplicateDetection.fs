@@ -116,7 +116,7 @@ module DuplicateDetection =
         let sessionPropertiesJson = formatter.SerializeToString(session)
         assert (sessionPropertiesJson <> "{}")
         doc.Fields.Add(sessionProperties, sessionPropertiesJson)
-        documentService.AddOrUpdateDocument(doc) |> Log.logErrorChoice
+        documentService.AddOrUpdateDocument(doc) |> Logger.Log
     
     let writeDuplicates (sourceRecord : SourceRecord) (documentService : IDocumentService) = 
         let sourceDoc = new Document(schema.IndexName, getId())
@@ -130,7 +130,7 @@ module DuplicateDetection =
         sourceDoc.Fields.Add(recordType, sourceRecordType)
         sourceDoc.Fields.Add(targetRecords, formatter.SerializeToString(sourceRecord.TargetRecords))
         documentService.AddDocument(sourceDoc)
-        |> Log.logErrorChoice
+        |> Logger.Log
         |> ignore
 
 type DuplicateDetectionRequest() = 

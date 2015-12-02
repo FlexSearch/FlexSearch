@@ -10,7 +10,6 @@ open System.Collections.Generic
 open System.Linq
 open System.IO
 open System.Reflection
-open Microsoft.Owin.Testing
 open Swensen.Unquote
 
 

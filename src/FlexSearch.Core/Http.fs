@@ -25,8 +25,10 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.IO
 open System.Net
+open System.Reflection
 open System.Threading
 open System.Threading.Tasks
+open System.Runtime.Versioning
 open Microsoft.AspNet.Hosting
 open Microsoft.AspNet.Builder
 open Microsoft.Extensions.Configuration
@@ -34,6 +36,8 @@ open Microsoft.AspNet.StaticFiles
 open Microsoft.AspNet.Http
 open Microsoft.AspNet.Cors
 open Microsoft.Extensions.Primitives
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.PlatformAbstractions
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -256,7 +260,7 @@ type IServer =
 
 /// Owin katana server
 [<Sealed>]
-type OwinServer(httpModule : Dictionary<string, IHttpHandler>, serverSettings: Settings.T) = 
+type WebServer(httpModule : Dictionary<string, IHttpHandler>, serverSettings: Settings.T) = 
     let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
     let _httpModule = httpModule
     let accessDenied = """
@@ -304,7 +308,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         //fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder) // TODO
         fileServerOptions.RequestPath <- new PathString(@"/portal")
         
-        app.UseStaticFiles(Constants.WebFolder) 
+        app.UseStaticFiles("/web") 
            .UseDefaultFiles()
            .UseDirectoryBrowser()
            .UseFileServer(fileServerOptions) 
@@ -324,6 +328,18 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                 try 
                     let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
                     let engine = builder.UseServer("Microsoft.AspNet.Server.Kestrel")
+                                        .UseServices(fun services -> 
+                                            services.AddCors() |> ignore
+
+                                            let conf = 
+                                                let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
+                                                if isNull c then "Debug" else c
+                                            let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
+                                                                                        new FrameworkName(".NETFramework,Version=v4.5"),
+                                                                                        conf,
+                                                                                        Assembly.Load("Microsoft.AspNet.Server.Kestrel"))
+                                                                                        //Assembly.GetExecutingAssembly())
+                                            services.AddInstance<IApplicationEnvironment>(appEnv) |> ignore)
                                         .UseStartup(this.Configuration)
                                         .Build()
                     server <- engine.Start()

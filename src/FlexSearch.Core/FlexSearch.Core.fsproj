@@ -87,6 +87,7 @@
     <Compile Include="Resources.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="Message.fs" />
+    <Compile Include="Logging.fs" />
     <Compile Include="Infrastructure.fs" />
     <Compile Include="Pools.fs" />
     <Compile Include="Settings.fs" />
@@ -94,6 +95,7 @@
     <Compile Include="Queues.fs" />
     <Compile Include="Domain.fsi" />
     <Compile Include="Domain.fs" />
+    <Compile Include="DnxHelper.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
@@ -406,6 +408,18 @@
       <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.1.0.0-rc1-final\lib\net451\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Console">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Console.1.0.0-rc1-final\lib\net451\Microsoft.Extensions.Logging.Console.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.EventLog">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.EventLog.1.0.0-rc1-final\lib\net451\Microsoft.Extensions.Logging.EventLog.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.TraceSource">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.TraceSource.1.0.0-rc1-final\lib\net451\Microsoft.Extensions.Logging.TraceSource.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Extensions.OptionsModel">
       <HintPath>..\packages\Microsoft.Extensions.OptionsModel.1.0.0-rc1-final\lib\net451\Microsoft.Extensions.OptionsModel.dll</HintPath>
       <Private>True</Private>
@@ -481,7 +495,7 @@
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Numerics.Vectors">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Metadata">
       <HintPath>..\packages\System.Reflection.Metadata.1.0.21\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>

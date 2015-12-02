@@ -13,7 +13,6 @@ open System.Net
 open System.Net.Http
 open System.Text
 open System.Threading
-open Microsoft.Owin.Testing
 open Swensen.Unquote
 
 [<AutoOpenAttribute>]
@@ -37,7 +36,7 @@ module Helpers =
           Uri : string
           mutable RequestBody : string
           mutable Response : HttpResponseMessage
-          Server : TestServer }
+          Server : WebServer }
     
     /// <summary>
     /// Build a new http test request
@@ -45,7 +44,7 @@ module Helpers =
     /// <param name="httpMethod"></param>
     /// <param name="uri"></param>
     /// <param name="server"></param>
-    let request (httpMethod : string) (uri : string) (server : TestServer) = 
+    let request (httpMethod : string) (uri : string) (server : WebServer) = 
         let request = 
             { RequestType = httpMethod
               Uri = uri
