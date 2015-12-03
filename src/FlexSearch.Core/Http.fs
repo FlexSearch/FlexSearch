@@ -156,6 +156,9 @@ module Http =
         if input.EndsWith("/") then input.Substring(0, (input.Length - 1))
         else input
     
+    let inline getUri (req : HttpRequest) =
+        new Uri(sprintf "%s://%s%s" req.Scheme req.Host.Value <| req.Path.ToUriComponent())
+
     /// A helper interface to dynamically find all the HttpHandlerBase classes
     type IHttpHandler = 
         abstract Execute : RequestContext -> unit
@@ -238,7 +241,7 @@ module Http =
     
     type HttpContext with
         member this.RequestContext = 
-            let uri = new Uri(this.Request.Path.ToUriComponent())
+            let uri = getUri this.Request
             let seg n = uri.Segments.[n]
             let segWithoutSlash n = seg n |> removeTrailingSlash
 
@@ -261,7 +264,7 @@ type IServer =
 /// Owin katana server
 [<Sealed>]
 type WebServer(httpModule : Dictionary<string, IHttpHandler>, serverSettings: Settings.T) = 
-    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)
+    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
     let _httpModule = httpModule
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
@@ -279,7 +282,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                 | (true, x) -> Some x
                 | _ -> None
             try 
-                let uri = new Uri(ctxt.Request.Path.ToUriComponent())
+                let uri = getUri ctxt.Request
                 let httpHandler = 
                     match uri.Segments.Length with
                     | 1 -> findHandler (ctxt.Request.Method + "/") // Server root
@@ -291,7 +294,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                 match httpHandler with
                 | Some(handler) -> handler.Execute(ctxt.RequestContext)
                 | None -> ctxt |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
-            with __ -> ()
+            with e -> Logger.Log("Couldn't parse the given URL: " + ctxt.Request.Path.Value, e, MessageKeyword.Default, MessageLevel.Warning)
         }
     
     /// Default OWIN handler to transform C# function to F#
@@ -326,35 +329,49 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         member this.Start() = 
             let startServer() = 
                 try 
+                    let setupServices (services : IServiceCollection) = 
+                        services.AddCors() |> ignore
+
+                        let conf = let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
+                                   if isNull c then "Debug" else c
+
+                        let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
+                                                                    new FrameworkName(".NETFramework,Version=v4.5"),
+                                                                    conf,
+                                                                    Assembly.Load("Microsoft.AspNet.Server.Kestrel"))
+                        services.AddInstance<IApplicationEnvironment>(appEnv)
+
+                    // Set the port number
+                    serverSettings.ConfigurationSource.Item "HTTP_PLATFORM_PORT" <- port
+
                     let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
                     let engine = builder.UseServer("Microsoft.AspNet.Server.Kestrel")
-                                        .UseServices(fun services -> 
-                                            services.AddCors() |> ignore
-
-                                            let conf = 
-                                                let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
-                                                if isNull c then "Debug" else c
-                                            let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
-                                                                                        new FrameworkName(".NETFramework,Version=v4.5"),
-                                                                                        conf,
-                                                                                        Assembly.Load("Microsoft.AspNet.Server.Kestrel"))
-                                                                                        //Assembly.GetExecutingAssembly())
-                                            services.AddInstance<IApplicationEnvironment>(appEnv) |> ignore)
+                                        .UseServices(fun s -> setupServices s |> ignore)
                                         .UseStartup(this.Configuration)
                                         .Build()
+                    
                     server <- engine.Start()
-
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
                     //let startOptions = new StartOptions(sprintf "http://+:%i/" port)
                     //server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
-                with e -> 
-                    if e.InnerException <> null then 
-                        let innerException = e.InnerException :?> System.Net.HttpListenerException
-                        if innerException.ErrorCode = 5 then 
-                            // Access denied error
-                            Logger.Log(accessDenied, e, MessageKeyword.Node, MessageLevel.Critical)
+                with 
+                    | :? ReflectionTypeLoadException as e -> 
+                        let loaderExceptions = e.LoaderExceptions 
+                                               |> Seq.map exceptionPrinter
+                                               |> fun exns -> String.Join(Environment.NewLine, exns)
+                        let message = sprintf "Main exception:\n%s\n\nType Loader Exceptions:\n%s" 
+                                      <| exceptionPrinter e
+                                      <| loaderExceptions
+                        Logger.Log(message, MessageKeyword.Startup, MessageLevel.Critical)
+                    | e when e.InnerException |> (isNull >> not) ->
+                        if e.InnerException :? HttpListenerException then
+                            let innerException = e.InnerException :?> HttpListenerException
+                            if innerException.ErrorCode = 5 then 
+                                // Access denied error
+                                Logger.Log(accessDenied, e, MessageKeyword.Node, MessageLevel.Critical)
+                            else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
                         else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
-                    else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
+                    | e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
             try 
                 thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
             with e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
