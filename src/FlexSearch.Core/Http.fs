@@ -38,6 +38,7 @@ open Microsoft.AspNet.Cors
 open Microsoft.Extensions.Primitives
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.PlatformAbstractions
+open Microsoft.AspNet.FileProviders
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -259,10 +260,6 @@ type IServer =
     abstract Start : unit -> unit
     abstract Stop : unit -> unit
 
-//type ExtendedContentTypeProvider() as this = 
-//    inherit Microsoft.Owin.StaticFiles.ContentTypes.FileExtensionContentTypeProvider()
-//    do this.Mappings.Add(".json", "application/json")
-
 /// Owin katana server
 [<Sealed>]
 type WebServer(httpModule : Dictionary<string, IHttpHandler>, serverSettings: Settings.T) = 
@@ -307,15 +304,13 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 
     member __.Configuration(app : IApplicationBuilder) = 
         let fileServerOptions = new FileServerOptions()
-        fileServerOptions.EnableDirectoryBrowsing <- true
         fileServerOptions.EnableDefaultFiles <- true
-        //fileServerOptions.StaticFileOptions.ContentTypeProvider <- new ExtendedContentTypeProvider() // TODO
-        //fileServerOptions.FileSystem <- new PhysicalFileSystem(Constants.WebFolder) // TODO
+        fileServerOptions.DefaultFilesOptions.DefaultFileNames.Add("index.html")
+        fileServerOptions.FileProvider <- new PhysicalFileProvider(Constants.WebFolder)
+        fileServerOptions.StaticFileOptions.ServeUnknownFileTypes <- true
         fileServerOptions.RequestPath <- new PathString(@"/portal")
         
         app.UseStaticFiles("/web") 
-           .UseDefaultFiles()
-           .UseDirectoryBrowser()
            .UseFileServer(fileServerOptions) 
            .UseCors(fun builder -> builder.AllowAnyOrigin()
                                           .AllowAnyHeader()
