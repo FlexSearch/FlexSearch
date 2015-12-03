@@ -127,7 +127,9 @@ module Http =
                 // *Try* flushing the stream as opposed to always doing it because
                 // the stream might have already been closed by the serializer.
                 try ctxt.Response.Body.Flush() with _ -> ()
-            | _ -> ctxt.Response.StatusCode <- int HttpStatusCode.InternalServerError
+            | _ -> 
+                Logger.Log("Couldn't find a formatter for format: " + format, MessageKeyword.Default, MessageLevel.Error)
+                ctxt.Response.StatusCode <- int HttpStatusCode.InternalServerError
     
     /// Write HTTP response
     let getRequestBody<'T> (request : HttpRequest) = 
@@ -342,6 +344,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                         services.AddInstance<IApplicationEnvironment>(appEnv)
 
                     // Set the port number
+                    // This is a hacky way of doing it. This is the key that AspNet.Hosting module is using to set the
+                    // port number. If any programmatic way of doing it comes up in the future (apart from using the
+                    // --server.urls parameter in dnx.exe), please use it
                     serverSettings.ConfigurationSource.Item "HTTP_PLATFORM_PORT" <- port
 
                     let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
@@ -352,8 +357,6 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                     
                     server <- engine.Start()
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
-                    //let startOptions = new StartOptions(sprintf "http://+:%i/" port)
-                    //server <- Microsoft.Owin.Hosting.WebApp.Start(startOptions, this.Configuration)
                 with 
                     | :? ReflectionTypeLoadException as e -> 
                         let loaderExceptions = e.LoaderExceptions 

@@ -422,7 +422,7 @@ type NewtonsoftJsonFormatter() =
         
         member __.SupportedHeaders = 
             [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8"; 
-               "application/javascript" |]
+               "application/javascript"; "text/html" |]
 
 [<Sealed>]
 type ProtoBufferFormatter() = 
