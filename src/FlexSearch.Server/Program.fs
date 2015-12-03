@@ -98,7 +98,7 @@ module Installers =
     /// Gets executed after the service is installed by TopShelf
     let afterInstall (settings : Settings.T) = 
         new Action(fun _ -> 
-        installManifest()
+        //installManifest()
         reservePort (settings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)))
 
 let mutable topShelfCommand = Unchecked.defaultof<string>

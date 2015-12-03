@@ -274,9 +274,8 @@ Copyright (C) 2010 - {year} - FlexSearch
     let initializeListeners() = 
         if isInteractive then 
             // Only use console listener in user interactive mode
-            Logging._loggerFactory.AddTraceSource(_sourceSwitch, new ConsoleTraceListener(false))
-            |> ignore
-//            consoleSink.EnableEvents(LogService.GetLogger(), EventLevel.LogAlways)
+            Logging._loggerFactory.AddTraceSource(_sourceSwitch, new ConsoleTraceListener(false)) |> ignore
+
         // Write all start up events to a specific file. This is helpful in case ETW is not
         // setup properly. The slight overhead of writing to two sinks is negligible.
         Logging._loggerFactory.AddTraceSource(_sourceSwitch, 
