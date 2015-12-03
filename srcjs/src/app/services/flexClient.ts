@@ -174,7 +174,7 @@ module flexportal {
 			return this.$http.post(this.FlexSearchUrl + "/indices/" + indexName + "/searchprofiletest", {
 				SearchQuery: {
 					QueryString: searchQueryString,
-					Columns: columnsToRetrieve || ["*"],
+					Columns: columnsToRetrieve.join(",") || "*",
 					Count: count,
 					Skip: skip
 				},
@@ -187,7 +187,7 @@ module flexportal {
 			orderBy?, orderByDirection?) {
 			return this.$http.get(this.FlexSearchUrl + "/indices/" + indexName + "/search", { params: {
 				q: searchQueryString,
-				c: columnsToRetrieve || ["*"],
+				c: columnsToRetrieve.join(",") || "*",
 				count: count,
 				skip: skip,
 				orderBy: orderBy,
