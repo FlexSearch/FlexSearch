@@ -519,13 +519,6 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FlexSearch.Logging\FlexSearch.Logging.csproj">
-      <Name>FlexSearch.Logging</Name>
-      <Project>{b43636f8-d809-4b73-a1da-c5f17df05992}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>

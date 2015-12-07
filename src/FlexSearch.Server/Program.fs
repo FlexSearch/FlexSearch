@@ -70,22 +70,6 @@ module Installers =
         use p = Process.Start(psi)
         p.WaitForExit()
     
-    let private manifestManFileName = "FlexSearch.Logging.FlexSearch.etwManifest.man"
-    let private manifestFileName = "FlexSearch.Logging.FlexSearch.etwManifest.dll"
-    
-    let installManifest() = 
-        printfn "Installing the ETW manifest..."
-        exec "wevtutil.exe" 
-        <| "im " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString) + " /rf:" 
-           + (Constants.rootFolder +/ manifestFileName |> toQuotedString) + " /mf:" 
-           + (Constants.rootFolder +/ manifestFileName |> toQuotedString)
-        <| true
-    
-    let uninstallManifest() = 
-        printfn "Un-installing the ETW manifest..."
-        exec "wevtutil.exe" <| "um " + (Constants.rootFolder +/ manifestManFileName |> toQuotedString)
-                            <| true
-    
     let reservePort (port : int) = 
         printfn "Reserving the port %i" port
         exec "netsh.exe" <| sprintf "http add urlacl url=http://+:%i/ user=everyone listen=yes" port
@@ -98,7 +82,6 @@ module Installers =
     /// Gets executed after the service is installed by TopShelf
     let afterInstall (settings : Settings.T) = 
         new Action(fun _ -> 
-        //installManifest()
         reservePort (settings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800)))
 
 let mutable topShelfCommand = Unchecked.defaultof<string>
@@ -118,7 +101,6 @@ let topShelfConfiguration (settings : Settings.T, conf : HostConfigurators.HostC
         factory.WhenStopped(fun tc -> tc.Stop()) |> ignore)
     |> ignore
     conf.AfterInstall(Installers.afterInstall (settings)) |> ignore
-    conf.AfterUninstall(new Action(fun _ -> Installers.uninstallManifest())) |> ignore
 
 let runService() = 
     if loadTopShelf then 
@@ -133,8 +115,6 @@ type CLIArguments =
     | [<AltCommandLine("-u")>] UnInstall
     | Start
     | Stop
-    | [<AltCommandLine("-im")>] InstallManifest
-    | [<AltCommandLine("-um")>] UnInstallManifest
     | SystemInfo
     interface IArgParserTemplate with
         member this.Usage = 
@@ -143,8 +123,6 @@ type CLIArguments =
             | UnInstall -> "Un-install the Windows Service"
             | Start -> "Starts the service if it is not already running"
             | Stop -> "Stops the service if it is running"
-            | InstallManifest -> "Install the ETW manifest"
-            | UnInstallManifest -> "Un-install the ETW manifest"
             | SystemInfo -> "Print basic information about the running system"
 
 /// Standard text to prefix before the help statement
@@ -183,14 +161,6 @@ let main argv =
             | UnInstall -> topShelfCommand <- "uninstall"
             | Start -> topShelfCommand <- "start"
             | Stop -> topShelfCommand <- "stop"
-            | InstallManifest -> 
-                loadTopShelf <- false
-                if Helpers.isAdministrator() then Installers.installManifest()
-                else printfn "The ETW Manifest can only be installed as an administrator"
-            | UnInstallManifest -> 
-                loadTopShelf <- false
-                if Helpers.isAdministrator() then Installers.uninstallManifest()
-                else printfn "The ETW Manifest can only be un-installed as an administrator"
             | SystemInfo -> 
                 loadTopShelf <- false
                 printf "%s" (Management.printSystemInfo())

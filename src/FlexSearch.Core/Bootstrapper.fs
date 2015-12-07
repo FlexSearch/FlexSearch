@@ -26,7 +26,6 @@ open System.IO
 open System.Linq
 open System.Threading
 open System.Threading.Tasks
-open FlexSearch.Logging
 
 // ----------------------------------------------------------------------------
 // Contains container and other factory implementation
