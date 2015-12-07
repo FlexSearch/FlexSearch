@@ -46,7 +46,7 @@ module Logging =
     let _loggerFactory = 
         let f = new LoggerFactory()
         f.MinimumLevel <- LogLevel.Debug
-        f.AddEventLog(new EventLogSettings(LogName = "FlexSearch", SourceName = "FlexSearch Server"))
+        f.AddEventLog(new EventLogSettings(LogName = "FlexSearch Server Events", SourceName = "FlexSearch Core"))
 
     let _logger = _loggerFactory.CreateLogger("FSLog")
     
