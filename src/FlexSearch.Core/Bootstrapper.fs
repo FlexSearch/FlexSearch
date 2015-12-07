@@ -229,11 +229,6 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
     
     member __.Stop() = shutdown()
 
-//type EventTextFormatter() = 
-//    interface Formatters.IEventTextFormatter with
-//        member __.WriteEvent(eventEntry, writer) = 
-//            writer.WriteLine(sprintf "[%s] %s" (eventEntry.Schema.Level.ToString()) eventEntry.FormattedMessage)
-
 module StartUp = 
     open Logging
     open System.Reflection
@@ -261,27 +256,22 @@ Copyright (C) 2010 - {year} - FlexSearch
     /// Checks if the application is in interactive user mode?
     let isInteractive = Environment.UserInteractive
     
-//    let private consoleSink = ConsoleLog.CreateListener(new EventTextFormatter())
-//    
-//    let private rollingFileSink = 
-//        let fileName = Constants.LogsFolder +/ "startup-log.txt"
-//        if File.Exists(fileName) then File.Delete(fileName)
-//        File.AppendAllText(fileName, headerText)
-//        FlatFileLog.CreateListener(fileName, new EventTextFormatter())
-    
     /// Initialize the listeners to be used across the application
     let initializeListeners() = 
         if isInteractive then 
             // Only use console listener in user interactive mode
             Logging._loggerFactory.AddTraceSource(_sourceSwitch, new ConsoleTraceListener(false)) |> ignore
-
+            
         // Write all start up events to a specific file. This is helpful in case ETW is not
         // setup properly. The slight overhead of writing to two sinks is negligible.
-        Logging._loggerFactory.AddTraceSource(_sourceSwitch, 
-            new TextWriterTraceListener(Constants.LogsFolder +/ "startup-log.txt", "FlexSearch"))
-        |> ignore
-//        rollingFileSink.EnableEvents
-//            (LogService.GetLogger(), EventLevel.LogAlways, LogService.Keywords.Startup ||| LogService.Keywords.Node)
+        let twl = new TextWriterTraceListener(Constants.LogsFolder +/ "startup-log.txt", "FlexSearch")
+        twl.Filter <- { new TraceFilter() with
+                member this.ShouldTrace(cache, source, eventType, id, format, args, data1, data) =
+                    // Startup events
+                    (id >= 7000 && id < 8000 )
+                    // Node events
+                    || (id >= 1000 && id < 2000) }
+        Logging._loggerFactory.AddTraceSource(_sourceSwitch, twl) |> ignore
     
     /// To improve CPU utilization, increase the number of threads that the .NET thread pool expands by when
     /// a burst of requests come in. We could do this by editing machine.config/system.web/processModel/minWorkerThreads,
