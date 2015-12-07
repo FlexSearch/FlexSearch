@@ -27,49 +27,8 @@ module Helpers =
     open System.Net
     open System.Text
     open System.Threading
-    
-    // ----------------------------------------------------------------------------
-    // Test request pattern
-    // ----------------------------------------------------------------------------
-    type RequestBuilder = 
-        { RequestType : string
-          Uri : string
-          mutable RequestBody : string
-          mutable Response : HttpResponseMessage
-          Server : WebServer }
-    
-    /// <summary>
-    /// Build a new http test request
-    /// </summary>
-    /// <param name="httpMethod"></param>
-    /// <param name="uri"></param>
-    /// <param name="server"></param>
-    let request (httpMethod : string) (uri : string) (server : WebServer) = 
-        let request = 
-            { RequestType = httpMethod
-              Uri = uri
-              RequestBody = ""
-              Response = null
-              Server = server }
-        request
-    
-    let withBody (body : string) (requestBuilder : RequestBuilder) = 
-        requestBuilder.RequestBody <- body
-        requestBuilder
-    
-    let execute (requestBuilder : RequestBuilder) = 
-        match requestBuilder.RequestType with
-        | "GET" -> requestBuilder.Response <- requestBuilder.Server.HttpClient.GetAsync(requestBuilder.Uri).Result
-        | "POST" -> 
-            let content = new StringContent(requestBuilder.RequestBody, Encoding.UTF8, "application/json")
-            requestBuilder.Response <- requestBuilder.Server.HttpClient.PostAsync(requestBuilder.Uri, content).Result
-        | "PUT" -> 
-            let content = new StringContent(requestBuilder.RequestBody, Encoding.UTF8, "application/json")
-            requestBuilder.Response <- requestBuilder.Server.HttpClient.PutAsync(requestBuilder.Uri, content).Result
-        | "DELETE" -> requestBuilder.Response <- requestBuilder.Server.HttpClient.DeleteAsync(requestBuilder.Uri).Result
-        | _ -> failwithf "Not supported"
-        requestBuilder
-    
+    open Microsoft.AspNet.TestHost
+
     let newIndex indexName = new Index(IndexName = indexName)
     let addField (index : Index) (fieldName : string) = 
         index.Fields <- index.Fields |> Array.append [| new Field(fieldName) |]
@@ -87,7 +46,6 @@ module Helpers =
     
     let isSuccessful response = response |> hasHttpStatusCode HttpStatusCode.OK
     let isCreated response = response |> hasHttpStatusCode HttpStatusCode.Created
-    let responseStatusEquals status result = result.Response.StatusCode =? status
     let data (response : Response<_> * HttpStatusCode) = (response |> fst).Data
     
     let isSuccessChoice choice = 

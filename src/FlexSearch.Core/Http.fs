@@ -301,8 +301,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
+    let mutable builder = Unchecked.defaultof<WebHostBuilder>
 
-    member __.Configuration(app : IApplicationBuilder) = 
+    let configuration (app : IApplicationBuilder) = 
         let fileServerOptions = new FileServerOptions()
         fileServerOptions.EnableDefaultFiles <- true
         fileServerOptions.DefaultFilesOptions.DefaultFileNames.Add("index.html")
@@ -321,36 +322,39 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
            .Use(handler)
         |> ignore
 
+    let _webHostBuilder =
+        let setupServices (services : IServiceCollection) = 
+            services.AddCors() |> ignore
+
+            let conf = let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
+                       if isNull c then "Debug" else c
+
+            let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
+                                                        new FrameworkName(".NETFramework,Version=v4.5"),
+                                                        conf,
+                                                        Assembly.Load("Microsoft.AspNet.Server.Kestrel"))
+            services.AddInstance<IApplicationEnvironment>(appEnv)
+
+        // Set the port number
+        // This is a hacky way of doing it. This is the key that AspNet.Hosting module is using to set the
+        // port number. If any programmatic way of doing it comes up in the future (apart from using the
+        // --server.urls parameter in dnx.exe), please use it
+        serverSettings.ConfigurationSource.Item "HTTP_PLATFORM_PORT" <- port
+
+        (new WebHostBuilder(serverSettings.ConfigurationSource))
+            .UseServer("Microsoft.AspNet.Server.Kestrel")
+            .UseServices(fun s -> setupServices s |> ignore)
+            .UseStartup(configuration)
+
+    // This member is exposed to insta
+    member __.GetWebHostBuilder() = _webHostBuilder
+
     interface IServer with
         
         member this.Start() = 
             let startServer() = 
                 try 
-                    let setupServices (services : IServiceCollection) = 
-                        services.AddCors() |> ignore
-
-                        let conf = let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
-                                   if isNull c then "Debug" else c
-
-                        let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
-                                                                    new FrameworkName(".NETFramework,Version=v4.5"),
-                                                                    conf,
-                                                                    Assembly.Load("Microsoft.AspNet.Server.Kestrel"))
-                        services.AddInstance<IApplicationEnvironment>(appEnv)
-
-                    // Set the port number
-                    // This is a hacky way of doing it. This is the key that AspNet.Hosting module is using to set the
-                    // port number. If any programmatic way of doing it comes up in the future (apart from using the
-                    // --server.urls parameter in dnx.exe), please use it
-                    serverSettings.ConfigurationSource.Item "HTTP_PLATFORM_PORT" <- port
-
-                    let builder = new WebHostBuilder(serverSettings.ConfigurationSource)
-                    let engine = builder.UseServer("Microsoft.AspNet.Server.Kestrel")
-                                        .UseServices(fun s -> setupServices s |> ignore)
-                                        .UseStartup(this.Configuration)
-                                        .Build()
-                    
-                    server <- engine.Start()
+                    server <- _webHostBuilder.Build().Start()
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
                 with 
                     | :? ReflectionTypeLoadException as e -> 

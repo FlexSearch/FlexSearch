@@ -11,6 +11,7 @@ open System.Linq
 open System.IO
 open System.Reflection
 open Swensen.Unquote
+open Microsoft.AspNet.TestHost
 
 
 /// <summary>
@@ -86,11 +87,9 @@ module DataHelpers =
     let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
         
     // Create a single instance of the OWIN server that will be shared across all tests
-    let owinServer() = 
-        TestServer.Create(fun app -> 
-                            let owinServer = 
-                                new OwinServer(generateRoutingTable handlerModules, 9800)
-                            owinServer.Configuration(app))
+    let testServer = 
+        let ws = new WebServer(generateRoutingTable handlerModules, serverSettings)
+        new TestServer(ws.GetWebHostBuilder())
 
     /// <summary>
     /// Basic index configuration
@@ -111,7 +110,7 @@ module DataHelpers =
             new Field("description", FieldDataType.Highlight)
             new Field("fullname", FieldDataType.Text) |]
         
-        let client = new FlexClient(owinServer().HttpClient)
+        let client = new FlexClient(testServer.CreateClient())
         client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
         index
 
@@ -120,7 +119,7 @@ module DataHelpers =
         let folder = Constants.DataFolder + "/country"
         if Directory.Exists(folder) then Directory.Delete(folder, true)
         // Create the demo index
-        let client = new FlexClient(owinServer().HttpClient)
+        let client = new FlexClient(testServer.CreateClient())
         client.SetupDemo().Result |> snd =? System.Net.HttpStatusCode.OK
 
     let demoIndexData = container.Resolve<DemoIndexService>().DemoData().Value 
@@ -139,9 +138,8 @@ module DataHelpers =
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
         fixture.Inject<IFlexFactory<IFlexQueryFunction>>(container.Resolve<IFlexFactory<IFlexQueryFunction>>()) |> ignore
         fixture.Register<FlexClient>(fun _ -> 
-            let server = owinServer()
-            fixture.Inject<LoggingHandler>(new LoggingHandler(server.Handler))
-            new FlexClient(server.HttpClient))
+            fixture.Inject<LoggingHandler>(new LoggingHandler(testServer.CreateHandler()))
+            new FlexClient(testServer.CreateClient()))
         fixture.Inject<Country list>(demoIndexData)
         fixture
      
