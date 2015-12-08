@@ -41,6 +41,7 @@ open Microsoft.Extensions.PlatformAbstractions
 open Microsoft.AspNet.FileProviders
 open Microsoft.Net.Http.Server
 open Microsoft.Extensions.Logging
+open Extensions
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -292,6 +293,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                     | 4 -> findHandler (ctxt.Request.Method + "/" + uri.Segments.[1] + ":id/" + uri.Segments.[3]) // /Resource/:Id/command
                     | 5 -> findHandler (ctxt.Request.Method + "/" + uri.Segments.[1] + ":id/" + uri.Segments.[3] + ":id") // /Resource/:Id/SubResouce/:Id
                     | _ -> None
+                let isAuthenticated = ctxt.User.Identity.IsAuthenticated
                 match httpHandler with
                 | Some(handler) -> handler.Execute(ctxt.RequestContext)
                 | None -> ctxt |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
@@ -303,17 +305,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-    let serverAssemblyName = "Microsoft.AspNet.Server.Kestrel"
-
-    /// Turns on logging of the AspNet framework
-    let turnOnFrameworkLogging (conf : IConfiguration) (services : IServiceCollection) =
-        if conf.Item "Server:FrameworkLogging" = "true" then
-            let logging = services 
-                          |> Seq.find (fun x -> x.ServiceType = typedefof<ILoggerFactory>)
-                          |> fun x -> x.ImplementationInstance
-                          :?> ILoggerFactory
-            logging.MinimumLevel <- LogLevel.Verbose
-            logging.AddEventLog() |> ignore
+    let serverAssemblyName = "Microsoft.AspNet.Server.WebListener"
 
     let configuration (app : IApplicationBuilder) = 
         let fileServerOptions = new FileServerOptions()
@@ -329,6 +321,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                                           .AllowAnyHeader()
                                           .AllowAnyMethod()
                                           .AllowCredentials() |> ignore)
+           .UseAuthenticationSchemes(//AuthenticationSchemes.AllowAnonymous
+                                     AuthenticationSchemes.NTLM
+                                     ||| AuthenticationSchemes.Negotiate)
            // This should always be the last middleware in the pipeline as this is
            // resposible for handling our REST requests
            .Use(handler)
@@ -336,9 +331,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 
     let _webHostBuilder =
         let setupServices (services : IServiceCollection) = 
-            services.AddCors() |> ignore
-            
-            services |> turnOnFrameworkLogging serverSettings.ConfigurationSource
+            services.AddCors()
+                    .AddFrameworkLogging(fun () -> serverSettings.ConfigurationSource.Item "Server:FrameworkLogging" = "true")
+            |> ignore
 
             let conf = let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
                        if isNull c then "Debug" else c

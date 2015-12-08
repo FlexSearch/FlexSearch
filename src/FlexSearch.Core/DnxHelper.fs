@@ -39,3 +39,27 @@ type HostApplicationEnvironment(appBase : string,
         member __.ApplicationBasePath = appBase
         member __.RuntimeFramework = targetFramework
         member __.Configuration = configuration
+
+module Extensions =
+    open Microsoft.AspNet.Http.Features
+    open Microsoft.Net.Http.Server
+    open Microsoft.Extensions.Configuration
+    open Microsoft.Extensions.Logging
+
+    type Microsoft.AspNet.Builder.IApplicationBuilder with
+        member app.UseAuthenticationSchemes(authenticationSchemes) =
+            let listener = app.ServerFeatures.Get<WebListener>()
+            if listener |> isNotNull then
+                listener.AuthenticationManager.AuthenticationSchemes <- authenticationSchemes
+            app
+    
+    type Microsoft.Extensions.DependencyInjection.IServiceCollection with
+        member services.AddFrameworkLogging(confCheck : unit -> bool) =
+            if confCheck () then
+                let logging = services 
+                              |> Seq.find (fun x -> x.ServiceType = typedefof<ILoggerFactory>)
+                              |> fun x -> x.ImplementationInstance
+                              :?> ILoggerFactory
+                logging.MinimumLevel <- LogLevel.Verbose
+                logging.AddEventLog() |> ignore
+            services
