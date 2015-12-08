@@ -39,6 +39,8 @@ open Microsoft.Extensions.Primitives
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.PlatformAbstractions
 open Microsoft.AspNet.FileProviders
+open Microsoft.Net.Http.Server
+open Microsoft.Extensions.Logging
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -301,7 +303,17 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-    let mutable builder = Unchecked.defaultof<WebHostBuilder>
+    let serverAssemblyName = "Microsoft.AspNet.Server.Kestrel"
+
+    /// Turns on logging of the AspNet framework
+    let turnOnFrameworkLogging (conf : IConfiguration) (services : IServiceCollection) =
+        if conf.Item "Server:FrameworkLogging" = "true" then
+            let logging = services 
+                          |> Seq.find (fun x -> x.ServiceType = typedefof<ILoggerFactory>)
+                          |> fun x -> x.ImplementationInstance
+                          :?> ILoggerFactory
+            logging.MinimumLevel <- LogLevel.Verbose
+            logging.AddEventLog() |> ignore
 
     let configuration (app : IApplicationBuilder) = 
         let fileServerOptions = new FileServerOptions()
@@ -325,6 +337,8 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     let _webHostBuilder =
         let setupServices (services : IServiceCollection) = 
             services.AddCors() |> ignore
+            
+            services |> turnOnFrameworkLogging serverSettings.ConfigurationSource
 
             let conf = let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
                        if isNull c then "Debug" else c
@@ -332,7 +346,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
             let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
                                                         new FrameworkName(".NETFramework,Version=v4.5"),
                                                         conf,
-                                                        Assembly.Load("Microsoft.AspNet.Server.Kestrel"))
+                                                        Assembly.Load(serverAssemblyName))
             services.AddInstance<IApplicationEnvironment>(appEnv)
 
         // Set the port number
@@ -342,9 +356,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         serverSettings.ConfigurationSource.Item "HTTP_PLATFORM_PORT" <- port
 
         (new WebHostBuilder(serverSettings.ConfigurationSource))
-            .UseServer("Microsoft.AspNet.Server.Kestrel")
-            .UseServices(fun s -> setupServices s |> ignore)
+            .UseServer(serverAssemblyName)
             .UseStartup(configuration)
+            .UseServices(fun s -> setupServices s |> ignore)
 
     // This member is exposed to insta
     member __.GetWebHostBuilder() = _webHostBuilder

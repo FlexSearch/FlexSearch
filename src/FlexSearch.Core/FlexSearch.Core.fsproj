@@ -338,6 +338,10 @@
       <HintPath>..\packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc1-final\lib\net451\Microsoft.AspNet.Server.Kestrel.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.AspNet.Server.WebListener">
+      <HintPath>..\packages\Microsoft.AspNet.Server.WebListener.1.0.0-rc1-final\lib\net451\Microsoft.AspNet.Server.WebListener.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.AspNet.StaticFiles">
       <HintPath>..\packages\Microsoft.AspNet.StaticFiles.1.0.0-rc1-final\lib\net451\Microsoft.AspNet.StaticFiles.dll</HintPath>
       <Private>True</Private>
@@ -446,6 +450,14 @@
     </Reference>
     <Reference Include="Microsoft.Net.Http.Headers">
       <HintPath>..\packages\Microsoft.Net.Http.Headers.1.0.0-rc1-final\lib\net451\Microsoft.Net.Http.Headers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Net.Http.Server">
+      <HintPath>..\packages\Microsoft.Net.Http.Server.1.0.0-rc1-final\lib\net451\Microsoft.Net.Http.Server.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Net.WebSockets">
+      <HintPath>..\packages\Microsoft.Net.WebSockets.1.0.0-rc1-final\lib\net451\Microsoft.Net.WebSockets.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.VisualBasic" />
