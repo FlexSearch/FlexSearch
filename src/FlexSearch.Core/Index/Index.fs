@@ -24,6 +24,8 @@ open FlexLucene.Document
 open FlexLucene.Index
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
+open FlexSearch.Api.Models
+open FlexSearch.Api.Constants
 open FlexSearch.Core
 open FlexSearch.Core.DictionaryHelpers
 open System
@@ -34,6 +36,27 @@ open System.Threading
 open java.util
 open System.Diagnostics
 open System.Threading.Tasks
+
+/// Signifies Shard status
+type ShardStatus = 
+    | Undefined = 0
+    | Opening = 1
+    | Recovering = 2
+    | Online = 3
+    | Offline = 4
+    | Closing = 5
+    | Faulted = 6
+
+/// Represents the current state of the index.
+type IndexStatus = 
+    | Undefined = 0
+    | Opening = 1
+    | Recovering = 2
+    | Online = 3
+    | OnlineFollower = 4
+    | Offline = 5
+    | Closing = 6
+    | Faulted = 7
 
 /// The types of events which can be raised on the event aggregrator
 type EventType = 
@@ -60,8 +83,8 @@ module MetaFields =
     let private idFieldInfo = 
         { Index = true
           Tokenize = false
-          FieldTermVector = FieldTermVector.DoNotStoreTermVector
-          FieldIndexOptions = FieldIndexOptions.DocsOnly }
+          FieldTermVector = TermVector.DoNotStoreTermVector
+          FieldIndexOptions = IndexOptions.DocsOnly }
     
     /// Field to be used by the Id field
     let getIdField (bloomEnabled) = 
@@ -163,21 +186,21 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
                (fun x -> 
                if isIndexAnalyzer then 
                    match x.FieldType with
-                   | FieldType.Custom(a, b, c) -> analyzerMap |> add (x.SchemaName, b)
-                   | FieldType.Highlight(a, b) -> analyzerMap |> add (x.SchemaName, b)
-                   | FieldType.Text(a, b) -> analyzerMap |> add (x.SchemaName, b)
-                   | FieldType.ExactText(a) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.Bool(a) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
+                   | FieldType.T.Custom(a, b, c) -> analyzerMap |> add (x.SchemaName, b)
+                   | FieldType.T.Highlight(a, b) -> analyzerMap |> add (x.SchemaName, b)
+                   | FieldType.T.Text(a, b) -> analyzerMap |> add (x.SchemaName, b)
+                   | FieldType.T.ExactText(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.Bool(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.Date | FieldType.T.DateTime | FieldType.T.Int | FieldType.T.Double | FieldType.T.Stored | FieldType.T.Long -> 
                        ()
                else 
                    match x.FieldType with
-                   | FieldType.Custom(a, b, c) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.Highlight(a, _) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.Text(a, _) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.ExactText(a) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.Bool(a) -> analyzerMap |> add (x.SchemaName, a)
-                   | FieldType.Date | FieldType.DateTime | FieldType.Int | FieldType.Double | FieldType.Stored | FieldType.Long -> 
+                   | FieldType.T.Custom(a, b, c) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.Highlight(a, _) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.Text(a, _) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.ExactText(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.Bool(a) -> analyzerMap |> add (x.SchemaName, a)
+                   | FieldType.T.Date | FieldType.T.DateTime | FieldType.T.Int | FieldType.T.Double | FieldType.T.Stored | FieldType.T.Long -> 
                        ())
         map <- analyzerMap
     

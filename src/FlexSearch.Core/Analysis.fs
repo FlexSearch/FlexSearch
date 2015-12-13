@@ -21,6 +21,7 @@ open FlexLucene.Analysis
 open FlexLucene.Analysis.Standard
 open FlexLucene.Analysis.Synonym
 open FlexLucene.Analysis.Util
+open FlexSearch.Api
 open System.Collections.Generic
 open java.io
 
@@ -71,7 +72,7 @@ module Analysis =
         file.toPath().getParent()
     
     /// Builds a Tokenizer Factory for a given Tokenizer
-    let buildTokenizerFactory (analyzerName, dto : FlexSearch.Core.Tokenizer) = 
+    let buildTokenizerFactory (analyzerName, dto : Models.Tokenizer) = 
         match availableTokenizers.contains (dto.TokenizerName) with
         | true -> 
             try 
@@ -87,7 +88,7 @@ module Analysis =
             |> Logger.Log
         
     /// Builds a Tokenizer Factory for a given Tokenizer
-    let buildTokenFilterFactory (analyzerName, dto : FlexSearch.Core.TokenFilter) = 
+    let buildTokenFilterFactory (analyzerName, dto : Models.Filter) = 
         match availableFilters.contains (dto.FilterName) with
         | true -> 
             try 
@@ -110,7 +111,7 @@ module Analysis =
         if notNull instance then instance.inform (loader)
     
     /// Builds a FlexAnalyzer from the Analyzer Dto
-    let buildFromAnalyzerDto (dto : FlexSearch.Core.Analyzer) = 
+    let buildFromAnalyzerDto (dto : Models.Analyzer) = 
         maybe { 
             do! dto.Validate()
             let loader = new FilesystemResourceLoader(resourcePath)
@@ -125,7 +126,7 @@ module Analysis =
         }
     
     /// Build a Lucene Analyzer from FlexSearch Analyzer DTO
-    let buildUsingLuceneBuilder (def : FlexSearch.Core.Analyzer) = 
+    let buildUsingLuceneBuilder (def : Models.Analyzer) = 
         // Load all required resources from the Resource folder
         let file = new java.io.File(ResourcesFolder +/ "tmp")
         let builder = CustomAnalyzer.Builder(file.toPath().getParent())

@@ -20,9 +20,10 @@ namespace FlexSearch.Core
 /// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
 /// the type of operation that the current script can perform. These can vary from scripts
 /// used for computing fields dynamically at index time or scripts which can be used to alter
-/// FlexSearch's default scoring.    
+/// FlexSearch's default scoring.
 [<AutoOpen>]
-module Scripts = 
+module Scripts =
+    open FlexSearch.Api.Models 
     open System
     open System.Collections.Generic
     
@@ -57,6 +58,7 @@ module Scripts =
 
 [<AutoOpen>]
 module Compiler = 
+    open FlexSearch.Api.Models
     open Microsoft.CodeAnalysis.CSharp
     open Microsoft.CodeAnalysis
     open System.IO

@@ -93,8 +93,6 @@
     <Compile Include="Settings.fs" />
     <Compile Include="Protocols.fs" />
     <Compile Include="Queues.fs" />
-    <Compile Include="Domain.fsi" />
-    <Compile Include="Domain.fs" />
     <Compile Include="DnxHelper.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="DomainExtensions.fs" />
@@ -518,6 +516,13 @@
       <HintPath>..\packages\YamlDotNet.3.6.1\lib\net35\YamlDotNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
+      <Name>FlexSearch.Api</Name>
+      <Project>{87b212a4-3565-4f73-91a4-bd9bae3ae6dd}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

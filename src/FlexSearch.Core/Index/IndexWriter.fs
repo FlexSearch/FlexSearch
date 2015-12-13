@@ -18,6 +18,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
+open FlexSearch.Api.Models
 open FlexLucene.Codecs.Bloom
 open System.Threading
 

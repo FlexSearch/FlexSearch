@@ -18,6 +18,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
+open FlexSearch.Api.Models
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
 open System
@@ -39,6 +40,10 @@ open Microsoft.Extensions.Primitives
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.PlatformAbstractions
 open Microsoft.AspNet.FileProviders
+
+type NoBody() = 
+    inherit DtoBase()
+    override __.Validate() = okUnit
 
 [<AutoOpenAttribute>]
 module Http = 
