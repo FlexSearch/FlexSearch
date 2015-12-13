@@ -1,0 +1,6 @@
+/// <summary>
+        /// {{^description}}Gets or Sets {{{name}}}{{/description}}{{#description}}{{{description}}}{{/description}}
+        /// </summary>
+        [DataMember(Name = "{{name}}", EmitDefaultValue = false)]
+        [JsonProperty(PropertyName = "{{baseName}}", DefaultValueHandling = DefaultValueHandling.Ignore)]{{#defaultValue}}[DefaultValue({{#isEnum}}{{name}}.{{/isEnum}}{{{defaultValue}}})]{{/defaultValue}}
+        public {{#isEnum}}{{name}}{{/isEnum}}{{^isEnum}}{{{datatype}}}{{/isEnum}} {{name}} { get; set; } {{#defaultValue}} = {{#isEnum}}{{name}}.{{/isEnum}}{{{defaultValue}}};{{/defaultValue}}

@@ -1,0 +1,3 @@
+// Initialize complex types
+            {{#vars}}{{^isPrimitiveType}}this.{{name}} = new {{{datatype}}}();
+            {{/isPrimitiveType}}{{/vars}}

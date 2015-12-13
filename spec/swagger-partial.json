@@ -1,0 +1,575 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "Description of all the REST endpoints exposed by FlexSearch.",
+    "version": "1.0.0",
+    "title": "FlexSearch REST Services"
+  },
+  "definitions": {
+    "analysisRequest": {
+      "description": "Represents a request object which can be used to analyze a text input using an analyzer.",
+      "type": "object",
+      "required": [ "text", "analyzerName" ],
+      "properties": {
+        "text": {
+          "description": "The text to be analyzed by the analyzer.",
+          "type": "string"
+        },
+        "analyzerName": {
+          "description": "The name of the analyzer.",
+          "type": "string"
+        }
+      }
+    },
+    "tokenizer": {
+      "description": "",
+      "type": "object",
+      "required": [ "tokenizerName" ],
+      "properties": {
+        "tokenizerName": {
+          "description": "Name of the tokenizer",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "filter": {
+      "description": "",
+      "type": "object",
+      "required": [ "filterName" ],
+      "properties": {
+        "filterName": {
+          "description": "Name of the filter",
+          "type": "string"
+        },
+        "parameters": {
+          "description": "",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "analyzer": {
+      "description": "",
+      "type": "object",
+      "required": [ "analyzerName", "tokenizer" ],
+      "properties": {
+        "analyzerName": {
+          "description": "Name of the analyzer",
+          "type": "string"
+        },
+        "tokenizer": {
+          "$ref": "#/definitions/tokenizer"
+        },
+        "filters": {
+          "description": "",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/filter"
+          }
+        }
+      }
+    },
+    "shardConfiguration": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "shardCount": {
+          "description": "Total number of shards to be present in the given index.",
+          "type": "integer",
+          "format": "int32",
+          "default": 1,
+          "minimum": 1,
+          "exclusiveMinimum": true
+        }
+      }
+    },
+    "indexConfiguration": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "commitTimeSeconds": {
+          "description": "The amount of time in seconds that FlexSearch should wait before committing changes to the disk. This is only used if no commits have happened in the set time period otherwise CommitEveryNFlushes takes care of commits",
+          "type": "integer",
+          "format": "int32",
+          "default": 60,
+          "minimum": 30
+        },
+        "commitEveryNFlushes": {
+          "description": "Determines how often the data be committed to the physical medium. Commits are more expensive then flushes so keep the setting as high as possible. Making this setting too high will result in excessive ram usage.",
+          "type": "integer",
+          "format": "int32",
+          "default": "3"
+        },
+        "commitOnClose": {
+          "description": "Determines whether to commit first before closing an index",
+          "type": "boolean",
+          "default": true
+        },
+        "autoCommit": {
+          "description": "Determines whether to enable auto commit functionality or not",
+          "type": "boolean",
+          "default": true
+        },
+        "directoryType": {
+          "description": "A Directory is a flat list of files. Files may be written once, when they are created. Once a file is created it may only be opened for read, or deleted. Random access is permitted both when reading and writing.",
+          "type": "string",
+          "enum": [ "FileSystem", "MemoryMapped", "Ram" ],
+          "default": "MemoryMapped"
+        },
+        "defaultWriteLockTimeout": {
+          "description": "The default maximum time to wait for a write lock (in milliseconds).",
+          "type": "integer",
+          "format": "int32",
+          "default": 1000
+        },
+        "ramBufferSizeMb": {
+          "description": "Determines the amount of RAM that may be used for buffering added documents and deletions before they are flushed to the Directory.",
+          "type": "integer",
+          "format": "int32",
+          "default": 100,
+          "minimum": 20
+        },
+        "maxBufferedDocs": {
+          "description": "The number of buffered added documents that will trigger a flush if enabled.",
+          "type": "integer",
+          "format": "int32",
+          "default": -1,
+          "minimum": 2
+        },
+        "refreshTimeMilliseconds": {
+          "description": "The amount of time in milliseconds that FlexSearch should wait before reopening index reader. This helps in keeping writing and real time aspects of the engine separate.",
+          "type": "integer",
+          "format": "int32",
+          "default": 500,
+          "minimum": 25
+        },
+        "autoRefresh": {
+          "description": "Determines whether to enable auto refresh or not",
+          "type": "boolean",
+          "default": true
+        },
+        "indexVersion": {
+          "description": "Corresponds to Lucene Index version. There will always be a default codec associated with each index version.",
+          "type": "string",
+          "enum": [ "Lucene_4_x_x", "Lucene_5_0_0" ],
+          "default": "Lucene_5_0_0"
+        },
+        "useBloomFilterForId": {
+          "description": "Signifies if bloom filter should be used for encoding Id field.",
+          "type": "boolean",
+          "default": true
+        },
+        "allowReads": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        },
+        "allowWrites": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "field": {
+      "description": "",
+      "type": "object",
+      "required": [ "fieldName" ],
+      "properties": {
+        "fieldName": {
+          "description": "Name of the field",
+          "type": "string"
+        },
+        "analyze": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        },
+        "index": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        },
+        "store": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        },
+        "allowSort": {
+          "description": "",
+          "type": "boolean",
+          "default": false
+        },
+        "indexAnalyzer": {
+          "description": "",
+          "type": "string",
+          "default": "standard"
+        },
+        "searchAnalyzer": {
+          "description": "",
+          "type": "string",
+          "default": "standard"
+        },
+        "fieldType": {
+          "description": "",
+          "type": "string",
+          "enum": [ "Int", "Double", "ExactText", "Text", "Highlight", "Bool", "Date", "DateTime", "Custom", "Stored", "Long" ],
+          "default": "Text"
+        },
+        "similarity": {
+          "description": "Similarity defines the components of Lucene scoring. Similarity determines how Lucene weights terms and Lucene interacts with Similarity at both index-time and query-time.",
+          "type": "string",
+          "enum": [ "BM25", "TFIDF" ],
+          "default": "TFIDF"
+        },
+        "indexOptions": {
+          "description": "",
+          "type": "string",
+          "enum": [ "DocsOnly", "DocsAndFreqs", "DocsAndFreqsAndPositions", "DocsAndFreqsAndPositionsAndOffsets" ],
+          "default": "DocsAndFreqsAndPositions"
+        },
+        "termVector": {
+          "description": "",
+          "type": "string",
+          "enum": [ "DoNotStoreTermVector", "StoreTermVector", "StoreTermVectorsWithPositions", "StoreTermVectorsWithPositionsandOffsets" ],
+          "default": "DoNotStoreTermVector"
+        },
+        "omitNorms": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        },
+        "scriptName": {
+          "description": "",
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "highlightOption": {
+      "description": "Used for configuring the settings for text highlighting in the search results",
+      "type": "object",
+      "required": [ "highlightedFields" ],
+      "properties": {
+        "fragmentsToReturn": {
+          "description": "Total number of fragments to return per document",
+          "type": "integer",
+          "format": "int32",
+          "default": 2
+        },
+        "highlightedFields": {
+          "description": "The fields to be used for text highlighting",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "postTag": {
+          "description": "Post tag to represent the ending of the highlighted word",
+          "type": "string",
+          "default": "</B>"
+        },
+        "preTag": {
+          "description": "Pre tag to represent the ending of the highlighted word",
+          "type": "string",
+          "default": "<B>"
+        }
+      }
+    },
+    "searchQuery": {
+      "description": "Search query is used for searching over a FlexSearch index. This provides a consistent syntax to execute various types of queries. The syntax is similar to the SQL syntax. This was done on purpose to reduce the learning curve.",
+      "type": "object",
+      "required": [ "indexName", "queryString" ],
+      "properties": {
+        "queryName": {
+          "description": "Unique name of the query. This is only required if you are setting up a search profile.",
+          "type": "string",
+          "default": ""
+        },
+        "columns": {
+          "description": "Columns to be returned as part of results. \n + *  - return all columns \n + [] - return no columns \n + [columnName] -  return specific column",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "count": {
+          "description": "Count of results to be returned",
+          "type": "integer",
+          "format": "int32",
+          "default": 10
+        },
+        "highlights": {
+          "$ref": "#/definitions/highlightOption"
+        },
+        "indexName": {
+          "description": "Name of the index",
+          "type": "string"
+        },
+        "orderBy": {
+          "description": "Can be used to order the results by score or specific field",
+          "type": "string",
+          "default": "score"
+        },
+        "orderByDirection": {
+          "description": "Can be used to determine the sort order.",
+          "type": "string",
+          "enum": [ "Ascending", "Descending" ],
+          "default": "Ascending"
+        },
+        "cutOff": {
+          "description": "Can be used to remove results lower than a certain threshold. This works in conjunction with the score of the top record as all the other records are filtered using the score set by the top scoring record.",
+          "type": "integer",
+          "format": "double"
+        },
+        "distinctBy": {
+          "description": "Can be used to return records with distinct values for the given field. Works in a manner similar to Sql distinct by clause.",
+          "type": "string",
+          "default": ""
+        },
+        "skip": {
+          "description": "Used to enable paging and skip certain pre-fetched results.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "queryString": {
+          "description": "Query string to be used for searching",
+          "type": "string"
+        },
+        "returnFlatResult": {
+          "description": "If true will return collapsed search results which are in tabular form. Flat results enable easy binding to a grid but grouping results is tougher with Flat result.",
+          "type": "boolean",
+          "default": false
+        },
+        "returnScore": {
+          "description": " If true then scores are returned as a part of search result.",
+          "type": "boolean",
+          "default": true
+        },
+        "searchProfile": {
+          "description": "Profile Name to be used for profile based searching.",
+          "type": "string",
+          "default": ""
+        },
+        "searchProfileScript": {
+          "description": "Script which can be used to select a search profile. This can help in dynamic selection of search profile based on the incoming data.",
+          "type": "string",
+          "default": ""
+        },
+        "overrideProfileOptions": {
+          "description": "Can be used to override the configuration saved in the search profile with the one which is passed as the Search Query",
+          "type": "boolean",
+          "default": false
+        },
+        "returnEmptyStringForNull": {
+          "description": "Returns an empty string for null values saved in the index rather than the null constant",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "document": {
+      "description": "",
+      "type": "object",
+      "required": [ "indexName", "id" ],
+      "properties": {
+        "fields": {
+          "description": "",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "description": "",
+          "type": "string"
+        },
+        "indexName": {
+          "description": "",
+          "type": "string"
+        },
+        "timeStamp": {
+          "description": "",
+          "type": "integer",
+          "format": "int64"
+        },
+        "highlights": {
+          "description": "",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "score": {
+          "description": "",
+          "type": "integer",
+          "format": "double"
+        }
+      }
+    },
+    "index": {
+      "description": "",
+      "type": "object",
+      "required": [ "indexName" ],
+      "properties": {
+        "indexName": {
+          "description": "",
+          "type": "string"
+        },
+        "fields": {
+          "description": "",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/field"
+          }
+        },
+        "searchProfiles": {
+          "description": "",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/searchQuery"
+          }
+        },
+        "shardConfiguration": {
+          "$ref": "#/definitions/shardConfiguration"
+        },
+        "indexConfiguration": {
+          "$ref": "#/definitions/indexConfiguration"
+        },
+        "active": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "searchResults": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "documents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/document"
+          }
+        },
+        "recordsReturned": {
+          "description": "",
+          "type": "integer",
+          "format": "int32"
+        },
+        "totalAvailable": {
+          "description": "",
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "job": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "description": "",
+          "type": "string"
+        },
+        "totalItems": {
+          "description": "",
+          "type": "integer",
+          "format": "int32"
+        },
+        "processedItems": {
+          "description": "",
+          "type": "integer",
+          "format": "int32"
+        },
+        "failedItems": {
+          "description": "",
+          "type": "integer",
+          "format": "int32"
+        },
+        "jobStatus": {
+          "description": "",
+          "type": "string",
+          "enum": [ "Initializing", "Initialized", "InProgress", "Completed", "CompletedWithErrors" ]
+        },
+        "message": {
+          "description": "",
+          "type": "string"
+        }
+      }
+    },
+    "createResponse": {
+      "description": "",
+      "type": "object",
+      "required": [ "id" ],
+      "properties": {
+        "id": {
+          "description": "",
+          "type": "string"
+        }
+      }
+    },
+    "indexExistsResponse": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "exists": {
+          "description": "",
+          "type": "boolean"
+        }
+      }
+    },
+    "memoryDetailsResponse": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "usedMemory": {
+          "description": "",
+          "type": "integer",
+          "format": "int64"
+        },
+        "totalMemory": {
+          "description": "",
+          "type": "integer",
+          "format": "int64"
+        },
+        "usage": {
+          "description": "",
+          "type": "integer",
+          "format": "double"
+        }
+      }
+    },
+    "searchProfileTestDto": {
+      "description": "",
+      "type": "object",
+      "properties": {
+        "searchQuery": {
+          "$ref": "#/definitions/searchQuery"
+        },
+        "searchProfile": {
+          "description": "",
+          "type": "string"
+        }
+      }
+    },
+    "noBody": {
+      "description": "",
+      "type": "object"
+    }
+  },
+  "externalDocs": {
+    "description": "Find out more about Swagger",
+    "url": "http://swagger.io"
+  }
+}
