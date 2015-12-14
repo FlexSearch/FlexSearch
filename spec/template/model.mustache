@@ -32,7 +32,7 @@ namespace FlexSearch.Api.Models
     /// {{description}}
     /// </summary>
     [DataContract]
-    public class {{classname}} : IEquatable<{{classname}}>{{#parent}}, {{{parent}}}{{/parent}}
+    public class {{classname}} : IDataTransferObject, IEquatable<{{classname}}>{{#parent}}, {{{parent}}}{{/parent}}
     {	
 		/// <summary>
         /// Initializes a new instance of the <see cref="{{classname}}" /> class.
@@ -83,6 +83,10 @@ namespace FlexSearch.Api.Models
         /// </summary>
         /// <returns>Returns the result of the validation</returns>
         public bool Validate() {
+            if (this.Validated) {
+                return this.ErrorDescription == String.Empty;
+            }
+            this.Validated = true;
             {{#vars}}
             {{#required}}
             if (this.{{name}} == null) {

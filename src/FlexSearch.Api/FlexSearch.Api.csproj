@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IDataTransferObject.cs" />
     <Compile Include="Models\*.*">
     </Compile>
   </ItemGroup>
