@@ -84,7 +84,7 @@ module DataHelpers =
 
     let container = Main.getContainer (Settings.T.GetDefault(), true)
     let serverSettings = container.Resolve<Settings.T>()
-    let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
+    let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
         
     // Create a single instance of the OWIN server that will be shared across all tests
     let testServer = 
@@ -136,7 +136,7 @@ module DataHelpers =
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
-        fixture.Inject<IFlexFactory<IFlexQueryFunction>>(container.Resolve<IFlexFactory<IFlexQueryFunction>>()) |> ignore
+        fixture.Inject<Dictionary<string, IFlexQueryFunction>>(container.Resolve<Dictionary<string, IFlexQueryFunction>>()) |> ignore
         fixture.Register<FlexClient>(fun _ -> 
             fixture.Inject<LoggingHandler>(new LoggingHandler(testServer.CreateHandler()))
             new FlexClient(testServer.CreateClient()))

@@ -5,10 +5,10 @@ open Swensen.Unquote
 open System
 open System.Collections.Generic
 
-type ``Function Tests``(queryFunctionFactory : IFlexFactory<IFlexQueryFunction>) =
+type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>) =
     let queryFunctions =
         let result = new Dictionary<string, IFlexQueryFunction>(StringComparer.OrdinalIgnoreCase)
-        for pair in queryFunctionFactory.GetAllModules() do
+        for pair in queryFunctions do
             result.Add(pair.Value.GetType() |> getTypeNameFromAttribute, pair.Value)
         result
 

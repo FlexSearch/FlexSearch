@@ -29,6 +29,7 @@ open System.Reflection
 open System.Threading
 open System.Threading.Tasks
 open System.Runtime.Versioning
+open System.ComponentModel.Composition
 open Microsoft.AspNet.Hosting
 open Microsoft.AspNet.Builder
 open Microsoft.Extensions.Configuration
@@ -166,6 +167,7 @@ module Http =
         new Uri(sprintf "%s://%s%s" req.Scheme req.Host.Value <| req.Path.ToUriComponent())
 
     /// A helper interface to dynamically find all the HttpHandlerBase classes
+    [<InheritedExport>]
     type IHttpHandler = 
         abstract Execute : RequestContext -> unit
     

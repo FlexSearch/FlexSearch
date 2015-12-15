@@ -1,5 +1,7 @@
 ﻿namespace FlexSearch.Core
 
+open System.ComponentModel.Composition
+
 # ws_PingHandler """Ping server"""
 # category "server"
 # description """
@@ -44,6 +46,7 @@ type GetFaviconHandler =
 [<NameAttribute ("GET-/indices"); SealedAttribute ()>]
 type GetAllIndexHandler =
     inherit Http.HttpHandlerBase<NoBody,Index []>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> GetAllIndexHandler
     override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Index []>
@@ -56,6 +59,7 @@ This service will return a status of 404 when index is not present on the server
 [<NameAttribute ("GET-/indices/:id"); SealedAttribute ()>]
 type GetIndexByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,Index>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> GetIndexByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Index>
@@ -64,6 +68,7 @@ type GetIndexByIdHandler =
 [<NameAttribute ("POST-/indices"); SealedAttribute ()>]
 type PostIndexByIdHandler =
     inherit Http.HttpHandlerBase<Index,CreateResponse>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> PostIndexByIdHandler
     override Process : Http.RequestContext * body:Index option ->
                 Http.ResponseContext<CreateResponse>
@@ -79,6 +84,7 @@ server restart.
 [<NameAttribute ("DELETE-/indices/:id"); SealedAttribute ()>]
 type DeleteIndexByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,unit>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> DeleteIndexByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
@@ -116,6 +122,7 @@ be removed from the index itself.
 [<Sealed>]
 type PutIndexFieldsHandler =
     inherit HttpHandlerBase<FieldsUpdateRequest, unit>
+    [<ImportingConstructor>]
     new : indexService : IIndexService -> PutIndexFieldsHandler
     override Process : request : RequestContext * FieldsUpdateRequest option ->
         ResponseContext<unit>
@@ -126,6 +133,7 @@ type PutIndexFieldsHandler =
 [<Sealed>]
 type PutIndexSearchProfileHandler =
     inherit HttpHandlerBase<SearchQuery, unit>
+    [<ImportingConstructor>]
     new : indexService : IIndexService -> PutIndexSearchProfileHandler
     override Process : request : RequestContext * SearchQuery option ->
         ResponseContext<unit>
@@ -142,6 +150,7 @@ The Index Version cannot be modified
 [<Sealed>]
 type PutIndexConfigurationHandler =
     inherit HttpHandlerBase<IndexConfiguration, unit>
+    [<ImportingConstructor>]
     new : indexService : IIndexService -> PutIndexConfigurationHandler
     override Process : request : RequestContext * IndexConfiguration option ->
         ResponseContext<unit>
@@ -164,6 +173,7 @@ This endpoint can be used to determine if an index is online or off-line.
 [<NameAttribute ("GET-/indices/:id/status"); SealedAttribute ()>]
 type GetStatusHandler =
     inherit Http.HttpHandlerBase<NoBody,IndexStatusResponse>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> GetStatusHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<IndexStatusResponse>
@@ -176,6 +186,7 @@ This endpoint can be used to set an index online or off-line.
 [<NameAttribute ("PUT-/indices/:id/status/:id"); SealedAttribute ()>]
 type PutStatusHandler =
     inherit Http.HttpHandlerBase<NoBody,unit>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> PutStatusHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
@@ -190,6 +201,7 @@ response is smaller in size.
 [<NameAttribute ("GET-/indices/:id/exists"); SealedAttribute ()>]
 type GetExistsHandler =
     inherit Http.HttpHandlerBase<NoBody,IndexExistsResponse>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> GetExistsHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<IndexExistsResponse>
@@ -204,6 +216,7 @@ and older segment files which are not cleaned up as part of the last comment.
 [<NameAttribute ("GET-/indices/:id/size"); SealedAttribute ()>]
 type GetIndexSizeHandler =
     inherit Http.HttpHandlerBase<NoBody,int64>
+    [<ImportingConstructor>]
     new : indexService:IIndexService -> GetIndexSizeHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<int64>
@@ -213,6 +226,7 @@ type GetIndexSizeHandler =
 [<NameAttribute ("GET-/analyzers/:id"); SealedAttribute ()>]
 type GetAnalyzerByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,Analyzer>
+    [<ImportingConstructor>]
     new : analyzerService:IAnalyzerService -> GetAnalyzerByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Analyzer>
@@ -222,6 +236,7 @@ type GetAnalyzerByIdHandler =
 [<NameAttribute ("GET-/analyzers"); SealedAttribute ()>]
 type GetAllAnalyzerHandler =
     inherit Http.HttpHandlerBase<NoBody,Analyzer []>
+    [<ImportingConstructor>]
     new : analyzerService:IAnalyzerService -> GetAllAnalyzerHandler
     override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Analyzer []>
@@ -236,6 +251,7 @@ The returned response contains the tokenised input.
 [<NameAttribute ("POST-/analyzers/:id/analyze"); SealedAttribute ()>]
 type AnalyzeTextHandler =
     inherit Http.HttpHandlerBase<AnalysisRequest,string []>
+    [<ImportingConstructor>]
     new : analyzerService:IAnalyzerService -> AnalyzeTextHandler
     override Process : request:Http.RequestContext * body:AnalysisRequest option ->
                 Http.ResponseContext<string []>
@@ -245,6 +261,7 @@ type AnalyzeTextHandler =
 [<NameAttribute ("DELETE-/analyzers/:id"); SealedAttribute ()>]
 type DeleteAnalyzerByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,unit>
+    [<ImportingConstructor>]
     new : analyzerService:IAnalyzerService -> DeleteAnalyzerByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
@@ -254,6 +271,7 @@ type DeleteAnalyzerByIdHandler =
 [<NameAttribute ("PUT-/analyzers/:id"); SealedAttribute ()>]
 type CreateOrUpdateAnalyzerByIdHandler =
     inherit Http.HttpHandlerBase<Analyzer,unit>
+    [<ImportingConstructor>]
     new : analyzerService:IAnalyzerService ->
             CreateOrUpdateAnalyzerByIdHandler
     override Process : request:Http.RequestContext * body:Analyzer option ->
@@ -269,6 +287,7 @@ using the service rather then using the search API.
 [<NameAttribute ("GET-/indices/:id/documents"); SealedAttribute ()>]
 type GetDocumentsHandler =
     inherit Http.HttpHandlerBase<NoBody,SearchResults>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> GetDocumentsHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<SearchResults>
@@ -278,6 +297,7 @@ type GetDocumentsHandler =
 [<NameAttribute ("GET-/indices/:id/documents/:id"); SealedAttribute ()>]
 type GetDocumentByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,Document>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> GetDocumentByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Document>
@@ -295,6 +315,7 @@ concepts section.
 [<NameAttribute ("POST-/indices/:id/documents"); SealedAttribute ()>]
 type PostDocumentByIdHandler =
     inherit Http.HttpHandlerBase<Document,CreateResponse>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> PostDocumentByIdHandler
     override Process : Http.RequestContext * body:Document option ->
                 Http.ResponseContext<CreateResponse>
@@ -308,6 +329,7 @@ want to reindex all the documents.
 [<NameAttribute ("DELETE-/indices/:id/documents"); SealedAttribute ()>]
 type DeleteDocumentsHandler =
     inherit Http.HttpHandlerBase<NoBody,unit>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> DeleteDocumentsHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
@@ -321,6 +343,7 @@ with that ID.
 [<NameAttribute ("DELETE-/indices/:id/documents/:id"); SealedAttribute ()>]
 type DeleteDocumentByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,unit>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> DeleteDocumentByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
@@ -337,6 +360,7 @@ document. This endpoint can be used with concurrency control semantics.
 [<NameAttribute ("PUT-/indices/:id/documents/:id"); SealedAttribute ()>]
 type PutDocumentByIdHandler =
     inherit Http.HttpHandlerBase<Document,unit>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> PutDocumentByIdHandler
     override Process : Http.RequestContext * body:Document option ->
                 Http.ResponseContext<unit>
@@ -351,6 +375,7 @@ on server restart.
 [<NameAttribute ("PUT-/setupdemo"); SealedAttribute ()>]
 type SetupDemoHandler =
     inherit Http.HttpHandlerBase<NoBody,unit>
+    [<ImportingConstructor>]
     new : service:DemoIndexService -> SetupDemoHandler
     override Process : Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
@@ -360,6 +385,7 @@ type SetupDemoHandler =
 [<NameAttribute ("GET-/jobs/:id"); SealedAttribute ()>]
 type GetJobByIdHandler =
     inherit Http.HttpHandlerBase<NoBody,Job>
+    [<ImportingConstructor>]
     new : jobService:IJobService -> GetJobByIdHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<Job>
@@ -395,6 +421,7 @@ post-indices-search-fuzzy-3
 [<NameAttribute ("GET|POST-/indices/:id/search"); SealedAttribute ()>]
 type GetSearchHandler =
     inherit Http.HttpHandlerBase<SearchQuery,obj>
+    [<ImportingConstructor>]
     new : searchService:ISearchService -> GetSearchHandler
     override Process : request:Http.RequestContext * body:SearchQuery option ->
                 Http.ResponseContext<obj>
@@ -415,6 +442,7 @@ by the search query."""
 [<NameAttribute ("DELETE-/indices/:id/search"); SealedAttribute ()>]
 type DeleteDocumentsFromSearchHandler =
     inherit Http.HttpHandlerBase<NoBody,obj>
+    [<ImportingConstructor>]
     new : documentService:IDocumentService -> DeleteDocumentsFromSearchHandler
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<obj>
@@ -430,6 +458,7 @@ but through the search UI provided as part of the portal.
 [<NameAttribute ("POST-/indices/:id/searchprofiletest"); SealedAttribute ()>]
 type PostSearchProfileTestHandler =
     inherit Http.HttpHandlerBase<SearchProfileTestDto,obj>
+    [<ImportingConstructor>]
     new : searchService:ISearchService -> PostSearchProfileTestHandler
     override Process : request:Http.RequestContext * body:SearchProfileTestDto option ->
                 Http.ResponseContext<obj>

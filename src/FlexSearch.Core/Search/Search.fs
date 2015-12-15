@@ -25,8 +25,10 @@ open FlexSearch.Core
 open System
 open System.Collections.Generic
 open System.Linq
+open System.ComponentModel.Composition
 
 /// FlexQuery interface     
+[<InheritedExport>]
 type IFlexQuery = 
     abstract QueryName : unit -> string []
     abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
@@ -40,6 +42,7 @@ type IFlexQuery =
 /// In variable query functions, the first parameter is a field name. Any other parameter
 /// should be a constant value. Variable query functions modify the given SearchQuery so 
 /// that it mimics the intended function. They don't return a constant value.
+[<InheritedExport>]
 type IFlexQueryFunction = 
     abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
     abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>

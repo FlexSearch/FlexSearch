@@ -27,15 +27,10 @@ open System.Runtime.Caching
 open System.Threading
 open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
-
-/// General factory Interface for all MEF based factories
-type IFlexFactory<'T> = 
-    abstract GetModuleByName : string -> Result<'T>
-    abstract ModuleExists : string -> bool
-    abstract GetAllModules : unit -> Dictionary<string, 'T>
-    abstract GetMetaData : string -> Result<IDictionary<string, obj>>
+open System.ComponentModel.Composition
 
 /// Index related operations
+[<InheritedExport>]
 type IIndexService = 
     abstract GetIndex : indexName:string -> Result<Index>
     abstract UpdateIndexFields : indexName:string * fields:Field [] -> Result<unit>
@@ -58,6 +53,7 @@ type IIndexService =
     abstract GetDiskUsage : indexName:string -> Result<int64>
 
 /// Document related operations
+[<InheritedExport>]
 type IDocumentService = 
     abstract GetDocument : indexName:string * id:string -> Result<Document>
     abstract GetDocuments : indexName:string * count:int -> Result<SearchResults>
@@ -69,6 +65,7 @@ type IDocumentService =
     abstract TotalDocumentCount : indexName:string -> Result<int>
 
 /// Search related operations
+[<InheritedExport>]
 type ISearchService = 
     abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string>
      -> Result<SearchResults<SearchResultComponents.T>>
@@ -78,10 +75,12 @@ type ISearchService =
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
+[<InheritedExport>]
 type IQueueService = 
     abstract AddDocumentQueue : document:Document -> unit
     abstract AddOrUpdateDocumentQueue : document:Document -> unit
 
+[<InheritedExport>]
 type IJobService = 
     abstract GetJob : string -> Result<Job>
     abstract DeleteAllJobs : unit -> Result<unit>
@@ -90,6 +89,7 @@ type IJobService =
     abstract UpdateJob : jobId:string * JobStatus * count:int * msg:string -> unit
 
 ///  Analyzer/Analysis related services
+[<InheritedExport>]
 type IAnalyzerService = 
     abstract GetAnalyzer : analyzerName:string -> Result<LuceneAnalyzer>
     abstract GetAnalyzerInfo : analyzerName:string -> Result<Analyzer>
@@ -99,6 +99,7 @@ type IAnalyzerService =
     abstract Analyze : analyzerName:string * input:string -> Result<string []>
 
 /// Script related services
+[<InheritedExport>]
 type IScriptService = 
     
     /// Signature : fun (indexName, fieldName, source, options) -> string
@@ -329,12 +330,12 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
             }
                 
 [<Sealed>]
-type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFactory : IFlexFactory<IFlexQuery>, queryFunctionFactory : IFlexFactory<IFlexQueryFunction>,  indexService : IIndexService) = 
+type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQueries : Dictionary<string, IFlexQuery>, flexQueryFuncs : Dictionary<string, IFlexQueryFunction>,  indexService : IIndexService) = 
     // Generate query types from query factory. This is necessary as a single query can support multiple
     // query names
     let queryTypes = 
         let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
-        for pair in queryFactory.GetAllModules() do
+        for pair in flexQueries do
             for queryName in pair.Value.QueryName() do
                 result.Add(queryName, pair.Value)
         result
@@ -342,7 +343,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFa
     // Generate query function types from factory. This is necessary when passing functions in the query string
     let queryFunctionTypes =
         let result = new Dictionary<string, IFlexQueryFunction>(StringComparer.OrdinalIgnoreCase)
-        for pair in queryFunctionFactory.GetAllModules() do
+        for pair in flexQueryFuncs do
             result.Add(pair.Value.GetType() |> getTypeNameFromAttribute, pair.Value)
         result
 

@@ -23,6 +23,7 @@ open Newtonsoft.Json
 open System
 open System.IO
 open System.Linq
+open System.ComponentModel.Composition
 
 type Country() = 
     member val Id = Unchecked.defaultof<string> with get, set
@@ -48,7 +49,7 @@ type Country() =
     member val Nationality = Unchecked.defaultof<string> with get, set
     member val Coordinates = Unchecked.defaultof<string> with get, set
 
-[<Sealed>]
+[<Sealed; Export>]
 /// <summary>
 /// Service wrapper around all analyzer/analysis related services
 /// </summary>

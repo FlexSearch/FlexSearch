@@ -18,108 +18,85 @@
 namespace FlexSearch.Core
 
 open Autofac
+open Autofac.Core
 open Autofac.Features.Metadata
 open FlexSearch.Core
 open System
 open System.Collections.Generic
 open System.IO
 open System.Linq
+open System.Reflection
 open System.Threading
 open System.Threading.Tasks
+open System.ComponentModel.Composition
+open System.ComponentModel.Composition.Hosting
 
 // ----------------------------------------------------------------------------
 // Contains container and other factory implementation
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
-module FactoryService = 
-    /// Register all the interface assemblies
-    let registerInterfaceAssemblies<'T> (builder : ContainerBuilder) = 
-        builder.RegisterAssemblyTypes(AppDomain.CurrentDomain.GetAssemblies())
-               .Where(fun t -> t.GetInterfaces().Any(fun i -> i.IsAssignableFrom(typeof<'T>))).AsImplementedInterfaces() 
-        |> ignore
-    
+module BootstrappingHelpers = 
     /// Register an instance as single instance in the builder
     let registerSingleInstance<'T, 'U> (builder : ContainerBuilder) = 
         builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore
+        builder
     
-    /// Factory implementation
-    [<Sealed>]
-    type FlexFactory<'T>(container : ILifetimeScope) = 
-        let moduleTypeName = typeof<'T>.Name
+    let registerSingleInstanceWithParam<'T, 'U> paramName paramValue (builder : ContainerBuilder) =
+        builder.RegisterType<'T>().As<'U>().SingleInstance()
+               .WithParameter(paramName, Some(paramValue)) |> ignore
+        builder
+
+    let private mapImportsToNames (value : 'T) =
+        try (value.GetType() |> getTypeNameFromAttribute, value) |> Some
+        with e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Critical); None
+
+    let registerImportGroup<'T> (mefContainer : CompositionContainer) (builder : ContainerBuilder) =
+        let importGroup = mefContainer.GetExportedValues<'T>()
+                          // Since MEF doesn't recognize attributes for the derived types (when using InheritedExport),
+                          // we'll just going to use reflection to get the Name from a specific type.
+                          |> Seq.choose mapImportsToNames
+                          |> fun x -> x.ToDictionary(fst, snd)
+        builder.RegisterInstance(importGroup).SingleInstance().As<Dictionary<string,'T>>() |> ignore
+        let msg = sprintf "Registered Plugins of type %s: %A" typedefof<'T>.Name importGroup.Keys
+        Logger.Log(msg, MessageKeyword.Plugin, MessageLevel.Info)
+        builder
+
+    // Registers an import group into an existing DI container by updating the DI Container
+    let updateRegisterImportGroup<'T> (mefContainer : CompositionContainer) (diContainer : IContainer) =
+        new ContainerBuilder()
+        |> registerImportGroup<'T> mefContainer
+        |> fun builder -> builder.Update diContainer
+        diContainer
+
+    let getMefContainer () =
+        let catalog = new AggregateCatalog(new DirectoryCatalog(@".\Plugins"),
+                                           new AssemblyCatalog(Assembly.GetExecutingAssembly()))
+        new CompositionContainer(catalog)
+
+    let injectServicesToMef (mefContainer : CompositionContainer) (diContainer : IContainer) =
+        diContainer.ComponentRegistry.Registrations
+        |> Seq.collect (fun r -> r.Services)
+        |> fun s -> s.OfType<IServiceWithType>()
+        |> Seq.map (fun r -> r.ServiceType) // Get the interface type
+        |> Seq.iter (fun interfaceType -> 
+                        // Get an instance from that interface
+                        let instance = diContainer.Resolve interfaceType
+                        // Add the instance to MEF
+                        mefContainer.ComposeParts(instance))
         
-        /// Returns a module by name.
-        /// Choice1of3 -> instance of T
-        /// Choice2of3 -> meta-data of T
-        /// Choice3of3 -> error
-        let getModuleByName (moduleName, metaOnly) = 
-            if (System.String.IsNullOrWhiteSpace(moduleName)) then 
-                Choice3Of3 <| ModuleNotFound(moduleName, moduleTypeName)
-            else 
-                // We cannot use a global instance of factory as it will cache the instances. We
-                // need a new instance of T per request 
-                let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                let injectMeta = 
-                    factory.FirstOrDefault
-                        (fun a -> 
-                        a.Metadata.Keys.Contains("Name") 
-                        && String.Equals(a.Metadata.["Name"].ToString(), moduleName, StringComparison.OrdinalIgnoreCase))
-                match injectMeta with
-                | null -> Choice3Of3 <| ModuleNotFound(moduleName, moduleTypeName)
-                | _ -> 
-                    if metaOnly then Choice2Of3(injectMeta.Metadata)
-                    else 
-                        try 
-                            let pluginValue = injectMeta.Value.Value
-                            //Log.componentLoaded (moduleName, typeof<'T>.FullName)
-                            Choice1Of3(pluginValue)
-                        with e -> 
-                            //Log.componentInitializationFailed (moduleName, typeof<'T>.FullName, exceptionPrinter e)
-                            Choice3Of3 <| ModuleInitializationError(moduleName, moduleTypeName, e.Message)
-        
-        interface IFlexFactory<'T> with
-            
-            member __.GetModuleByName(moduleName) = 
-                match getModuleByName (moduleName, false) with
-                | Choice1Of3(x) -> ok x
-                | _ -> fail <| ModuleNotFound(moduleName, moduleTypeName)
-            
-            member __.GetMetaData(moduleName) = 
-                match getModuleByName (moduleName, true) with
-                | Choice2Of3(x) -> ok (x)
-                | _ -> fail <| ModuleNotFound(moduleName, moduleTypeName)
-            
-            member __.ModuleExists(moduleName) = 
-                match getModuleByName (moduleName, true) with
-                | Choice1Of3(_) -> false
-                | _ -> true
-            
-            member __.GetAllModules() = 
-                let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
-                let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                let moduleNames = new ResizeArray<string>()
-                for plugin in factory do
-                    if plugin.Metadata.ContainsKey("Name") then 
-                        let pluginName = plugin.Metadata.["Name"].ToString()
-                        try 
-                            let pluginValue = plugin.Value.Value
-                            modules.Add(pluginName, pluginValue)
-                            moduleNames.Add(pluginName)
-                        with e -> Logger.Log <| PluginLoadFailure(pluginName, typeof<'T>.FullName, exceptionPrinter e)
-                Logger.Log <| PluginsLoaded(typeof<'T>.FullName, moduleNames)
-                modules
-    
-    let registerSingleFactoryInstance<'T> (builder : ContainerBuilder) = 
-        builder.RegisterType<FlexFactory<'T>>().As<IFlexFactory<'T>>().SingleInstance() |> ignore
+        diContainer
 
 [<AutoOpen>]
 module Main = 
     open Autofac
     open Autofac.Extras.Attributed
     open FlexSearch.Core
-    open System.Reflection
-    
+    open System.Linq
+    open System.Diagnostics
+
     /// Get a container with all dependencies setup
     let getContainer (serverSettings : Settings.T, testServer : bool) = 
+        let mefContainer = getMefContainer()
         let builder = new ContainerBuilder()
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
@@ -127,30 +104,32 @@ module Main =
         // so the meta-data attributes get read.
         builder.RegisterModule<AttributedMetadataModule>() |> ignore
         builder.RegisterInstance(serverSettings).SingleInstance().As<Settings.T>() |> ignore
-        // Interface scanning
-        builder |> FactoryService.registerInterfaceAssemblies<IFlexQuery>
-        builder |> FactoryService.registerInterfaceAssemblies<IFlexQueryFunction>
-        builder |> FactoryService.registerInterfaceAssemblies<IHttpHandler>
-        // Factory registration
-        builder |> FactoryService.registerSingleFactoryInstance<IFlexQuery>
-        builder |> FactoryService.registerSingleFactoryInstance<IFlexQueryFunction>
-        builder |> FactoryService.registerSingleFactoryInstance<IHttpHandler>
-        builder |> FactoryService.registerSingleInstance<NewtonsoftJsonFormatter, IFormatter>
-        builder |> FactoryService.registerSingleInstance<ThreadSafeFileWriter, ThreadSafeFileWriter>
-        builder |> FactoryService.registerSingleInstance<FlexParser, IFlexParser>
+
+        builder
+        // Register the groups/factories of services
+        |> registerImportGroup<IFlexQuery> mefContainer
+        |> registerImportGroup<IFlexQueryFunction> mefContainer
+        // Register Utilities
+        |> registerSingleInstance<NewtonsoftJsonFormatter, IFormatter>
+        |> registerSingleInstance<ThreadSafeFileWriter, ThreadSafeFileWriter>
+        |> registerSingleInstance<FlexParser, IFlexParser>
         // Register services
-        builder.RegisterType<AnalyzerService>().As<IAnalyzerService>().SingleInstance()
-            .WithParameter("testMode", Some(testServer)) |> ignore
-        builder.RegisterType<IndexService>().As<IIndexService>().SingleInstance()
-            .WithParameter("testMode", Some(testServer)) |> ignore
-        builder |> FactoryService.registerSingleInstance<ScriptService, IScriptService>
-        builder |> FactoryService.registerSingleInstance<DocumentService, IDocumentService>
-        builder |> FactoryService.registerSingleInstance<QueueService, IQueueService>
-        builder |> FactoryService.registerSingleInstance<SearchService, ISearchService>
-        builder |> FactoryService.registerSingleInstance<JobService, IJobService>
-        builder |> FactoryService.registerSingleInstance<DemoIndexService, DemoIndexService>
-        builder |> FactoryService.registerSingleInstance<EventAggregrator, EventAggregrator>
-        builder.Build()
+        |> registerSingleInstanceWithParam<AnalyzerService, IAnalyzerService> "testMode" testServer
+        |> registerSingleInstanceWithParam<IndexService, IIndexService> "testMode" testServer
+        |> registerSingleInstance<ScriptService, IScriptService>
+        |> registerSingleInstance<DocumentService, IDocumentService>
+        |> registerSingleInstance<QueueService, IQueueService>
+        |> registerSingleInstance<SearchService, ISearchService>
+        |> registerSingleInstance<JobService, IJobService>
+        |> registerSingleInstance<DemoIndexService, DemoIndexService>
+        |> registerSingleInstance<EventAggregrator, EventAggregrator>
+        // Build the container
+        |> fun b -> b.Build()
+        // We need to add the resolved instances as exports to MEF so that it 
+        // can use them in the HttpHandlers
+        |> injectServicesToMef mefContainer
+        // Register the HttpHandlers
+        |> updateRegisterImportGroup<IHttpHandler> mefContainer
 
 //            let indexService = container.Resolve<IIndexService>()
 // Close all open indices
@@ -222,7 +201,7 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
     //            if testServer <> true then MaximizeThreads() |> ignore
     member __.Start() = 
         try 
-            let handlerModules = container.Resolve<IFlexFactory<IHttpHandler>>().GetAllModules()
+            let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
             httpServer <- new WebServer(generateRoutingTable handlerModules, serverSettings)
             httpServer.Start()
         with e -> printfn "%A" e
@@ -272,7 +251,7 @@ Copyright (C) 2010 - {year} - FlexSearch
                     // Node events
                     || (id >= 1000 && id < 2000) }
         Logging._loggerFactory.AddTraceSource(_sourceSwitch, twl) |> ignore
-    
+
     /// To improve CPU utilization, increase the number of threads that the .NET thread pool expands by when
     /// a burst of requests come in. We could do this by editing machine.config/system.web/processModel/minWorkerThreads,
     /// but that seems too global a change, so we do it in code for just our AppPool. More info: 
