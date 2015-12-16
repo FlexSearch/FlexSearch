@@ -18,8 +18,11 @@
 namespace FlexSearch.Core
 
 open Autofac
+open Autofac.Integration.Mef
 open Autofac.Core
+open Autofac.Builder
 open Autofac.Features.Metadata
+open Autofac.Extensions.DependencyInjection
 open FlexSearch.Core
 open System
 open System.Collections.Generic
@@ -30,19 +33,27 @@ open System.Threading
 open System.Threading.Tasks
 open System.ComponentModel.Composition
 open System.ComponentModel.Composition.Hosting
+open Microsoft.Extensions.DependencyInjection
 
 // ----------------------------------------------------------------------------
 // Contains container and other factory implementation
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module BootstrappingHelpers = 
+    let registerModule<'T when 'T : (new : unit -> 'T) and 'T :> IModule> (builder : ContainerBuilder) = 
+        builder.RegisterModule<'T>() |> ignore; builder
+        
+    let registerInstance<'Interface> implementation (builder : ContainerBuilder) =
+        builder.RegisterInstance(implementation).SingleInstance().As<'Interface>() |> ignore
+        builder
+
     /// Register an instance as single instance in the builder
-    let registerSingleInstance<'T, 'U> (builder : ContainerBuilder) = 
-        builder.RegisterType<'T>().As<'U>().SingleInstance() |> ignore
+    let registerSingleton<'Implementation, 'Interface> (builder : ContainerBuilder) = 
+        builder.RegisterType<'Implementation>().As<'Interface>().SingleInstance() |> ignore
         builder
     
-    let registerSingleInstanceWithParam<'T, 'U> paramName paramValue (builder : ContainerBuilder) =
-        builder.RegisterType<'T>().As<'U>().SingleInstance()
+    let registerSingletonWithParam<'Implementation, 'Interface> paramName paramValue (builder : ContainerBuilder) =
+        builder.RegisterType<'Implementation>().As<'Interface>().SingleInstance()
                .WithParameter(paramName, Some(paramValue)) |> ignore
         builder
 
@@ -50,15 +61,19 @@ module BootstrappingHelpers =
         try (value.GetType() |> getTypeNameFromAttribute, value) |> Some
         with e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Critical); None
 
-    let registerImportGroup<'T> (mefContainer : CompositionContainer) (builder : ContainerBuilder) =
-        let importGroup = mefContainer.GetExportedValues<'T>()
-                          // Since MEF doesn't recognize attributes for the derived types (when using InheritedExport),
-                          // we'll just going to use reflection to get the Name from a specific type.
-                          |> Seq.choose mapImportsToNames
-                          |> fun x -> x.ToDictionary(fst, snd)
-        builder.RegisterInstance(importGroup).SingleInstance().As<Dictionary<string,'T>>() |> ignore
-        let msg = sprintf "Registered Plugins of type %s: %A" typedefof<'T>.Name importGroup.Keys
-        Logger.Log(msg, MessageKeyword.Plugin, MessageLevel.Info)
+    let registerImportGroup<'Interface> (mefContainer : CompositionContainer) (builder : ContainerBuilder) =
+        try
+            let importGroup = mefContainer.GetExportedValues<'Interface>()
+                              // Since MEF doesn't recognize attributes for the derived types (when using InheritedExport),
+                              // we'll just going to use reflection to get the Name from a specific type.
+                              |> Seq.choose mapImportsToNames
+                              |> fun x -> x.ToDictionary(fst, snd)
+        
+            builder.RegisterInstance(importGroup).SingleInstance().As<Dictionary<string,'Interface>>() |> ignore
+        
+            Logger.Log <| PluginsLoaded(typedefof<'Interface>.FullName, importGroup.Keys.ToList())
+        with e -> Logger.Log <| PluginLoadFailure("Unknown", typedefof<'Interface>.FullName, exceptionPrinter e);
+
         builder
 
     // Registers an import group into an existing DI container by updating the DI Container
@@ -67,11 +82,6 @@ module BootstrappingHelpers =
         |> registerImportGroup<'T> mefContainer
         |> fun builder -> builder.Update diContainer
         diContainer
-
-    let getMefContainer () =
-        let catalog = new AggregateCatalog(new DirectoryCatalog(@".\Plugins"),
-                                           new AssemblyCatalog(Assembly.GetExecutingAssembly()))
-        new CompositionContainer(catalog)
 
     let injectServicesToMef (mefContainer : CompositionContainer) (diContainer : IContainer) =
         diContainer.ComponentRegistry.Registrations
@@ -86,43 +96,48 @@ module BootstrappingHelpers =
         
         diContainer
 
+    let getMefContainer () =
+        let catalog = new AggregateCatalog(new DirectoryCatalog(@".\Plugins"),
+                                           new AssemblyCatalog(Assembly.GetExecutingAssembly()))
+        new CompositionContainer(catalog)
+
+    let injectFromAspDi (services : IServiceCollection) (builder : ContainerBuilder) =
+        builder.Populate <| services.AsEnumerable(); builder
+
 [<AutoOpen>]
 module Main = 
-    open Autofac
-    open Autofac.Extras.Attributed
+    open Autofac.Extras.AttributeMetadata
     open FlexSearch.Core
-    open System.Linq
-    open System.Diagnostics
 
     /// Get a container with all dependencies setup
-    let getContainer (serverSettings : Settings.T, testServer : bool) = 
+    let setupDependencies (testServer : bool) (serverSettings : Settings.T) (services : IServiceCollection) = 
         let mefContainer = getMefContainer()
         let builder = new ContainerBuilder()
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
         // so the meta-data attributes get read.
-        builder.RegisterModule<AttributedMetadataModule>() |> ignore
-        builder.RegisterInstance(serverSettings).SingleInstance().As<Settings.T>() |> ignore
-
         builder
+        |> registerModule<AttributedMetadataModule>
+        |> injectFromAspDi services
+        |> registerInstance<Settings.T>(serverSettings)
         // Register the groups/factories of services
         |> registerImportGroup<IFlexQuery> mefContainer
         |> registerImportGroup<IFlexQueryFunction> mefContainer
         // Register Utilities
-        |> registerSingleInstance<NewtonsoftJsonFormatter, IFormatter>
-        |> registerSingleInstance<ThreadSafeFileWriter, ThreadSafeFileWriter>
-        |> registerSingleInstance<FlexParser, IFlexParser>
+        |> registerSingleton<NewtonsoftJsonFormatter, IFormatter>
+        |> registerSingleton<ThreadSafeFileWriter, ThreadSafeFileWriter>
+        |> registerSingleton<FlexParser, IFlexParser>
         // Register services
-        |> registerSingleInstanceWithParam<AnalyzerService, IAnalyzerService> "testMode" testServer
-        |> registerSingleInstanceWithParam<IndexService, IIndexService> "testMode" testServer
-        |> registerSingleInstance<ScriptService, IScriptService>
-        |> registerSingleInstance<DocumentService, IDocumentService>
-        |> registerSingleInstance<QueueService, IQueueService>
-        |> registerSingleInstance<SearchService, ISearchService>
-        |> registerSingleInstance<JobService, IJobService>
-        |> registerSingleInstance<DemoIndexService, DemoIndexService>
-        |> registerSingleInstance<EventAggregrator, EventAggregrator>
+        |> registerSingletonWithParam<AnalyzerService, IAnalyzerService> "testMode" testServer
+        |> registerSingletonWithParam<IndexService, IIndexService> "testMode" testServer
+        |> registerSingleton<ScriptService, IScriptService>
+        |> registerSingleton<DocumentService, IDocumentService>
+        |> registerSingleton<QueueService, IQueueService>
+        |> registerSingleton<SearchService, ISearchService>
+        |> registerSingleton<JobService, IJobService>
+        |> registerSingleton<DemoIndexService, DemoIndexService>
+        |> registerSingleton<EventAggregrator, EventAggregrator>
         // Build the container
         |> fun b -> b.Build()
         // We need to add the resolved instances as exports to MEF so that it 
@@ -130,14 +145,9 @@ module Main =
         |> injectServicesToMef mefContainer
         // Register the HttpHandlers
         |> updateRegisterImportGroup<IHttpHandler> mefContainer
+        // Return an IServiceProvider to be compatible with Microsoft's DI
+        |> fun container -> container.Resolve<IServiceProvider>()
 
-//            let indexService = container.Resolve<IIndexService>()
-// Close all open indices
-//            match indexService.GetAllIndex() with
-//            | Ok(regs) -> 
-//                for registeration in regs do
-//                    indexService.CloseIndex(registeration.IndexName) |> ignore
-//            | _ -> ()
 module Interop = 
     open System
     open System.Linq
@@ -181,19 +191,23 @@ module Interop =
 /// Used by windows service (top shelf) to start and stop windows service.
 [<Sealed>]
 type NodeService(serverSettings : Settings.T, testServer : bool) = 
-    let container = getContainer (serverSettings, testServer)
     let mutable httpServer = Unchecked.defaultof<IServer>
     
     /// Perform all the clean up tasks to be run just before a shutdown request is 
     /// received by the server
     let shutdown() = 
         httpServer.Stop()
-        // Get all types which implements IRequireNotificationForShutdown and issue shutdown command
-        container.ComponentRegistry.Registrations
-        |> Seq.where (fun x -> typeof<IRequireNotificationForShutdown>.IsAssignableFrom(x.Activator.LimitType))
-        |> Seq.map (fun x -> x.Activator.LimitType |> container.Resolve :?> IRequireNotificationForShutdown)
-        |> Seq.toArray
-        |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
+        // Get all types which implement IRequireNotificationForShutdown and issue shutdown command
+        match httpServer.Services with
+        | Some(container) -> 
+            // TODO check it works
+            container.GetServices<IRequireNotificationForShutdown>()(*.ComponentRegistry.Registrations
+            |> Seq.where (fun x -> typeof<IRequireNotificationForShutdown>.IsAssignableFrom(x.Activator.LimitType))
+            |> Seq.map (fun x -> x.Activator.LimitType |> container.Resolve :?> IRequireNotificationForShutdown)*)
+            |> Seq.toArray
+            |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
+        | _ -> 
+            Logger.Log("Couldn't get access to the web server's service provider", MessageKeyword.Default, MessageLevel.Warning)
     
     // do 
     // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
@@ -201,8 +215,7 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
     //            if testServer <> true then MaximizeThreads() |> ignore
     member __.Start() = 
         try 
-            let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
-            httpServer <- new WebServer(generateRoutingTable handlerModules, serverSettings)
+            httpServer <- new WebServer(setupDependencies testServer, serverSettings)
             httpServer.Start()
         with e -> printfn "%A" e
     

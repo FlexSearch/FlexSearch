@@ -82,7 +82,7 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = Main.getContainer (Settings.T.GetDefault(), true)
+    let container = Main.setupDependencies (Settings.T.GetDefault(), true)
     let serverSettings = container.Resolve<Settings.T>()
     let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
         

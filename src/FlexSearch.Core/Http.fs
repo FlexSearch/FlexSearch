@@ -31,6 +31,7 @@ open System.Threading.Tasks
 open System.Runtime.Versioning
 open System.ComponentModel.Composition
 open Microsoft.AspNet.Hosting
+open Microsoft.AspNet.Hosting.Internal
 open Microsoft.AspNet.Builder
 open Microsoft.Extensions.Configuration
 open Microsoft.AspNet.StaticFiles
@@ -264,12 +265,18 @@ module Http =
 type IServer = 
     abstract Start : unit -> unit
     abstract Stop : unit -> unit
+    // This member is exposed to access the services so that they can be gracefully shut down
+    abstract member Services : IServiceProvider option
 
-/// Owin katana server
 [<Sealed>]
-type WebServer(httpModule : Dictionary<string, IHttpHandler>, serverSettings: Settings.T) = 
+type WebServer(dependencySetup : Settings.T -> IServiceCollection -> IServiceProvider, serverSettings: Settings.T) = 
     let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
-    let _httpModule = httpModule
+    let _httpHandlers = new Dictionary<string, IHttpHandler>()
+    let mutable engine = Unchecked.defaultof<IHostingEngine>
+    let mutable server = Unchecked.defaultof<IDisposable>
+    let mutable thread = Unchecked.defaultof<_>
+    let serverAssemblyName = "Microsoft.AspNet.Server.WebListener"
+
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
 Use the below command to add URL reservation.
@@ -282,7 +289,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     let exec (ctxt : HttpContext) = 
         async { 
             let findHandler lookupValue = 
-                match _httpModule.TryGetValue(lookupValue) with
+                match _httpHandlers.TryGetValue(lookupValue) with
                 | (true, x) -> Some x
                 | _ -> None
             try 
@@ -305,9 +312,6 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
     /// Default OWIN handler to transform C# function to F#
     let handler = Func<HttpContext, Func<Task>, Tasks.Task>(fun ctx _ -> Async.StartAsTask(exec ctx) :> Task)
     
-    let mutable server = Unchecked.defaultof<IDisposable>
-    let mutable thread = Unchecked.defaultof<_>
-    let serverAssemblyName = "Microsoft.AspNet.Server.WebListener"
 
     let configuration (app : IApplicationBuilder) = 
         let fileServerOptions = new FileServerOptions()
@@ -332,6 +336,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         |> ignore
 
     let _webHostBuilder =
+        let configureAutofacServices (services : IServiceCollection) : IServiceProvider =
+            services |> dependencySetup serverSettings
+
         let setupServices (services : IServiceCollection) = 
             services.AddCors()
                     .AddFrameworkLogging(fun () -> serverSettings.ConfigurationSource.Item "Server:FrameworkLogging" = "true")
@@ -344,7 +351,9 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                                                         new FrameworkName(".NETFramework,Version=v4.5"),
                                                         conf,
                                                         Assembly.Load(serverAssemblyName))
-            services.AddInstance<IApplicationEnvironment>(appEnv)
+
+            // Add the instance of the Hosting environment
+            services.AddInstance<IApplicationEnvironment>(appEnv) |> ignore
 
         // Set the port number
         // This is a hacky way of doing it. This is the key that AspNet.Hosting module is using to set the
@@ -354,10 +363,10 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 
         (new WebHostBuilder(serverSettings.ConfigurationSource))
             .UseServer(serverAssemblyName)
-            .UseStartup(configuration)
-            .UseServices(fun s -> setupServices s |> ignore)
+            .UseStartup(configuration, configureAutofacServices)
+            .UseServices(fun s -> setupServices s)
 
-    // This member is exposed to insta
+    // This member is exposed to instantiate the Test Server
     member __.GetWebHostBuilder() = _webHostBuilder
 
     interface IServer with
@@ -365,7 +374,15 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
         member this.Start() = 
             let startServer() = 
                 try 
-                    server <- _webHostBuilder.Build().Start()
+                    engine <- _webHostBuilder.Build()
+
+                    // Resolve the Http Handlers
+                    engine.ApplicationServices.GetService<Dictionary<string, IHttpHandler>>()
+                    |> generateRoutingTable
+                    |> Seq.iter (fun kv -> _httpHandlers.Add(kv.Key, kv.Value))
+                    
+                    // Start the server
+                    server <- engine.Start()
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
                 with 
                     | :? ReflectionTypeLoadException as e -> 
@@ -390,3 +407,6 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
             with e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
         
         member __.Stop() = server.Dispose()
+
+        member __.Services = if engine |> isNull then None
+                             else engine.ApplicationServices |> Some
