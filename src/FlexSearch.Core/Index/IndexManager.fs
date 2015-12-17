@@ -152,18 +152,23 @@ module IndexManager =
                 return CreateResponse(index.IndexName)
         }
     
-    /// Close an existing index and set the status to off-line
-    let closeIndex (indexName : string) (t : T) = 
+    /// Shut down an existing index without saving the configuration as Inactive
+    let shutdownIndex (indexName : string) (t : T) = 
         maybe { 
             let! indexState = t |> indexState indexName
             match indexState.IndexStatus with
             | IndexStatus.Closing | IndexStatus.Offline -> return! fail <| IndexIsAlreadyOffline(indexName)
             | _ -> 
                 indexState.IndexDto.Active <- false
-                do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto)
                 indexState.IndexWriter.Value |> IndexWriter.close
                 do! t |> updateState (createIndexState (indexState.IndexDto, IndexStatus.Offline))
+            return indexState
         }
+
+    /// Close an existing index by shutting it down and saving it as Inactive
+    let closeIndex (indexName : string) (t : T) = 
+        t |> shutdownIndex indexName
+        >>= (fun indexState -> t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto))
     
     /// open an existing index and set the status to online
     let openIndex (indexName : string) (t : T) = 

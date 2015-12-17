@@ -326,7 +326,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
                 eventAggregrator.Push(RegisterForShutdownCallback(__))
                 getAllIndex() |> Array.Parallel.iter (fun i -> 
                                      im
-                                     |> IndexManager.closeIndex i.IndexName
+                                     |> IndexManager.shutdownIndex i.IndexName
                                      |> ignore)
             }
                 
