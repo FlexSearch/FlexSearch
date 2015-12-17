@@ -165,7 +165,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         filters.Add(new Filter(FilterName = "phonetic", Parameters = filterParams))
         let analyzerDefinition = 
             new Models.Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
-                             Tokenizer = new Models.Tokenizer(TokenizerName = "whitespace"), Filters = filters)
+                             Tokenizer = new Models.Tokenizer(TokenizerName = "whitespace"), Filters = filters.ToArray())
         (analyzerDefinition, Analysis.buildFromAnalyzerDto (analyzerDefinition) |> extract)
     
     let path = 
@@ -291,7 +291,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         member __.UpdateIndexFields(indexName:string, fields : Field []) = 
             match im.Store.TryGetValue(indexName) with
             | true, state -> let index = state.IndexDto
-                             index.Fields <- fields.ToList()
+                             index.Fields <- fields
                              im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
 

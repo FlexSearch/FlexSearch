@@ -73,7 +73,7 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : List<Field>, analyzerService, scriptService) (build) = 
+    let withFields (fields : Field[], analyzerService, scriptService) (build) = 
         let ic = build.Setting.IndexConfiguration
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new Field.FieldCollection()
@@ -94,7 +94,7 @@ module IndexSettingBuilder =
                                               IndexAnalyzer = buildAnalyzer (result, true) } }
     
     /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : List<SearchQuery>, parser : IFlexParser) (build) = 
+    let withSearchProfiles (profiles : SearchQuery[], parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
             let predicate = returnOrFail <| parser.Parse profile.QueryString

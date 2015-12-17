@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Models
 open Microsoft.Extensions.Primitives
 open System.Net
 open System.IO

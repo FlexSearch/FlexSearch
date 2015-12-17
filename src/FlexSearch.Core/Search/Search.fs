@@ -110,7 +110,7 @@ module SearchResultComponents =
         let searchResults = new SearchResults()
         searchResults.RecordsReturned <- result.Meta.RecordsReturned
         searchResults.TotalAvailable <- result.Meta.TotalAvailable
-        searchResults.Documents <- toStructuredResults(result).Documents.ToList()
+        searchResults.Documents <- toStructuredResults(result).Documents.ToArray()
         searchResults
 
 // ----------------------------------------------------------------------------
@@ -283,7 +283,7 @@ module SearchDsl =
 
         match search.Columns with
         // Return no other columns when nothing is passed
-        | _ when search.Columns.Count = 0 -> ()
+        | _ when search.Columns.Length = 0 -> ()
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
@@ -360,7 +360,7 @@ module SearchDsl =
         let highlighterOptions = 
             if notNull searchQuery.Highlights then 
                 match searchQuery.Highlights.HighlightedFields with
-                | x when x.Count = 1 -> 
+                | x when x.Length = 1 -> 
                     match indexWriter.Settings.Fields.TryGetValue(x.First()) with
                     | (true, field) -> 
                         let htmlFormatter = 
@@ -409,7 +409,7 @@ module SearchDsl =
                 resultDoc.Fields <- fields
                 resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
                                    else 0.0
-                resultDoc.Highlights <- (getHighlighter (document, hit.ShardIndex, hit.Doc)).ToList()
+                resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
                 SearchResultComponents.StructuredResult(resultDoc)
         
         let distinctByFilter (document : LuceneDocument) = 

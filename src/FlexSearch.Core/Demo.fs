@@ -17,6 +17,9 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
 open FlexLucene.Analysis.Synonym
 open FlexLucene.Util
 open Newtonsoft.Json
@@ -105,26 +108,26 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
         index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
         index.Active <- true
         index.Fields <- [| new Field("countryname")
-                           new Field("exports", FieldDataType.Long)
-                           new Field("imports", FieldDataType.Text, IndexAnalyzer = "striptonumbersanalyzer")
-                           new Field("independence", FieldDataType.Date)
-                           new Field("militaryexpenditure", FieldDataType.Double)
-                           new Field("netmigration", FieldDataType.Double)
-                           new Field("area", FieldDataType.Int)
-                           new Field("internetusers", FieldDataType.Long)
-                           new Field("labourforce", FieldDataType.Long)
-                           new Field("population", FieldDataType.Long)
-                           new Field("agriproducts", FieldDataType.Text, IndexAnalyzer = "foodsynonymsanalyzer")
+                           new Field("exports", Constants.FieldType.Long)
+                           new Field("imports", Constants.FieldType.Text, IndexAnalyzer = "striptonumbersanalyzer")
+                           new Field("independence", Constants.FieldType.Date)
+                           new Field("militaryexpenditure", Constants.FieldType.Double)
+                           new Field("netmigration", Constants.FieldType.Double)
+                           new Field("area", Constants.FieldType.Int)
+                           new Field("internetusers", Constants.FieldType.Long)
+                           new Field("labourforce", Constants.FieldType.Long)
+                           new Field("population", Constants.FieldType.Long)
+                           new Field("agriproducts", Constants.FieldType.Text, IndexAnalyzer = "foodsynonymsanalyzer")
                            new Field("areacomparative")
-                           new Field("background", FieldDataType.Highlight)
+                           new Field("background", Constants.FieldType.Highlight)
                            new Field("capital")
                            new Field("climate")
                            new Field("economy")
                            new Field("governmenttype")
                            new Field("memberof")
-                           new Field("countrycode", FieldDataType.ExactText)
+                           new Field("countrycode", Constants.FieldType.ExactText)
                            new Field("nationality")
-                           new Field("coordinates", FieldDataType.ExactText) |]
+                           new Field("coordinates", Constants.FieldType.ExactText) |]
         index
     
     let buildSynonymFile fileName = 
@@ -138,22 +141,19 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             // Custom analyzer for food synonym
             let foodsynonymsanalyzer = new Analyzer(AnalyzerName = "foodsynonymsanalyzer")
             foodsynonymsanalyzer.Tokenizer <- new Tokenizer(TokenizerName = "standard")
-            foodsynonymsanalyzer.Filters.Add(new TokenFilter(FilterName = "standard"))
-            foodsynonymsanalyzer.Filters.Add(new TokenFilter(FilterName = "lowercase"))
-            let synonymfilter = new TokenFilter(FilterName = "synonym")
+            let synonymfilter = new Filter(FilterName = "synonym")
             let synonymFileName = "foodsynonyms.txt"
             buildSynonymFile synonymFileName
             synonymfilter.Parameters.Add("synonyms", synonymFileName)
-            foodsynonymsanalyzer.Filters.Add(synonymfilter)
+            foodsynonymsanalyzer.Filters <- [| new Filter(FilterName = "standard"); new Filter(FilterName = "lowercase"); synonymfilter |]
             do! analyzerService.UpdateAnalyzer(foodsynonymsanalyzer)
             // Custom analyzer for strip to numbers
             let striptonumbersanalyzer = new Analyzer(AnalyzerName = "striptonumbersanalyzer")
             striptonumbersanalyzer.Tokenizer <- new Tokenizer(TokenizerName = "keyword")
-            striptonumbersanalyzer.Filters.Add(new TokenFilter(FilterName = "standard"))
-            let regexFilter = new TokenFilter(FilterName = "patternreplace")
+            let regexFilter = new Filter(FilterName = "patternreplace")
             regexFilter.Parameters.Add("pattern", @"[a-z$ ]")
             regexFilter.Parameters.Add("replacement", "")
-            striptonumbersanalyzer.Filters.Add(regexFilter)
+            foodsynonymsanalyzer.Filters <- [| new Filter(FilterName = "standard"); regexFilter |]
             do! analyzerService.UpdateAnalyzer(striptonumbersanalyzer)
             let! createResponse = indexService.AddIndex(index)
             // Index data

@@ -17,6 +17,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
 open System
 open System.Data
 open System.Data.SqlClient
@@ -137,7 +139,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
             let rec loop() = 
                 async { 
                     let! (body : CsvIndexingRequest, path : string, jobId : Guid, isFolder : bool) = inbox.Receive()
-                    let job = new Job(JobId = jobId.ToString("N"), Status = JobStatus.InProgress)
+                    let job = new Job(JobId = jobId.ToString("N"), JobStatus = JobStatus.InProgress)
                     jobService.UpdateJob(job) |> ignore
                     let execFileJob filePath = 
                         match processFile (body, filePath) with
@@ -150,8 +152,8 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                     if isFolder then Directory.EnumerateFiles(path) |> Seq.iter execFileJob
                     else execFileJob path
                     // Mark the Job as Completed with/without errors
-                    if job.FailedItems > 0 then job.Status <- JobStatus.CompletedWithErrors
-                    else job.Status <- JobStatus.Completed
+                    if job.FailedItems > 0 then job.JobStatus <- JobStatus.CompletedWithErrors
+                    else job.JobStatus <- JobStatus.Completed
                     jobService.UpdateJob(job) |> ignore
                     return! loop()
                 }
@@ -208,7 +210,7 @@ type SqlHandler(queueService : IQueueService, jobService : IJobService) =
     let ExecuteSql(request : SqlIndexingRequest, jobId) = 
         let isNotBlank = isBlank >> not
         if request.CreateJob then 
-            let job = new Job(JobId = jobId, Status = JobStatus.InProgress)
+            let job = new Job(JobId = jobId, JobStatus = JobStatus.InProgress)
             jobService.UpdateJob(job) |> ignore
         try 
             use connection = new SqlConnection(request.ConnectionString)
