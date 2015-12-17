@@ -7,7 +7,7 @@
   },
   "definitions": {
     "analysisRequest": {
-      "description": "Represents a request object which can be used to analyze a text input using an analyzer.",
+      "description": "A request object which can be used to analyze a text input using an analyzer.",
       "type": "object",
       "required": [ "text", "analyzerName" ],
       "properties": {
@@ -22,7 +22,7 @@
       }
     },
     "tokenizer": {
-      "description": "",
+      "description": "<<tokenizer>>",
       "type": "object",
       "required": [ "tokenizerName" ],
       "properties": {
@@ -31,7 +31,7 @@
           "type": "string"
         },
         "parameters": {
-          "description": "",
+          "description": "<<parameters>>",
           "type": "object",
           "additionalProperties": {
             "type": "string"
@@ -40,7 +40,7 @@
       }
     },
     "filter": {
-      "description": "",
+      "description": "<<filter>>",
       "type": "object",
       "required": [ "filterName" ],
       "properties": {
@@ -58,7 +58,7 @@
       }
     },
     "analyzer": {
-      "description": "",
+      "description": "<<analyzer>>",
       "type": "object",
       "required": [ "analyzerName", "tokenizer" ],
       "properties": {
@@ -79,7 +79,7 @@
       }
     },
     "shardConfiguration": {
-      "description": "",
+      "description": "Allows to control various Index Shards related settings.",
       "type": "object",
       "properties": {
         "shardCount": {
@@ -93,7 +93,7 @@
       }
     },
     "indexConfiguration": {
-      "description": "",
+      "description": "Allows to control various Index related settings.",
       "type": "object",
       "properties": {
         "commitTimeSeconds": {
@@ -181,43 +181,23 @@
       }
     },
     "field": {
-      "description": "",
+      "description": "<<field>>",
       "type": "object",
       "required": [ "fieldName" ],
       "properties": {
-        "fieldName": {
-          "description": "Name of the field",
-          "type": "string"
-        },
-        "analyze": {
-          "description": "",
-          "type": "boolean",
-          "default": true
-        },
-        "index": {
-          "description": "",
-          "type": "boolean",
-          "default": true
-        },
-        "store": {
-          "description": "",
-          "type": "boolean",
-          "default": true
-        },
         "allowSort": {
           "description": "",
           "type": "boolean",
           "default": false
         },
-        "indexAnalyzer": {
-          "description": "",
-          "type": "string",
-          "default": "standard"
+        "analyze": {
+          "description": "Signifies if the field should be analyzed using an analyzer.",
+          "type": "boolean",
+          "default": true
         },
-        "searchAnalyzer": {
-          "description": "",
-          "type": "string",
-          "default": "standard"
+        "fieldName": {
+          "description": "Name of the field",
+          "type": "string"
         },
         "fieldType": {
           "description": "",
@@ -225,23 +205,21 @@
           "enum": [ "Int", "Double", "ExactText", "Text", "Highlight", "Bool", "Date", "DateTime", "Custom", "Stored", "Long" ],
           "default": "Text"
         },
-        "similarity": {
-          "description": "Similarity defines the components of Lucene scoring. Similarity determines how Lucene weights terms and Lucene interacts with Similarity at both index-time and query-time.",
+        "index": {
+          "default": true,
+          "description": "Signifies if a field should be indexed. A field can only be stored without indexing.",
+          "type": "boolean"
+        },
+        "indexAnalyzer": {
+          "description": "",
           "type": "string",
-          "enum": [ "BM25", "TFIDF" ],
-          "default": "TFIDF"
+          "default": "standard"
         },
         "indexOptions": {
+          "default": "DocsAndFreqsAndPositions",
           "description": "",
-          "type": "string",
           "enum": [ "DocsOnly", "DocsAndFreqs", "DocsAndFreqsAndPositions", "DocsAndFreqsAndPositionsAndOffsets" ],
-          "default": "DocsAndFreqsAndPositions"
-        },
-        "termVector": {
-          "description": "",
-          "type": "string",
-          "enum": [ "DoNotStoreTermVector", "StoreTermVector", "StoreTermVectorsWithPositions", "StoreTermVectorsWithPositionsandOffsets" ],
-          "default": "DoNotStoreTermVector"
+          "type": "string"
         },
         "omitNorms": {
           "description": "",
@@ -252,6 +230,28 @@
           "description": "",
           "type": "string",
           "default": ""
+        },
+        "searchAnalyzer": {
+          "description": "",
+          "type": "string",
+          "default": "standard"
+        },
+        "similarity": {
+          "description": "<<similarity>>",
+          "type": "string",
+          "enum": [ "BM25", "TFIDF" ],
+          "default": "TFIDF"
+        },
+        "store": {
+          "description": "",
+          "type": "boolean",
+          "default": true
+        },
+        "termVector": {
+          "description": "",
+          "type": "string",
+          "enum": [ "DoNotStoreTermVector", "StoreTermVector", "StoreTermVectorsWithPositions", "StoreTermVectorsWithPositionsandOffsets" ],
+          "default": "DoNotStoreTermVector"
         }
       }
     },
@@ -328,7 +328,7 @@
         },
         "cutOff": {
           "description": "Can be used to remove results lower than a certain threshold. This works in conjunction with the score of the top record as all the other records are filtered using the score set by the top scoring record.",
-          "type": "integer",
+          "type": "number",
           "format": "double"
         },
         "distinctBy": {
@@ -411,7 +411,7 @@
         },
         "score": {
           "description": "",
-          "type": "integer",
+          "type": "number",
           "format": "double"
         }
       }
@@ -545,7 +545,7 @@
         },
         "usage": {
           "description": "",
-          "type": "integer",
+          "type": "number",
           "format": "double"
         }
       }
