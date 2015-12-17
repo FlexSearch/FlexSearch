@@ -322,7 +322,8 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
     
     interface IRequireNotificationForShutdown with
         member __.Shutdown() = 
-            async { 
+            async {
+                eventAggregrator.Push(RegisterForShutdownCallback(__))
                 getAllIndex() |> Array.Parallel.iter (fun i -> 
                                      im
                                      |> IndexManager.closeIndex i.IndexName

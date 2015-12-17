@@ -120,27 +120,19 @@ module IndexManager =
     let loadAllIndex (t : T) = 
         let loadFromFile (path) = 
             match t.ThreadSafeFileWriter.ReadFile<Index>(path) with
-            | Ok(dto) -> 
-                t
-                |> updateState (createIndexState (dto, IndexStatus.Opening))
-                |> ignore
-                Some(dto)
-            | Fail(error) -> 
-                Logger.Log(error)
-                None
+            | Ok(dto) -> Some (dto)
+            | Fail(error) -> Logger.Log(error); None
         
         let queueOnThreadPool (dto : Index) = 
-            ThreadPool.QueueUserWorkItem
-                (fun _ -> 
-                try 
-                    t
-                    |> loadIndex dto
-                    |> Logger.Log
-                    |> ignore
+            fun _ -> 
+                try t 
+                    |> loadIndex dto 
+                    |> (Logger.Log >> ignore)
                 with e -> 
                     Logger.Log
                         (sprintf "Index Loading Error. Index Name: %s" dto.IndexName, e, MessageKeyword.Node, 
-                         MessageLevel.Error))
+                            MessageLevel.Error)
+            |> ThreadPool.QueueUserWorkItem
             |> ignore
         
         loopFiles (path)
