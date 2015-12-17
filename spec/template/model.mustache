@@ -39,7 +39,6 @@ namespace FlexSearch.Api.Models
         /// </summary>
         public {{classname}}()
         {		
-            {{> model-constructor-body}}
         }
 		
 		{{#mandatory}}{{#-first}}
@@ -53,7 +52,6 @@ namespace FlexSearch.Api.Models
 			{{#vars}}{{#required}}
             this.{{name}} = {{baseName}};
 			{{/required}}{{/vars}}						
-            {{> model-constructor-body}}
         }
 		{{/-first}}{{/mandatory}}        
         {{#vars}}

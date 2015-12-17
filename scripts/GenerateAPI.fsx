@@ -36,9 +36,11 @@ module GenerateAPI =
                 line <- line.Remove(startPos + 1, 1)
                 line <- line.Remove(endPos - 1, 1)
             // Convert lists to array
-//            if line.Contains("List<") then
-//                line <- line.Replace("List<", "")
-//                line <- line.Replace(">", "[]")
+            if line.Contains("List<") then
+                line <- line.Replace("List<", "")
+                line <- line.Replace(">>", "%%")
+                line <- line.Replace(">", "[]")
+                line <- line.Replace("%%", ">")
             line
 
         let cleanupFile(f) =
