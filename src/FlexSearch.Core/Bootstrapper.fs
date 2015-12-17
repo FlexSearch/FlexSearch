@@ -61,6 +61,28 @@ module BootstrappingHelpers =
         try (value.GetType() |> getTypeNameFromAttribute, value) |> Some
         with e -> Logger.Log(e, MessageKeyword.Plugin, MessageLevel.Critical); None
 
+    let updateContainer (registrationFunction : ContainerBuilder -> ContainerBuilder)  (container : IContainer) =
+        new ContainerBuilder()
+        |> registrationFunction
+        |> fun builder -> builder.Update container
+        container
+
+    let registerExistingInstanceAs<'Interface> (container : IContainer) =
+        let builder = new ContainerBuilder()
+        
+        container.ComponentRegistry.Registrations
+        |> Seq.where (fun x -> typeof<'Interface>.IsAssignableFrom(x.Activator.LimitType))
+        // Get the main interface it implements
+        |> Seq.map (fun x -> x.Services |> Seq.head :?> TypedService |> fun s -> s.ServiceType) 
+        // Resolve to an instance
+        |> Seq.map container.Resolve
+        // Register that instance to the new interface
+        |> Seq.iter (fun instance -> builder.RegisterInstance(instance).SingleInstance().As<'Interface>() |> ignore)
+        
+        builder.Update container
+        container
+
+
     let registerImportGroup<'Interface> (mefContainer : CompositionContainer) (builder : ContainerBuilder) =
         try
             let importGroup = mefContainer.GetExportedValues<'Interface>()
@@ -75,13 +97,6 @@ module BootstrappingHelpers =
         with e -> Logger.Log <| PluginLoadFailure("Unknown", typedefof<'Interface>.FullName, exceptionPrinter e);
 
         builder
-
-    // Registers an import group into an existing DI container by updating the DI Container
-    let updateRegisterImportGroup<'T> (mefContainer : CompositionContainer) (diContainer : IContainer) =
-        new ContainerBuilder()
-        |> registerImportGroup<'T> mefContainer
-        |> fun builder -> builder.Update diContainer
-        diContainer
 
     let injectServicesToMef (mefContainer : CompositionContainer) (diContainer : IContainer) =
         diContainer.ComponentRegistry.Registrations
@@ -144,7 +159,9 @@ module Main =
         // can use them in the HttpHandlers
         |> injectServicesToMef mefContainer
         // Register the HttpHandlers
-        |> updateRegisterImportGroup<IHttpHandler> mefContainer
+        |> updateContainer (registerImportGroup<IHttpHandler> mefContainer)
+        // Register the services required for shutdown
+        |> registerExistingInstanceAs<IRequireNotificationForShutdown>
         // Return an IServiceProvider to be compatible with Microsoft's DI
         |> fun container -> container.Resolve<IServiceProvider>()
 
@@ -200,10 +217,7 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
         // Get all types which implement IRequireNotificationForShutdown and issue shutdown command
         match httpServer.Services with
         | Some(container) -> 
-            // TODO check it works
-            container.GetServices<IRequireNotificationForShutdown>()(*.ComponentRegistry.Registrations
-            |> Seq.where (fun x -> typeof<IRequireNotificationForShutdown>.IsAssignableFrom(x.Activator.LimitType))
-            |> Seq.map (fun x -> x.Activator.LimitType |> container.Resolve :?> IRequireNotificationForShutdown)*)
+            container.GetServices<IRequireNotificationForShutdown>()
             |> Seq.toArray
             |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
         | _ -> 
