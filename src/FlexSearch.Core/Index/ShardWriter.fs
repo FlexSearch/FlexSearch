@@ -136,6 +136,11 @@ module ShardWriter =
         try 
             sw.SearcherManager.Close()
             sw.IndexWriter.Close()
+            sw.TxWriter :> IRequireNotificationForShutdown 
+            |> fun x -> x.Shutdown()
+            |> Async.RunSynchronously
+            sw.TxWriter :> IDisposable
+            |> fun x -> x.Dispose()
         with AlreadyClosedException -> ()
     
     /// Adds a document to this index.
