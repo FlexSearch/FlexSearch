@@ -43,7 +43,7 @@ module BootstrappingHelpers =
     let registerModule<'T when 'T : (new : unit -> 'T) and 'T :> IModule> (builder : ContainerBuilder) = 
         builder.RegisterModule<'T>() |> ignore; builder
         
-    let registerInstance<'Interface> implementation (builder : ContainerBuilder) =
+    let registerInstance<'Interface> (implementation : obj) (builder : ContainerBuilder) =
         builder.RegisterInstance(implementation).SingleInstance().As<'Interface>() |> ignore
         builder
 
@@ -77,11 +77,27 @@ module BootstrappingHelpers =
         // Resolve to an instance
         |> Seq.map container.Resolve
         // Register that instance to the new interface
-        |> Seq.iter (fun instance -> builder.RegisterInstance(instance).SingleInstance().As<'Interface>() |> ignore)
+        |> Seq.iter (fun instance -> builder |> registerInstance<'Interface>(instance) |> ignore)
         
         builder.Update container
         container
 
+    let logEvents (eventAggregator : EventAggregator) =
+        fun event -> 
+            match event with
+            | IndexStatusChange(idxName, status) -> Logger.Log(sprintf "Index '%s' changed status to '%s'" idxName status,
+                                                               MessageKeyword.Node,
+                                                               MessageLevel.Info)
+            | ShardStatusChange(idxName, sNo, status) -> Logger.Log(sprintf "Shard number %i of index '%s' changed status to '%s'" sNo idxName status,
+                                                                    MessageKeyword.Node,
+                                                                    MessageLevel.Info)
+            | RegisterForShutdownCallback(service) -> Logger.Log(sprintf "Service %s has been called to shut down" <| service.GetType().FullName,
+                                                                 MessageKeyword.Node,
+                                                                 MessageLevel.Info)
+        |> Event.add
+        <| eventAggregator.Event()
+
+        eventAggregator
 
     let registerImportGroup<'Interface> (mefContainer : CompositionContainer) (builder : ContainerBuilder) =
         try
@@ -90,8 +106,7 @@ module BootstrappingHelpers =
                               // we'll just going to use reflection to get the Name from a specific type.
                               |> Seq.choose mapImportsToNames
                               |> fun x -> x.ToDictionary(fst, snd)
-        
-            builder.RegisterInstance(importGroup).SingleInstance().As<Dictionary<string,'Interface>>() |> ignore
+            builder |> registerInstance<Dictionary<string, 'Interface>>(importGroup) |> ignore
         
             Logger.Log <| PluginsLoaded(typedefof<'Interface>.FullName, importGroup.Keys.ToList())
         with e -> Logger.Log <| PluginLoadFailure("Unknown", typedefof<'Interface>.FullName, exceptionPrinter e);
@@ -128,6 +143,10 @@ module Main =
     let setupDependencies (testServer : bool) (serverSettings : Settings.T) (services : IServiceCollection) = 
         let mefContainer = getMefContainer()
         let builder = new ContainerBuilder()
+        // The event aggregator logging needs to be instantiated here because log messages
+        // begin to be pushed once services are instantiated/resolved
+        let eventAggregator = new EventAggregator() |> logEvents
+
         // Register the service to consume with meta-data.
         // Since we're using attributed meta-data, we also
         // need to register the AttributedMetadataModule
@@ -135,6 +154,7 @@ module Main =
         builder
         |> registerModule<AttributedMetadataModule>
         |> injectFromAspDi services
+        |> registerInstance<EventAggregator>(eventAggregator)
         |> registerInstance<Settings.T>(serverSettings)
         // Register the groups/factories of services
         |> registerImportGroup<IFlexQuery> mefContainer
@@ -152,7 +172,6 @@ module Main =
         |> registerSingleton<SearchService, ISearchService>
         |> registerSingleton<JobService, IJobService>
         |> registerSingleton<DemoIndexService, DemoIndexService>
-        |> registerSingleton<EventAggregrator, EventAggregrator>
         // Build the container
         |> fun b -> b.Build()
         // We need to add the resolved instances as exports to MEF so that it 
@@ -222,7 +241,7 @@ type NodeService(serverSettings : Settings.T, testServer : bool) =
             |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
         | _ -> 
             Logger.Log("Couldn't get access to the web server's service provider", MessageKeyword.Default, MessageLevel.Warning)
-    
+
     // do 
     // Increase the HTTP.SYS backlog queue from the default of 1000 to 65535.
     // To verify that this works, run `netsh http show servicestate`.

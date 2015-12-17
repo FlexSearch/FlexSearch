@@ -35,19 +35,6 @@ open java.util
 open System.Diagnostics
 open System.Threading.Tasks
 
-/// The types of events which can be raised on the event aggregrator
-type EventType = 
-    | ShardStatusChange of indexName : string * shardNo : int * shardStatus : ShardStatus
-    | IndexStatusChange of indexName : string * indexStatus : IndexStatus
-    | RegisterForShutdownCallback of service : IRequireNotificationForShutdown
-
-/// A multi-purpose event aggregrator pipeline for raising and subscribing to server
-/// event in a decoupled manner
-type EventAggregrator() = 
-    let event = new Event<EventType>()
-    member __.Event() = event.Publish
-    member __.Push(e : EventType) = event.Trigger(e)
-
 /// This module contains all the meta data related fields used throughout the system
 [<AutoOpen>]
 module MetaFields = 

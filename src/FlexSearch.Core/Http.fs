@@ -366,6 +366,21 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
             .UseStartup(configuration, configureAutofacServices)
             .UseServices(fun s -> setupServices s)
 
+    let logEvents (eventAggregator : EventAggregator) =
+        fun event -> 
+            match event with
+            | IndexStatusChange(idxName, status) -> Logger.Log(sprintf "Index '%s' changed status to '%s'" idxName status,
+                                                               MessageKeyword.Node,
+                                                               MessageLevel.Info)
+            | ShardStatusChange(idxName, sNo, status) -> Logger.Log(sprintf "Shard number %i of index '%s' changed status to '%s'" sNo idxName status,
+                                                                    MessageKeyword.Node,
+                                                                    MessageLevel.Info)
+            | RegisterForShutdownCallback(service) -> Logger.Log(sprintf "Service %s has been called to shut down" <| service.GetType().FullName,
+                                                                 MessageKeyword.Node,
+                                                                 MessageLevel.Info)
+        |> Event.add
+        <| eventAggregator.Event()
+
     // This member is exposed to instantiate the Test Server
     member __.GetWebHostBuilder() = _webHostBuilder
 
@@ -376,13 +391,17 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                 try 
                     engine <- _webHostBuilder.Build()
 
+                    // Subscribe to events in order to log them
+                    engine.ApplicationServices.GetService<EventAggregator>() |> logEvents
+
                     // Resolve the Http Handlers
                     engine.ApplicationServices.GetService<Dictionary<string, IHttpHandler>>()
                     |> generateRoutingTable
                     |> Seq.iter (fun kv -> _httpHandlers.Add(kv.Key, kv.Value))
-                    
+
                     // Start the server
                     server <- engine.Start()
+
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
                 with 
                     | :? ReflectionTypeLoadException as e -> 

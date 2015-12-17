@@ -44,7 +44,7 @@ module IndexManager =
     
     type T = 
         { Store : ConcurrentDictionary<string, IndexState>
-          EventAggregrator : EventAggregrator
+          EventAggregrator : EventAggregator
           ThreadSafeFileWriter : ThreadSafeFileWriter
           GetAnalyzer : string -> Result<LuceneAnalyzer>
           GetComputedScript : string -> Result<ComputedDelegate * string []> }
@@ -67,14 +67,19 @@ module IndexManager =
         match t.Store.TryGetValue(newState.IndexDto.IndexName) with
         | true, state -> 
             match t.Store.TryUpdate(state.IndexDto.IndexName, newState, state) with
-            | true -> okUnit
+            | true -> 
+                t.EventAggregrator.Push(IndexStatusChange(state.IndexDto.IndexName, newState.IndexStatus.ToString()))
+                // TODO change status on shard as well
+                okUnit
             | false -> 
                 fail 
                 <| UnableToUpdateIndexStatus
                        (state.IndexDto.IndexName, state.IndexStatus.ToString(), newState.IndexStatus.ToString())
         | _ -> 
             match t.Store.TryAdd(newState.IndexDto.IndexName, newState) with
-            | true -> okUnit
+            | true -> 
+                t.EventAggregrator.Push(IndexStatusChange(newState.IndexDto.IndexName, newState.IndexStatus.ToString()))
+                okUnit
             | false -> 
                 fail <| UnableToUpdateIndexStatus(newState.IndexDto.IndexName, "None", newState.IndexDto.ToString())
     

@@ -563,3 +563,22 @@ type AtomicLong(value : int64) =
     
     static member Create() = new AtomicLong(0L)
     static member Create(value) = new AtomicLong(value)
+
+/// Interface to be used by the services which require notification of
+/// server shutdown so that they can start performing there internal 
+/// cleanup
+type IRequireNotificationForShutdown = 
+    abstract Shutdown : unit -> Async<unit>
+
+/// The types of events which can be raised on the event aggregrator
+type EventType = 
+    | ShardStatusChange of indexName : string * shardNo : int * shardStatus : string
+    | IndexStatusChange of indexName : string * indexStatus : string
+    | RegisterForShutdownCallback of service : IRequireNotificationForShutdown
+
+/// A multi-purpose event aggregrator pipeline for raising and subscribing to server
+/// event in a decoupled manner
+type EventAggregator() = 
+    let event = new Event<EventType>()
+    member __.Event() = event.Publish
+    member __.Push(e : EventType) = event.Trigger(e)

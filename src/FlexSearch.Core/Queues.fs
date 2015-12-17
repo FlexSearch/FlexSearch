@@ -22,12 +22,6 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open FSharpx.Extras
 
-/// Interface to be used by the services which require notification of
-/// server shutdown so that they can start performing there internal 
-/// cleanup
-type IRequireNotificationForShutdown = 
-    abstract Shutdown : unit -> Async<unit>
-
 /// Interface which represents the functionality exposed by the queue. A queue
 /// can be used to process any number of arbitrary items one at a time or many in
 /// parallel. There are multiple implementations of the queue available in the

@@ -238,7 +238,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                     return parseTextUsingAnalyzer(analyzer, "", input).ToArray() }
 
 [<Sealed>]
-type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
+type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     let im = 
         IndexManager.create 
