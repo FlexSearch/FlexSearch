@@ -17,6 +17,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api
+open FlexSearch.Api.Models
 open FlexLucene.Document
 open FlexLucene.Index
 open FlexLucene.Search
@@ -50,7 +52,7 @@ module SearchResultComponents =
     /// Represents the search result format supported
     /// by the engine
     type T = 
-        | StructuredResult of Document
+        | StructuredResult of Models.Document
         | FlatResult of Dictionary<string, string>
     
     /// Represents the search related meta data that can
@@ -281,7 +283,7 @@ module SearchDsl =
 
         match search.Columns with
         // Return no other columns when nothing is passed
-        | _ when search.Columns.Length = 0 -> ()
+        | _ when search.Columns.Count = 0 -> ()
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
@@ -358,7 +360,7 @@ module SearchDsl =
         let highlighterOptions = 
             if notNull searchQuery.Highlights then 
                 match searchQuery.Highlights.HighlightedFields with
-                | x when x.Length = 1 -> 
+                | x when x.Count = 1 -> 
                     match indexWriter.Settings.Fields.TryGetValue(x.First()) with
                     | (true, field) -> 
                         let htmlFormatter = 
@@ -400,14 +402,14 @@ module SearchDsl =
                 if searchQuery.ReturnScore then fields.[MetaFields.Score] <- hit.Score.ToString()
                 SearchResultComponents.FlatResult(fields)
             else 
-                let resultDoc = new Document()
+                let resultDoc = new Models.Document()
                 resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
                 resultDoc.IndexName <- indexWriter.Settings.IndexName
                 resultDoc.TimeStamp <- timeStamp
                 resultDoc.Fields <- fields
                 resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
                                    else 0.0
-                resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
+                resultDoc.Highlights <- (getHighlighter (document, hit.ShardIndex, hit.Doc)).ToList()
                 SearchResultComponents.StructuredResult(resultDoc)
         
         let distinctByFilter (document : LuceneDocument) = 

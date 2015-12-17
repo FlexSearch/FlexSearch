@@ -17,6 +17,9 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
+open FlexSearch.Api
 open FlexLucene.Analysis
 open FlexSearch.Core
 open System
@@ -92,10 +95,10 @@ type IJobService =
 ///  Analyzer/Analysis related services
 type IAnalyzerService = 
     abstract GetAnalyzer : analyzerName:string -> Result<LuceneAnalyzer>
-    abstract GetAnalyzerInfo : analyzerName:string -> Result<Analyzer>
+    abstract GetAnalyzerInfo : analyzerName:string -> Result<Models.Analyzer>
     abstract DeleteAnalyzer : analyzerName:string -> Result<unit>
-    abstract UpdateAnalyzer : analyzer:Analyzer -> Result<unit>
-    abstract GetAllAnalyzers : unit -> Analyzer []
+    abstract UpdateAnalyzer : analyzer:Models.Analyzer -> Result<unit>
+    abstract GetAllAnalyzers : unit -> Models.Analyzer []
     abstract Analyze : analyzerName:string * input:string -> Result<string []>
 
 /// Script related services
@@ -158,11 +161,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         let filterParams = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         filterParams.Add("encoder", encoder)
         filterParams.Add("inject", "false")
-        let filters = new List<TokenFilter>()
-        filters.Add(new TokenFilter(FilterName = "phonetic", Parameters = filterParams))
+        let filters = new List<Filter>()
+        filters.Add(new Filter(FilterName = "phonetic", Parameters = filterParams))
         let analyzerDefinition = 
-            new Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
-                             Tokenizer = new Tokenizer(TokenizerName = "whitespace"), Filters = filters)
+            new Models.Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
+                             Tokenizer = new Models.Tokenizer(TokenizerName = "whitespace"), Filters = filters)
         (analyzerDefinition, Analysis.buildFromAnalyzerDto (analyzerDefinition) |> extract)
     
     let path = 
@@ -170,11 +173,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         |> Directory.CreateDirectory
         |> fun x -> x.FullName
     
-    let store = conDict<Analyzer * LuceneAnalyzer>()
+    let store = conDict<Models.Analyzer * LuceneAnalyzer>()
     
-    let updateAnalyzer (analyzer : Analyzer) = 
+    let updateAnalyzer (analyzer : Models.Analyzer) = 
         maybe { 
-            do! analyzer.Validate()
+            do! validate analyzer
             let! instance = Analysis.buildFromAnalyzerDto (analyzer)
             do! threadSafeWriter.WriteFile(path +/ analyzer.AnalyzerName, analyzer)
             do! store
@@ -184,7 +187,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     
     let loadAllAnalyzers() = 
         Directory.EnumerateFiles(path) |> Seq.iter (fun x -> 
-                                              match threadSafeWriter.ReadFile<Analyzer>(x) with
+                                              match threadSafeWriter.ReadFile<Models.Analyzer>(x) with
                                               | Ok(dto) -> 
                                                   updateAnalyzer (dto)
                                                   |> Logger.Log
@@ -198,10 +201,10 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     
     do 
         // Add prebuilt analyzers
-        let standardAnalyzer = new Analyzer(AnalyzerName = "standard")
+        let standardAnalyzer = new Models.Analyzer(AnalyzerName = "standard")
         let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> LuceneAnalyzer
         store |> add ("standard", (standardAnalyzer, instance))
-        store |> add ("keyword", (new Analyzer(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
+        store |> add ("keyword", (new Models.Analyzer(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
         store |> add ("refinedsoundex", getPhoneticFilter ("refinedsoundex"))
         store |> add ("doublemetaphone", getPhoneticFilter ("doublemetaphone"))
         if not testMode then loadAllAnalyzers()
@@ -209,7 +212,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     interface IAnalyzerService with
         
         /// Create or update an existing analyzer
-        member __.UpdateAnalyzer(analyzer : Analyzer) = updateAnalyzer (analyzer)
+        member __.UpdateAnalyzer(analyzer : Models.Analyzer) = updateAnalyzer (analyzer)
         
         /// Delete an analyzer. This 
         member __.DeleteAnalyzer(analyzerName : string) = 
@@ -288,7 +291,7 @@ type IndexService(eventAggregrator : EventAggregrator, threadSafeWriter : Thread
         member __.UpdateIndexFields(indexName:string, fields : Field []) = 
             match im.Store.TryGetValue(indexName) with
             | true, state -> let index = state.IndexDto
-                             index.Fields <- fields
+                             index.Fields <- fields.ToList()
                              im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
 
@@ -479,7 +482,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Add or update an existing document
         member __.AddOrUpdateDocument(document) = 
             maybe { 
-                do! document.Validate()
+                do! validate document
                 let! indexWriter = indexService.IsIndexOnline <| document.IndexName
                 return! indexWriter |> IndexWriter.updateDocument document
             }
@@ -487,7 +490,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Add a new document to the index
         member __.AddDocument(document) = 
             maybe { 
-                do! document.Validate()
+                do! validate document
                 if document.TimeStamp > 0L then 
                     return! fail 
                             <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
@@ -535,13 +538,13 @@ type JobService() =
         
         member __.UpdateJob(jobId, jobStatus, itemCount) = 
             if isNotBlank jobId then 
-                let job = new Job(JobId = jobId, Status = jobStatus, Message = "", ProcessedItems = itemCount)
+                let job = new Job(JobId = jobId, JobStatus = jobStatus, Message = "", ProcessedItems = itemCount)
                 let item = new CacheItem(jobId, job)
                 cache.Set(item, getCachePolicy())
         
         member __.UpdateJob(jobId, jobStatus, itemCount, message) = 
             if isNotBlank jobId then 
-                let job = new Job(JobId = jobId, Status = jobStatus, Message = message, ProcessedItems = itemCount)
+                let job = new Job(JobId = jobId, JobStatus = jobStatus, Message = message, ProcessedItems = itemCount)
                 let item = new CacheItem(jobId, job)
                 cache.Set(item, getCachePolicy())
         

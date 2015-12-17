@@ -17,6 +17,9 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
+open FlexSearch.Api
 open Microsoft.FSharp.Reflection
 open System
 open System.Collections.Concurrent
@@ -55,6 +58,14 @@ type MessageLevel =
 type IMessage = 
     abstract OperationMessage : unit -> OperationMessage
     abstract LogProperty : unit -> MessageKeyword * MessageLevel
+
+/// Implmentation of IMesage to be used for validation
+type ValidationMessage(model : IDataTransferObject) =
+    interface IMessage with
+        member __.OperationMessage() =
+            //TODO: Implement properly
+            { Properties = Array.empty; Message = model.ErrorDescription; ErrorCode = ""}
+        member __.LogProperty() = (MessageKeyword.Node, MessageLevel.Error)
 
 /// Represents the result of a computation.
 type Result<'T> =

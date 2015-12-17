@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Models
 open FlexLucene.Analysis
 open FlexLucene.Analysis.Standard
 open FlexLucene.Analysis.Synonym
@@ -113,7 +114,7 @@ module Analysis =
     /// Builds a FlexAnalyzer from the Analyzer Dto
     let buildFromAnalyzerDto (dto : Models.Analyzer) = 
         maybe { 
-            do! dto.Validate()
+            do! validate dto
             let loader = new FilesystemResourceLoader(resourcePath)
             let! tokenizer = buildTokenizerFactory (dto.AnalyzerName, dto.Tokenizer)
             applyResourceLoader (loader, tokenizer)
