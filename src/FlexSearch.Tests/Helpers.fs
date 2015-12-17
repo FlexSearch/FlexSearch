@@ -11,7 +11,6 @@ open System.Linq
 open System.IO
 open System.Reflection
 open Swensen.Unquote
-open Microsoft.AspNet.TestHost
 
 
 /// <summary>
@@ -33,10 +32,9 @@ module Global =
 [<AutoOpenAttribute>]
 module DataHelpers = 
     open Autofac
-    open Autofac.Extras.Attributed
     open System.Diagnostics
     open Client
-    
+    open Microsoft.Extensions.DependencyInjection
 
     let writer = new TextWriterTraceListener(System.Console.Out)
     Debug.Listeners.Add(writer) |> ignore
@@ -82,15 +80,10 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = Main.setupDependencies (Settings.T.GetDefault(), true)
-    let serverSettings = container.Resolve<Settings.T>()
-    let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
-        
-    // Create a single instance of the OWIN server that will be shared across all tests
-    let testServer = 
-        let ws = new WebServer(generateRoutingTable handlerModules, serverSettings)
-        new TestServer(ws.GetWebHostBuilder())
-
+    let container = Main.setupDependencies true <| Settings.T.GetDefault() <| new ServiceCollection()
+    let serverSettings = container.GetService<Settings.T>()
+    let handlerModules = container.GetService<Dictionary<string, IHttpHandler>>()
+    
     /// <summary>
     /// Basic index configuration
     /// </summary>
@@ -110,8 +103,8 @@ module DataHelpers =
             new Field("description", FieldDataType.Highlight)
             new Field("fullname", FieldDataType.Text) |]
         
-        let client = new FlexClient(testServer.CreateClient())
-        client.AddIndex(index).Result |> snd =? System.Net.HttpStatusCode.Created
+        let indexService = container.GetService<IIndexService>()
+        test <@ indexService.AddIndex(index) |> succeeded @>
         index
 
     let createDemoIndex = 
@@ -119,10 +112,10 @@ module DataHelpers =
         let folder = Constants.DataFolder + "/country"
         if Directory.Exists(folder) then Directory.Delete(folder, true)
         // Create the demo index
-        let client = new FlexClient(testServer.CreateClient())
-        client.SetupDemo().Result |> snd =? System.Net.HttpStatusCode.OK
+        let demoService = container.GetService<DemoIndexService>()
+        test <@ demoService.Setup() |> succeeded @>
 
-    let demoIndexData = container.Resolve<DemoIndexService>().DemoData().Value 
+    let demoIndexData = container.GetService<DemoIndexService>().DemoData().Value 
 
     /// Autofixture customizations
     let fixtureCustomization() = 
@@ -131,15 +124,12 @@ module DataHelpers =
         // used as index name
         fixture.Register<String>(fun _ -> Guid.NewGuid().ToString("N"))
         fixture.Register<Index>(fun _ -> getTestIndex()) |> ignore
-        fixture.Inject<IIndexService>(container.Resolve<IIndexService>()) |> ignore
-        fixture.Inject<ISearchService>(container.Resolve<ISearchService>()) |> ignore
-        fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
-        fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
-        fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
-        fixture.Inject<Dictionary<string, IFlexQueryFunction>>(container.Resolve<Dictionary<string, IFlexQueryFunction>>()) |> ignore
-        fixture.Register<FlexClient>(fun _ -> 
-            fixture.Inject<LoggingHandler>(new LoggingHandler(testServer.CreateHandler()))
-            new FlexClient(testServer.CreateClient()))
+        fixture.Inject<IIndexService>(container.GetService<IIndexService>()) |> ignore
+        fixture.Inject<ISearchService>(container.GetService<ISearchService>()) |> ignore
+        fixture.Inject<IDocumentService>(container.GetService<IDocumentService>()) |> ignore
+        fixture.Inject<IJobService>(container.GetService<IJobService>()) |> ignore
+        fixture.Inject<IQueueService>(container.GetService<IQueueService>()) |> ignore
+        fixture.Inject<Dictionary<string, IFlexQueryFunction>>(container.GetService<Dictionary<string, IFlexQueryFunction>>()) |> ignore
         fixture.Inject<Country list>(demoIndexData)
         fixture
      

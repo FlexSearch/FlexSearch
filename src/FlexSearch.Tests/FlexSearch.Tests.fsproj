@@ -83,7 +83,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">
-      <HintPath>..\packages\Autofac.3.5.2\lib\net40\Autofac.dll</HintPath>
+      <HintPath>..\packages\Autofac.4.0.0-rc1-177\lib\net45\Autofac.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Autofac.Extras.AttributeMetadata">
@@ -286,6 +286,10 @@
       <HintPath>..\packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc1-final\lib\net451\Microsoft.AspNet.Server.Kestrel.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.AspNet.Server.WebListener">
+      <HintPath>..\packages\Microsoft.AspNet.Server.WebListener.1.0.0-rc1-final\lib\net451\Microsoft.AspNet.Server.WebListener.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.AspNet.TestHost">
       <HintPath>..\packages\Microsoft.AspNet.TestHost.1.0.0-rc1-final\lib\net451\Microsoft.AspNet.TestHost.dll</HintPath>
       <Private>True</Private>
@@ -361,6 +365,14 @@
     </Reference>
     <Reference Include="Microsoft.Net.Http.Headers">
       <HintPath>..\packages\Microsoft.Net.Http.Headers.1.0.0-rc1-final\lib\net451\Microsoft.Net.Http.Headers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Net.Http.Server">
+      <HintPath>..\packages\Microsoft.Net.Http.Server.1.0.0-rc1-final\lib\net451\Microsoft.Net.Http.Server.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Net.WebSockets">
+      <HintPath>..\packages\Microsoft.Net.WebSockets.1.0.0-rc1-final\lib\net451\Microsoft.Net.WebSockets.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="mscorlib" />
