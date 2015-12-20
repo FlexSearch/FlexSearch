@@ -309,7 +309,7 @@ module SearchDsl =
         
         let sortOrder =
             match searchQuery.OrderByDirection with
-            | InvariantEqual "asc" -> false
+            | Constants.OrderByDirection.Ascending -> false
             | _ -> true
 
         let sort = 

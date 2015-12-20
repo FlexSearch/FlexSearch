@@ -443,7 +443,14 @@ module SearchQuery =
         query.Count <- request.HttpContext |> intFromQueryString "count" query.Count
         query.Skip <- request.HttpContext |> intFromQueryString "skip" query.Skip
         query.OrderBy <- request.HttpContext |> stringFromQueryString "orderby" query.OrderBy
-        query.OrderByDirection <- request.HttpContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
+        query.OrderByDirection <- 
+            match request.HttpContext.Request.Query |> getFirstStringValue "orderbydirection" with
+            | null -> query.OrderByDirection
+            | value -> 
+                if value = "asc" then
+                    OrderByDirection.Ascending
+                else
+                    OrderByDirection.Descending
         query.ReturnFlatResult <- request.HttpContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
         query.SearchProfile <- request.HttpContext |> stringFromQueryString "searchprofile" query.SearchProfile
         query.IndexName <- request.ResId.Value
