@@ -86,7 +86,7 @@ type CommitTests() =
                                                                     indexService : IIndexService, 
                                                                     documentService : IDocumentService) = 
         // Reduce max buffered docs count so that we can flush quicker
-        index.IndexConfiguration.MaxBufferedDocs <- 2
+        index.IndexConfiguration.MaxBufferedDocs <- 3
         let random = new System.Random()
         let commitCount = random.Next(5, 20)
         let documentsPerCommit = random.Next(1, 10)
