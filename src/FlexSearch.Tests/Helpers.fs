@@ -2,6 +2,8 @@
 module Helpers
 
 open Fixie
+open FlexSearch.Api.Models
+open FlexSearch.Api
 open FlexSearch.Core
 open Ploeh.AutoFixture
 open Ploeh.AutoFixture.Kernel
@@ -46,20 +48,20 @@ module DataHelpers =
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Active <- true
-        index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
-        index.Fields <- [| new Field("b1", FieldDataType.Bool)
-                           new Field("b2", FieldDataType.Bool)
-                           new Field("d1", FieldDataType.Date)
-                           new Field("dt1", FieldDataType.DateTime)
-                           new Field("db1", FieldDataType.Double)
-                           new Field("et1", FieldDataType.ExactText, AllowSort = true)
-                           new Field("h1", FieldDataType.Highlight)
-                           new Field("i1", FieldDataType.Int)
-                           new Field("i2", FieldDataType.Int, AllowSort = true)
-                           new Field("l1", FieldDataType.Long)
-                           new Field("t1", FieldDataType.Text)
-                           new Field("t2", FieldDataType.Text)
-                           new Field("s1", FieldDataType.Stored) |]
+        index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.MemoryMapped
+        index.Fields <- [| new Field("b1", Constants.FieldType.Bool)
+                           new Field("b2", Constants.FieldType.Bool)
+                           new Field("d1", Constants.FieldType.Date)
+                           new Field("dt1", Constants.FieldType.DateTime)
+                           new Field("db1", Constants.FieldType.Double)
+                           new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
+                           new Field("h1", Constants.FieldType.Highlight)
+                           new Field("i1", Constants.FieldType.Int)
+                           new Field("i2", Constants.FieldType.Int, AllowSort = true)
+                           new Field("l1", Constants.FieldType.Long)
+                           new Field("t1", Constants.FieldType.Text)
+                           new Field("t2", Constants.FieldType.Text)
+                           new Field("s1", Constants.FieldType.Stored) |]
         index
 
     /// Utility method to add data to an index
@@ -92,16 +94,16 @@ module DataHelpers =
         index.IndexName <- "contact"
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Active <- true
-        index.IndexConfiguration.DirectoryType <- DirectoryType.Ram
+        index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.Ram
         index.Fields <- 
-         [| new Field("firstname", FieldDataType.Text)
-            new Field("lastname", FieldDataType.Text)
-            new Field("email", FieldDataType.ExactText)
-            new Field("country", FieldDataType.Text)
-            new Field("ipaddress", FieldDataType.ExactText)
-            new Field("cvv2", FieldDataType.Int)
-            new Field("description", FieldDataType.Highlight)
-            new Field("fullname", FieldDataType.Text) |]
+         [| new Field("firstname", Constants.FieldType.Text)
+            new Field("lastname", Constants.FieldType.Text)
+            new Field("email", Constants.FieldType.ExactText)
+            new Field("country", Constants.FieldType.Text)
+            new Field("ipaddress", Constants.FieldType.ExactText)
+            new Field("cvv2", Constants.FieldType.Int)
+            new Field("description", Constants.FieldType.Highlight)
+            new Field("fullname", Constants.FieldType.Text) |]
         
         let indexService = container.GetService<IIndexService>()
         test <@ indexService.AddIndex(index) |> succeeded @>

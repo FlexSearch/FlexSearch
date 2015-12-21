@@ -158,7 +158,7 @@
           "description": "The number of buffered added documents that will trigger a flush if enabled.",
           "type": "integer",
           "format": "int32",
-          "default": -1,
+          "default": 3,
           "minimum": 2
         },
         "refreshTimeMilliseconds": {

@@ -13,6 +13,7 @@ open System.IO
 open Newtonsoft.Json.Bson
 open System.Linq
 open System.Collections
+open FlexSearch.Api.Models
 
 [<AutoOpen>]
 module Helper =
@@ -181,8 +182,8 @@ type FlexClient(uri : Uri, httpClient : HttpClient, ?defaultConnectionLimit : in
         this.PostHelper<Index, CreateResponse>("/indices", index)
     member this.UpdateIndex(index : Index) = 
         this.PutHelper<Index, unit>(sprintf "/indices/%s" index.IndexName, index)
-    member this.UpdateIndexFields(indexName : string, fields : FieldsUpdateRequest) = 
-        this.PutHelper<FieldsUpdateRequest, unit>(sprintf "/indices/%s/fields" indexName, fields)
+//    member this.UpdateIndexFields(indexName : string, fields : FieldsUpdateRequest) = 
+//        this.PutHelper<FieldsUpdateRequest, unit>(sprintf "/indices/%s/fields" indexName, fields)
     member this.UpdateIndexSearchProfile(indexName : string, profile : SearchQuery) = 
         this.PutHelper<SearchQuery, unit>(sprintf "/indices/%s/searchprofile" indexName, profile)
     member this.UpdateIndexConfiguration(indexName : string, conf : IndexConfiguration) = 

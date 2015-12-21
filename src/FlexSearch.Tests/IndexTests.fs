@@ -1,5 +1,7 @@
 ﻿module IndexTests
 
+open FlexSearch.Api.Models
+open FlexSearch.Api.Constants
 open FlexSearch.Core
 open Ploeh.AutoFixture
 open Ploeh.AutoFixture.Kernel

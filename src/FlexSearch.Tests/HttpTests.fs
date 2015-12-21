@@ -14,6 +14,8 @@ open System.Net.Http
 open System.Text
 open System.Threading
 open Swensen.Unquote
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
 
 [<AutoOpenAttribute>]
 module Helpers = 
@@ -179,13 +181,13 @@ type ``Index Update Tests``() =
         handler |> log "put-indices-id-1"
         actual |> hasHttpStatusCode HttpStatusCode.BadRequest
     
-    [<Example("put-indices-id-2", "")>]
-    member __.``Trying to update index fields should return success`` (client : FlexClient, index : Index, 
-                                                                       handler : LoggingHandler) = 
-        client.AddIndex(index).Result |> isCreated
-        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldDataType.Text, Store = true) |])
-        isSuccessful <| client.UpdateIndexFields(index.IndexName, fields).Result
-        handler |> log "put-indices-id-2"
+//    [<Example("put-indices-id-2", "")>]
+//    member __.``Trying to update index fields should return success`` (client : FlexClient, index : Index, 
+//                                                                       handler : LoggingHandler) = 
+//        client.AddIndex(index).Result |> isCreated
+//        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldDataType.Text, Store = true) |])
+//        isSuccessful <| client.UpdateIndexFields(index.IndexName, fields).Result
+//        handler |> log "put-indices-id-2"
     
     [<Example("put-indices-id-3", "")>]
     member __.``Trying to update index search profile should return success`` (client : FlexClient, index : Index, 
@@ -291,7 +293,7 @@ type ``Document Tests``() =
     
     let testIndex indexName = 
         let index = new Index(IndexName = indexName, Active = true)
-        index.Fields <- [| new Field("firstname", FieldDataType.Text)
+        index.Fields <- [| new Field("firstname", FlexSearch.Api.Constants.FieldType.Text)
                            new Field("lastname") |]
         index
     
@@ -476,4 +478,4 @@ type ``Search Tests``() =
         query.Columns <- [| "country"; "background" |]
         let result = client.Search(query).Result
         result |> isSuccessful
-        (result |> data).Documents.Count >=? 0
+        (result |> data).Documents.Length >=? 0

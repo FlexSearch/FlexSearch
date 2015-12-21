@@ -1,5 +1,7 @@
 ﻿module DomainTests
 
+open FlexSearch.Api.Models
+open FlexSearch.Api
 open FlexSearch.Core
 open Swensen.Unquote
 open System.Collections.Generic
@@ -13,59 +15,59 @@ type ``Field Dto Default value tests``() =
     member __.``'Analyze' should default to 'true'``() = test <@ sut.Analyze = true @>
     member __.``'Store' should default to 'true'``() = test <@ sut.Store = true @>
     member __.``'Index' should default to 'true'``() = test <@ sut.Index = true @>
-    member __.``'FieldType' should default to 'Text'``() = test <@ sut.FieldType = FieldDataType.Text @>
+    member __.``'FieldType' should default to 'Text'``() = test <@ sut.FieldType = Constants.FieldType.Text @>
 
 type ``Index Field tests``() = 
     
-    [<InlineDataAttribute(FieldDataType.Text)>]
-    [<InlineDataAttribute(FieldDataType.Highlight)>]
-    [<InlineDataAttribute(FieldDataType.Custom)>]
+    [<InlineDataAttribute(Constants.FieldType.Text)>]
+    [<InlineDataAttribute(Constants.FieldType.Highlight)>]
+    [<InlineDataAttribute(Constants.FieldType.Custom)>]
     [<Ignore>]
-    member __.``Correct Index Analyzer should be specified for {fieldType} field types`` (fieldType : FieldDataType) = 
+    member __.``Correct Index Analyzer should be specified for {fieldType} field types`` (fieldType : Constants.FieldType) = 
         let field = new Field()
         field.FieldName <- "notblank"
         field.FieldType <- fieldType
         field.IndexAnalyzer <- ""
-        test <@ failed <| field.Validate() @>
+        test <@ field.Validate() @>
     
-    [<InlineDataAttribute(FieldDataType.Text)>]
-    [<InlineDataAttribute(FieldDataType.Highlight)>]
-    [<InlineDataAttribute(FieldDataType.Custom)>]
+    [<InlineDataAttribute(Constants.FieldType.Text)>]
+    [<InlineDataAttribute(Constants.FieldType.Highlight)>]
+    [<InlineDataAttribute(Constants.FieldType.Custom)>]
     [<Ignore>]
-    member __.``Correct Search Analyzer should be specified for {fieldType} field types`` (fieldType : FieldDataType) = 
+    member __.``Correct Search Analyzer should be specified for {fieldType} field types`` (fieldType : Constants.FieldType) = 
         let field = new Field()
         field.FieldName <- "notblank"
         field.FieldType <- fieldType
         field.SearchAnalyzer <- ""
-        test <@ failed <| field.Validate() @>
+        test <@ field.Validate() @>
     
-    [<InlineDataAttribute(FieldDataType.Bool)>]
-    [<InlineDataAttribute(FieldDataType.Date)>]
-    [<InlineDataAttribute(FieldDataType.DateTime)>]
-    [<InlineDataAttribute(FieldDataType.Double)>]
-    [<InlineDataAttribute(FieldDataType.ExactText)>]
-    [<InlineDataAttribute(FieldDataType.Int)>]
-    [<InlineDataAttribute(FieldDataType.Stored)>]
+    [<InlineDataAttribute(Constants.FieldType.Bool)>]
+    [<InlineDataAttribute(Constants.FieldType.Date)>]
+    [<InlineDataAttribute(Constants.FieldType.DateTime)>]
+    [<InlineDataAttribute(Constants.FieldType.Double)>]
+    [<InlineDataAttribute(Constants.FieldType.ExactText)>]
+    [<InlineDataAttribute(Constants.FieldType.Int)>]
+    [<InlineDataAttribute(Constants.FieldType.Stored)>]
     [<Ignore>]
-    member __.``Search Analyzer is ignored for {fieldType} field types`` (fieldType : FieldDataType) = 
+    member __.``Search Analyzer is ignored for {fieldType} field types`` (fieldType : Constants.FieldType) = 
         let field = new Field("test")
         field.FieldType <- fieldType
         field.SearchAnalyzer <- ""
-        test <@ succeeded <| field.Validate() @>
+        test <@ field.Validate() @>
     
-    [<InlineDataAttribute(FieldDataType.Bool)>]
-    [<InlineDataAttribute(FieldDataType.Date)>]
-    [<InlineDataAttribute(FieldDataType.DateTime)>]
-    [<InlineDataAttribute(FieldDataType.Double)>]
-    [<InlineDataAttribute(FieldDataType.ExactText)>]
-    [<InlineDataAttribute(FieldDataType.Int)>]
-    [<InlineDataAttribute(FieldDataType.Stored)>]
+    [<InlineDataAttribute(Constants.FieldType.Bool)>]
+    [<InlineDataAttribute(Constants.FieldType.Date)>]
+    [<InlineDataAttribute(Constants.FieldType.DateTime)>]
+    [<InlineDataAttribute(Constants.FieldType.Double)>]
+    [<InlineDataAttribute(Constants.FieldType.ExactText)>]
+    [<InlineDataAttribute(Constants.FieldType.Int)>]
+    [<InlineDataAttribute(Constants.FieldType.Stored)>]
     [<Ignore>]
-    member __.``Index Analyzer is ignored for {fieldType} field types`` (fieldType : FieldDataType) = 
+    member __.``Index Analyzer is ignored for {fieldType} field types`` (fieldType : Constants.FieldType) = 
         let field = new Field("test")
         field.FieldType <- fieldType
         field.IndexAnalyzer <- ""
-        test <@ succeeded <| field.Validate() @>
+        test <@ field.Validate() @>
 
 type ``Index Dto tests``() = 
     
@@ -73,23 +75,23 @@ type ``Index Dto tests``() =
         let index = new Index()
         index.IndexName <- "valid"
         index.Fields <- [| new Field("INVALIDKEY") |]
-        test <@ failed <| index.Validate() @>
+        test <@ index.Validate() @>
     
     member __.``Scripts can have valid keys``() = 
         let index = new Index()
         index.IndexName <- "valid"
         index.Fields <- [| new Field("validkey") |]
-        test <@ succeeded <| index.Validate() @>
+        test <@ index.Validate() @>
     
     member __.``Validation will fail even for a single invalid key``() = 
         let index = new Index()
         index.IndexName <- "valid"
         index.Fields <- [|  new Field("validkey")
                             new Field("INVALIDKEY") |]
-        test <@ failed <| index.Validate() @>
+        test <@ index.Validate() @>
     
     member __.``Adding duplicate fields to the index should fail``() = 
         let index = new Index(IndexName = "valid")
         index.Fields <- [| new Field("test")
                            new Field("test") |]
-        test <@ failed <| index.Validate() @>
+        test <@ index.Validate() @>

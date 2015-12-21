@@ -1,5 +1,6 @@
 ﻿module ScriptTests
 
+open FlexSearch.Api.Models
 open FlexSearch.Core
 open Swensen.Unquote
 open System.Collections.Generic

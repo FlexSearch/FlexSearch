@@ -1,5 +1,7 @@
 ﻿module SearchTests
 
+open FlexSearch.Api.Models
+open FlexSearch.Api.Constants
 open FlexSearch.Core
 open Swensen.Unquote
 open System.Linq
@@ -34,7 +36,7 @@ let withOrderBy (column : string) (query : SearchQuery) =
 
 let withOrderByDesc (column : string) (query : SearchQuery) = 
     query.OrderBy <- column
-    query.OrderByDirection <- "desc"
+    query.OrderByDirection <- OrderByDirection.Descending
     query
 
 let withDistinctBy (column : string) (query : SearchQuery) = 
@@ -72,11 +74,11 @@ let assertFieldCount (expected : int) (result : SearchResults) = test <@ result.
 /// Check if the total number of document returned by the query matched the expected
 /// count
 let assertReturnedDocsCount (expected : int) (result : SearchResults) = 
-    test <@ result.Documents.Count = expected @>
+    test <@ result.Documents.Length = expected @>
     test <@ result.RecordsReturned = expected @>
 
 let assertFieldValue (documentNo : int) (fieldName : string) (expectedFieldValue : string) (result : SearchResults) = 
-    test <@ result.Documents.Count >= documentNo + 1 @>
+    test <@ result.Documents.Length >= documentNo + 1 @>
     test <@ result.Documents.[documentNo].Fields.[fieldName] = expectedFieldValue @>
 
 /// Check if the total number of available document returned by the query matched the expected
@@ -588,7 +590,7 @@ id,et1,t1,i1,s1
             |> withDistinctBy "et1"
             |> searchAndExtract searchService
         // The document returned count will still be 5 as we are filtering records
-        test <@ result.Documents.Count = 3 @>
+        test <@ result.Documents.Length = 3 @>
         test <@ result.RecordsReturned = 5 @>
 
     member __.``Distinctby only works with ExactText fields``() = 
@@ -596,7 +598,7 @@ id,et1,t1,i1,s1
             getQuery (index.IndexName, "_id matchall '*'")
             |> withDistinctBy "t1"
             |> searchAndExtract searchService
-        test <@ result.Documents.Count = 5 @>
+        test <@ result.Documents.Length = 5 @>
         test <@ result.RecordsReturned = 5 @>
 
 // ----------------------------------------------------------------------------
