@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Models
 open FlexSearch.Core
 open System.Collections.Concurrent
 open System

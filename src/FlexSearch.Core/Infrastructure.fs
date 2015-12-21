@@ -283,6 +283,13 @@ module Operators =
         | Some x -> ok x
         | None -> fail message
     
+    open FlexSearch.Api
+    let inline validate (model : IDataTransferObject) =
+        if model.Validate() then
+            okUnit
+        else
+            fail <| new ValidationMessage(model)
+
     [<Sealed>]
     type ErrorHandlingBuilder() = 
         

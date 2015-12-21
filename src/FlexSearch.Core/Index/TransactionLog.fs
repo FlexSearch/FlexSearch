@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Models
 open MsgPack.Serialization
 open System
 open System.IO
@@ -55,7 +56,7 @@ module TransactionLog =
         static member Create(txId, id) = 
             { TransactionId = txId
               Operation = Operation.Delete
-              Document = Document.Default
+              Document = Unchecked.defaultof<Document>
               Id = id
               Query = String.Empty }
     

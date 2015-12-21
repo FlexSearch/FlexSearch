@@ -18,6 +18,8 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
+open FlexSearch.Api.Models
+open FlexSearch.Api.Constants
 open System.Collections.Concurrent
 open System.IO
 open System.Threading
@@ -143,7 +145,7 @@ module IndexManager =
     /// Add a new index to the node
     let addIndex (index : Index) (t : T) = 
         maybe { 
-            do! index.Validate()
+            do! validate index
             match t |> indexExists index.IndexName with
             | Ok(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
             | _ -> 

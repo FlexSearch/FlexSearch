@@ -23,6 +23,7 @@ namespace FlexSearch.Core
 /// indices. This module will be used for logging, duplicates, jobs 
 /// etc.
 module Orm =
+    open FlexSearch.Api.Models
     open FastMember
     open System.Collections.Concurrent
     open System.Collections.Generic

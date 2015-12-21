@@ -17,6 +17,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
 open FlexSearch.Core
 open FlexLucene.Index
 open FlexLucene.Search

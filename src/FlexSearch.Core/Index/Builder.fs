@@ -26,6 +26,8 @@ open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexSearch.Core
 open FlexSearch.Core.DictionaryHelpers
+open FlexSearch.Api.Models
+open FlexSearch.Api.Constants
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
@@ -71,7 +73,7 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field array, analyzerService, scriptService) (build) = 
+    let withFields (fields : Field[], analyzerService, scriptService) (build) = 
         let ic = build.Setting.IndexConfiguration
         let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
         let result = new Field.FieldCollection()
@@ -92,7 +94,7 @@ module IndexSettingBuilder =
                                               IndexAnalyzer = buildAnalyzer (result, true) } }
     
     /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : SearchQuery array, parser : IFlexParser) (build) = 
+    let withSearchProfiles (profiles : SearchQuery[], parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
             let predicate = returnOrFail <| parser.Parse profile.QueryString
@@ -114,14 +116,14 @@ module IndexWriterConfigBuilder =
     /// Returns an instance of per field similarity provider 
     let getSimilarityProvider (s : IndexSetting.T) = 
         let defaultSimilarity = 
-            s.IndexConfiguration.DefaultFieldSimilarity
+            Similarity.TFIDF
             |> FieldSimilarity.getLuceneT
             |> extract
         
-        let mappings = new Dictionary<string, Similarity>(StringComparer.OrdinalIgnoreCase)
+        let mappings = new Dictionary<string, LuceneSimilarity>(StringComparer.OrdinalIgnoreCase)
         for field in s.Fields do
             // Only add if the format is not same as default postings format
-            if field.Similarity <> s.IndexConfiguration.DefaultFieldSimilarity then 
+            if field.Similarity <> Similarity.TFIDF then 
                 let similarity = 
                     field.Similarity
                     |> FieldSimilarity.getLuceneT

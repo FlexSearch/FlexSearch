@@ -17,6 +17,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
 open Microsoft.Extensions.Primitives
 open System.Net
 open System.IO
@@ -93,18 +95,18 @@ type DeleteIndexByIdHandler(indexService : IIndexService) =
     inherit HttpHandlerBase<NoBody, unit>()
     override __.Process(request, _) = SomeResponse(indexService.DeleteIndex(request.ResId.Value), Ok, BadRequest)
 
-type FieldsUpdateRequest() =
-    inherit DtoBase()
-    member val Fields = Array.empty<Field> with get, set
-    override this.Validate() = okUnit
-
-/// Update the Index Fields
-[<Name("PUT-/indices/:id/fields")>]
-[<Sealed>]
-type PutIndexFieldsHandler(indexService : IIndexService) =
-    inherit HttpHandlerBase<FieldsUpdateRequest, unit>()
-    override __.Process(request, body) = 
-        SomeResponse(indexService.UpdateIndexFields(request.ResId.Value, body.Value.Fields), Ok, Conflict)
+//type FieldsUpdateRequest() =
+//    inherit DtoBase()
+//    member val Fields = Array.empty<Field> with get, set
+//    override this.Validate() = okUnit
+//
+///// Update the Index Fields
+//[<Name("PUT-/indices/:id/fields")>]
+//[<Sealed>]
+//type PutIndexFieldsHandler(indexService : IIndexService) =
+//    inherit HttpHandlerBase<FieldsUpdateRequest, unit>()
+//    override __.Process(request, body) = 
+//        SomeResponse(indexService.UpdateIndexFields(request.ResId.Value, body.Value.Fields), Ok, Conflict)
 
 [<Name("PUT-/indices/:id/searchprofile")>]
 [<Sealed>]
@@ -131,7 +133,7 @@ type PutIndexConfigurationHandler(indexService : IIndexService) =
 //        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
 type IndexStatusResponse() = 
     inherit DtoBase()
-    member val Status = IndexStatus.Undefined with get, set
+    member val Status = IndexStatus.Opening with get, set
     override this.Validate() = okUnit
 
 /// Get index status
@@ -495,5 +497,5 @@ type GetMemoryDetails() =
         let totalMemory = (new Microsoft.VisualBasic.Devices.ComputerInfo()).TotalPhysicalMemory
         SuccessResponse(new MemoryDetailsResponse(
             UsedMemory = usedMemory,
-            TotalMemory = totalMemory,
+            TotalMemory = int64 totalMemory,
             Usage = float(usedMemory) / float(totalMemory) * 100.0), Ok)

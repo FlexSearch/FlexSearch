@@ -24,9 +24,12 @@ open FlexLucene.Index
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexLucene.Store
+open FlexSearch.Api.Models
+open FlexSearch.Api.Constants
 open System
 open System.Collections.Generic
 open System.IO
+open System.Linq
 
 // type mappings to avoid name conflict
 type LuceneAnalyzer = FlexLucene.Analysis.Analyzer
@@ -37,6 +40,8 @@ type LuceneField = FlexLucene.Document.Field
 
 type LuceneFieldType = FlexLucene.Document.FieldType
 
+type LuceneSimilarity = FlexLucene.Search.Similarities.Similarity
+
 [<RequireQualifiedAccess; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FieldSimilarity = 
     open FlexLucene.Search.Similarities
@@ -44,8 +49,8 @@ module FieldSimilarity =
     /// Converts the enum similarity to Lucene Similarity
     let getLuceneT = 
         function 
-        | FieldSimilarity.TFIDF -> ok (new DefaultSimilarity() :> Similarity)
-        | FieldSimilarity.BM25 -> ok (new BM25Similarity() :> Similarity)
+        | Similarity.TFIDF -> ok (new DefaultSimilarity() :> Similarity)
+        | Similarity.BM25 -> ok (new BM25Similarity() :> Similarity)
         | unknown -> fail (UnSupportedSimilarity(unknown.ToString()))
     
     /// Default similarity provider used by FlexSearch
@@ -91,9 +96,9 @@ type FieldIndexingInformation =
       Tokenize : bool
       /// This maps to Lucene's term vectors and is only used for flex custom
       /// data type
-      FieldTermVector : FieldTermVector
+      FieldTermVector : TermVector
       /// This maps to Lucene's field index options
-      FieldIndexOptions : FieldIndexOptions }
+      FieldIndexOptions : IndexOptions }
 
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FieldType = 
@@ -172,7 +177,7 @@ module FieldType =
 
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module IndexConfiguration = 
-    let inline getIndexWriterConfiguration (codec : Codec) (similarity : Similarity) (indexAnalyzer : Analyzer) 
+    let inline getIndexWriterConfiguration (codec : Codec) (similarity : LuceneSimilarity) (indexAnalyzer : LuceneAnalyzer) 
                (configuration : IndexConfiguration) = 
         let iwc = new IndexWriterConfig(indexAnalyzer)
         iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
@@ -191,7 +196,7 @@ module Field =
           // Signifies the position of the field in the index
           Ordinal : int
           IsStored : bool
-          Similarity : FieldSimilarity
+          Similarity : Similarity
           FieldType : FieldType.T
           GenerateDocValue : bool
           Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option
@@ -220,16 +225,16 @@ module Field =
     
     /// Creates Lucene's field types. This is only used for FlexCustom data type to
     /// support flexible field type
-    let getFieldTemplate (fieldTermVector : FieldTermVector, stored, tokenized, _) = 
+    let getFieldTemplate (fieldTermVector : TermVector, stored, tokenized, _) = 
         let fieldType = new LuceneFieldType()
         fieldType.SetStored(stored)
         fieldType.SetTokenized(tokenized)
         match fieldTermVector with
-        | FieldTermVector.DoNotStoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS)
-        | FieldTermVector.StoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS)
-        | FieldTermVector.StoreTermVectorsWithPositions -> 
+        | TermVector.DoNotStoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS)
+        | TermVector.StoreTermVector -> fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS)
+        | TermVector.StoreTermVectorsWithPositions -> 
             fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
-        | FieldTermVector.StoreTermVectorsWithPositionsandOffsets -> 
+        | TermVector.StoreTermVectorsWithPositionsandOffsets -> 
             fieldType.SetIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
         | _ -> failwithf "Invalid Field term vector"
         fieldType
@@ -365,37 +370,37 @@ module Field =
           GenerateDocValue = generateDocValues
           Source = None
           Searchable = FieldType.searchable (fieldType)
-          Similarity = FieldSimilarity.TFIDF
+          Similarity = Similarity.TFIDF
           RequiresAnalyzer = FieldType.requiresAnalyzer (fieldType) }
     
     /// Build FlexField from field
-    let build (field : FlexSearch.Core.Field, indexConfiguration : IndexConfiguration, 
+    let build (field : Field, indexConfiguration : IndexConfiguration, 
                analyzerFactory : string -> Result<FlexLucene.Analysis.Analyzer>, scriptService) = 
-        let getSource (field : FlexSearch.Core.Field) = 
+        let getSource (field : Field) = 
             if (String.IsNullOrWhiteSpace(field.ScriptName)) then ok <| None
             else 
                 match scriptService (field.ScriptName) with
                 | Ok(func) -> ok <| Some(func)
                 | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
         
-        let getFieldType (field : FlexSearch.Core.Field) = 
+        let getFieldType (field : Field) = 
             maybe { 
                 match field.FieldType with
-                | FieldDataType.Int -> return FieldType.T.Int
-                | FieldDataType.Double -> return FieldType.T.Double
-                | FieldDataType.Bool -> return FieldType.T.Bool(CaseInsensitiveKeywordAnalyzer)
-                | FieldDataType.Date -> return FieldType.T.Date
-                | FieldDataType.DateTime -> return FieldType.T.DateTime
-                | FieldDataType.Long -> return FieldType.T.Long
-                | FieldDataType.Stored -> return FieldType.T.Stored
-                | FieldDataType.ExactText -> return FieldType.T.ExactText(CaseInsensitiveKeywordAnalyzer)
-                | FieldDataType.Text | FieldDataType.Highlight | FieldDataType.Custom -> 
+                | FieldType.Int -> return FieldType.T.Int
+                | FieldType.Double -> return FieldType.T.Double
+                | FieldType.Bool -> return FieldType.T.Bool(CaseInsensitiveKeywordAnalyzer)
+                | FieldType.Date -> return FieldType.T.Date
+                | FieldType.DateTime -> return FieldType.T.DateTime
+                | FieldType.Long -> return FieldType.T.Long
+                | FieldType.Stored -> return FieldType.T.Stored
+                | FieldType.ExactText -> return FieldType.T.ExactText(CaseInsensitiveKeywordAnalyzer)
+                | FieldType.Text | FieldType.Highlight | FieldType.Custom -> 
                     let! searchAnalyzer = analyzerFactory <| field.SearchAnalyzer
                     let! indexAnalyzer = analyzerFactory <| field.IndexAnalyzer
                     match field.FieldType with
-                    | FieldDataType.Text -> return FieldType.T.Text(searchAnalyzer, indexAnalyzer)
-                    | FieldDataType.Highlight -> return FieldType.T.Highlight(searchAnalyzer, indexAnalyzer)
-                    | FieldDataType.Custom -> 
+                    | FieldType.Text -> return FieldType.T.Text(searchAnalyzer, indexAnalyzer)
+                    | FieldType.Highlight -> return FieldType.T.Highlight(searchAnalyzer, indexAnalyzer)
+                    | FieldType.Custom -> 
                         let indexingInformation = 
                             { Index = field.Index
                               Tokenize = field.Analyze
@@ -406,7 +411,7 @@ module Field =
                 | _ -> return! fail (UnSupportedFieldType(field.FieldName, field.FieldType.ToString()))
             }
         
-        let checkDocValuesSupport (field : FlexSearch.Core.Field) (fieldType : FieldType.T) = 
+        let checkDocValuesSupport (field : Field) (fieldType : FieldType.T) = 
             field.AllowSort && requiresCustomDocValues (fieldType)
         maybe { 
             let! source = getSource (field)
@@ -438,7 +443,14 @@ module SearchQuery =
         query.Count <- request.HttpContext |> intFromQueryString "count" query.Count
         query.Skip <- request.HttpContext |> intFromQueryString "skip" query.Skip
         query.OrderBy <- request.HttpContext |> stringFromQueryString "orderby" query.OrderBy
-        query.OrderByDirection <- request.HttpContext |> stringFromQueryString "orderbydirection" query.OrderByDirection
+        query.OrderByDirection <- 
+            match request.HttpContext.Request.Query |> getFirstStringValue "orderbydirection" with
+            | null -> query.OrderByDirection
+            | value -> 
+                if value = "asc" then
+                    OrderByDirection.Ascending
+                else
+                    OrderByDirection.Descending
         query.ReturnFlatResult <- request.HttpContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
         query.SearchProfile <- request.HttpContext |> stringFromQueryString "searchprofile" query.SearchProfile
         query.IndexName <- request.ResId.Value

@@ -17,6 +17,8 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api
+open FlexSearch.Api.Models
 open FlexLucene.Document
 open FlexLucene.Index
 open FlexLucene.Search
@@ -53,7 +55,7 @@ module SearchResultComponents =
     /// Represents the search result format supported
     /// by the engine
     type T = 
-        | StructuredResult of Document
+        | StructuredResult of Models.Document
         | FlatResult of Dictionary<string, string>
     
     /// Represents the search related meta data that can
@@ -111,7 +113,7 @@ module SearchResultComponents =
         let searchResults = new SearchResults()
         searchResults.RecordsReturned <- result.Meta.RecordsReturned
         searchResults.TotalAvailable <- result.Meta.TotalAvailable
-        searchResults.Documents <- toStructuredResults(result).Documents.ToList()
+        searchResults.Documents <- toStructuredResults(result).Documents.ToArray()
         searchResults
 
 // ----------------------------------------------------------------------------
@@ -310,7 +312,7 @@ module SearchDsl =
         
         let sortOrder =
             match searchQuery.OrderByDirection with
-            | InvariantEqual "asc" -> false
+            | Constants.OrderByDirection.Ascending -> false
             | _ -> true
 
         let sort = 
@@ -403,7 +405,7 @@ module SearchDsl =
                 if searchQuery.ReturnScore then fields.[MetaFields.Score] <- hit.Score.ToString()
                 SearchResultComponents.FlatResult(fields)
             else 
-                let resultDoc = new Document()
+                let resultDoc = new Models.Document()
                 resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
                 resultDoc.IndexName <- indexWriter.Settings.IndexName
                 resultDoc.TimeStamp <- timeStamp

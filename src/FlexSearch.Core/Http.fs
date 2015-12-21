@@ -17,7 +17,9 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api
 open FlexSearch.Core
+open FlexSearch.Api.Models
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
 open System
@@ -44,6 +46,13 @@ open Microsoft.AspNet.FileProviders
 open Microsoft.Net.Http.Server
 open Microsoft.Extensions.Logging
 open Extensions
+
+type NoBody() = 
+    interface IDataTransferObject with
+        member val Validated = true with get
+        member val ErrorDescription = String.Empty with get
+        member val ErrorField = String.Empty with get
+        member __.Validate() = true
 
 [<AutoOpenAttribute>]
 module Http = 
@@ -174,7 +183,7 @@ module Http =
     
     /// Handler base class which exposes common Http Handler functionality
     [<AbstractClass>]
-    type HttpHandlerBase<'T, 'U when 'T :> DtoBase>(?failOnMissingBody : bool, ?validateBody : bool) = 
+    type HttpHandlerBase<'T, 'U when 'T :> IDataTransferObject>(?failOnMissingBody : bool, ?validateBody : bool) = 
         member __.HasBody = typeof<'T> <> typeof<NoBody>
         member this.FailOnMissingBody = defaultArg failOnMissingBody this.HasBody
         member __.ValidateBody = defaultArg validateBody false
@@ -208,7 +217,7 @@ module Http =
                                             else ok <| None
                                     | false -> ok <| None
                         /// Validate the DTO
-                        if body.IsSome && handler.ValidateBody then do! body.Value.Validate()
+                        if body.IsSome && handler.ValidateBody then do! validate body.Value
                         return body
                     }
                 

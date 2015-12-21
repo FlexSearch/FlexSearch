@@ -17,6 +17,9 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.DuplicateDetection
 
+open FlexSearch.Api
+open FlexSearch.Api.Constants
+open FlexSearch.Api.Models
 open FlexSearch.Core
 open System
 open System.Collections.Generic
@@ -91,20 +94,20 @@ module DuplicateDetection =
         index.IndexConfiguration <- new IndexConfiguration()
         index.IndexConfiguration.DirectoryType <- DirectoryType.MemoryMapped
         index.Active <- true
-        index.Fields <- [| new Field(sessionId, FieldDataType.ExactText)
-                           new Field(recordType, FieldDataType.ExactText)
+        index.Fields <- [| new Field(sessionId, Constants.FieldType.ExactText)
+                           new Field(recordType, Constants.FieldType.ExactText)
                            // Source record
-                           new Field(sourceId, FieldDataType.Int, AllowSort = true)
-                           new Field(sourceRecordId, FieldDataType.ExactText)
-                           new Field(sourceContent, FieldDataType.Stored)
-                           new Field(sourceDisplayName, FieldDataType.Stored)
-                           new Field(totalDupesFound, FieldDataType.Int)
-                           new Field(sourceStatus, FieldDataType.Int, AllowSort = true)
-                           new Field(targetRecords, FieldDataType.Stored)
-                           new Field(notes, FieldDataType.Text)
+                           new Field(sourceId, Constants.FieldType.Int, AllowSort = true)
+                           new Field(sourceRecordId, Constants.FieldType.ExactText)
+                           new Field(sourceContent, Constants.FieldType.Stored)
+                           new Field(sourceDisplayName, Constants.FieldType.Stored)
+                           new Field(totalDupesFound, Constants.FieldType.Int)
+                           new Field(sourceStatus, Constants.FieldType.Int, AllowSort = true)
+                           new Field(targetRecords, Constants.FieldType.Stored)
+                           new Field(notes, Constants.FieldType.Text)
                            // Session related
-                           new Field(sessionProperties, FieldDataType.Stored)
-                           new Field(misc, FieldDataType.Text) |]
+                           new Field(sessionProperties, Constants.FieldType.Stored)
+                           new Field(misc, Constants.FieldType.Text) |]
         index
     
     let getId() = Guid.NewGuid().ToString()
