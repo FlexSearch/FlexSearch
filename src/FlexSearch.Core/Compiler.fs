@@ -71,13 +71,15 @@ module Compiler =
     let scriptMethodName = "Execute"
     let usingStatements = """
 using System;
+using FlexSearch.Api.Models;
+using FlexSearch.Api.Constants;
 using FlexSearch.Core;
 using System.Collections.Generic;
 """
     
     let metaDataReference = 
         [| MetadataReference.CreateFromFile(typeof<System.Object>.Assembly.Location) :> MetadataReference
-           
+           MetadataReference.CreateFromFile(typeof<OperationMessage>.Assembly.Location) :> MetadataReference
            MetadataReference.CreateFromFile(typeof<SearchQuery>.Assembly.Location) :> MetadataReference |]
     
     let generateSyntaxTree (scriptName) (text : string) = 
