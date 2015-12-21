@@ -355,7 +355,8 @@
         "skip": {
           "description": "Used to enable paging and skip certain pre-fetched results.",
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "exclusiveMinimum": true
         },
         "queryString": {
           "description": "Query string to be used for searching",
