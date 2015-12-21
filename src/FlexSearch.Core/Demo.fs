@@ -66,7 +66,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
         for line in lines.Skip(1) do
             assert (lines.Count() = headers.Count())
             let items = line.Split([| "," |], StringSplitOptions.RemoveEmptyEntries)
-            let indexDocument = new Document(index.IndexName, items.[0].Trim())
+            let indexDocument = new Document(items.[0].Trim(), index.IndexName)
             for i in 1..items.Length - 1 do
                 indexDocument.Fields.Add(headers.[i].Trim(), items.[i].Trim())
             documentService.AddDocument(indexDocument) |> ignore
@@ -76,7 +76,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     
     let IndexJsonData(data : List<Country>) = 
         for record in data do
-            let indexDocument = new Document(indexName, record.Id)
+            let indexDocument = new Document(indexName = indexName, id = record.Id)
             indexDocument.Fields.Add("countryname", record.CountryName)
             indexDocument.Fields.Add("exports", record.Exports)
             indexDocument.Fields.Add("imports", record.Imports)

@@ -44,7 +44,7 @@ module Orm =
 
     /// Create flex document from the object using reflection
     let createDocFromObj<'T> indexName id (instance: 'T) =
-        let doc = new Document(indexName, id)
+        let doc = new Document(id, indexName)
         
         match typeRepository.TryGetValue(typeof<'T>.FullName) with
         | true, t -> doc.Fields <- generateFields<'T> (instance) t

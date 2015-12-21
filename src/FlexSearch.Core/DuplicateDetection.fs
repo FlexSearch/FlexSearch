@@ -113,7 +113,7 @@ module DuplicateDetection =
     let getId() = Guid.NewGuid().ToString()
     
     let writeSessionRecord (session : Session, documentService : IDocumentService) = 
-        let doc = new Document(schema.IndexName, session.Id)
+        let doc = new Document(indexName = schema.IndexName, id = session.Id)
         doc.Fields.Add(sessionId, session.SessionId)
         doc.Fields.Add(recordType, sessionRecordType)
         let sessionPropertiesJson = formatter.SerializeToString(session)
@@ -122,7 +122,7 @@ module DuplicateDetection =
         documentService.AddOrUpdateDocument(doc) |> Logger.Log
     
     let writeDuplicates (sourceRecord : SourceRecord) (documentService : IDocumentService) = 
-        let sourceDoc = new Document(schema.IndexName, getId())
+        let sourceDoc = new Document(indexName = schema.IndexName, id = getId())
         sourceDoc.Fields.Add(sessionId, sourceRecord.SessionId)
         sourceDoc.Fields.Add(sourceId, sourceRecord.SourceId.ToString())
         sourceDoc.Fields.Add(sourceRecordId, sourceRecord.SourceRecordId)

@@ -299,7 +299,7 @@ type ``Document Tests``() =
     
     let createDocument (client : FlexClient) indexName = 
         client.AddIndex(testIndex indexName).Result |> isCreated
-        let document = new Document(indexName, "1")
+        let document = new Document(indexName = indexName, id = "1")
         document.Fields.Add("firstname", "Seemant")
         document.Fields.Add("lastname", "Rajvanshi")
         let result = client.AddDocument(indexName, document).Result
@@ -326,7 +326,7 @@ type ``Document Tests``() =
     
     member __.``Cannot add a document without an id`` (client : FlexClient, indexName : string, handler : LoggingHandler) = 
         client.AddIndex(testIndex indexName).Result |> isCreated
-        let document = new Document(indexName, " ")
+        let document = new Document(indexName = indexName, id = " ")
         client.AddDocument(indexName, document).Result |> hasHttpStatusCode HttpStatusCode.BadRequest
         printfn "%s" (handler.Log().ToString())
     

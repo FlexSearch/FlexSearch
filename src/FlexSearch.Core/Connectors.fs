@@ -122,7 +122,7 @@ type CsvHandler(queueService : IQueueService, indexService : IIndexService, jobS
                 try 
                     rows <- rows + 1L
                     let currentRow = reader.ReadFields()
-                    let document = new Document(body.IndexName, currentRow.[0])
+                    let document = new Document(indexName = body.IndexName, id = currentRow.[0])
                     document.TimeStamp <- 0L
                     // The first column is always id so skip it
                     for i = 1 to currentRow.Length - 1 do

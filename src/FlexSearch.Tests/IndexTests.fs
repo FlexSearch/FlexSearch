@@ -43,8 +43,8 @@ type CommitTests() =
                                                                                       documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
-        test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "1")) @>
-        test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "2")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "2")) @>
         // Close the index without any commit
         test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
         // Document should get recovered from TxLogs after index is reopened
@@ -58,7 +58,7 @@ type CommitTests() =
                                                                              documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
-        test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
         test <@ succeeded <| documentService.DeleteDocument(index.IndexName, "1") @>
         // Close the index without any commit
         test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
@@ -72,9 +72,9 @@ type CommitTests() =
                                                                              documentService : IDocumentService) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
-        test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
         test <@ succeeded <| documentService.DeleteDocument(index.IndexName, "1") @>
-        test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "1")) @>
+        test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
         // Close the index without any commit
         test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
         // Document should get recovered from TxLogs after index is reopened
@@ -106,7 +106,7 @@ type CommitTests() =
             test <@ writer.ShardWriters.[0].Generation.Value = previousGen + 1L  @>
             
             for j = 1 to documentsPerCommit do 
-                test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "1")) @>
+                test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
             let txFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
             // Test if the TxLog file is present with the current generation
             test <@ File.Exists(txFile) @>
@@ -117,7 +117,7 @@ type CommitTests() =
         test <@ succeeded <| indexService.AddIndex(index) @>
         let writer = extract <| indexService.IsIndexOnline(index.IndexName)
         for i = 1 to 10 do
-            test <@ succeeded <| documentService.AddDocument(new Document(index.IndexName, "1")) @>
+            test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
             let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.ShardWriters.[0].TxLogPath).Count()
             let olderTxFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
             test <@ File.Exists(olderTxFile) @>

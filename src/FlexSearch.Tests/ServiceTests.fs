@@ -97,7 +97,7 @@ id,et1,et2,i1,i2
                     documentService : IDocumentService) =
             index.Active <- true
             indexService.AddIndex(index) |> (?)
-            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+            documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
             let modified = index |> modifyFirstField
             indexService.UpdateIndexFields(index.IndexName, modified.Fields) |> (?)
@@ -110,12 +110,12 @@ id,et1,et2,i1,i2
                     documentService : IDocumentService) =
             index.Active <- true
             indexService.AddIndex(index) |> (?)
-            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+            documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
             let modified = index |> modifyFirstFieldName
             indexService.UpdateIndexFields(index.IndexName, modified.Fields) |> (?)
             
-            let doc = documentService.GetDocument(index.IndexName, "1") 
+            let doc = documentService.GetDocument(indexName = index.IndexName, id = "1") 
             (?) doc
             test <@ (extract doc).Fields.ContainsKey("modified") @>
 
@@ -154,7 +154,7 @@ id,et1,et2,i1,i2
                     searchService : ISearchService) =
             index.Active <- true
             indexService.AddIndex(index) |> (?)
-            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+            documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
             let conf = index.IndexConfiguration
             conf.AutoCommit <- true
@@ -169,7 +169,7 @@ id,et1,et2,i1,i2
                     searchService : ISearchService) =
             index.Active <- true
             indexService.AddIndex(index) |> (?)
-            documentService.AddDocument(new Document(index.IndexName, "1")) |> (?)
+            documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
             let conf = new IndexConfiguration()
             conf.IndexVersion <- IndexVersion.Lucene_4_x_x
@@ -193,7 +193,7 @@ module DocumentServiceTests =
                                                                           documentService : IDocumentService) = 
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, documentId)
+            let document = new Document(indexName = index.IndexName, id = documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
@@ -205,7 +205,7 @@ module DocumentServiceTests =
                                                                                            documentService : IDocumentService) = 
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, documentId)
+            let document = new Document(indexName = index.IndexName, id = documentId)
             document.Fields.Add("et1", "test")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
@@ -221,7 +221,7 @@ module DocumentServiceTests =
                                                                    documentService : IDocumentService) = 
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, documentId)
+            let document = new Document(indexName = index.IndexName, id = documentId)
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ documentService.TotalDocumentCount(index.IndexName) = ok(1) @>
@@ -235,7 +235,7 @@ module DocumentServiceTests =
                                                            documentService : IDocumentService) = 
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, id)
+            let document = new Document(indexName = index.IndexName, id = id)
             document.Fields.["t1"] <- "0"
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
@@ -251,7 +251,7 @@ module DocumentServiceTests =
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             [1..10] |> Seq.iter (fun i ->
-                let d = new Document(index.IndexName, i.ToString())
+                let d = new Document(indexName = index.IndexName, id = i.ToString())
                 d.Fields.["t1"] <- "0"
                 test <@ succeeded <| documentService.AddDocument(d) @>)
 
@@ -269,7 +269,7 @@ module DocumentServiceTests =
             index.Active <- true
             test <@ succeeded <| indexService.AddIndex(index) @>
             [1..10] |> Seq.iter (fun i ->
-                let d = new Document(index.IndexName, i.ToString())
+                let d = new Document(indexName = index.IndexName, id = i.ToString())
                 d.Fields.["i1"] <- i.ToString()
                 test <@ succeeded <| documentService.AddDocument(d) @>)
 
@@ -301,7 +301,7 @@ module DocumentServiceTests =
                                                                                  documentService : IDocumentService, 
                                                                                  index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             document.TimeStamp <- -1L
             test <@ documentService.AddDocument(document) = fail(DocumentIdAlreadyExists(index.IndexName, "1")) @>
@@ -310,7 +310,7 @@ module DocumentServiceTests =
                                                                                                              documentService : IDocumentService, 
                                                                                                              index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             document.TimeStamp <- -1L
@@ -321,14 +321,14 @@ module DocumentServiceTests =
                                                                     index : Index) = 
             // TimeStamp of 1 implies that we want to ensure that the document exists which is against the logic of basic create operation
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1", TimeStamp = 1L)
+            let document = new Document(indexName = index.IndexName, id = "1", TimeStamp = 1L)
             test <@ failed <| documentService.AddDocument(document) @>
         
         member __.``Duplicate document can be created with a timestamp of 0`` (indexService : IIndexService, 
                                                                                documentService : IDocumentService, 
                                                                                index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1", TimeStamp = 0L)
+            let document = new Document(indexName = index.IndexName, id = "1", TimeStamp = 0L)
             test <@ succeeded <| documentService.AddDocument(document) @>
             document.TimeStamp <- 0L
             test <@ succeeded <| documentService.AddDocument(document) @>
@@ -338,7 +338,7 @@ module DocumentServiceTests =
                                                                         documentService : IDocumentService, 
                                                                         index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
@@ -349,7 +349,7 @@ module DocumentServiceTests =
                                                                      documentService : IDocumentService, 
                                                                      index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             document.TimeStamp <- 1000L
             test <@ failed <| documentService.AddOrUpdateDocument(document) @>
@@ -358,7 +358,7 @@ module DocumentServiceTests =
                                                                                  documentService : IDocumentService, 
                                                                                  index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             document.TimeStamp <- 1L
             test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
@@ -367,7 +367,7 @@ module DocumentServiceTests =
                                                                                              documentService : IDocumentService, 
                                                                                              index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1", TimeStamp = 1L)
+            let document = new Document(indexName = index.IndexName, id = "1", TimeStamp = 1L)
             test 
                 <@ documentService.AddOrUpdateDocument(document) = fail
                                                                        (DocumentIdNotFound(index.IndexName, document.Id)) @>
@@ -376,7 +376,7 @@ module DocumentServiceTests =
                                                                                           documentService : IDocumentService, 
                                                                                           index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, document.Id)).TimeStamp > 1L @>
@@ -385,7 +385,7 @@ module DocumentServiceTests =
                                                                                           documentService : IDocumentService, 
                                                                                           index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Commit(index.IndexName) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
@@ -396,7 +396,7 @@ module DocumentServiceTests =
                                                                                                                     documentService : IDocumentService, 
                                                                                                                     index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
@@ -408,7 +408,7 @@ module DocumentServiceTests =
                                                                             documentService : IDocumentService, 
                                                                             index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             let indexWriter = extract <| indexService.IsIndexOnline(index.IndexName)
@@ -418,7 +418,7 @@ module DocumentServiceTests =
                                                                                             documentService : IDocumentService, 
                                                                                             index : Index) = 
             test <@ succeeded <| indexService.AddIndex(index) @>
-            let document = new Document(index.IndexName, "1")
+            let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             let indexWriter = extract <| indexService.IsIndexOnline(index.IndexName)
@@ -434,7 +434,7 @@ type QueueServiceTests() =
                                                                          documentService : IDocumentService, 
                                                                          index : Index) = 
         test <@ succeeded <| indexService.AddIndex(index) @>
-        let document = new Document(index.IndexName, "1")
+        let document = new Document(indexName = index.IndexName, id = "1")
         queueService.AddDocumentQueue(document)
         // TODO wait for the action block to actually finish adding the document to Lucene
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
