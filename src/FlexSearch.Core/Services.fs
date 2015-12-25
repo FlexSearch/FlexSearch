@@ -32,8 +32,10 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open System.ComponentModel.Composition
 
+type IModuleService =
+    abstract GetAllModules<'T> : unit -> Dictionary<string, 'T>
+
 /// Index related operations
-[<InheritedExport>]
 type IIndexService = 
     abstract GetIndex : indexName:string -> Result<Index>
     abstract UpdateIndexFields : indexName:string * fields:Field [] -> Result<unit>
@@ -56,7 +58,6 @@ type IIndexService =
     abstract GetDiskUsage : indexName:string -> Result<int64>
 
 /// Document related operations
-[<InheritedExport>]
 type IDocumentService = 
     abstract GetDocument : indexName:string * id:string -> Result<Document>
     abstract GetDocuments : indexName:string * count:int -> Result<SearchResults>
@@ -68,7 +69,6 @@ type IDocumentService =
     abstract TotalDocumentCount : indexName:string -> Result<int>
 
 /// Search related operations
-[<InheritedExport>]
 type ISearchService = 
     abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string>
      -> Result<SearchResults<SearchResultComponents.T>>
@@ -78,12 +78,10 @@ type ISearchService =
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
-[<InheritedExport>]
 type IQueueService = 
     abstract AddDocumentQueue : document:Document -> unit
     abstract AddOrUpdateDocumentQueue : document:Document -> unit
 
-[<InheritedExport>]
 type IJobService = 
     abstract GetJob : string -> Result<Job>
     abstract DeleteAllJobs : unit -> Result<unit>
@@ -92,7 +90,7 @@ type IJobService =
     abstract UpdateJob : jobId:string * JobStatus * count:int * msg:string -> unit
 
 ///  Analyzer/Analysis related services
-[<InheritedExport>]
+
 type IAnalyzerService = 
     abstract GetAnalyzer : analyzerName:string -> Result<LuceneAnalyzer>
     abstract GetAnalyzerInfo : analyzerName:string -> Result<Models.Analyzer>
@@ -102,7 +100,6 @@ type IAnalyzerService =
     abstract Analyze : analyzerName:string * input:string -> Result<string []>
 
 /// Script related services
-[<InheritedExport>]
 type IScriptService = 
     
     /// Signature : fun (indexName, fieldName, source, options) -> string
@@ -113,7 +110,6 @@ type IScriptService =
     /// Usually a script call looks like below
     /// function('param1','param2','param3',....)
     abstract GetScriptSig : scriptSig:string -> Result<string * string []>
-    
     abstract GetComputedScript : scriptSig:string -> Result<ComputedDelegate * string []>
     abstract GetSearchProfileScript : scriptSig:string -> Result<SearchProfileDelegate>
 

@@ -65,7 +65,7 @@ Connector for importing CSV file data into the system.
 [<SealedAttribute (); NameAttribute ("POST-/indices/:id/csv")>]
 type CsvHandler =
     inherit Http.HttpHandlerBase<CsvIndexingRequest,string>
-    [<ImportingConstructor>]
+
     new : queueService:IQueueService * indexService:IIndexService *
         jobService:IJobService -> CsvHandler
     override Process : request:Http.RequestContext * body:CsvIndexingRequest option ->
@@ -77,7 +77,7 @@ Connector for importing data from Microsoft SQL into the system.
 [<SealedAttribute (); NameAttribute ("POST-/indices/:id/sql")>]
 type SqlHandler =
     inherit Http.HttpHandlerBase<SqlIndexingRequest,string>
-    [<ImportingConstructor>]
+
     new : queueService:IQueueService * jobService:IJobService -> SqlHandler
     override Process : request:Http.RequestContext * body:SqlIndexingRequest option ->
                 Http.ResponseContext<string>

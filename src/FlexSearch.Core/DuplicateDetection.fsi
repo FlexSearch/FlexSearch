@@ -72,7 +72,7 @@ Duplicate Detection Handler
 [<SealedAttribute (); FlexSearch.Core.NameAttribute ("POST-/indices/:id/duplicatedetection/:id")>]
 type DuplicateDetectionHandler =
     inherit FlexSearch.Core.Http.HttpHandlerBase<DuplicateDetectionRequest, System.Guid>
-    [<ImportingConstructor>]
+
     new : indexService:FlexSearch.Core.IIndexService *
         documentService:FlexSearch.Core.IDocumentService *
         searchService:FlexSearch.Core.ISearchService -> DuplicateDetectionHandler

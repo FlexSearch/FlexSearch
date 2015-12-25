@@ -177,7 +177,6 @@ module Http =
         new Uri(sprintf "%s://%s%s" req.Scheme req.Host.Value <| req.Path.ToUriComponent())
 
     /// A helper interface to dynamically find all the HttpHandlerBase classes
-    [<InheritedExport>]
     type IHttpHandler = 
         abstract Execute : RequestContext -> unit
     
