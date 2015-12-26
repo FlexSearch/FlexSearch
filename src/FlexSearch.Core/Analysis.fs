@@ -35,19 +35,19 @@ open java.io
 [<Sealed>]
 type FlexAnalyzer(tokenizerFactory : TokenizerFactory, filterFactories : TokenFilterFactory []) = 
     inherit Analyzer()
-    override __.createComponents (_) = 
+    override __.CreateComponents (_) = 
         let tk = tokenizerFactory.Create()
         let mutable ts = tk :> TokenStream
         for filter in filterFactories do
-            ts <- filter.create (ts)
-        new Analyzer.TokenStreamComponents(tk, ts)
+            ts <- filter.Create (ts)
+        new AnalyzerTokenStreamComponents(tk, ts)
 
 type FlexSynonymFilterFactory(args) as self = 
     inherit TokenFilterFactory(args)
-    let ignoreCase = self.getBoolean (args, "ignoreCase", true)
+    let ignoreCase = self.GetBoolean (args, "ignoreCase", true)
     let synonyms = self.Require(args, "synonyms")
-    let expand = self.getBoolean (args, "expand", true)
-    let dedupe = self.getBoolean (args, "dedupe", true)
+    let expand = self.GetBoolean (args, "expand", true)
+    let dedupe = self.GetBoolean (args, "dedupe", true)
     let mutable map = Unchecked.defaultof<_>
     
     do 
@@ -56,9 +56,9 @@ type FlexSynonymFilterFactory(args) as self =
         if System.IO.File.Exists(filePath) then 
             let file = new FileReader(filePath)
             parser.Parse(file)
-            map <- parser.build()
+            map <- parser.Build()
     
-    override __.create (input) = new SynonymFilter(input, map, ignoreCase) :> TokenStream
+    override __.Create (input) = new SynonymFilter(input, map, ignoreCase) :> TokenStream
 
 [<AutoOpen>]
 module Analysis = 
@@ -109,7 +109,7 @@ module Analysis =
              
     let applyResourceLoader (loader : ResourceLoader, factory : obj) = 
         let instance = castAs<ResourceLoaderAware> (factory)
-        if notNull instance then instance.inform (loader)
+        if notNull instance then instance.Inform (loader)
     
     /// Builds a FlexAnalyzer from the Analyzer Dto
     let buildFromAnalyzerDto (dto : Models.Analyzer) = 
@@ -132,9 +132,9 @@ module Analysis =
         let file = new java.io.File(ResourcesFolder +/ "tmp")
         let builder = CustomAnalyzer.Builder(file.toPath().getParent())
         try 
-            builder.withTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
-            def.Filters |> Seq.iter (fun f -> builder.addTokenFilter (f.FilterName, dictToMap (f.Parameters)) |> ignore)
-            ok (builder.build() :> Analyzer)
+            builder.WithTokenizer (def.Tokenizer.TokenizerName, dictToMap (def.Tokenizer.Parameters)) |> ignore
+            def.Filters |> Seq.iter (fun f -> builder.AddTokenFilter (f.FilterName, dictToMap (f.Parameters)) |> ignore)
+            ok (builder.Build() :> Analyzer)
         with ex -> 
             AnalyzerBuilder(def.AnalyzerName, ex.Message, exceptionPrinter (ex))
             |> fail 
@@ -156,7 +156,7 @@ module Analysis =
         try 
             try 
                 source.Reset()
-                while source.incrementToken() do
+                while source.IncrementToken() do
                     tokens.Add(termAtt.ToString())
                 source.End()
             with _ -> ()

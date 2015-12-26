@@ -57,7 +57,7 @@ module FieldSimilarity =
     [<SealedAttribute>]
     type Provider(mappings : IReadOnlyDictionary<string, Similarity>, defaultFormat : Similarity) = 
         inherit PerFieldSimilarityWrapper()
-        override __.get (fieldName) = 
+        override __.Get (fieldName) = 
             match mappings.TryGetValue(fieldName) with
             | true, format -> format
             | _ -> defaultFormat
@@ -166,21 +166,21 @@ module FieldType =
         | Custom(_, _, _) -> failwithf "Sorting is not possible on string or text data type."
         | Stored(_) -> failwithf "Sorting is not possible on store only data type."
         | Text(_) -> failwithf "Sorting is not possible on string or text data type."
-        | Bool(_) -> SortField.Type.STRING
-        | ExactText(_) -> SortField.Type.STRING
-        | Date(_) -> SortField.Type.LONG
-        | DateTime(_) -> SortField.Type.LONG
-        | Int(_) -> SortField.Type.INT
-        | Double(_) -> SortField.Type.DOUBLE
+        | Bool(_) -> SortFieldType.STRING
+        | ExactText(_) -> SortFieldType.STRING
+        | Date(_) -> SortFieldType.LONG
+        | DateTime(_) -> SortFieldType.LONG
+        | Int(_) -> SortFieldType.INT
+        | Double(_) -> SortFieldType.DOUBLE
         | Highlight(_) -> failwithf "Sorting is not possible on string or text data type."
-        | Long(_) -> SortField.Type.LONG
+        | Long(_) -> SortFieldType.LONG
 
 [<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module IndexConfiguration = 
     let inline getIndexWriterConfiguration (codec : Codec) (similarity : LuceneSimilarity) (indexAnalyzer : LuceneAnalyzer) 
                (configuration : IndexConfiguration) = 
         let iwc = new IndexWriterConfig(indexAnalyzer)
-        iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
+        iwc.SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND) |> ignore
         iwc.SetRAMBufferSizeMB(float configuration.RamBufferSizeMb) |> ignore
         iwc.SetCodec(codec).SetSimilarity(similarity) |> ignore
         iwc
@@ -239,24 +239,24 @@ module Field =
         | _ -> failwithf "Invalid Field term vector"
         fieldType
     
-    let store = LuceneField.Store.YES
-    let doNotStore = LuceneField.Store.NO
+    let store = FieldStore.YES
+    let doNotStore = FieldStore.NO
     
     /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
     /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
     /// intend to use for sorting or access through the field cache.
-    let getStringField (fieldName, value : string, store : LuceneField.Store) = 
+    let getStringField (fieldName, value : string, store : FieldStore) = 
         new StringField(fieldName, value, store) :> LuceneField
     
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
     let getTextField (fieldName, value, store) = new TextField(fieldName, value, store) :> LuceneField
     
-    let getLongField (fieldName, value : int64, store : LuceneField.Store) = 
+    let getLongField (fieldName, value : int64, store : FieldStore) = 
         new LongField(fieldName, value, store) :> LuceneField
-    let getIntField (fieldName, value : int32, store : LuceneField.Store) = 
+    let getIntField (fieldName, value : int32, store : FieldStore) = 
         new IntField(fieldName, value, store) :> LuceneField
-    let getDoubleField (fieldName, value : float, store : LuceneField.Store) = 
+    let getDoubleField (fieldName, value : float, store : FieldStore) = 
         new DoubleField(fieldName, value, store) :> LuceneField
     let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> LuceneField
     let getBinaryField (fieldName) = new StoredField(fieldName, [||]) :> LuceneField
@@ -307,8 +307,8 @@ module Field =
             | FieldType.T.Long -> (value |> pLong 0L) |> lucenceField.SetLongValue
     
     let inline storeInfoMap (isStored) = 
-        if isStored then LuceneField.Store.YES
-        else LuceneField.Store.NO
+        if isStored then FieldStore.YES
+        else FieldStore.NO
     
     /// Create docvalues field from 
     let inline createDocValueField flexField = 

@@ -130,25 +130,25 @@ module QueryHelpers =
             match p.TryGetValue("clausetype") with
             | true, b -> 
                 match b with
-                | InvariantEqual "or" -> BooleanClause.Occur.SHOULD
-                | _ -> BooleanClause.Occur.MUST
-            | _ -> BooleanClause.Occur.MUST
-        | _ -> BooleanClause.Occur.MUST
+                | InvariantEqual "or" -> BooleanClauseOccur.SHOULD
+                | _ -> BooleanClauseOccur.MUST
+            | _ -> BooleanClauseOccur.MUST
+        | _ -> BooleanClauseOccur.MUST
     
     let inline addBooleanClause inheritedQuery occur (baseQuery : BooleanQuery) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, occur))
         baseQuery
     
     let inline addMustClause inheritedQuery (baseQuery : BooleanQuery) = 
-        baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClause.Occur.MUST))
+        baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.MUST))
         baseQuery
     
     let inline addMustNotClause inheritedQuery (baseQuery : BooleanQuery) = 
-        baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClause.Occur.MUST_NOT))
+        baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.MUST_NOT))
         baseQuery
     
     let inline addShouldClause inheritedQuery (baseQuery : BooleanQuery) = 
-        baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClause.Occur.SHOULD))
+        baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.SHOULD))
         baseQuery
     
     // ----------------------------------------------------------------------------

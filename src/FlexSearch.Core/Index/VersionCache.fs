@@ -43,8 +43,8 @@ module VersionCache =
           LastModifiedFieldName : string
           ShardWriter : ShardWriter.T }
         
-        interface ReferenceManager.RefreshListener with
-            member this.afterRefresh (_ : bool) : unit = 
+        interface ReferenceManagerRefreshListener with
+            member this.AfterRefresh (_ : bool) : unit = 
                 // Now drop all the old values because they are now
                 // visible via the searcher that was just opened; if
                 // didRefresh is false, it's possible old has some
@@ -52,7 +52,7 @@ module VersionCache =
                 // actually already included in the previously opened
                 // reader.  So we can safely clear old here:
                 this.Old <- new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
-            member this.beforeRefresh() : unit = 
+            member this.BeforeRefresh() : unit = 
                 this.Old <- this.Current
                 // Start sending all updates after this point to the new
                 // dictionary.  While reopen is running, any lookup will first
@@ -89,12 +89,12 @@ module VersionCache =
             let reader = readerContext.Reader()
             let terms = reader.Terms(cache.IdFieldName)
             assert (terms <> null)
-            let termsEnum = terms.iterator()
+            let termsEnum = terms.Iterator()
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
                 let docsEnums = termsEnum.Docs(null, null, 0)
-                let nDocs = reader.getNumericDocValues (cache.LastModifiedFieldName)
-                nDocs.get (docsEnums.nextDoc())
+                let nDocs = reader.GetNumericDocValues (cache.LastModifiedFieldName)
+                nDocs.Get (docsEnums.NextDoc())
             | false -> 
                 if counter - 1 > 0 then loop (counter - 1)
                 else 0L

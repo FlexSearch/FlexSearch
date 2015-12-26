@@ -96,7 +96,7 @@ module WikipediaPerformanceTests =
         let termFreq = 
             FlexLucene.Misc.HighFreqTerms.GetHighFreqTerms
                 (searchers.[0].IndexReader, 10000, "body[lucene_4_9]<lucene_4_1>", 
-                 new FlexLucene.Misc.HighFreqTerms.DocFreqComparator())
+                 new FlexLucene.Misc.HighFreqTermsDocFreqComparator())
         let medFreqUpperRange = 1000000
         let medFreqLowerRange = 100000
         let lowFreqLowerRange = 10000

@@ -170,7 +170,7 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
                        ())
         map <- analyzerMap
     
-    override this.getWrappedAnalyzer (fieldName) = 
+    override this.GetWrappedAnalyzer (fieldName) = 
         match map.TryGetValue(fieldName) with
         | true, analyzer -> analyzer
         | _ -> defaultAnalyzer
@@ -192,13 +192,13 @@ module Codec =
         | IndexVersion.Lucene_5_0_0 -> 
             let postingsFormat = new Lucene50PostingsFormat()
             { new Lucene53Codec() with
-                  member this.getPostingsFormatForField (fieldName) = 
+                  member this.GetPostingsFormatForField (fieldName) = 
                       getPostingsFormat (fieldName, enableBloomFilter, postingsFormat) } :> Codec
             |> ok
         | IndexVersion.Lucene_4_x_x -> 
             let postingsFormat = new Lucene41PostingsFormat()
             { new Lucene410Codec() with
-                  member this.getPostingsFormatForField (fieldName) = 
+                  member this.GetPostingsFormatForField (fieldName) = 
                       getPostingsFormat (fieldName, enableBloomFilter, postingsFormat) } :> Codec
             |> ok
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))

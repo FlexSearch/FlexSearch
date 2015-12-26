@@ -39,7 +39,7 @@ module ShardWriter =
         /// A hook for extending classes to execute operations after pending 
         /// added and deleted documents have been flushed to the Directory but 
         /// before the change is committed (new segments_N file written).
-        override __.doAfterFlush() = 
+        override __.DoAfterFlush() = 
             /// State can be null when the index writer is opened for the
             /// very first time
             if not (isNull state) then state.IncrementFlushCount() |> ignore
@@ -83,10 +83,10 @@ module ShardWriter =
         for i = 0 to r.Leaves().size() - 1 do
             let ctx = r.Leaves().get(i) :?> LeafReaderContext
             let reader = ctx.Reader()
-            let nDocs = reader.getNumericDocValues (MetaFields.ModifyIndex)
-            let liveDocs = reader.getLiveDocs()
-            for j = 0 to reader.maxDoc() do
-                if (liveDocs <> null || liveDocs.get (j)) then max <- Math.Max(max, nDocs.get (j))
+            let nDocs = reader.GetNumericDocValues (MetaFields.ModifyIndex)
+            let liveDocs = reader.GetLiveDocs()
+            for j = 0 to reader.MaxDoc() do
+                if (liveDocs <> null || liveDocs.Get (j)) then max <- Math.Max(max, nDocs.Get (j))
         max
     
     /// Commits all pending changes (added & deleted documents, segment merges, added indexes, etc.) to the index, 
@@ -172,10 +172,10 @@ module ShardWriter =
     let refresh (sw : T) = sw.SearcherManager.MaybeRefresh() |> ignore
     
     /// Adds a listener, to be notified when a reference is refreshed/swapped.
-    let addRefreshListener (item : ReferenceManager.RefreshListener) (sw : T) = sw.SearcherManager.AddListener(item)
+    let addRefreshListener (item : ReferenceManagerRefreshListener) (sw : T) = sw.SearcherManager.AddListener(item)
     
     /// Remove a listener added with AddRefreshListener.
-    let removeRefreshListener (item : ReferenceManager.RefreshListener) (sw : T) = 
+    let removeRefreshListener (item : ReferenceManagerRefreshListener) (sw : T) = 
         sw.SearcherManager.RemoveListener(item)
     
     /// Returns the total number of docs present in the index

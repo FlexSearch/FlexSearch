@@ -46,7 +46,7 @@ type FlexFuzzyQuery() =
             let slop = parameters |> intFromOptDict "slop" 1
             let prefixLength = parameters |> intFromOptDict "prefixlength" 0
             zeroOneOrManyQuery <| getTerms (flexIndexField, values) 
-            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClause.Occur.MUST
+            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClauseOccur.MUST
 
 /// Match all Query
 [<Name("match_all"); Sealed>]
@@ -78,7 +78,7 @@ type FlexWildcardQuery() =
             // Like query does not go through analysis phase as the analyzer would remove the
             // special character
             zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
-            <| getWildCardQuery flexIndexField.SchemaName <| BooleanClause.Occur.MUST
+            <| getWildCardQuery flexIndexField.SchemaName <| BooleanClauseOccur.MUST
 
 /// Regex Query
 [<Name("regex"); Sealed>]
@@ -89,7 +89,7 @@ type RegexQuery() =
             // Regex query does not go through analysis phase as the analyzer would remove the
             // special character
             zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
-            <| getRegexpQuery flexIndexField.SchemaName <| BooleanClause.Occur.MUST
+            <| getRegexpQuery flexIndexField.SchemaName <| BooleanClauseOccur.MUST
 
 // ----------------------------------------------------------------------------
 // Range Queries

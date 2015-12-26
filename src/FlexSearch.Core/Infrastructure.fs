@@ -85,7 +85,7 @@ module Constants =
     let SettingsFileExtension = ".json"
     
     let CaseInsensitiveKeywordAnalyzer = 
-        CustomAnalyzer.Builder().withTokenizer("keyword").addTokenFilter("lowercase").build() :> FlexLucene.Analysis.Analyzer
+        CustomAnalyzer.Builder().WithTokenizer("keyword").AddTokenFilter("lowercase").Build() :> FlexLucene.Analysis.Analyzer
 
 [<AutoOpen>]
 module DateTimeHelpers = 

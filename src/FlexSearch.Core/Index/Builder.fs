@@ -142,7 +142,7 @@ module IndexWriterConfigBuilder =
         
         let similarityProvider = s |> getSimilarityProvider
         iwc.SetCommitOnClose(s.IndexConfiguration.CommitOnClose) |> ignore
-        iwc.SetOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND) |> ignore
+        iwc.SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND) |> ignore
         iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb) |> ignore
         iwc.SetMaxBufferedDocs(s.IndexConfiguration.MaxBufferedDocs) |> ignore
         iwc.SetCodec(codec) |> ignore
