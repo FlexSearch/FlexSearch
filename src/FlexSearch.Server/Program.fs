@@ -1,4 +1,5 @@
 ﻿open FlexSearch.Core
+open FlexSearch.Server
 open Nessos.UnionArgParser
 open System.Text
 open System.IO
@@ -105,7 +106,7 @@ let topShelfConfiguration (settings : Settings.T, conf : HostConfigurators.HostC
 let runService() = 
     if loadTopShelf then 
         HostFactory.Run(fun configurator -> 
-            let settings = StartUp.load()
+            let settings = Startup.load()
             topShelfConfiguration (settings, configurator))
         |> int
     else 0
@@ -140,7 +141,7 @@ let printUsage() =
 [<EntryPoint>]
 let main argv = 
     
-    printfn "%s" StartUp.headerText
+    printfn "%s" Startup.headerText
 
     // The reason we need to reset the performance counters is that sometimes 
     // the counters cache in the registry becomes corrupted.
@@ -149,7 +150,7 @@ let main argv =
     Installers.resetPerformanceCounters()
 
     // Only parse arguments in case of interactive mode
-    if notNull argv && argv.Length > 0 && StartUp.isInteractive then 
+    if notNull argv && argv.Length > 0 && Startup.isInteractive then 
         try 
             let results = parser.Parse(argv).GetAllResults()
             // We don't want TopShelf to process the incoming arguments.
@@ -166,7 +167,7 @@ let main argv =
                 printf "%s" (Management.printSystemInfo())
         with e -> printUsage()
     let result = runService()
-    if StartUp.isInteractive then 
+    if Startup.isInteractive then 
         printfn "Press any key to continue . . ."
         Console.ReadKey() |> ignore
     result

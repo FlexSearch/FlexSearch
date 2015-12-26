@@ -93,7 +93,6 @@
     <Compile Include="Settings.fs" />
     <Compile Include="Protocols.fs" />
     <Compile Include="Queues.fs" />
-    <Compile Include="DnxHelper.fs" />
     <Compile Include="Http.fs" />
     <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
@@ -471,10 +470,6 @@
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.8.0.1-beta4\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Owin">
-      <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PerfUtil">

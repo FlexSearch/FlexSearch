@@ -15,7 +15,7 @@
 //
 //  You must not remove this notice, or any other, from this software.
 // ----------------------------------------------------------------------------
-namespace FlexSearch.Core
+namespace FlexSearch.Server
 
 open System
 open System.Reflection
@@ -42,17 +42,9 @@ type HostApplicationEnvironment(appBase : string,
 
 module Extensions =
     open Microsoft.AspNet.Http.Features
-    open Microsoft.Net.Http.Server
     open Microsoft.Extensions.Configuration
     open Microsoft.Extensions.Logging
 
-    type Microsoft.AspNet.Builder.IApplicationBuilder with
-        member app.UseAuthenticationSchemes(authenticationSchemes) =
-            let listener = app.ServerFeatures.Get<WebListener>()
-            if listener |> isNotNull then
-                listener.AuthenticationManager.AuthenticationSchemes <- authenticationSchemes
-            app
-    
     type Microsoft.Extensions.DependencyInjection.IServiceCollection with
         member services.AddFrameworkLogging(confCheck : unit -> bool) =
             if confCheck () then
