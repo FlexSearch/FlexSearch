@@ -112,28 +112,20 @@ module BootstrappingHelpers =
         <| eventAggregator.Event()
         eventAggregator
     
-    /// Factory implementation
-    [<Sealed>]
-    type ModuleService(container : ILifetimeScope) = 
-        interface IModuleService with
-            member __.GetAllModules<'T>() = 
-                let modules = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
-                let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
-                let moduleNames = new ResizeArray<string>()
-                for plugin in factory do
-                    if plugin.Metadata.ContainsKey("Name") then 
-                        let pluginName = plugin.Metadata.["Name"].ToString()
-                        try 
-                            let pluginValue = plugin.Value.Value
-                            modules.Add(pluginName, pluginValue)
-                            moduleNames.Add(pluginName)
-                        with e -> Logger.Log <| PluginLoadFailure(pluginName, typeof<'T>.FullName, exceptionPrinter e)
-                Logger.Log <| PluginsLoaded(typeof<'T>.FullName, moduleNames)
-                modules
-    
     let registerGroup<'T when 'T : not struct> (container : IContainer) = 
-        let service = container.Resolve<IModuleService>()
-        let instances = service.GetAllModules<'T>()
+        let instances = new Dictionary<string, 'T>(StringComparer.OrdinalIgnoreCase)
+        let factory = container.Resolve<IEnumerable<Meta<Lazy<'T>>>>()
+        let moduleNames = new ResizeArray<string>()
+        for plugin in factory do
+            if plugin.Metadata.ContainsKey("Name") then 
+                let pluginName = plugin.Metadata.["Name"].ToString()
+                try 
+                    let pluginValue = plugin.Value.Value
+                    instances.Add(pluginName, pluginValue)
+                    moduleNames.Add(pluginName)
+                with e -> Logger.Log <| PluginLoadFailure(pluginName, typeof<'T>.FullName, exceptionPrinter e)
+        Logger.Log <| PluginsLoaded(typeof<'T>.FullName, moduleNames)
+
         let builder = new ContainerBuilder()
         builder.RegisterInstance<Dictionary<string, 'T>>(instances) |> ignore
         builder.Update container
@@ -180,8 +172,6 @@ module Main =
         |> registerSingleton<SearchService, ISearchService>
         |> registerSingleton<JobService, IJobService>
         |> registerSingleton<DemoIndexService, DemoIndexService>
-        // Register the module service
-        |> registerSingleton<ModuleService, IModuleService>
         // Build the container
         |> fun b -> b.Build()
         // Register the services required for shutdown

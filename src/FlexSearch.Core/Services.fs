@@ -32,9 +32,6 @@ open System.Threading.Tasks
 open System.Threading.Tasks.Dataflow
 open System.ComponentModel.Composition
 
-type IModuleService =
-    abstract GetAllModules<'T> : unit -> Dictionary<string, 'T>
-
 /// Index related operations
 type IIndexService = 
     abstract GetIndex : indexName:string -> Result<Index>
