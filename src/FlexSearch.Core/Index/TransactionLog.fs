@@ -34,14 +34,11 @@ module TransactionLog =
     type T = 
         { TransactionId : int64
           Operation : Operation
-          [<NullGuard.AllowNullAttribute>]
           Document : Document
           /// This will be used for delete operation as we
           /// don't require a document
-          [<NullGuard.AllowNullAttribute>]
           Id : string
           /// This will be used for delete operation
-          [<NullGuard.AllowNullAttribute>]
           Query : string }
         
         static member Create(tranxId, operation, document, ?id : string, ?query : string) = 

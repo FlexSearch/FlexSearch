@@ -145,7 +145,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FastMember">
-      <HintPath>..\packages\FastMember.1.0.0.11\lib\net40\FastMember.dll</HintPath>
+      <HintPath>..\packages\FastMember.1.1.0-beta1\lib\net40\FastMember.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FlexLucene">
@@ -153,15 +153,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FParsec">
-      <HintPath>..\packages\FParsec.1.0.1\lib\net40-client\FParsec.dll</HintPath>
+      <HintPath>..\packages\FParsec.1.0.2\lib\net40-client\FParsec.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FParsecCS">
-      <HintPath>..\packages\FParsec.1.0.1\lib\net40-client\FParsecCS.dll</HintPath>
+      <HintPath>..\packages\FParsec.1.0.2\lib\net40-client\FParsecCS.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Control.AsyncSeq">
-      <HintPath>..\packages\FSharp.Control.AsyncSeq.2.0.1\lib\net45\FSharp.Control.AsyncSeq.dll</HintPath>
+      <HintPath>..\packages\FSharp.Control.AsyncSeq.2.0.3\lib\net45\FSharp.Control.AsyncSeq.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Core">
@@ -173,11 +173,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharpx.Collections">
-      <HintPath>..\packages\FSharpx.Collections.1.11.0\lib\net40\FSharpx.Collections.dll</HintPath>
+      <HintPath>..\packages\FSharpx.Collections.1.13.4\lib\net40\FSharpx.Collections.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharpx.Extras">
-      <HintPath>..\packages\FSharpx.Extras.1.10.2\lib\40\FSharpx.Extras.dll</HintPath>
+      <HintPath>..\packages\FSharpx.Extras.1.10.3\lib\40\FSharpx.Extras.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="IKVM.AWT.WinForms">
@@ -293,8 +293,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Janitor">
-      <HintPath>..\packages\Janitor.Fody.1.1.1.0\Lib\portable-net4+sl5+wp8+win8+wpa81+MonoAndroid16+MonoTouch40\Janitor.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\Janitor.Fody.1.1.4.0\lib\dotnet\Janitor.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.AspNet.Cors">
       <HintPath>..\packages\Microsoft.AspNet.Cors.6.0.0-rc1-final\lib\net451\Microsoft.AspNet.Cors.dll</HintPath>
@@ -353,11 +353,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.0.0\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.0.0\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
@@ -466,15 +466,11 @@
     <Reference Include="mscorlib" />
     <Reference Include="mscorlib" />
     <Reference Include="MsgPack">
-      <HintPath>..\packages\MsgPack.Cli.0.5.11\lib\net45\MsgPack.dll</HintPath>
+      <HintPath>..\packages\MsgPack.Cli.0.7.0-alpha1\lib\net45\MsgPack.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="NullGuard">
-      <HintPath>..\packages\NullGuard.Fody.1.4.2\Lib\portable-net4+sl4+wp7+win8+MonoAndroid16+MonoTouch40\NullGuard.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.8.0.1-beta4\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Owin">
@@ -486,14 +482,14 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="protobuf-net">
-      <HintPath>..\packages\protobuf-net.2.0.0.668\lib\net40\protobuf-net.dll</HintPath>
+      <HintPath>..\packages\protobuf-net.2.1.0-alpha-1\lib\net45\protobuf-net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.Immutable">
-      <HintPath>..\packages\System.Collections.Immutable.1.1.36\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <HintPath>..\packages\System.Collections.Immutable.1.1.38-beta-23516\lib\dotnet5.1\System.Collections.Immutable.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
@@ -512,7 +508,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="System.Reflection.Metadata">
-      <HintPath>..\packages\System.Reflection.Metadata.1.0.21\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
+      <HintPath>..\packages\System.Reflection.Metadata.1.1.0\lib\dotnet5.2\System.Reflection.Metadata.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Runtime.Caching" />
@@ -525,11 +521,11 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="ToString">
-      <HintPath>..\packages\ToString.Fody.1.7.0.0\Lib\portable-net4+sl4+wp7+win8+MonoAndroid16+MonoTouch40\ToString.dll</HintPath>
+      <HintPath>..\packages\ToString.Fody.1.7.2.0\lib\dotnet\ToString.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="YamlDotNet">
-      <HintPath>..\packages\YamlDotNet.3.6.1\lib\net35\YamlDotNet.dll</HintPath>
+      <HintPath>..\packages\YamlDotNet.3.8.0-pre162\lib\net35\YamlDotNet.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -540,18 +536,21 @@
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('..\packages\Fody.1.28.3\build\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.28.3\build\Fody.targets'))" />
-    <!--<Error Condition="!Exists('..\packages\FSharpLint.0.2.6\build\FSharpLint.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\FSharpLint.0.2.6\build\FSharpLint.targets'))" />-->
-  </Target>
-  <Import Project="..\packages\Fody.1.28.3\build\Fody.targets" Condition="Exists('..\packages\Fody.1.28.3\build\Fody.targets')" />
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc1-final\runtimes\win7-x64\native\libuv.dll" "$(SolutionDir)..\build-debug" /Y
 xcopy "$(SolutionDir)packages\System.Numerics.Vectors.4.1.1-beta-23516\lib\net46\System.Numerics.Vectors.dll" "$(SolutionDir)..\build-debug" /Y</PostBuildEvent>
   </PropertyGroup>
+  <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.4\build\dotnet\Fody.targets'))" />
+    <Error Condition="!Exists('..\packages\Janitor.Fody.1.1.4.0\build\dotnet\Janitor.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Janitor.Fody.1.1.4.0\build\dotnet\Janitor.Fody.targets'))" />
+    <Error Condition="!Exists('..\packages\ToString.Fody.1.7.2.0\build\dotnet\ToString.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ToString.Fody.1.7.2.0\build\dotnet\ToString.Fody.targets'))" />
+  </Target>
+  <Import Project="..\packages\Janitor.Fody.1.1.4.0\build\dotnet\Janitor.Fody.targets" Condition="Exists('..\packages\Janitor.Fody.1.1.4.0\build\dotnet\Janitor.Fody.targets')" />
+  <Import Project="..\packages\ToString.Fody.1.7.2.0\build\dotnet\ToString.Fody.targets" Condition="Exists('..\packages\ToString.Fody.1.7.2.0\build\dotnet\ToString.Fody.targets')" />
   <!--<Import Project="..\packages\FSharpLint.0.2.6\build\FSharpLint.targets" Condition="Exists('..\packages\FSharpLint.0.2.6\build\FSharpLint.targets')" />-->
   <!--<Import Project="..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />-->
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -81,9 +81,7 @@ module Http =
     
     /// Standard FlexSearch response to all web requests 
     type Response<'T> = 
-        { [<NullGuard.AllowNullAttribute>]
-          Data : 'T
-          [<NullGuard.AllowNullAttribute>]
+        { Data : 'T
           Error : OperationMessage }
         
         /// Populate response with data part populated
