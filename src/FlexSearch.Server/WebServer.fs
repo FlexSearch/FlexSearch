@@ -9,6 +9,7 @@ open Microsoft.AspNet.Builder
 open Microsoft.AspNet.StaticFiles
 open Microsoft.AspNet.FileProviders
 open Microsoft.Extensions.PlatformAbstractions
+open Microsoft.Net.Http.Server
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
@@ -116,6 +117,7 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                     // Start the server
                     server <- engine.Start()
 
+                    true
                     //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
                 with 
                     | :? ReflectionTypeLoadException as e -> 
@@ -125,7 +127,15 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                         let message = sprintf "Main exception:\n%s\n\nType Loader Exceptions:\n%s" 
                                       <| exceptionPrinter e
                                       <| loaderExceptions
-                        Logger.Log(message, MessageKeyword.Startup, MessageLevel.Critical)
+                        Logger.Log(message, MessageKeyword.Startup, MessageLevel.Critical);
+                        reraise()
+                    | :? WebListenerException as e -> 
+                        if e.ErrorCode = 5 then // Access Denied
+                            Logger.Log("FlexSearch can only be run as an administrator when using WebListener server",
+                                       MessageKeyword.Node,
+                                       MessageLevel.Critical)
+                        else Logger.Log(e, MessageKeyword.Startup, MessageLevel.Critical)
+                        reraise()
                     | e when e.InnerException |> (isNull >> not) ->
                         if e.InnerException :? HttpListenerException then
                             let innerException = e.InnerException :?> HttpListenerException
@@ -134,12 +144,12 @@ netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
                                 Logger.Log(accessDenied, e, MessageKeyword.Node, MessageLevel.Critical)
                             else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
                         else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
-                    | e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
-            try 
-                thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
-            with e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
+                        reraise()
+                    | e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical); reraise()
+            
+            thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
         
-        member __.Stop() = server.Dispose()
+        member __.Stop() = if (not << isNull) server then server.Dispose()
 
         member __.Services = if engine |> isNull then None
                              else engine.ApplicationServices |> Some
