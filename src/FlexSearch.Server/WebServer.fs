@@ -31,7 +31,10 @@ type WebServer(dependencySetup : Settings.T -> IServiceCollection -> IServicePro
     let mutable engine = Unchecked.defaultof<IHostingEngine>
     let mutable server = Unchecked.defaultof<IDisposable>
     let mutable thread = Unchecked.defaultof<_>
-    let serverAssemblyName = "Microsoft.AspNet.Server.Kestrel"
+    let serverAssemblyName = 
+        let name = "Microsoft.AspNet.Server." + serverSettings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
+        Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
+        name
 
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 

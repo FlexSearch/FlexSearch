@@ -34,6 +34,9 @@ module Settings =
     
     [<Literal>]
     let HttpPort = "HttpPort"
+
+    [<Literal>]
+    let ServerType = "ServerType"
     
     /// Create settings from the path 
     let create (path : string) = 
