@@ -43,6 +43,9 @@ module GenerateAPI =
                 line <- line.Replace("%%", ">")
             // Covers the corner case when we have arrays of basic data type
             line <- line.Replace("= new string[]();", "= Array.Empty<string>();")
+            // Specify the format type for ToString for date time field
+            if line.EndsWith("//datetime") then
+                line <- line.Replace(".ToString()", """.ToString("yyyyMMddHHmmss")""")
             line
 
         let cleanupFile(f) =

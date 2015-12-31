@@ -228,6 +228,41 @@ namespace FlexSearch.Api.Models
             return JsonConvert.DeserializeObject<{{classname}}>(input);
         }
         
+        /// Constants for the field name
+        {{#vars}}
+        private static readonly string {{name}}_IndexName = "{{name}}".ToLower();
+        private static readonly string {{name}}_DataType = "{{{datatype}}}".ToLower();
+        {{/vars}}
+
+        /// <summary>
+        /// Returns a FlexSearch object for the object
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public Document ToFlexDocument(string id, string indexName) {
+            var doc = new Document(id, indexName);
+            {{#vars}}
+            {{#isNotContainer}}
+            doc.Fields.Add({{name}}_IndexName, this.{{name}}.ToString()); //{{datatype}}
+            {{/isNotContainer}}
+            {{^isNotContainer}}
+            doc.Fields.Add({{name}}_IndexName, JsonConvert.SerializeObject(this.{{name}}, Formatting.None));
+            {{/isNotContainer}}
+            {{/vars}}
+            return doc;
+        }
+        
+        /// <summary>
+        /// Returns the FlexSearch Index Fields for the given type
+        /// </summary>
+        /// <returns></returns>
+        public static Field[] GetIndexFields() {
+            var fields = new List <Field>();
+            {{#vars}}
+            fields.Add(new Field({{name}}_IndexName, Helpers.GetFieldType({{name}}_DataType)));
+            {{/vars}}
+            return fields.ToArray();
+        }
     }
     {{/model}}
     {{/models}}
