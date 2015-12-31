@@ -331,7 +331,7 @@ module DataType =
     /// Get a value from a readonly collection and perform a parsing operation. In case the
     /// operation fails or there is any other error it returns the default value
     let inline getFromCollection<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
-               (coll : IReadableStringCollection) = 
+               (coll : IQueryCollection) = 
         match coll |> getFirstStringValue key with
         | null -> defaultValue
         | value -> value |> existsCase defaultValue
