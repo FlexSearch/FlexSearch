@@ -545,8 +545,8 @@
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc1-final\runtimes\win7-x64\native\libuv.dll" "$(SolutionDir)..\build-debug" /Y
-xcopy "$(SolutionDir)packages\System.Numerics.Vectors.4.1.1-beta-23516\lib\net46\System.Numerics.Vectors.dll" "$(SolutionDir)..\build-debug" /Y</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc2-16236\runtimes\win7-x64\native\libuv.dll" "$(SolutionDir)..\build-debug" /Y
+xcopy "$(SolutionDir)packages\System.Numerics.Vectors.4.1.1-rc2-23623\lib\net46\System.Numerics.Vectors.dll" "$(SolutionDir)..\build-debug" /Y</PostBuildEvent>
   </PropertyGroup>
   <Import Project="..\packages\Fody.1.29.4\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.4\build\dotnet\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
