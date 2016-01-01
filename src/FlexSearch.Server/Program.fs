@@ -96,8 +96,8 @@ let topShelfConfiguration (settings : Settings.T, conf : HostConfigurators.HostC
     conf.SetServiceName("FlexSearch-Server")
     conf.StartAutomatically() |> ignore
     conf.EnableServiceRecovery(fun rc -> rc.RestartService(1) |> ignore) |> ignore
-    conf.Service<NodeService>(fun (factory : ServiceConfigurators.ServiceConfigurator<_>) -> 
-        factory.ConstructUsing(new Func<_>(fun _ -> new NodeService(settings, false))) |> ignore
+    conf.Service<WebServerBuilder>(fun (factory : ServiceConfigurators.ServiceConfigurator<_>) -> 
+        factory.ConstructUsing(new Func<_>(fun _ -> new WebServerBuilder(settings))) |> ignore
         factory.WhenStarted(fun tc -> tc.Start()) |> ignore
         factory.WhenStopped(fun tc -> tc.Stop()) |> ignore)
     |> ignore

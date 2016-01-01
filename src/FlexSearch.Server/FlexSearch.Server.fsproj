@@ -102,9 +102,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Compile Include="DnxHelper.fs" />
-    <Compile Include="WebServer.fs" />
-    <Compile Include="NodeService.fs" />
     <Compile Include="Startup.fs" />
+    <Compile Include="WebServer.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -444,6 +443,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
+      <Name>FlexSearch.Api</Name>
+      <Project>{87b212a4-3565-4f73-91a4-bd9bae3ae6dd}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>

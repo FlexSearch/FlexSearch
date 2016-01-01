@@ -1,7 +1,8 @@
 ﻿namespace FlexSearch.Server
-
+open Autofac
 open FlexSearch.Core
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Configuration
 open Microsoft.AspNet.Hosting
 open Microsoft.AspNet.Hosting.Internal
 open Microsoft.AspNet.Http
@@ -18,25 +19,7 @@ open System.Runtime.Versioning
 open System.Net
 open FlexSearch.Server.Extensions
 
-
-type IServer = 
-    abstract Start : unit -> unit
-    abstract Stop : unit -> unit
-    // This member is exposed to access the services so that they can be gracefully shut down
-    abstract member Services : IServiceProvider option
-
-[<Sealed>]
-type WebServer(dependencySetup : Settings.T -> IServiceCollection -> IServiceProvider, serverSettings: Settings.T) = 
-    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
-    let _httpHandlers = new Dictionary<string, IHttpHandler>()
-    let mutable engine = Unchecked.defaultof<IHostingEngine>
-    let mutable server = Unchecked.defaultof<IDisposable>
-    let mutable thread = Unchecked.defaultof<_>
-    let serverAssemblyName = 
-        let name = "Microsoft.AspNet.Server." + serverSettings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
-        Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
-        name
-
+module Messages =
     let accessDenied = """
 Port access issue. Make sure that the running user has necessary permission to open the port. 
 Use the below command to add URL reservation.
@@ -44,112 +27,154 @@ Use the below command to add URL reservation.
 netsh http add urlacl url=http://+:{port}/ user=everyone listen=yes
 ---------------------------------------------------------------------------
 """
-    
-    /// Default OWIN handler to transform C# function to F#
-    let handler = Func<HttpContext, Func<Task>, Task>(fun ctx _ -> Async.StartAsTask(requestProcessor ctx _httpHandlers) :> Task)
-    
 
-    let configuration (app : IApplicationBuilder) = 
-        let fileServerOptions = new FileServerOptions()
-        fileServerOptions.EnableDefaultFiles <- true
-        fileServerOptions.DefaultFilesOptions.DefaultFileNames.Add("index.html")
-        fileServerOptions.FileProvider <- new PhysicalFileProvider(Constants.WebFolder)
-        fileServerOptions.StaticFileOptions.ServeUnknownFileTypes <- true
-        fileServerOptions.RequestPath <- new PathString(@"/portal")
+/// Creates a web server which supports ASP.net style initialization.
+/// Pass custom server settings object in case creating a test server.
+/// Otherwise the default settings will be loaded from the config.ini
+/// file in production mode.
+/// Note: It is advisable to create this class through WebServerBuilder 
+[<Sealed>]
+type WebServer(configuration : IConfiguration) =
+    
+    /// Create settings object from the passed configuration
+    let serverSettings = new Settings.T(configuration)
+    
+    /// Determine if we have to start the server in test mode
+    let testServer = serverSettings.GetBool("server", "testserver", false)
+    
+    /// Name of the HTTP server to be used
+    let serverAssemblyName = 
+        let name = "Microsoft.AspNet.Server." + serverSettings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
+        Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
+        name
+    
+    /// Port on which server should start (Defaults to 9800)
+    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
         
-        app.UseStaticFiles("/web") 
-           .UseFileServer(fileServerOptions) 
-           .UseCors(fun builder -> builder.AllowAnyOrigin()
+    /// Autofac container 
+    let mutable container = setupDependencies testServer serverSettings
+
+    /// Represents all the HTTP services loaded in the domain
+    let httpHandlers = 
+        container.Resolve<Dictionary<string, IHttpHandler>>()
+        |> generateRoutingTable
+
+    /// Default handler to transform C# function to F#
+    let handler = Func<HttpContext, Func<Task>, Task>(fun ctx _ -> Async.StartAsTask(requestProcessor ctx httpHandlers) :> Task)
+    
+    /// Wraps ASP.net dependencies inside the AutoFac container
+    let setupContainerForAsp(services : IServiceCollection) =
+        let builder = new ContainerBuilder()
+        builder
+        |> injectFromAspDi services
+        |> fun x -> 
+            x.Update(container)
+        // Return an IServiceProvider to be compatible with Microsoft's DI
+        container.Resolve<IServiceProvider>()
+
+    // Use this method to add services to the container.
+    // NOTE: This method name/signature cannot be changed as ASP.net expects it.
+    member __.ConfigureServices(services : IServiceCollection) : IServiceProvider =
+        services.AddCors() |> ignore
+
+        // Add the instance of the Hosting environment
+        services.AddSingleton<IApplicationEnvironment>(new DefaultApplicationEnvironment()) |> ignore
+        services |> setupContainerForAsp
+
+    // Use this method to configure the HTTP request pipeline.
+    // NOTE: This method name/signature cannot be changed as ASP.net expects it.
+    member __.Configure (app : IApplicationBuilder) = 
+        let configureFileServer() =
+            let fileServerOptions = new FileServerOptions()
+            fileServerOptions.EnableDefaultFiles <- true
+            fileServerOptions.DefaultFilesOptions.DefaultFileNames.Add("index.html")
+            fileServerOptions.FileProvider <- new PhysicalFileProvider(Constants.WebFolder)
+            fileServerOptions.StaticFileOptions.ServeUnknownFileTypes <- true
+            fileServerOptions.RequestPath <- new PathString(@"/portal")
+            app.UseStaticFiles("/web") 
+               .UseFileServer(fileServerOptions) |> ignore
+
+        let configureCors() =
+           // TODO: Get CORS settings from the settings file
+           app.UseCors(fun builder -> builder.AllowAnyOrigin()
                                           .AllowAnyHeader()
                                           .AllowAnyMethod()
-                                          .AllowCredentials() |> ignore)
-           // This should always be the last middleware in the pipeline as this is
-           // resposible for handling our REST requests
-           .Use(handler)
-        |> ignore
+                                          .AllowCredentials() |> ignore) |> ignore
 
-    let _webHostBuilder =
-        let configureAutofacServices (services : IServiceCollection) : IServiceProvider =
-            services |> dependencySetup serverSettings
+        configureFileServer()
+        configureCors()
+   
+        // This should always be the last middle-ware in the pipeline as this is
+        // responsible for handling our REST requests
+        app.Use(handler) |> ignore
 
-        let setupServices (services : IServiceCollection) = 
-            services.AddCors()
-                    .AddFrameworkLogging(fun () -> serverSettings.ConfigurationSource.Item "Server:FrameworkLogging" = "true")
-            |> ignore
+[<Sealed>]
+type WebServerBuilder(settings : Settings.T) =
+    let mutable engine = Unchecked.defaultof<IWebApplication>
+    let mutable server = Unchecked.defaultof<IDisposable>
+    let mutable thread = Unchecked.defaultof<Task>
+    
+    /// Name of the HTTP server to be used
+    let serverAssemblyName = 
+        let name = "Microsoft.AspNet.Server." + settings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
+        Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
+        name
+    
+    /// Port on which server should start (Defaults to 9800)
+    let port = settings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
+    
+    let webHostBuilder =
+        let config = settings.ConfigurationSource
+        let webAppBuilder = new WebApplicationBuilder()
+        webAppBuilder.UseConfiguration(config)
+                     .UseServerFactory(serverAssemblyName)
+                     .ConfigureServices(fun s -> s.AddSingleton<IConfiguration>(config) |> ignore)
+                     .UseStartup<WebServer>()
+    
+    /// Perform all the clean up tasks to be run just before a shutdown request is 
+    /// received by the server
+    let shutdown() = 
+        // Get all types which implement IRequireNotificationForShutdown and issue shutdown command 
+        engine.Services.GetServices<IRequireNotificationForShutdown>()
+        |> Seq.toArray
+        |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
+        server.Dispose()
 
-            let conf = let c = Environment.GetEnvironmentVariable("TARGET_CONFIGURATION")
-                       if isNull c then "Debug" else c
-
-            let appEnv = new HostApplicationEnvironment(AppContext.BaseDirectory,
-                                                        new FrameworkName(".NETFramework,Version=v4.5"),
-                                                        conf,
-                                                        Assembly.Load(serverAssemblyName))
-
-            // Add the instance of the Hosting environment
-            services.AddInstance<IApplicationEnvironment>(appEnv) |> ignore
-
-        // Set the port number
-        // This is a hacky way of doing it. This is the key that AspNet.Hosting module is using to set the
-        // port number. If any programmatic way of doing it comes up in the future (apart from using the
-        // --server.urls parameter in dnx.exe), please use it
-        serverSettings.ConfigurationSource.Item "HTTP_PLATFORM_PORT" <- port
-
-        (new WebHostBuilder(serverSettings.ConfigurationSource))
-            .UseServer(serverAssemblyName)
-            .UseStartup(configuration, configureAutofacServices)
-            .UseServices(fun s -> setupServices s)
-
-    // This member is exposed to instantiate the Test Server
-    member __.GetWebHostBuilder() = _webHostBuilder
-
-    interface IServer with
-        
-        member this.Start() = 
-            let startServer() = 
-                try 
-                    engine <- _webHostBuilder.Build()
-
-                    // Resolve the Http Handlers
-                    engine.ApplicationServices.GetService<Dictionary<string, IHttpHandler>>()
-                    |> generateRoutingTable
-                    |> Seq.iter (fun kv -> _httpHandlers.Add(kv.Key, kv.Value))
-
-                    // Start the server
-                    server <- engine.Start()
-
-                    true
-                    //netsh http add urlacl url=http://+:9800/ user=everyone listen=yes
-                with 
-                    | :? ReflectionTypeLoadException as e -> 
-                        let loaderExceptions = e.LoaderExceptions 
-                                               |> Seq.map exceptionPrinter
-                                               |> fun exns -> String.Join(Environment.NewLine, exns)
-                        let message = sprintf "Main exception:\n%s\n\nType Loader Exceptions:\n%s" 
-                                      <| exceptionPrinter e
-                                      <| loaderExceptions
-                        Logger.Log(message, MessageKeyword.Startup, MessageLevel.Critical);
-                        reraise()
-                    | :? WebListenerException as e -> 
-                        if e.ErrorCode = 5 then // Access Denied
-                            Logger.Log("FlexSearch can only be run as an administrator when using WebListener server",
-                                       MessageKeyword.Node,
-                                       MessageLevel.Critical)
-                        else Logger.Log(e, MessageKeyword.Startup, MessageLevel.Critical)
-                        reraise()
-                    | e when e.InnerException |> (isNull >> not) ->
-                        if e.InnerException :? HttpListenerException then
-                            let innerException = e.InnerException :?> HttpListenerException
-                            if innerException.ErrorCode = 5 then 
-                                // Access denied error
-                                Logger.Log(accessDenied, e, MessageKeyword.Node, MessageLevel.Critical)
-                            else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
+    member __.Start() =
+        let startServer() = 
+            try 
+                engine <- webHostBuilder.Build()
+                let addresses = engine.GetAddresses()
+                addresses.Add(sprintf "http://localhost:%s" port)
+                server <- engine.Start()
+            with 
+                | :? ReflectionTypeLoadException as e -> 
+                    let loaderExceptions = e.LoaderExceptions 
+                                            |> Seq.map exceptionPrinter
+                                            |> fun exns -> String.Join(Environment.NewLine, exns)
+                    let message = sprintf "Main exception:\n%s\n\nType Loader Exceptions:\n%s" 
+                                    <| exceptionPrinter e
+                                    <| loaderExceptions
+                    Logger.Log(message, MessageKeyword.Startup, MessageLevel.Critical);
+                    reraise()
+                | :? WebListenerException as e -> 
+                    if e.ErrorCode = 5 then // Access Denied
+                        Logger.Log("FlexSearch can only be run as an administrator when using WebListener server",
+                                    MessageKeyword.Node,
+                                    MessageLevel.Critical)
+                    else Logger.Log(e, MessageKeyword.Startup, MessageLevel.Critical)
+                    reraise()
+                | e when e.InnerException |> (isNull >> not) ->
+                    if e.InnerException :? HttpListenerException then
+                        let innerException = e.InnerException :?> HttpListenerException
+                        if innerException.ErrorCode = 5 then 
+                            // Access denied error
+                            Logger.Log(Messages.accessDenied, e, MessageKeyword.Node, MessageLevel.Critical)
                         else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
-                        reraise()
-                    | e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical); reraise()
+                    else Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical)
+                    reraise()
+                | e -> Logger.Log(e, MessageKeyword.Node, MessageLevel.Critical); reraise()
             
-            thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
+        thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
         
-        member __.Stop() = if (not << isNull) server then server.Dispose()
-
-        member __.Services = if engine |> isNull then None
-                             else engine.ApplicationServices |> Some
+    member __.Stop() = shutdown()
