@@ -141,7 +141,7 @@ module Main =
     open FlexSearch.Core
     
     /// Get a container with all dependencies setup
-    let setupDependencies (testServer : bool) (serverSettings : Settings.T) (services : IServiceCollection) = 
+    let setupDependencies (testServer : bool) (serverSettings : Settings.T) = 
         let builder = new ContainerBuilder()
         // The event aggregator logging needs to be instantiated here because log messages
         // begin to be pushed once services are instantiated/resolved
@@ -152,7 +152,6 @@ module Main =
         // so the meta-data attributes get read.
         builder
         |> registerModule<AttributedMetadataModule>
-        |> injectFromAspDi services
         |> registerInstance<EventAggregator> (eventAggregator)
         |> registerInstance<Settings.T> (serverSettings)
         // Interface scanning
@@ -180,8 +179,7 @@ module Main =
         |> registerGroup<IFlexQuery>
         |> registerGroup<IFlexQueryFunction>
         |> registerGroup<IHttpHandler>
-        // Return an IServiceProvider to be compatible with Microsoft's DI
-        |> fun container -> container.Resolve<IServiceProvider>()
+
 
 module Interop = 
     open System
