@@ -46,7 +46,7 @@ module Settings =
             ok <| configBuilder.Build()
         with e -> fail <| UnableToParseConfig(path, exceptionPrinter e)
     
-    type T(source : IConfigurationRoot) = 
+    type T(source : IConfiguration) = 
         
         member val ConfigurationSource = source
 
