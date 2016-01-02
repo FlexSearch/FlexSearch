@@ -17,7 +17,6 @@ open System.Threading.Tasks
 open System.Reflection
 open System.Runtime.Versioning
 open System.Net
-open FlexSearch.Server.Extensions
 
 module Messages =
     let accessDenied = """
