@@ -82,9 +82,9 @@ module DataHelpers =
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
 
-    let container = Main.setupDependencies true <| Settings.T.GetDefault() <| new ServiceCollection()
-    let serverSettings = container.GetService<Settings.T>()
-    let handlerModules = container.GetService<Dictionary<string, IHttpHandler>>()
+    let container = Main.setupDependencies true <| Settings.T.GetDefault()
+    let serverSettings = container.Resolve<Settings.T>()
+    let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
     
     /// <summary>
     /// Basic index configuration
@@ -105,7 +105,7 @@ module DataHelpers =
             new Field("description", Constants.FieldType.Highlight)
             new Field("fullname", Constants.FieldType.Text) |]
         
-        let indexService = container.GetService<IIndexService>()
+        let indexService = container.Resolve<IIndexService>()
         test <@ indexService.AddIndex(index) |> succeeded @>
         index
 
@@ -114,10 +114,10 @@ module DataHelpers =
         let folder = Constants.DataFolder + "/country"
         if Directory.Exists(folder) then Directory.Delete(folder, true)
         // Create the demo index
-        let demoService = container.GetService<DemoIndexService>()
+        let demoService = container.Resolve<DemoIndexService>()
         test <@ demoService.Setup() |> succeeded @>
 
-    let demoIndexData = container.GetService<DemoIndexService>().DemoData().Value 
+    let demoIndexData = container.Resolve<DemoIndexService>().DemoData().Value 
 
     /// Autofixture customizations
     let fixtureCustomization() = 
@@ -126,12 +126,12 @@ module DataHelpers =
         // used as index name
         fixture.Register<String>(fun _ -> Guid.NewGuid().ToString("N"))
         fixture.Register<Index>(fun _ -> getTestIndex()) |> ignore
-        fixture.Inject<IIndexService>(container.GetService<IIndexService>()) |> ignore
-        fixture.Inject<ISearchService>(container.GetService<ISearchService>()) |> ignore
-        fixture.Inject<IDocumentService>(container.GetService<IDocumentService>()) |> ignore
-        fixture.Inject<IJobService>(container.GetService<IJobService>()) |> ignore
-        fixture.Inject<IQueueService>(container.GetService<IQueueService>()) |> ignore
-        fixture.Inject<Dictionary<string, IFlexQueryFunction>>(container.GetService<Dictionary<string, IFlexQueryFunction>>()) |> ignore
+        fixture.Inject<IIndexService>(container.Resolve<IIndexService>()) |> ignore
+        fixture.Inject<ISearchService>(container.Resolve<ISearchService>()) |> ignore
+        fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
+        fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
+        fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
+        fixture.Inject<Dictionary<string, IFlexQueryFunction>>(container.Resolve<Dictionary<string, IFlexQueryFunction>>()) |> ignore
         fixture.Inject<Country list>(demoIndexData)
         fixture
      
