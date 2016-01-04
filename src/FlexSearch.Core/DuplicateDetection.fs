@@ -136,35 +136,36 @@ module DuplicateDetection =
         |> Logger.Log
         |> ignore
 
-type DuplicateDetectionRequest() = 
-    inherit DtoBase()
-    member val SelectionQuery = defString with get, set
-    member val FileName = defString with get, set
+type DuplicateDetectionRequestExtension() = 
+    inherit DuplicateDetectionRequest()
     
     /// Helper field to determine if the session uses file based input
     member val FileBasedSession = false with get, set
-    
-    member val DisplayName = defString with get, set
-    member val ThreadCount = 1 with get, set
-    member val IndexName = defString with get, set
-    member val ProfileName = defString with get, set
-    member val MaxRecordsToScan = Int16.MaxValue with get, set
-    member val DuplicatesCount = Int16.MaxValue with get, set
     member val NextId = new AtomicLong(0L)
-    override this.Validate() = 
-        this.IndexName
-        |> notBlank "IndexName"
-        >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
-        >>= fun _ -> 
-            if this.FileName |> isNotBlank then 
-                this.FileBasedSession <- true
-                okUnit
-            else if this.SelectionQuery |> isNotBlank then okUnit
-            else 
-                fail 
-                <| GenericError
-                       ("Either one of the field 'FileName or 'SelectionQuery' is required", 
-                        new ResizeArray<KeyValuePair<string, string>>())
+
+    interface IExtraValidation with
+        member this.ExtraValidation() = 
+            let result = 
+                this.IndexName
+                |> notBlank "IndexName"
+                >>= fun _ -> this.ProfileName |> notBlank "ProfileName"
+                >>= fun _ -> 
+                    if this.FileName |> isNotBlank then 
+                        this.FileBasedSession <- true
+                        okUnit
+                    else if this.SelectionQuery |> isNotBlank then okUnit
+                    else 
+                        fail 
+                        <| GenericError
+                               ("Either one of the field 'FileName or 'SelectionQuery' is required", 
+                                new ResizeArray<KeyValuePair<string, string>>())
+
+            match result with
+            | Ok() -> true
+            | Fail(msg) -> let opmsg = msg.OperationMessage()
+                           this.ErrorDescription <- opmsg.Message
+                           false
+                               
 
 /// Represents the datasources used by a duplicate detection
 type DataSource = 
@@ -193,7 +194,7 @@ type DataSource =
 [<Sealed>]
 [<Name("POST-/indices/:id/duplicatedetection/:id")>]
 type DuplicateDetectionHandler(indexService : IIndexService, documentService : IDocumentService, searchService : ISearchService) = 
-    inherit HttpHandlerBase<DuplicateDetectionRequest, Guid>()
+    inherit HttpHandlerBase<DuplicateDetectionRequestExtension, Guid>()
     
     do 
         if not <| indexService.IndexExists schema.IndexName then 
@@ -201,7 +202,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             | Ok(_) -> ()
             | Fail(error) -> Logger.Log error
     
-    let duplicateRecordCheck (req : DuplicateDetectionRequest, record : Dictionary<string, string>, session : Session, profileQuery : SearchQuery) = 
+    let duplicateRecordCheck (req : DuplicateDetectionRequestExtension, record : Dictionary<string, string>, session : Session, profileQuery : SearchQuery) = 
         let query = 
             new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName, 
                             Columns = [| session.DisplayFieldName |], ReturnFlatResult = true, ReturnScore = true)
@@ -254,7 +255,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         | _ -> ()
     
     /// Returns a data source based on a csv file
-    let getFileDataSource (request : DuplicateDetectionRequest) = 
+    let getFileDataSource (request : DuplicateDetectionRequestExtension) = 
         !> "Reading file %s" request.FileName
         try
             let reader = new TextFieldParser(request.FileName)
@@ -284,7 +285,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
               Records = Array.empty }
     
     /// Returns a search query based data source
-    let getSearchQueryDataSource (request : DuplicateDetectionRequest) = 
+    let getSearchQueryDataSource (request : DuplicateDetectionRequestExtension) = 
         let mainQuery = 
             new SearchQuery(request.IndexName, request.SelectionQuery, Count = int request.MaxRecordsToScan, 
                             ReturnFlatResult = true, Columns = [| "*" |])
@@ -308,11 +309,11 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
               ReturnedRecords = -1
               Records = Array.empty }
     
-    let getDataSource (req : DuplicateDetectionRequest) = 
+    let getDataSource (req : DuplicateDetectionRequestExtension) = 
         if isNotBlank req.FileName then getFileDataSource (req)
         else getSearchQueryDataSource (req)
     
-    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequest, profileQuery : SearchQuery) = 
+    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequestExtension, profileQuery : SearchQuery) = 
         let session = 
             new Session(IndexName = req.IndexName, ProfileName = req.ProfileName, DisplayFieldName = req.DisplayName, 
                         JobStartTime = DateTime.Now, ThreadCount = req.ThreadCount, 
@@ -349,9 +350,8 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                 }
             loop())
     
-    let processRequest indexName (body : DuplicateDetectionRequest) = 
+    let processRequest indexName (body : DuplicateDetectionRequestExtension) = 
         maybe { 
-            do! body.Validate()
             let! writer = indexService.IsIndexOnline(indexName)
             match indexService.IsIndexOnline(indexName) with
             | Ok(writer) -> 

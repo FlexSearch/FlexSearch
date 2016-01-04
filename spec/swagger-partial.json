@@ -89,7 +89,49 @@
           "default": false
         }
       },
-      "required": ["indexName", "query", "connectionString"]
+      "required": [ "indexName", "query", "connectionString" ]
+    },
+    "duplicateDetectionRequest": {
+      "description": "Represents a request to execute dedupe against a given index and search profile",
+      "type": "object",
+      "properties": {
+        "selectionQuery": {
+          "description": "The query that filters the records to include in the deduplication",
+          "type": "string"
+        },
+        "fileName": {
+          "description": "The file path of the CSV to submit for this session",
+          "type": "string"
+        },
+        "displayName": {
+          "description": "The name of the field used to display the results",
+          "type": "string"
+        },
+        "threadCount": {
+          "description": "The number of threads on which to run the deduplication.",
+          "type": "integer",
+          "default": 1
+        },
+        "indexName": {
+          "description": "The name of the index on which to run the session",
+          "type": "string"
+        },
+        "profileName": {
+          "description": "The name of the profile used for deduplication.",
+          "type": "string"
+        },
+        "maxRecordsToScan": {
+          "description": "The maxmimum number of records to scan for deduplication",
+          "type": "integer",
+          "default": 500000
+        },
+        "duplicatesCount": {
+          "description": "The maxmimum number of duplicates to include in the result",
+          "type": "integer",
+          "default": 500000
+        }
+      },
+      "required": ["displayName", "indexName", "profileName"]
     },
     "tokenizer": {
       "description": "<<tokenizer>>",

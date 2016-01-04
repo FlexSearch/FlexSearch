@@ -118,8 +118,7 @@
     <Compile Include="HttpService.fs" />
     <Compile Include="Connectors.fsi" />
     <Compile Include="Connectors.fs" />
-    <Content Include="DuplicateDetection.fsi" />
-    <Content Include="DuplicateDetection.fs" />
+    <Compile Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
