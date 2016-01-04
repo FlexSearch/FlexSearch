@@ -51,7 +51,7 @@ type WebServer(configuration : IConfiguration) =
     let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
         
     /// Autofac container 
-    let mutable container = setupDependencies testServer serverSettings
+    let container = setupDependencies testServer serverSettings
 
     /// Represents all the HTTP services loaded in the domain
     let httpHandlers = 
