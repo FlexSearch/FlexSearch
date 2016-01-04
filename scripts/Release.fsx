@@ -1,6 +1,7 @@
 // include Fake lib
-#r @"packages\FAKE\tools\FakeLib.dll"
+#r @"..\src\packages\FAKE\tools\FakeLib.dll"
 #r "System.Management.Automation"
+#load "Helpers.fsx"
 
 open Fake
 open Fake.AssemblyInfoFile
@@ -9,15 +10,16 @@ open System.Linq
 open System
 open System.Diagnostics
 open System.Management.Automation
+open Helpers
 
-TraceEnvironmentVariables()
-//RestorePackages()
+//TraceEnvironmentVariables()
+
 Target "RestorePackages" (fun _ ->
     !! "./**/packages.config"
         |> Seq.iter (RestorePackage (fun p ->
             { p with
-                OutputPath = "./packages"
-                Sources = [@"https://nuget.org/api/v2/"; @"https://www.myget.org/F/roslyn-nightly/"]}))
+                OutputPath = "./src/packages"
+                Sources = [@"https://nuget.org/api/v2/"; @"https://www.myget.org/F/aspnetvnext/api/v2/"]}))
 )
 
 if buildServer = BuildServer.AppVeyor then 
@@ -31,14 +33,7 @@ let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
 let version = sprintf "%i.%i.%i-alpha+%s" majorVersion minorVersion patchLevel buildVersion
 let productName = "FlexSearch"
 let copyright = sprintf "Copyright (C) 2010 - %i - FlexSearch" DateTime.Now.Year
-// Properties
-let buildDir = @".\build\"
-let testDir = @".\build-test\"
-let deployDir = @".\deploy\"
-let portalDir = currentDirectory + @"\..\srcjs"
-let documentationDir = currentDirectory + @"\..\documentation"
-let dataDir = currentDirectory + @"\..\documentation\docs\data"
-let webDir = buildDir + @"Web\"
+
 
 // Create necessary directories if they don't exist
 Directory.CreateDirectory(buildDir)
@@ -49,8 +44,8 @@ Directory.CreateDirectory(deployDir)
 /// Delete and move files to correct folders
 /// </summary>
 let packageFiles() = 
-    let src = __SOURCE_DIRECTORY__ + @"\build"
-    let dest = __SOURCE_DIRECTORY__ + @"\build\lib\"
+    let src = buildDir
+    let dest = buildDir <!!> "lib"
     // Delete all pdb files
     for file in Directory.GetFiles(src, "*.pdb") do
         File.Delete(file)
@@ -119,8 +114,8 @@ Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\D
 Target "BuildApp" (fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
-    AssemblyInfoCSharp "FlexSearch.Logging" "FlexSearch Logging Library"
-    MSBuildRelease buildDir "Build" [ @"FlexSearch.sln" ] |> Log "BuildApp-Output: "
+    AssemblyInfoCSharp "FlexSearch.API" "FlexSearch API Library"
+    MSBuildRelease buildDir "Build" [ @"src\FlexSearch.sln" ] |> Log "BuildApp-Output: "
     // Copy the files from build to build-test necessary for Testing
     FileHelper.CopyRecursive buildDir testDir true |> ignore)
 Target "Test" (fun _ -> 
@@ -171,8 +166,8 @@ Target "GenerateSwagger" <| fun _ ->
 ==> "BuildApp" 
 ==> "Default" 
 ==> "MoveFiles" 
-==> "GenerateSwagger"
-==> "MovePortal"
+//==> "GenerateSwagger"
+//==> "MovePortal"
 ==> "Zip"
 ==> "Test"
 
@@ -180,4 +175,4 @@ Target "GenerateSwagger" <| fun _ ->
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "Test"
+RunTargetOrDefault "Zip"

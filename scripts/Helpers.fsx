@@ -9,6 +9,7 @@ module Helpers =
     open System.Linq
     open System.Text.RegularExpressions
     
+
     let (<!!>) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
     let loopDir (dir : string) = Directory.EnumerateDirectories(dir)
     let loopFiles (dir : string) = Directory.EnumerateFiles(dir)
@@ -22,14 +23,31 @@ module Helpers =
     let (!>) (content : string) = printfn "[INFO] %s" content |> ignore
     let (!>>) (content : string) = printfn "\t%s" content |> ignore
     let brk() = !>"------------------------------------------------------------------------"
-    let buildDir = __SOURCE_DIRECTORY__
-    let srcDir = Directory.GetParent(buildDir).FullName <!!> "src"
-    let specDir = Directory.GetParent(buildDir).FullName <!!> "spec"
-    let toolsDir = buildDir <!!> "tools"
-    let codeFormatterExe = toolsDir <!!> @"CodeFormatter\CodeFormatter.exe"
-    let modelsTempDir = buildDir <!!> @"obj\src\main\csharp\IO\Swagger\Model"
-    let modelsDir = srcDir <!!> @"FlexSearch.Api\Models"
-    let javaHome = Environment.GetEnvironmentVariable("JAVA_HOME")
+    let printPath (name : string) (content : string) = 
+        !>> (sprintf "%s: %s" name content)
+        content
+
+    brk()
+    !> "FlexSearch Build Variables"
+    brk()
+    let scriptDir = __SOURCE_DIRECTORY__ |> printPath "Scripts Directory"
+    let rootDir = Directory.GetParent(scriptDir).FullName |> printPath "Root Directory"
+    let srcDir = rootDir <!!> "src" |> printPath "Source Code Directory"
+    let specDir = rootDir <!!> "spec" |> printPath "Specs Directory"
+    let toolsDir = scriptDir <!!> "tools" |> printPath "Tools Directory"
+    let codeFormatterExe = toolsDir <!!> @"CodeFormatter\CodeFormatter.exe" |> printPath "Code Formatter Directory"
+    let modelsTempDir = scriptDir <!!> @"obj\src\main\csharp\IO\Swagger\Model" |> printPath "Models Temp Directory"
+    let modelsDir = srcDir <!!> @"FlexSearch.Api\Models" |> printPath "Models Directory"
+    let buildDir = rootDir <!!> "build" |> printPath "Build Directory"
+    let testDir = rootDir <!!> "build-test" |> printPath "Test Directory"
+    let deployDir = rootDir <!!> "deploy" |> printPath "Deploy Directory"
+    let portalDir = rootDir <!!> "srcjs" |> printPath "Portal Directory"
+    let documentationDir = rootDir <!!> "documentation" |> printPath "Docs Directory"
+    let dataDir = rootDir <!!> @"documentation\docs\data" |> printPath "Data Directory"
+    let webDir = buildDir + "Web" |> printPath "Web Directory"
+
+    let javaHome = Environment.GetEnvironmentVariable("JAVA_HOME") |> printPath "JAVA HOME"
+
 
     /// Execute a file from the path with the provided reference
     let exec(path, argument) = 
@@ -44,15 +62,4 @@ module Helpers =
     
     let javaExec (args : string) = exec(javaHome <!!> @"bin\java.exe", args)
 
-    brk()
-    !> "FlexSearch Build Variables"
-    brk()
-    !>> (sprintf "Build Directory: %s" buildDir)
-    !>> (sprintf "Source Directory: %s" srcDir)
-    !>> (sprintf "Tools Directory: %s" toolsDir)
-    !>> (sprintf "Specs Directory: %s" specDir)
-    !>> (sprintf "Models Directory: %s" modelsDir)
-    !>> (sprintf "Models Temp Directory: %s" modelsTempDir)
-    !>> (sprintf "Code formatter Directory: %s" codeFormatterExe)
-    !>> (sprintf "Java Home Directory: %s" javaHome)
     brk()
