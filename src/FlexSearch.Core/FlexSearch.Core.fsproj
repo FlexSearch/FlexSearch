@@ -116,8 +116,8 @@
     <Compile Include="Benchmark.fs" />
     <Compile Include="HttpService.fsi" />
     <Compile Include="HttpService.fs" />
-    <Content Include="Connectors.fsi" />
-    <Content Include="Connectors.fs" />
+    <Compile Include="Connectors.fsi" />
+    <Compile Include="Connectors.fs" />
     <Content Include="DuplicateDetection.fsi" />
     <Content Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />

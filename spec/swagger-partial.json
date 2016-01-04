@@ -60,7 +60,36 @@
           "type": "string"
         }
       },
-      "required": [ "indexName", "hasHeaderRecord" ]
+      "required": [ "indexName", "hasHeaderRecord", "path" ]
+    },
+    "sqlIndexingRequest": {
+      "description": "Represents a request which can be sent to Sql connector to index SQL data",
+      "type": "object",
+      "properties": {
+        "indexName": {
+          "description": "Name of the index",
+          "type": "string"
+        },
+        "query": {
+          "description": "The query to be used to fetch data from Sql server",
+          "type": "string"
+        },
+        "connectionString": {
+          "description": "Connection string used to connect to the server",
+          "type": "string"
+        },
+        "forceCreate": {
+          "description": "Signifies if all updates to the index are create",
+          "type": "boolean",
+          "default": true
+        },
+        "createJob": {
+          "description": "Signifies if the connector should create a job for the task and return a jobId which can be used\nto check the status of the job.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": ["indexName", "query", "connectionString"]
     },
     "tokenizer": {
       "description": "<<tokenizer>>",
@@ -784,7 +813,7 @@
         "parameters": [
           {
             "in": "body",
-            "schema": { "$ref": "#/definitions/document" }
+            "schema": { "$ref": "#/definitions/document" },
             "name": "Document",
             "required": true
           },
@@ -896,7 +925,7 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response" // TODO
+            "description": "Successful response TODO"
           }
         }
       },
@@ -922,7 +951,7 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response" // TODO
+            "description": "Successful response TODO"
           }
         }
       },
@@ -972,7 +1001,7 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response" // TODO
+            "description": "Successful response TODO"
           }
         }
       }
@@ -1349,7 +1378,7 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response" // TODO
+            "description": "Successful response TODO"
           }
         }
       }
@@ -1492,6 +1521,7 @@
             "in": "body",
             "schema": { "$ref": "#/definitions/sqlIndexingRequest" },
             "name": "SqlIndexingRequest",
+            "description": "The SQL request",
             "required": true
           },
           {
@@ -1500,7 +1530,7 @@
             "description": "Index Name",
             "required": true,
             "type": "string"
-          },
+          }
         ],
         "responses": {
           "default": {
