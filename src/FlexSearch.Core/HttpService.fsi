@@ -58,43 +58,33 @@ type DeleteIndexByIdHandler =
     override Process : request:Http.RequestContext * NoBody option ->
                 Http.ResponseContext<unit>
 
-//#if dto_FieldsUpdateRequest
-//Container to store the list of fields to be updated
-//#endif
-//type FieldsUpdateRequest =
-//    inherit IDataTransferObject
-//    new : unit -> FieldsUpdateRequest
-//    #if prop_Fields
-//    #endif
-//    member Fields : Field [] with get, set
-//
-//# ws_PutIndexFieldsHandler """Update the Index Fields"""
-//# category "indices"
-//# description """
-//Any analyser which is to be used as part of an index field should be defined
-//before adding the field to the index.
-//
-//<div class="note">
-//Always reindex the data after a field update, otherwise you may get unexpected
-//results.
-//</div>
-//
-//<div class="important">
-//New fields added as part of fields update will not have any data available for
-//the older records, in such cases if the indexing is not done the engine will use
-//default values for the field type. If an existing field is removed then the data
-//associated with that field will not be accessible even though the data will not
-//be removed from the index itself.
-//</div>
-//"""
-//[<Name("PUT-/indices/:id/fields")>]
-//[<Sealed>]
-//type PutIndexFieldsHandler =
-//    inherit HttpHandlerBase<FieldsUpdateRequest, unit>
-//
-//    new : indexService : IIndexService -> PutIndexFieldsHandler
-//    override Process : request : RequestContext * FieldsUpdateRequest option ->
-//        ResponseContext<unit>
+# ws_PutIndexFieldsHandler """Update the Index Fields"""
+# category "indices"
+# description """
+Any analyser which is to be used as part of an index field should be defined
+before adding the field to the index.
+
+<div class="note">
+Always reindex the data after a field update, otherwise you may get unexpected
+results.
+</div>
+
+<div class="important">
+New fields added as part of fields update will not have any data available for
+the older records, in such cases if the indexing is not done the engine will use
+default values for the field type. If an existing field is removed then the data
+associated with that field will not be accessible even though the data will not
+be removed from the index itself.
+</div>
+"""
+[<Name("PUT-/indices/:id/fields")>]
+[<Sealed>]
+type PutIndexFieldsHandler =
+    inherit HttpHandlerBase<FieldsUpdateRequest, unit>
+
+    new : indexService : IIndexService -> PutIndexFieldsHandler
+    override Process : request : RequestContext * FieldsUpdateRequest option ->
+        ResponseContext<unit>
 
 [<Name("PUT-/indices/:id/searchprofile")>]
 [<Sealed>]

@@ -131,7 +131,19 @@
           "default": 500000
         }
       },
-      "required": ["displayName", "indexName", "profileName"]
+      "required": [ "displayName", "indexName", "profileName" ]
+    },
+    "fieldsUpdateRequest": {
+      "description": "Represents a request to update a field in an index",
+      "type": "object",
+      "properties": {
+        "fields": {
+          "description": "The list of fields containing the new properties",
+          "type": "array",
+          "items": { "$ref": "#/definitions/field" }
+        }
+      },
+      "required": [ "fields" ]
     },
     "tokenizer": {
       "description": "<<tokenizer>>",
