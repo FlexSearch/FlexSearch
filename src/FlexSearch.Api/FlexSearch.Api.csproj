@@ -212,6 +212,7 @@
     <Compile Include="Extensions\Field.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IDataTransferObject.cs" />
+    <Compile Include="IExtraValidation.cs" />
     <Compile Include="Models\*.*">
     </Compile>
   </ItemGroup>

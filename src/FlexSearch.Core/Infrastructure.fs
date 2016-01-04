@@ -285,7 +285,10 @@ module Operators =
     
     open FlexSearch.Api
     let inline validate (model : IDataTransferObject) =
-        if model.Validate() then
+        let _1stStage = model.Validate()
+        let _2ndStage = (not <| model :? IExtraValidation)
+                        || ((model :?> IExtraValidation).ExtraValidation())
+        if _1stStage && _2ndStage then
             okUnit
         else
             fail <| new ValidationMessage(model)
