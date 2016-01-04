@@ -37,6 +37,31 @@
         }
       }
     },
+    "csvIndexingRequest": {
+      "description": "Represents a request which can be sent to CSV connector to index CSV data.",
+      "type": "object",
+      "properties": {
+        "indexName": {
+          "description": "Name of the index",
+          "type": "string"
+        },
+        "hasHeaderRecord": {
+          "description": "Indicates if the passed CSV file(s) has a header record",
+          "type": "boolean",
+          "default": false
+        },
+        "headers": {
+          "description": "The headers to be used by each column. This should only be passed when there is\nno header in the csv file. The first column is always assumed to be id field. Make sure\nin your array you always offset the column names by 1 position.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "path": {
+          "description": "The path of the folder or file to be indexed. The service will pick up all files with .csv extension.",
+          "type": "string"
+        }
+      },
+      "required": [ "indexName", "hasHeaderRecord" ]
+    },
     "tokenizer": {
       "description": "<<tokenizer>>",
       "type": "object",
@@ -588,5 +613,912 @@
   "externalDocs": {
     "description": "Find out more about Swagger",
     "url": "http://swagger.io"
-  }
+  },
+  "host": "localhost:9800",
+  "paths": {
+    "/analyzers/{id}/analyze": {
+      "post": {
+        "tags": [ "analyzer" ],
+        "summary": "Analyze input next",
+        "description": "This endpoint is useful to understand the effect of a particular analyser on\nthe input text. You can use the service with both custom and built-in analysers.\nThe returned response contains the tokenised input.\n",
+        "operationId": "analyzeText",
+        "parameters": [
+          {
+            "in": "body",
+            "description": "Text to analyze",
+            "schema": { "$ref": "#/definitions/analysisRequest" },
+            "name": "AnalysisRequest",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Analyzer name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful operation",
+            "schema": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "/analyzers/{id}": {
+      "get": {
+        "tags": [ "analyzer" ],
+        "summary": "Returns an analyzer by ID",
+        "description": "",
+        "operationId": "getAnalyzerById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Analyzer name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Analyzer",
+            "schema": { "$ref": "#/definitions/analyzer" }
+          }
+        }
+      },
+      "put": {
+        "tags": [ "analyzer" ],
+        "summary": "Create or update an analyser",
+        "description": "",
+        "operationId": "createOrUpdateAnalyzerById",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/analyzer" },
+            "name": "Analyzer",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Analyzer name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful operation"
+          }
+        }
+      },
+      "delete": {
+        "tags": [ "analyzer" ],
+        "summary": "Deletes an analyser by ID",
+        "description": "",
+        "operationId": "deleteAnalyzerById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Analyzer name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful operation"
+          }
+        }
+      }
+    },
+    "/indices/{id}/csv": {
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Connector for importing CSV file data into the system.\n",
+        "description": "",
+        "operationId": "csv",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/csvIndexingRequest" },
+            "name": "CsvIndexingRequest",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "The job ID",
+            "schema": { "type": "string" }
+          }
+        }
+      }
+    },
+    "/indices/{indexId}/documents/{docId}": {
+      "get": {
+        "tags": [ "documents" ],
+        "summary": "Returns document by ID",
+        "description": "",
+        "operationId": "getDocumentById",
+        "parameters": [
+          {
+            "name": "indexId",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "docId",
+            "in": "path",
+            "description": "Document ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Document",
+            "schema": { "$ref": "#/definitions/document" }
+          }
+        }
+      },
+      "put": {
+        "tags": [ "documents" ],
+        "summary": "Create or update a document",
+        "description": "It is advisable to use create document endpoint when you are sure that the\ndocument does not exist in an index. This service will always perform an ID\nbased look up to determine if a document already exists. In case of non-unique\nID based index, this will replace all the documents with the currently passed\ndocument. This endpoint can be used with concurrency control semantics.\n",
+        "operationId": "putDocumentById",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/document" }
+            "name": "Document",
+            "required": true
+          },
+          {
+            "name": "indexId",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "docId",
+            "in": "path",
+            "description": "Document ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful operation"
+          }
+        }
+      },
+      "delete": {
+        "tags": [ "documents" ],
+        "summary": "Delete a document by ID",
+        "description": "In case of non-unique ID field, this will delete all the documents associated\nwith that ID.\n",
+        "operationId": "deleteDocumentById",
+        "parameters": [
+          {
+            "name": "indexId",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "docId",
+            "in": "path",
+            "description": "Document ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful operation"
+          }
+        }
+      }
+    },
+    "/indices/{id}/search": {
+      "get": {
+        "tags": [ "search" ],
+        "summary": "Search and index",
+        "description": "Search across the index for documents using SQL like query syntax.\n\n<div class= \"note\">\nAny parameter passed as part of query string takes precedence over the same\nparameter in the request body.\n</div>\n\nRefer to the search DSL section to learn more about FlexSearch's querying capability.\n",
+        "operationId": "getSearch",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Short hand for 'QueryString'.",
+            "type": "string"
+          },
+          {
+            "name": "c",
+            "in": "query",
+            "description": "Columns to be retrieved. Use * to retrieve all columns.",
+            "type": "integer"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Count parameter. Refer to 'Search Query' properties.",
+            "type": "integer"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip parameter. Refer to 'Search Query' properties.",
+            "type": "integer"
+          },
+          {
+            "name": "orderby",
+            "in": "query",
+            "description": "Order by parameter. Refer to 'Search Query' properties.",
+            "type": "string"
+          },
+          {
+            "name": "orderbydirection",
+            "in": "query",
+            "description": "Order by Direction parameter. Refer to 'Search Query' properties.",
+            "type": "string"
+          },
+          {
+            "name": "returnflatresult",
+            "in": "query",
+            "description": "Return flat results parameter. Refer to 'Search Query' properties.",
+            "type": "boolean"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response" // TODO
+          }
+        }
+      },
+      "post": {
+        "tags": [ "search" ],
+        "summary": "Search and index",
+        "description": "Search across the index for documents using SQL like query syntax.\n\n<div class= \"note\">\nAny parameter passed as part of query string takes precedence over the same\nparameter in the request body.\n</div>\n\nRefer to the search DSL section to learn more about FlexSearch's querying capability.\n",
+        "operationId": "getSearch",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/searchQuery" },
+            "name": "SearchQuery",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response" // TODO
+          }
+        }
+      },
+      "delete": {
+        "tags": [ "search" ],
+        "summary": "Deletes document by query",
+        "description": "Deletes all document returned by the search query for the given index. Returns the records identified\nby the search query.",
+        "operationId": "deleteDocumentsFromSearch",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Short hand for 'QueryString'.",
+            "type": "string"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Count parameter. Refer to 'Search Query' properties.",
+            "type": "integer"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip parameter. Refer to 'Search Query' properties.",
+            "type": "integer"
+          },
+          {
+            "name": "orderby",
+            "in": "query",
+            "description": "Order by parameter. Refer to 'Search Query' properties.",
+            "type": "string"
+          },
+          {
+            "name": "orderbydirection",
+            "in": "query",
+            "description": "Order by Direction parameter. Refer to 'Search Query' properties.",
+            "type": "string"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response" // TODO
+          }
+        }
+      }
+    },
+    "/indices/{id}/documents": {
+      "get": {
+        "tags": [ "documents" ],
+        "summary": "Returns top 10 document from the index",
+        "description": "This endpoint is useful to determine the structure of the documents indexed. At\ntimes it is quicker to get the count of all the documents present in the index\nusing the service rather then using the search API.\n",
+        "operationId": "getDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "SearchResults",
+            "schema": { "$ref": "#/definitions/searchResults" }
+          }
+        }
+      },
+      "post": {
+        "tags": [ "documents" ],
+        "summary": "Creates a new document",
+        "description": "Unlike a database system FlexSearch doesn't impose the requirement of a unique\nID per document. You can add multiple documents by the same ID but this can\nimpose a problem while adding or retrieving them. You can enforce a unique ID\ncheck by using the `timestamp` field. To understand more about ID check and\nconcurrency control, please refer to the article `concurrency control` under\nconcepts section.\n",
+        "operationId": "postDocumentById",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/document" },
+            "name": "Document",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "CreateResponse",
+            "schema": { "$ref": "#/definitions/createResponse" }
+          }
+        }
+      },
+      "delete": {
+        "tags": [ "documents" ],
+        "summary": "Deletes all documents present in the index",
+        "description": "This will remove all the documents present in an index. This is useful when you\nwant to reindex all the documents.\n",
+        "operationId": "deleteDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{id}": {
+      "get": {
+        "tags": [ "indices" ],
+        "summary": "Returns an index by the ID",
+        "description": "This service will return a status of 404 when index is not present on the server.\n",
+        "operationId": "getIndexById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Index",
+            "schema": { "$ref": "#/definitions/index" }
+          }
+        }
+      },
+      "delete": {
+        "tags": [ "indices" ],
+        "summary": "Deletes an index by ID",
+        "description": "Index deletion happens in two parts, first the index configuration file is\ndeleted from the configurations folder, then the index is deleted from the data\nfolder. In case any error is encountered the cleanup will be performed on the\nserver restart.\n",
+        "operationId": "deleteIndexById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/duplicatedetection/{profileName}": {
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Duplicate Detection Handler\n",
+        "description": "",
+        "operationId": "duplicateDetection",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/duplicateDetectionRequest" },
+            "name": "DuplicateDetectionRequest",
+            "required": true
+          },
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "profileName",
+            "in": "path",
+            "description": "Profile name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Job ID",
+            "schema": { "type": "string" }
+          }
+        }
+      }
+    },
+    "/analyzers": {
+      "get": {
+        "tags": [ "analyzer" ],
+        "summary": "Returns all analysers",
+        "description": "",
+        "operationId": "getAllAnalyzer",
+        "responses": {
+          "default": {
+            "description": "All Analyzers",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/analyzer" }
+            }
+          }
+        }
+      }
+    },
+    "/indices": {
+      "get": {
+        "tags": [ "indices" ],
+        "summary": "Returns all the indexes",
+        "description": "",
+        "operationId": "getAllIndex",
+        "responses": {
+          "default": {
+            "description": "All indices",
+            "schema": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/index" }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Create a new index",
+        "description": "",
+        "operationId": "postIndexById",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/index" },
+            "name": "Index",
+            "required": true
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "CreateResponse",
+            "schema": { "$ref": "#/definitions/createResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/exists": {
+      "get": {
+        "tags": [ "indices" ],
+        "summary": "Check if an index exists",
+        "description": "This endpoint can be used to check if an index is present in the system. This\nendpoint is a lighter alternative to accessing the index by an ID as the\nresponse is smaller in size.\n",
+        "operationId": "getExists",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "IndexExistsResponse",
+            "schema": { "$ref": "#/definitions/indexExistsResponse" }
+          }
+        }
+      }
+    },
+    "/favicon.ico": {
+      "get": {
+        "tags": [ "server" ],
+        "summary": "Returns favourite icon",
+        "description": "An internal end point which is used to return favourite icon when it is\nrequested by a web browser.\n",
+        "operationId": "getFavicon",
+        "responses": {
+          "default": {
+            "description": "Successful response",
+            "schema": { "type": "file" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/size": {
+      "get": {
+        "tags": [ "indices" ],
+        "summary": "Returns the size of an index",
+        "description": "The return size may be higher than the actual size of the documents present in\nthe index. The return value includes the space occupied by the transaction logs\nand older segment files which are not cleaned up as part of the last comment.\n",
+        "operationId": "getIndexSize",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Index size in bytes",
+            "schema": { "type": "number" }
+          }
+        }
+      }
+    },
+    "/jobs/{id}": {
+      "get": {
+        "tags": [ "jobs" ],
+        "summary": "Returns job information",
+        "description": "",
+        "operationId": "getJobById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Job ID",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Job",
+            "schema": { "$ref": "#/definitions/job" }
+          }
+        }
+      }
+    },
+    "/memory": {
+      "get": {
+        "tags": [ "server" ],
+        "summary": "Returns memory used by the server",
+        "description": "",
+        "operationId": "getMemoryDetails",
+        "responses": {
+          "default": {
+            "description": "MemoryDetailsResponse",
+            "schema": { "$ref": "#/definitions/memoryDetailsResponse" }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [ "server" ],
+        "summary": "Redirect requests from base URL",
+        "description": "An internal endpoint which is used to redirect requests to the root URL to the\nFlexSearch portal.\n",
+        "operationId": "getRoot",
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{id}/status": {
+      "get": {
+        "tags": [ "indices" ],
+        "summary": "Returns the status of an index",
+        "description": "This endpoint can be used to determine if an index is online or off-line.\n",
+        "operationId": "getStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "IndexStatusResponse",
+            "schema": { "$ref": "#/definitions/indexStatusResponse" }
+          }
+        }
+      }
+    },
+    "/ping": {
+      "get": {
+        "tags": [ "server" ],
+        "summary": "Ping server",
+        "description": "A simple endpoint which can be used to check the server is running. This is\nuseful for checking the status of the server from a load balancer or fire-wall.\n",
+        "operationId": "ping",
+        "responses": {
+          "default": {
+            "description": "Pong"
+          }
+        }
+      }
+    },
+    "/indices/{id}/searchprofiletest": {
+      "post": {
+        "tags": [ "search" ],
+        "summary": "Test a search profile",
+        "description": "This endpoint is useful to test such profiles dynamically, you can test search\nprofiles without adding them to the index. This becomes useful when trying out\ndifferent search profiles. It is advisable to not to use this service directly\nbut through the search UI provided as part of the portal.\n",
+        "operationId": "postSearchProfileTest",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/searchProfileTestDto" },
+            "name": "SearchProfileTestDto",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response" // TODO
+          }
+        }
+      }
+    },
+    "/indices/{id}/configuration": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Update the configuration of an index",
+        "description": "<div class=\"important\">\nThe Index Version cannot be modified\n</div>\n",
+        "operationId": "PutIndexConfiguration",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/indexConfiguration" },
+            "name": "IndexConfiguration",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{id}/fields": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Update the Index Fields",
+        "description": "Any analyser which is to be used as part of an index field should be defined\nbefore adding the field to the index.\n\n<div class=\"note\">\nAlways reindex the data after a field update, otherwise you may get unexpected\nresults.\n</div>\n\n<div class=\"important\">\nNew fields added as part of fields update will not have any data available for\nthe older records, in such cases if the indexing is not done the engine will use\ndefault values for the field type. If an existing field is removed then the data\nassociated with that field will not be accessible even though the data will not\nbe removed from the index itself.\n</div>\n",
+        "operationId": "putIndexFields",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/fieldsUpdateRequest" },
+            "name": "FieldsUpdateRequest",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{id}/searchprofile": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Adds or updates a search profile for the given index",
+        "description": "",
+        "operationId": "putIndexSearchProfile",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/searchQuery" },
+            "name": "SearchQuery",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/status/{status}": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Update the status of an index",
+        "description": "This endpoint can be used to set an index online or off-line.\n",
+        "operationId": "putStatus",
+        "parameters": [
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "in": "path",
+            "description": "offline / online",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/setupdemo": {
+      "put": {
+        "tags": [ "server" ],
+        "summary": "Setup a demo index",
+        "description": "This endpoint if useful for setting up a demo index which can be used to explore\nthe capabilities of FlexSearch. This is an in memory index which gets wiped out\non server restart.\n",
+        "operationId": "setupDemo",
+        "parameters": [ ],
+        "responses": {
+          "default": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/indices/{id}/sql": {
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Connector for importing data from Microsoft SQL into the system.\n",
+        "description": "",
+        "operationId": "sql",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/sqlIndexingRequest" },
+            "name": "SqlIndexingRequest",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          },
+        ],
+        "responses": {
+          "default": {
+            "description": "The job ID",
+            "schema": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "All" },
+    { "name": "analyzer" },
+    { "name": "common" },
+    { "name": "documents" },
+    { "name": "search" },
+    { "name": "indices" },
+    { "name": "server" },
+    { "name": "jobs" }
+  ]
 }
