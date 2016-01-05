@@ -1,6 +1,6 @@
 ﻿module DomainTests
 
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Api
 open FlexSearch.Core
 open Swensen.Unquote

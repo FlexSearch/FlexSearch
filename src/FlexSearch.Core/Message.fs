@@ -18,7 +18,6 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api.Constants
-open FlexSearch.Api.Models
 open FlexSearch.Api
 open Microsoft.FSharp.Reflection
 open System

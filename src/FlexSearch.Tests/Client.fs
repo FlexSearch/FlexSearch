@@ -13,7 +13,7 @@ open System.IO
 open Newtonsoft.Json.Bson
 open System.Linq
 open System.Collections
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 
 [<AutoOpen>]
 module Helper =

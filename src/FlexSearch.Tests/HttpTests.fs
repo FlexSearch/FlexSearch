@@ -15,7 +15,7 @@ open System.Text
 open System.Threading
 open Swensen.Unquote
 open FlexSearch.Api.Constants
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 
 [<AutoOpenAttribute>]
 module Helpers = 
@@ -251,7 +251,7 @@ type ``Index Other Services Tests``() =
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
         actual |> isSuccessful
-        (actual |> data).Status =? IndexStatus.Offline
+        (actual |> data).IndexStatus =? IndexStatus.Offline
         handler |> log "get-indices-id-status-1"
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
@@ -261,7 +261,7 @@ type ``Index Other Services Tests``() =
         client.AddIndex(index).Result |> isCreated
         client.BringIndexOnline(index.IndexName).Result |> isSuccessful
         let actual = client.GetIndexStatus(index.IndexName).Result
-        (actual |> data).Status =? IndexStatus.Online
+        (actual |> data).IndexStatus =? IndexStatus.Online
         handler |> log "put-indices-id-status-1"
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
@@ -269,10 +269,10 @@ type ``Index Other Services Tests``() =
         client.AddIndex(index).Result |> isCreated
         let actual = client.GetIndexStatus(index.IndexName).Result
         actual |> isSuccessful
-        (actual |> data).Status =? IndexStatus.Online
+        (actual |> data).IndexStatus =? IndexStatus.Online
         client.SetIndexOffline(index.IndexName).Result |> isSuccessful
         let actual = client.GetIndexStatus(index.IndexName).Result
-        (actual |> data).Status =? IndexStatus.Offline
+        (actual |> data).IndexStatus =? IndexStatus.Offline
         client.DeleteIndex(index.IndexName).Result |> isSuccessful
     
     [<Example("get-indices-id-exists-1", "")>]

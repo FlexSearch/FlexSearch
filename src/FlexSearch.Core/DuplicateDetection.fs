@@ -19,7 +19,7 @@ namespace FlexSearch.DuplicateDetection
 
 open FlexSearch.Api
 open FlexSearch.Api.Constants
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Core
 open System
 open System.Collections.Generic

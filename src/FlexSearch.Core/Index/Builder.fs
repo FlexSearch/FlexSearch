@@ -26,7 +26,7 @@ open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexSearch.Core
 open FlexSearch.Core.DictionaryHelpers
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Api.Constants
 open System
 open System.Collections.Concurrent

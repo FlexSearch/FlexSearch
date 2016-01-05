@@ -18,7 +18,7 @@
 namespace FlexSearch.Core
 
 module WikipediaPerformanceTests = 
-    open FlexSearch.Api.Models
+    open FlexSearch.Api.Model
     open System.IO
     open PerfUtil
     open System.Linq

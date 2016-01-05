@@ -18,7 +18,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api.Constants
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Api
 open FlexLucene.Analysis
 open FlexSearch.Core
@@ -90,10 +90,10 @@ type IJobService =
 
 type IAnalyzerService = 
     abstract GetAnalyzer : analyzerName:string -> Result<LuceneAnalyzer>
-    abstract GetAnalyzerInfo : analyzerName:string -> Result<Models.Analyzer>
+    abstract GetAnalyzerInfo : analyzerName:string -> Result<Model.Analyzer>
     abstract DeleteAnalyzer : analyzerName:string -> Result<unit>
-    abstract UpdateAnalyzer : analyzer:Models.Analyzer -> Result<unit>
-    abstract GetAllAnalyzers : unit -> Models.Analyzer []
+    abstract UpdateAnalyzer : analyzer:Model.Analyzer -> Result<unit>
+    abstract GetAllAnalyzers : unit -> Model.Analyzer []
     abstract Analyze : analyzerName:string * input:string -> Result<string []>
 
 /// Script related services
@@ -158,8 +158,8 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         let filters = new List<Filter>()
         filters.Add(new Filter(FilterName = "phonetic", Parameters = filterParams))
         let analyzerDefinition = 
-            new Models.Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
-                             Tokenizer = new Models.Tokenizer(TokenizerName = "whitespace"), Filters = filters.ToArray())
+            new Model.Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
+                             Tokenizer = new Model.Tokenizer(TokenizerName = "whitespace"), Filters = filters.ToArray())
         (analyzerDefinition, Analysis.buildFromAnalyzerDto (analyzerDefinition) |> extract)
     
     let path = 
@@ -167,9 +167,9 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         |> Directory.CreateDirectory
         |> fun x -> x.FullName
     
-    let store = conDict<Models.Analyzer * LuceneAnalyzer>()
+    let store = conDict<Model.Analyzer * LuceneAnalyzer>()
     
-    let updateAnalyzer (analyzer : Models.Analyzer) = 
+    let updateAnalyzer (analyzer : Model.Analyzer) = 
         maybe { 
             do! validate analyzer
             let! instance = Analysis.buildFromAnalyzerDto (analyzer)
@@ -181,7 +181,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     
     let loadAllAnalyzers() = 
         Directory.EnumerateFiles(path) |> Seq.iter (fun x -> 
-                                              match threadSafeWriter.ReadFile<Models.Analyzer>(x) with
+                                              match threadSafeWriter.ReadFile<Model.Analyzer>(x) with
                                               | Ok(dto) -> 
                                                   updateAnalyzer (dto)
                                                   |> Logger.Log
@@ -195,10 +195,10 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     
     do 
         // Add prebuilt analyzers
-        let standardAnalyzer = new Models.Analyzer(AnalyzerName = "standard")
+        let standardAnalyzer = new Model.Analyzer(AnalyzerName = "standard")
         let instance = new FlexLucene.Analysis.Standard.StandardAnalyzer() :> LuceneAnalyzer
         store |> add ("standard", (standardAnalyzer, instance))
-        store |> add ("keyword", (new Models.Analyzer(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
+        store |> add ("keyword", (new Model.Analyzer(AnalyzerName = "keyword"), CaseInsensitiveKeywordAnalyzer))
         store |> add ("refinedsoundex", getPhoneticFilter ("refinedsoundex"))
         store |> add ("doublemetaphone", getPhoneticFilter ("doublemetaphone"))
         if not testMode then loadAllAnalyzers()
@@ -206,7 +206,7 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
     interface IAnalyzerService with
         
         /// Create or update an existing analyzer
-        member __.UpdateAnalyzer(analyzer : Models.Analyzer) = updateAnalyzer (analyzer)
+        member __.UpdateAnalyzer(analyzer : Model.Analyzer) = updateAnalyzer (analyzer)
         
         /// Delete an analyzer. This 
         member __.DeleteAnalyzer(analyzerName : string) = 

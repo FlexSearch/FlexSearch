@@ -2,7 +2,7 @@
 module Helpers
 
 open Fixie
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Api
 open FlexSearch.Core
 open Ploeh.AutoFixture

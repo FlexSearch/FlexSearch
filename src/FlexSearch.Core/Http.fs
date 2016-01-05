@@ -19,7 +19,6 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Core
-open FlexSearch.Api.Models
 open Newtonsoft.Json
 open Newtonsoft.Json.Converters
 open System

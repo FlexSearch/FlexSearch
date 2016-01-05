@@ -17,7 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open MsgPack.Serialization
 open System
 open System.IO

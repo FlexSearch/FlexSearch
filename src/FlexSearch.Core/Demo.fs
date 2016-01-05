@@ -19,7 +19,7 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api
 open FlexSearch.Api.Constants
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexLucene.Analysis.Synonym
 open FlexLucene.Util
 open Newtonsoft.Json

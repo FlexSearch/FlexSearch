@@ -1,6 +1,6 @@
 ﻿namespace FlexSearch.Core
 
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open System.ComponentModel.Composition
 
 # ws_CsvHandler """

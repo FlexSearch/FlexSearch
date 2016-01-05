@@ -18,7 +18,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Api.Constants
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open System
 open System.Data
 open System.Data.SqlClient

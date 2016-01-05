@@ -18,7 +18,7 @@
 namespace FlexSearch.Core
 
 open FlexSearch.Core
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open System.Linq
 
 module DocumentTemplate = 

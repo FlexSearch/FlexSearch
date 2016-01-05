@@ -24,7 +24,7 @@ open FlexLucene.Index
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexLucene.Store
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Api.Constants
 open System
 open System.Collections.Generic

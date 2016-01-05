@@ -1,6 +1,6 @@
 ﻿module ServiceTests
 
-open FlexSearch.Api.Models
+open FlexSearch.Api.Model
 open FlexSearch.Api.Constants
 open FlexSearch.Core
 open Swensen.Unquote

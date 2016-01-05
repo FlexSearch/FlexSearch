@@ -23,7 +23,7 @@ namespace FlexSearch.Core
 /// FlexSearch's default scoring.
 [<AutoOpen>]
 module Scripts =
-    open FlexSearch.Api.Models 
+    open FlexSearch.Api.Model 
     open System
     open System.Collections.Generic
     
@@ -58,7 +58,7 @@ module Scripts =
 
 [<AutoOpen>]
 module Compiler = 
-    open FlexSearch.Api.Models
+    open FlexSearch.Api.Model
     open Microsoft.CodeAnalysis.CSharp
     open Microsoft.CodeAnalysis
     open System.IO
@@ -71,7 +71,7 @@ module Compiler =
     let scriptMethodName = "Execute"
     let usingStatements = """
 using System;
-using FlexSearch.Api.Models;
+using FlexSearch.Api.Model;
 using FlexSearch.Api.Constants;
 using FlexSearch.Core;
 using System.Collections.Generic;
