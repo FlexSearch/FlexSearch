@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FlexSearch.Api.Constants;
 
-namespace FlexSearch.Api.Models
+namespace FlexSearch.Api.Model
 {
     public partial class Field
     {

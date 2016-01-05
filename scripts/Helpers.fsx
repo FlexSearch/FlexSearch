@@ -26,6 +26,7 @@ module Helpers =
     let printPath (name : string) (content : string) = 
         !>> (sprintf "%s: %s" name content)
         content
+    let ensureDir (dir : string) = createDir dir; dir
 
     brk()
     !> "FlexSearch Build Variables"
@@ -36,8 +37,12 @@ module Helpers =
     let specDir = rootDir <!!> "spec" |> printPath "Specs Directory"
     let toolsDir = scriptDir <!!> "tools" |> printPath "Tools Directory"
     let codeFormatterExe = toolsDir <!!> @"CodeFormatter\CodeFormatter.exe" |> printPath "Code Formatter Directory"
-    let modelsTempDir = scriptDir <!!> @"obj\src\main\csharp\IO\Swagger\Model" |> printPath "Models Temp Directory"
-    let modelsDir = srcDir <!!> @"FlexSearch.Api\Models" |> printPath "Models Directory"
+    let modelsTempDir = scriptDir <!!> @"obj\src\main\csharp\FlexSearch\Api\Model" |> printPath "Models Temp Directory"
+    let apiTempDir = scriptDir <!!> @"obj\src\main\csharp\FlexSearch\Api\Api" |> printPath "API Temp Directory"
+    let clientTempDir = scriptDir <!!> @"obj\src\main\csharp\FlexSearch\Api\Client" |> printPath "Client Temp Directory"
+    let modelsDir = srcDir <!!> @"FlexSearch.Api\Model" |> printPath "Model Directory" |> ensureDir
+    let apiDir = srcDir <!!> @"FlexSearch.Api\Api" |> printPath "Api Directory" |> ensureDir
+    let clientDir = srcDir <!!> @"FlexSearch.Api\Client" |> printPath "Client Directory" |> ensureDir
     let buildDir = rootDir <!!> "build" |> printPath "Build Directory"
     let testDir = rootDir <!!> "build-test" |> printPath "Test Directory"
     let deployDir = rootDir <!!> "deploy" |> printPath "Deploy Directory"

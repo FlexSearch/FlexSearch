@@ -8,10 +8,9 @@ open System.Linq
 open System.Text.RegularExpressions
 
 let private generateSwaggerModel() = 
-    !>> "Cleaning Models directory"
-    emptyDir modelsTempDir
-    emptyDir modelsDir
-    javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -Dmodels""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "template")
+    !>> "Cleaning Models, Api & Client directories"
+    [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter emptyDir
+    javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "template") (toolsDir <!!> "codegen-config.json")
     let generatedFiles = Directory.GetFiles(modelsTempDir).Count()
     if generatedFiles > 0 then
         brk()
@@ -48,12 +47,13 @@ let private cleanup() =
             line <- line.Replace(".ToString()", """.ToString("yyyyMMddHHmmss")""")
         line
 
-    let cleanupFile(f) =
+    let cleanupFile(f : string) =
         let mutable file = File.ReadAllLines(f)
         let lines = 
             file 
             |> Array.map codeCorrection
             |> Array.filter (String.IsNullOrWhiteSpace >> not)
+
         File.WriteAllLines(f, lines)
         
     modelsTempDir
@@ -64,9 +64,14 @@ let private formatCode() =
     exec(codeFormatterExe, sprintf "%s/FlexSearch.Api/FlexSearch.Api.csproj /nocopyright" srcDir)
     
 let private copy() =
-    modelsTempDir
-    |> loopFiles
-    |> Seq.iter (fun f -> File.Copy(f, modelsDir <!!> Path.GetFileName(f)))
+    let work tempDir fsDir = 
+        tempDir
+        |> loopFiles
+        |> Seq.iter (fun f -> File.Copy(f, fsDir <!!> Path.GetFileName(f)))
+
+    work modelsTempDir modelsDir
+    work apiTempDir apiDir 
+    work clientTempDir clientDir 
     
 /// Generate API model from the swagger definition
 let generateModel() =

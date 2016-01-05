@@ -26,7 +26,7 @@ namespace FlexSearch.Api.Constants
 {{/vars}}
 }
 
-namespace FlexSearch.Api.Models
+namespace FlexSearch.Api.Model
 {
     /// <summary>
     /// {{description}}
@@ -233,6 +233,14 @@ namespace FlexSearch.Api.Models
         private static readonly string {{name}}_IndexName = "{{name}}".ToLower();
         private static readonly string {{name}}_DataType = "{{{datatype}}}".ToLower();
         {{/vars}}
+
+        /// Constants for the Enum Defaults
+        {{#vars}}
+        {{#defaultValue}}{{#isEnum}}
+        public static readonly {{name}} {{name}}Default = {{name}}.{{{defaultValue}}};
+        {{/isEnum}}{{/defaultValue}}
+        {{/vars}}
+        
 
         /// <summary>
         /// Returns a FlexSearch object for the object

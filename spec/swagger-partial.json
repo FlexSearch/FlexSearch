@@ -14,11 +14,6 @@
           "description": "Signifies the Shard status",
           "type": "string",
           "enum": [ "Opening", "Recovering", "Online", "Offline", "Closing", "Faulted" ]
-        },
-        "indexStatus": {
-          "description": "Signifies the Index status",
-          "type": "string",
-          "enum": [ "Opening", "Recovering", "Online", "OnlineFollower", "Offline", "Closing", "Faulted" ]
         }
       }
     },
@@ -145,6 +140,18 @@
       },
       "required": [ "fields" ]
     },
+    "indexStatusResponse": {
+      "description": "Represents the response of an Index status request - tells whether an index is online, offline, opening, etc.",
+      "type": "object",
+      "properties": {
+        "indexStatus": {
+          "description": "The status of an index",
+          "type": "string",
+          "enum": [ "Opening", "Recovering", "Online", "OnlineFollower", "Offline", "Closing", "Faulted" ],
+          "default": "Opening"
+        }
+      }
+    },
     "tokenizer": {
       "description": "<<tokenizer>>",
       "type": "object",
@@ -212,7 +219,7 @@
           "format": "int32",
           "default": 1,
           "minimum": 1,
-          "exclusiveMinimum": true
+          "exclusiveMinimum": false
         }
       }
     },
@@ -231,7 +238,7 @@
           "description": "Determines how often the data be committed to the physical medium. Commits are more expensive then flushes so keep the setting as high as possible. Making this setting too high will result in excessive ram usage.",
           "type": "integer",
           "format": "int32",
-          "default": "3"
+          "default": 3
         },
         "commitOnClose": {
           "description": "Determines whether to commit first before closing an index",
@@ -987,7 +994,7 @@
         "tags": [ "search" ],
         "summary": "Search and index",
         "description": "Search across the index for documents using SQL like query syntax.\n\n<div class= \"note\">\nAny parameter passed as part of query string takes precedence over the same\nparameter in the request body.\n</div>\n\nRefer to the search DSL section to learn more about FlexSearch's querying capability.\n",
-        "operationId": "getSearch",
+        "operationId": "postSearch",
         "parameters": [
           {
             "in": "body",
