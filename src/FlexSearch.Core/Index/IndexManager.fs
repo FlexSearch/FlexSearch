@@ -151,7 +151,7 @@ module IndexManager =
             | _ -> 
                 do! t.ThreadSafeFileWriter.WriteFile(path +/ index.IndexName, index)
                 do! t |> loadIndex index
-                return CreateResponse(index.IndexName)
+                return CreationId(index.IndexName)
         }
     
     /// Shut down an existing index without saving the configuration as Inactive

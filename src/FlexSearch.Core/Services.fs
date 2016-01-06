@@ -39,7 +39,7 @@ type IIndexService =
     abstract AddOrUpdateSearchProfile : indexName:string * profile:SearchQuery -> Result<unit>
     abstract UpdateIndexConfiguration : indexName:string * indexConfiguration:IndexConfiguration -> Result<unit>
     abstract DeleteIndex : indexName:string -> Result<unit>
-    abstract AddIndex : index:Index -> Result<CreateResponse>
+    abstract AddIndex : index:Index -> Result<CreationId>
     abstract GetAllIndex : unit -> Index array
     abstract IndexExists : indexName:string -> bool
     abstract IndexOnline : indexName:string -> bool
@@ -62,7 +62,7 @@ type IDocumentService =
     abstract DeleteDocument : indexName:string * id:string -> Result<unit>
     abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Result<SearchResults<T>>
     abstract DeleteAllDocuments : indexName:string -> Result<unit>
-    abstract AddDocument : document: Document -> Result<CreateResponse>
+    abstract AddDocument : document: Document -> Result<CreationId>
     abstract TotalDocumentCount : indexName:string -> Result<int>
 
 /// Search related operations
@@ -492,7 +492,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 else 
                     let! writer = indexService.IsIndexOnline <| document.IndexName
                     do! writer |> IndexWriter.addDocument document
-                    return new CreateResponse(document.Id)
+                    return new CreationId(document.Id)
             }
         
         /// Delete a document by Id

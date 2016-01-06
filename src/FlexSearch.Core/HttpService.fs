@@ -80,7 +80,7 @@ type GetIndexByIdHandler(indexService : IIndexService) =
 [<Name("POST-/indices")>]
 [<Sealed>]
 type PostIndexByIdHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<Index, CreateResponse>()
+    inherit HttpHandlerBase<Index, CreationId>()
     override __.Process(_, body) = 
         match indexService.AddIndex(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
@@ -159,11 +159,10 @@ type PutStatusHandler(indexService : IIndexService) =
 [<Name("GET-/indices/:id/exists")>]
 [<Sealed>]
 type GetExistsHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<NoBody, IndexExistsResponse>()
+    inherit HttpHandlerBase<NoBody, IndexExists>()
     override __.Process(request, _) = 
-        match indexService.IndexExists(request.ResId.Value) with
-        | true -> SuccessResponse(new IndexExistsResponse(Exists = true), Ok)
-        | false -> FailureResponse(IndexNotFound(request.ResName), NotFound)
+        let response = indexService.IndexExists(request.ResId.Value)
+        SuccessResponse(new IndexExists(Exists = response), Ok)
 
 /// Gets the size on disk of an index
 [<Name("GET-/indices/:id/size")>]
@@ -305,7 +304,7 @@ type GetDocumentByIdHandler(documentService : IDocumentService) =
 [<Name("POST-/indices/:id/documents")>]
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<Document, CreateResponse>()
+    inherit HttpHandlerBase<Document, CreationId>()
     override __.Process(_, body) = 
         match documentService.AddDocument(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
@@ -484,14 +483,14 @@ type PostSearchProfileTestHandler(searchService : ISearchService) =
 [<Name("GET-/memory")>]
 [<Sealed>]
 type GetMemoryDetails() =
-    inherit HttpHandlerBase<NoBody, MemoryDetailsResponse>()
+    inherit HttpHandlerBase<NoBody, MemoryDetails>()
     override __.Process(request, body) =
         let usedMemory = 
             let procName = System.Diagnostics.Process.GetCurrentProcess().ProcessName
             let counter = new System.Diagnostics.PerformanceCounter("Process", "Working Set - Private", procName)
             counter.RawValue
         let totalMemory = (new Microsoft.VisualBasic.Devices.ComputerInfo()).TotalPhysicalMemory
-        SuccessResponse(new MemoryDetailsResponse(
+        SuccessResponse(new MemoryDetails(
             UsedMemory = usedMemory,
             TotalMemory = int64 totalMemory,
             Usage = float(usedMemory) / float(totalMemory) * 100.0), Ok)

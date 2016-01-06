@@ -17,6 +17,28 @@
         }
       }
     },
+    "operationMessage": {
+      "description": "Holds all of the information regarding an error",
+      "type": "object",
+      "properties": {
+        "properties": {
+          "description": "The list of key value pairs holding the data of the error",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "message": {
+          "description": "The Error message",
+          "type": "string"
+        },
+        "errorCode": {
+          "description": "The Error Code",
+          "type": "string"
+        }
+      },
+      "required": [ "message", "errorCode" ]
+    },
     "analysisRequest": {
       "description": "A request object which can be used to analyze a text input using an analyzer.",
       "type": "object",
@@ -640,7 +662,7 @@
         }
       }
     },
-    "createResponse": {
+    "creationId": {
       "description": "",
       "type": "object",
       "required": [ "id" ],
@@ -651,7 +673,7 @@
         }
       }
     },
-    "indexExistsResponse": {
+    "indexExists": {
       "description": "",
       "type": "object",
       "properties": {
@@ -661,7 +683,7 @@
         }
       }
     },
-    "memoryDetailsResponse": {
+    "memoryDetails": {
       "description": "",
       "type": "object",
       "properties": {
@@ -698,6 +720,114 @@
     "noBody": {
       "description": "",
       "type": "object"
+    },
+    "analyzeTextResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "analyzerResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/analyzer" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "jobSuccessResponse": {
+      "description": "Gives you the ID of the successfully submitted job",
+      "type": "object",
+      "properties": {
+        "data": { "type": "string" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "documentResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/document" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "searchResultsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/searchResults" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "creationIdResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/creationId" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "indexResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/index" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "analyzersResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/analyzer" }
+        },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "indicesResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/index" }
+        },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "indexExistsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/indexExists" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "indexSizeResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "number" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "jobResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/job" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "memoryDetailsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/memoryDetails" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "getStatusResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/indexStatusResponse" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     }
   },
   "externalDocs": {
@@ -731,10 +861,7 @@
         "responses": {
           "default": {
             "description": "Successful operation",
-            "schema": {
-              "type": "array",
-              "items": { "type": "string" }
-            }
+            "schema": {"$ref": "#/definitions/analyzeTextResponse"}
           }
         }
       }
@@ -757,7 +884,7 @@
         "responses": {
           "default": {
             "description": "Analyzer",
-            "schema": { "$ref": "#/definitions/analyzer" }
+            "schema": { "$ref": "#/definitions/analyzerResponse" }
           }
         }
       },
@@ -832,7 +959,7 @@
         "responses": {
           "default": {
             "description": "The job ID",
-            "schema": { "type": "string" }
+            "schema": { "$ref": "#/definitions/jobSuccessResponse" }
           }
         }
       }
@@ -862,7 +989,7 @@
         "responses": {
           "default": {
             "description": "Document",
-            "schema": { "$ref": "#/definitions/document" }
+            "schema": { "$ref": "#/definitions/documentResponse" }
           }
         }
       },
@@ -1085,7 +1212,7 @@
         "responses": {
           "default": {
             "description": "SearchResults",
-            "schema": { "$ref": "#/definitions/searchResults" }
+            "schema": { "$ref": "#/definitions/searchResultsResponse" }
           }
         }
       },
@@ -1112,7 +1239,7 @@
         "responses": {
           "default": {
             "description": "CreateResponse",
-            "schema": { "$ref": "#/definitions/createResponse" }
+            "schema": { "$ref": "#/definitions/creationIdResponse" }
           }
         }
       },
@@ -1155,7 +1282,7 @@
         "responses": {
           "default": {
             "description": "Index",
-            "schema": { "$ref": "#/definitions/index" }
+            "schema": { "$ref": "#/definitions/indexResponse" }
           }
         }
       },
@@ -1211,7 +1338,7 @@
         "responses": {
           "default": {
             "description": "Job ID",
-            "schema": { "type": "string" }
+            "schema": { "$ref": "#/definitions/jobSuccessResponse" }
           }
         }
       }
@@ -1225,10 +1352,7 @@
         "responses": {
           "default": {
             "description": "All Analyzers",
-            "schema": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/analyzer" }
-            }
+            "schema": {"$ref": "#/definitions/analyzersResponse"}
           }
         }
       }
@@ -1242,10 +1366,7 @@
         "responses": {
           "default": {
             "description": "All indices",
-            "schema": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/index" }
-            }
+            "schema": { "$ref": "#/definitions/indicesResponse" }
           }
         }
       },
@@ -1265,7 +1386,7 @@
         "responses": {
           "default": {
             "description": "CreateResponse",
-            "schema": { "$ref": "#/definitions/createResponse" }
+            "schema": { "$ref": "#/definitions/creationIdResponse" }
           }
         }
       }
@@ -1325,7 +1446,7 @@
         "responses": {
           "default": {
             "description": "Index size in bytes",
-            "schema": { "type": "number" }
+            "schema": { "$ref": "#/definitions/indexSizeResponse" }
           }
         }
       }
@@ -1348,7 +1469,7 @@
         "responses": {
           "default": {
             "description": "Job",
-            "schema": { "$ref": "#/definitions/job" }
+            "schema": { "$ref": "#/definitions/jobResponse" }
           }
         }
       }
@@ -1596,7 +1717,7 @@
         "responses": {
           "default": {
             "description": "The job ID",
-            "schema": { "type": "string" }
+            "schema": { "$ref": "#/definitions/jobSuccessResponse" }
           }
         }
       }

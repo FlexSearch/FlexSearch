@@ -32,7 +32,7 @@ namespace FlexSearch.Api.Model
     /// {{description}}
     /// </summary>
     [DataContract]
-    public partial class {{classname}} : IDataTransferObject, IEquatable<{{classname}}>{{#parent}}, {{{parent}}}{{/parent}}
+    public partial class {{classname}} : {{#parent}}{{{parent}}}, {{/parent}}IDataTransferObject, IEquatable<{{classname}}>
     {	
 		/// <summary>
         /// Initializes a new instance of the <see cref="{{classname}}" /> class.
