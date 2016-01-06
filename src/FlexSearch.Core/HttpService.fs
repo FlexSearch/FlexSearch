@@ -415,18 +415,12 @@ type GetJobByIdHandler(jobService : IJobService) =
 [<Name("GET|POST-/indices/:id/search")>]
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 
-    inherit HttpHandlerBase<SearchQuery, obj>(false)
+    inherit HttpHandlerBase<SearchQuery, SearchResults>(false)
     override __.Process(request, body) = 
         let query = SearchQuery.getQueryFromRequest request body
             
         match searchService.Search(query) with
-        | Ok(result) -> 
-            if query.ReturnFlatResult then 
-                request.HttpContext.Response.Headers.Add
-                    ("RecordsReturned", result.Meta.RecordsReturned.ToString() |> StringValues)
-                request.HttpContext.Response.Headers.Add("TotalAvailable", result.Meta.TotalAvailable.ToString() |> StringValues)
-                SuccessResponse((toFlatResults result).Documents :> obj, Ok)
-            else SuccessResponse(toSearchResults (result) :> obj, Ok)
+        | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
 /// <summary>
@@ -450,34 +444,22 @@ type GetSearchHandler(searchService : ISearchService) =
 [<Name("DELETE-/indices/:id/search")>]
 [<Sealed>]
 type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<NoBody, obj>()
+    inherit HttpHandlerBase<NoBody, SearchResults>()
     override __.Process(request, _) = 
         let query = SearchQuery.getQueryFromRequest request <| Some (new SearchQuery())
 
         match documentService.DeleteDocumentsFromSearch(request.ResId.Value, query) with
-        | Ok(result) -> 
-            if query.ReturnFlatResult then 
-                request.HttpContext.Response.Headers.Add
-                    ("RecordsReturned", result.Meta.RecordsReturned.ToString() |> StringValues)
-                request.HttpContext.Response.Headers.Add("TotalAvailable", result.Meta.TotalAvailable.ToString() |> StringValues)
-                SuccessResponse((toFlatResults result).Documents :> obj, Ok)
-            else SuccessResponse(toSearchResults (result) :> obj, Ok)
+        | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
 [<Name("POST-/indices/:id/searchprofiletest")>]
 [<Sealed>]
 type PostSearchProfileTestHandler(searchService : ISearchService) = 
-    inherit HttpHandlerBase<SearchProfileTestDto, obj>()
+    inherit HttpHandlerBase<SearchProfileTestDto, SearchResults>()
     override __.Process(request, body) =
         body.Value.SearchQuery.IndexName <- request.ResId.Value
         match searchService.Search(body.Value.SearchQuery, body.Value.SearchProfile) with
-        | Ok(result) -> 
-            if body.Value.SearchQuery.ReturnFlatResult then 
-                request.HttpContext.Response.Headers.Add
-                    ("RecordsReturned", result.Meta.RecordsReturned.ToString() |> StringValues)
-                request.HttpContext.Response.Headers.Add("TotalAvailable", result.Meta.TotalAvailable.ToString() |> StringValues)
-                SuccessResponse((toFlatResults result).Documents :> obj, Ok)
-            else SuccessResponse(toSearchResults (result) :> obj, Ok)
+        | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
 [<Name("GET-/memory")>]

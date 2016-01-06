@@ -47,73 +47,6 @@ type IFlexQueryFunction =
     abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
     abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>
 
-
-[<AutoOpenAttribute>]
-module SearchResultComponents = 
-    /// Represents the search result format supported
-    /// by the engine
-    type T = 
-        | StructuredResult of Model.Document
-        | FlatResult of Dictionary<string, string>
-    
-    /// Represents the search related meta data that can
-    /// be exposed through a search result. This can be
-    /// easily extended in future to include more things.
-    type ResultMeta = 
-        { RecordsReturned : int
-          BestScore : float32
-          TotalAvailable : int }
-    
-    /// Wrapper around the search result. This is also used
-    /// to transform one result type to another
-    type SearchResults<'T> = 
-        { Meta : ResultMeta
-          Documents : seq<'T> }
-    
-    /// Transforms a SearchResult to StructuredResult 
-    let toStructuredResult (result : T) = 
-        match result with
-        | StructuredResult(doc) -> doc
-        | _ -> failwithf "Internal error: Expecting Structured result."
-    
-    /// Transforms a SearchResult to FlatResult
-    let toFlatResult (result : T) = 
-        match result with
-        | FlatResult(doc) -> doc
-        | _ -> failwithf "Internal error: Expecting Flat result."
-    
-    /// Transforms a result seq to a Document seq
-    let toStructuredResults (result : SearchResults<T>) = 
-        let docs = 
-            seq { 
-                for doc in result.Documents do
-                    match doc with
-                    | StructuredResult(d) -> yield d
-                    | FlatResult(_) -> failwithf "Internal error: Should have never returned a Flat Document."
-            }
-        { Meta = result.Meta
-          Documents = docs }
-    
-    /// Transforms a result seq to a Flat Document seq
-    let toFlatResults (result : SearchResults<T>) = 
-        let docs = 
-            seq { 
-                for doc in result.Documents do
-                    match doc with
-                    | StructuredResult(_) -> failwithf "Internal error: Should have never returned a Result Document."
-                    | FlatResult(d) -> yield d
-            }
-        { Meta = result.Meta
-          Documents = docs }
-    
-    /// Transforms a result seq to Search results
-    let toSearchResults (result : SearchResults<T>) = 
-        let searchResults = new SearchResults()
-        searchResults.RecordsReturned <- result.Meta.RecordsReturned
-        searchResults.TotalAvailable <- result.Meta.TotalAvailable
-        searchResults.Documents <- toStructuredResults(result).Documents.ToArray()
-        searchResults
-
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
 // The order of this file does not matter as
@@ -397,21 +330,16 @@ module SearchDsl =
                 else
                     int64 t
             let fields = getDocument (indexWriter, searchQuery, document)
-            if searchQuery.ReturnFlatResult then 
-                fields.[MetaFields.IdField] <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
-                fields.[MetaFields.LastModifiedField] <- document.Get(indexWriter.GetSchemaName(MetaFields.LastModifiedField))
-                if searchQuery.ReturnScore then fields.[MetaFields.Score] <- hit.Score.ToString()
-                SearchResultComponents.FlatResult(fields)
-            else 
-                let resultDoc = new Model.Document()
-                resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
-                resultDoc.IndexName <- indexWriter.Settings.IndexName
-                resultDoc.TimeStamp <- timeStamp
-                resultDoc.Fields <- fields
-                resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
-                                   else 0.0
-                resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
-                SearchResultComponents.StructuredResult(resultDoc)
+            
+            let resultDoc = new Model.Document()
+            resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
+            resultDoc.IndexName <- indexWriter.Settings.IndexName
+            resultDoc.TimeStamp <- timeStamp
+            resultDoc.Fields <- fields
+            resultDoc.Score <- if searchQuery.ReturnScore then float (hit.Score)
+                               else 0.0
+            resultDoc.Highlights <- getHighlighter (document, hit.ShardIndex, hit.Doc)
+            resultDoc
         
         let distinctByFilter (document : LuceneDocument) = 
             match distinctBy with
@@ -443,8 +371,7 @@ module SearchDsl =
                     (indexSearchers.[i] :> IDisposable).Dispose()
             }
         
-        { Meta = 
-              { RecordsReturned = recordsReturned
-                BestScore = totalDocs.GetMaxScore() 
-                TotalAvailable = totalAvailable }
-          Documents = results }
+        new SearchResults(RecordsReturned = recordsReturned,
+                          BestScore = totalDocs.GetMaxScore(),
+                          TotalAvailable = totalAvailable,
+                          Documents = results.ToArray())

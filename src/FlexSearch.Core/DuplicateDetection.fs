@@ -208,7 +208,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                             Columns = [| session.DisplayFieldName |], ReturnFlatResult = true, ReturnScore = true)
         // Search for the records that match the current one using the search profile
         match searchService.Search(query, record) with
-        | Ok(results) when results.Meta.RecordsReturned > 1 -> 
+        | Ok(results) when results.RecordsReturned > 1 -> 
             !>"Duplicate Found"
             let header = 
                 new SourceRecord(session.SessionId, SourceDisplayName = record.[session.DisplayFieldName])
@@ -219,25 +219,24 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             else
                 header.SourceRecordId <- record.[MetaFields.IdField]
 
-            let docs = results |> toFlatResults
             // Map each document to a TargetRecord
-            header.TargetRecords <- docs.Documents
-                                    |> Seq.filter (fun r -> r.[MetaFields.IdField] <> header.SourceRecordId)
+            header.TargetRecords <- results.Documents
+                                    |> Seq.filter (fun r -> r.Fields.[MetaFields.IdField] <> header.SourceRecordId)
                                     |> Seq.filter (fun r -> 
                                         // If duplicate detection is used with DistinctBy then do a second pass filtering to ensure
                                         // that the source record is not picked up. This can happen when source record is not the 
                                         // best match for the search profile
                                         if isNotBlank profileQuery.DistinctBy then
-                                            r.[profileQuery.DistinctBy] <> record.[profileQuery.DistinctBy]
+                                            r.Fields.[profileQuery.DistinctBy] <> record.[profileQuery.DistinctBy]
                                         else true
                                     )
                                     |> Seq.mapi 
                                            (fun i result -> 
                                            new TargetRecord(TargetId = i + 1, 
-                                                            TargetDisplayName = result.[session.DisplayFieldName], 
-                                                            TargetScore = float32 result.[MetaFields.Score] 
-                                                                          / docs.Meta.BestScore * 100.0f, 
-                                                            TargetRecordId = result.[MetaFields.IdField]))
+                                                            TargetDisplayName = result.Fields.[session.DisplayFieldName], 
+                                                            TargetScore = float32 result.Fields.[MetaFields.Score] 
+                                                                          / results.BestScore * 100.0f, 
+                                                            TargetRecordId = result.Fields.[MetaFields.IdField]))
                                     |> Seq.toArray
             // We can have less actual documents returned by the search because of
             // filtering being ran further down the search stream. Therefore it is 
@@ -292,16 +291,15 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         let result = searchService.Search(mainQuery)
         match result with
         | Ok(result) -> 
-            (!>) "Main Query Records Returned:%i" result.Meta.RecordsReturned
-            let records = result |> toFlatResults
+            (!>) "Main Query Records Returned:%i" result.RecordsReturned
             
             let d = 
                 seq { 
-                    for record in records.Documents do
-                        yield record
+                    for record in result.Documents do
+                        yield record.Fields
                 }
-            { AvailableRecords = result.Meta.TotalAvailable
-              ReturnedRecords = result.Meta.RecordsReturned
+            { AvailableRecords = result.TotalAvailable
+              ReturnedRecords = result.RecordsReturned
               Records = d }
         | Fail(err) -> 
             Logger.Log(err)

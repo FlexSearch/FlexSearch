@@ -617,9 +617,12 @@
           }
         },
         "recordsReturned": {
-          "description": "",
           "type": "integer",
           "format": "int32"
+        },
+        "bestScore": {
+          "type": "number",
+          "format": "float"
         },
         "totalAvailable": {
           "description": "",
@@ -861,7 +864,7 @@
         "responses": {
           "default": {
             "description": "Successful operation",
-            "schema": {"$ref": "#/definitions/analyzeTextResponse"}
+            "schema": { "$ref": "#/definitions/analyzeTextResponse" }
           }
         }
       }
@@ -1113,7 +1116,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response TODO"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/searchResultsResponse" }
           }
         }
       },
@@ -1139,7 +1143,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response TODO"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/searchResultsResponse" }
           }
         }
       },
@@ -1189,7 +1194,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response TODO"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/searchResultsResponse" }
           }
         }
       }
@@ -1352,7 +1358,7 @@
         "responses": {
           "default": {
             "description": "All Analyzers",
-            "schema": {"$ref": "#/definitions/analyzersResponse"}
+            "schema": { "$ref": "#/definitions/analyzersResponse" }
           }
         }
       }
@@ -1560,7 +1566,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response TODO"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/searchResultsResponse" }
           }
         }
       }

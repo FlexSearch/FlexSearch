@@ -60,18 +60,16 @@ type IDocumentService =
     abstract GetDocuments : indexName:string * count:int -> Result<SearchResults>
     abstract AddOrUpdateDocument : document:Document -> Result<unit>
     abstract DeleteDocument : indexName:string * id:string -> Result<unit>
-    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Result<SearchResults<T>>
+    abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Result<SearchResults>
     abstract DeleteAllDocuments : indexName:string -> Result<unit>
     abstract AddDocument : document: Document -> Result<CreationId>
     abstract TotalDocumentCount : indexName:string -> Result<int>
 
 /// Search related operations
 type ISearchService = 
-    abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string>
-     -> Result<SearchResults<SearchResultComponents.T>>
-    abstract Search : searchQuery:SearchQuery -> Result<SearchResults<SearchResultComponents.T>>
-    abstract Search : searchQuery:SearchQuery * searchProfileString:string
-     -> Result<SearchResults<SearchResultComponents.T>>
+    abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string> -> Result<SearchResults>
+    abstract Search : searchQuery:SearchQuery -> Result<SearchResults>
+    abstract Search : searchQuery:SearchQuery * searchProfileString:string -> Result<SearchResults>
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
@@ -457,7 +455,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 q.Columns <- [| "*" |]
                 match searchService.Search(q) with
                 | Ok(v') -> 
-                    if v'.Meta.RecordsReturned <> 0 then return (v'.Documents.First() |> toStructuredResult)
+                    if v'.RecordsReturned <> 0 then return (v'.Documents.First())
                     else return! fail <| DocumentIdNotFound(indexName, documentId)
                 | Fail(e) -> return! fail <| e
             }
@@ -470,8 +468,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
                 q.Count <- count
-                let! result = searchService.Search(q)
-                return result |> toSearchResults
+                return! searchService.Search(q)
             }
         
         /// Add or update an existing document
