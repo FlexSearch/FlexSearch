@@ -874,7 +874,7 @@
         "tags": [ "analyzer" ],
         "summary": "Returns an analyzer by ID",
         "description": "",
-        "operationId": "getAnalyzerById",
+        "operationId": "getAnalyzer",
         "parameters": [
           {
             "name": "id",
@@ -895,7 +895,7 @@
         "tags": [ "analyzer" ],
         "summary": "Create or update an analyser",
         "description": "",
-        "operationId": "createOrUpdateAnalyzerById",
+        "operationId": "createOrUpdateAnalyzer",
         "parameters": [
           {
             "in": "body",
@@ -921,7 +921,7 @@
         "tags": [ "analyzer" ],
         "summary": "Deletes an analyser by ID",
         "description": "",
-        "operationId": "deleteAnalyzerById",
+        "operationId": "deleteAnalyzer",
         "parameters": [
           {
             "name": "id",
@@ -972,7 +972,7 @@
         "tags": [ "documents" ],
         "summary": "Returns document by ID",
         "description": "",
-        "operationId": "getDocumentById",
+        "operationId": "getDocument",
         "parameters": [
           {
             "name": "indexId",
@@ -1000,7 +1000,7 @@
         "tags": [ "documents" ],
         "summary": "Create or update a document",
         "description": "It is advisable to use create document endpoint when you are sure that the\ndocument does not exist in an index. This service will always perform an ID\nbased look up to determine if a document already exists. In case of non-unique\nID based index, this will replace all the documents with the currently passed\ndocument. This endpoint can be used with concurrency control semantics.\n",
-        "operationId": "putDocumentById",
+        "operationId": "updateDocument",
         "parameters": [
           {
             "in": "body",
@@ -1033,7 +1033,7 @@
         "tags": [ "documents" ],
         "summary": "Delete a document by ID",
         "description": "In case of non-unique ID field, this will delete all the documents associated\nwith that ID.\n",
-        "operationId": "deleteDocumentById",
+        "operationId": "deleteDocument",
         "parameters": [
           {
             "name": "indexId",
@@ -1226,7 +1226,7 @@
         "tags": [ "documents" ],
         "summary": "Creates a new document",
         "description": "Unlike a database system FlexSearch doesn't impose the requirement of a unique\nID per document. You can add multiple documents by the same ID but this can\nimpose a problem while adding or retrieving them. You can enforce a unique ID\ncheck by using the `timestamp` field. To understand more about ID check and\nconcurrency control, please refer to the article `concurrency control` under\nconcepts section.\n",
-        "operationId": "postDocumentById",
+        "operationId": "createDocument",
         "parameters": [
           {
             "in": "body",
@@ -1275,7 +1275,7 @@
         "tags": [ "indices" ],
         "summary": "Returns an index by the ID",
         "description": "This service will return a status of 404 when index is not present on the server.\n",
-        "operationId": "getIndexById",
+        "operationId": "getIndex",
         "parameters": [
           {
             "name": "id",
@@ -1296,7 +1296,7 @@
         "tags": [ "indices" ],
         "summary": "Deletes an index by ID",
         "description": "Index deletion happens in two parts, first the index configuration file is\ndeleted from the configurations folder, then the index is deleted from the data\nfolder. In case any error is encountered the cleanup will be performed on the\nserver restart.\n",
-        "operationId": "deleteIndexById",
+        "operationId": "deleteIndex",
         "parameters": [
           {
             "name": "id",
@@ -1377,10 +1377,10 @@
         }
       },
       "post": {
-        "tags": [ "common" ],
+        "tags": [ "common", "indices" ],
         "summary": "Create a new index",
         "description": "",
-        "operationId": "postIndexById",
+        "operationId": "createIndex",
         "parameters": [
           {
             "in": "body",
@@ -1462,7 +1462,7 @@
         "tags": [ "jobs" ],
         "summary": "Returns job information",
         "description": "",
-        "operationId": "getJobById",
+        "operationId": "getJob",
         "parameters": [
           {
             "name": "id",
@@ -1548,7 +1548,7 @@
         "tags": [ "search" ],
         "summary": "Test a search profile",
         "description": "This endpoint is useful to test such profiles dynamically, you can test search\nprofiles without adding them to the index. This becomes useful when trying out\ndifferent search profiles. It is advisable to not to use this service directly\nbut through the search UI provided as part of the portal.\n",
-        "operationId": "postSearchProfileTest",
+        "operationId": "doSearchProfileTest",
         "parameters": [
           {
             "in": "body",
@@ -1577,7 +1577,7 @@
         "tags": [ "indices" ],
         "summary": "Update the configuration of an index",
         "description": "<div class=\"important\">\nThe Index Version cannot be modified\n</div>\n",
-        "operationId": "PutIndexConfiguration",
+        "operationId": "updateIndexConfiguration",
         "parameters": [
           {
             "in": "body",
@@ -1605,7 +1605,7 @@
         "tags": [ "indices" ],
         "summary": "Update the Index Fields",
         "description": "Any analyser which is to be used as part of an index field should be defined\nbefore adding the field to the index.\n\n<div class=\"note\">\nAlways reindex the data after a field update, otherwise you may get unexpected\nresults.\n</div>\n\n<div class=\"important\">\nNew fields added as part of fields update will not have any data available for\nthe older records, in such cases if the indexing is not done the engine will use\ndefault values for the field type. If an existing field is removed then the data\nassociated with that field will not be accessible even though the data will not\nbe removed from the index itself.\n</div>\n",
-        "operationId": "putIndexFields",
+        "operationId": "updateIndexFields",
         "parameters": [
           {
             "in": "body",
@@ -1633,7 +1633,7 @@
         "tags": [ "indices" ],
         "summary": "Adds or updates a search profile for the given index",
         "description": "",
-        "operationId": "putIndexSearchProfile",
+        "operationId": "updateIndexSearchProfile",
         "parameters": [
           {
             "in": "body",
@@ -1661,7 +1661,7 @@
         "tags": [ "indices" ],
         "summary": "Update the status of an index",
         "description": "This endpoint can be used to set an index online or off-line.\n",
-        "operationId": "putStatus",
+        "operationId": "updateStatus",
         "parameters": [
           {
             "name": "indexName",
