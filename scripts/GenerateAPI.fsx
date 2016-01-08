@@ -23,7 +23,7 @@ let private generateSwaggerModel() =
 
 let private cleanup() = 
     /// Perform specific code cleanups
-    let codeCorrection(l : string) =
+    let codeCorrection (fileName : string) (l : string) =
         // Correct constructors
         let mutable line = l.Replace(", )", ")")
         // Remove all null-able types
@@ -45,15 +45,17 @@ let private cleanup() =
         // Specify the format type for ToString for date time field
         if line.EndsWith("//datetime") then
             line <- line.Replace(".ToString()", """.ToString("yyyyMMddHHmmss")""")
+        // Change Dictionary<string,string> to List<KeyValuePair<string, string>>
+        if fileName.Contains("OperationMessage.cs") then
+            line <- line.Replace("Dictionary<string, string>", "List<KeyValuePair<string, string>>")
+        
         line
-
-        // Change OperationMessage.Properties to List<KeyValuePair<string, string>>
 
     let cleanupFile(f : string) =
         let mutable file = File.ReadAllLines(f)
         let lines = 
             file 
-            |> Array.map codeCorrection
+            |> Array.map (codeCorrection f)
             |> Array.filter (String.IsNullOrWhiteSpace >> not)
 
         File.WriteAllLines(f, lines)
