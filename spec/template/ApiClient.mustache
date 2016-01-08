@@ -31,6 +31,7 @@ namespace {{packageName}}.Client
         /// </summary>
         /// <param name="basePath">The base path.</param>
         public ApiClient(String basePath = "{{basePath}}")
+            : base()
         {
             if (String.IsNullOrEmpty(basePath))
                 throw new ArgumentException("basePath cannot be empty");
