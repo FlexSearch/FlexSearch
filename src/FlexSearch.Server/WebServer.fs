@@ -40,15 +40,6 @@ type WebServer(configuration : IConfiguration) =
     
     /// Determine if we have to start the server in test mode
     let testServer = serverSettings.GetBool("server", "testserver", false)
-    
-    /// Name of the HTTP server to be used
-    let serverAssemblyName = 
-        let name = "Microsoft.AspNet.Server." + serverSettings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
-        Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
-        name
-    
-    /// Port on which server should start (Defaults to 9800)
-    let port = serverSettings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
         
     /// Autofac container 
     let container = setupDependencies testServer serverSettings
@@ -120,7 +111,7 @@ type WebServerBuilder(settings : Settings.T) =
         name
     
     /// Port on which server should start (Defaults to 9800)
-    let port = settings.GetInt(Settings.ServerKey, Settings.HttpPort, 9800).ToString()
+    let port = settings.ConfigurationSource.Get<string>(Settings.ServerKey + ":" + Settings.HttpPort, "9800")
     
     let webHostBuilder =
         let config = settings.ConfigurationSource
