@@ -168,3 +168,9 @@ type WebServerBuilder(settings : Settings.T) =
         thread <- Task.Factory.StartNew(startServer, TaskCreationOptions.LongRunning)
         
     member __.Stop() = shutdown()
+
+    // Used by the TestServer
+    member val WebAppBuilder = webHostBuilder
+
+    interface IDisposable with
+        member __.Dispose() = __.Stop()

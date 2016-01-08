@@ -21,13 +21,14 @@ open FSharpx.Task
 
 
 module Global =
+    open Microsoft.AspNet.TestHost
+
     let mutable RequestLogPath = String.Empty
-    let port = 9700
-    let basePath = "http://localhost:" + port.ToString()
     let server = 
-        let settings = FlexSearch.Core.Settings.T.GetDefault()
-        settings.ConfigurationSource.Item "Server:HttpPort" <- port.ToString()
-        new FlexSearch.Server.WebServerBuilder(settings)
+        let serverBuilder = 
+            let settings = FlexSearch.Core.Settings.T.GetDefault()
+            new FlexSearch.Server.WebServerBuilder(settings)
+        new TestServer(serverBuilder.WebAppBuilder)
 
 /// <summary>
 /// Represents the lookup name for the plug-in
@@ -163,9 +164,8 @@ module FixtureSetup =
                            new Field("s1", Constants.FieldType.Stored) |]
         index
 
-    
-    Global.server.Start()
-    let flexClient = new ApiClient(Global.basePath)
+    let httpMessageHandler = Global.server.CreateHandler()
+    let flexClient = new ApiClient(httpMessageHandler)
 
     let fixtureCustomization () =
         let fixture = new Ploeh.AutoFixture.Fixture()
@@ -181,7 +181,7 @@ module FixtureSetup =
         fixture.Inject<JobsApi>(new JobsApi(flexClient))
         fixture.Inject<SearchApi>(new SearchApi(flexClient))
         fixture.Inject<ServerApi>(new ServerApi(flexClient))
-        fixture.Inject<LoggingHandler>(Unchecked.defaultof<LoggingHandler>)
+        fixture.Inject<LoggingHandler>(new LoggingHandler(httpMessageHandler))
         fixture
 
 // ----------------------------------------------------------------------------
