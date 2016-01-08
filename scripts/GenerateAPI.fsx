@@ -9,8 +9,9 @@ open System.Text.RegularExpressions
 
 let private generateSwaggerModel() = 
     !>> "Cleaning Models, Api & Client directories"
+    [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter (ensureDir >> ignore)
     [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter emptyDir
-    javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "template") (toolsDir <!!> "codegen-config.json")
+    javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "template") (toolsDir <!!> @"..\codegen-config.json")
     let generatedFiles = Directory.GetFiles(modelsTempDir).Count()
     if generatedFiles > 0 then
         brk()
