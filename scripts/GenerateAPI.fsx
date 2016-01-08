@@ -47,6 +47,8 @@ let private cleanup() =
             line <- line.Replace(".ToString()", """.ToString("yyyyMMddHHmmss")""")
         line
 
+        // Change OperationMessage.Properties to List<KeyValuePair<string, string>>
+
     let cleanupFile(f : string) =
         let mutable file = File.ReadAllLines(f)
         let lines = 
