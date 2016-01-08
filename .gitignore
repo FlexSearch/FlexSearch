@@ -248,3 +248,4 @@ src/FlexSearch.Api/Api
 src/FlexSearch.Api/Client
 Tools
 /.fake
+client
