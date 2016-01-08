@@ -149,7 +149,7 @@ namespace {{packageName}}.Client
             {
                 var req = new HttpRequestMessage();
                 req.Method = httpMethod;
-                req.RequestUri = new Uri(path);
+                req.RequestUri = new Uri(path, UriKind.Relative);
                 response = await this.SendAsync(req);
             }
             else if (httpMethod == HttpMethod.Post)
