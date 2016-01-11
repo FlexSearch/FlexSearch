@@ -451,7 +451,6 @@ module SearchQuery =
                     OrderByDirection.Ascending
                 else
                     OrderByDirection.Descending
-        query.ReturnFlatResult <- request.HttpContext |> boolFromQueryString "returnflatresult" query.ReturnFlatResult
         query.SearchProfile <- request.HttpContext |> stringFromQueryString "searchprofile" query.SearchProfile
         query.IndexName <- request.ResId.Value
         query

@@ -499,11 +499,6 @@
           "description": "Query string to be used for searching",
           "type": "string"
         },
-        "returnFlatResult": {
-          "description": "If true will return collapsed search results which are in tabular form. Flat results enable easy binding to a grid but grouping results is tougher with Flat result.",
-          "type": "boolean",
-          "default": false
-        },
         "returnScore": {
           "description": " If true then scores are returned as a part of search result.",
           "type": "boolean",
@@ -1141,12 +1136,6 @@
             "in": "query",
             "description": "Order by Direction parameter. Refer to 'Search Query' properties.",
             "type": "string"
-          },
-          {
-            "name": "returnflatresult",
-            "in": "query",
-            "description": "Return flat results parameter. Refer to 'Search Query' properties.",
-            "type": "boolean"
           },
           {
             "name": "id",

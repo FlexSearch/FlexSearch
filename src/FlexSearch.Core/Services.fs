@@ -451,7 +451,6 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
             maybe { 
                 let q = new SearchQuery(indexName, (sprintf "%s = '%s'" MetaFields.IdField documentId))
                 q.ReturnScore <- false
-                q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
                 match searchService.Search(q) with
                 | Ok(v') -> 
@@ -465,7 +464,6 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
             maybe { 
                 let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" MetaFields.IdField))
                 q.ReturnScore <- false
-                q.ReturnFlatResult <- false
                 q.Columns <- [| "*" |]
                 q.Count <- count
                 return! searchService.Search(q)

@@ -205,7 +205,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
     let duplicateRecordCheck (req : DuplicateDetectionRequestExtension, record : Dictionary<string, string>, session : Session, profileQuery : SearchQuery) = 
         let query = 
             new SearchQuery(session.IndexName, String.Empty, SearchProfile = session.ProfileName, 
-                            Columns = [| session.DisplayFieldName |], ReturnFlatResult = true, ReturnScore = true)
+                            Columns = [| session.DisplayFieldName |], ReturnScore = true)
         // Search for the records that match the current one using the search profile
         match searchService.Search(query, record) with
         | Ok(results) when results.RecordsReturned > 1 -> 
@@ -287,7 +287,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
     let getSearchQueryDataSource (request : DuplicateDetectionRequestExtension) = 
         let mainQuery = 
             new SearchQuery(request.IndexName, request.SelectionQuery, Count = int request.MaxRecordsToScan, 
-                            ReturnFlatResult = true, Columns = [| "*" |])
+                            Columns = [| "*" |])
         let result = searchService.Search(mainQuery)
         match result with
         | Ok(result) -> 
