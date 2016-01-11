@@ -293,6 +293,14 @@ module Operators =
         else
             fail <| new ValidationMessage(model)
 
+    let handleShutdownExceptions (output : Choice<'T, exn>) =
+        match output with 
+        | Choice1Of2 _ -> ()
+        | Choice2Of2 exn ->
+            if exn :? AggregateException && exn.InnerException :? InvalidOperationException 
+            then ()
+            else Logger.Log(exn, MessageKeyword.Index, MessageLevel.Warning)
+
     [<Sealed>]
     type ErrorHandlingBuilder() = 
         

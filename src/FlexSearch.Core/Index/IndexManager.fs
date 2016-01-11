@@ -196,10 +196,7 @@ module IndexManager =
     /// Deletes an existing index
     let deleteIndex (indexName : string) (t : T) = 
         maybe { 
-            let! indexState = t |> indexState indexName
-            match indexState.IndexWriter with
-            | Some(writer) -> writer |> IndexWriter.close
-            | None -> ()
+            do! t |> closeIndex indexName
             t.Store.TryRemove(indexName) |> ignore
             do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName)
             delDir (DataFolder +/ indexName)

@@ -65,14 +65,14 @@ module IndexWriter =
     /// Close the index    
     let close (writer : T) = 
         writer.Token.Cancel()
-        writer.ShardWriters |> Array.iter (fun s -> ShardWriter.close (s))
+        writer.ShardWriters |> Array.iter ShardWriter.close
     
     /// Refresh the index    
-    let refresh (s : T) = s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.refresh)
+    let refresh (s : T) = s.ShardWriters |> Array.iter ShardWriter.refresh
     
     /// Commit unsaved data to the index
     let commit (forceCommit : bool) (s : T) = 
-        s.ShardWriters |> Array.iter (fun shard -> shard |> ShardWriter.commit forceCommit)
+        s.ShardWriters |> Array.iter (ShardWriter.commit forceCommit)
     
     let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
     

@@ -127,7 +127,10 @@ type WebServerBuilder(settings : Settings.T) =
         // Get all types which implement IRequireNotificationForShutdown and issue shutdown command 
         engine.Services.GetServices<IRequireNotificationForShutdown>()
         |> Seq.toArray
-        |> Array.Parallel.iter (fun x -> x.Shutdown() |> Async.RunSynchronously)
+        |> Array.Parallel.iter (fun x -> x.Shutdown() 
+                                         |> Async.Catch
+                                         |> Async.RunSynchronously
+                                         |> handleShutdownExceptions)
         server.Dispose()
 
     member __.Start() =

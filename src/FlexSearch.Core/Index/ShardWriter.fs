@@ -140,10 +140,12 @@ module ShardWriter =
             sw.IndexWriter.Close()
             sw.TxWriter :> IRequireNotificationForShutdown 
             |> fun x -> x.Shutdown()
+            |> Async.Catch
             |> Async.RunSynchronously
+            |> handleShutdownExceptions
             sw.TxWriter :> IDisposable
             |> fun x -> x.Dispose()
-        with AlreadyClosedException -> ()
+        with e -> ()
     
     /// Adds a document to this index.
     let addDocument (document : LuceneDocument) (sw : T) = sw.TrackingIndexWriter.AddDocument(document) |> ignore
