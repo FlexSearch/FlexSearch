@@ -357,6 +357,7 @@ type HttpServerMessage =
     | HttpNoBodyDefined
     | HttpNotSupported
     | HttpUriIdNotSupplied
+    | InternalServerError of ``exception`` : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Node, MessageLevel.Info)
         member this.OperationMessage() = 
@@ -366,6 +367,7 @@ type HttpServerMessage =
             | HttpNoBodyDefined -> "No body defined for the HTTP message"
             | HttpNotSupported -> "The requested URI endpoint is not supported."
             | HttpUriIdNotSupplied -> "The URI enpoint expects an id which is not supplied"
+            | InternalServerError(e) -> sprintf "An unexpected exception was thrown by the server:\n%s" e
             |> caseToMsg this
 
 type FileMessage = 

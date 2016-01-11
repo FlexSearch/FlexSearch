@@ -287,5 +287,14 @@ module Http =
                 match httpHandler with
                 | Some(handler) -> handler.Execute(ctxt.RequestContext)
                 | None -> ctxt |> BAD_REQUEST(Response<unit>.WithError(HttpNotSupported))
-            with e -> Logger.Log("Couldn't parse the given URL: " + ctxt.Request.Path.Value, e, MessageKeyword.Default, MessageLevel.Warning)
+            with e -> Logger.Log(sprintf "An error occurred while doing a %s on the URL: %s"
+                                         ctxt.Request.Method
+                                         ctxt.Request.Path.Value,
+                                 e, 
+                                 MessageKeyword.Default, 
+                                 MessageLevel.Warning)
+                      // Last resort response. If this fails, then we return nothing to the user
+                      try ctxt |> writeResponse HttpStatusCode.InternalServerError 
+                                                (Response<unit>.WithError(InternalServerError(exceptionPrinter e)))
+                      with _ -> ()
         }
