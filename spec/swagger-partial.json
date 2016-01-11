@@ -1351,7 +1351,7 @@
         "responses": {
           "default": {
             "description": "Successful response",
-            "schema": {"$ref": "#/definitions/response"}
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       }
@@ -1638,7 +1638,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       }
@@ -1666,7 +1667,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       }
@@ -1694,7 +1696,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       }

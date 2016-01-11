@@ -3,6 +3,7 @@
 open FlexSearch.Api.Api
 open FlexSearch.Api.Model
 open FlexSearch.Api.Client
+open FlexSearch.Api.Constants
 open ResponseLogging
 open Global
 open TestCommandHelpers
@@ -51,7 +52,7 @@ type ``Index Creation Tests``() =
         api.DeleteIndex(indexName) |> isSuccessful
     
     //    [<Example("post-indices-id-4", "")>]
-    //    member __.``Create an index with dynamic fields`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
+    //    member __.``Create an index with dynamic fields`` (api : IndicesApi, indexName : string, handler : LoggingHandler) = 
     //        let index = newIndex indexName
     //        index.Fields <- [| new Field.Dto("firstname")
     //                           new Field.Dto("lastname")
@@ -69,52 +70,55 @@ type ``Index Creation Tests``() =
         handler |> log "post-indices-id-5"
         api.DeleteIndex(index.IndexName) |> isSuccessful
 
-//type ``Index Update Tests``() = 
-//    
+type ``Index Update Tests``() = 
+    
 //    [<Example("put-indices-id-1", "")>]
-//    member __.``Trying to update an index is not supported`` (api : ApiClient, index : Index, 
+//    member __.``Trying to update an index is not supported`` (api : IndicesApi, index : Index, 
 //                                                              handler : LoggingHandler) = 
 //        let actual = api.UpdateIndex(index).Result
 //        actual
 //        |> fst
 //        |> hasErrorCode "HttpNotSupported"
 //        handler |> log "put-indices-id-1"
-//        actual |> hasHttpStatusCode HttpStatusCode.BadRequest
-//    
-////    [<Example("put-indices-id-2", "")>]
-////    member __.``Trying to update index fields should return success`` (api : ApiClient, index : Index, 
-////                                                                       handler : LoggingHandler) = 
-////        api.CreateIndex(index).Result |> isCreated
-////        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldDataType.Text, Store = true) |])
-////        isSuccessful <| api.UpdateIndexFields(index.IndexName, fields).Result
-////        handler |> log "put-indices-id-2"
-//    
-//    [<Example("put-indices-id-3", "")>]
-//    member __.``Trying to update index search profile should return success`` (api : ApiClient, index : Index, 
-//                                                                               handler : LoggingHandler) = 
-//        api.CreateIndex(index).Result |> isCreated
-//        let sp = new SearchQuery(index.IndexName, "et1 matchall 'x'", QueryName = "all")
-//        isSuccessful <| api.UpdateIndexSearchProfile(index.IndexName, sp).Result
-//        handler |> log "put-indices-id-3"
-//    
-//    [<Example("put-indices-id-4", "")>]
-//    member __.``Trying to update index configuration should return success`` (api : ApiClient, index : Index, 
-//                                                                              handler : LoggingHandler) = 
-//        api.CreateIndex(index).Result |> isCreated
-//        let conf = new IndexConfiguration(CommitTimeSeconds = 100)
-//        isSuccessful <| api.UpdateIndexConfiguration(index.IndexName, conf).Result
-//        handler |> log "put-indices-id-4"
-//
+//        actual |> hasStatusCode HttpStatusCode.BadRequest
+    
+    [<Example("put-indices-id-2", "")>]
+    member __.``Trying to update index fields should return success`` (api : IndicesApi, index : Index, 
+                                                                       handler : LoggingHandler) = 
+        api.CreateIndexWithHttpInfo(index) |> isCreated
+        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldType.Text, Store = true) |])
+        api.UpdateIndexFields(fields, index.IndexName) |> isSuccessful
+        handler |> log "put-indices-id-2"
+        api.DeleteIndex(index.IndexName) |> isSuccessful
+    
+    [<Example("put-indices-id-3", "")>]
+    member __.``Trying to update index search profile should return success`` (api : IndicesApi, index : Index, 
+                                                                               handler : LoggingHandler) = 
+        api.CreateIndexWithHttpInfo(index) |> isCreated
+        let sp = new SearchQuery(index.IndexName, "et1 matchall 'x'", QueryName = "all")
+        api.UpdateIndexSearchProfile(sp, index.IndexName) |> isSuccessful
+        handler |> log "put-indices-id-3"
+        api.DeleteIndex(index.IndexName) |> isSuccessful
+    
+    [<Example("put-indices-id-4", "")>]
+    member __.``Trying to update index configuration should return success`` (api : IndicesApi, index : Index, 
+                                                                              handler : LoggingHandler) = 
+        api.CreateIndexWithHttpInfo(index) |> isCreated
+        let conf = new IndexConfiguration(CommitTimeSeconds = 100)
+        api.UpdateIndexConfiguration(conf, index.IndexName) |> isSuccessful
+        handler |> log "put-indices-id-4"
+        api.DeleteIndex(index.IndexName) |> isSuccessful
+
 //type ``Delete Index Test 1``() = 
 //    [<Example("delete-indices-id-1", "")>]
-//    member __.``Delete an index by id`` (api : ApiClient, index : Index, handler : LoggingHandler) = 
+//    member __.``Delete an index by id`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
 //        api.CreateIndex(index).Result |> isCreated
 //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
 //        handler |> log "delete-indices-id-1"
 //
 //type ``Delete Index Test 2``() = 
 //    [<Example("delete-indices-id-2", "")>]
-//    member __.``Trying to delete an non existing index will return error`` (api : ApiClient, indexName : string, 
+//    member __.``Trying to delete an non existing index will return error`` (api : IndicesApi, indexName : string, 
 //                                                                            handler : LoggingHandler) = 
 //        let actual = api.DeleteIndex(indexName).Result
 //        actual
@@ -125,7 +129,7 @@ type ``Index Creation Tests``() =
 //
 //type ``Get Index Tests``() = 
 //    [<Example("get-indices-id-1", "")>]
-//    member __.``Getting an index detail by name`` (api : ApiClient, handler : LoggingHandler) = 
+//    member __.``Getting an index detail by name`` (api : IndicesApi, handler : LoggingHandler) = 
 //        let actual = api.GetIndex("contact").Result
 //        actual |> isSuccessful
 //        (actual |> data).IndexName =? "contact"
@@ -134,7 +138,7 @@ type ``Index Creation Tests``() =
 //
 //type ``Get Non existing Index Tests``() = 
 //    [<Example("get-indices-id-2", "")>]
-//    member __.``Getting an non existing index will return error`` (api : ApiClient, indexName : string, 
+//    member __.``Getting an non existing index will return error`` (api : IndicesApi, indexName : string, 
 //                                                                   handler : LoggingHandler) = 
 //        let actual = api.GetIndex(indexName).Result
 //        actual
@@ -146,7 +150,7 @@ type ``Index Creation Tests``() =
 //type ``Index Other Services Tests``() = 
 //    
 //    [<Example("get-indices-id-status-1", "Get status of an index (offine)")>]
-//    member __.``Newly created index is always offline`` (api : ApiClient, index : Index, handler : LoggingHandler) = 
+//    member __.``Newly created index is always offline`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
 //        index.Active <- false
 //        api.CreateIndex(index).Result |> isCreated
 //        let actual = api.GetIndexStatus(index.IndexName).Result
@@ -156,7 +160,7 @@ type ``Index Creation Tests``() =
 //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
 //    
 //    [<Example("put-indices-id-status-1", "")>]
-//    member __.``Set status of an index 'online'`` (api : ApiClient, index : Index, handler : LoggingHandler) = 
+//    member __.``Set status of an index 'online'`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
 //        index.Active <- false
 //        api.CreateIndex(index).Result |> isCreated
 //        api.BringIndexOnline(index.IndexName).Result |> isSuccessful
@@ -165,7 +169,7 @@ type ``Index Creation Tests``() =
 //        handler |> log "put-indices-id-status-1"
 //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
 //    
-//    member __.``Set status of an index 'offline'`` (api : ApiClient, index : Index, handler : LoggingHandler) = 
+//    member __.``Set status of an index 'offline'`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
 //        api.CreateIndex(index).Result |> isCreated
 //        let actual = api.GetIndexStatus(index.IndexName).Result
 //        actual |> isSuccessful
@@ -176,14 +180,14 @@ type ``Index Creation Tests``() =
 //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
 //    
 //    [<Example("get-indices-id-exists-1", "")>]
-//    member __.``Check if a given index exists`` (api : ApiClient, indexName : Guid, handler : LoggingHandler) = 
+//    member __.``Check if a given index exists`` (api : IndicesApi, indexName : Guid, handler : LoggingHandler) = 
 //        let actual = api.IndexExists("contact").Result
 //        actual |> isSuccessful
 //        handler |> log "get-indices-id-exists-1"
 //        (actual |> data).Exists =? true
 //    
 //    [<Example("get-indices-1", "")>]
-//    member __.``Get all indices`` (api : ApiClient, handler : LoggingHandler) = 
+//    member __.``Get all indices`` (api : IndicesApi, handler : LoggingHandler) = 
 //        let actual = api.GetAllIndex().Result
 //        handler |> log "get-indices-1"
 //        (// Should have at least contact index
@@ -197,7 +201,7 @@ type ``Index Creation Tests``() =
 //                           new Field("lastname") |]
 //        index
 //    
-//    let createDocument (api : ApiClient) indexName = 
+//    let createDocument (api : IndicesApi) indexName = 
 //        api.CreateIndex(testIndex indexName).Result |> isCreated
 //        let document = new Document(indexName = indexName, id = "1")
 //        document.Fields.Add("firstname", "Seemant")
@@ -206,14 +210,14 @@ type ``Index Creation Tests``() =
 //        (result, document)
 //    
 //    [<Example("get-indices-id-documents-1", "")>]
-//    member __.``Get top 10 documents from an index`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
+//    member __.``Get top 10 documents from an index`` (api : IndicesApi, indexName : string, handler : LoggingHandler) = 
 //        let actual = api.GetTopDocuments("country", 10).Result
 //        actual |> isSuccessful
 //        handler |> log "get-indices-id-documents-1"
 //        (actual |> data).RecordsReturned =? 10
 //    
 //    [<Example("post-indices-id-documents-id-2", "")>]
-//    member __.``Add a document to an index`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
+//    member __.``Add a document to an index`` (api : IndicesApi, indexName : string, handler : LoggingHandler) = 
 //        let actual = createDocument client indexName
 //        actual
 //        |> fst
@@ -224,14 +228,14 @@ type ``Index Creation Tests``() =
 //         |> data).Id
 //        =? "1"
 //    
-//    member __.``Cannot add a document without an id`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
+//    member __.``Cannot add a document without an id`` (api : IndicesApi, indexName : string, handler : LoggingHandler) = 
 //        api.CreateIndex(testIndex indexName).Result |> isCreated
 //        let document = new Document(indexName = indexName, id = " ")
 //        api.AddDocument(indexName, document).Result |> hasHttpStatusCode HttpStatusCode.BadRequest
 //        printfn "%s" (handler.Log().ToString())
 //    
 //    [<Example("put-indices-id-documents-id-1", "")>]
-//    member __.``Update a document to an index`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
+//    member __.``Update a document to an index`` (api : IndicesApi, indexName : string, handler : LoggingHandler) = 
 //        // Create the document
 //        let (result, document) = createDocument client indexName
 //        result |> isCreated
@@ -242,7 +246,7 @@ type ``Index Creation Tests``() =
 //        actual |> isSuccessful
 //    
 //    [<Example("get-indices-id-documents-id-1", "")>]
-//    member __.``Get a document from an index`` (api : ApiClient, indexService : IIndexService, indexName : string, 
+//    member __.``Get a document from an index`` (api : IndicesApi, indexService : IIndexService, indexName : string, 
 //                                                handler : LoggingHandler, documentService : IDocumentService) = 
 //        createDocument client indexName
 //        |> fst
@@ -255,7 +259,7 @@ type ``Index Creation Tests``() =
 //        handler |> log "get-indices-id-documents-id-1"
 //    
 //    [<Example("get-indices-id-documents-id-2", "")>]
-//    member __.``Non existing document should return Not found`` (api : ApiClient, indexName : string, 
+//    member __.``Non existing document should return Not found`` (api : IndicesApi, indexName : string, 
 //                                                                 handler : LoggingHandler) = 
 //        createDocument client indexName
 //        |> fst
@@ -265,70 +269,70 @@ type ``Index Creation Tests``() =
 //        handler |> log "get-indices-id-documents-id-2"
 //
 //type ``Demo index Test``() = 
-//    member __.``Setting up the demo index creates the country index`` (api : ApiClient, handler : LoggingHandler) = 
+//    member __.``Setting up the demo index creates the country index`` (api : IndicesApi, handler : LoggingHandler) = 
 //        api.SetupDemo().Result |> isSuccessful
 //        api.GetIndex("country").Result |> isSuccessful
 //
 //type ``Search Tests``() = 
 //    
 //    [<Example("post-indices-search-term-1", "Term search using '=' operator")>]
-//    member __.``Term Query Test 1`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Term Query Test 1`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = 
 //            indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
 //        client |> query "agriproducts = 'rice' and agriproducts = 'wheat'" expected 1
 //    
 //    [<Example("post-indices-search-term-2", "Term search using multiple words")>]
-//    member __.``Term Query Test 2`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Term Query Test 2`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = 
 //            indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
 //        client |> query "agriproducts = 'rice wheat'" expected 1
 //    
 //    [<Example("post-indices-search-term-3", "Term search using '=' operator")>]
-//    member __.``Term Query Test 3`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Term Query Test 3`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = 
 //            indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
 //        client |> query "agriproducts eq 'rice' or agriproducts eq 'wheat'" expected 1
 //    
 //    [<Example("post-indices-search-term-4", "Term search using '=' operator")>]
-//    member __.``Term Query Test 4`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Term Query Test 4`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = 
 //            indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
 //        client |> query "agriproducts eq 'rice wheat' {clausetype : 'or'}" expected 1
 //    
 //    [<Example("post-indices-search-fuzzy-1", "Fuzzy search using 'fuzzy' operator")>]
-//    member __.``Fuzzy Query Test 1`` (api : ApiClient) = client |> query "countryname fuzzy 'Iran'" 2 3
+//    member __.``Fuzzy Query Test 1`` (api : IndicesApi) = client |> query "countryname fuzzy 'Iran'" 2 3
 //    
 //    [<Example("post-indices-search-fuzzy-2", "Fuzzy search using '~=' operator")>]
-//    member __.``Fuzzy Query Test 2`` (api : ApiClient) = client |> query "countryname ~= 'Iran'" 2 3
+//    member __.``Fuzzy Query Test 2`` (api : IndicesApi) = client |> query "countryname ~= 'Iran'" 2 3
 //    
 //    [<Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
-//    member __.``Fuzzy Query Test 3`` (api : ApiClient) = client |> query "countryname ~= 'China' {slop : '2'}" 3 3
+//    member __.``Fuzzy Query Test 3`` (api : IndicesApi) = client |> query "countryname ~= 'China' {slop : '2'}" 3 3
 //    
 //    [<Example("post-indices-search-phrase-1", "Phrase search using match operator")>]
-//    member __.``Phrase Query Test 1`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Phrase Query Test 1`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.GovernmentType.Contains("federal parliamentary democracy")).Count()
 //        client |> query "governmenttype match 'federal parliamentary democracy'" expected 4
 //    
 //    [<Example("post-indices-search-phrase-2", "Phrase search with slop of 4")>]
-//    member __.``Phrase Query Test 2`` (api : ApiClient) = 
+//    member __.``Phrase Query Test 2`` (api : IndicesApi) = 
 //        client |> query "governmenttype match 'parliamentary monarchy' {slop : '4'}" 6 4
 //    
 //    [<Example("post-indices-search-phrase-3", "Phrase search with slop of 4")>]
-//    member __.``Phrase Query Test 3`` (api : ApiClient) = 
+//    member __.``Phrase Query Test 3`` (api : IndicesApi) = 
 //        client |> query "governmenttype match 'monarchy parliamentary' {slop : '4'}" 3 4
 //    
 //    [<Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
-//    member __.``Wildcard Query Test 1`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Wildcard Query Test 1`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni"))
 //        client |> query "countryname like '*uni*'" (expected.Count()) 3
 //    
 //    [<Example("post-indices-search-wildcard-2", "Wildcard search using '%=' operator")>]
-//    member __.``Wildcard Query Test 2`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Wildcard Query Test 2`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni")).Count()
 //        client |> query "countryname %= '*uni*'" expected 3
 //    
 //    [<Example("post-indices-search-wildcard-3", "Wildcard search with single character operator")>]
-//    member __.``Wildcard Query Test 3`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Wildcard Query Test 3`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = 
 //            indexData.Where(fun x -> 
 //                     System.Text.RegularExpressions.Regex.Match(x.CountryName.ToLowerInvariant(), "unit[a-z]?d").Success)
@@ -336,7 +340,7 @@ type ``Index Creation Tests``() =
 //        client |> query "countryname %= 'Unit?d'" expected 1
 //    
 //    [<Example("post-indices-search-regex-1", "Regex search using regex operator")>]
-//    member __.``Regex Query Test 1`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Regex Query Test 1`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = 
 //            indexData.Where(fun x -> 
 //                     System.Text.RegularExpressions.Regex.Match(x.AgriProducts.ToLowerInvariant(), "[ms]ilk").Success)
@@ -344,32 +348,32 @@ type ``Index Creation Tests``() =
 //        client |> query "agriproducts regex '[ms]ilk'" expected 3
 //    
 //    [<Example("post-indices-search-matchall-1", "Match all search using 'matchall' operator")>]
-//    member __.``Matchall Query Test 1`` (api : ApiClient, indexData : Country list) = 
+//    member __.``Matchall Query Test 1`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Count()
 //        client |> query "countryname matchall '*'" expected 50
 //    
 //    [<Example("post-indices-search-range-1", "Greater than '>' operator")>]
-//    member __.``NumericRange Query Test 1`` (api : ApiClient, indexData : Country list) = 
+//    member __.``NumericRange Query Test 1`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.Population > 1000000L).Count()
 //        client |> query "population > '1000000'" expected 48
 //    
 //    [<Example("post-indices-search-range-2", "Greater than or equal to '>=' operator")>]
-//    member __.``NumericRange Query Test 2`` (api : ApiClient, indexData : Country list) = 
+//    member __.``NumericRange Query Test 2`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.Population >= 1000000L).Count()
 //        client |> query "population >= '1000000'" expected 48
 //    
 //    [<Example("post-indices-search-range-3", "Smaller than '<' operator")>]
-//    member __.``NumericRange Query Test 3`` (api : ApiClient, indexData : Country list) = 
+//    member __.``NumericRange Query Test 3`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.Population < 1000000L).Count()
 //        client |> query "population < '1000000'" expected 48
 //    
 //    [<Example("post-indices-search-range-4", "Smaller than or equal to '<=' operator")>]
-//    member __.``NumericRange Query Test 4`` (api : ApiClient, indexData : Country list) = 
+//    member __.``NumericRange Query Test 4`` (api : IndicesApi, indexData : Country list) = 
 //        let expected = indexData.Where(fun x -> x.Population <= 1000000L).Count()
 //        client |> query "population <= '1000000'" expected 48
 //    
 //    [<Example("post-indices-search-highlighting-1", "Text highlighting example")>]
-//    member __.``Search Highlight Feature Test1`` (api : ApiClient) = 
+//    member __.``Search Highlight Feature Test1`` (api : IndicesApi) = 
 //        let query = new SearchQuery("country", "background = 'most prosperous countries'")
 //        let highlight = new List<string>()
 //        highlight.Add("background")
