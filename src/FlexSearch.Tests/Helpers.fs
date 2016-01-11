@@ -14,28 +14,14 @@ open System.IO
 open System.Reflection
 open Swensen.Unquote
 
-
-/// <summary>
-/// Represents the lookup name for the plug-in
-/// </summary>
-[<Sealed>]
-[<System.AttributeUsage(System.AttributeTargets.Method)>]
-type ExampleAttribute(fileName : string, title : string) = 
-    inherit Attribute()
-    member this.FileName = fileName
-    member this.Title = title
-
 [<AttributeUsage(AttributeTargets.Method)>]
 type IgnoreAttribute() = inherit Attribute()
 
-module Global =
-    let mutable RequestLogPath = String.Empty
 
 [<AutoOpenAttribute>]
 module DataHelpers = 
     open Autofac
     open System.Diagnostics
-    open Client
     open Microsoft.Extensions.DependencyInjection
 
     let writer = new TextWriterTraceListener(System.Console.Out)
@@ -109,16 +95,6 @@ module DataHelpers =
         test <@ indexService.AddIndex(index) |> succeeded @>
         index
 
-    let createDemoIndex = 
-        // Make sure the demo index folder is empty
-        let folder = Constants.DataFolder + "/country"
-        if Directory.Exists(folder) then Directory.Delete(folder, true)
-        // Create the demo index
-        let demoService = container.Resolve<DemoIndexService>()
-        test <@ demoService.Setup() |> succeeded @>
-
-    let demoIndexData = container.Resolve<DemoIndexService>().DemoData().Value 
-
     /// Autofixture customizations
     let fixtureCustomization() = 
         let fixture = new Ploeh.AutoFixture.Fixture()
@@ -132,7 +108,6 @@ module DataHelpers =
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
         fixture.Inject<Dictionary<string, IFlexQueryFunction>>(container.Resolve<Dictionary<string, IFlexQueryFunction>>()) |> ignore
-        fixture.Inject<Country list>(demoIndexData)
         fixture
      
 [<AutoOpenAttribute>]
@@ -174,10 +149,6 @@ type SingleInstancePerClassConvention() as self =
         (new SpecimenContext(fixture)).Resolve(typ)
     
     do
-        printfn "RequestLogPath: %A" self.Options.["requestlogpath"]
-        if self.Options.["requestlogpath"].Count = 1 then
-            Global.RequestLogPath <- self.Options.["requestlogpath"].[0]
-
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         // Temporarily ignore parametric tests because Fixie doesn't handle them in VS 2015
         // Comment out this line if you want to also execute ignored tests

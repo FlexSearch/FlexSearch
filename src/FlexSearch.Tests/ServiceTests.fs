@@ -61,7 +61,7 @@ module IndexServiceTests =
         let searchAndExtract (searchService : ISearchService) query = 
             let result = searchService.Search(query)
             test <@ succeeded <| result @>
-            (extract <| result) |> toSearchResults
+            extract result
 
         let setUpAndModifyProfile (index : Index) indexService documentService searchService newProfile =
             let testData = """
@@ -282,12 +282,12 @@ module DocumentServiceTests =
             let query = new SearchQuery(index.IndexName, "i1 <= '4'")
             let searchRes = searchService.Search(query)
             test <@ succeeded searchRes @>
-            test <@ (extract searchRes |> toSearchResults).RecordsReturned = 4 @>
+            test <@ (extract searchRes).RecordsReturned = 4 @>
 
             // Execute deletion query 
             let delResult = documentService.DeleteDocumentsFromSearch(index.IndexName, query)
             test <@ succeeded delResult @>
-            test <@ (extract delResult |> toSearchResults).RecordsReturned = 4 @>
+            test <@ (extract delResult).RecordsReturned = 4 @>
 
             test <@ succeeded <| indexService.Refresh index.IndexName @>
 

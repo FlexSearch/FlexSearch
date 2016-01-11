@@ -58,13 +58,13 @@ let withSkip (skip : int) (query : SearchQuery) =
 let searchAndExtract (searchService : ISearchService) (query) = 
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
-    (extract <| result) |> toSearchResults
+    (extract <| result)
 
-let searchForFlatAndExtract (searchService : ISearchService) (query : SearchQuery) = 
+let searchExtractDocList (searchService : ISearchService) (query : SearchQuery) = 
     query.ReturnFlatResult <- true
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
-    ((extract <| result) |> toFlatResults).Documents.ToList()
+    (extract <| result).Documents.ToList()
 
 /// Assertions
 /// Checks if the total number of fields returned by the query matched the expected
@@ -137,15 +137,15 @@ id,et1,t1,i1,s1
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "et1"; "t1" |]
-            |> searchForFlatAndExtract searchService
-        test <@ result.[0].ContainsKey(MetaFields.IdField) @>
+            |> searchExtractDocList searchService
+        test <@ result.[0].Fields.ContainsKey(MetaFields.IdField) @>
     
     member __.``SearchAsDictionarySeq will return the lastmodified column populated in Fields``() = 
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "et1"; "t1" |]
-            |> searchForFlatAndExtract searchService
-        test <@ result.[0].ContainsKey(MetaFields.LastModifiedField) @>
+            |> searchExtractDocList searchService
+        test <@ result.[0].Fields.ContainsKey(MetaFields.LastModifiedField) @>
     
     //    member __.``SearchAsDictionarySeq will return the type column populated in Fields``() = 
     //        let result = 
@@ -154,8 +154,8 @@ id,et1,t1,i1,s1
     //            |> searchForFlatAndExtract searchService
     //        test <@ result.[0].ContainsKey(Constants.Type) @>
     member __.``SearchAsDictionarySeq will return the _score column populated in Fields``() = 
-        let result = getQuery (index.IndexName, "i1 eq '1'") |> searchForFlatAndExtract searchService
-        test <@ result.[0].ContainsKey(MetaFields.Score) @>
+        let result = getQuery (index.IndexName, "i1 eq '1'") |> searchExtractDocList searchService
+        test <@ result.[0].Fields.ContainsKey(MetaFields.Score) @>
     
     member __.``No score will be returned if ReturnScore is set to false``() = 
         let result = 
