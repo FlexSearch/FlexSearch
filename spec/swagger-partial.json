@@ -724,113 +724,154 @@
       "description": "",
       "type": "object"
     },
-    "analyzeTextResponse": {
+    "response": {
       "type": "object",
+      "description": "Base type of an HTTP response containing the Error part",
       "properties": {
-        "data": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
+    },
+    "analyzeTextResponse": {
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      ]
     },
     "analyzerResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/analyzer" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/analyzer" } }
+        }
+      ]
     },
     "jobSuccessResponse": {
-      "description": "Gives you the ID of the successfully submitted job",
-      "type": "object",
-      "properties": {
-        "data": { "type": "string" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "description": "Gives you the ID of the successfully submitted job",
+          "type": "object",
+          "properties": { "data": { "type": "string" } }
+        }
+      ]
     },
     "documentResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/document" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/document" } }
+        }
+      ]
     },
     "searchResultsResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/searchResults" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/searchResults" } }
+        }
+      ]
     },
     "creationIdResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/creationId" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/creationId" } }
+        }
+      ]
     },
     "indexResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/index" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/index" } }
+        }
+      ]
     },
     "analyzersResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/analyzer" }
-        },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/analyzer" }
+            }
+          }
+        }
+      ]
     },
     "indicesResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/index" }
-        },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": {
+            "data": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/index" }
+            }
+          }
+        }
+      ]
     },
     "indexExistsResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/indexExists" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/indexExists" } }
+        }
+      ]
     },
     "indexSizeResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "type": "number" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "type": "number" } }
+        }
+      ]
     },
     "jobResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/job" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/job" } }
+        }
+      ]
     },
     "memoryDetailsResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/memoryDetails" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/memoryDetails" } }
+        }
+      ]
     },
     "getStatusResponse": {
-      "type": "object",
-      "properties": {
-        "data": { "$ref": "#/definitions/indexStatusResponse" },
-        "error": { "$ref": "#/definitions/operationMessage" }
-      }
+      "allOf": [
+        { "$ref": "#/definitions/response" },
+        {
+          "type": "object",
+          "properties": { "data": { "$ref": "#/definitions/indexStatusResponse" } }
+        }
+      ]
     }
   },
   "externalDocs": {
@@ -1308,7 +1349,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": {"$ref": "#/definitions/response"}
           }
         }
       }
