@@ -95,6 +95,7 @@ module ResponseLogging =
 module TestCommandHelpers =
     open ResponseLogging
     open FlexSearch.Core.Helpers
+    open System.Net
 
     let newIndex indexName = new Index(IndexName = indexName)
     let formatter = new FlexSearch.Core.NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
@@ -138,6 +139,12 @@ module TestCommandHelpers =
             | None -> ()
 
     let isNotNullOrEmpty (str : string) = String.IsNullOrEmpty(str) |> not
+
+    let hasStatusCode (statusCode : HttpStatusCode) (r : ApiResponse<'T>) = r.StatusCode =? int statusCode; r
+    let hasErrorCode (errorCode : string) (r : 'T when 'T :> Response) = r.Error.ErrorCode =? errorCode; r
+    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> Response) = r.Data |> hasErrorCode errorCode
+    let isSuccessful (r : Response) = r.Error =? null
+    let isCreated (r : ApiResponse<'T> when 'T :> Response) = r.StatusCode =? int HttpStatusCode.Created
 
 [<AutoOpen>]
 module FixtureSetup =

@@ -94,6 +94,14 @@ namespace FlexSearch.Api.Model
             }
             {{/required}}
 
+            {{#minLength}}
+            if (this.{{name}}.Length{{^exclusiveMinimum}} <= {{/exclusiveMinimum}}{{#exclusiveMinimum}} < {{/exclusiveMinimum}} {{minLength}}) {
+                this.ErrorField = "{{name}}";
+                this.ErrorDescription = "The field value should be longer than {{#exclusiveMinimum}}or equal to{{/exclusiveMinimum}} {{minLength}}. ";
+                return false;
+            }
+            {{/minLength}}
+
             {{#minimum}}
             if (this.{{name}} {{^exclusiveMinimum}} <= {{/exclusiveMinimum}}{{#exclusiveMinimum}} < {{/exclusiveMinimum}} {{minimum}}) {
                 this.ErrorField = "{{name}}";

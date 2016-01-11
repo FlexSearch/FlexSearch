@@ -7,73 +7,68 @@ open ResponseLogging
 open Global
 open TestCommandHelpers
 open Swensen.Unquote
+open System.Net
 
 type ``Index Creation Tests``() = 
     
-    //    member __.``Accessing server root should return 200`` () = 
-    //        owinServer()
-    //        |> request "GET" "/"
-    //        |> execute
-    //        |> responseStatusEquals HttpStatusCode.OK
     [<Example("post-indices-id-1", "Creating an index without any data")>]
     member __.``Creating an index without any parameters should return 200`` (api : IndicesApi, indexName : string, 
                                                                               handler : LoggingHandler) = 
-        let actual = api.CreateIndex(newIndex indexName)
-        test <@ actual.Data.Id |> isNotNullOrEmpty @>
+        api.CreateIndexWithHttpInfo(newIndex indexName) |> isCreated
         handler |> log "post-indices-id-1"
-        api.DeleteIndex(indexName)
+        api.DeleteIndex(indexName) |> isSuccessful
     
     [<Example("post-indices-id-2", "Duplicate index cannot be created")>]
     member __.``Duplicate index cannot be created`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
-        api.CreateIndex(index) |> ignore
-        try api.CreateIndex(index) |> ignore
-        with :? ApiException as e -> e.ErrorCode =? 1
-//        actual
-//        |> fst
-//        |> hasErrorCode "IndexAlreadyExists"
-//        actual |> hasHttpStatusCode HttpStatusCode.Conflict
+        api.CreateIndex(index) |> isSuccessful
+        api.CreateIndexWithHttpInfo(index)
+        |> hasStatusCode HttpStatusCode.Conflict
+        |> hasApiErrorCode "IndexAlreadyExists"
+        |> ignore
         handler |> log "post-indices-id-2"
-        api.DeleteIndex(index.IndexName)
+        api.DeleteIndex(index.IndexName) |> isSuccessful
+        
+    member __.``Create response contains the id of the created index`` (api : IndicesApi, index : Index, 
+                                                                        handler : LoggingHandler) = 
+        let actual = api.CreateIndexWithHttpInfo(index)
+        actual |> isCreated
+        actual.Data.Data.Id =? index.IndexName
+        api.DeleteIndex(index.IndexName) |> isSuccessful
     
-//    member __.``Create response contains the id of the created index`` (api : ApiClient, index : Index, 
-//                                                                        handler : LoggingHandler) = 
-//        let actual = api.CreateIndex(index).Result
-//        actual |> isCreated
-//        (actual |> data).Id =? index.IndexName
-//        api.DeleteIndex(index.IndexName).Result |> isSuccessful
-//    
-//    member __.``Index cannot be created without IndexName`` (api : ApiClient, handler : LoggingHandler) = 
-//        let actual = api.CreateIndex(newIndex"").Result
-//        actual |> hasHttpStatusCode HttpStatusCode.BadRequest
-//    
-//    [<Example("post-indices-id-3", "")>]
-//    member __.``Create index with two field 'firstname' & 'lastname'`` (api : ApiClient, indexName : string, 
-//                                                                        handler : LoggingHandler) = 
-//        let index = newIndex indexName
-//        index.Fields <- [| new Field("firstname")
-//                           new Field("lastname") |]
-//        api.CreateIndex(index).Result |> isCreated
-//        handler |> log "post-indices-id-3"
-//        api.DeleteIndex(indexName).Result |> isSuccessful
-//    
-//    //    [<Example("post-indices-id-4", "")>]
-//    //    member __.``Create an index with dynamic fields`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
-//    //        let index = newIndex indexName
-//    //        index.Fields <- [| new Field.Dto("firstname")
-//    //                           new Field.Dto("lastname")
-//    //                           new Field.Dto("fullname", ScriptName = "fullnamescript") |]
-//    //        index.Scripts <- 
-//    //            [| new Script.Dto(ScriptName = "fullnamescript", Source = "return fields.firstname + \" \" + fields.lastname;", ScriptType = ScriptType.Dto.ComputedField) |]
-//    //        api.CreateIndex(index).Result |> isCreated
-//    //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
-//    [<Example("post-indices-id-5", "")>]
-//    member __.``Create an index by setting all properties`` (api : ApiClient, index : Index, 
-//                                                             handler : LoggingHandler) = 
-//        let actual = api.CreateIndex(index).Result
-//        actual |> hasHttpStatusCode HttpStatusCode.Created
-//        handler |> log "post-indices-id-5"
-//        api.DeleteIndex(index.IndexName).Result |> isSuccessful
-//
+    member __.``Index cannot be created without IndexName`` (api : IndicesApi, handler : LoggingHandler) = 
+        api.CreateIndexWithHttpInfo(newIndex "") 
+        |> hasStatusCode HttpStatusCode.BadRequest
+        |> ignore
+    
+    [<Example("post-indices-id-3", "")>]
+    member __.``Create index with two field 'firstname' & 'lastname'`` (api : IndicesApi, indexName : string, 
+                                                                        handler : LoggingHandler) = 
+        let index = newIndex indexName
+        index.Fields <- [| new Field("firstname")
+                           new Field("lastname") |]
+        api.CreateIndex(index) |> isSuccessful
+        handler |> log "post-indices-id-3"
+        api.DeleteIndex(indexName) |> isSuccessful
+    
+    //    [<Example("post-indices-id-4", "")>]
+    //    member __.``Create an index with dynamic fields`` (api : ApiClient, indexName : string, handler : LoggingHandler) = 
+    //        let index = newIndex indexName
+    //        index.Fields <- [| new Field.Dto("firstname")
+    //                           new Field.Dto("lastname")
+    //                           new Field.Dto("fullname", ScriptName = "fullnamescript") |]
+    //        index.Scripts <- 
+    //            [| new Script.Dto(ScriptName = "fullnamescript", Source = "return fields.firstname + \" \" + fields.lastname;", ScriptType = ScriptType.Dto.ComputedField) |]
+    //        api.CreateIndex(index).Result |> isCreated
+    //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
+    [<Example("post-indices-id-5", "")>]
+    member __.``Create an index by setting all properties`` (api : IndicesApi, index : Index, 
+                                                             handler : LoggingHandler) = 
+        api.CreateIndexWithHttpInfo(index)
+        |> hasStatusCode HttpStatusCode.Created
+        |> ignore
+        handler |> log "post-indices-id-5"
+        api.DeleteIndex(index.IndexName) |> isSuccessful
+
 //type ``Index Update Tests``() = 
 //    
 //    [<Example("put-indices-id-1", "")>]
