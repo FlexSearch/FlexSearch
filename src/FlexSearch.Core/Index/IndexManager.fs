@@ -196,10 +196,20 @@ module IndexManager =
     /// Deletes an existing index
     let deleteIndex (indexName : string) (t : T) = 
         maybe { 
-            do! t |> closeIndex indexName
+            // Try closing the index
+            do! match t |> closeIndex indexName with
+                | Ok(_) -> okUnit
+                | Fail(e) when e.OperationMessage().ErrorCode = "IndexIsAlreadyOffline" -> okUnit
+                | Fail(e) -> fail <| e
+
             t.Store.TryRemove(indexName) |> ignore
+
+            // Delete the index configuration file
             do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName)
-            delDir (DataFolder +/ indexName)
+
+            // Data might not be present for this index
+            if (Directory.Exists(DataFolder +/ indexName))
+            then delDir (DataFolder +/ indexName)
         }
     
     /// Create a new 

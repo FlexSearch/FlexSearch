@@ -142,13 +142,19 @@ module TestCommandHelpers =
 
     let hasStatusCode (statusCode : HttpStatusCode) (r : ApiResponse<'T>) = r.StatusCode =? int statusCode; r
     let hasErrorCode (errorCode : string) (r : 'T when 'T :> Response) = r.Error.ErrorCode =? errorCode; r
-    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> Response) = r.Data |> hasErrorCode errorCode
+    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> Response) = 
+        r.Data 
+        |> hasErrorCode errorCode 
+        |> ignore
+        r
     let isSuccessful (r : Response) = r.Error =? null
     let isCreated (r : ApiResponse<'T> when 'T :> Response) = r.StatusCode =? int HttpStatusCode.Created
 
 [<AutoOpen>]
 module FixtureSetup =
     open ResponseLogging
+    open TestCommandHelpers
+    open Newtonsoft.Json
 
     /// Basic test index with all field types
     let getTestIndex() = 
@@ -174,6 +180,29 @@ module FixtureSetup =
     let httpMessageHandler = Global.server.CreateHandler()
     let flexClient = new ApiClient(httpMessageHandler)
 
+    let mockIndexSettings = 
+        let index = new Index()
+        index.IndexName <- "contact"
+        index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
+        index.Active <- true
+        index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.Ram
+        index.Fields <- 
+         [| new Field("firstname", Constants.FieldType.Text)
+            new Field("lastname", Constants.FieldType.Text)
+            new Field("email", Constants.FieldType.ExactText)
+            new Field("country", Constants.FieldType.Text)
+            new Field("ipaddress", Constants.FieldType.ExactText)
+            new Field("cvv2", Constants.FieldType.Int)
+            new Field("description", Constants.FieldType.Highlight)
+            new Field("fullname", Constants.FieldType.Text) |]
+        
+        let api = new IndicesApi(flexClient)
+        if not <| api.IndexExists("contact").Data.Exists
+        then api.CreateIndex(index) |> isSuccessful
+        index
+
+    let countryList = JsonConvert.DeserializeObject<List<FlexSearch.Core.Country>>(Resources.DemoIndexData)
+
     let fixtureCustomization () =
         let fixture = new Ploeh.AutoFixture.Fixture()
         // We override Auto fixture's string generation mechanism to return this string which will be
@@ -189,6 +218,7 @@ module FixtureSetup =
         fixture.Inject<SearchApi>(new SearchApi(flexClient))
         fixture.Inject<ServerApi>(new ServerApi(flexClient))
         fixture.Inject<LoggingHandler>(new LoggingHandler(httpMessageHandler))
+        fixture.Inject<FlexSearch.Core.Country list>(countryList |> Seq.toList)
         fixture
 
 // ----------------------------------------------------------------------------

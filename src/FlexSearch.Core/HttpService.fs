@@ -127,10 +127,6 @@ type PutIndexConfigurationHandler(indexService : IIndexService) =
 //        // Index name passed in URL takes precedence
 //        body.Value.IndexName <- request.ResId.Value
 //        SomeResponse(indexService.UpdateIndex(body.Value), Ok, BadRequest)
-type IndexStatusResponse() = 
-    inherit DtoBase()
-    member val Status = IndexStatus.Opening with get, set
-    override this.Validate() = okUnit
 
 /// Get index status
 [<Name("GET-/indices/:id/status")>]
@@ -140,7 +136,7 @@ type GetStatusHandler(indexService : IIndexService) =
     override __.Process(request, _) = 
         let response = 
             match indexService.GetIndexState(request.ResId.Value) with
-            | Ok(state) -> ok <| new IndexStatusResponse(Status = state)
+            | Ok(state) -> ok <| new IndexStatusResponse(IndexStatus = state)
             | Fail(error) -> fail(error)
         SomeResponse(response, Ok, BadRequest)
 

@@ -540,7 +540,8 @@
         },
         "id": {
           "description": "",
-          "type": "string"
+          "type": "string",
+          "minLength": 0
         },
         "indexName": {
           "description": "",
@@ -1006,7 +1007,7 @@
     },
     "/indices/{indexId}/documents/{docId}": {
       "get": {
-        "tags": [ "documents" ],
+        "tags": [ "documents", "common" ],
         "summary": "Returns document by ID",
         "description": "",
         "operationId": "getDocument",
@@ -1034,7 +1035,7 @@
         }
       },
       "put": {
-        "tags": [ "documents" ],
+        "tags": [ "documents", "common" ],
         "summary": "Create or update a document",
         "description": "It is advisable to use create document endpoint when you are sure that the\ndocument does not exist in an index. This service will always perform an ID\nbased look up to determine if a document already exists. In case of non-unique\nID based index, this will replace all the documents with the currently passed\ndocument. This endpoint can be used with concurrency control semantics.\n",
         "operationId": "updateDocument",
@@ -1062,7 +1063,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful operation"
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       },
@@ -1094,7 +1096,7 @@
         }
       }
     },
-    "/indices/{id}/search": {
+    "/indices/{indexName}/search": {
       "get": {
         "tags": [ "search" ],
         "summary": "Search and index",
@@ -1138,7 +1140,7 @@
             "type": "string"
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1165,7 +1167,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1216,7 +1218,7 @@
             "type": "string"
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1254,7 +1256,7 @@
         }
       },
       "post": {
-        "tags": [ "documents" ],
+        "tags": [ "documents", "common" ],
         "summary": "Creates a new document",
         "description": "Unlike a database system FlexSearch doesn't impose the requirement of a unique\nID per document. You can add multiple documents by the same ID but this can\nimpose a problem while adding or retrieving them. You can enforce a unique ID\ncheck by using the `timestamp` field. To understand more about ID check and\nconcurrency control, please refer to the article `concurrency control` under\nconcepts section.\n",
         "operationId": "createDocument",
@@ -1281,7 +1283,7 @@
         }
       },
       "delete": {
-        "tags": [ "documents" ],
+        "tags": [ "documents", "common" ],
         "summary": "Deletes all documents present in the index",
         "description": "This will remove all the documents present in an index. This is useful when you\nwant to reindex all the documents.\n",
         "operationId": "deleteDocuments",
@@ -1324,7 +1326,7 @@
         }
       },
       "delete": {
-        "tags": [ "indices" ],
+        "tags": [ "indices", "common" ],
         "summary": "Deletes an index by ID",
         "description": "Index deletion happens in two parts, first the index configuration file is\ndeleted from the configurations folder, then the index is deleted from the data\nfolder. In case any error is encountered the cleanup will be performed on the\nserver restart.\n",
         "operationId": "deleteIndex",
@@ -1434,7 +1436,7 @@
         "tags": [ "indices" ],
         "summary": "Check if an index exists",
         "description": "This endpoint can be used to check if an index is present in the system. This\nendpoint is a lighter alternative to accessing the index by an ID as the\nresponse is smaller in size.\n",
-        "operationId": "getExists",
+        "operationId": "indexExists",
         "parameters": [
           {
             "name": "id",
@@ -1557,7 +1559,7 @@
         "responses": {
           "default": {
             "description": "IndexStatusResponse",
-            "schema": { "$ref": "#/definitions/indexStatusResponse" }
+            "schema": { "$ref": "#/definitions/getStatusResponse" }
           }
         }
       }
@@ -1715,7 +1717,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       }
@@ -1729,7 +1732,8 @@
         "parameters": [ ],
         "responses": {
           "default": {
-            "description": "Successful response"
+            "description": "Successful response",
+            "schema": { "$ref": "#/definitions/response" }
           }
         }
       }
