@@ -76,6 +76,8 @@ type ISearchService =
 type IQueueService = 
     abstract AddDocumentQueue : document:Document -> unit
     abstract AddOrUpdateDocumentQueue : document:Document -> unit
+    /// Waits until all the work items submitted are completed
+    abstract Complete : unit -> unit
 
 type IJobService = 
     abstract GetJob : string -> Result<Job>
@@ -570,6 +572,7 @@ type QueueService(documentService : IDocumentService) =
         executionBlockOption.BoundedCapacity <- 100
         executionBlockOption
     
+
     /// <summary>
     /// Add queue processing method
     /// </summary>
@@ -583,23 +586,22 @@ type QueueService(documentService : IDocumentService) =
     /// <summary>
     /// Queue for add operation 
     /// </summary>
-    let addQueue : ActionBlock<Document> = 
-        new ActionBlock<Document>(processAddQueueItems, executionBlockOptions())
+    let addQueue = new MultipleConsumerQueue<Document>(processAddQueueItems)
     
     /// <summary>
     /// Queue for add or update operation 
     /// </summary>
-    let addOrUpdateQueue : ActionBlock<Document> = 
-        new ActionBlock<Document>(processAddOrUpdateQueueItems, executionBlockOptions())
+    let addOrUpdateQueue = new MultipleConsumerQueue<Document>(processAddOrUpdateQueueItems)
     
     interface IQueueService with
-        
-        member __.AddDocumentQueue(document) = 
-            Async.AwaitTask(addQueue.SendAsync(document))
-            |> Async.RunSynchronously
-            |> ignore
-        
-        member __.AddOrUpdateDocumentQueue(document) = 
-            Async.AwaitTask(addOrUpdateQueue.SendAsync(document))
-            |> Async.RunSynchronously
-            |> ignore
+        member __.AddDocumentQueue(document) = (addQueue :> IQueue<Document>).Send(document)
+        member __.AddOrUpdateDocumentQueue(document) = (addOrUpdateQueue :> IQueue<Document>).Send(document)
+        member __.Complete() = 
+            let completeQueue (q : MultipleConsumerQueue<Document>) =
+                (q :> IRequireNotificationForShutdown).Shutdown()
+                |> Async.Catch
+                |> Async.RunSynchronously
+                |> handleShutdownExceptions
+
+            completeQueue addQueue
+            completeQueue addOrUpdateQueue

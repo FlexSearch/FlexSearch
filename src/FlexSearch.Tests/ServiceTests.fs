@@ -436,9 +436,9 @@ type QueueServiceTests() =
         test <@ succeeded <| indexService.AddIndex(index) @>
         let document = new Document(indexName = index.IndexName, id = "1")
         let q = new QueueService(documentService) :> IQueueService
-        // TODO Use Queues.fs for the QueueService; Expose Queue object so that we can shut it down
         queueService.AddDocumentQueue(document)
-        // TODO wait for the action block to actually finish adding the document to Lucene
+        // Wait for the action block to actually finish adding the document to Lucene
+        queueService.Complete()
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         
