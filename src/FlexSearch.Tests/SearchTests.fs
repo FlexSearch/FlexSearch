@@ -61,7 +61,6 @@ let searchAndExtract (searchService : ISearchService) (query) =
     (extract <| result)
 
 let searchExtractDocList (searchService : ISearchService) (query : SearchQuery) = 
-    query.ReturnFlatResult <- true
     let result = searchService.Search(query)
     test <@ succeeded <| result @>
     (extract <| result).Documents.ToList()
@@ -133,19 +132,19 @@ id,et1,t1,i1,s1
         result |> assertFieldPresent "et1"
         result |> assertFieldPresent "t1"
     
-    member __.``SearchAsDictionarySeq will return the id column populated in Fields``() = 
+    member __.``Search will return the id column populated as a field of the Document object``() = 
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "et1"; "t1" |]
             |> searchExtractDocList searchService
-        test <@ result.[0].Fields.ContainsKey(MetaFields.IdField) @>
+        String.IsNullOrEmpty(result.[0].Id) =? false
     
-    member __.``SearchAsDictionarySeq will return the lastmodified column populated in Fields``() = 
+    member __.``Search will return the lastmodified column as a field of the Document object``() = 
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "et1"; "t1" |]
             |> searchExtractDocList searchService
-        test <@ result.[0].Fields.ContainsKey(MetaFields.LastModifiedField) @>
+        result.[0].TimeStamp >? 0L
     
     //    member __.``SearchAsDictionarySeq will return the type column populated in Fields``() = 
     //        let result = 
@@ -153,9 +152,9 @@ id,et1,t1,i1,s1
     //            |> withColumns [| "et1"; "t1" |]
     //            |> searchForFlatAndExtract searchService
     //        test <@ result.[0].ContainsKey(Constants.Type) @>
-    member __.``SearchAsDictionarySeq will return the _score column populated in Fields``() = 
+    member __.``Search will return the _score column populated as a field of the Documents object``() = 
         let result = getQuery (index.IndexName, "i1 eq '1'") |> searchExtractDocList searchService
-        test <@ result.[0].Fields.ContainsKey(MetaFields.Score) @>
+        result.[0].Score >? 0.0
     
     member __.``No score will be returned if ReturnScore is set to false``() = 
         let result = 
