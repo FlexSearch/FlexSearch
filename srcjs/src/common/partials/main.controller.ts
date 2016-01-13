@@ -1,4 +1,5 @@
 /// <reference path="../references/references.d.ts" />
+/// <reference path="error.ts" />
 
 module flexportal {
   'use strict';

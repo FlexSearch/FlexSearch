@@ -16,19 +16,19 @@ module.exports = function(options) {
     var sortOutput = require('../' + options.tmp + '/sortOutput.json');
 
     var injectScripts = gulp.src([
-      '{' + options.src + ',' + options.tmp + '/serve}/app/**/*.js',
-      '!' + options.src + '/app/**/*.spec.js',
-      '!' + options.src + '/app/**/*.mock.js',
-      '!' + options.src + '/app/references/process.js'
+      '{' + options.src + ',' + options.common + ',' + options.tmp + '/serve}/app/**/*.js',
+      '!' + options.src + '/**/*.spec.js',
+      '!' + options.src + '/**/*.mock.js',
+      '!' + options.src + '/references/process.js'
     ], { read: false })
     .pipe($.order(sortOutput, {base: options.tmp + '/serve/app'}));
 
     var injectOptions = {
-      ignorePath: [options.src, options.tmp + '/serve'],
+      ignorePath: [options.src, options.common, options.tmp + '/serve'],
       addRootSlash: false
     };
 
-    return gulp.src(options.src + '/*.html')
+    return gulp.src(options.common + '/index.html')
       .pipe($.inject(injectStyles, injectOptions))
       .pipe($.inject(injectScripts, injectOptions))
       .pipe(wiredep(options.wiredep))

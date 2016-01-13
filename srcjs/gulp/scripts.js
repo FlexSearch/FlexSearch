@@ -10,7 +10,7 @@ module.exports = function(options) {
   gulp.task('scripts', ['tsd:install', 'pure-libs'], function () {
     mkdirp.sync(options.tmp);
 
-    return gulp.src(options.src + '/app/**/*.ts')
+    return gulp.src('{' + options.src + ',' + options.common + '}' + '/**/*.ts')
       .pipe($.sourcemaps.init())
       .pipe($.tslint())
       .pipe($.tslint.report('prose', { emitError: false }))

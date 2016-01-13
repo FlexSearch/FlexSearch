@@ -3,105 +3,109 @@
 var gulp = require('gulp');
 
 var $ = require('gulp-load-plugins')({
-  pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
+    pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
 });
 
 var swaggerDir = __dirname + '\\..\\..\\documentation\\';
 
-module.exports = function(options) {
-  gulp.task('partials', function () {
-    return gulp.src([
-      options.src + '/app/**/*.html',
-      options.tmp + '/serve/app/**/*.html'
-    ])
-      .pipe($.minifyHtml({
-        empty: true,
-        spare: true,
-        quotes: true
-      }))
-      .pipe($.angularTemplatecache('templateCacheHtml.js', {
-        module: 'flexportal',
-        root: 'app'
-      }))
-      .pipe(gulp.dest(options.tmp + '/partials/'));
-  });
+module.exports = function (options) {
+    gulp.task('partials', function () {
+        
+        return gulp.src([
+            options.src + '/**/*.html',
+            options.common + '/**/*.html',
+            options.tmp + '/serve/app/**/*.html'
+        ])
+            .pipe($.minifyHtml({
+                empty: true,
+                spare: true,
+                quotes: true
+            }))
+            .pipe($.angularTemplatecache('templateCacheHtml.js', {
+                module: 'flexportal',
+                root: 'app'
+            }))
+            .pipe(gulp.dest(options.tmp + '/partials/'));
+    });
 
-  gulp.task('html', ['inject', 'partials'], function () {
-    var partialsInjectFile = gulp.src(options.tmp + '/partials/templateCacheHtml.js', { read: false });
-    var partialsInjectOptions = {
-      starttag: '<!-- inject:partials -->',
-      ignorePath: options.tmp + '/partials',
-      addRootSlash: false
-    };
+    gulp.task('html', ['inject', 'partials'], function () {
+        var partialsInjectFile = gulp.src(options.tmp + '/partials/templateCacheHtml.js', { read: false });
+        var partialsInjectOptions = {
+            starttag: '<!-- inject:partials -->',
+            ignorePath: options.tmp + '/partials',
+            addRootSlash: false
+        };
 
-    var htmlFilter = $.filter('*.html');
-    var jsFilter = $.filter('**/*.js');
-    var cssFilter = $.filter('**/*.css');
-    var assets;
+        var htmlFilter = $.filter('*.html');
+        var jsFilter = $.filter('**/*.js');
+        var cssFilter = $.filter('**/*.css');
+        var assets;
 
-    return gulp.src(options.tmp + '/serve/*.html')
-      .pipe($.inject(partialsInjectFile, partialsInjectOptions))
-      .pipe(assets = $.useref.assets())
-      .pipe($.rev())
-      .pipe(jsFilter)
-      .pipe($.ngAnnotate())
-      .pipe($.uglify({ preserveComments: $.uglifySaveLicense })).on('error', options.errorHandler('Uglify'))
-      .pipe(jsFilter.restore())
-      .pipe(cssFilter)
-      .pipe($.csso())
-      .pipe(cssFilter.restore())
-      .pipe(assets.restore())
-      .pipe($.useref())
-      .pipe($.revReplace())
-      .pipe(htmlFilter)
-      .pipe($.minifyHtml({
-        empty: true,
-        spare: true,
-        quotes: true,
-        conditionals: true
-      }))
-      .pipe(htmlFilter.restore())
-      .pipe(gulp.dest(options.dist + '/'))
-      .pipe($.size({ title: options.dist + '/', showFiles: true }));
-  });
+        return gulp.src(options.tmp + '/serve/*.html')
+            .pipe($.inject(partialsInjectFile, partialsInjectOptions))
+            .pipe(assets = $.useref.assets())
+            .pipe($.rev())
+            .pipe(jsFilter)
+            .pipe($.ngAnnotate())
+            .pipe($.uglify({ preserveComments: $.uglifySaveLicense })).on('error', options.errorHandler('Uglify'))
+            .pipe(jsFilter.restore())
+            .pipe(cssFilter)
+            .pipe($.csso())
+            .pipe(cssFilter.restore())
+            .pipe(assets.restore())
+            .pipe($.useref())
+            .pipe($.revReplace())
+            .pipe(htmlFilter)
+            .pipe($.minifyHtml({
+                empty: true,
+                spare: true,
+                quotes: true,
+                conditionals: true
+            }))
+            .pipe(htmlFilter.restore())
+            .pipe(gulp.dest(options.dist + '/'))
+            .pipe($.size({ title: options.dist + '/', showFiles: true }));
+    });
 
-  // Only applies for fonts from bower dependencies
-  // Custom fonts are handled by the "other" task
-  gulp.task('fonts', function () {
-    return gulp.src($.mainBowerFiles())
-      .pipe($.filter('**/*.{eot,svg,ttf,woff,woff2}'))
-      .pipe($.flatten())
-      .pipe(gulp.dest(options.dist + '/fonts/'));
-  });
+    // Only applies for fonts from bower dependencies
+    // Custom fonts are handled by the "other" task
+    gulp.task('fonts', function () {
+        return gulp.src($.mainBowerFiles())
+            .pipe($.filter('**/*.{eot,svg,ttf,woff,woff2}'))
+            .pipe($.flatten())
+            .pipe(gulp.dest(options.dist + '/fonts/'));
+    });
 
-  gulp.task('other', function () {
-    return gulp.src([
-      options.src + '/**/*',
-      '!' + options.src + '/**/*.{html,css,js,scss,ts}'
-    ])
-      .pipe(gulp.dest(options.dist + '/'));
-  });
+    gulp.task('other', function () {
+        return gulp.src([
+            options.src + '/**/*',
+            options.common + '/**/*',
+            '!' + options.src + '/**/*.{html,css,js,scss,ts}',
+            '!' + options.common + '/**/*.{html,css,js,scss,ts}'
+        ])
+            .pipe(gulp.dest(options.dist + '/'));
+    });
 
-  // Task for copying over js libraries that should remain untouched
-  gulp.task('pure-libs', function() {
-    return gulp.src(options.src + '/app/references/*')
-      .pipe($.filter('process.js'))
-      .pipe(gulp.dest(options.tmp + '/serve/scripts'))
-      .pipe(gulp.dest(options.dist + '/scripts'))
-  });
+    // Task for copying over js libraries that should remain untouched
+    gulp.task('pure-libs', function () {
+        return gulp.src(options.common + '/references/*')
+            .pipe($.filter('process.js'))
+            .pipe(gulp.dest(options.tmp + '/serve/scripts'))
+            .pipe(gulp.dest(options.dist + '/scripts'))
+    });
 
-  gulp.task('clean', ['tsd:purge'], function (done) {
-    $.del([options.dist + '/', options.tmp + '/'], done);
-  });
+    gulp.task('clean', ['tsd:purge'], function (done) {
+        $.del([options.dist + '/', options.tmp + '/'], done);
+    });
 
-  gulp.task('swagger', function() {
-    $.util.log("Building swagger...");
-    
-    return gulp.src(swaggerDir + "swagger.json")
-      .pipe(gulp.dest(options.src))
-      .pipe(gulp.dest(options.tmp))
-      .pipe(gulp.dest(options.dist))
-  });
+    gulp.task('swagger', function () {
+        $.util.log("Building swagger...");
 
-  gulp.task('build', ['html', 'fonts', 'other', 'swagger']);
+        return gulp.src(swaggerDir + "swagger.json")
+            .pipe(gulp.dest(options.src))
+            .pipe(gulp.dest(options.tmp))
+            .pipe(gulp.dest(options.dist))
+    });
+
+    gulp.task('build', ['html', 'fonts', 'other', 'swagger']);
 };

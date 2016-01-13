@@ -1,4 +1,5 @@
 /// <reference path="..\references\references.d.ts" />
+/// <reference path="..\partials\error.ts" />
 
 module flexportal {
 	
@@ -16,6 +17,7 @@ module flexportal {
 		IndexName: string
 		Online: boolean
 	}
+    
 	
 	export class FlexClient {
 		private $http: ng.IHttpService;
@@ -97,25 +99,25 @@ module flexportal {
 	      	.then(this.getFirstResponse, this.handleError);
 	  	}
 		  
-	  	public updateDuplicate(duplicate: Duplicate) {
-			return this.$http.put(this.DuplicatesUrl + "/documents/" + duplicate.FlexSearchId,
-			{
-				Fields: {
-				  sessionid: duplicate.SessionId,
-				  sourcedisplayname: duplicate.SourceDisplayName,
-				  sourceid: duplicate.SourceId,
-				  sourcerecordid: duplicate.SourceRecordId,
-				  totaldupesfound: duplicate.TotalDupes,
-				  type: "source",
-				  notes: duplicate.Notes,
-				  sourcestatus: duplicate.SourceStatus,
-				  targetrecords: JSON.stringify(duplicate.Targets)
-				},
-				Id: duplicate.FlexSearchId,
-				IndexName: "duplicates"
-			});
-	  	}
-		  
+	  	// public updateDuplicate(duplicate: Duplicate) {
+		// 	return this.$http.put(this.DuplicatesUrl + "/documents/" + duplicate.FlexSearchId,
+		// 	{
+		// 		Fields: {
+		// 		  sessionid: duplicate.SessionId,
+		// 		  sourcedisplayname: duplicate.SourceDisplayName,
+		// 		  sourceid: duplicate.SourceId,
+		// 		  sourcerecordid: duplicate.SourceRecordId,
+		// 		  totaldupesfound: duplicate.TotalDupes,
+		// 		  type: "source",
+		// 		  notes: duplicate.Notes,
+		// 		  sourcestatus: duplicate.SourceStatus,
+		// 		  targetrecords: JSON.stringify(duplicate.Targets)
+		// 		},
+		// 		Id: duplicate.FlexSearchId,
+		// 		IndexName: "duplicates"
+		// 	});
+	  	// }
+		//   
 		public getSessionBySessionId(sessionId) {
 		  return this.$http.get(this.DuplicatesUrl + "/search", 
 		        { params: { 

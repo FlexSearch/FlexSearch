@@ -9,7 +9,6 @@ var util = require('util');
 var middleware = require('./proxy');
 
 module.exports = function(options) {
-
   function browserSyncInit(baseDir, browser) {
     browser = browser === undefined ? 'default' : browser;
 
@@ -24,7 +23,7 @@ module.exports = function(options) {
       baseDir: baseDir,
       routes: routes
     };
-
+    
     if(middleware.length > 0) {
       server.middleware = middleware;
     }
@@ -41,7 +40,7 @@ module.exports = function(options) {
   }));
 
   gulp.task('serve', ['watch'], function () {
-    browserSyncInit([options.tmp + '/serve', options.src]);
+    browserSyncInit([options.tmp + '/serve', options.src, options.common]);
   });
 
   gulp.task('serve:dist', ['build'], function () {
