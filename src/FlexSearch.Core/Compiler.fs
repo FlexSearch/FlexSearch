@@ -73,7 +73,6 @@ module Compiler =
 using System;
 using FlexSearch.Api.Model;
 using FlexSearch.Api.Constants;
-using FlexSearch.Core;
 using System.Collections.Generic;
 """
     
