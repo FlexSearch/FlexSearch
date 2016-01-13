@@ -17,7 +17,7 @@ module CSharp =
         !>> "Cleaning Models, Api & Client directories"
         [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter (ensureDir >> ignore)
         [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter emptyDir
-        javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "template") (toolsDir <!!> @"..\codegen-config.json")
+        javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "cs-template") (toolsDir <!!> @"..\codegen-config.json")
         let generatedFiles = Directory.GetFiles(modelsTempDir).Count()
         if generatedFiles > 0 then
             brk()
@@ -94,14 +94,14 @@ module CSharp =
             
 module TypeScript =
     let tempTsDir = scriptDir <!!> @"obj\API\Client"
-    let targetTsDir = rootDir <!!> @"srcjs\src\app\client"
+    let targetTsDir = rootDir <!!> @"srcjs\src\common\client"
     
     let generateTypeScriptModel() =
         !>> "Cleaning Models directory"    
         [tempTsDir; targetTsDir] |> Seq.iter (ensureDir >> ignore)
         [tempTsDir; targetTsDir] |> Seq.iter emptyDir
-        javaExec <| sprintf """-jar %s generate -i %s -l typescript-angular -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (toolsDir <!!> @"..\codegen-config.json")
-        let generatedFiles = Directory.GetFiles(modelsTempDir).Count()
+        javaExec <| sprintf """-jar %s generate -i %s -l typescript-angular -o obj -t %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "ts-template")
+        let generatedFiles = Directory.GetFiles(tempTsDir).Count()
         if generatedFiles > 0 then
             brk()
             !> (sprintf "%i files generated." generatedFiles)
@@ -114,10 +114,55 @@ module TypeScript =
     let copy() =
         work tempTsDir targetTsDir
     
+    let private cleanup() = 
+        /// Perform specific code cleanups
+        let codeCorrection (fileName : string) (l : string) =
+            
+            let capitalizeAfter (after : string) (input : string) =
+                let chars = input.ToCharArray()
+                chars.[after.Length] <- Char.ToUpper(chars.[after.Length])
+                new string(chars)
+
+            // Capitalize type references
+            let mutable line = 
+                let idx = l.IndexOf("@capitalize@") // 12 chars
+                if idx > 0 then 
+                    let str1 = l.Substring(0, idx)
+                    let str2 = l.Substring(idx + 12)
+                    let mutable out = str2
+
+                    let reserved = 
+                        let x = ["any"; "number"; "boolean"; "string"]
+                        x |> List.append (x |> List.map (fun s -> "Array<" + s))
+
+                    if reserved |> Seq.exists (fun x -> str2.StartsWith(x)) then str1 + str2
+                    else
+                        if str2.StartsWith("Array<") then str2 |> capitalizeAfter "Array<"
+                        else str2 |> capitalizeAfter ""
+                        |> fun s2 -> str1 + s2
+                else l
+            
+            line
+
+        let cleanupFile(f : string) =
+            let mutable file = File.ReadAllLines(f)
+            let lines = 
+                file 
+                |> Array.map (codeCorrection f)
+                |> Array.filter (String.IsNullOrWhiteSpace >> not)
+
+            File.WriteAllLines(f, lines)
+        
+        tempTsDir
+        |> loopFiles
+        |> Seq.iter cleanupFile
+
     let generateTypeScript() =
         brk()
         !> "Generating TypeScript API models"
         generateTypeScriptModel()
+        !>> "Cleaning up the generated files"
+        cleanup()
         !>> "Copying the files to the API directory"
         copy()
         brk()
