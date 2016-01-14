@@ -1,7 +1,5 @@
 /// <reference path="../../../typings/tsd.d.ts" />
-
 /// <reference path="../../common/partials/main.controller.ts" />
-/// <reference path="../../common/client/api.d.ts" />
 /// <reference path="../../common/references/references.d.ts" />
 
 
@@ -17,9 +15,10 @@ module flexportal {
   // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('ErrorController', ErrorController)
-    .controller('DemoIndexController', ["$scope", "$state", "flexClient", DemoIndexController])
+    .controller('DemoIndexController', DemoIndexController)
   // Services
-    .service('flexClient', ["$http", "$mdBottomSheet", "$q", "$location", function($http, $mdBottomSheet, $q, $location) { return new FlexClient($http, $mdBottomSheet, $q, $location); }])
+    .service('serverApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.ServerApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
+    .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
     
   // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {

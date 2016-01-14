@@ -1,4 +1,4 @@
-/// <reference path="../../references/references.d.ts" />
+/// <reference path="../../common/references/references.d.ts" />
 
 module flexportal {
   'use strict';
@@ -12,19 +12,19 @@ module flexportal {
 
   export class DemoIndexController {
     /* @ngInject */
-    constructor($scope: IDemoIndexScope, $state: any, flexClient: FlexClient) {
+    constructor($scope: IDemoIndexScope, $state: any, serverApi: API.Client.ServerApi, indicesApi: API.Client.IndicesApi) {
       var hideProgress = () => $scope.showProgress = false;
       
       // Check if the demo index exists
-      flexClient.indexExists("country")
+      indicesApi.indexExistsHandled("country")
       .then(result => {
-        if (result) $scope.hasDemoIndex = true;
+        if (result.data.exists) $scope.hasDemoIndex = true;
         else $scope.hasDemoIndex = false;
       }, () => $scope.hasDemoIndex = false);
       
       $scope.setupDemoIndex = function() {
         $scope.showProgress = true;
-        flexClient.setupDemoIndex()
+        serverApi.setupDemoHandled()
         .then(() => {
           $scope.showProgress = false;
           $scope.hasDemoIndex = true;
@@ -35,8 +35,11 @@ module flexportal {
       
       $scope.deleteDemoIndex = function() {
         $scope.showProgress = true;
-        flexClient.deleteIndex("country")
-        .then(() => $scope.showProgress = false, hideProgress);
+        indicesApi.deleteIndexHandled("country")
+        .then(() => {
+            $scope.showProgress = false;
+            $scope.hasDemoIndex = false;
+        }, hideProgress);
       };
     }
   }

@@ -9,14 +9,14 @@ module flexportal {
     
     if (typeof e == "string")
       message = e;
-    else if (e.data != undefined && e.data.Error != undefined && e.data.Error.ErrorCode != undefined) {
-      errorCode = e.data.Error.ErrorCode;
-      errorMessage = e.data.Error.Message;
-      errorProperties = e.data.Error.Properties;
+    else if (e.data != undefined && e.data.error != undefined && e.data.error.errorCode != undefined) {
+      errorCode = e.data.error.errorCode;
+      errorMessage = e.data.error.message;
+      errorProperties = e.data.error.properties;
     }
       
     $mdBottomSheet.show({
-        templateUrl: 'app/partials/error.html',
+        templateUrl: 'partials/error.html',
         controller: 'ErrorController',
         locals: {
           message: message,
