@@ -13,11 +13,11 @@
 			</md-toolbar>
 			<md-content class="scrollable">
 				<md-list>
-					<md-list-item class="md-2-line" ng-repeat="index in Indices track by $index" ng-click="showDetails(index.IndexName)">
+					<md-list-item class="md-2-line" ng-repeat="index in Indices track by $index" ng-click="showDetails(index.indexName)">
 						<ng-md-icon class="large transparent" size="36" icon="blur_on"></ng-md-icon>
 						<div class="md-list-item-text">
-							<h3>{{$index+1}}. {{ index.IndexName }}</h3>
-							<p>{{ index.Online ? "Online" : "Offline" }}</p>
+							<h3>{{$index+1}}. {{ index.indexName }}</h3>
+							<p>{{ index.active ? "Online" : "Offline" }}</p>
 						</div>
 						<md-divider ng-hide="$last && hasDemoIndex"></md-divider>
 					</md-list-item>

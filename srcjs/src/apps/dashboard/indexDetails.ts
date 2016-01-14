@@ -1,4 +1,4 @@
-/// <reference path="../../references/references.d.ts" />
+/// <reference path="../../common/references/references.d.ts" />
 
 module flexportal {
   'use strict';
@@ -18,7 +18,7 @@ module flexportal {
 
 
       $scope.IndicesPromise.then(() => {
-        var filtered = $scope.Indices.filter(i => i.IndexName == $scope.IndexName);
+        var filtered = $scope.Indices.filter(i => i.indexName == $scope.IndexName);
 
         if (filtered.length != 1) {
           $scope.currentIndex = { Error: "Couldn't find index " + $scope.IndexName };

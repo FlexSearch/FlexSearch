@@ -1,9 +1,10 @@
-/// <reference path="../../references/references.d.ts" />
+/// <reference path="../../common/references/references.d.ts" />
+/// <reference path="../../common/partials/main.controller.ts" />
 
 module flexportal {
   'use strict';
 
-  export class IndexDetailedResult extends IndexResult {
+  export interface IndexDetailedResult extends API.Client.Index {
     DocCount: number
     DiskSize: number
     StatusReason: string
@@ -14,7 +15,7 @@ module flexportal {
     ChartsDataStore: { Data: number[]; Labels: string[] }[]
     Charts: any[]
     Indices: IndexDetailedResult[]
-    MemoryDetails: FlexSearch.Core.MemoryDetailsResponse
+    MemoryDetails: API.Client.MemoryDetails
     RadarChart: LinearInstance
     BarChart: LinearInstance
     IndicesPromise: ng.IPromise<void>
@@ -45,6 +46,9 @@ module flexportal {
     "219, 125, 175", "232, 112, 84", "182, 169, 31", "48, 71, 229"]
 
   export class ClusterController {
+    private indicesApi : API.Client.IndicesApi;
+    private serverApi : API.Client.ServerApi;
+    private documentsApi : API.Client.DocumentsApi;
     private static unusedColors = colors.slice();
 
     private static getNextColor() {
@@ -128,20 +132,25 @@ module flexportal {
        return prettysize;
     }
 
-    private static GetIndicesData(flexClient: FlexClient, $scope: IClusterScope) {
+    private getDocsCount(indexName) {
+        return this.documentsApi.getDocumentsHandled(indexName)
+        .then(result => result.data.totalAvailable, this.documentsApi.handleError)
+    }
+
+    private GetIndicesData($scope: IClusterScope, $q: any) {
       $scope.showProgress = true;
-      return flexClient.getIndices()
-        .then(response => $scope.Indices = <IndexDetailedResult[]>response)
+      return this.indicesApi.getAllIndexHandled()
+        .then(response => $scope.Indices = <IndexDetailedResult[]>response.data)
         
         // Display the pretty scrollbar for the list of indices
         .then(() => (<any>$('.scrollable')).perfectScrollbar())
         
         // Get the status of each index
-        .then(() => flexClient.resolveAllPromises(
-            $scope.Indices.map(i => flexClient.getIndexStatus(i.IndexName))))
+        .then(() => $q.all(
+            $scope.Indices.map(i => this.indicesApi.getStatusHandled(i.indexName))))
         // Store the indexes on the main index
         .then(statuses => {
-          $scope.Indices.forEach((idx, i) => idx.StatusReason = statuses[i]);
+          $scope.Indices.forEach((idx, i) => idx.StatusReason = (<API.Client.GetStatusResponse>statuses[i]).data.indexStatus.toString());
           var grouped = _.groupBy(statuses, s => s);
           $scope.ChartsDataStore['indices'] = {
             Data: _.map(grouped, g => g.length),
@@ -150,30 +159,31 @@ module flexportal {
         })
         
         // Get the number of documents in each index
-        .then(() => flexClient.resolveAllPromises(
-            $scope.Indices.map(i => flexClient.getDocsCount(i.IndexName))))
+        .then(() => $q.all(
+            $scope.Indices.map(i => this.documentsApi.getDocumentsHandled(i.indexName)
+                                        .then(result => result.data.totalAvailable))))
         // Store the number of documents on the main Index Store
         .then(docCounts => $scope.Indices.forEach((idx, i) => idx.DocCount = docCounts[i]))
         
         // Get the indices disk size
-        .then(() => flexClient.resolveAllPromises(
-          $scope.Indices.map(i => flexClient.getIndexSize(i.IndexName))))
+        .then(() => $q.all(
+          $scope.Indices.map(i => this.indicesApi.getIndexSizeHandled(i.indexName))))
         // Store the disk size of the indices
         .then(sizes => {
           $scope.Indices.forEach((idx, i) => idx.DiskSize = sizes[i]);
           $scope.ChartsDataStore['disk'] = {
             Data: $scope.Indices.map(i => i.DiskSize),
-            Labels: $scope.Indices.map(i => i.IndexName)
+            Labels: $scope.Indices.map(i => i.indexName)
           };
         })
         
         // Get the memory details
-        .then(() => flexClient.getMemoryDetails())
+        .then(() => this.serverApi.getMemoryDetailsHandled())
         // Store the memory details
         .then(mem => {
-          $scope.MemoryDetails = mem;
+          $scope.MemoryDetails = mem.data;
           $scope.ChartsDataStore['memory'] = {
-            Data: [mem.UsedMemory, mem.TotalMemory - mem.UsedMemory],
+            Data: [mem.data.usedMemory, mem.data.totalMemory - mem.data.usedMemory],
             Labels: ["Used", "Free"] };
         })
         
@@ -185,11 +195,11 @@ module flexportal {
           var docs = ClusterController.toPercentage(
             $scope.Indices.map(i => i.DocCount));
           var shards = ClusterController.toPercentage(
-            $scope.Indices.map(i => parseInt(i.ShardConfiguration.ShardCount)));
+            $scope.Indices.map(i => i.shardConfiguration.shardCount));
           var profiles = ClusterController.toPercentage(
-            $scope.Indices.map(i => i.SearchProfiles.length));
+            $scope.Indices.map(i => i.searchProfiles.length));
           var fields = ClusterController.toPercentage(
-            $scope.Indices.map(i => i.Fields.length));
+            $scope.Indices.map(i => i.fields.length));
           
           var radarData : LinearChartData = {
             labels: ["Size", "Shards", "Profiles", "Fields", "Docs"],
@@ -199,7 +209,7 @@ module flexportal {
             var nextColor = ClusterController.getNextColor();
             
             var ds = {
-              label: index.IndexName,
+              label: index.indexName,
               fillColor: "rgba(" + nextColor + ",0.2)",
               strokeColor: "rgba(" + nextColor + ",1)",
               data: [
@@ -220,7 +230,7 @@ module flexportal {
         // Create the Bar Chart
         .then(() => {
           var barData : LinearChartData = {
-            labels: $scope.Indices.map(i => i.IndexName),
+            labels: $scope.Indices.map(i => i.indexName),
             datasets: [{
                 label: "Number of documents",
                 fillColor: "rgba(151,187,205,0.5)",
@@ -238,9 +248,12 @@ module flexportal {
     }
     
     /* @ngInject */
-    constructor($scope: IClusterScope, $state: any, $timeout: ng.ITimeoutService, flexClient: FlexClient) {
+    constructor($scope: IClusterScope, $state: any, $timeout: ng.ITimeoutService, serverApi: API.Client.ServerApi, documentsApi : API.Client.DocumentsApi, indicesApi : API.Client.IndicesApi, $q: any) {
+        this.documentsApi = documentsApi;
+        this.serverApi = serverApi;
+        this.indicesApi = indicesApi;
       $scope.Rendering = null;
-      $scope.FlexSearchUrl = flexClient.FlexSearchUrl;
+      $scope.FlexSearchUrl = serverApi.basePath;
       $scope.prettysize = ClusterController.getPrettySizeFunc();
       // First assume we have the demo index set up
       $scope.hasDemoIndex = true; 
@@ -271,10 +284,10 @@ module flexportal {
       });
 
       // Get the data for the charts
-      $scope.IndicesPromise = ClusterController.GetIndicesData(flexClient, $scope);
+      $scope.IndicesPromise = this.GetIndicesData($scope, $q);
       
       // Check if we have a demo index or not
-      $scope.IndicesPromise.then(() => $scope.hasDemoIndex = $scope.Indices.some(i => i.IndexName == 'country'));
+      $scope.IndicesPromise.then(() => $scope.hasDemoIndex = $scope.Indices.some(i => i.indexName == 'country'));
 
       $scope.ChartsDataStore = [];
       $scope.ChartsDataStore['indices'] = {
@@ -307,7 +320,7 @@ module flexportal {
       
       $scope.setupDemoIndex = function() {
         $scope.showProgress = true;
-        flexClient.setupDemoIndex()
+        serverApi.setupDemoHandled()
         .then(() => $scope.hasDemoIndex = true)
         .then(() => $scope.showProgress = false)
         // Refresh the page
