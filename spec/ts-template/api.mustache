@@ -12,14 +12,26 @@ module {{package}} {
     */
 {{/description}}
     export class {{classname}} {
-        protected basePath = '{{basePath}}';
+        public basePath = '{{basePath}}';
+        private $bs : any;
+        private $q : any;
+        public handleError : any;
         public defaultHeaders : any = {};
 
         static $inject: string[] = ['$http', '$httpParamSerializer'];
 
-        constructor(protected $http: ng.IHttpService, protected $httpParamSerializer?: (d: any) => any, basePath?: string) {
-            if (basePath) {
-                this.basePath = basePath;
+        constructor(protected $http: ng.IHttpService, protected $httpParamSerializer?: (d: any) => any, basePath?: string, $bs?: any, $q? : any, errorHandler?: (q, bs, e) => any) {
+            if (basePath) this.basePath = basePath;
+            if ($bs) this.$bs = $bs;
+            if ($q) this.$q = $q;
+
+            if ($bs && $q && errorHandler) {
+                this.handleError =
+                    function(bs, q) {
+                        return errorHandler
+                            .bind(null, q)
+                            .bind(null, bs);
+                    } (this.$bs, this.$q);
             }
         }
 
@@ -91,6 +103,15 @@ module {{package}} {
             }
 
             return this.$http(httpRequestParams);
+        }
+
+         /**
+         * Version of the {{nickname}} method, but using the provided error handler.
+         {{#allParams}}* @param {{paramName}} {{description}}
+         {{/allParams}}*/
+        public {{nickname}}Handled ({{#allParams}}{{paramName}}{{^required}}?{{/required}}: {{{dataType}}}, {{/allParams}}extraHttpRequestParams?: any ) : ng.IPromise<{{#returnType}}@capitalize@{{{returnType}}}{{/returnType}}{{^returnType}}{}{{/returnType}}> {
+            return this.{{nickname}}({{#allParams}}{{paramName}}, {{/allParams}}extraHttpRequestParams)
+                .then(response => response.data, this.handleError);
         }
 {{/operation}}
     }
