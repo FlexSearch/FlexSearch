@@ -403,8 +403,9 @@ type IFormatter =
 
 [<Sealed>]
 type NewtonsoftJsonFormatter() = 
-    let options = new Newtonsoft.Json.JsonSerializerSettings()
-    let serializer = JsonSerializer.Create()
+    let options = new Newtonsoft.Json.JsonSerializerSettings(
+                        ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver())
+    let serializer = JsonSerializer.Create(options)
     do 
         serializer.Converters.Add(new StringEnumConverter())
         options.Converters.Add(new StringEnumConverter())
