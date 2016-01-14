@@ -1,4 +1,5 @@
-/// <reference path="../../references/references.d.ts" />
+/// <reference path="../../common/references/references.d.ts" />
+
 module flexportal {
   'use strict';
 
@@ -59,7 +60,7 @@ module flexportal {
   }
   export class SearchStudioController {
     /* @ngInject */
-    constructor($scope: ISearchStudioScope, flexClient: FlexClient) {
+    constructor($scope: ISearchStudioScope, indicesApi: API.Client.IndicesApi, searchApi: API.Client.SearchApi) {
       $scope.Criteria = "normal";
       
       // Function to update the Search query with the given value. It makes sure
@@ -157,80 +158,95 @@ module flexportal {
       
       // Get the available indices
       $scope.mainProgressBar = true;
-      flexClient.getIndices()
+      indicesApi.getAllIndexHandled()
       .then(response => {
-        $scope.Indices = response.map(i => {
+        $scope.Indices = response.data.map(i => {
           var idx = new SearchIndex();
-          idx.Name = i.IndexName;
-          idx.Fields = i.Fields.map(f => { return {
-            Name: f.FieldName,
+          idx.Name = i.indexName;
+          idx.Fields = i.fields.map(f => { return {
+            Name: f.fieldName,
             Value: undefined,
             Show: true }; 
           });
-          idx.SearchProfiles = i.SearchProfiles.map(sp => { 
+          idx.SearchProfiles = i.searchProfiles.map(sp => { 
             return {
-              Name: sp.QueryName, 
-              QueryString: sp.QueryString } });
+              Name: sp.queryName, 
+              QueryString: sp.queryString } });
           return idx; 
           });
       })
       .then(() => $scope.mainProgressBar = false)
       .then(() => (<any>$('.scrollable, .ui-grid-viewport')).perfectScrollbar());
-      console.log($scope);
     
     // Function that submits the Search test to FlexSearch
-      $scope.submit = function(index: Index) {
+      $scope.submit = function(index: SearchIndex) {
         var flexQuery = null;
         $scope.mainProgressBar = true;
         
         // Search Profile test
         if($scope.ProfileMode) {
-          // Build the Search Query String
-          var searchQueryString = index.Fields
-            .filter(f => f.Value != undefined && f.Value != "")
-            .map(f => f.Name + ":'" + f.Value + "'")
-            .join(",");
-          
-         // Colate the columns to retrieve
-         var columns = index.Fields
-            .filter(f => f.Show)
-            .map(f => f.Name);
+            // Build the Search Query String
+            var searchQueryString = index.Fields
+                .filter(f => f.Value != undefined && f.Value != "")
+                .map(f => f.Name + ":'" + f.Value + "'")
+                .join(",");
             
-         flexQuery = flexClient.submitSearchProfileTest(index.Name, 
-           searchQueryString || "_id matchall 'x'", 
-           extractSearchQueryFromACE(),
-           columns.length == 0 ? undefined : columns, $scope.RecordsToRetrieve);
+            // Colate the columns to retrieve
+            var columns = index.Fields
+                .filter(f => f.Show)
+                .map(f => f.Name);
+                
+            var spReq : API.Client.SearchProfileTestDto = {
+                searchProfile: extractSearchQueryFromACE(),
+                searchQuery: {
+                    indexName: index.Name,
+                    queryString: searchQueryString || "_id matchall 'x'",
+                    columns: columns.length == 0 ? undefined : columns,
+                    count: $scope.RecordsToRetrieve
+                } 
+            };
+            
+            flexQuery = searchApi.doSearchProfileTestHandled(spReq, index.Name); 
         }
         // Plain Search test
         else {
-         // Colate the columns to retrieve
-         var columns = index.Fields
-            .filter(f => f.Show)
-            .map(f => f.Name);
-         var query = extractSearchQueryFromACE();
-         console.log("Generated Query:", query);
-         flexQuery = flexClient.submitSearch(index.Name, query,
-           columns.length == 0 ? undefined : columns, $scope.RecordsToRetrieve,
-           undefined,
-           $scope.OrderBy,
-           $scope.OrderByDirection);
+            // Colate the columns to retrieve
+            var columns = index.Fields
+                .filter(f => f.Show)
+                .map(f => f.Name);
+            var query = extractSearchQueryFromACE();
+            console.log("Generated Query:", query);
+            
+            var sReq : API.Client.SearchQuery = {
+                indexName: index.Name,
+                queryString: query,
+                columns: columns.length == 0 ? undefined : columns,
+                count: $scope.RecordsToRetrieve,
+                orderBy: $scope.OrderBy,
+                orderByDirection: $scope.OrderByDirection && $scope.OrderByDirection.indexOf("esc") > 0 ? API.Client.SearchQuery.OrderByDirectionEnum.Descending : API.Client.SearchQuery.OrderByDirectionEnum.Ascending
+            };
+            flexQuery = searchApi.postSearchHandled(sReq, index.Name);
         }
-         
          // Get the response of the query
          flexQuery  
-           .then(result => {
+           .then((result : API.Client.SearchResultsResponse) => {
              var r = new SearchResponse();
-             r.RecordsReturned = result.RecordsReturned;
-             r.TotalAvailable = result.TotalAvailable;
+             var fieldNamesPopulated = false;
+             r.RecordsReturned = result.data.recordsReturned;
+             r.TotalAvailable = result.data.totalAvailable;
              r.FieldNames = [];
              r.Documents = [];
               
-             for (var i in result.Documents) {
-               var doc = result.Documents[i];
-               // Populate the field names if they're empty
-               if (r.FieldNames.length == 0)
-                 r.FieldNames = Object.keys(doc.Fields).map(key => new DataGrid.ColumnDef(key));
-               r.Documents.push(doc.Fields);
+             for (var i in result.data.documents) {
+               var doc = result.data.documents[i];
+               var values = [];
+               for(var name in doc.fields){
+                   // Populate the field names if they're empty
+                 if(!fieldNamesPopulated) r.FieldNames.push(new DataGrid.ColumnDef(name));
+                 values[name] = doc.fields[name];
+               } 
+               fieldNamesPopulated = true;
+               r.Documents.push(values);
              }
              
              $scope.Response = r;
