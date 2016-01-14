@@ -10,7 +10,7 @@ function isOnlyChange(event) {
 module.exports = function(options) {
   gulp.task('watch-' + options.name, ['inject-' + options.name, 'swagger-' + options.name], function () {
 
-    gulp.watch(['{' + options.src + ',' + options.common + '}' + '/*.html', 'bower.json'], ['inject']);
+    gulp.watch(['{' + options.src + ',' + options.common + '}' + '/*.html', 'bower.json'], ['inject-' + options.name]);
 
     gulp.watch([
       '{' + options.src + ',' + options.common + '}' + '/**/*.css',

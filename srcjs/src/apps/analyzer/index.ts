@@ -17,9 +17,9 @@ module flexportal {
   // Controllers
     .controller('MainCtrl', ["$scope", "$mdUtil", "$mdSidenav", "$mdBottomSheet", MainCtrl])
     .controller('ErrorController', ErrorController)
-    .controller('AnalyzerTestController', ["$scope", "flexClient", AnalyzerTestController])
+    .controller('AnalyzerTestController', ["$scope", "analyzerApi", AnalyzerTestController])
   // Services
-    .service('flexClient', ["$http", "$mdBottomSheet", "$q", "$location", function($http, $mdBottomSheet, $q, $location) { return new FlexClient($http, $mdBottomSheet, $q, $location); }])
+    .service('analyzerApi', ["$http", function($http) { return new API.Client.AnalyzerApi($http); }])
     
   // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {
@@ -30,7 +30,7 @@ module flexportal {
     
   // Route configuration
     .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider: angular.ui.IUrlRouterProvider) {
-      $urlRouterProvider.otherwise("/analyzerTest");
+      $urlRouterProvider.otherwise("/analyzertest");
 
       $stateProvider
           

@@ -876,6 +876,7 @@
     "url": "http://swagger.io"
   },
   "host": "localhost:9800",
+  "schemes": [ "http" ],
   "paths": {
     "/analyzers/{id}/analyze": {
       "post": {

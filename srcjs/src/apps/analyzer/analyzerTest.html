@@ -15,7 +15,7 @@
 	<md-content layout="column" layout-padding>
 		<form name="form" layout="row" layout-padding>
 			<md-select placeholder="Analyzer Name" ng-model="AnalyzerName" required>
-				<md-option ng-repeat="analyzer in Analyzers" value="{{analyzer.AnalyzerName}}">{{analyzer.AnalyzerName}}</md-option>
+				<md-option ng-repeat="analyzer in Analyzers" value="{{analyzer.analyzerName}}">{{analyzer.analyzerName}}</md-option>
 			</md-select>
 			<md-input-container layout-fill>
 			  <label>Text to analyze</label>
