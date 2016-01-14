@@ -5,22 +5,8 @@ var gutil = require('gulp-util');
 var wrench = require('wrench');
 var fs = require('fs');
 var path = require('path');
-
-var options = {
-    src: 'src',
-    dist: 'dist',
-    tmp: '.tmp',
-    e2e: 'e2e',
-    errorHandler: function (title) {
-        return function (err) {
-            gutil.log(gutil.colors.red('[' + title + ']'), err.toString());
-            this.emit('end');
-        };
-    },
-    wiredep: {
-        directory: 'bower_components'
-    }
-};
+var gulps = [];
+var runSequence = require('run-sequence');
 
 function getFolders(dir) {
     return fs.readdirSync(dir)
@@ -29,12 +15,20 @@ function getFolders(dir) {
         });
 }
 
+wrench.readdirSyncRecursive('./gulp')
+    .filter(function (file) {
+        return (/\.(js|coffee)$/i).test(file);
+    }).map(function (file) {
+        gulps.push(require('./gulp/' + file));
+    });
+
 // Build the SPAs for each app
-getFolders('src/apps').map(function (appFolder) {
+var taskNames = getFolders('src/apps').map(function (appFolder) {
     var relFolderPath = 'src/apps/' + appFolder;
-    gutil.log("Building app " + appFolder + "...");
     
     var options = {
+        // This name is used so that we create unique gulp task names for each app
+        name: appFolder,
         src: relFolderPath,
         common : 'src/common', 
         dist: relFolderPath + '/dist',
@@ -51,14 +45,18 @@ getFolders('src/apps').map(function (appFolder) {
         }
     };
 
-    wrench.readdirSyncRecursive('./gulp').filter(function (file) {
-        return (/\.(js|coffee)$/i).test(file);
-    }).map(function (file) {
-        require('./gulp/' + file)(options);
+    gutil.log("gulping " + appFolder);
+    gulps.map(g => g(options));
+    
+    gulp.task(appFolder, ['clean-' + appFolder], function () {
+        gutil.log("Building app " + appFolder + "...");
+        return gulp.start('build-' + appFolder);
     });
+    
+    return appFolder;
+});
 
-    gulp.task('default', ['clean'], function () {
-        gulp.start('build');
-    });
-
+gulp.task('default', function() {
+   gutil.log("Building all apps...");
+   return runSequence.apply(null, taskNames);
 });

@@ -7,7 +7,7 @@ var mkdirp = require('mkdirp');
 var $ = require('gulp-load-plugins')();
 
 module.exports = function(options) {
-  gulp.task('scripts', ['tsd:install', 'pure-libs'], function () {
+  gulp.task('scripts-' + options.name, ['tsd:install', 'pure-libs-' + options.name], function () {
     mkdirp.sync(options.tmp);
 
     return gulp.src('{' + options.src + ',' + options.common + '}' + '/**/*.ts')

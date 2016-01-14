@@ -9,7 +9,7 @@ var $ = require('gulp-load-plugins')({
 var swaggerDir = __dirname + '\\..\\..\\documentation\\';
 
 module.exports = function (options) {
-    gulp.task('partials', function () {
+    gulp.task('partials-' + options.name, function () {
         
         return gulp.src([
             options.src + '/**/*.html',
@@ -28,7 +28,7 @@ module.exports = function (options) {
             .pipe(gulp.dest(options.tmp + '/partials/'));
     });
 
-    gulp.task('html', ['inject', 'partials'], function () {
+    gulp.task('html-' + options.name, ['inject-' + options.name, 'partials-' + options.name], function () {
         var partialsInjectFile = gulp.src(options.tmp + '/partials/templateCacheHtml.js', { read: false });
         var partialsInjectOptions = {
             starttag: '<!-- inject:partials -->',
@@ -69,14 +69,14 @@ module.exports = function (options) {
 
     // Only applies for fonts from bower dependencies
     // Custom fonts are handled by the "other" task
-    gulp.task('fonts', function () {
+    gulp.task('fonts-' + options.name, function () {
         return gulp.src($.mainBowerFiles())
             .pipe($.filter('**/*.{eot,svg,ttf,woff,woff2}'))
             .pipe($.flatten())
             .pipe(gulp.dest(options.dist + '/fonts/'));
     });
 
-    gulp.task('other', function () {
+    gulp.task('other-' + options.name, function () {
         return gulp.src([
             options.src + '/**/*',
             options.common + '/**/*',
@@ -87,18 +87,18 @@ module.exports = function (options) {
     });
 
     // Task for copying over js libraries that should remain untouched
-    gulp.task('pure-libs', function () {
+    gulp.task('pure-libs-' + options.name, function () {
         return gulp.src(options.common + '/references/*')
             .pipe($.filter('process.js'))
             .pipe(gulp.dest(options.tmp + '/serve/scripts'))
             .pipe(gulp.dest(options.dist + '/scripts'))
     });
 
-    gulp.task('clean', ['tsd:purge'], function (done) {
+    gulp.task('clean-' + options.name, ['tsd:purge'], function (done) {
         $.del([options.dist + '/', options.tmp + '/'], done);
     });
 
-    gulp.task('swagger', function () {
+    gulp.task('swagger-' + options.name, function () {
         $.util.log("Building swagger...");
 
         return gulp.src(swaggerDir + "swagger.json")
@@ -107,5 +107,5 @@ module.exports = function (options) {
             .pipe(gulp.dest(options.dist))
     });
 
-    gulp.task('build', ['html', 'fonts', 'other', 'swagger']);
+    gulp.task('build-' + options.name, ['html-' + options.name, 'fonts-' + options.name, 'other-' + options.name, 'swagger-' + options.name]);
 };

@@ -8,7 +8,7 @@ function isOnlyChange(event) {
 }
 
 module.exports = function(options) {
-  gulp.task('watch', ['inject', 'swagger'], function () {
+  gulp.task('watch-' + options.name, ['inject-' + options.name, 'swagger-' + options.name], function () {
 
     gulp.watch(['{' + options.src + ',' + options.common + '}' + '/*.html', 'bower.json'], ['inject']);
 
@@ -17,9 +17,9 @@ module.exports = function(options) {
       '{' + options.src + ',' + options.common + '}' + '/**/*.scss'
     ], function(event) {
       if(isOnlyChange(event)) {
-        gulp.start('styles');
+        gulp.start('styles-' + options.name);
       } else {
-        gulp.start('inject');
+        gulp.start('inject-' + options.name);
       }
     });
 
@@ -28,9 +28,9 @@ module.exports = function(options) {
       '{' + options.src + ',' + options.common + '}' + '/**/*.ts'
     ], function(event) {
       if(isOnlyChange(event)) {
-        gulp.start('scripts');
+        gulp.start('scripts-' + options.name);
       } else {
-        gulp.start('inject');
+        gulp.start('inject-' + options.name);
       }
     });
 

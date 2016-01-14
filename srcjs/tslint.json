@@ -6,7 +6,7 @@
       ["_", "isDefined"]
     ],
     "class-name": true,
-    "comment-format": [true,
+    "comment-format": [false,
       "check-space",
       "check-lowercase"
     ],
@@ -43,7 +43,7 @@
     "no-string-literal": true,
     "no-switch-case-fall-through": true,
     "no-trailing-comma": true,
-    "no-trailing-whitespace": true,
+    "no-trailing-whitespace": false,
     "no-unused-expression": true,
     "no-unused-variable": true,
     "no-unreachable": true,
@@ -52,17 +52,16 @@
     "one-line": [true,
       "check-open-brace",
       "check-catch",
-      "check-else",
-      "check-whitespace"
+      "check-else"
     ],
-    "quotemark": [true, "single"],
+    "quotemark": [false, "single"],
     "radix": true,
     "semicolon": true,
     "triple-equals": [true, "allow-null-check"],
     "typedef": [true,
       "callSignature",
       "indexSignature",
-      "parameter",
+      
       "propertySignature",
       "variableDeclarator"
     ],
@@ -76,7 +75,7 @@
       "check-function"
     ],
     "variable-name": false,
-    "whitespace": [true,
+    "whitespace": [false,
       "check-branch",
       "check-decl",
       "check-operator",
