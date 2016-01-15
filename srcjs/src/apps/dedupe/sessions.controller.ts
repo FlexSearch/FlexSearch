@@ -1,4 +1,4 @@
-/// <reference path="../../references/references.d.ts" />
+/// <reference path="../../common/references/references.d.ts" />
 
 module flexportal {
   'use strict';
@@ -22,7 +22,7 @@ module flexportal {
 
   export class SessionsController {
     /* @ngInject */
-    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any, flexClient: FlexClient, $mdSidenav: any, $mdUtil: any) {
+    constructor($scope: ISessionsScope, $state: any, $http: ng.IHttpService, datePrinter: any, commonApi: API.Client.CommonApi, $mdSidenav: any, $mdUtil: any) {
       $scope.GridOptions = new DataGrid.GridOptions();
       $scope.GridOptions.columnDefs = [
         new DataGrid.ColumnDef("IndexName"),
@@ -92,13 +92,14 @@ module flexportal {
         $scope.ActivePage = pageNumber;
         
         // Get the sessions
-        flexClient.getSessions(
+        apiHelpers.getSessions(
           $scope.PageSize,
           ($scope.ActivePage - 1) * $scope.PageSize,
+          commonApi,
           "_lastmodified", "desc")
           .then(results => {
-            $scope.Sessions = results.Documents
-              .map(d => <Session>JSON.parse(d.Fields["sessionproperties"]))
+            $scope.Sessions = results.documents
+              .map(d => <Session>JSON.parse(d.fields["sessionproperties"]))
               .map(s => {
                 s.JobStartTimeString = datePrinter.toDateStr(s.JobStartTime);
                 s.JobEndTimeString = datePrinter.toDateStr(s.JobEndTime);
@@ -107,9 +108,9 @@ module flexportal {
 
             $scope.GridOptions.data = $scope.Sessions;
             // Set the number of pages
-            $scope.PageCount = Math.ceil(results.TotalAvailable / $scope.PageSize);
+            $scope.PageCount = Math.ceil(results.totalAvailable / $scope.PageSize);
             // Set the grid total items, otherwise it will display it to be 1
-            $scope.GridOptions.totalItems = results.TotalAvailable;
+            $scope.GridOptions.totalItems = results.totalAvailable;
             
             console.debug("Scope Sessions", $scope.Sessions);
             console.debug('Fetched page:' + pageNumber);

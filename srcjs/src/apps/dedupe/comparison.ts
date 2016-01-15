@@ -1,5 +1,7 @@
-/// <reference path="..\..\references\references.d.ts" />
-
+/// <reference path="..\..\common\references\references.d.ts" />
+/// <reference path="..\..\common\partials\main.controller.ts" />
+/// <reference path="session.controller.ts" />
+/// <reference path="index.ts" />
 
 module flexportal {
   
@@ -18,7 +20,7 @@ module flexportal {
   }
   
   interface IComparisonScope extends ISessionScope, IMainScope {
-    ActiveDuplicate: Duplicate
+    ActiveDuplicate: apiHelpers.Duplicate
     FieldNames: string []
     Source: ComparisonItem
     Targets: ComparisonItem []
@@ -48,7 +50,7 @@ module flexportal {
     }
     
     /* @ngInject */
-    constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any, flexClient: FlexClient) {
+    constructor($scope: IComparisonScope, $stateParams: any, $http: ng.IHttpService, $mdToast: any, indicesApi: API.Client.IndicesApi, commonApi : API.Client.CommonApi) {
       // Function to check if two field values from source vs target are equal
       $scope.areEqual = function(fieldNumber, targetNumber) {
         return $scope.Source.Values[fieldNumber] == $scope.Targets[targetNumber].Values[fieldNumber];
@@ -108,7 +110,7 @@ module flexportal {
             if(t.TargetId == masterTarget.Id) t.TrueDuplicate = true;
           });
           
-          flexClient.updateDuplicate(duplicate)
+          apiHelpers.updateDuplicate(duplicate, commonApi)
           .then(function() {
             $mdToast.show(
               $mdToast.simple()
@@ -140,7 +142,7 @@ module flexportal {
         }
         duplicate.SourceStatus = "1";
         
-        flexClient.updateDuplicate(duplicate)
+        apiHelpers.updateDuplicate(duplicate, commonApi)
         .then(function() {
           $mdToast.show(
             $mdToast.simple()
@@ -156,7 +158,7 @@ module flexportal {
       };
       
       // Get the duplicate that needs to be displayed
-      flexClient.getDuplicateBySourceId($stateParams.sessionId, $stateParams.sourceId)
+      apiHelpers.getDuplicateBySourceId($stateParams.sessionId, $stateParams.sourceId, commonApi)
       .then(document => {
         if(document == null) { $scope.showError("Couldn't find duplicate"); return; }
         
@@ -170,7 +172,7 @@ module flexportal {
             var dupRecs = [$scope.ActiveDuplicate.SourceRecordId] 
               .concat($scope.ActiveDuplicate.Targets.map(t => t.TargetRecordId));
               
-            flexClient.getRecordsByIds(session.IndexName, dupRecs) 
+            apiHelpers.getRecordsByIds(session.IndexName, dupRecs, commonApi) 
             .then(documents => {
               // Populate the FieldNames
               $scope.FieldNames = Object.keys(documents[0]);

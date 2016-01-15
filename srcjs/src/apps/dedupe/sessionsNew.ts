@@ -1,4 +1,4 @@
-/// <reference path="../../references/references.d.ts" />
+/// <reference path="../../common/references/references.d.ts" />
 
 module flexportal {
   'use strict';
@@ -25,7 +25,7 @@ module flexportal {
 
   export class SessionsNewController {
     /* @ngInject */
-    constructor($scope: ISessionsNewScope, flexClient: FlexClient, $mdToast: any, $state: any) {
+    constructor($scope: ISessionsNewScope, commonApi: API.Client.CommonApi, indicesApi : API.Client.IndicesApi, $mdToast: any, $state: any) {
       // Display the frame
       $('md-whiteframe.new-session').show();
       
@@ -34,16 +34,16 @@ module flexportal {
       $scope.SelectionQuery = "_id matchall '*'";
       
       // Get the available indices
-      flexClient.getIndices()
+      indicesApi.getAllIndexHandled()
       .then(response => {
-        $scope.Indices = response.map(i => {
+        $scope.Indices = response.data.map(i => {
           var idx = new Index();
-          idx.Name = i.IndexName;
-          idx.Fields = i.Fields.map(f => f.FieldName);
-          idx.SearchProfiles = i.SearchProfiles.map(sp => { 
+          idx.Name = i.indexName;
+          idx.Fields = i.fields.map(f => f.fieldName);
+          idx.SearchProfiles = i.searchProfiles.map(sp => { 
             return {
-              Name: sp.QueryName, 
-              QueryString: sp.QueryString } });
+              Name: sp.queryName, 
+              QueryString: sp.queryString } });
           return idx; 
           });
       });
@@ -53,12 +53,13 @@ module flexportal {
         progress.show();
         
         var index = $scope.Indices[$scope.IndexNumber];
-        flexClient.submitDuplicateDetection (
+        apiHelpers.submitDuplicateDetection (
           index.Name,
           index.SearchProfiles[$scope.ProfileNumber].Name,
           $scope.FieldName,
           $scope.SelectionQuery,
           $scope.FileName,
+          commonApi,
           $scope.ThreadCount,
           $scope.MaxRecordsToScan,
           $scope.MaxDupsToReturn

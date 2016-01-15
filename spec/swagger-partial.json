@@ -1156,7 +1156,7 @@
         }
       },
       "post": {
-        "tags": [ "search" ],
+        "tags": [ "search", "common" ],
         "summary": "Search and index",
         "description": "Search across the index for documents using SQL like query syntax.\n\n<div class= \"note\">\nAny parameter passed as part of query string takes precedence over the same\nparameter in the request body.\n</div>\n\nRefer to the search DSL section to learn more about FlexSearch's querying capability.\n",
         "operationId": "postSearch",

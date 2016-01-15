@@ -1,16 +1,11 @@
-/// <reference path="..\..\references\references.d.ts" />
+/// <reference path="..\..\common\references\references.d.ts" />
 
 module flexportal {
     'use strict';
-
-    import Session = FlexSearch.DuplicateDetection.Session;
-    import TargetRecord = FlexSearch.DuplicateDetection.TargetRecord;
     
-    export class Duplicate extends FlexSearch.DuplicateDetection.SourceRecord {
-        Targets: TargetRecord []    
-        SourceStatusName: any
-        FlexSearchId: string
-    }
+    type Duplicate = apiHelpers.Duplicate
+    type Session = apiHelpers.Session
+    type TargetRecord = apiHelpers.TargetRecord
     
     export interface ISessionScope extends ng.IScope, IMainScope {
         duplicates: Duplicate[]
@@ -33,26 +28,26 @@ module flexportal {
         id: string
     }
 
-    export function fromDocumentToDuplicate(d: FlexSearch.Core.DocumentDto) {
-        var dup = new Duplicate();
-        dup.FlexSearchId = d.Id;
-        dup.SessionId = d.Fields["sessionid"];
-        dup.SourceId = d.Fields["sourceid"];
-        dup.SourceRecordId = d.Fields["sourcerecordid"];
-        dup.TotalDupes = d.Fields["totaldupesfound"];
-        dup.SourceContent = d.Fields["sourcecontent"];
-        dup.SourceStatus = d.Fields["sourcestatus"];
-        dup.Notes = d.Fields["notes"];
+    export function fromDocumentToDuplicate(d: API.Client.Document) {
+        var dup = new apiHelpers.Duplicate();
+        dup.FlexSearchId = d.id;
+        dup.SessionId = d.fields["sessionid"];
+        dup.SourceId = d.fields["sourceid"];
+        dup.SourceRecordId = d.fields["sourcerecordid"];
+        dup.TotalDupes = parseInt(d.fields["totaldupesfound"]);
+        dup.SourceContent = d.fields["sourcecontent"];
+        dup.SourceStatus = d.fields["sourcestatus"];
+        dup.Notes = d.fields["notes"];
         dup.SourceStatusName = toSourceStatusName(parseInt(dup.SourceStatus));
-        dup.SourceDisplayName = d.Fields["sourcedisplayname"];
-        dup.Targets = <TargetRecord[]>JSON.parse(d.Fields["targetrecords"]);
+        dup.SourceDisplayName = d.fields["sourcedisplayname"];
+        dup.Targets = <TargetRecord[]>JSON.parse(d.fields["targetrecords"]);
         
         return dup;
     }
 
     export class SessionController {
         /* @ngInject */
-        constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any, flexClient: FlexClient) {
+        constructor($scope: ISessionScope, $stateParams: any, $http: ng.IHttpService, $state: any, datePrinter: any, commonApi: API.Client.CommonApi) {
             var sessionId = $stateParams.sessionId;
             $scope.ActivePage = 1;
             $scope.PageSize = 50;
@@ -68,9 +63,9 @@ module flexportal {
             // Get the Session Properties
            (function(sId) {
                 // Store the promise on the $scope to be accessed by child controllers
-                $scope.sessionPromise = flexClient.getSessionBySessionId(sId)
+                $scope.sessionPromise = apiHelpers.getSessionBySessionId(sId, commonApi)
                 .then(document => {
-                    $scope.session = <Session>JSON.parse(document.Fields["sessionproperties"]);
+                    $scope.session = <Session>JSON.parse(document.fields["sessionproperties"]);
                       
                     // Display the session details on the top toolbar
                     $scope.title = 
@@ -94,20 +89,21 @@ module flexportal {
                 // Get the Duplicates
                 (function(sId) {
                     // Store the promise on the $scope to make it accessible by child controllers
-                    $scope.duplicatesPromise = flexClient.getDuplicatesFromSession(
+                    $scope.duplicatesPromise = apiHelpers.getDuplicatesFromSession(
                         sId,
                         $scope.PageSize,
                         ($scope.ActivePage - 1) * $scope.PageSize,
+                        commonApi,
                         "sourcestatus"
                     ) 
                     .then(results => {
-                        $scope.duplicates = results.Documents.map(fromDocumentToDuplicate);
+                        $scope.duplicates = results.documents.map(fromDocumentToDuplicate);
                         
                         // Set the total number of Duplicates    
-                        $scope.DupesCount = results.TotalAvailable;
+                        $scope.DupesCount = results.totalAvailable;
                         
                         // Set the number of pages
-                        $scope.PageCount = Math.ceil(results.TotalAvailable / $scope.PageSize);
+                        $scope.PageCount = Math.ceil(results.totalAvailable / $scope.PageSize);
                             
                         // Hide the progress bar
                         progress.hide();
