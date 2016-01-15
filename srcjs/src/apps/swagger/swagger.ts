@@ -11,10 +11,10 @@ module flexportal {
 
   export class SwaggerController {
     /* @ngInject */
-    constructor($scope: ISwaggerScope, flexClient: FlexClient) {
+    constructor($scope: ISwaggerScope, commonApi: API.Client.CommonApi) {
       // Modify the URL so that it uses the base URL in the browser
       $scope.transformFunction = function(options) {
-        options.url = options.url.replace(new RegExp("http[s]?:\/\/[^:]+:[0-9]+"), flexClient.FlexSearchUrl);
+        options.url = options.url.replace(new RegExp("http[s]?:\/\/[^:]+:[0-9]+"), commonApi.basePath);
       };
       
       $scope.swaggerUrl = "swagger.json";

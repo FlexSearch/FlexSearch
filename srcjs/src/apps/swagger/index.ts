@@ -19,7 +19,7 @@ module flexportal {
     .controller('ErrorController', ErrorController)
     .controller('SwaggerController', SwaggerController)
   // Services
-    .service('flexClient', ["$http", "$mdBottomSheet", "$q", "$location", function($http, $mdBottomSheet, $q, $location) { return new FlexClient($http, $mdBottomSheet, $q, $location); }])
+    .service('commonApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.CommonApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
     
   // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {
@@ -45,7 +45,7 @@ module flexportal {
           url: "^/swagger",
           parent: 'main',
           controller: 'SwaggerController',
-          templateUrl: "app/views/swagger/swagger.html"
+          templateUrl: "swagger.html"
         })
     });
 }
