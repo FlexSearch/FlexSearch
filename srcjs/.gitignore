@@ -6,4 +6,4 @@ dist/
 typings/
 npm-debug.log
 .vscode/
-src/**/swagger.json
+swagger.json

@@ -6,11 +6,11 @@ var $ = require('gulp-load-plugins')({
     pattern: ['gulp-*', 'main-bower-files', 'uglify-save-license', 'del']
 });
 
-var swaggerDir = __dirname + '\\..\\..\\documentation\\';
+var swaggerDir = __dirname + '\\..\\..\\spec\\';
 
 module.exports = function (options) {
     gulp.task('partials-' + options.name, function () {
-        
+
         return gulp.src([
             options.src + '/**/*.html',
             options.common + '/**/*.html',
@@ -99,12 +99,15 @@ module.exports = function (options) {
     });
 
     gulp.task('swagger-' + options.name, function () {
-        $.util.log("Building swagger...");
-
-        return gulp.src(swaggerDir + "swagger.json")
-            .pipe(gulp.dest(options.src))
-            .pipe(gulp.dest(options.tmp))
-            .pipe(gulp.dest(options.dist))
+        // Swagger file is only needed for the swagger module 
+        if (options.name == 'swagger') {
+            // TODO replace swagger-partial with swagger-full
+            return gulp.src(swaggerDir + "swagger-partial.json")
+                .pipe($.rename('swagger.json'))
+                .pipe(gulp.dest(options.src))
+                .pipe(gulp.dest(options.tmp))
+                .pipe(gulp.dest(options.dist))
+        }
     });
 
     gulp.task('build-' + options.name, ['html-' + options.name, 'fonts-' + options.name, 'other-' + options.name, 'swagger-' + options.name]);
