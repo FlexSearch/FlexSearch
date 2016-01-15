@@ -1,0 +1,6 @@
+{
+    "title": "Swagger UI",
+    "description": "FlexSearch uses Swagger specification to document its REST API. From here you can access the Swagger UI and explore the API.",
+    "version": 0.5,
+    "url": "swagger"
+}

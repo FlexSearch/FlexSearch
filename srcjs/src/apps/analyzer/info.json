@@ -1,0 +1,6 @@
+{
+    "title": "Analysis tool",
+    "description": "This tool can be used to understand the behaviour of analyzers on input text. This will show the output data from FlexSearch analysis chain.",
+    "version": 0.5,
+    "url": "analyzertest"
+}

@@ -1,0 +1,6 @@
+{
+    "title": "Dashboard",
+    "description": "Quick overview of all the indices and settings present in the cluster.",
+    "version": 0.5,
+    "url": "dashboard"
+}
