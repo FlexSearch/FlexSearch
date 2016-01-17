@@ -40,6 +40,21 @@ open System.Linq
 open java.io
 open java.util
 
+[<AutoOpen>]
+module Mapping =
+    // type mappings to avoid name conflict
+    type LuceneAnalyzer = FlexLucene.Analysis.Analyzer
+
+    type LuceneDocument = FlexLucene.Document.Document
+
+    type LuceneField = FlexLucene.Document.Field
+
+    type LuceneFieldType = FlexLucene.Document.FieldType
+
+    type LuceneSimilarity = FlexLucene.Search.Similarities.Similarity
+
+    type LuceneTextField = FlexLucene.Document.TextField
+
 /// Determines whether it's an infinite value and if it's minimum or maximum
 type Infinite = 
     | MinInfinite
