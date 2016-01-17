@@ -358,6 +358,11 @@
           "enum": [ "Int", "Double", "ExactText", "Text", "Highlight", "Bool", "Date", "DateTime", "Custom", "Stored", "Long" ],
           "default": "Text"
         },
+        "fieldProperty": {
+          "description": "Field Properties",
+          "type": "string",
+          "enum": ["Indexed", "Tokenized", "Stored", "OmitNorms", "OmitTfPostions", "StoreTermVectors", "StoreTermPositions", "StoreTermOffsets", "Required", "OmitPositions", "StoreOffsets", "DocValues", "Sorted", "StoreTermPayloads"] 
+        },
         "index": {
           "default": true,
           "description": "Signifies if a field should be indexed. A field can only be stored without indexing.",
