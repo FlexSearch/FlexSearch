@@ -55,8 +55,6 @@ type BasicDataType =
 [<Interface>]
 type IField = 
     
-    /// Signifies if a field is represented using multiple fields in the index
-    abstract IsMultiField : bool
     
     abstract Suffix : string option
     abstract SubTypes : IField [] option
@@ -202,6 +200,9 @@ module Field =
     /// Returns the Sort field associated with the field
     let sortField (schema : FieldSchema) = schema.Field.SortFieldType
 
+    /// Signifies if a field is represented using multiple fields in the index
+    let hasSubType (field : IField) = field.SubTypes.IsSome
+
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TypeIndentity = 
     /// Generate the identity value from the given array
@@ -237,7 +238,6 @@ module IntFieldExtensions =
 type IntField() = 
     static member Default = new IntField() :> IField
     interface IField with
-        member __.IsMultiField = false
         member __.FieldType = FlexSearch.Api.Constants.FieldType.Int
         member __.LuceneFieldType = IntFieldExtensions.LuceneFieldType
         member __.SortFieldType = IntFieldExtensions.SortFieldType
