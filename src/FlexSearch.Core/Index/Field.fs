@@ -53,22 +53,32 @@ type BasicDataType =
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
 /// instance could be cachced. Any Index specific information shouls go to FieldSchema
-[<Interface>]
-type IField = 
-    
-    
+[<AbstractClass>]
+type FieldBase() = 
     abstract Suffix : string option
-    abstract SubTypes : IField [] option
+    abstract SubTypes : FieldBase [] option
     abstract FieldType : FlexSearch.Api.Constants.FieldType
     abstract LuceneFieldType : LuceneFieldType
-    abstract SortFieldType : SortFieldType option
+    abstract SortFieldType : SortFieldType
     abstract DefaultStringValue : string
-    abstract ToInternal : string -> BasicDataType
+    abstract DefaultBasicValue : BasicDataType
+    abstract ToInternal : fieldName:string -> fieldValue:string -> BasicDataType
     abstract ToExternal : fieldName:string -> fieldValue:string -> string
-    abstract Validate : fieldName:string -> fieldValue:string -> BasicDataType option
-    abstract DefaultValue : BasicDataType
     abstract CreateFieldTemplate : schemaName:string -> generateDocValue:bool -> FieldTemplate
     abstract UpdateFieldTemplate : fieldName:string -> document:Dictionary<string, string> -> FieldTemplate -> unit
+
+[<AbstractClass>]
+type BasicFieldBase<'T>(fieldType, luceneFieldType, sortFieldType, defaultValueString) = 
+    inherit FieldBase()
+    abstract DefaultValue : 'T
+    override __.Suffix = None
+    override __.SubTypes = None
+    override __.FieldType = fieldType
+    override __.LuceneFieldType = luceneFieldType
+    override __.DefaultStringValue = defaultValueString
+    override __.SortFieldType = SortFieldType.SCORE
+    override __.ToExternal (fieldName : string) (value : string) = value
+    abstract Validate : fieldName:string -> fieldValue:string -> 'T
 
 /// Represents a field in an Index.
 type FieldSchema = 
@@ -76,7 +86,7 @@ type FieldSchema =
       FieldName : string
       // Signifies the position of the field in the index
       Ordinal : int
-      Field : IField
+      Field : FieldBase
       Analyzers : FieldAnalyzers option
       Indentity : FieldTypeIndentity
       Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option }
@@ -88,28 +98,29 @@ type FieldCollection() =
     member this.TryGetValue(key : string) = this.Dictionary.TryGetValue(key)
     member this.ReadOnlyDictionary = new ReadOnlyDictionary<string, FieldSchema>(this.Dictionary)
 
-module LuceneFieldHelpers = 
+/// Helpers for creating Lucene field types
+[<RequireQualifiedAccess>]
+module CreateField = 
     /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
     /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
     /// intend to use for sorting or access through the field cache.
-    let getStringField (fieldName, value : string, store : FieldStore) = 
-        new StringField(fieldName, value, store) :> LuceneField
+    let string fieldName = new StringField(fieldName, Constants.StringDefaultValue, FieldStore.YES) :> LuceneField
     
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
-    let getTextField (fieldName, value, store) = new TextField(fieldName, value, store) :> LuceneField
+    let text fieldName = new TextField(fieldName, Constants.StringDefaultValue, FieldStore.YES) :> LuceneField
     
-    let getLongField (fieldName, value : int64, store : FieldStore) = 
-        new LongField(fieldName, value, store) :> LuceneField
-    let getIntField (fieldName, value : int32, store : FieldStore) = 
-        new IntField(fieldName, value, store) :> LuceneField
-    let getDoubleField (fieldName, value : float, store : FieldStore) = 
-        new DoubleField(fieldName, value, store) :> LuceneField
-    let getFloatField (fieldName, value : float32, store : FieldStore) = 
-        new FloatField(fieldName, value, store) :> LuceneField
-    let getStoredField (fieldName, value : string) = new StoredField(fieldName, value) :> LuceneField
-    let getBinaryField (fieldName) = new StoredField(fieldName, [||]) :> LuceneField
-    let getField (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
+    let long fieldName = new LongField(fieldName, 0L, FieldStore.YES) :> LuceneField
+    let longDV fieldName = new NumericDocValuesField(fieldName, 0L) :> LuceneField
+    let int fieldName = new IntField(fieldName, 0, FieldStore.YES) :> LuceneField
+    let intDV fieldName = new NumericDocValuesField(fieldName, 0L) :> LuceneField
+    let double fieldName = new DoubleField(fieldName, 0.0, FieldStore.YES) :> LuceneField
+    let doubleDV fieldName = new DoubleDocValuesField(fieldName, 0.0) :> LuceneField
+    let float fieldName = new FloatField(fieldName, float32 0.0, FieldStore.YES) :> LuceneField
+    let floatDV fieldName = new FloatDocValuesField(fieldName, float32 0.0) :> LuceneField
+    let stored fieldName = new StoredField(fieldName, Constants.StringDefaultValue) :> LuceneField
+    let binary fieldName = new StoredField(fieldName, [||]) :> LuceneField
+    let custom (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
         new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
 
@@ -202,9 +213,9 @@ module Field =
     
     /// Returns the Sort field associated with the field
     let sortField (schema : FieldSchema) = schema.Field.SortFieldType
-
+    
     /// Signifies if a field is represented using multiple fields in the index
-    let hasSubType (field : IField) = field.SubTypes.IsSome
+    let hasSubType (field : FieldBase) = field.SubTypes.IsSome
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TypeIndentity = 
@@ -230,167 +241,110 @@ module TypeIndentity =
         if fieldType.StoreTermVectorPayloads() then properties.Add(Field.StoreTermPayloads)
         properties.ToArray() |> generateIdentity
 
-module IntFieldExtensions = 
-    let Properties = TypeIndentity.createFromFieldType (IntField.TYPE_STORED)
-    let LuceneFieldType = IntField.TYPE_STORED
-    let SortFieldType = Some <| SortFieldType.INT
-    let Analyzers = None
-    let DefaultValue = 0
-    let DefaultStringvalue = "0"
+type IntField() as self = 
+    inherit BasicFieldBase<Int32>(FieldType.Int, IntField.TYPE_STORED, SortFieldType.INT, "0")
+    static member Instance = new IntField() :> FieldBase
+    override __.DefaultValue = Convert.ToInt32 self.DefaultStringValue
+    override __.DefaultBasicValue = Convert.ToInt32 self.DefaultStringValue |> Integer
+    override __.Validate (fieldName : string) (value : string) = pInt self.DefaultValue value
+    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Integer
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
+        { Fields = [| CreateField.int schemaName |]
+          DocValues = 
+              if generateDV then Some <| [| CreateField.intDV schemaName |]
+              else None }
+    
+    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
+             (template : FieldTemplate) = 
+        let value = 
+            match document.TryGetValue(fieldName) with
+            | true, v -> this.Validate fieldName v
+            | _ -> self.DefaultValue
+        template.Fields.[0].SetIntValue(value)
+        if template.DocValues.IsSome then 
+            // Numeric doc values can only be saved as Int64 
+            template.DocValues.Value.[0].SetLongValue(int64 value)
 
-type IntField() = 
-    static member Default = new IntField() :> IField
-    interface IField with
-        member __.FieldType = FlexSearch.Api.Constants.FieldType.Int
-        member __.LuceneFieldType = IntFieldExtensions.LuceneFieldType
-        member __.SortFieldType = IntFieldExtensions.SortFieldType
-        member __.SubTypes = None
-        member __.Suffix = None
-        member __.DefaultValue = Integer IntFieldExtensions.DefaultValue
-        member __.DefaultStringValue = IntFieldExtensions.DefaultStringvalue
-        member __.ToInternal(value : string) = pInt IntFieldExtensions.DefaultValue value |> Integer
-        member __.ToExternal (fieldName : string) (value : string) = value
-        member __.Validate (fieldName : string) (value : string) = 
-            pInt IntFieldExtensions.DefaultValue value
-            |> Integer
-            |> Some
-        member __.CreateFieldTemplate(schemaName: string) (generateDocValues : bool) = 
-                let docValues = 
-                    if generateDocValues then 
-                        Some <| [| (new NumericDocValuesField(schemaName, 0L) :> LuceneField) |]
-                    else
-                        None
-                { Fields = [| LuceneFieldHelpers.getIntField(schemaName, IntFieldExtensions.DefaultValue, FieldStore.YES) |]
-                  DocValues = docValues }
-        member __.UpdateFieldTemplate (fieldName:string) (document:Dictionary<string, string>) (template:FieldTemplate) = 
-            let value =
-                match document.TryGetValue(fieldName) with
-                | true, v -> pInt IntFieldExtensions.DefaultValue v
-                | _ -> IntFieldExtensions.DefaultValue
-            template.Fields.[0].SetIntValue(value)
-            if template.DocValues.IsSome then
-                // Numeric doc values can only be saved as Int64 
-                template.DocValues.Value.[0].SetLongValue(int64 value)
+type DoubleField() as self = 
+    inherit BasicFieldBase<Double>(FieldType.Double, DoubleField.TYPE_STORED, SortFieldType.DOUBLE, "0.0")
+    static member Instance = new DoubleField() :> FieldBase
+    override __.DefaultValue = Convert.ToDouble self.DefaultStringValue
+    override __.DefaultBasicValue = Convert.ToDouble self.DefaultStringValue |> Double
+    override __.Validate (fieldName : string) (value : string) = pDouble self.DefaultValue value
+    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Double
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
+        { Fields = [| CreateField.double schemaName |]
+          DocValues = 
+              if generateDocValues then Some <| [| CreateField.doubleDV schemaName |]
+              else None }
+    
+    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
+             (template : FieldTemplate) = 
+        let value = 
+            match document.TryGetValue(fieldName) with
+            | true, v -> this.Validate fieldName v
+            | _ -> self.DefaultValue
+        template.Fields.[0].SetDoubleValue(value)
+        if template.DocValues.IsSome then template.DocValues.Value.[0].SetDoubleValue(value)
 
-module DoubleFieldExtensions = 
-    let Properties = TypeIndentity.createFromFieldType (DoubleField.TYPE_STORED)
-    let LuceneFieldType = DoubleField.TYPE_STORED
-    let SortFieldType = Some <| SortFieldType.DOUBLE
-    let Analyzers = None
-    let DefaultValue = 0.0
-    let DefaultStringvalue = "0.0"
+type FloatField() as self = 
+    inherit BasicFieldBase<float32>(FieldType.Float, FloatField.TYPE_STORED, SortFieldType.FLOAT, "0.0")
+    static member Instance = new FloatField() :> FieldBase
+    override __.DefaultValue = Convert.ToSingle self.DefaultStringValue
+    override __.DefaultBasicValue = Convert.ToSingle self.DefaultStringValue |> Float
+    override __.Validate (fieldName : string) (value : string) = pFloat self.DefaultValue value
+    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Float
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
+        { Fields = [| CreateField.float schemaName |]
+          DocValues = 
+              if generateDocValues then Some <| [| CreateField.floatDV schemaName |]
+              else None }
+    
+    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
+             (template : FieldTemplate) = 
+        let value = 
+            match document.TryGetValue(fieldName) with
+            | true, v -> this.Validate fieldName v
+            | _ -> self.DefaultValue
+        template.Fields.[0].SetFloatValue(value)
+        if template.DocValues.IsSome then template.DocValues.Value.[0].SetFloatValue(value)
 
-type DoubleField() = 
-    static member Default = new DoubleField() :> IField
-    interface IField with
-        member __.FieldType = FlexSearch.Api.Constants.FieldType.Double
-        member __.LuceneFieldType = DoubleFieldExtensions.LuceneFieldType
-        member __.SortFieldType = DoubleFieldExtensions.SortFieldType
-        member __.SubTypes = None
-        member __.Suffix = None
-        member __.DefaultValue = Double DoubleFieldExtensions.DefaultValue
-        member __.DefaultStringValue = DoubleFieldExtensions.DefaultStringvalue
-        member __.ToInternal(value : string) = pDouble DoubleFieldExtensions.DefaultValue value |> Double
-        member __.ToExternal (fieldName : string) (value : string) = value
-        member __.Validate (fieldName : string) (value : string) = 
-            pDouble DoubleFieldExtensions.DefaultValue value
-            |> Double
-            |> Some
-        member __.CreateFieldTemplate(schemaName: string) (generateDocValues : bool) = 
-                let docValues = 
-                    if generateDocValues then 
-                        Some <| [| (new DoubleDocValuesField(schemaName, DoubleFieldExtensions.DefaultValue) :> LuceneField) |]
-                    else
-                        None
-                { Fields = [| LuceneFieldHelpers.getDoubleField(schemaName, DoubleFieldExtensions.DefaultValue, FieldStore.YES) |]
-                  DocValues = docValues }
-        member __.UpdateFieldTemplate (fieldName:string) (document:Dictionary<string, string>) (template:FieldTemplate) =
-            let value =
-                match document.TryGetValue(fieldName) with
-                | true, v -> pDouble DoubleFieldExtensions.DefaultValue v
-                | _ -> DoubleFieldExtensions.DefaultValue
-            template.Fields.[0].SetDoubleValue(value)
-            if template.DocValues.IsSome then
-                template.DocValues.Value.[0].SetDoubleValue(value)
+type LongField(stringDefaultValue) as self = 
+    inherit BasicFieldBase<Int64>(FieldType.Long, LongField.TYPE_STORED, SortFieldType.LONG, stringDefaultValue)
+    static member Instance = new LongField("0") :> FieldBase
+    override __.DefaultValue = Convert.ToInt64 self.DefaultStringValue
+    override __.DefaultBasicValue = Convert.ToInt64 self.DefaultStringValue |> Long
+    override __.Validate (fieldName : string) (value : string) = pLong self.DefaultValue value
+    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Long
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
+        { Fields = [| CreateField.long schemaName |]
+          DocValues = 
+              if generateDocValues then Some <| [| CreateField.longDV schemaName |]
+              else None }
+    
+    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
+             (template : FieldTemplate) = 
+        let value = 
+            match document.TryGetValue(fieldName) with
+            | true, v -> this.Validate fieldName v
+            | _ -> self.DefaultValue
+        template.Fields.[0].SetLongValue(value)
+        if template.DocValues.IsSome then template.DocValues.Value.[0].SetLongValue(value)
 
-module FloatFieldExtensions = 
-    let Properties = TypeIndentity.createFromFieldType (FloatField.TYPE_STORED)
-    let LuceneFieldType = FloatField.TYPE_STORED
-    let SortFieldType = Some <| SortFieldType.FLOAT
-    let Analyzers = None
-    let DefaultValue = float32 0.0
-    let DefaultStringvalue = "0.0"
+type DateTimeField() as self = 
+    inherit LongField("00010101000000") // Equivalent to 00:00:00.0000000, January 1, 0001, in the Gregorian calendar
+    static member Instance = new DateTimeField() :> FieldBase
+    override __.Validate (fieldName : string) (value : string) = 
+        // TODO: Implement custom validation for datetime
+        pLong self.DefaultValue value
 
-type FloatField() = 
-    static member Default = new FloatField() :> IField
-    interface IField with
-        member __.FieldType = FlexSearch.Api.Constants.FieldType.Float
-        member __.LuceneFieldType = FloatFieldExtensions.LuceneFieldType
-        member __.SortFieldType = FloatFieldExtensions.SortFieldType
-        member __.SubTypes = None
-        member __.Suffix = None
-        member __.DefaultValue = Float FloatFieldExtensions.DefaultValue
-        member __.DefaultStringValue = FloatFieldExtensions.DefaultStringvalue
-        member __.ToInternal(value : string) = pFloat FloatFieldExtensions.DefaultValue value |> Float
-        member __.ToExternal (fieldName : string) (value : string) = value
-        member __.Validate (fieldName : string) (value : string) = 
-            pFloat FloatFieldExtensions.DefaultValue value
-            |> Float
-            |> Some
-        member __.CreateFieldTemplate(schemaName: string) (generateDocValues : bool) = 
-                let docValues = 
-                    if generateDocValues then 
-                        Some <| [| (new FloatDocValuesField(schemaName, FloatFieldExtensions.DefaultValue) :> LuceneField) |]
-                    else
-                        None
-                { Fields = [| LuceneFieldHelpers.getFloatField(schemaName, FloatFieldExtensions.DefaultValue, FieldStore.YES) |]
-                  DocValues = docValues }
-        member __.UpdateFieldTemplate (fieldName:string) (document:Dictionary<string, string>) (template:FieldTemplate) =
-            let value =
-                match document.TryGetValue(fieldName) with
-                | true, v -> pFloat FloatFieldExtensions.DefaultValue v
-                | _ -> FloatFieldExtensions.DefaultValue
-            template.Fields.[0].SetFloatValue(value)
-            if template.DocValues.IsSome then
-                template.DocValues.Value.[0].SetFloatValue(value)
-
-module LongFieldExtensions = 
-    let Properties = TypeIndentity.createFromFieldType (LongField.TYPE_STORED)
-    let LuceneFieldType = LongField.TYPE_STORED
-    let SortFieldType = Some <| SortFieldType.LONG
-    let Analyzers = None
-    let DefaultValue = 0L
-    let DefaultStringvalue = "0"
-
-type LongField() = 
-    static member Default = new LongField() :> IField
-    interface IField with
-        member __.FieldType = FlexSearch.Api.Constants.FieldType.Long
-        member __.LuceneFieldType = LongFieldExtensions.LuceneFieldType
-        member __.SortFieldType = LongFieldExtensions.SortFieldType
-        member __.SubTypes = None
-        member __.Suffix = None
-        member __.DefaultValue = Long LongFieldExtensions.DefaultValue
-        member __.DefaultStringValue = LongFieldExtensions.DefaultStringvalue
-        member __.ToInternal(value : string) = pLong LongFieldExtensions.DefaultValue value |> Long
-        member __.ToExternal (fieldName : string) (value : string) = value
-        member __.Validate (fieldName : string) (value : string) = 
-            pLong LongFieldExtensions.DefaultValue value
-            |> Long
-            |> Some
-        member __.CreateFieldTemplate(schemaName: string) (generateDocValues : bool) = 
-                let docValues = 
-                    if generateDocValues then 
-                        Some <| [| (new NumericDocValuesField(schemaName, LongFieldExtensions.DefaultValue) :> LuceneField) |]
-                    else
-                        None
-                { Fields = [| LuceneFieldHelpers.getLongField(schemaName, LongFieldExtensions.DefaultValue, FieldStore.YES) |]
-                  DocValues = None }
-        member __.UpdateFieldTemplate (fieldName:string) (document:Dictionary<string, string>) (template:FieldTemplate) =
-            let value =
-                match document.TryGetValue(fieldName) with
-                | true, v -> pLong LongFieldExtensions.DefaultValue v
-                | _ -> LongFieldExtensions.DefaultValue
-            template.Fields.[0].SetLongValue(value)
-            if template.DocValues.IsSome then
-                template.DocValues.Value.[0].SetLongValue(value)
+type DateField() as self = 
+    inherit LongField("00010101") // Equivalent to January 1, 0001, in the Gregorian calendar
+    static member Instance = new DateTimeField() :> FieldBase
+    override __.Validate (fieldName : string) (value : string) = 
+        // TODO: Implement custom validation for date
+        pLong self.DefaultValue value
