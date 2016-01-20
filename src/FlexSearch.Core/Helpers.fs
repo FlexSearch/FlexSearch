@@ -272,44 +272,29 @@ module DataType =
         | _ -> None
         
     let inline pBool (failureDefault) (value : string) = 
-        if isNull value then
-            failureDefault
-        else
-            match Boolean.TryParse(value) with
-            | true, a -> a
-            | _ -> failureDefault
+        match Boolean.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
     
     let inline pLong (failureDefault) (value : string) = 
-        if isNull value then
-            failureDefault
-        else
-            match Int64.TryParse(value) with
-            | true, a -> a
-            | _ -> failureDefault
+        match Int64.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
     
     let inline pInt (failureDefault) (value : string) = 
-        if isNull value then
-            failureDefault
-        else
-            match Int32.TryParse(value) with
-            | true, a -> a
-            | _ -> failureDefault
+        match Int32.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
     
     let inline pDouble (failureDefault) (value : string) = 
-        if isNull value then
-            failureDefault
-        else
-            match Double.TryParse(value) with
-            | true, a -> a
-            | _ -> failureDefault
+        match Double.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
     
     let inline pFloat (failureDefault) (value : string) = 
-        if isNull value then
-            failureDefault
-        else
-            match Single.TryParse(value) with
-            | true, a -> a
-            | _ -> failureDefault
+        match Single.TryParse(value) with
+        | true, a -> a
+        | _ -> failureDefault
 
     /// Gets the first string of a collection of StringValues that matches the given item. 
     /// Returns null if not found
