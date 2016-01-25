@@ -28,7 +28,7 @@ module DocumentTemplate =
     /// Note: Make sure that the template is not accessed by multiple threads.
     type T = 
         { Setting : IndexSetting.T
-          TemplateFields : array<TemplateField>
+          TemplateFields : array<FieldTemplate>
           Template : LuceneDocument
           MetaDataFieldCount : int }
     
@@ -37,9 +37,9 @@ module DocumentTemplate =
     /// Create a new document template
     let create (s : IndexSetting.T) = 
         let template = new LuceneDocument()
-        let fields = new ResizeArray<TemplateField>()
+        let fields = new ResizeArray<FieldTemplate>()
         
-        let add (field : TemplateField) = 
+        let add (field : FieldTemplate) = 
             template.Add(field.LuceneField)
             if field.DocValue.IsSome then template.Add(field.DocValue.Value)
             fields.Add(field)

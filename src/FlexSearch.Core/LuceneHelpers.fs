@@ -73,7 +73,11 @@ module JavaHelpers =
     let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
     let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
     let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
-    
+    let javaInt (value : int) = new java.lang.Integer(value)
+    let javaDouble (value : double) = new java.lang.Double(value)
+    let javaLong (value : int64) = new java.lang.Long(value)
+    let javaFloat (value : float32) = new java.lang.Float(value)
+
     /// Get a new Java hashmap
     let hashMap() = new HashMap()
     

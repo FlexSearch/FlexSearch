@@ -68,15 +68,15 @@ module IndexSettingBuilder =
     
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer
-    let buildAnalyzer (fields : Field.FieldCollection, isIndexAnalyzer : bool) = 
+    let buildAnalyzer (fields : FieldCollection, isIndexAnalyzer : bool) = 
         let analyzer = new AnalyzerWrapper()
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
     let withFields (fields : Field[], analyzerService, scriptService) (build) = 
         let ic = build.Setting.IndexConfiguration
-        let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
-        let result = new Field.FieldCollection()
+        let resultLookup = new Dictionary<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
+        let result = new FieldCollection()
         // Add system fields
         MetaFields.getMetaFields (ic.UseBloomFilterForId) |> Seq.iter (fun x -> result.Add(x))
         for field in fields do
