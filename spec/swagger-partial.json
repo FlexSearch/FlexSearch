@@ -313,8 +313,8 @@
         "indexVersion": {
           "description": "Corresponds to Lucene Index version. There will always be a default codec associated with each index version.",
           "type": "string",
-          "enum": [ "Lucene_4_x_x", "Lucene_5_0_0" ],
-          "default": "Lucene_5_0_0"
+          "enum": [ "FlexSearch_1A", "FlexSearch_1B" ],
+          "default": "FlexSearch_1B"
         },
         "useBloomFilterForId": {
           "description": "Signifies if bloom filter should be used for encoding Id field.",
