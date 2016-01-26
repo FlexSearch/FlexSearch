@@ -8,12 +8,39 @@
     <meta name="viewport" content="width=device-width">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,300,700,400italic">
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- {{inject-css}} -->
 </head>
 
 <body>
     <md-content flex layout="column" layout-fill style="height:100%">
-        <!-- inject -->
-        <!-- A card will be placed for each module here -->
+        <div layout="row">
+            <div class="container" style="margin-top: 50px">
+                <div class="row">
+                    <div class="col">
+                        <div class="card medium">
+                            <div class="card-image">
+                                <img src="assets/images/material/mb-bg-fb-04.jpg">
+                                <span class="card-title black">Welcome</span>
+                            </div>
+                            <div class="card-content">
+                                <p>FlexSearch server has been successfully started. Learn more about FlexSearch by visiting
+                                    below links or access other resources available from the page.</p>
+                            </div>
+                            <div class="card-action">
+                                <button href="http://flexsearch.net/" class="md-button">Why FlexSearch?</button>
+                                <button href="http://flexsearch.net/docs/" class="md-button">Documentation</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <h1>Installed tools</h1>
+                <hr />
+                <!-- inject -->
+                <!-- A card will be placed for each module here -->
+                <!-- {{inject-cards}} -->
+            </div>
+        </div>
     </md-content>
 </body>
+
 </html>

@@ -10,7 +10,8 @@ open System.IO
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Logging.Console
 open Microsoft.Extensions.Logging.TraceSource
-    
+
+
 let version = Assembly.GetExecutingAssembly().GetName().Version.ToString()
     
 /// Header text to be displayed at the beginning of the program
@@ -82,11 +83,17 @@ let loadAllPlugins() =
             System.Reflection.Assembly.LoadFile(file) |> ignore
         with e -> Logger.Log("Error loading plug-in library.", e, MessageKeyword.Startup, MessageLevel.Warning)
     
+open FlexSearch.Server.HomepageGenerator
+let generateHomePage() =
+    match buildHomePage() with
+    | Ok() -> ()
+    | Fail(e) -> Logger.Log(e, MessageKeyword.Startup, MessageLevel.Error)
+
 /// Load all the server components and return settings
 let load() = 
     // NOTE: The order of operations below is very important 
     // It is important to initialize Listeners first otherwise logging services will not be available 
     initializeListeners()
     subscribeToUnhandledExceptions()
-    loadAllPlugins()
+    generateHomePage()
     loadSettings()

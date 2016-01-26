@@ -2,5 +2,6 @@
     "title": "Deduplication tool",
     "description": "This tool can be used to create new BDM sessions and view existing results.",
     "version": 0.5,
-    "url": "sessions"
+    "url": "sessions",
+    "imgSrc": "assets/images/material/mb-bg-fb-03.jpg" 
 }

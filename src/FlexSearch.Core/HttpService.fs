@@ -36,12 +36,12 @@ type PingHandler() =
 type GetRootHandler() = 
     inherit HttpHandlerBase<NoBody, unit>()
     
-    let filePath = Path.Combine(Constants.WebFolder, "index.html")
+    let filePath = Path.Combine(Constants.WebFolder, "home.html")
     let pageExists = filePath |> System.IO.File.Exists 
     
     override __.Process(request, _) = 
         if pageExists then
-            request.HttpContext.Response.Redirect("/portal/index.html");
+            request.HttpContext.Response.Redirect("/portal/home.html");
             NoResponse
         else
             FailureResponse(FileNotFound(filePath), NotFound)

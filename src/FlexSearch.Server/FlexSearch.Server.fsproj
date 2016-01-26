@@ -101,6 +101,7 @@
     <Content Include="LICENSE.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Compile Include="HomepageGenerator.fs" />
     <Compile Include="Startup.fs" />
     <Compile Include="WebServer.fs" />
     <Compile Include="Program.fs" />

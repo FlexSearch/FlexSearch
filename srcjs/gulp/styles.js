@@ -50,7 +50,7 @@ module.exports = function (options) {
             .pipe(browserSync.reload({ stream: true }));
 
         var css = gulp.src(options.src + '/**/*.css')
-            .pipe(gulp.dest(options.tmp + '/serve/app/' + options.name + '/'));
+            .pipe(gulp.dest(options.tmp + '/serve/app/'));
 
         return merge(scss, css);
     });

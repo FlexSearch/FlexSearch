@@ -49,7 +49,7 @@ module Helpers =
     let portalDir = rootDir <!!> "srcjs" |> printPath "Portal Directory"
     let documentationDir = rootDir <!!> "documentation" |> printPath "Docs Directory"
     let dataDir = rootDir <!!> @"documentation\docs\data" |> printPath "Data Directory"
-    let webDir = buildDir + "Web" |> printPath "Web Directory"
+    let webDir = buildDir <!!> "Web" |> printPath "Web Directory"
 
     let javaHome = Environment.GetEnvironmentVariable("JAVA_HOME") |> printPath "JAVA HOME"
 

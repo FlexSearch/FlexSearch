@@ -144,21 +144,39 @@ Target "BuildPortal" <| fun _ ->
 
 Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
-    let source = portalDir + @"\dist"
-    FileHelper.CopyRecursive source webDir true |> ignore
-    trace "Move Font files to styles folder"
-    CreateDir(webDir + @"\styles")
-    File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.ttf", webDir + @"\styles\ui-grid.ttf")
-    File.Copy(portalDir + @"\bower_components\angular-ui-grid\ui-grid.woff", webDir + @"\styles\ui-grid.woff")
+    let source = portalDir + @"\src\apps"
+    let target = webDir <!!> "apps"
+    ensureDirectory target
+    
+    // Copy the apps
+    loopDir source
+    |> Seq.iter (fun dir -> 
+        let appName = (directoryInfo dir).Name
+        trace ("Moving files for app " + appName)
+        let targetAppPath = target <!!> appName
+        ensureDirectory targetAppPath
+        FileHelper.CopyRecursive (dir <!!> "dist\\") targetAppPath true |> ignore
+        ensureDirectory(targetAppPath <!!> @"\styles")
+        File.Copy(dir <!!> @"dist\fonts\ui-grid.ttf", targetAppPath <!!> @"\styles\ui-grid.ttf", true)
+        File.Copy(portalDir <!!> @"dist\fonts\ui-grid.woff", targetAppPath <!!> @"\styles\ui-grid.woff", true))
+
+    // Copy the homepage templates
+    File.Copy(portalDir <!!> @"src\home.html", webDir <!!> "home.html")
+    File.Copy(portalDir <!!> @"src\cardTemplate.html", webDir <!!> "cardTemplate.html")
+    // Copy the assets, fonts and styles
+    ["assets"; "fonts"; "styles"]
+    |> Seq.iter (fun folder -> 
+            ensureDirectory (webDir <!!> folder)
+            FileHelper.CopyRecursive (loopDir source |> Seq.head <!!> "dist\\" + folder) (webDir <!!> folder) true |> ignore)
 
 // Documentation related
-Target "GenerateSwagger" <| fun _ ->
-    trace "Generating Swagger"
-    FileUtils.cd documentationDir
-
-    runPsScript <| File.ReadAllText "build.ps1"
-
-    FileUtils.cd @"..\src"
+//Target "GenerateSwagger" <| fun _ ->
+//    trace "Generating Swagger"
+//    FileUtils.cd documentationDir
+//
+//    runPsScript <| File.ReadAllText "build.ps1"
+//
+//    FileUtils.cd @"..\src"
 
 // Dependencies
 "Clean" 
@@ -171,8 +189,9 @@ Target "GenerateSwagger" <| fun _ ->
 ==> "Zip"
 ==> "Test"
 
-"BuildPortal"
+//"BuildPortal"
+"Clean"
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "Zip"
+RunTargetOrDefault "MovePortal"

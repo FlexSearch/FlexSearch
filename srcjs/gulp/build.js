@@ -22,8 +22,8 @@ module.exports = function (options) {
                 quotes: true
             }))
             .pipe($.angularTemplatecache('templateCacheHtml.js', {
-                module: 'flexportal',
-                root: 'app'
+                module: 'flexportal'/*,
+                root: 'app'*/
             }))
             .pipe(gulp.dest(options.tmp + '/partials/'));
     });
@@ -43,7 +43,7 @@ module.exports = function (options) {
 
         return gulp.src(options.tmp + '/serve/*.html')
             .pipe($.inject(partialsInjectFile, partialsInjectOptions))
-            .pipe(assets = $.useref.assets())
+            .pipe(assets = $.useref.assets({ searchPath: [options.tmp + '/serve', options.tmp + '/partials', options.src, options.common] }))
             .pipe($.rev())
             .pipe(jsFilter)
             .pipe($.ngAnnotate())
