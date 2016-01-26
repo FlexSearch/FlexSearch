@@ -78,9 +78,9 @@ module IndexSettingBuilder =
         let resultLookup = new Dictionary<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
         let result = new FieldCollection()
         // Add system fields
-        MetaFields.getMetaFields (ic.UseBloomFilterForId) |> Seq.iter (fun x -> result.Add(x))
+        FieldSchema.getMetaFields () |> Seq.iter (fun x -> result.Add(x))
         for field in fields do
-            let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
+            let fieldObject = returnOrFail (FieldSchema.build (field, ic, analyzerService, scriptService))
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
         // Perf: Intern all the field names in the string pool. This is done as the field names will be

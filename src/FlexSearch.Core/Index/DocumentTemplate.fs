@@ -49,7 +49,7 @@ module DocumentTemplate =
         for field in s.Fields.Skip(metaDataFields.Count()) do
             let hasDocValues = FieldSchema.hasDocValues field
             FieldSchema.hasDocValues field
-            |> field.Field.CreateTemplate field.SchemaName
+            |> field.FieldType.CreateTemplate field.SchemaName
             |> add
         { Setting = s
           TemplateFields = fields.ToArray()

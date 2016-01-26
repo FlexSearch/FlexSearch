@@ -34,12 +34,10 @@ type FieldTypeIndentity =
 type FieldSchema = 
     { SchemaName : string
       FieldName : string
-      // Signifies the position of the field in the index
-      Ordinal : int
-      Field : BasicFieldType
+      FieldType : BasicFieldType
       Analyzers : FieldAnalyzers option
       Similarity : Similarity
-      Indentity : FieldTypeIndentity
+      TypeIdentity : FieldTypeIndentity
       Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option }
 
 /// KeyedCollection wrapper for Field collections
@@ -94,13 +92,13 @@ module FieldSchema =
     let Numeric = Int + Long + Short + Float + Double
     
     /// Signifies if a field is indexed
-    let isIndexed (schema : FieldSchema) = schema.Indentity.Value &&& Indexed <> 0
+    let isIndexed (schema : FieldSchema) = schema.TypeIdentity.Value &&& Indexed <> 0
     
     /// Signifies if a field is tokenized
-    let isTokenized (schema : FieldSchema) = schema.Indentity.Value &&& Tokenized <> 0
+    let isTokenized (schema : FieldSchema) = schema.TypeIdentity.Value &&& Tokenized <> 0
     
     /// Signifies if a field is stored
-    let isStored (schema : FieldSchema) = schema.Indentity.Value &&& Stored <> 0
+    let isStored (schema : FieldSchema) = schema.TypeIdentity.Value &&& Stored <> 0
     
     /// Method to map boolean to FieldStore enum
     let store (schema : FieldSchema) = 
@@ -129,46 +127,116 @@ module FieldSchema =
     let isSearchable (schema : FieldSchema) = schema |> isIndexed
     
     /// Signifies if the field supports doc values
-    let hasDocValues (schema : FieldSchema) = schema.Indentity.Value &&& DocValues <> 0
+    let hasDocValues (schema : FieldSchema) = schema.TypeIdentity.Value &&& DocValues <> 0
     
     /// Signifies if the field allows sorting
     let allowSorting (schema : FieldSchema) = schema |> hasDocValues
     
     /// Signifies if the field is numeric
-    let isNumericField (schema : FieldSchema) = schema.Indentity.Value &&& Numeric <> 0
+    let isNumericField (schema : FieldSchema) = schema.TypeIdentity.Value &&& Numeric <> 0
     
-    /// Returns all the metadata fields that should be present in an index    
-    let getMetaFields() = 
-        [| IdField.Instance; TimeStampField.Instance; ModifyIndexField.Instance; StateField.Instance |]
-    
-    let getMetaFieldsTemplates() = 
-        let getTemplateFields (fieldType : BasicFieldType) = 
-            match fieldType with
-            | StringType(v) -> v.CreateFieldTemplate "" false
-            | LongType(v) -> v.CreateFieldTemplate "" true
-            | _ -> failwithf "Meta fields for other types are not supported."
-        getMetaFields() |> Array.map getTemplateFields
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module TypeIndentity = 
     /// Generate the identity value from the given array
     let generateIdentity (values : int []) = { Value = values |> Array.fold (|||) 0 }
     
+    type FlexField = FlexSearch.Api.Model.Field
+    
+    type FlexFieldType = FlexSearch.Api.Constants.FieldType
+    
     /// Generates the field properties identity from the Lucene Field Type
-    let createFromFieldType (fieldType : LuceneFieldType) = 
+    let createFromFieldType (fieldType : LuceneFieldType) (field : FlexField) = 
         let properties = new ResizeArray<int>()
-        if fieldType.Tokenized() then properties.Add(FieldSchema.Tokenized)
-        if fieldType.Stored() then properties.Add(FieldSchema.Stored)
-        if fieldType.OmitNorms() then properties.Add(FieldSchema.OmitNorms)
+        if fieldType.Tokenized() then properties.Add(Tokenized)
+        if fieldType.Stored() then properties.Add(Stored)
+        if fieldType.OmitNorms() then properties.Add(OmitNorms)
         let indexOptions = fieldType.IndexOptions()
         // Default is DOCS_AND_FREQS_AND_POSITIONS           
-        if indexOptions = IndexOptions.DOCS then properties.Add(FieldSchema.OmitTfPositions)
-        else if indexOptions = IndexOptions.DOCS_AND_FREQS then properties.Add(FieldSchema.OmitPositions)
+        if indexOptions = IndexOptions.DOCS then properties.Add(OmitTfPositions)
+        else if indexOptions = IndexOptions.DOCS_AND_FREQS then properties.Add(OmitPositions)
         else 
-            if indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS then 
-                properties.Add(FieldSchema.StoreOffsets)
-        if fieldType.StoreTermVectors() then properties.Add(FieldSchema.StoreTermVectors)
-        if fieldType.StoreTermVectorOffsets() then properties.Add(FieldSchema.StoreTermOffsets)
-        if fieldType.StoreTermVectorPositions() then properties.Add(FieldSchema.StoreTermPositions)
-        if fieldType.StoreTermVectorPayloads() then properties.Add(FieldSchema.StoreTermPayloads)
+            if indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS then properties.Add(StoreOffsets)
+        if fieldType.StoreTermVectors() then properties.Add(StoreTermVectors)
+        if fieldType.StoreTermVectorOffsets() then properties.Add(StoreTermOffsets)
+        if fieldType.StoreTermVectorPositions() then properties.Add(StoreTermPositions)
+        if fieldType.StoreTermVectorPayloads() then properties.Add(StoreTermPayloads)
+        if field.AllowSort then properties.Add(DocValues)
         properties.ToArray() |> generateIdentity
+    
+    /// Build a Schema field from the Field DTO
+    let build (field : FlexField) (getAnalyzer : string -> Result<LuceneAnalyzer>) 
+        (getScript : string -> Result<ComputedDelegate * string []>) = 
+        let getSource (field : FlexField) = 
+            if (isBlank field.ScriptName) then ok <| None
+            else 
+                match getScript field.ScriptName with
+                | Ok(func) -> ok <| Some(func)
+                | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
+        
+        let getFieldType (field : FlexField) = 
+            match field.FieldType with
+            | FieldType.Int -> IntField.Instance
+            | FieldType.Double -> DoubleField.Instance
+            | FieldType.Bool -> BoolField.Instance
+            | FieldType.Date -> DateField.Instance
+            | FieldType.DateTime -> DateTimeField.Instance
+            | FieldType.Long -> LongField.Instance
+            | FieldType.Stored -> StoredField.Instance
+            | FieldType.ExactText -> ExactTextField.Instance
+            | FieldType.Text -> TextField.Instance
+            | _ -> failwithf "Internal error: Unsupported FieldType"
+        
+        let getAnalyzers (field : FlexField) = 
+            maybe { 
+                // These are the only two field types which support custom analyzer
+                if field.FieldType = FieldType.Text || field.FieldType = FieldType.ExactText then 
+                    let! searchAnalyzer = getAnalyzer field.SearchAnalyzer
+                    let! indexAnalyzer = getAnalyzer field.IndexAnalyzer
+                    return Some <| { IndexAnalyzer = indexAnalyzer
+                                     SearchAnalyzer = searchAnalyzer }
+                else return None
+            }
+        
+        maybe { 
+            let! source = getSource field
+            let basicFieldType = getFieldType field
+            let! analyzers = getAnalyzers field
+            let typeIdentity = createFromFieldType (basicFieldType.LuceneFieldType()) field
+            return { FieldName = field.FieldName
+                     SchemaName = field.FieldName
+                     FieldType = basicFieldType
+                     TypeIdentity = typeIdentity
+                     Source = source
+                     Similarity = field.Similarity
+                     Analyzers = analyzers }
+        }
+    
+    ///----------------------------------------------------------------------
+    /// Meta data fields related
+    ///----------------------------------------------------------------------
+    /// Helper method to generate FieldSchema for a given meta data field
+    let generateSchemaForMetaField name basicFieldType docValues = 
+        let field = new FlexField()
+        field.AllowSort <- docValues
+        { FieldName = name
+          SchemaName = name
+          FieldType = basicFieldType
+          TypeIdentity = createFromFieldType (basicFieldType.LuceneFieldType()) field
+          Source = None
+          Similarity = FlexSearch.Api.Constants.Similarity.TFIDF
+          Analyzers = None }
+    
+    /// Returns all the meta-data fields that should be present in an index    
+    let getMetaFields = [| IdField.Instance; TimeStampField.Instance; ModifyIndexField.Instance; StateField.Instance |]
+    
+    /// Returns all the meta-data schema fields that should be present in an index    
+    let getMetaSchemaFields = 
+        [| generateSchemaForMetaField IdField.Name IdField.Instance false
+           generateSchemaForMetaField TimeStampField.Name TimeStampField.Instance true
+           generateSchemaForMetaField ModifyIndexField.Name ModifyIndexField.Instance true
+           generateSchemaForMetaField StateField.Name StateField.Instance false |]
+    
+    /// Returns all the meta-data field templates that should be present in an index    
+    let getMetaFieldsTemplates() = 
+        [| IdField.Instance.CreateTemplate "" false
+           TimeStampField.Instance.CreateTemplate "" true
+           ModifyIndexField.Instance.CreateTemplate "" true
+           StateField.Instance.CreateTemplate "" false |]

@@ -46,6 +46,16 @@ type RangeQueryProperties<'T> =
       InclusiveMinimum : bool
       InclusiveMaximum : bool }
 
+/// Interface containing all the Field related properties which are not
+/// dependent upon the type information
+[<Interface>]
+type IField = 
+    abstract LuceneFieldType : FieldType
+    abstract SortFieldType : SortFieldType
+    abstract DefaultStringValue : string
+    abstract ToExternal : option<string -> string>
+    abstract CreateFieldTemplate : schemaName:string -> generateDocValues:bool -> FieldTemplate
+
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
 /// instance could be cached. Any Index specific information should go to FieldSchema
@@ -91,6 +101,13 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     abstract GetTokens : option<string -> option<LuceneAnalyzer> -> List<string>>
     
     override __.GetTokens = None
+    interface IField with
+        member this.LuceneFieldType = this.LuceneFieldType
+        member this.SortFieldType = this.SortFieldType
+        member this.DefaultStringValue = this.DefaultStringValue
+        member this.ToExternal = this.ToExternal
+        member this.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
+            this.CreateFieldTemplate schemaName generateDocValues
 
 /// A wrapper around FieldBase which helps in maintaining strongly typed list
 /// of field.
@@ -103,13 +120,22 @@ type BasicFieldType =
     | LongType of FieldBase<int64>
     | DoubleType of FieldBase<double>
     | FloatType of FieldBase<float32>
-    member this.CreateTemplate (schemaName : string) (generateDocValues : bool) = 
+    
+    /// Helper method to cast to IField
+    member this.GetField() = 
         match this with
-        | StringType(v) -> v.CreateFieldTemplate schemaName generateDocValues
-        | IntegerType(v) -> v.CreateFieldTemplate schemaName generateDocValues
-        | LongType(v) -> v.CreateFieldTemplate schemaName generateDocValues
-        | DoubleType(v) -> v.CreateFieldTemplate schemaName generateDocValues
-        | FloatType(v) -> v.CreateFieldTemplate schemaName generateDocValues
+        | IntegerType(v) -> v :> IField
+        | LongType(v) -> v :> IField
+        | DoubleType(v) -> v :> IField
+        | FloatType(v) -> v :> IField
+        | StringType(v) -> v :> IField
+    
+    /// Helper method to access CreateFieldTemplate from the FieldBase<_>
+    member this.CreateTemplate (schemaName : string) (generateDocValues : bool) = 
+        this.GetField().CreateFieldTemplate schemaName generateDocValues
+    
+    /// Helper method to access LuceneFieldType from the FieldBase<_>
+    member this.LuceneFieldType() = this.GetField().LuceneFieldType
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]
@@ -273,13 +299,13 @@ type TextField() as self =
 /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
 /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
 /// intend to use for sorting or access through the field cache.
-type ExactText(?defaultFieldName) as self = 
+type ExactTextField(?defaultFieldName) as self = 
     inherit FieldBase<String>(StringField.TYPE_STORED, SortFieldType.SCORE, "null", defaultFieldName)
     let getRangeQuery (fieldName : string) (options : RangeQueryProperties<string>) = 
         new TermRangeQuery(fieldName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes options.Minimum), 
                            new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes options.Maxmimum), 
                            options.InclusiveMinimum, options.InclusiveMaximum) :> Query
-    static member Instance = StringType <| (new ExactText() :> FieldBase<string>)
+    static member Instance = StringType <| (new ExactTextField() :> FieldBase<string>)
     
     override this.Validate(value : string) = 
         if String.IsNullOrWhiteSpace value then this.DefaultStringValue
@@ -299,7 +325,7 @@ type ExactText(?defaultFieldName) as self =
 
 /// Field that indexes boolean values.
 type BoolField() = 
-    inherit ExactText()
+    inherit ExactTextField()
     let trueString = "true"
     let falseString = "false"
     
@@ -347,14 +373,14 @@ type TimeStampField() =
 
 /// Used for representing the id of an index
 type IdField() = 
-    inherit ExactText(IdField.Name)
+    inherit ExactTextField(IdField.Name)
     static do addToMetaFields IdField.Name
     static member Name = "_id"
     static member Instance = StringType <| (new IdField() :> FieldBase<string>)
 
 /// Used for representing the id of an index
 type StateField() = 
-    inherit ExactText(StateField.Name)
+    inherit ExactTextField(StateField.Name)
     static do addToMetaFields StateField.Name
     static member Name = "_state"
     static member Instance = StringType <| (new StateField() :> FieldBase<string>)
