@@ -355,7 +355,7 @@
         "fieldType": {
           "description": "",
           "type": "string",
-          "enum": [ "Int", "Double", "Float", "ExactText", "Text", "Highlight", "Bool", "Date", "DateTime", "Custom", "Stored", "Long" ],
+          "enum": [ "Int", "Double", "Float", "ExactText", "Text", "Bool", "Date", "DateTime", "Custom", "Stored", "Long" ],
           "default": "Text"
         },
         "fieldProperty": {
