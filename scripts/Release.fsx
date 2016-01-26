@@ -169,6 +169,10 @@ Target "MovePortal" <| fun _ ->
             ensureDirectory (webDir <!!> folder)
             FileHelper.CopyRecursive (loopDir source |> Seq.head <!!> "dist\\" + folder) (webDir <!!> folder) true |> ignore)
 
+    // Copy the Web folder from build to build-debug
+    ensureDirectory (debugDir <!!> "Web")
+    FileHelper.CopyRecursive (buildDir <!!> "Web") (debugDir <!!> "Web") true |> ignore
+
 // Documentation related
 //Target "GenerateSwagger" <| fun _ ->
 //    trace "Generating Swagger"
@@ -185,13 +189,12 @@ Target "MovePortal" <| fun _ ->
 ==> "Default" 
 ==> "MoveFiles" 
 //==> "GenerateSwagger"
-//==> "MovePortal"
+==> "MovePortal"
 ==> "Zip"
 ==> "Test"
 
-//"BuildPortal"
-"Clean"
+"BuildPortal"
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "MovePortal"
+RunTargetOrDefault "Zip"

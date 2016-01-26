@@ -44,6 +44,7 @@ module Helpers =
     let apiDir = srcDir <!!> @"FlexSearch.Api\Api" |> printPath "Api Directory" |> ensureDir
     let clientDir = srcDir <!!> @"FlexSearch.Api\Client" |> printPath "Client Directory" |> ensureDir
     let buildDir = rootDir <!!> "build" |> printPath "Build Directory"
+    let debugDir = rootDir <!!> "build-debug" |> printPath "Debug Directory"
     let testDir = rootDir <!!> "build-test" |> printPath "Test Directory"
     let deployDir = rootDir <!!> "deploy" |> printPath "Deploy Directory"
     let portalDir = rootDir <!!> "srcjs" |> printPath "Portal Directory"
