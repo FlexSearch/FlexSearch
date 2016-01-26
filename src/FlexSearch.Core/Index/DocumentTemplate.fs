@@ -32,7 +32,7 @@ module DocumentTemplate =
           Template : LuceneDocument
           MetaDataFieldCount : int }
     
-    let inline protectedFields (fieldName) = fieldName = MetaFields.IdField || fieldName = MetaFields.LastModifiedField
+    let inline protectedFields (fieldName) = fieldName = IdField.Name || fieldName = TimeStampField.Name
     
     /// Create a new document template
     let create (s : IndexSetting.T) = 
@@ -40,18 +40,17 @@ module DocumentTemplate =
         let fields = new ResizeArray<FieldTemplate>()
         
         let add (field : FieldTemplate) = 
-            template.Add(field.LuceneField)
-            if field.DocValue.IsSome then template.Add(field.DocValue.Value)
+            template.Add(field.Fields.[0])
+            if field.DocValues.IsSome then template.Add(field.DocValues.Value.[0])
             fields.Add(field)
         
-        let metaDataFields = getLuceneMetaFields()
+        let metaDataFields = FieldSchema.getMetaFieldsTemplates()
         metaDataFields |> Array.iter (fun f -> add (f))
         for field in s.Fields.Skip(metaDataFields.Count()) do
-            let docValue = 
-                if field.GenerateDocValue then Field.createDocValueField (field)
-                else None
-            add ({ LuceneField = Field.createDefaultLuceneField (field)
-                   DocValue = docValue })
+            let hasDocValues = FieldSchema.hasDocValues field
+            FieldSchema.hasDocValues field
+            |> field.Field.CreateTemplate field.SchemaName
+            |> add
         { Setting = s
           TemplateFields = fields.ToArray()
           Template = template
@@ -62,12 +61,12 @@ module DocumentTemplate =
     let updateTempate (document : Document) (modifyIndex : int64) (template : T) = 
         // Update meta fields
         // Id Field
-        template.TemplateFields.[0].LuceneField.SetStringValue(document.Id)
+        template.TemplateFields.[0].Fields.[0].SetStringValue(document.Id)
         // Timestamp fields
-        template.TemplateFields.[1].LuceneField.SetLongValue(document.TimeStamp)
-        template.TemplateFields.[1].DocValue.Value.SetLongValue(document.TimeStamp)
-        template.TemplateFields.[2].LuceneField.SetLongValue(modifyIndex)
-        template.TemplateFields.[2].DocValue.Value.SetLongValue(modifyIndex)
+        template.TemplateFields.[1].Fields.[0].SetLongValue(document.TimeStamp)
+        template.TemplateFields.[1].DocValues.Value.[0].SetLongValue(document.TimeStamp)
+        template.TemplateFields.[2].Fields.[0].SetLongValue(modifyIndex)
+        template.TemplateFields.[2].DocValues.Value.[0].SetLongValue(modifyIndex)
         // Performance of F# iter is very slow here.
         for i = template.MetaDataFieldCount to template.TemplateFields.Length - 1 do
             let field = template.Setting.Fields.[i]

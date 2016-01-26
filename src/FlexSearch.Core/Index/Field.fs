@@ -26,10 +26,6 @@ open System.Collections.Generic
 open System.Collections.ObjectModel
 open System.Text
 
-/// Uniquely represents the properties of a field Type
-type FieldTypeIndentity = 
-    { Value : int32 }
-
 /// Represents the analyzers associated with a field. By creating this abstraction
 /// we can easily create a cache able copy of it which can be shared across field types
 type FieldAnalyzers = 
@@ -96,31 +92,24 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     
     override __.GetTokens = None
 
+/// A wrapper around FieldBase which helps in maintaining strongly typed list
+/// of field.
+/// Note: Without this the only way is to cast return types to objects as it is not
+/// possible to have a list of generics with different types.  i.e List<FieldBase<'T>>
+/// where 'T is int, string etc.
 type BasicFieldType = 
     | StringType of FieldBase<string>
     | IntegerType of FieldBase<int32>
     | LongType of FieldBase<int64>
     | DoubleType of FieldBase<double>
     | FloatType of FieldBase<float32>
-
-/// Represents a field in an Index.
-type FieldSchema = 
-    { SchemaName : string
-      FieldName : string
-      // Signifies the position of the field in the index
-      Ordinal : int
-      Field : BasicFieldType
-      Analyzers : FieldAnalyzers option
-      Similarity : Similarity
-      Indentity : FieldTypeIndentity
-      Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option }
-
-/// KeyedCollection wrapper for Field collections
-type FieldCollection() = 
-    inherit KeyedCollection<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
-    override __.GetKeyForItem(t : FieldSchema) = t.FieldName
-    member this.TryGetValue(key : string) = this.Dictionary.TryGetValue(key)
-    member this.ReadOnlyDictionary = new ReadOnlyDictionary<string, FieldSchema>(this.Dictionary)
+    member this.CreateTemplate (schemaName : string) (generateDocValues : bool) = 
+        match this with
+        | StringType(v) -> v.CreateFieldTemplate schemaName generateDocValues
+        | IntegerType(v) -> v.CreateFieldTemplate schemaName generateDocValues
+        | LongType(v) -> v.CreateFieldTemplate schemaName generateDocValues
+        | DoubleType(v) -> v.CreateFieldTemplate schemaName generateDocValues
+        | FloatType(v) -> v.CreateFieldTemplate schemaName generateDocValues
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]
@@ -149,117 +138,6 @@ module CreateField =
     let custom (fieldName, value : string, template : FlexLucene.Document.FieldType) = 
         new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
-
-module Field = 
-    let powOf2 n = Math.Pow(2.0, float n) |> int
-    let mutable private count = 0
-    let private lookupDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-    let lookup (value : string) = lookupDict.TryGetValue(value)
-    
-    let private add (name : string) = 
-        let value = powOf2 count
-        lookupDict.Add(name, value)
-        count <- count + 1
-        value
-    
-    let private alias (name : string) (value : int) = 
-        lookupDict.Add(name, value)
-        value
-    
-    /// Bit values for boolean field properties.
-    /// Bit fields are also more efficient to represent in memory
-    let Indexed = add "Indexed"
-    
-    let Tokenized = add "Tokenized"
-    let Stored = add "Stored"
-    let OmitNorms = add "OmitNorms"
-    let OmitTfPositions = add "OmitTfPositions"
-    let StoreTermVectors = add "StoreTermVectors"
-    let StoreTermPositions = add "StoreTermPositions"
-    let StoreTermOffsets = add "StoreTermOffsets"
-    let MultiValued = add "MultiValued"
-    let Required = add "Required"
-    let OmitPositions = add "OmitPositions"
-    let StoreOffsets = add "StoreOffsets"
-    let DocValues = add "DocValues"
-    let Sorted = alias "Sorted" DocValues
-    let StoreTermPayloads = add "StoreTermPayloads"
-    let Binary = add "Binary"
-    let Int = add "Int"
-    let Long = add "Long"
-    let Short = add "Short"
-    let String = add "String"
-    let Float = add "Float"
-    let Double = add "Double"
-    let Numeric = Int + Long + Short + Float + Double
-    
-    /// Signifies if a field is indexed
-    let isIndexed (schema : FieldSchema) = schema.Indentity.Value &&& Indexed <> 0
-    
-    /// Signifies if a field is tokenized
-    let isTokenized (schema : FieldSchema) = schema.Indentity.Value &&& Tokenized <> 0
-    
-    /// Signifies if a field is stored
-    let isStored (schema : FieldSchema) = schema.Indentity.Value &&& Stored <> 0
-    
-    /// Method to map boolean to FieldStore enum
-    let store (schema : FieldSchema) = 
-        if schema |> isStored then FieldStore.YES
-        else FieldStore.NO
-    
-    /// Signifies if the field requires a search time analyzer
-    let requiresSearchAnalyzer (schema : FieldSchema) = schema.Analyzers.IsSome
-    
-    /// Signifies if the field requires an index time analyzer
-    let requiresIndexAnalyzer (schema : FieldSchema) = schema.Analyzers.IsSome
-    
-    /// Returns the Search analyzer associated with the field
-    let searchAnalyzer (schema : FieldSchema) = 
-        match schema.Analyzers with
-        | Some(a) -> Some(a.SearchAnalyzer)
-        | _ -> None
-    
-    /// Returns the Index analyzer associated with the field 
-    let indexAnalyzer (schema : FieldSchema) = 
-        match schema.Analyzers with
-        | Some(a) -> Some(a.IndexAnalyzer)
-        | _ -> None
-    
-    /// Signifies if the field is search-able
-    let isSearchable (schema : FieldSchema) = schema |> isIndexed
-    
-    /// Signifies if the field supports doc values
-    let hasDocValues (schema : FieldSchema) = schema.Indentity.Value &&& DocValues <> 0
-    
-    /// Signifies if the field allows sorting
-    let allowSorting (schema : FieldSchema) = schema |> hasDocValues
-    
-    /// Signifies if the field is numeric
-    let isNumericField (schema : FieldSchema) = schema.Indentity.Value &&& Numeric <> 0
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module TypeIndentity = 
-    /// Generate the identity value from the given array
-    let generateIdentity (values : int []) = { Value = values |> Array.fold (|||) 0 }
-    
-    /// Generates the field properties identity from the Lucene Field Type
-    let createFromFieldType (fieldType : LuceneFieldType) = 
-        let properties = new ResizeArray<int>()
-        if fieldType.Tokenized() then properties.Add(Field.Tokenized)
-        if fieldType.Stored() then properties.Add(Field.Stored)
-        if fieldType.OmitNorms() then properties.Add(Field.OmitNorms)
-        let indexOptions = fieldType.IndexOptions()
-        // Default is DOCS_AND_FREQS_AND_POSITIONS           
-        if indexOptions = IndexOptions.DOCS then properties.Add(Field.OmitTfPositions)
-        else if indexOptions = IndexOptions.DOCS_AND_FREQS then properties.Add(Field.OmitPositions)
-        else 
-            if indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS then 
-                properties.Add(Field.StoreOffsets)
-        if fieldType.StoreTermVectors() then properties.Add(Field.StoreTermVectors)
-        if fieldType.StoreTermVectorOffsets() then properties.Add(Field.StoreTermOffsets)
-        if fieldType.StoreTermVectorPositions() then properties.Add(Field.StoreTermPositions)
-        if fieldType.StoreTermVectorPayloads() then properties.Add(Field.StoreTermPayloads)
-        properties.ToArray() |> generateIdentity
 
 /// Field that indexes integer values for efficient range filtering and sorting.
 type IntField() = 
@@ -462,17 +340,23 @@ type StoredField() as self =
 /// time.
 /// It only supports a fixed YYYYMMDDHHMMSSfff format.
 type TimeStampField() = 
-    inherit LongField(00010101000000000L, "_timestamp")
+    inherit LongField(00010101000000000L, TimeStampField.Name)
+    static do addToMetaFields TimeStampField.Name
+    static member Name = "_timestamp"
     static member Instance = LongType <| (new TimeStampField() :> FieldBase<int64>)
 
 /// Used for representing the id of an index
 type IdField() = 
-    inherit ExactText("_id")
+    inherit ExactText(IdField.Name)
+    static do addToMetaFields IdField.Name
+    static member Name = "_id"
     static member Instance = StringType <| (new IdField() :> FieldBase<string>)
 
 /// Used for representing the id of an index
 type StateField() = 
-    inherit ExactText("_state")
+    inherit ExactText(StateField.Name)
+    static do addToMetaFields StateField.Name
+    static member Name = "_state"
     static member Instance = StringType <| (new StateField() :> FieldBase<string>)
     static member Active = "active"
     static member Inactive = "inactive"
@@ -482,5 +366,7 @@ type StateField() =
 /// a document with the higher index.
 /// This is also used for concurrency updates.
 type ModifyIndexField() = 
-    inherit LongField(0L, "_modifyindex")
+    inherit LongField(0L, ModifyIndexField.Name)
+    static do addToMetaFields ModifyIndexField.Name
+    static member Name = "_modifyindex"
     static member Instance = LongType <| (new ModifyIndexField() :> FieldBase<int64>)

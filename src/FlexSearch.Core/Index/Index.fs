@@ -38,13 +38,13 @@ open System.Diagnostics
 open System.Threading.Tasks
 
 /// This module contains all the meta data related fields used throughout the system
-[<AutoOpen>]
-module MetaFields = 
+//[<AutoOpen>]
+//module MetaFields = 
     /// Represents the ID field in an index
-    [<Literal>]
-    let IdField = "_id"
-    
-    Validators.metaFields.Add(IdField) |> ignore
+//    [<Literal>]
+//    let IdField = "_id"
+//    
+//    Validators.metaFields.Add(IdField) |> ignore
 //    
 //    let private idFieldInfo = 
 //        { Index = true
@@ -63,11 +63,11 @@ module MetaFields =
 //    
     /// Represents the date of last modification of a particular 
     /// document
-    [<Literal>]
-    let LastModifiedField = "_lastmodified"
-    
-    Validators.metaFields.Add(LastModifiedField) |> ignore
+//    [<Literal>]
+//    let LastModifiedField = "_lastmodified"
 //    
+//    Validators.metaFields.Add(LastModifiedField) |> ignore
+////    
 //    /// Field to be used by time stamp
 //    let getTimeStampField() = Field.create (LastModifiedField, FieldType.DateTime, true)
 //    
@@ -75,10 +75,10 @@ module MetaFields =
     /// the index. A document with lower modify index was created/updated before
     /// a document with the higher index.
     /// This is also used for concurrency updates.
-    [<Literal>]
-    let ModifyIndex = "_modifyindex"
-    
-    Validators.metaFields.Add(ModifyIndex) |> ignore
+//    [<Literal>]
+//    let ModifyIndex = "_modifyindex"
+//    
+//    Validators.metaFields.Add(ModifyIndex) |> ignore
 //    
 //    /// Field to be used to store modify index
 //    let getModifyIndexField() = Field.create (ModifyIndex, FieldType.Long, true)
@@ -86,10 +86,10 @@ module MetaFields =
     /// Represents the state of a document in the index. A document is never truly
     /// deleted from the index and it is kept around with a status of Deleted. This
     /// is done to simplify the replication.
-    [<Literal>]
-    let State = "_state"
-    
-    Validators.metaFields.Add(State) |> ignore
+//    [<Literal>]
+//    let State = "_state"
+//    
+//    Validators.metaFields.Add(State) |> ignore
 //    
 //    /// Field to be used by the Id field
 //    let getStateField() = 
@@ -108,8 +108,7 @@ module MetaFields =
 //        Field.create (Source, fieldType, false)
 //    
     /// Represents the score of the search result document
-    [<Literal>]
-    let Score = "_score"
+    
 //    
 //    Validators.metaFields.Add(Score) |> ignore
 //    
@@ -168,7 +167,7 @@ module Codec =
     open FlexLucene.Codecs
     
     let getPostingsFormat (fieldName : string, enableBloomFilter, defaultFormat) = 
-        if fieldName.Equals(MetaFields.IdField, StringComparison.OrdinalIgnoreCase) && enableBloomFilter then 
+        if fieldName.Equals(IdField.Name, StringComparison.OrdinalIgnoreCase) && enableBloomFilter then 
             new BloomFilteringPostingsFormat(defaultFormat) :> PostingsFormat
         else defaultFormat
 

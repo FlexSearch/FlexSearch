@@ -70,8 +70,8 @@ module VersionCache =
         let store = 
             { Current = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
               Old = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
-              IdFieldName = settings.Fields.[MetaFields.IdField].SchemaName
-              LastModifiedFieldName = settings.Fields.[MetaFields.LastModifiedField].SchemaName
+              IdFieldName = settings.Fields.[IdField.Name].SchemaName
+              LastModifiedFieldName = settings.Fields.[TimeStampField.Name].SchemaName
               ShardWriter = shardWriter }
         shardWriter |> ShardWriter.addRefreshListener (store)
         store

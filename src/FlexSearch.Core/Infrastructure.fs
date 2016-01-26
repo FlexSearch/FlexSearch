@@ -411,7 +411,10 @@ module Validators =
         | Fail(_) -> fail <| InvalidPropertyName(fieldName, input)
     
     /// Contains the list of all valid meta fields
-    let metaFields = new HashSet<string>()
+    let private metaFields = new HashSet<string>()
+
+    let addToMetaFields (value : string) = 
+        metaFields.Add(value) |> ignore 
 
     /// Checks if the property name is not in the restricted field names
     let invalidPropertyName fieldName input = 

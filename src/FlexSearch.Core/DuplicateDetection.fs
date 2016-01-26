@@ -217,11 +217,11 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
             if req.FileBasedSession then
                 header.SourceContent <- formatter.SerializeToString(record)
             else
-                header.SourceRecordId <- record.[MetaFields.IdField]
+                header.SourceRecordId <- record.[IdField.Name]
 
             // Map each document to a TargetRecord
             header.TargetRecords <- results.Documents
-                                    |> Seq.filter (fun r -> r.Fields.[MetaFields.IdField] <> header.SourceRecordId)
+                                    |> Seq.filter (fun r -> r.Fields.[IdField.Name] <> header.SourceRecordId)
                                     |> Seq.filter (fun r -> 
                                         // If duplicate detection is used with DistinctBy then do a second pass filtering to ensure
                                         // that the source record is not picked up. This can happen when source record is not the 
@@ -236,7 +236,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                                                             TargetDisplayName = result.Fields.[session.DisplayFieldName], 
                                                             TargetScore = float32 result.Fields.[MetaFields.Score] 
                                                                           / results.BestScore * 100.0f, 
-                                                            TargetRecordId = result.Fields.[MetaFields.IdField]))
+                                                            TargetRecordId = result.Fields.[IdField.Name]))
                                     |> Seq.toArray
             // We can have less actual documents returned by the search because of
             // filtering being ran further down the search stream. Therefore it is 

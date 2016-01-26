@@ -451,7 +451,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Get a document by Id        
         member __.GetDocument(indexName, documentId) = 
             maybe { 
-                let q = new SearchQuery(indexName, (sprintf "%s = '%s'" MetaFields.IdField documentId))
+                let q = new SearchQuery(indexName, (sprintf "%s = '%s'" IdField.Name documentId))
                 q.ReturnScore <- false
                 q.Columns <- [| "*" |]
                 match searchService.Search(q) with
@@ -464,7 +464,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Get top 10 document from the index
         member __.GetDocuments(indexName, count) = 
             maybe { 
-                let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" MetaFields.IdField))
+                let q = new SearchQuery(indexName, (sprintf "%s matchall 'x'" IdField.Name))
                 q.ReturnScore <- false
                 q.Columns <- [| "*" |]
                 q.Count <- count

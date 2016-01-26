@@ -221,7 +221,7 @@ module SearchDsl =
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
-                if [MetaFields.IdField; MetaFields.LastModifiedField; MetaFields.ModifyIndex; MetaFields.State]
+                if [IdField.Name; TimeStampField.Name; ModifyIndexField.Name; StateField.Name]
                    |> Seq.contains field.FieldName
                 then ()
                 else getValue(field)
@@ -324,7 +324,7 @@ module SearchDsl =
         
         let processDocument (hit : ScoreDoc, document : LuceneDocument) = 
             let timeStamp = 
-                let t = document.Get(indexWriter.GetSchemaName(MetaFields.LastModifiedField))
+                let t = document.Get(indexWriter.GetSchemaName(TimeStampField.Name))
                 if isNull t then
                     0L
                 else
@@ -332,7 +332,7 @@ module SearchDsl =
             let fields = getDocument (indexWriter, searchQuery, document)
             
             let resultDoc = new Model.Document()
-            resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
+            resultDoc.Id <- document.Get(indexWriter.GetSchemaName(IdField.Name))
             resultDoc.IndexName <- indexWriter.Settings.IndexName
             resultDoc.TimeStamp <- timeStamp
             resultDoc.Fields <- fields

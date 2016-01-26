@@ -83,7 +83,7 @@ module ShardWriter =
         for i = 0 to r.Leaves().size() - 1 do
             let ctx = r.Leaves().get(i) :?> LeafReaderContext
             let reader = ctx.Reader()
-            let nDocs = reader.GetNumericDocValues (MetaFields.ModifyIndex)
+            let nDocs = reader.GetNumericDocValues (ModifyIndexField.Name)
             let liveDocs = reader.GetLiveDocs()
             for j = 0 to reader.MaxDoc() do
                 if (liveDocs <> null || liveDocs.Get (j)) then max <- Math.Max(max, nDocs.Get (j))
@@ -202,7 +202,7 @@ module ShardWriter =
         
         let trackingWriter = new TrackingIndexWriter(iw)
         let searcherManager = new SearcherManager(iw, true, new SearcherFactory())
-        let modifyIndex = pLong 1L (commitData.getOrDefault (MetaFields.ModifyIndex, "1") :?> string)
+        let modifyIndex = pLong 1L (commitData.getOrDefault (ModifyIndexField.Name, "1") :?> string)
         let logPath = basePath +/ "shards" +/ shardNumber.ToString() +/ "txlogs"
         Directory.CreateDirectory(logPath) |> ignore
         let state = 
