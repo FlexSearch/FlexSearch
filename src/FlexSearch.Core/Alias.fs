@@ -43,6 +43,14 @@ type SchemaName = string
 
 type FieldValue = string
 
+type LowerRange = string
+
+type UpperRange = string
+
+type InclusiveMinimum = bool
+
+type InclusiveMaximum = bool
+
 type Token = string
 
 type GetAnalyzer = string -> Result<LuceneAnalyzer>

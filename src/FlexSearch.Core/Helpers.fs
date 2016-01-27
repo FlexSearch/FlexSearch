@@ -117,23 +117,22 @@ module Helpers =
     let loopDir (dir : string) = Directory.EnumerateDirectories(dir)
     let loopFiles (dir : string) = Directory.EnumerateFiles(dir)
     let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
+    let emptyDir (path) = loopDir path |> Seq.iter (loopFiles >> Seq.iter File.Delete)
     
-    let emptyDir (path) = 
-        loopDir path |> Seq.iter (loopFiles >> Seq.iter File.Delete)
-        
     let delDir (path) = 
         emptyDir path
         Directory.Delete(path, true)
     
     /// Check for null
     let inline isNull (x : ^a when ^a : not struct) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
+    
     let inline isNotNull x = x |> (isNull >> not)
     
     let castAs<'T when 'T : null> (o : obj) = 
         match o with
         | :? 'T as res -> res
         | _ -> null
-
+    
     /// Check if not null
     let inline notNull (x : ^a when ^a : not struct) = not (obj.ReferenceEquals(x, Unchecked.defaultof<_>))
     
@@ -144,22 +143,18 @@ module Helpers =
         if isNull (x) then failwithf "Internal Error: %s object cannot be null." name
     
     /// Returns the string value between starting and ending characters
-    let inline between (startingChar : char) (endingChar : char) (input : string) =
+    let inline between (startingChar : char) (endingChar : char) (input : string) = 
         let startingPos = input.IndexOf(startingChar) + 1
         let endingPos = input.IndexOf(endingChar)
-        if startingPos = -1 || endingPos = -1 || startingPos >= endingPos then
-            String.Empty
-        else
-            input.Substring(startingPos, endingPos - startingPos)
-
+        if startingPos = -1 || endingPos = -1 || startingPos >= endingPos then String.Empty
+        else input.Substring(startingPos, endingPos - startingPos)
+    
     /// Returns the string after a given character
-    let inline after (startingChar : char) (input: string) =
+    let inline after (startingChar : char) (input : string) = 
         let startingPos = input.IndexOf(startingChar) + 1
-        if startingPos = -1 then
-            String.Empty
-        else
-            input.Substring(startingPos)
-
+        if startingPos = -1 then String.Empty
+        else input.Substring(startingPos)
+    
     /// Simple exception formatter
     /// Based on : http://sergeytihon.wordpress.com/2013/04/08/f-exception-formatter/
     [<CompiledNameAttribute("ExceptionPrinter")>]
@@ -194,7 +189,7 @@ module Helpers =
         sb.ToString()
     
     /// Utility method to load a file into text string
-    let loadFile(filePath : string) = 
+    let loadFile (filePath : string) = 
         if not <| File.Exists(filePath) then failwithf "File does not exist: %s" filePath
         File.ReadAllText(filePath)
     
@@ -203,7 +198,7 @@ module Helpers =
         (new WindowsPrincipal(WindowsIdentity.GetCurrent())).IsInRole(WindowsBuiltInRole.Administrator)
     
     /// Generates an absolute path for a given relative path
-    let generateAbsolutePath(path : string) = 
+    let generateAbsolutePath (path : string) = 
         if String.IsNullOrWhiteSpace(path) then failwith "internalmessage=No path is specified."
         else 
             let dataPath = 
@@ -219,16 +214,16 @@ module Helpers =
     
     [<CompiledNameAttribute("Await")>]
     let await iar = Async.AwaitIAsyncResult iar |> ignore
-
+    
     // Returns the size on disk of a folder by summing up the file sizes
-    let getFolderSize (path : string) =
-        let rec getFolderSizeRec sum (dir : DirectoryInfo) =
-            dir.EnumerateFiles() 
+    let getFolderSize (path : string) = 
+        let rec getFolderSizeRec sum (dir : DirectoryInfo) = 
+            dir.EnumerateFiles()
             |> Seq.map (fun f -> f.Length)
             |> Seq.sum
             |> (+) (dir.EnumerateDirectories() |> Seq.sumBy (getFolderSizeRec sum))
         getFolderSizeRec 0 (new DirectoryInfo(path))
-  
+
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns
 // ----------------------------------------------------------------------------
@@ -270,7 +265,7 @@ module DataType =
         match String.IsNullOrWhiteSpace str with
         | true -> Some(str)
         | _ -> None
-        
+    
     let inline pBool (failureDefault) (value : string) = 
         match Boolean.TryParse(value) with
         | true, a -> a
@@ -295,14 +290,31 @@ module DataType =
         match Single.TryParse(value) with
         | true, a -> a
         | _ -> failureDefault
-
+    
+    // http://www.fssnip.net/2y
+    // convenient, functional TryParse wrappers returning option<'a>
+    let tryParseWith tryParseFunc = 
+        tryParseFunc >> function 
+        | true, v -> Some v
+        | false, _ -> None
+    
+    let parseDate = tryParseWith System.DateTime.TryParse
+    let parseInt = tryParseWith System.Int32.TryParse
+    let parseLong = tryParseWith System.Int64.TryParse
+    let parseSingle = tryParseWith System.Single.TryParse
+    let parseDouble = tryParseWith System.Double.TryParse
+    
     /// Gets the first string of a collection of StringValues that matches the given item. 
     /// Returns null if not found
-    let getFirstStringValue item (collection : IEnumerable<KeyValuePair<string,StringValues>>) =
-        match collection |> Seq.filter (fun x -> x.Key = item) |> Seq.toList with
+    let getFirstStringValue item (collection : IEnumerable<KeyValuePair<string, StringValues>>) = 
+        match collection
+              |> Seq.filter (fun x -> x.Key = item)
+              |> Seq.toList with
         | [] -> null
-        | h::t -> if h.Value.Count > 0 then h.Value.Item 0 else null
-
+        | h :: t -> 
+            if h.Value.Count > 0 then h.Value.Item 0
+            else null
+    
     /// Get a value from a dictionary and perform a parsing operation. In case the
     /// operation fails or there is any other error it returns the default value
     let inline getFromDict<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
@@ -323,18 +335,17 @@ module DataType =
     
     /// Get a value from a readonly collection and perform a parsing operation. In case the
     /// operation fails or there is any other error it returns the default value
-    let inline getFromCollection<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) 
-               (coll : IQueryCollection) = 
+    let inline getFromCollection<'T> key (existsCase : 'T -> string -> 'T) (defaultValue : 'T) (coll : IQueryCollection) = 
         match coll |> getFirstStringValue key with
         | null -> defaultValue
         | value -> value |> existsCase defaultValue
     
     /// Get string from string collection
-    let inline stringFromQueryString key defaultValue (ctx : HttpContext) =
+    let inline stringFromQueryString key defaultValue (ctx : HttpContext) = 
         match ctx.Request.Query |> getFirstStringValue key with
         | null -> defaultValue
         | value -> value
-
+    
     /// Get integer from dictionary
     let inline intFromDict key defaultValue (dict : Dictionary<string, string>) = 
         dict |> getFromDict key pInt defaultValue
@@ -396,12 +407,14 @@ type IFormatter =
 
 [<Sealed>]
 type NewtonsoftJsonFormatter() = 
-    let options = new Newtonsoft.Json.JsonSerializerSettings(
-                        ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver())
+    let options = 
+        new Newtonsoft.Json.JsonSerializerSettings(ContractResolver = new Newtonsoft.Json.Serialization.CamelCasePropertyNamesContractResolver())
     let serializer = JsonSerializer.Create(options)
+    
     do 
         serializer.Converters.Add(new StringEnumConverter())
         options.Converters.Add(new StringEnumConverter())
+    
     interface IFormatter with
         member __.SerializeToString(body : obj) = JsonConvert.SerializeObject(body, options)
         
@@ -409,7 +422,7 @@ type NewtonsoftJsonFormatter() =
             use reader = new StreamReader(stream)
             use jsonTextReader = new JsonTextReader(reader)
             serializer.Deserialize<'T>(jsonTextReader)
-            
+        
         member __.Serialize(body : obj, stream : Stream) : unit = 
             use writer = new StreamWriter(stream)
             use jsonWriter = new JsonTextWriter(writer)
@@ -457,9 +470,9 @@ module Debug =
     open System.Diagnostics
     
     let inline (!>) msg = Printf.kprintf Debug.WriteLine msg
-    //let inline fail msg = Printf.kprintf Debug.Fail msg
 
+//let inline fail msg = Printf.kprintf Debug.Fail msg
 /// Attribute used on types that are not needed in the Documentation
 [<AttributeUsage(AttributeTargets.Class)>]
-type NotForDocumentation() =
+type NotForDocumentation() = 
     inherit Attribute()

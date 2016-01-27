@@ -84,6 +84,9 @@ module Constants =
     /// Extension to be used by settings file
     let SettingsFileExtension = ".json"
     
+    /// Constant to represent infinite value 
+    let Infinite = "inf"
+
     let CaseInsensitiveKeywordAnalyzer = 
         CustomAnalyzer.Builder().WithTokenizer("keyword").AddTokenFilter("lowercase").Build() :> FlexLucene.Analysis.Analyzer
 
