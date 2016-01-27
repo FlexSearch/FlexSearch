@@ -59,39 +59,8 @@ module DocumentTemplate =
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
     let updateTempate (document : Document) (modifyIndex : int64) (template : T) = 
-        // Update meta fields
-        // Id Field
-        template.TemplateFields.[0].Fields.[0].SetStringValue(document.Id)
-        // Timestamp fields
-        template.TemplateFields.[1].Fields.[0].SetLongValue(document.TimeStamp)
-        template.TemplateFields.[1].DocValues.Value.[0].SetLongValue(document.TimeStamp)
-        template.TemplateFields.[2].Fields.[0].SetLongValue(modifyIndex)
-        template.TemplateFields.[2].DocValues.Value.[0].SetLongValue(modifyIndex)
-        // Performance of F# iter is very slow here.
-        for i = template.MetaDataFieldCount to template.TemplateFields.Length - 1 do
-            let field = template.Setting.Fields.[i]
-            
-            let value = 
-                // If it is computed field then generate and add it otherwise follow standard path
-                match field.Source with
-                | Some(s, options) -> 
-                    try 
-                        // Wrong values for the data type will still be handled as update Lucene field will
-                        // check the data type
-                        let value = s.Invoke(document.IndexName, field.FieldName, document.Fields, options)
-                        Some <| value
-                    with _ -> None
-                | None -> 
-                    match document.Fields.TryGetValue(field.FieldName) with
-                    | (true, value) -> Some <| value
-                    | _ -> None
-            match value with
-            | Some(v) -> 
-                v |> Field.updateLuceneField field template.TemplateFields.[i].LuceneField false
-                if field.GenerateDocValue then 
-                    v |> Field.updateLuceneField field template.TemplateFields.[i].DocValue.Value true
-            | None -> 
-                Field.updateLuceneFieldToDefault field false template.TemplateFields.[i].LuceneField
-                if field.GenerateDocValue then 
-                    Field.updateLuceneFieldToDefault field true template.TemplateFields.[i].DocValue.Value
+        for i = 0 to template.Setting.Fields.Count - 1 do
+            let f = template.Setting.Fields.[i]
+            let tf = template.TemplateFields.[i]
+            f.FieldType.UpdateField document f.SchemaName f.Source tf
         template.Template

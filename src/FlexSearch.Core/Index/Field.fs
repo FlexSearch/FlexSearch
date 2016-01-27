@@ -55,6 +55,7 @@ type IField =
     abstract DefaultStringValue : string
     abstract ToExternal : option<string -> string>
     abstract CreateFieldTemplate : schemaName:string -> generateDocValues:bool -> FieldTemplate
+    abstract UpdateField : FlexDocument -> SchemaName -> FieldSource option -> FieldTemplate -> unit
 
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
@@ -87,7 +88,28 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     
     /// Update a field template with the given value. Call to this
     /// method should be chained from Validate
-    abstract UpdateFieldTemplate : 'T -> FieldTemplate -> unit
+    abstract UpdateFieldTemplate : FieldTemplate -> 'T -> unit
+    
+    /// Update a field template from the given FlexDocument. This is a higher level method which
+    /// bring together a number of lower level method from FieldBase
+    abstract UpdateField : FlexDocument -> SchemaName -> FieldSource option -> FieldTemplate -> unit
+    
+    override this.UpdateField document schemaName fieldSource template = 
+        // If it is computed field then generate and add it otherwise follow standard path
+        match fieldSource with
+        | Some(s, options) -> 
+            try 
+                // Wrong values for the data type will still be handled as update Lucene field will
+                // check the data type
+                let value = s.Invoke(document.IndexName, schemaName, document.Fields, options)
+                value
+            with _ -> this.DefaultStringValue
+        | None -> 
+            match document.Fields.TryGetValue(schemaName) with
+            | (true, value) -> value
+            | _ -> this.DefaultStringValue
+        |> this.Validate
+        |> this.UpdateFieldTemplate template
     
     // Validate the given string for the Field. This works in
     // conjunction with the UpdateFieldTemplate
@@ -108,6 +130,8 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
         member this.ToExternal = this.ToExternal
         member this.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
             this.CreateFieldTemplate schemaName generateDocValues
+        member this.UpdateField document schemaName fieldSource template = 
+            this.UpdateField document schemaName fieldSource template
 
 /// A wrapper around FieldBase which helps in maintaining strongly typed list
 /// of field.
@@ -136,6 +160,9 @@ type BasicFieldType =
     
     /// Helper method to access LuceneFieldType from the FieldBase<_>
     member this.LuceneFieldType() = this.GetField().LuceneFieldType
+    
+    member this.UpdateField document schemaName fieldSource template = 
+        this.GetField().UpdateField document schemaName fieldSource template
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]
@@ -180,7 +207,7 @@ type IntField() =
               if generateDV then Some <| [| CreateField.intDV <| this.GetSchemaName schemaName |]
               else None }
     
-    override __.UpdateFieldTemplate (value : int) (template : FieldTemplate) = 
+    override __.UpdateFieldTemplate (template : FieldTemplate) (value : int) = 
         template.Fields.[0].SetIntValue(value)
         if template.DocValues.IsSome then 
             // Numeric doc values can only be saved as Int64 
@@ -205,7 +232,7 @@ type DoubleField() =
               if generateDocValues then Some <| [| CreateField.doubleDV <| this.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (value : double) (template : FieldTemplate) = 
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : double) = 
         template.Fields.[0].SetDoubleValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetDoubleValue(value)
     
@@ -227,7 +254,7 @@ type FloatField() as self =
               if generateDocValues then Some <| [| CreateField.floatDV <| self.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (value : float32) (template : FieldTemplate) = 
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : float32) = 
         template.Fields.[0].SetFloatValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetFloatValue(value)
     
@@ -249,7 +276,7 @@ type LongField(defaultValue : int64, ?defaultFieldName) as self =
               if generateDocValues then Some <| [| CreateField.longDV <| self.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (value : int64) (template : FieldTemplate) = 
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : int64) = 
         template.Fields.[0].SetLongValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetLongValue(value)
     
@@ -292,7 +319,7 @@ type TextField() as self =
         { Fields = [| CreateField.text <| self.GetSchemaName schemaName |]
           DocValues = None }
     
-    override this.UpdateFieldTemplate (value : string) (template : FieldTemplate) = 
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
         template.Fields.[0].SetStringValue(value)
     override __.GetRangeQuery = Some <| getRangeQuery
 
@@ -317,7 +344,7 @@ type ExactTextField(?defaultFieldName) as self =
               if generateDV then Some <| [| CreateField.stringDV <| self.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (value : string) (template : FieldTemplate) = 
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
         template.Fields.[0].SetStringValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetBytesValue(Encoding.UTF8.GetBytes(value))
     
@@ -355,7 +382,7 @@ type StoredField() as self =
         { Fields = [| CreateField.text <| self.GetSchemaName schemaName |]
           DocValues = None }
     
-    override this.UpdateFieldTemplate (value : string) (template : FieldTemplate) = 
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
         template.Fields.[0].SetStringValue(value)
     override __.GetRangeQuery = None
 
@@ -370,6 +397,9 @@ type TimeStampField() =
     static do addToMetaFields TimeStampField.Name
     static member Name = "_timestamp"
     static member Instance = LongType <| (new TimeStampField() :> FieldBase<int64>)
+    override this.UpdateField document schemaName fieldSource template = 
+        // The timestamp value will always be auto generated
+        this.UpdateFieldTemplate template (GetCurrentTimeAsLong())
 
 /// Used for representing the id of an index
 type IdField() = 
@@ -377,6 +407,8 @@ type IdField() =
     static do addToMetaFields IdField.Name
     static member Name = "_id"
     static member Instance = StringType <| (new IdField() :> FieldBase<string>)
+    override this.UpdateField document schemaName fieldSource template = 
+        this.Validate document.Id |> this.UpdateFieldTemplate template
 
 /// Used for representing the id of an index
 type StateField() = 
@@ -386,6 +418,11 @@ type StateField() =
     static member Instance = StringType <| (new StateField() :> FieldBase<string>)
     static member Active = "active"
     static member Inactive = "inactive"
+    override this.UpdateField document schemaName fieldSource template = 
+        // Set it to Active for all normal indexing requests
+        this.UpdateFieldTemplate template StateField.Active
+    /// Helper method to set the state to Inactive
+    member this.UpdateFieldToInactive template = this.UpdateFieldTemplate template StateField.Inactive
 
 /// This field is used to add causal ordering to the events in 
 /// the index. A document with lower modify index was created/updated before
@@ -396,3 +433,5 @@ type ModifyIndexField() =
     static do addToMetaFields ModifyIndexField.Name
     static member Name = "_modifyindex"
     static member Instance = LongType <| (new ModifyIndexField() :> FieldBase<int64>)
+    override this.UpdateField document schemaName fieldSource template = 
+        this.UpdateFieldTemplate template document.ModifyIndex

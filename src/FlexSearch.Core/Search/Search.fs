@@ -32,7 +32,7 @@ open System.ComponentModel.Composition
 /// FlexQuery interface     
 type IFlexQuery = 
     abstract QueryName : unit -> string []
-    abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
+    abstract GetQuery : FieldSchema * string [] * Dictionary<string, string> option -> Result<Query>
 
 /// Interface for implementing query functions.
 /// Query functions can be of two types: constant and variable.
@@ -45,7 +45,7 @@ type IFlexQuery =
 /// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
     abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
-    abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>
+    abstract GetVariableResult : FieldSchema * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>
 
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
@@ -81,14 +81,14 @@ module SearchDsl =
                 else fail <| MissingFieldValue fieldName
             | _ -> fail <| MissingFieldValue fieldName
 
-    let validateSearchField (fields : IReadOnlyDictionary<string, Field.T>)  fieldName =
+    let validateSearchField (fields : IReadOnlyDictionary<string, FieldSchema>)  fieldName =
             maybe {
                 let! field = fields |> keyExists2 (fieldName, fieldNotFound)
                 do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
                 return field
             }
 
-    let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
+    let generateQuery (fields : IReadOnlyDictionary<string, FieldSchema>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
                        queryTypes : Dictionary<string, IFlexQuery>,
                        queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) = 
@@ -130,7 +130,7 @@ module SearchDsl =
             | None -> v |> computeFieldValueAsArray fieldName
         
         let queryGenerationWrapper fieldName operator constant parameters 
-                                   (queryGetter : Field.T -> IFlexQuery -> string[] option -> Result<Query>) =
+                                   (queryGetter : FieldSchema -> IFlexQuery -> string[] option -> Result<Query>) =
             maybe {
                     // First validate the field
                     let! field = fieldName |> validateSearchField fields
@@ -207,7 +207,7 @@ module SearchDsl =
     /// Returns a document from the index
     let getDocument (indexWriter : IndexWriter.T, search : SearchQuery, document : LuceneDocument) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        let getValue(field: Field.T) =
+        let getValue(field: FieldSchema) =
             let value = document.Get(field.SchemaName)
             if notNull value then 
                 if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then

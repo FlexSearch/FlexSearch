@@ -520,6 +520,11 @@
           "type": "integer",
           "format": "int64"
         },
+        "modifyIndex": {
+          "description": "",
+          "type": "integer",
+          "format": "int64"
+        },
         "highlights": {
           "description": "",
           "type": "array",

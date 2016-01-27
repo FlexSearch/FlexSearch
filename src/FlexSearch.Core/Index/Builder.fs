@@ -73,14 +73,14 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field[], analyzerService, scriptService) (build) = 
+    let withFields (fields : Field[], analyzerService : GetAnalyzer, scriptService: GetScript) (build) = 
         let ic = build.Setting.IndexConfiguration
         let resultLookup = new Dictionary<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
         let result = new FieldCollection()
         // Add system fields
-        FieldSchema.getMetaFields () |> Seq.iter (fun x -> result.Add(x))
+        FieldSchema.getMetaSchemaFields |> Seq.iter (fun x -> result.Add(x))
         for field in fields do
-            let fieldObject = returnOrFail (FieldSchema.build (field, ic, analyzerService, scriptService))
+            let fieldObject = returnOrFail <| FieldSchema.build field analyzerService scriptService
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
         // Perf: Intern all the field names in the string pool. This is done as the field names will be

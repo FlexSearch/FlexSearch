@@ -27,7 +27,7 @@ open System.Collections.ObjectModel
 open System.Text
 
 /// Uniquely represents the properties of a field Type
-type FieldTypeIndentity = 
+type FieldTypeIndentity =
     { Value : int32 }
 
 /// Represents a field in an Index.
@@ -162,8 +162,8 @@ module FieldSchema =
         properties.ToArray() |> generateIdentity
     
     /// Build a Schema field from the Field DTO
-    let build (field : FlexField) (getAnalyzer : string -> Result<LuceneAnalyzer>) 
-        (getScript : string -> Result<ComputedDelegate * string []>) = 
+    let build (field : FlexField) (getAnalyzer : GetAnalyzer) 
+        (getScript : GetScript) = 
         let getSource (field : FlexField) = 
             if (isBlank field.ScriptName) then ok <| None
             else 

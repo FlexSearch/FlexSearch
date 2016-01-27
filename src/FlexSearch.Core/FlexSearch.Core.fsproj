@@ -97,6 +97,7 @@
     <Compile Include="Http.fs" />
     <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
+    <Compile Include="Alias.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Analysis.fs" />
     <Compile Include="LuceneHelpers.fs" />
@@ -167,6 +168,7 @@
       <HintPath>..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FSharp.Data.TypeProviders" />
     <Reference Include="FSharpx.Async">
       <HintPath>..\packages\FSharpx.Async.1.12.0\lib\net40\FSharpx.Async.dll</HintPath>
       <Private>True</Private>
@@ -496,6 +498,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Diagnostics.DiagnosticSource">
       <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.0.0-rc2-23623\lib\dotnet5.2\System.Diagnostics.DiagnosticSource.dll</HintPath>
       <Private>True</Private>
