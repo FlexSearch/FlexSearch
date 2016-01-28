@@ -81,6 +81,7 @@ module FieldSchema =
     let StoreOffsets = add "StoreOffsets"
     let DocValues = add "DocValues"
     let Sorted = alias "Sorted" DocValues
+    let StoreOnly = add "StoreOnly"
     let StoreTermPayloads = add "StoreTermPayloads"
     let Binary = add "Binary"
     let Int = add "Int"
@@ -124,7 +125,7 @@ module FieldSchema =
         | _ -> None
     
     /// Signifies if the field is search-able
-    let isSearchable (schema : FieldSchema) = schema |> isIndexed
+    let isSearchable (schema : FieldSchema) = schema.TypeIdentity.Value &&& StoreOnly = 0
     
     /// Signifies if the field supports doc values
     let hasDocValues (schema : FieldSchema) = schema.TypeIdentity.Value &&& DocValues <> 0
@@ -145,6 +146,7 @@ module FieldSchema =
     /// Generates the field properties identity from the Lucene Field Type
     let createFromFieldType (fieldType : LuceneFieldType) (field : FlexField) = 
         let properties = new ResizeArray<int>()
+        if field.FieldType = FlexFieldType.Stored then properties.Add(StoreOnly)
         if fieldType.Tokenized() then properties.Add(Tokenized)
         if fieldType.Stored() then properties.Add(Stored)
         if fieldType.OmitNorms() then properties.Add(OmitNorms)
