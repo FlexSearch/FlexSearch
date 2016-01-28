@@ -41,7 +41,7 @@ module DataHelpers =
                            new Field("dt1", Constants.FieldType.DateTime)
                            new Field("db1", Constants.FieldType.Double)
                            new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
-                           new Field("h1", Constants.FieldType.Highlight)
+                           new Field("h1", Constants.FieldType.Text)
                            new Field("i1", Constants.FieldType.Int)
                            new Field("i2", Constants.FieldType.Int, AllowSort = true)
                            new Field("l1", Constants.FieldType.Long)
@@ -88,7 +88,7 @@ module DataHelpers =
             new Field("country", Constants.FieldType.Text)
             new Field("ipaddress", Constants.FieldType.ExactText)
             new Field("cvv2", Constants.FieldType.Int)
-            new Field("description", Constants.FieldType.Highlight)
+            new Field("description", Constants.FieldType.Text)
             new Field("fullname", Constants.FieldType.Text) |]
         
         let indexService = container.Resolve<IIndexService>()

@@ -49,7 +49,7 @@ module DocumentTemplate =
         for field in s.Fields.Skip(metaDataFields.Count()) do
             let hasDocValues = FieldSchema.hasDocValues field
             FieldSchema.hasDocValues field
-            |> field.FieldType.CreateTemplate field.SchemaName
+            |> field.FieldType.CreateFieldTemplate field.SchemaName
             |> add
         { Setting = s
           TemplateFields = fields.ToArray()
@@ -62,5 +62,5 @@ module DocumentTemplate =
         for i = 0 to template.Setting.Fields.Count - 1 do
             let f = template.Setting.Fields.[i]
             let tf = template.TemplateFields.[i]
-            f.FieldType.UpdateField document f.SchemaName f.Source tf
+            f.FieldType.UpdateDocument document f.SchemaName f.Source tf
         template.Template

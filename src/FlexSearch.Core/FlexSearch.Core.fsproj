@@ -95,9 +95,9 @@
     <Compile Include="Protocols.fs" />
     <Compile Include="Queues.fs" />
     <Compile Include="Http.fs" />
+    <Compile Include="Alias.fs" />
     <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
-    <Compile Include="Alias.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Analysis.fs" />
     <Compile Include="LuceneHelpers.fs" />

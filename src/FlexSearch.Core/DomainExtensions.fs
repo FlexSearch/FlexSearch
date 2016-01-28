@@ -31,17 +31,6 @@ open System.Collections.Generic
 open System.IO
 open System.Linq
 
-// type mappings to avoid name conflict
-type LuceneAnalyzer = FlexLucene.Analysis.Analyzer
-
-type LuceneDocument = FlexLucene.Document.Document
-
-type LuceneField = FlexLucene.Document.Field
-
-type LuceneFieldType = FlexLucene.Document.FieldType
-
-type LuceneSimilarity = FlexLucene.Search.Similarities.Similarity
-
 [<RequireQualifiedAccess; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FieldSimilarity = 
     open FlexLucene.Search.Similarities

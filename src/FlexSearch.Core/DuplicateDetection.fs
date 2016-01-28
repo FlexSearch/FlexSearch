@@ -234,7 +234,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
                                            (fun i result -> 
                                            new TargetRecord(TargetId = i + 1, 
                                                             TargetDisplayName = result.Fields.[session.DisplayFieldName], 
-                                                            TargetScore = float32 result.Fields.[MetaFields.Score] 
+                                                            TargetScore = float32 result.Fields.["_score"] 
                                                                           / results.BestScore * 100.0f, 
                                                             TargetRecordId = result.Fields.[IdField.Name]))
                                     |> Seq.toArray

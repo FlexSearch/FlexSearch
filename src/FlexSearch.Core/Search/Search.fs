@@ -84,7 +84,7 @@ module SearchDsl =
     let validateSearchField (fields : IReadOnlyDictionary<string, FieldSchema>)  fieldName =
             maybe {
                 let! field = fields |> keyExists2 (fieldName, fieldNotFound)
-                do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
+                do! FieldSchema.isSearchable field |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
                 return field
             }
 
@@ -252,8 +252,8 @@ module SearchDsl =
             | _ -> 
                 match indexWriter.Settings.Fields.TryGetValue(searchQuery.OrderBy) with
                 | (true, field) -> 
-                    if field.GenerateDocValue then
-                        new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType, sortOrder))
+                    if field |> FieldSchema.hasDocValues then
+                        new Sort(new SortField(field.SchemaName, field.FieldType.SortFieldType, sortOrder))
                     else
                         Sort.RELEVANCE
                 | _ -> Sort.RELEVANCE
@@ -262,8 +262,8 @@ module SearchDsl =
             if not <| String.IsNullOrWhiteSpace(searchQuery.DistinctBy) then 
                 match indexWriter.Settings.Fields.TryGetValue(searchQuery.DistinctBy) with
                 | true, field -> 
-                    match field.FieldType with
-                    | FieldType.ExactText(_) -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
+                    match field.FieldType.GetTokens with
+                    | Some(_) -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
                     | _ -> None
                 | _ -> None
             else None

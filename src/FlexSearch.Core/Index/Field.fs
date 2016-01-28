@@ -49,15 +49,27 @@ type RangeQueryProperties<'T> =
 /// FieldBase containing all the Field related properties which are not
 /// dependent upon the type information
 [<AbstractClass>]
-type FieldBase() = 
-    abstract LuceneFieldType : FieldType
-    abstract SortFieldType : SortFieldType
+type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option) = 
+    
+    /// Checks if the Field has a reserved name then returns that otherwise
+    /// format's the passed name to the correct schema name 
+    member __.GetSchemaName(fieldName : string) = 
+        match defaultFieldName with
+        | Some name -> name
+        | _ -> fieldName
+    
+    member __.LuceneFieldType : FieldType = luceneFieldType
+    member __.SortFieldType : SortFieldType = sortFieldType
     abstract DefaultStringValue : string
     
     /// Generate any type specific formatting that is needed before sending
     /// the data out as part of search result. This is useful in case of enums
     /// and boolean fields which have a different internal representation. 
     abstract ToExternal : option<FieldValue -> string>
+    
+    /// Default implementation of ToExternal as most of the types will not have
+    /// any specific external formatting rules
+    override __.ToExternal = None
     
     /// Create a new Field template for the given field. 
     abstract CreateFieldTemplate : SchemaName -> generateDocValues:bool -> FieldTemplate
@@ -72,28 +84,17 @@ type FieldBase() =
     /// Get tokens for a given input. This is not supported by all field types for example
     /// it does not make any sense to tokenize numeric types and exact text fields
     abstract GetTokens : option<string -> option<LuceneAnalyzer> -> List<string>>
+    
+    override __.GetTokens = None
 
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
 /// instance could be cached. Any Index specific information should go to FieldSchema
 [<AbstractClass>]
 type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldName : string option) = 
-    inherit FieldBase()
-    override __.LuceneFieldType = luceneFieldType
-    override __.SortFieldType = sortFieldType
+    inherit FieldBase(luceneFieldType, sortFieldType, defaultFieldName)
     member __.DefaultValue : 'T = defaultValue
     override __.DefaultStringValue = defaultValue.ToString()
-    
-    /// Checks if the Field has a reserved name then returns that otherwise
-    /// format's the passed name to the correct schema name 
-    member __.GetSchemaName(fieldName : string) = 
-        match defaultFieldName with
-        | Some name -> name
-        | _ -> fieldName
-    
-    /// Default implementation of ToExternal as most of the types will not have
-    /// any specific external formatting rules
-    override __.ToExternal = None
     
     /// Update a field template with the given value. Call to this
     /// method should be chained from Validate
@@ -119,7 +120,6 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     // Validate the given string for the Field. This works in
     // conjunction with the UpdateFieldTemplate
     abstract Validate : value:string -> 'T
-    override __.GetTokens = None
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]

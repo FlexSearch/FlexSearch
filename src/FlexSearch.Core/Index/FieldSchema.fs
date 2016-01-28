@@ -34,7 +34,7 @@ type FieldTypeIndentity =
 type FieldSchema = 
     { SchemaName : string
       FieldName : string
-      FieldType : BasicFieldType
+      FieldType : FieldBase
       Analyzers : FieldAnalyzers option
       Similarity : Similarity
       TypeIdentity : FieldTypeIndentity
@@ -199,7 +199,7 @@ module FieldSchema =
             let! source = getSource field
             let basicFieldType = getFieldType field
             let! analyzers = getAnalyzers field
-            let typeIdentity = createFromFieldType (basicFieldType.LuceneFieldType()) field
+            let typeIdentity = createFromFieldType (basicFieldType.LuceneFieldType) field
             return { FieldName = field.FieldName
                      SchemaName = field.FieldName
                      FieldType = basicFieldType
@@ -219,7 +219,7 @@ module FieldSchema =
         { FieldName = name
           SchemaName = name
           FieldType = basicFieldType
-          TypeIdentity = createFromFieldType (basicFieldType.LuceneFieldType()) field
+          TypeIdentity = createFromFieldType (basicFieldType.LuceneFieldType) field
           Source = None
           Similarity = FlexSearch.Api.Constants.Similarity.TFIDF
           Analyzers = None }
@@ -236,7 +236,7 @@ module FieldSchema =
     
     /// Returns all the meta-data field templates that should be present in an index    
     let getMetaFieldsTemplates() = 
-        [| IdField.Instance.CreateTemplate "" false
-           TimeStampField.Instance.CreateTemplate "" true
-           ModifyIndexField.Instance.CreateTemplate "" true
-           StateField.Instance.CreateTemplate "" false |]
+        [| IdField.Instance.CreateFieldTemplate "" false
+           TimeStampField.Instance.CreateFieldTemplate "" true
+           ModifyIndexField.Instance.CreateFieldTemplate "" true
+           StateField.Instance.CreateFieldTemplate "" false |]

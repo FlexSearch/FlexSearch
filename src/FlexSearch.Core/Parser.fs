@@ -15,7 +15,6 @@ open System.Collections.Generic
 open System.Linq
 
 // Represents the parts/items which can be used in the query string
-type FieldName = string
 type Constant = 
     | SingleValue of string
     | ValueList of string list

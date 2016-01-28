@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexSearch.Api.Model
 open System
 open System.Collections.Generic
 
@@ -54,5 +55,11 @@ type InclusiveMaximum = bool
 type Token = string
 
 type GetAnalyzer = string -> Result<LuceneAnalyzer>
+
+type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
+    
+type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string, string>, bool * float32>
+    
+type SearchProfileDelegate = Action<SearchQuery, Dictionary<string, string>>
 
 type GetScript = string -> Result<ComputedDelegate * string []>
