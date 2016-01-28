@@ -137,7 +137,7 @@ module IndexWriterConfigBuilder =
         
         let codec = 
             s.IndexConfiguration.IndexVersion
-            |> Codec.getCodec s.IndexConfiguration.UseBloomFilterForId
+            |> Codec.getCodec
             |> extract
         
         let similarityProvider = s |> getSimilarityProvider

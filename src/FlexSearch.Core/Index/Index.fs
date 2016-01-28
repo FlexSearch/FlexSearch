@@ -40,7 +40,7 @@ open System.Threading.Tasks
 /// This module contains all the meta data related fields used throughout the system
 //[<AutoOpen>]
 //module MetaFields = 
-    /// Represents the ID field in an index
+/// Represents the ID field in an index
 //    [<Literal>]
 //    let IdField = "_id"
 //    
@@ -61,8 +61,8 @@ open System.Threading.Tasks
 //        /// Get a term for the IdField
 //        member this.IdTerm() = new Term(IdField, this)
 //    
-    /// Represents the date of last modification of a particular 
-    /// document
+/// Represents the date of last modification of a particular 
+/// document
 //    [<Literal>]
 //    let LastModifiedField = "_lastmodified"
 //    
@@ -71,10 +71,10 @@ open System.Threading.Tasks
 //    /// Field to be used by time stamp
 //    let getTimeStampField() = Field.create (LastModifiedField, FieldType.DateTime, true)
 //    
-    /// This field is used to add causal ordering to the events in 
-    /// the index. A document with lower modify index was created/updated before
-    /// a document with the higher index.
-    /// This is also used for concurrency updates.
+/// This field is used to add causal ordering to the events in 
+/// the index. A document with lower modify index was created/updated before
+/// a document with the higher index.
+/// This is also used for concurrency updates.
 //    [<Literal>]
 //    let ModifyIndex = "_modifyindex"
 //    
@@ -83,9 +83,9 @@ open System.Threading.Tasks
 //    /// Field to be used to store modify index
 //    let getModifyIndexField() = Field.create (ModifyIndex, FieldType.Long, true)
 //    
-    /// Represents the state of a document in the index. A document is never truly
-    /// deleted from the index and it is kept around with a status of Deleted. This
-    /// is done to simplify the replication.
+/// Represents the state of a document in the index. A document is never truly
+/// deleted from the index and it is kept around with a status of Deleted. This
+/// is done to simplify the replication.
 //    [<Literal>]
 //    let State = "_state"
 //    
@@ -107,8 +107,7 @@ open System.Threading.Tasks
 //        let fieldType = FieldType.Stored
 //        Field.create (Source, fieldType, false)
 //    
-    /// Represents the score of the search result document
-    
+/// Represents the score of the search result document
 //    
 //    Validators.metaFields.Add(Score) |> ignore
 //    
@@ -134,7 +133,6 @@ open System.Threading.Tasks
 //             DocValue = None }
 //           { LuceneField = Field.getBinaryField Source
 //             DocValue = None } |]
-
 /// Wraps Lucene Analyzers in an dictionary to create a per field analyzer
 type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) = 
     inherit DelegatingAnalyzerWrapper(Analyzer.PER_FIELD_REUSE_STRATEGY)
@@ -153,7 +151,7 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
                                    else x.Analyzers.Value.SearchAnalyzer))
         map <- analyzerMap
     
-    override this.GetWrappedAnalyzer (fieldName) = 
+    override this.GetWrappedAnalyzer(fieldName) = 
         match map.TryGetValue(fieldName) with
         | true, analyzer -> analyzer
         | _ -> defaultAnalyzer
@@ -165,25 +163,12 @@ module Codec =
     open FlexLucene.Codecs.Lucene410
     open FlexLucene.Codecs.Lucene41
     open FlexLucene.Codecs
-    
-    let getPostingsFormat (fieldName : string, enableBloomFilter, defaultFormat) = 
-        if fieldName.Equals(IdField.Name, StringComparison.OrdinalIgnoreCase) && enableBloomFilter then 
-            new BloomFilteringPostingsFormat(defaultFormat) :> PostingsFormat
-        else defaultFormat
-
+        
     /// Get the default codec associated with the index version
-    let getCodec (enableBloomFilter : bool) (version : IndexVersion) = 
+    let getCodec (version : IndexVersion) = 
         match version with
-        | IndexVersion.FlexSearch_1A -> 
-            { new Lucene53Codec() with
-                  member this.GetPostingsFormatForField (fieldName) = 
-                      getPostingsFormat (fieldName, enableBloomFilter, this.PostingsFormat()) } :> Codec
-            |> ok
-        | IndexVersion.FlexSearch_1B ->
-            { new Lucene54Codec() with
-                  member this.GetPostingsFormatForField (fieldName) = 
-                      getPostingsFormat (fieldName, enableBloomFilter, this.PostingsFormat()) } :> Codec
-            |> ok
+        | IndexVersion.FlexSearch_1A -> new Lucene53Codec() :> Codec |> ok
+        | IndexVersion.FlexSearch_1B -> new Lucene54Codec() :> Codec |> ok
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
 module IndexSetting = 

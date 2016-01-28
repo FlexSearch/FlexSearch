@@ -316,11 +316,6 @@
           "enum": [ "FlexSearch_1A", "FlexSearch_1B" ],
           "default": "FlexSearch_1B"
         },
-        "useBloomFilterForId": {
-          "description": "Signifies if bloom filter should be used for encoding Id field.",
-          "type": "boolean",
-          "default": true
-        },
         "allowReads": {
           "description": "",
           "type": "boolean",
