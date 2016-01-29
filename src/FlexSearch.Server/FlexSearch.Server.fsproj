@@ -89,9 +89,6 @@
     <Content Include="Plugins\Readme.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Web\WelcomePage.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Web\Reports\DuplicateDetectionTemplate.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
