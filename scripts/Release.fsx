@@ -197,4 +197,4 @@ Target "MovePortal" <| fun _ ->
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "MovePortal"
+RunTargetOrDefault "Zip"
