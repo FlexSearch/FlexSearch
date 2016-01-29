@@ -173,6 +173,13 @@ Target "MovePortal" <| fun _ ->
     ensureDirectory (debugDir <!!> "Web")
     FileHelper.CopyRecursive (buildDir <!!> "Web") (debugDir <!!> "Web") true |> ignore
 
+Target "DeployTypeScriptClient" <| fun _ ->
+    let target = deployDir <!!> "clients\\ts"
+    ensureDirectory target
+    emptyDir target
+    FileHelper.CopyRecursive (portalDir <!!> "src\\common\\client\\") (deployDir <!!> "clients\\ts") true |> ignore
+
+
 // Documentation related
 //Target "GenerateSwagger" <| fun _ ->
 //    trace "Generating Swagger"
@@ -188,8 +195,8 @@ Target "MovePortal" <| fun _ ->
 ==> "BuildApp" 
 ==> "Default" 
 ==> "MoveFiles" 
-//==> "GenerateSwagger"
 ==> "MovePortal"
+==> "DeployTypeScriptClient"
 ==> "Zip"
 ==> "Test"
 
