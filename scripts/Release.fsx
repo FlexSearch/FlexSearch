@@ -79,20 +79,20 @@ let packageFiles() =
         if filesToMove.Contains(fileName) then File.Move(file, Path.Combine(src, "Plugins", fileName))
 
 let AssemblyInfo path title = 
-    CreateFSharpAssemblyInfo (sprintf @".\%s\AssemblyInfo.fs" path) [ Attribute.Title title
-                                                                      Attribute.Description title
-                                                                      Attribute.Product productName
-                                                                      Attribute.Copyright copyright
-                                                                      Attribute.FileVersion version
-                                                                      Attribute.Version version ]
+    CreateFSharpAssemblyInfo (sprintf @".\src\%s\AssemblyInfo.fs" path) [ Attribute.Title title
+                                                                          Attribute.Description title
+                                                                          Attribute.Product productName
+                                                                          Attribute.Copyright copyright
+                                                                          Attribute.FileVersion version
+                                                                          Attribute.Version version ]
 
 let AssemblyInfoCSharp path title = 
-    CreateCSharpAssemblyInfo (sprintf @".\%s\Properties\AssemblyInfo.cs" path) [ Attribute.Title title
-                                                                                 Attribute.Description title
-                                                                                 Attribute.Product productName
-                                                                                 Attribute.Copyright copyright
-                                                                                 Attribute.FileVersion version
-                                                                                 Attribute.Version version ]
+    CreateCSharpAssemblyInfo (sprintf @".\src\%s\Properties\AssemblyInfo.cs" path) [ Attribute.Title title
+                                                                                     Attribute.Description title
+                                                                                     Attribute.Product productName
+                                                                                     Attribute.Copyright copyright
+                                                                                     Attribute.FileVersion version
+                                                                                     Attribute.Version version ]
 
 let runPsScript scriptText =
     let ps = PowerShell.Create()
@@ -132,7 +132,7 @@ Target "Test" (fun _ ->
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
-    (fun _ -> !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir + "FlexSearch." + version + ".zip"))
+    (fun _ -> !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir <!!> "FlexSearch." + version + ".zip"))
 
 // Portal related
 Target "BuildPortal" <| fun _ ->
@@ -157,8 +157,8 @@ Target "MovePortal" <| fun _ ->
         ensureDirectory targetAppPath
         FileHelper.CopyRecursive (dir <!!> "dist\\") targetAppPath true |> ignore
         ensureDirectory(targetAppPath <!!> @"\styles")
-        File.Copy(dir <!!> @"dist\fonts\ui-grid.ttf", targetAppPath <!!> @"\styles\ui-grid.ttf", true)
-        File.Copy(portalDir <!!> @"dist\fonts\ui-grid.woff", targetAppPath <!!> @"\styles\ui-grid.woff", true))
+        File.Copy(dir <!!> @"dist\fonts\ui-grid.ttf", targetAppPath <!!> @"styles\ui-grid.ttf", true)
+        File.Copy(portalDir <!!> @"dist\fonts\ui-grid.woff", targetAppPath <!!> @"styles\ui-grid.woff", true))
 
     // Copy the homepage templates
     File.Copy(portalDir <!!> @"src\home.html", webDir <!!> "home.html")
@@ -197,4 +197,4 @@ Target "MovePortal" <| fun _ ->
 ==> "MovePortal"
 
 // start building core FlexSearch
-RunTargetOrDefault "Zip"
+RunTargetOrDefault "MovePortal"
