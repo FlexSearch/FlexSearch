@@ -103,7 +103,7 @@ module IndexWriter =
                 TransactionLog.serializer (stream, txEntry)
                 s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
             // Release the dictionary back to the pool so that it could be recycled
-            dictionaryPool.Release(document.Fields)
+            dictionaryPool.Return(document.Fields)
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
                else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(IdField.Name)), doc)

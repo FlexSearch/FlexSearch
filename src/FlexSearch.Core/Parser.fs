@@ -195,7 +195,6 @@ module Parsers =
     /// </summary> 
     [<Sealed>]
     type FlexParser() = 
-        inherit PooledObject()
         let opp = new OperatorPrecedenceParser<Predicate, unit, unit>()
         let expr = opp.ExpressionParser
         

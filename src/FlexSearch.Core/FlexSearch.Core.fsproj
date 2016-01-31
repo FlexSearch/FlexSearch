@@ -427,6 +427,10 @@
       <HintPath>..\packages\Microsoft.Extensions.Logging.TraceSource.1.0.0-rc2-15958\lib\net451\Microsoft.Extensions.Logging.TraceSource.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Extensions.ObjectPool">
+      <HintPath>..\packages\Microsoft.Extensions.ObjectPool.1.0.0-rc2-15967\lib\net451\Microsoft.Extensions.ObjectPool.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Extensions.Options">
       <HintPath>..\packages\Microsoft.Extensions.Options.1.0.0-rc2-15942\lib\net451\Microsoft.Extensions.Options.dll</HintPath>
       <Private>True</Private>
