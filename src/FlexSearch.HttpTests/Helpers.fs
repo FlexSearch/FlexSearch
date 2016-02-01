@@ -141,14 +141,14 @@ module TestCommandHelpers =
     let isNotNullOrEmpty (str : string) = String.IsNullOrEmpty(str) |> not
 
     let hasStatusCode (statusCode : HttpStatusCode) (r : ApiResponse<'T>) = r.StatusCode =? int statusCode; r
-    let hasErrorCode (errorCode : string) (r : 'T when 'T :> Response) = r.Error.ErrorCode =? errorCode; r
-    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> Response) = 
+    let hasErrorCode (errorCode : string) (r : 'T when 'T :> FlexResponse) = r.Error.ErrorCode =? errorCode; r
+    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> FlexResponse) = 
         r.Data 
         |> hasErrorCode errorCode 
         |> ignore
         r
-    let isSuccessful (r : Response) = r.Error =? null
-    let isCreated (r : ApiResponse<'T> when 'T :> Response) = r.StatusCode =? int HttpStatusCode.Created
+    let isSuccessful (r : FlexResponse) = r.Error =? null
+    let isCreated (r : ApiResponse<'T> when 'T :> FlexResponse) = r.StatusCode =? int HttpStatusCode.Created
 
 [<AutoOpen>]
 module FixtureSetup =
