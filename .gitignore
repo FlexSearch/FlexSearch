@@ -249,3 +249,4 @@ src/FlexSearch.Api/Client
 Tools
 /.fake
 client
+spec/swagger-full.json

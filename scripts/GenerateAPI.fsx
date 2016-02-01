@@ -1,6 +1,8 @@
 #load "Helpers.fsx"
+#load "SwaggerInjector.fsx"
 
 open Helpers
+open SwaggerInjector
 open System
 open System.Diagnostics
 open System.IO
@@ -17,7 +19,7 @@ module CSharp =
         !>> "Cleaning Models, Api & Client directories"
         [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter (ensureDir >> ignore)
         [modelsTempDir; modelsDir; apiDir; clientDir] |> Seq.iter emptyDir
-        javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "cs-template") (toolsDir <!!> @"..\codegen-config.json")
+        javaExec <| sprintf """-jar %s generate -i %s -l csharp -t %s -o obj -c %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-full.json") (specDir <!!> "cs-template") (toolsDir <!!> @"..\codegen-config.json")
         let generatedFiles = Directory.GetFiles(modelsTempDir).Count()
         if generatedFiles > 0 then
             brk()
@@ -100,7 +102,7 @@ module TypeScript =
         !>> "Cleaning Models directory"    
         [tempTsDir; targetTsDir] |> Seq.iter (ensureDir >> ignore)
         [tempTsDir; targetTsDir] |> Seq.iter emptyDir
-        javaExec <| sprintf """-jar %s generate -i %s -l typescript-angular -o obj -t %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "ts-template")
+        javaExec <| sprintf """-jar %s generate -i %s -l typescript-angular -o obj -t %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-full.json") (specDir <!!> "ts-template")
         let generatedFiles = Directory.GetFiles(tempTsDir).Count()
         if generatedFiles > 0 then
             brk()
@@ -176,7 +178,7 @@ module JavaScript =
         !>> "Cleaning Models directory"    
         [tempJsDir; targetJsDir] |> Seq.iter (ensureDir >> ignore)
         [tempJsDir; targetJsDir] |> Seq.iter emptyDir
-        javaExec <| sprintf """-jar %s generate -i %s -l javascript -o obj -t %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "js-template")
+        javaExec <| sprintf """-jar %s generate -i %s -l javascript -o obj -t %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-full.json") (specDir <!!> "js-template")
         let generatedFiles = Directory.GetFiles(tempJsDir, "*.js", SearchOption.AllDirectories).Count()
         if generatedFiles > 0 then
             brk()
@@ -205,6 +207,8 @@ module JavaScript =
 
 /// Generate API model from the swagger definition
 let generateModel() =
+    // First generate the full swagger file according to the glossary
+    injectSwagger()
     CSharp.generateCSharp()
     TypeScript.generateTypeScript()
     JavaScript.generateJavaScript()

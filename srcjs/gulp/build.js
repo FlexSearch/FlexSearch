@@ -101,8 +101,7 @@ module.exports = function (options) {
     gulp.task('swagger-' + options.name, function () {
         // Swagger file is only needed for the swagger module 
         if (options.name == 'swagger') {
-            // TODO replace swagger-partial with swagger-full
-            return gulp.src(swaggerDir + "swagger-partial.json")
+            return gulp.src(swaggerDir + "swagger-full.json")
                 .pipe($.rename('swagger.json'))
                 .pipe(gulp.dest(options.src))
                 .pipe(gulp.dest(options.tmp))

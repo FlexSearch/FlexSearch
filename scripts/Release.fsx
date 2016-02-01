@@ -110,7 +110,7 @@ let runPsScript scriptText =
         ps.Streams.Error |> Seq.iter (sprintf "%A" >> trace)
 
 // Targets
-Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web" ])
+Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web"; deployDir ])
 Target "BuildApp" (fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
@@ -132,7 +132,11 @@ Target "Test" (fun _ ->
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
-    (fun _ -> !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir <!!> "FlexSearch." + version + ".zip"))
+    (fun _ -> 
+        // Zip FlexSearch.Core
+        !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir <!!> "FlexSearch." + version + ".zip")
+        // Zip clients
+        !!(deployDir + "/clients/**/*.*") -- "*.zip" |> Zip deployDir (deployDir <!!> "FlexSearch.Clients." + version + ".zip"))
 
 // Portal related
 Target "BuildPortal" <| fun _ ->
