@@ -1,15 +1,21 @@
 @echo OFF
 cls
 
+ECHO [INFO] Checking if FAKE was downloaded from Nuget
+IF NOT EXIST %~dp0\src\packages\FAKE\tools\FAKE.exe (
+	ECHO [INFO] Downloading FAKE from Nuget
+	"src\.nuget\NuGet.exe" "Install" "FAKE" "-OutputDirectory" "src\packages" "-ExcludeVersion"
+)
+
 IF "%1"=="api" (
 	CALL :API
 	GOTO EXIT
 )
 
-ECHO [INFO] Checking if FAKE was downloaded from Nuget
-IF NOT EXIST %~dp0\src\packages\FAKE\tools\FAKE.exe (
-	ECHO [INFO] Downloading FAKE from Nuget
-	"src\.nuget\NuGet.exe" "Install" "FAKE" "-OutputDirectory" "src\packages" "-ExcludeVersion"
+IF "%1"=="target" (
+	SET _target=%2
+	CALL :TARGET
+	GOTO EXIT
 )
 
 ECHO [INFO] ------------------------------------------------------------------------
@@ -24,6 +30,12 @@ GOTO EXIT
 ECHO [INFO] ------------------------------------------------------------------------
 ECHO [INFO] Running API Generation
 "src\packages\FAKE\tools\Fake.exe" scripts\GenerateAPI.fsx
+EXIT /B 0
+
+:TARGET
+ECHO [INFO] ------------------------------------------------------------------------
+ECHO [INFO] Running the specified target from the Release script
+"src\packages\FAKE\tools\Fake.exe" scripts\Release.fsx %_target% -st
 EXIT /B 0
 
 :EXIT
