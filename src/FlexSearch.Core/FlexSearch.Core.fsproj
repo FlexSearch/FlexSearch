@@ -114,7 +114,6 @@
     <Compile Include="Search\Search.fs" />
     <Compile Include="Search\FlexQueries.fs" />
     <Compile Include="Search\QueryFunctions.fs" />
-    <Compile Include="Orm.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
     <Compile Include="Benchmark.fs" />
