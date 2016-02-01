@@ -1,0 +1,17 @@
+{
+  "name": "{{{projectName}}}",
+  "version": "{{{projectVersion}}}",
+  "description": "{{{projectDescription}}}",{{#projectLicenseName}}
+  "license": "{{{projectLicenseName}}}",{{/projectLicenseName}}
+  "main": "{{sourceFolder}}/index.js",
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha --recursive"
+  },
+  "dependencies": {
+    "superagent": "1.7.1"
+  },
+  "devDependencies": {
+    "mocha": "~2.3.4",
+    "expect.js": "~0.3.1"
+  }
+}

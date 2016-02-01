@@ -27,6 +27,19 @@ module Helpers =
         !>> (sprintf "%s: %s" name content)
         content
     let ensureDir (dir : string) = createDir dir; dir
+    let copyFiles (sourceDir : string) (targetDir : string) =
+        ensureDir (targetDir) |> ignore
+
+        loopFiles sourceDir
+        |> Seq.iter (fun fileSrc -> 
+            let fileName = (new FileInfo(fileSrc)).Name
+            File.Copy(fileSrc, targetDir <!!> fileName))
+
+    let copyDir (sourceDir : string) (targetDir : string) =
+        let sourceDirName = (new DirectoryInfo(sourceDir)).Name
+        ensureDir (targetDir <!!> sourceDirName) |> ignore
+        
+        copyFiles sourceDir (targetDir <!!> sourceDirName)
 
     brk()
     !> "FlexSearch Build Variables"

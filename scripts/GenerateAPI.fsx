@@ -166,11 +166,47 @@ module TypeScript =
         !>> "Copying the files to the API directory"
         copy()
         brk()
-        !> "CSharp Model generation finished"
+        !> "TypeScript Model generation finished"
+
+module JavaScript =
+    let tempJsDir = scriptDir <!!> @"obj\src"
+    let targetJsDir = rootDir <!!> @"deploy\clients\js"
+
+    let generateJavaScriptModel() =
+        !>> "Cleaning Models directory"    
+        [tempJsDir; targetJsDir] |> Seq.iter (ensureDir >> ignore)
+        [tempJsDir; targetJsDir] |> Seq.iter emptyDir
+        javaExec <| sprintf """-jar %s generate -i %s -l javascript -o obj -t %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-partial.json") (specDir <!!> "js-template")
+        let generatedFiles = Directory.GetFiles(tempJsDir, "*.js", SearchOption.AllDirectories).Count()
+        if generatedFiles > 0 then
+            brk()
+            !> (sprintf "%i files generated." generatedFiles)
+            brk()
+        else
+            brk()
+            !> "Swagger code generation failed." 
+            brk()
+    
+    let copy() =
+        // Copy the files
+        copyFiles tempJsDir targetJsDir
+        // Copy the directories
+        loopDir tempJsDir
+        |> Seq.iter (fun src -> copyDir src targetJsDir)
+    
+    let generateJavaScript() =
+        brk()
+        !> "Generating TypeScript API models"
+        generateJavaScriptModel()
+        !>> "Copying the files to the API directory"
+        copy()
+        brk()
+        !> "JavaScript Model generation finished"
 
 /// Generate API model from the swagger definition
 let generateModel() =
     CSharp.generateCSharp()
     TypeScript.generateTypeScript()
+    JavaScript.generateJavaScript()
 
 generateModel()
