@@ -94,9 +94,7 @@
     <Compile Include="Settings.fs" />
     <Compile Include="Protocols.fs" />
     <Compile Include="Queues.fs" />
-    <Compile Include="Http.fs" />
     <Compile Include="Alias.fs" />
-    <Compile Include="DomainExtensions.fs" />
     <Compile Include="Compiler.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Analysis.fs" />
@@ -116,8 +114,9 @@
     <Compile Include="Search\QueryFunctions.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
+    <Compile Include="Http\Http.fs" />
+    <Compile Include="Http\HttpService.fs" />
     <Compile Include="Benchmark.fs" />
-    <Compile Include="HttpService.fs" />
     <Compile Include="Connectors.fs" />
     <Compile Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />

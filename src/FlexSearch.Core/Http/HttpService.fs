@@ -23,6 +23,33 @@ open Microsoft.Extensions.Primitives
 open System.Net
 open System.IO
 
+module ServiceHelpers =
+    
+    /// Gets a search query from an Owin request using the optional body
+    let getQueryFromRequest request body = 
+        let query = 
+            match body with
+            | Some(q) -> q
+            | None -> new SearchQuery()
+        query.QueryString <- request.HttpContext |> stringFromQueryString "q" query.QueryString
+        query.Columns <- match request.HttpContext.Request.Query |> getFirstStringValue "c" with
+                         | null -> query.Columns
+                         | v -> v.Split([| ',' |], System.StringSplitOptions.RemoveEmptyEntries)
+        query.Count <- request.HttpContext |> intFromQueryString "count" query.Count
+        query.Skip <- request.HttpContext |> intFromQueryString "skip" query.Skip
+        query.OrderBy <- request.HttpContext |> stringFromQueryString "orderby" query.OrderBy
+        query.OrderByDirection <- 
+            match request.HttpContext.Request.Query |> getFirstStringValue "orderbydirection" with
+            | null -> query.OrderByDirection
+            | value -> 
+                if value = "asc" then
+                    OrderByDirection.Ascending
+                else
+                    OrderByDirection.Descending
+        query.SearchProfile <- request.HttpContext |> stringFromQueryString "searchprofile" query.SearchProfile
+        query.IndexName <- request.ResId.Value
+        query
+
 /// Returns OK status
 [<Sealed>]
 [<Name("GET-/ping")>]
@@ -412,8 +439,9 @@ type GetJobByIdHandler(jobService : IJobService) =
 [<Sealed>]
 type GetSearchHandler(searchService : ISearchService) = 
     inherit HttpHandlerBase<SearchQuery, SearchResults>(false)
+
     override __.Process(request, body) = 
-        let query = SearchQuery.getQueryFromRequest request body
+        let query = ServiceHelpers.getQueryFromRequest request body
             
         match searchService.Search(query) with
         | Ok(result) -> SuccessResponse(result, Ok)
@@ -442,7 +470,7 @@ type GetSearchHandler(searchService : ISearchService) =
 type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<NoBody, SearchResults>()
     override __.Process(request, _) = 
-        let query = SearchQuery.getQueryFromRequest request <| Some (new SearchQuery())
+        let query = ServiceHelpers.getQueryFromRequest request <| Some (new SearchQuery())
 
         match documentService.DeleteDocumentsFromSearch(request.ResId.Value, query) with
         | Ok(result) -> SuccessResponse(result, Ok)
