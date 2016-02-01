@@ -9,9 +9,18 @@ FlexSearch is written in F# & C# 5.0 (.net framework 4.5). It exposes REST, SOAP
 More information is available at http://www.flexsearch.net/
 
 
-**This is a pre-release version and might introduce breaking changes.** 
+### Build FlexSearch
 
-**Roadmap**
+In order to build FlexSearch you need to run the following commands:
+```
+git submodule init
+.\build
+```
+
+
+###Roadmap
+
+**This is a pre-release version and might introduce breaking changes.** 
 
 Most of the road map is suggestive at the moment and might change depending upon other requirements. The focus is to have a stable bug free core even at the expense of reduced functionality.
 
