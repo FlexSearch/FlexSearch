@@ -163,7 +163,7 @@ module Codec =
     open FlexLucene.Codecs.Lucene410
     open FlexLucene.Codecs.Lucene41
     open FlexLucene.Codecs
-        
+    
     /// Get the default codec associated with the index version
     let getCodec (version : IndexVersion) = 
         match version with
@@ -171,18 +171,17 @@ module Codec =
         | IndexVersion.FlexSearch_1B -> new Lucene54Codec() :> Codec |> ok
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
-module IndexSetting = 
-    /// General index settings
-    type T = 
-        { IndexName : string
-          IndexAnalyzer : AnalyzerWrapper
-          SearchAnalyzer : AnalyzerWrapper
-          /// Contains all the fields used in the index
-          Fields : FieldCollection
-          SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery>
-          IndexConfiguration : IndexConfiguration
-          BaseFolder : string
-          ShardConfiguration : ShardConfiguration }
+/// General index settings
+type IndexSetting = 
+    { IndexName : string
+      IndexAnalyzer : AnalyzerWrapper
+      SearchAnalyzer : AnalyzerWrapper
+      /// Contains all the fields used in the index
+      Fields : FieldCollection
+      SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery>
+      IndexConfiguration : IndexConfiguration
+      BaseFolder : string
+      ShardConfiguration : ShardConfiguration }
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality
 type RealTimeSearcher(searchManger : SearcherManager) = 

@@ -43,7 +43,7 @@ type IIndexService =
     abstract GetAllIndex : unit -> Index array
     abstract IndexExists : indexName:string -> bool
     abstract IndexOnline : indexName:string -> bool
-    abstract IsIndexOnline : indexName:string -> Result<IndexWriter.T>
+    abstract IsIndexOnline : indexName:string -> Result<IndexWriter>
     abstract GetIndexState : indexName:string -> Result<IndexStatus>
     abstract OpenIndex : indexName:string -> Result<unit>
     abstract CloseIndex : indexName:string -> Result<unit>
@@ -344,7 +344,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQue
             result.Add(pair.Value.GetType() |> getTypeNameFromAttribute, pair.Value)
         result
 
-    let getSearchPredicate (writers : IndexWriter.T, search : SearchQuery, 
+    let getSearchPredicate (writers : IndexWriter, search : SearchQuery, 
                             inputValues : Dictionary<string, string> option) = 
         maybe { 
             if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
@@ -385,7 +385,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQue
                  return (predicate, None)
         }
     
-    let generateSearchQuery (writers : IndexWriter.T, searchQuery : SearchQuery, 
+    let generateSearchQuery (writers : IndexWriter, searchQuery : SearchQuery, 
                              inputValues : Dictionary<string, string> option, queryTypes) = 
         maybe { 
             let! (predicate, searchProfile) = getSearchPredicate (writers, searchQuery, inputValues)

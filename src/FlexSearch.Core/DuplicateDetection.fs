@@ -311,7 +311,7 @@ type DuplicateDetectionHandler(indexService : IIndexService, documentService : I
         if isNotBlank req.FileName then getFileDataSource (req)
         else getSearchQueryDataSource (req)
     
-    let performDuplicateDetection (jobId, indexWriter : IndexWriter.T, req : DuplicateDetectionRequestExtension, profileQuery : SearchQuery) = 
+    let performDuplicateDetection (jobId, indexWriter : IndexWriter, req : DuplicateDetectionRequestExtension, profileQuery : SearchQuery) = 
         let session = 
             new Session(IndexName = req.IndexName, ProfileName = req.ProfileName, DisplayFieldName = req.DisplayName, 
                         JobStartTime = DateTime.Now, ThreadCount = req.ThreadCount, 

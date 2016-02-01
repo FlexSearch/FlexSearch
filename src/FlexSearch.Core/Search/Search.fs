@@ -205,7 +205,7 @@ module SearchDsl =
         generateQuery predicate
     
     /// Returns a document from the index
-    let getDocument (indexWriter : IndexWriter.T, search : SearchQuery, document : LuceneDocument) = 
+    let getDocument (indexWriter : IndexWriter, search : SearchQuery, document : LuceneDocument) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         let getValue(field: FieldSchema) =
             let value = document.Get(field.SchemaName)
@@ -233,7 +233,7 @@ module SearchDsl =
                 | _ -> ()
         fields
     
-    let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery) = 
+    let search (indexWriter : IndexWriter, query : Query, searchQuery : SearchQuery) = 
         (!>) "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
@@ -273,7 +273,7 @@ module SearchDsl =
             | 0 -> 10 + searchQuery.Skip
             | _ -> searchQuery.Count + searchQuery.Skip
         
-        let searchShard(x : ShardWriter.T) =
+        let searchShard(x : ShardWriter) =
             // This is to enable proper sorting
             let topFieldCollector = 
                 TopFieldCollector.Create(sort, count, null, true, true, true)

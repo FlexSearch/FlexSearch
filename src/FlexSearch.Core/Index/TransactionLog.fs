@@ -22,81 +22,80 @@ open MsgPack.Serialization
 open System
 open System.IO
 
-module TransactionLog = 
-    [<Internal>]
-    type Operation = 
-        | Create = 1
-        | Update = 2
-        | Delete = 3
+[<Internal>]
+type TxOperation = 
+    | Create = 1
+    | Update = 2
+    | Delete = 3
+
+/// Represents a single Transaction log record entry.
+[<CLIMutableAttribute>]
+type TransactionLog = 
+    { TransactionId : int64
+      Operation : TxOperation
+      Document : Document
+      /// This will be used for delete operation as we
+      /// don't require a document
+      Id : string
+      /// This will be used for delete operation
+      Query : string }
     
-    /// Represents a single Transaction log record entry.
-    [<CLIMutableAttribute>]
-    type T = 
-        { TransactionId : int64
-          Operation : Operation
-          Document : Document
-          /// This will be used for delete operation as we
-          /// don't require a document
-          Id : string
-          /// This will be used for delete operation
-          Query : string }
-        
-        static member Create(tranxId, operation, document, ?id : string, ?query : string) = 
-            let id = defaultArg id String.Empty
-            let query = defaultArg query String.Empty
-            { TransactionId = tranxId
-              Operation = operation
-              Document = document
-              Id = id
-              Query = query }
-        
-        static member Create(txId, id) = 
-            { TransactionId = txId
-              Operation = Operation.Delete
-              Document = Unchecked.defaultof<Document>
-              Id = id
-              Query = String.Empty }
+    static member Create(tranxId, operation, document, ?id : string, ?query : string) = 
+        let id = defaultArg id String.Empty
+        let query = defaultArg query String.Empty
+        { TransactionId = tranxId
+          Operation = operation
+          Document = document
+          Id = id
+          Query = query }
     
-    let msgPackSerializer = SerializationContext.Default.GetSerializer<T>()
-    let serializer (stream, entry : T) = msgPackSerializer.Pack(stream, entry)
-    let deSerializer (stream) = msgPackSerializer.Unpack(stream)
+    static member Create(txId, id) = 
+        { TransactionId = txId
+          Operation = TxOperation.Delete
+          Document = Unchecked.defaultof<Document>
+          Id = id
+          Query = String.Empty }
     
-    type TxWriter(path : string, gen : int64) = 
-        inherit SingleConsumerQueue<byte [] * int64>()
-        let mutable currentGen = gen
-        let mutable fileStream = Unchecked.defaultof<_>
-        let populateFS() = 
-            fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, 
-                                         FileShare.ReadWrite, 1024, true)
-        do populateFS()
-        
-        override __.Process(item : byte [] * int64) = 
-            let (data, gen) = item
-            if gen <> currentGen then 
-                fileStream.Close()
-                currentGen <- gen
-                populateFS()
-            await <| fileStream.WriteAsync(data, 0, data.Length)
-            fileStream.Flush()
-        
-        /// Reads existing Transaction Log and returns all the entries
-        member __.ReadLog(gen : int64) = 
-            if File.Exists(path +/ gen.ToString()) then 
-                try 
-                    seq { 
-                        use fileStream = 
-                            new FileStream(path +/ gen.ToString(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                        while fileStream.Position <> fileStream.Length do
-                            yield msgPackSerializer.Unpack(fileStream)
-                    }
-                with e -> 
-                    Logger.Log <| TransactionLogReadFailure(path +/ gen.ToString(), exceptionPrinter e)
-                    Seq.empty
-            else Seq.empty
-        
-        /// Append a new entry to TxLog
-        member this.Append(data, gen) = this.Post(data, gen) |> ignore
-        
-        interface IDisposable with
-            member __.Dispose() : unit = 
-                if not (isNull fileStream) then fileStream.Close()
+    static member MsgPackSerializer = SerializationContext.Default.GetSerializer<TransactionLog>()
+    static member Serializer(stream, entry : TransactionLog) = TransactionLog.MsgPackSerializer.Pack(stream, entry)
+    static member DeSerializer(stream) = TransactionLog.MsgPackSerializer.Unpack(stream)
+
+type TxWriter(path : string, gen : int64) = 
+    inherit SingleConsumerQueue<byte [] * int64>()
+    let mutable currentGen = gen
+    let mutable fileStream = Unchecked.defaultof<_>
+    let populateFS() = 
+        fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, 
+                                     FileShare.ReadWrite, 1024, true)
+    do populateFS()
+    
+    override __.Process(item : byte [] * int64) = 
+        let (data, gen) = item
+        if gen <> currentGen then 
+            fileStream.Close()
+            currentGen <- gen
+            populateFS()
+        await <| fileStream.WriteAsync(data, 0, data.Length)
+        fileStream.Flush()
+    
+    /// Reads existing Transaction Log and returns all the entries
+    member __.ReadLog(gen : int64) = 
+        if File.Exists(path +/ gen.ToString()) then 
+            try 
+                seq { 
+                    use fileStream = 
+                        new FileStream(path +/ gen.ToString(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    while fileStream.Position <> fileStream.Length do
+                        yield TransactionLog.MsgPackSerializer.Unpack(fileStream)
+                }
+            with e -> 
+                Logger.Log <| TransactionLogReadFailure(path +/ gen.ToString(), exceptionPrinter e)
+                Seq.empty
+        else Seq.empty
+    
+    /// Append a new entry to TxLog
+    member this.Append(data, gen) = this.Post(data, gen) |> ignore
+    
+    interface IDisposable with
+        member __.Dispose() : unit = 
+            if not (isNull fileStream) then fileStream.Close()

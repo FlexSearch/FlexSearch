@@ -40,12 +40,11 @@ open System.Threading.Tasks
 /// Builder related to creating Index Settings
 [<AutoOpenAttribute>]
 module IndexSettingBuilder = 
-    open IndexSetting
     
     /// Builder object which will be passed around to build
     /// index setting
     type BuilderObject = 
-        { Setting : IndexSetting.T }
+        { Setting : IndexSetting }
     
     let withIndexName (indexName, path) = 
         Directory.CreateDirectory(path) |> ignore
@@ -114,7 +113,7 @@ module IndexSettingBuilder =
 /// Builders related to creating Lucene IndexWriterConfig
 module IndexWriterConfigBuilder = 
     /// Returns an instance of per field similarity provider 
-    let getSimilarityProvider (s : IndexSetting.T) = 
+    let getSimilarityProvider (s : IndexSetting) = 
         let defaultSimilarity = 
             Similarity.TFIDF
             |> FieldSimilarity.getLuceneT
@@ -132,7 +131,7 @@ module IndexWriterConfigBuilder =
         new FieldSimilarity.Provider(mappings, defaultSimilarity)
     
     /// Build Index writer settings with the given index settings
-    let buildWithSettings (s : IndexSetting.T) = 
+    let buildWithSettings (s : IndexSetting) = 
         let iwc = new IndexWriterConfig(s.IndexAnalyzer)
         
         let codec = 
@@ -150,5 +149,5 @@ module IndexWriterConfigBuilder =
         iwc
     
     /// Used for updating real time Index writer settings
-    let updateWithSettings (s : IndexSetting.T) (iwc : LiveIndexWriterConfig) = 
+    let updateWithSettings (s : IndexSetting) (iwc : LiveIndexWriterConfig) = 
         iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb)

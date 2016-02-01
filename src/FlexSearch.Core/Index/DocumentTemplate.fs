@@ -21,21 +21,22 @@ open FlexSearch.Core
 open FlexSearch.Api.Model
 open System.Linq
 
+/// This is responsible for creating a wrapper around Document which can be cached and re-used.
+/// Note: Make sure that the template is not accessed by multiple threads.
+type DocumentTemplate = 
+    { Setting : IndexSetting
+      TemplateFields : array<FieldTemplate>
+      Template : LuceneDocument
+      MetaDataFieldCount : int }
+
+[<Compile(ModuleSuffix)>]
 module DocumentTemplate = 
     type NumericDocValuesField = FlexLucene.Document.NumericDocValuesField
-    
-    /// This is responsible for creating a wrapper around Document which can be cached and re-used.
-    /// Note: Make sure that the template is not accessed by multiple threads.
-    type T = 
-        { Setting : IndexSetting.T
-          TemplateFields : array<FieldTemplate>
-          Template : LuceneDocument
-          MetaDataFieldCount : int }
     
     let inline protectedFields (fieldName) = fieldName = IdField.Name || fieldName = TimeStampField.Name
     
     /// Create a new document template
-    let create (s : IndexSetting.T) = 
+    let create (s : IndexSetting) = 
         let template = new LuceneDocument()
         let fields = new ResizeArray<FieldTemplate>()
         
@@ -58,7 +59,7 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let updateTempate (document : Document) (modifyIndex : int64) (template : T) = 
+    let updateTempate (document : Document) (modifyIndex : int64) (template : DocumentTemplate) = 
         for i = 0 to template.Setting.Fields.Count - 1 do
             let f = template.Setting.Fields.[i]
             let tf = template.TemplateFields.[i]

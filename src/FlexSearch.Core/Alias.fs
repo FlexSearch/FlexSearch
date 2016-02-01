@@ -63,3 +63,11 @@ type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string
 type SearchProfileDelegate = Action<SearchQuery, Dictionary<string, string>>
 
 type GetScript = string -> Result<ComputedDelegate * string []>
+
+type Compile = CompilationRepresentationAttribute
+
+[<AutoOpen>]
+module Alias =
+
+    [<Literal>]
+    let ModuleSuffix = CompilationRepresentationFlags.ModuleSuffix

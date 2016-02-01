@@ -16,13 +16,13 @@ type TransactionWriterTests() =
         let fixture = new Ploeh.AutoFixture.Fixture()
         use stream = new MemoryStream()
         let context = new SpecimenContext(fixture)
-        let txEntry = context.Create<TransactionLog.T>()
-        TransactionLog.serializer (stream, txEntry)
+        let txEntry = context.Create<TransactionLog>()
+        TransactionLog.Serializer (stream, txEntry)
         (txEntry, stream.ToArray())
     
     member __.``Transaction can be added and retrieved``() = 
         if File.Exists(DataHelpers.rootFolder +/ "0") then File.Delete(DataHelpers.rootFolder +/ "0")
-        let writer = new TransactionLog.TxWriter(DataHelpers.rootFolder, 0L)
+        let writer = new TxWriter(DataHelpers.rootFolder, 0L)
         let entries = Array.create 5 (getTransactionLogEntry())
         entries |> Array.iter (fun entry -> writer.Append(snd entry, 0L))
         let txEntries = entries |> Array.map (fun entry -> fst entry)
