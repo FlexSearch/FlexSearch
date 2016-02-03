@@ -138,12 +138,12 @@ module ShardWriter =
         try 
             sw.SearcherManager.Close()
             sw.IndexWriter.Close()
-            sw.TxWriter :> IRequireNotificationForShutdown
-            |> fun x -> x.Shutdown()
-            |> Async.Catch
-            |> Async.RunSynchronously
-            |> handleShutdownExceptions
-            sw.TxWriter :> IDisposable |> fun x -> x.Dispose()
+//            sw.TxWriter :> IRequireNotificationForShutdown
+//            |> fun x -> x.Shutdown()
+//            |> Async.Catch
+//            |> Async.RunSynchronously
+//            |> handleShutdownExceptions
+//            sw.TxWriter :> IDisposable |> fun x -> x.Dispose()
         with e -> ()
     
     /// Adds a document to this index.
@@ -216,7 +216,7 @@ module ShardWriter =
               OutstandingFlushes = AtomicLong.Create()
               Status = ShardStatus.Opening
               ModifyIndex = AtomicLong.Create(modifyIndex)
-              TxWriter = new TxWriter(logPath, generation)
+              TxWriter = new TxWriter(generation, logPath)
               Settings = settings
               TxLogPath = logPath
               Lock = new Object()

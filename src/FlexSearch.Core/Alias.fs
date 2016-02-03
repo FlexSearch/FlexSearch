@@ -40,6 +40,8 @@ type FieldSource = Func<string, string, IReadOnlyDictionary<string, string>, str
 
 type FieldName = string
 
+type Fields = Dictionary<string, string>
+
 type SchemaName = string
 
 type FieldValue = string

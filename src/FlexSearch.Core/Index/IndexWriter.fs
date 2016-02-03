@@ -75,7 +75,7 @@ module IndexWriter =
     /// Commit unsaved data to the index
     let commit (forceCommit : bool) (s : IndexWriter) = s.ShardWriters |> Array.iter (ShardWriter.commit forceCommit)
     
-    let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
+    
     
     /// Add or update a document
     let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : IndexWriter) = 
@@ -97,10 +97,8 @@ module IndexWriter =
                     if create then TxOperation.Create
                     else TxOperation.Update
                 
-                let txEntry = TransactionLog.Create(txId, opCode, document)
-                use stream = memoryManager.GetStream()
-                TransactionLog.Serializer(stream, txEntry)
-                s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
+                let txEntry = TransactionEntry.Create(txId, opCode, document.Fields, document.Id)
+                s.ShardWriters.[shardNo].TxWriter.AppendEntry(txEntry, s.ShardWriters.[shardNo].Generation.Value)
             // Release the dictionary back to the pool so that it could be recycled
             dictionaryPool.Return(document.Fields)
             s.Template.Return(template)
@@ -131,10 +129,8 @@ module IndexWriter =
                 |> VersionCache.delete (id, VersionCache.deletedValue)
                 |> boolToResult UnableToUpdateMemory
             let txId = s.ShardWriters.[shardNo].GetNextIndex()
-            let txEntry = TransactionLog.Create(txId, id)
-            use stream = memoryManager.GetStream()
-            TransactionLog.Serializer(stream, txEntry)
-            s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
+            let txEntry = TransactionEntry.Create(txId, id)
+            s.ShardWriters.[shardNo].TxWriter.AppendEntry(txEntry, s.ShardWriters.[shardNo].Generation.Value)
             s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(IdField.Name))
         }
     

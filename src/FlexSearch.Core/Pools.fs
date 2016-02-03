@@ -42,7 +42,10 @@ module Pools =
             dict.Clear()
             true
         new DefaultObjectPool<Dictionary<string, string>>(new DefaultObjectPoolPolicy<Dictionary<string, string>>(factory, 
-                                                                                                                  onRelease))
+                                                                                                              onRelease))
+    
+    /// Global memory pool to be shared across the engine
+    let memory = new Microsoft.IO.RecyclableMemoryStreamManager()
 
 [<AutoOpen>]
 module BytePool = 

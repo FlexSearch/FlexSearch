@@ -21,6 +21,9 @@ open FlexSearch.Api.Model
 open MsgPack.Serialization
 open System
 open System.IO
+open System.Security.AccessControl
+open System.Text
+open System.Collections.Generic
 
 [<Internal>]
 type TxOperation = 
@@ -30,72 +33,68 @@ type TxOperation =
 
 /// Represents a single Transaction log record entry.
 [<CLIMutableAttribute>]
-type TransactionLog = 
-    { TransactionId : int64
+type TransactionEntry = 
+    { ModifyIndex : int64
       Operation : TxOperation
-      Document : Document
-      /// This will be used for delete operation as we
-      /// don't require a document
-      Id : string
-      /// This will be used for delete operation
-      Query : string }
+      Data : Fields
+      Id : string }
     
-    static member Create(tranxId, operation, document, ?id : string, ?query : string) = 
-        let id = defaultArg id String.Empty
-        let query = defaultArg query String.Empty
-        { TransactionId = tranxId
+    static member Create(modifyIndex, operation, data, id : string) = 
+        { ModifyIndex = modifyIndex
           Operation = operation
-          Document = document
-          Id = id
-          Query = query }
+          Data = data
+          Id = id }
     
-    static member Create(txId, id) = 
-        { TransactionId = txId
+    /// Used for creating delete entry
+    static member Create(modifyIndex, id : string) = 
+        { ModifyIndex = modifyIndex
           Operation = TxOperation.Delete
-          Document = Unchecked.defaultof<Document>
-          Id = id
-          Query = String.Empty }
-    
-    static member MsgPackSerializer = SerializationContext.Default.GetSerializer<TransactionLog>()
-    static member Serializer(stream, entry : TransactionLog) = TransactionLog.MsgPackSerializer.Pack(stream, entry)
-    static member DeSerializer(stream) = TransactionLog.MsgPackSerializer.Unpack(stream)
+          Data = Unchecked.defaultof<_>
+          Id = id }
 
-type TxWriter(path : string, gen : int64) = 
-    inherit SingleConsumerQueue<byte [] * int64>()
+    static member MsgPackSerializer = SerializationContext.Default.GetSerializer<TransactionEntry>()
+    static member Serializer(stream, entry : TransactionEntry) = TransactionEntry.MsgPackSerializer.Pack(stream, entry)
+    static member DeSerializer(stream) = TransactionEntry.MsgPackSerializer.Unpack(stream)
+
+/// TxWriter is used for writing transaction entries to a text file using MessagePack serializer.
+/// NOTE: This is not threadsafe and should be used as a pooled resource for performance.
+type TxWriter(gen : int64, ?path0 : string) = 
+    let path = defaultArg path0 (Path.GetTempFileName())
     let mutable currentGen = gen
     let mutable fileStream = Unchecked.defaultof<_>
     let populateFS() = 
-        fileStream <- new FileStream(path +/ currentGen.ToString(), FileMode.Append, FileAccess.Write, 
-                                     FileShare.ReadWrite, 1024, true)
+        let localPath = if path0.IsSome then path +/ currentGen.ToString() else path
+        fileStream <- new FileStream(localPath, FileMode.OpenOrCreate, FileSystemRights.AppendData, 
+                                     FileShare.ReadWrite, 1024, FileOptions.Asynchronous)
     do populateFS()
     
-    override __.Process(item : byte [] * int64) = 
-        let (data, gen) = item
+    member __.AppendEntry(entry : TransactionEntry, gen : int64) = 
         if gen <> currentGen then 
             fileStream.Close()
             currentGen <- gen
             populateFS()
-        await <| fileStream.WriteAsync(data, 0, data.Length)
+        use stream = Pools.memory.GetStream()
+        TransactionEntry.Serializer(stream, entry)
+        // Avoid using ToArray as it allocates a lot of memory
+        fileStream.Write(stream.GetBuffer(), 0, int stream.Position)     
         fileStream.Flush()
     
     /// Reads existing Transaction Log and returns all the entries
     member __.ReadLog(gen : int64) = 
-        if File.Exists(path +/ gen.ToString()) then 
+        let localPath = if path0.IsSome then path +/ currentGen.ToString() else path
+        if File.Exists(localPath) then 
             try 
                 seq { 
-                    use fileStream = 
-                        new FileStream(path +/ gen.ToString(), FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-                    while fileStream.Position <> fileStream.Length do
-                        yield TransactionLog.MsgPackSerializer.Unpack(fileStream)
+                    use fs = 
+                        new FileStream(localPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    while fs.Position <> fs.Length do
+                        yield TransactionEntry.MsgPackSerializer.Unpack(fs)
                 }
             with e -> 
                 Logger.Log <| TransactionLogReadFailure(path +/ gen.ToString(), exceptionPrinter e)
                 Seq.empty
         else Seq.empty
-    
-    /// Append a new entry to TxLog
-    member this.Append(data, gen) = this.Post(data, gen) |> ignore
-    
+        
     interface IDisposable with
         member __.Dispose() : unit = 
             if not (isNull fileStream) then fileStream.Close()
