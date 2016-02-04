@@ -110,18 +110,18 @@ type CommitTests() =
         
         for i = 1 to commitCount do
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = (i - 1) * documentsPerCommit @>
-            let previousGen  = writer.ShardWriters.[0].Generation.Value
+            let previousGen  = writer.Generation.Value
             // Do a commit before hand so that we can see the tx file change
             test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
             // Commit should cause a flush
             // TODO: Fix this
             // test <@ writer.ShardWriters.[0].OutstandingFlushes.Value = 1L @>
             // New generation must be 1 higer than the last
-            test <@ writer.ShardWriters.[0].Generation.Value = previousGen + 1L  @>
+            test <@ writer.Generation.Value = previousGen + 1L  @>
             
             for j = 1 to documentsPerCommit do 
                 test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
-            let txFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
+            let txFile = writer.Settings.BaseFolder +/ "txlogs" +/ writer.Generation.Value.ToString()
             // Test if the TxLog file is present with the current generation
             test <@ File.Exists(txFile) @>
 
@@ -132,9 +132,9 @@ type CommitTests() =
         let writer = extract <| indexService.IsIndexOnline(index.IndexName)
         for i = 1 to 10 do
             test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
-            let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.ShardWriters.[0].TxLogPath).Count()
-            let olderTxFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
+            let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ "txlogs").Count()
+            let olderTxFile = writer.Settings.BaseFolder +/ "txlogs" +/ writer.Generation.Value.ToString()
             test <@ File.Exists(olderTxFile) @>
             test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
-            let afterCommitTotalNoFiles = Directory.EnumerateFiles(writer.ShardWriters.[0].TxLogPath).Count()
+            let afterCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ "txlogs").Count()
             test <@ afterCommitTotalNoFiles <= beforeCommitTotalNoFiles @>

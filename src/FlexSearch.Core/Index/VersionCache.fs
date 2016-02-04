@@ -67,7 +67,7 @@ type VersionCache =
 /// complicates the design and requires thread management
 [<Compile(ModuleSuffix)>]
 module VersionCache = 
-    let create (settings : IndexSetting, shardWriter : ShardWriter) = 
+    let create (settings : IndexSetting) (shardWriter : ShardWriter) = 
         let store = 
             { Current = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
               Old = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
