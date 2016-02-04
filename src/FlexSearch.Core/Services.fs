@@ -42,7 +42,7 @@ type IIndexService =
     abstract AddIndex : index:Index -> Result<CreationId>
     abstract GetAllIndex : unit -> Index array
     abstract IndexExists : indexName:string -> bool
-    abstract IndexOnline : indexName:string -> bool
+    abstract IndexOnline : indexName:string -> Result<unit>
     abstract IsIndexOnline : indexName:string -> Result<IndexWriter.T>
     abstract GetIndexState : indexName:string -> Result<IndexStatus>
     abstract OpenIndex : indexName:string -> Result<unit>
@@ -275,7 +275,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
         member __.IndexOnline(indexName : string) = 
             im
             |> IndexManager.indexOnline indexName
-            |> resultToBool
+            >>= fun _ -> okUnit
         
         member __.GetIndexState(indexName : string) = 
             match im |> IndexManager.indexState indexName with
