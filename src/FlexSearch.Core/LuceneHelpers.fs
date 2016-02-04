@@ -110,13 +110,6 @@ module QueryHelpers =
     
     /// Get term for the given fieldname and value
     let inline getTerm (fieldName : string) (text : string) = new Term(fieldName, text)
-        
-    // Find terms associated with the search string
-    let inline getTerms (schemaName : string, analyzer : LuceneAnalyzer, values : string[]) = 
-        let result = new List<string>()
-        for value in values do
-            result.AddRange(parseTextUsingAnalyzer (analyzer, schemaName, value))
-        result
 
     // ----------------------------------------------------------------------------
     // Queries

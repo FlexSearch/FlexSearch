@@ -262,9 +262,9 @@ module SearchDsl =
             if not <| String.IsNullOrWhiteSpace(searchQuery.DistinctBy) then 
                 match indexWriter.Settings.Fields.TryGetValue(searchQuery.DistinctBy) with
                 | true, field -> 
-                    match field.FieldType.GetTokens with
-                    | Some(_) -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
-                    | _ -> None
+                    match field |> FieldSchema.isTokenized with
+                    | false -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
+                    | true -> None
                 | _ -> None
             else None
         

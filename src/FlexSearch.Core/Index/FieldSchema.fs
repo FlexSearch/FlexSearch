@@ -211,6 +211,24 @@ module FieldSchema =
                      Analyzers = analyzers }
         }
     
+    /// Get tokens for a given input. This is not supported by all field types for example
+    /// it does not make any sense to tokenize numeric types and exact text fields. In these
+    /// cases the internal representation of the field type is used.
+    /// Note: An instance of List is passed so that we can avoid memory allocation and
+    /// reuse the list from the object pool.
+    /// Note: Avoid using the below for numeric types. 
+    let inline getTerms (values : string[], result : List<string>) (fs : FieldSchema) = 
+        match fs.Analyzers with
+        | Some(analyzers) ->
+            for value in values do
+                result.AddRange(parseTextUsingAnalyzer (analyzers.SearchAnalyzer, fs.SchemaName, value))
+        | _ -> 
+            // The field does not have an associated analyzer so just add the input to
+            // the result by using the field specific formatting
+            for value in values do
+                result.Add(fs.FieldType.ToInternal value)
+        result
+
     ///----------------------------------------------------------------------
     /// Meta data fields related
     ///----------------------------------------------------------------------

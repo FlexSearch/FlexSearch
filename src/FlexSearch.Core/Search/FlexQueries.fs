@@ -20,6 +20,7 @@ namespace FlexSearch.Core
 open FlexSearch.Core
 open FlexLucene.Index
 open FlexLucene.Search
+open System.Collections.Generic
 
 /// Term Query
 [<Name("term_match"); Sealed>]
@@ -37,7 +38,7 @@ type FlexTermQuery() =
                 // This behaviour will result in matching of both the terms in the results which may not be
                 // adjacent to each other. The adjacency case should be handled through phrase query
                 zeroOneOrManyQuery 
-                <| getTerms (flexIndexField.SchemaName, flexIndexField.Analyzers.Value.SearchAnalyzer, values) 
+                <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
                 <| getTermQuery flexIndexField.SchemaName <| getBooleanClause parameters
 
 /// Fuzzy Query
@@ -49,7 +50,7 @@ type FlexFuzzyQuery() =
             let slop = parameters |> intFromOptDict "slop" 1
             let prefixLength = parameters |> intFromOptDict "prefixlength" 0
             zeroOneOrManyQuery 
-            <| getTerms (flexIndexField.SchemaName, flexIndexField.Analyzers.Value.SearchAnalyzer, values) 
+            <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
             <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClauseOccur.MUST
 
 /// Match all Query
@@ -65,7 +66,7 @@ type FlexPhraseQuery() =
     interface IFlexQuery with
         member __.QueryName() = [| "match" |]
         member __.GetQuery(flexIndexField, values, parameters) = 
-            let terms = getTerms (flexIndexField.SchemaName, flexIndexField.Analyzers.Value.SearchAnalyzer, values)
+            let terms = FieldSchema.getTerms (values, new List<string>()) flexIndexField 
             let query = new PhraseQuery()
             for term in terms do
                 query.Add(new Term(flexIndexField.SchemaName, term))
