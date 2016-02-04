@@ -71,6 +71,10 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
     /// any specific external formatting rules
     override __.ToExternal = None
     
+    /// Generates the internal representation of the field. This is mostly
+    /// useful when searching if the field does not have an associated analyzer.
+    abstract ToInternal : string -> string
+
     /// Create a new Field template for the given field. 
     abstract CreateFieldTemplate : SchemaName -> generateDocValues:bool -> FieldTemplate
     
@@ -81,12 +85,6 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
     /// Get a range query for the given type
     abstract GetRangeQuery : option<SchemaName -> (LowerRange * UpperRange) -> (InclusiveMinimum * InclusiveMaximum) -> Result<Query>>
     
-    /// Get tokens for a given input. This is not supported by all field types for example
-    /// it does not make any sense to tokenize numeric types and exact text fields
-    abstract GetTokens : option<string -> option<LuceneAnalyzer> -> List<string>>
-    
-    override __.GetTokens = None
-
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
 /// instance could be cached. Any Index specific information should go to FieldSchema
@@ -120,6 +118,9 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     // Validate the given string for the Field. This works in
     // conjunction with the UpdateFieldTemplate
     abstract Validate : value:string -> 'T
+
+    /// Provide a default ToInternal representation by wrapping around validate method.
+    override this.ToInternal (value) = this.Validate(value).ToString()
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]
