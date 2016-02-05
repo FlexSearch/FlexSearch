@@ -24,18 +24,15 @@ open FlexLucene.Search
 open System
 open System.Collections.Generic
 open System.Collections.ObjectModel
-
-/// Uniquely represents the properties of a field Type
-type FieldTypeIndentity = 
-    { Value : int32 }
+open System.Text
 
 /// Represents the analyzers associated with a field. By creating this abstraction
-/// we can easily create a cacheable copy of it which can be shared across field types
+/// we can easily create a cache able copy of it which can be shared across field types
 type FieldAnalyzers = 
     { SearchAnalyzer : LuceneAnalyzer
       IndexAnalyzer : LuceneAnalyzer }
 
-/// Represents the minimum unit to represent a field in FlexSearch Document. The reson
+/// Represents the minimum unit to represent a field in FlexSearch Document. The reason
 /// to use array is to support fields which can maps to multiple internal fields.
 /// Note: We will create a new instance of FieldTemplate per field in an index. So, it
 /// should not occupy a lot of memory
@@ -43,60 +40,87 @@ type FieldTemplate =
     { Fields : LuceneField []
       DocValues : LuceneField [] option }
 
-type BasicDataType = 
-    | String of string
-    | Integer of int32
-    | Long of int64
-    | Double of double
-    | Float of float32
+type RangeQueryProperties<'T> = 
+    { Minimum : 'T
+      Maxmimum : 'T
+      InclusiveMinimum : bool
+      InclusiveMaximum : bool }
 
+/// FieldBase containing all the Field related properties which are not
+/// dependent upon the type information
+[<AbstractClass>]
+type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option) = 
+    
+    /// Checks if the Field has a reserved name then returns that otherwise
+    /// format's the passed name to the correct schema name 
+    member __.GetSchemaName(fieldName : string) = 
+        match defaultFieldName with
+        | Some name -> name
+        | _ -> fieldName
+    
+    member __.LuceneFieldType : FieldType = luceneFieldType
+    member __.SortFieldType : SortFieldType = sortFieldType
+    abstract DefaultStringValue : string
+    
+    /// Generate any type specific formatting that is needed before sending
+    /// the data out as part of search result. This is useful in case of enums
+    /// and boolean fields which have a different internal representation. 
+    abstract ToExternal : option<FieldValue -> string>
+    
+    /// Default implementation of ToExternal as most of the types will not have
+    /// any specific external formatting rules
+    override __.ToExternal = None
+    
+    /// Generates the internal representation of the field. This is mostly
+    /// useful when searching if the field does not have an associated analyzer.
+    abstract ToInternal : string -> string
+
+    /// Create a new Field template for the given field. 
+    abstract CreateFieldTemplate : SchemaName -> generateDocValues:bool -> FieldTemplate
+    
+    /// Update a field template from the given FlexDocument. This is a higher level method which
+    /// bring together a number of lower level method from FieldBase
+    abstract UpdateDocument : FlexDocument -> SchemaName -> FieldSource option -> FieldTemplate -> unit
+    
+    /// Get a range query for the given type
+    abstract GetRangeQuery : option<SchemaName -> (LowerRange * UpperRange) -> (InclusiveMinimum * InclusiveMaximum) -> Result<Query>>
+    
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
-/// instance could be cachced. Any Index specific information shouls go to FieldSchema
+/// instance could be cached. Any Index specific information should go to FieldSchema
 [<AbstractClass>]
-type FieldBase() = 
-    abstract Suffix : string option
-    abstract SubTypes : FieldBase [] option
-    abstract FieldType : FlexSearch.Api.Constants.FieldType
-    abstract LuceneFieldType : LuceneFieldType
-    abstract SortFieldType : SortFieldType
-    abstract DefaultStringValue : string
-    abstract DefaultBasicValue : BasicDataType
-    abstract ToInternal : fieldName:string -> fieldValue:string -> BasicDataType
-    abstract ToExternal : fieldName:string -> fieldValue:string -> string
-    abstract CreateFieldTemplate : schemaName:string -> generateDocValue:bool -> FieldTemplate
-    abstract UpdateFieldTemplate : fieldName:string -> document:Dictionary<string, string> -> FieldTemplate -> unit
+type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldName : string option) = 
+    inherit FieldBase(luceneFieldType, sortFieldType, defaultFieldName)
+    member __.DefaultValue : 'T = defaultValue
+    override __.DefaultStringValue = defaultValue.ToString()
+    
+    /// Update a field template with the given value. Call to this
+    /// method should be chained from Validate
+    abstract UpdateFieldTemplate : FieldTemplate -> 'T -> unit
+    
+    override this.UpdateDocument document schemaName fieldSource template = 
+        // If it is computed field then generate and add it otherwise follow standard path
+        match fieldSource with
+        | Some(s, options) -> 
+            try 
+                // Wrong values for the data type will still be handled as update Lucene field will
+                // check the data type
+                let value = s.Invoke(document.IndexName, schemaName, document.Fields, options)
+                value
+            with _ -> this.DefaultStringValue
+        | None -> 
+            match document.Fields.TryGetValue(schemaName) with
+            | (true, value) -> value
+            | _ -> this.DefaultStringValue
+        |> this.Validate
+        |> this.UpdateFieldTemplate template
+    
+    // Validate the given string for the Field. This works in
+    // conjunction with the UpdateFieldTemplate
+    abstract Validate : value:string -> 'T
 
-[<AbstractClass>]
-type BasicFieldBase<'T>(fieldType, luceneFieldType, sortFieldType, defaultValueString) = 
-    inherit FieldBase()
-    abstract DefaultValue : 'T
-    override __.Suffix = None
-    override __.SubTypes = None
-    override __.FieldType = fieldType
-    override __.LuceneFieldType = luceneFieldType
-    override __.DefaultStringValue = defaultValueString
-    override __.SortFieldType = SortFieldType.SCORE
-    override __.ToExternal (fieldName : string) (value : string) = value
-    abstract Validate : fieldName:string -> fieldValue:string -> 'T
-
-/// Represents a field in an Index.
-type FieldSchema = 
-    { SchemaName : string
-      FieldName : string
-      // Signifies the position of the field in the index
-      Ordinal : int
-      Field : FieldBase
-      Analyzers : FieldAnalyzers option
-      Indentity : FieldTypeIndentity
-      Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option }
-
-/// KeyedCollection wrapper for Field collections
-type FieldCollection() = 
-    inherit KeyedCollection<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
-    override __.GetKeyForItem(t : FieldSchema) = t.FieldName
-    member this.TryGetValue(key : string) = this.Dictionary.TryGetValue(key)
-    member this.ReadOnlyDictionary = new ReadOnlyDictionary<string, FieldSchema>(this.Dictionary)
+    /// Provide a default ToInternal representation by wrapping around validate method.
+    override this.ToInternal (value) = this.Validate(value).ToString()
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]
@@ -105,6 +129,8 @@ module CreateField =
     /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
     /// intend to use for sorting or access through the field cache.
     let string fieldName = new StringField(fieldName, Constants.StringDefaultValue, FieldStore.YES) :> LuceneField
+    
+    let stringDV fieldName = new SortedDocValuesField(fieldName, new FlexLucene.Util.BytesRef()) :> LuceneField
     
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
@@ -124,227 +150,259 @@ module CreateField =
         new LuceneField(fieldName, value, template)
     let bytesForNullString = System.Text.Encoding.Unicode.GetBytes(Constants.StringDefaultValue)
 
-module Field = 
-    let powOf2 n = Math.Pow(2.0, float n) |> int
-    let mutable private count = 0
-    let private lookupDict = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-    let lookup (value : string) = lookupDict.TryGetValue(value)
-    
-    let private add (name : string) = 
-        let value = powOf2 count
-        lookupDict.Add(name, value)
-        count <- count + 1
-        value
-    
-    let private alias (name : string) (value : int) = 
-        lookupDict.Add(name, value)
-        value
-    
-    /// Bit values for boolean field properties.
-    /// Bit fields are also more efficient to represent in memory
-    let Indexed = add "Indexed"
-    
-    let Tokenized = add "Tokenized"
-    let Stored = add "Stored"
-    let OmitNorms = add "OmitNorms"
-    let OmitTfPositions = add "OmitTfPositions"
-    let StoreTermVectors = add "StoreTermVectors"
-    let StoreTermPositions = add "StoreTermPositions"
-    let StoreTermOffsets = add "StoreTermOffsets"
-    let MultiValued = add "MultiValued"
-    let Required = add "Required"
-    let OmitPositions = add "OmitPositions"
-    let StoreOffsets = add "StoreOffsets"
-    let DocValues = add "DocValues"
-    let Sorted = alias "Sorted" DocValues
-    let StoreTermPayloads = add "StoreTermPayloads"
-    let Binary = add "Binary"
-    let Int = add "Int"
-    let Long = add "Long"
-    let Short = add "Short"
-    let String = add "String"
-    let Float = add "Float"
-    let Double = add "Double"
-    let Numeric = Int + Long + Short + Float + Double
-    
-    /// Signifies if a field is indexed
-    let isIndexed (schema : FieldSchema) = schema.Indentity.Value &&& Indexed <> 0
-    
-    /// Signifies if a field is tokenized
-    let isTokenized (schema : FieldSchema) = schema.Indentity.Value &&& Tokenized <> 0
-    
-    /// Signifies if a field is stored
-    let isStored (schema : FieldSchema) = schema.Indentity.Value &&& Stored <> 0
-    
-    /// Method to map boolean to FieldStore enum
-    let store (schema : FieldSchema) = 
-        if schema |> isStored then FieldStore.YES
-        else FieldStore.NO
-    
-    /// Signifies if the field requires a search time analyzer
-    let requiresSearchAnalyzer (schema : FieldSchema) = schema.Analyzers.IsSome
-    
-    /// Signifies if the field requires an index time analyzer
-    let requiresIndexAnalyzer (schema : FieldSchema) = schema.Analyzers.IsSome
-    
-    /// Returns the Search analyzer associated with the field
-    let searchAnalyzer (schema : FieldSchema) = 
-        match schema.Analyzers with
-        | Some(a) -> Some(a.SearchAnalyzer)
-        | _ -> None
-    
-    /// Returns the Index analyzer assicuated with the field 
-    let indexAnalyzer (schema : FieldSchema) = 
-        match schema.Analyzers with
-        | Some(a) -> Some(a.IndexAnalyzer)
-        | _ -> None
-    
-    /// Signifies if the field is searchable
-    let isSearchable (schema : FieldSchema) = schema |> isIndexed
-    
-    /// Signifies if the field supports doc values
-    let hasDocValues (schema : FieldSchema) = schema.Indentity.Value &&& DocValues <> 0
-    
-    /// Signifies if the field allows sorting
-    let allowSorting (schema : FieldSchema) = schema |> hasDocValues
-    
-    /// Signifies if the field is numeric
-    let isNumericField (schema : FieldSchema) = schema.Indentity.Value &&& Numeric <> 0
-    
-    /// Returns the Sort field associated with the field
-    let sortField (schema : FieldSchema) = schema.Field.SortFieldType
-    
-    /// Signifies if a field is represented using multiple fields in the index
-    let hasSubType (field : FieldBase) = field.SubTypes.IsSome
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module TypeIndentity = 
-    /// Generate the identity value from the given array
-    let generateIdentity (values : int []) = { Value = values |> Array.fold (|||) 0 }
-    
-    /// Generates the field properties identity from the Lucene Field Type
-    let createFromFieldType (fieldType : LuceneFieldType) = 
-        let properties = new ResizeArray<int>()
-        if fieldType.Tokenized() then properties.Add(Field.Tokenized)
-        if fieldType.Stored() then properties.Add(Field.Stored)
-        if fieldType.OmitNorms() then properties.Add(Field.OmitNorms)
-        let indexOptions = fieldType.IndexOptions()
-        // Default is DOCS_AND_FREQS_AND_POSITIONS           
-        if indexOptions = IndexOptions.DOCS then properties.Add(Field.OmitTfPositions)
-        else if indexOptions = IndexOptions.DOCS_AND_FREQS then properties.Add(Field.OmitPositions)
-        else 
-            if indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS then 
-                properties.Add(Field.StoreOffsets)
-        if fieldType.StoreTermVectors() then properties.Add(Field.StoreTermVectors)
-        if fieldType.StoreTermVectorOffsets() then properties.Add(Field.StoreTermOffsets)
-        if fieldType.StoreTermVectorPositions() then properties.Add(Field.StoreTermPositions)
-        if fieldType.StoreTermVectorPayloads() then properties.Add(Field.StoreTermPayloads)
-        properties.ToArray() |> generateIdentity
-
-type IntField() as self = 
-    inherit BasicFieldBase<Int32>(FieldType.Int, IntField.TYPE_STORED, SortFieldType.INT, "0")
+/// Field that indexes integer values for efficient range filtering and sorting.
+type IntField() = 
+    inherit FieldBase<int32>(IntField.TYPE_STORED, SortFieldType.INT, 0, None)
+    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
+        maybe 
+            { 
+            let! lower = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") lowerRange JavaIntMin 
+                             Int32.TryParse javaInt
+            let! upper = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") upperRange JavaIntMin 
+                             Int32.TryParse javaInt
+            return NumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new IntField() :> FieldBase
-    override __.DefaultValue = Convert.ToInt32 self.DefaultStringValue
-    override __.DefaultBasicValue = Convert.ToInt32 self.DefaultStringValue |> Integer
-    override __.Validate (fieldName : string) (value : string) = pInt self.DefaultValue value
-    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Integer
     
-    override __.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
-        { Fields = [| CreateField.int schemaName |]
+    override this.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
+        { Fields = [| CreateField.int <| this.GetSchemaName schemaName |]
           DocValues = 
-              if generateDV then Some <| [| CreateField.intDV schemaName |]
+              if generateDV then Some <| [| CreateField.intDV <| this.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
-             (template : FieldTemplate) = 
-        let value = 
-            match document.TryGetValue(fieldName) with
-            | true, v -> this.Validate fieldName v
-            | _ -> self.DefaultValue
+    override __.UpdateFieldTemplate (template : FieldTemplate) (value : int) = 
         template.Fields.[0].SetIntValue(value)
         if template.DocValues.IsSome then 
             // Numeric doc values can only be saved as Int64 
             template.DocValues.Value.[0].SetLongValue(int64 value)
-
-type DoubleField() as self = 
-    inherit BasicFieldBase<Double>(FieldType.Double, DoubleField.TYPE_STORED, SortFieldType.DOUBLE, "0.0")
-    static member Instance = new DoubleField() :> FieldBase
-    override __.DefaultValue = Convert.ToDouble self.DefaultStringValue
-    override __.DefaultBasicValue = Convert.ToDouble self.DefaultStringValue |> Double
-    override __.Validate (fieldName : string) (value : string) = pDouble self.DefaultValue value
-    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Double
     
-    override __.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
-        { Fields = [| CreateField.double schemaName |]
+    override this.Validate(value : string) = pInt this.DefaultValue value
+    override __.GetRangeQuery = Some <| getRangeQuery
+
+/// Field that indexes double values for efficient range filtering and sorting.
+type DoubleField() = 
+    inherit FieldBase<double>(DoubleField.TYPE_STORED, SortFieldType.DOUBLE, 0.0, None)
+    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
+        maybe 
+            { 
+            let! lower = parseNumber<double, java.lang.Double> (schemaName, "Double") lowerRange JavaDoubleMin 
+                             Double.TryParse javaDouble
+            let! upper = parseNumber<double, java.lang.Double> (schemaName, "Double") upperRange JavaDoubleMax 
+                             Double.TryParse javaDouble
+            return NumericRangeQuery.NewDoubleRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
+    static member Instance = new DoubleField() :> FieldBase
+    override this.Validate(value : string) = pDouble this.DefaultValue value
+    
+    override this.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
+        { Fields = [| CreateField.double <| this.GetSchemaName schemaName |]
           DocValues = 
-              if generateDocValues then Some <| [| CreateField.doubleDV schemaName |]
+              if generateDocValues then Some <| [| CreateField.doubleDV <| this.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
-             (template : FieldTemplate) = 
-        let value = 
-            match document.TryGetValue(fieldName) with
-            | true, v -> this.Validate fieldName v
-            | _ -> self.DefaultValue
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : double) = 
         template.Fields.[0].SetDoubleValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetDoubleValue(value)
+    
+    override __.GetRangeQuery = Some <| getRangeQuery
 
+/// Field that indexes float values for efficient range filtering and sorting.
 type FloatField() as self = 
-    inherit BasicFieldBase<float32>(FieldType.Float, FloatField.TYPE_STORED, SortFieldType.FLOAT, "0.0")
+    inherit FieldBase<float32>(FloatField.TYPE_STORED, SortFieldType.FLOAT, float32 0.0, None)
+    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
+        maybe 
+            { 
+            let! lower = parseNumber<float32, java.lang.Float> (schemaName, "Float") lowerRange JavaFloatMin 
+                             Single.TryParse javaFloat
+            let! upper = parseNumber<float32, java.lang.Float> (schemaName, "Float") upperRange JavaFloatMax 
+                             Single.TryParse javaFloat
+            return NumericRangeQuery.NewFloatRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new FloatField() :> FieldBase
-    override __.DefaultValue = Convert.ToSingle self.DefaultStringValue
-    override __.DefaultBasicValue = Convert.ToSingle self.DefaultStringValue |> Float
-    override __.Validate (fieldName : string) (value : string) = pFloat self.DefaultValue value
-    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Float
+    override __.Validate(value : string) = pFloat self.DefaultValue value
     
     override __.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
-        { Fields = [| CreateField.float schemaName |]
+        { Fields = [| CreateField.float <| self.GetSchemaName schemaName |]
           DocValues = 
-              if generateDocValues then Some <| [| CreateField.floatDV schemaName |]
+              if generateDocValues then Some <| [| CreateField.floatDV <| self.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
-             (template : FieldTemplate) = 
-        let value = 
-            match document.TryGetValue(fieldName) with
-            | true, v -> this.Validate fieldName v
-            | _ -> self.DefaultValue
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : float32) = 
         template.Fields.[0].SetFloatValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetFloatValue(value)
+    
+    override __.GetRangeQuery = Some <| getRangeQuery
 
-type LongField(stringDefaultValue) as self = 
-    inherit BasicFieldBase<Int64>(FieldType.Long, LongField.TYPE_STORED, SortFieldType.LONG, stringDefaultValue)
-    static member Instance = new LongField("0") :> FieldBase
-    override __.DefaultValue = Convert.ToInt64 self.DefaultStringValue
-    override __.DefaultBasicValue = Convert.ToInt64 self.DefaultStringValue |> Long
-    override __.Validate (fieldName : string) (value : string) = pLong self.DefaultValue value
-    override this.ToInternal (fieldName : string) (value : string) = this.Validate fieldName value |> Long
+/// Field that indexes long values for efficient range filtering and sorting.
+type LongField(defaultValue : int64, ?defaultFieldName) as self = 
+    inherit FieldBase<int64>(LongField.TYPE_STORED, SortFieldType.LONG, defaultValue, defaultFieldName)
+    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
+        maybe 
+            { 
+            let! lower = parseNumber<int64, java.lang.Long> (schemaName, "Long") lowerRange JavaLongMin Int64.TryParse 
+                             javaLong
+            let! upper = parseNumber<int64, java.lang.Long> (schemaName, "Long") upperRange JavaLongMax Int64.TryParse 
+                             javaLong
+            return NumericRangeQuery.NewLongRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
+    static member Instance = new LongField(0L) :> FieldBase
+    override __.Validate(value : string) = pLong self.DefaultValue value
     
     override __.CreateFieldTemplate (schemaName : string) (generateDocValues : bool) = 
-        { Fields = [| CreateField.long schemaName |]
+        { Fields = [| CreateField.long <| self.GetSchemaName schemaName |]
           DocValues = 
-              if generateDocValues then Some <| [| CreateField.longDV schemaName |]
+              if generateDocValues then Some <| [| CreateField.longDV <| self.GetSchemaName schemaName |]
               else None }
     
-    override this.UpdateFieldTemplate (fieldName : string) (document : Dictionary<string, string>) 
-             (template : FieldTemplate) = 
-        let value = 
-            match document.TryGetValue(fieldName) with
-            | true, v -> this.Validate fieldName v
-            | _ -> self.DefaultValue
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : int64) = 
         template.Fields.[0].SetLongValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetLongValue(value)
+    
+    override __.GetRangeQuery = Some <| getRangeQuery
 
+/// Field that indexes date time values for efficient range filtering and sorting.
+/// It only supports a fixed YYYYMMDDHHMMSS format.
 type DateTimeField() as self = 
-    inherit LongField("00010101000000") // Equivalent to 00:00:00.0000000, January 1, 0001, in the Gregorian calendar
+    inherit LongField(00010101000000L) // Equivalent to 00:00:00.0000000, January 1, 0001, in the Gregorian calendar
     static member Instance = new DateTimeField() :> FieldBase
-    override __.Validate (fieldName : string) (value : string) = 
-        // TODO: Implement custom validation for datetime
+    override __.Validate(value : string) = 
+        // TODO: Implement custom validation for date time
         pLong self.DefaultValue value
 
+/// Field that indexes date time values for efficient range filtering and sorting.
+/// It only supports a fixed YYYYMMDD format.
 type DateField() as self = 
-    inherit LongField("00010101") // Equivalent to January 1, 0001, in the Gregorian calendar
-    static member Instance = new DateTimeField() :> FieldBase
-    override __.Validate (fieldName : string) (value : string) = 
+    inherit LongField(00010101L) // Equivalent to January 1, 0001, in the Gregorian calendar
+    static member Instance = new DateField() :> FieldBase
+    override __.Validate(value : string) = 
         // TODO: Implement custom validation for date
         pLong self.DefaultValue value
+
+/// A field that is indexed and tokenized, without term vectors. For example this would be used on 
+/// a 'body' field, that contains the bulk of a document's text.
+/// Note: This field does not support sorting.
+type TextField() as self = 
+    inherit FieldBase<string>(TextField.TYPE_STORED, SortFieldType.LONG, "null", None)
+    static member Instance = new TextField() :> FieldBase
+    
+    override this.Validate(value : string) = 
+        if String.IsNullOrWhiteSpace value then this.DefaultValue
+        else value
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
+        { Fields = [| CreateField.text <| self.GetSchemaName schemaName |]
+          DocValues = None }
+    
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
+        template.Fields.[0].SetStringValue(value)
+    override this.GetRangeQuery = None
+
+/// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
+/// For example this might be used for a 'country' field or an 'id' field, or any field that you 
+/// intend to use for sorting or access through the field cache.
+type ExactTextField(?defaultFieldName) as self = 
+    inherit FieldBase<String>(StringField.TYPE_STORED, SortFieldType.SCORE, "null", defaultFieldName)
+    let getRangeQuery schemaName (lowerRange : string, upperRange : string) (inclusiveMinimum, inclusiveMaximum) = 
+        ok 
+        <| (new TermRangeQuery(schemaName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes lowerRange), 
+                               new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes upperRange), inclusiveMinimum, 
+                               inclusiveMaximum) :> Query)
+    static member Instance = new ExactTextField() :> FieldBase
+    
+    override this.Validate(value : string) = 
+        if String.IsNullOrWhiteSpace value then this.DefaultStringValue
+        else value.ToLowerInvariant() // ToLower is necessary to make searching case insensitive
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
+        { Fields = [| CreateField.text <| self.GetSchemaName schemaName |]
+          DocValues = 
+              if generateDV then Some <| [| CreateField.stringDV <| self.GetSchemaName schemaName |]
+              else None }
+    
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
+        template.Fields.[0].SetStringValue(value)
+        if template.DocValues.IsSome then template.DocValues.Value.[0].SetBytesValue(Encoding.UTF8.GetBytes(value))
+    
+    override __.GetRangeQuery = Some <| getRangeQuery
+
+/// Field that indexes boolean values.
+type BoolField() = 
+    inherit ExactTextField()
+    let trueString = "true"
+    let falseString = "false"
+    
+    let toExternal (value : string) = 
+        if String.Equals("t", value, StringComparison.InvariantCultureIgnoreCase) then trueString
+        else falseString
+    
+    static member Instance = new BoolField() :> FieldBase
+    
+    override this.Validate(value : string) = 
+        if String.IsNullOrWhiteSpace value then this.DefaultStringValue
+        else if value.StartsWith("t", true, Globalization.CultureInfo.InvariantCulture) then "t"
+        else "f"
+    
+    override __.ToExternal = Some <| toExternal
+
+/// A field which is only stored and is not search-able
+type StoredField() as self = 
+    inherit FieldBase<string>(StoredField.TYPE, SortFieldType.SCORE, "null", None)
+    static member Instance = new StoredField() :> FieldBase
+    
+    override this.Validate(value : string) = 
+        if String.IsNullOrWhiteSpace value then this.DefaultValue
+        else value
+    
+    override __.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
+        { Fields = [| CreateField.text <| self.GetSchemaName schemaName |]
+          DocValues = None }
+    
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
+        template.Fields.[0].SetStringValue(value)
+    override __.GetRangeQuery = None
+
+/// ----------------------------------------------------------------------
+/// Extended field types
+/// ----------------------------------------------------------------------
+/// Field to be used for time stamp. This field is used by index to capture the modification
+/// time.
+/// It only supports a fixed YYYYMMDDHHMMSSfff format.
+type TimeStampField() = 
+    inherit LongField(00010101000000000L, TimeStampField.Name)
+    static do addToMetaFields TimeStampField.Name
+    static member Name = "_timestamp"
+    static member Instance = new TimeStampField() :> FieldBase
+    override this.UpdateDocument document schemaName fieldSource template = 
+        // The timestamp value will always be auto generated
+        this.UpdateFieldTemplate template (GetCurrentTimeAsLong())
+
+/// Used for representing the id of an index
+type IdField() = 
+    inherit ExactTextField(IdField.Name)
+    static do addToMetaFields IdField.Name
+    static member Name = "_id"
+    static member Instance = new IdField() :> FieldBase
+    override this.UpdateDocument document schemaName fieldSource template = 
+        this.Validate document.Id |> this.UpdateFieldTemplate template
+
+/// Used for representing the id of an index
+type StateField() = 
+    inherit ExactTextField(StateField.Name)
+    static do addToMetaFields StateField.Name
+    static member Name = "_state"
+    static member Instance = new StateField() :> FieldBase
+    static member Active = "active"
+    static member Inactive = "inactive"
+    override this.UpdateDocument document schemaName fieldSource template = 
+        // Set it to Active for all normal indexing requests
+        this.UpdateFieldTemplate template StateField.Active
+    /// Helper method to set the state to Inactive
+    member this.UpdateFieldToInactive template = this.UpdateFieldTemplate template StateField.Inactive
+
+/// This field is used to add causal ordering to the events in 
+/// the index. A document with lower modify index was created/updated before
+/// a document with the higher index.
+/// This is also used for concurrency updates.
+type ModifyIndexField() = 
+    inherit LongField(0L, ModifyIndexField.Name)
+    static do addToMetaFields ModifyIndexField.Name
+    static member Name = "_modifyindex"
+    static member Instance = new ModifyIndexField() :> FieldBase
+    override this.UpdateDocument document schemaName fieldSource template = 
+        this.UpdateFieldTemplate template document.ModifyIndex

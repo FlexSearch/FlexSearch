@@ -24,6 +24,12 @@ open System.Collections.Concurrent
 open System.IO
 open System.Threading
 
+/// Represent the internal representation of the index state
+type IndexState = 
+    { IndexDto : Index
+      IndexStatus : IndexStatus
+      IndexWriter : IndexWriter option }
+
 /// Index Manager module is responsible for the life cycle of an index on the node. 
 /// Life cycle management will include state management also.
 /// Note: The logical hierarchy of objects will be
@@ -32,24 +38,19 @@ open System.Threading
 ///     IndexWriter : Manage a index and all its shards
 ///             -> has Many -> 
 ///     ShardWriter : Responsible for managing single shard of an index
+type IndexManager = 
+    { Store : ConcurrentDictionary<string, IndexState>
+      EventAggregrator : EventAggregator
+      ThreadSafeFileWriter : ThreadSafeFileWriter
+      GetAnalyzer : string -> Result<LuceneAnalyzer>
+      GetComputedScript : string -> Result<ComputedDelegate * string []> }
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module IndexManager = 
     let path = 
         Constants.ConfFolder +/ "Indices"
         |> Directory.CreateDirectory
         |> fun x -> x.FullName
-    
-    /// Represent the internal representation of the index state
-    type IndexState = 
-        { IndexDto : Index
-          IndexStatus : IndexStatus
-          IndexWriter : IndexWriter.T option }
-    
-    type T = 
-        { Store : ConcurrentDictionary<string, IndexState>
-          EventAggregrator : EventAggregator
-          ThreadSafeFileWriter : ThreadSafeFileWriter
-          GetAnalyzer : string -> Result<LuceneAnalyzer>
-          GetComputedScript : string -> Result<ComputedDelegate * string []> }
     
     /// Returns IndexNotFound error
     let indexNotFound (indexName) = IndexNotFound <| indexName
@@ -65,7 +66,7 @@ module IndexManager =
           IndexWriter = Some(writer) }
     
     /// Updates an index status to the given value
-    let updateState (newState : IndexState) (t : T) = 
+    let updateState (newState : IndexState) (t : IndexManager) = 
         match t.Store.TryGetValue(newState.IndexDto.IndexName) with
         | true, state -> 
             match t.Store.TryUpdate(state.IndexDto.IndexName, newState, state) with
@@ -86,14 +87,14 @@ module IndexManager =
                 fail <| UnableToUpdateIndexStatus(newState.IndexDto.IndexName, "None", newState.IndexDto.ToString())
     
     /// Check if the given index exists
-    let indexExists (indexName) (t : T) = 
+    let indexExists (indexName) (t : IndexManager) = 
         match t.Store.TryGetValue(indexName) with
         | true, _ -> okUnit
         | _ -> fail <| indexNotFound indexName
     
     /// Checks if a given index is online or not. If it is 
     /// online then return the index writer
-    let indexOnline (indexName) (t : T) = 
+    let indexOnline (indexName) (t : IndexManager) = 
         match t.Store.TryGetValue(indexName) with
         | true, state -> 
             match state.IndexStatus with
@@ -102,13 +103,13 @@ module IndexManager =
             | _ -> fail <| IndexShouldBeOnline indexName
         | _ -> fail <| indexNotFound indexName
     
-    let indexState (indexName) (t : T) = 
+    let indexState (indexName) (t : IndexManager) = 
         match t.Store.TryGetValue(indexName) with
         | true, state -> ok <| state
         | _ -> fail <| indexNotFound indexName
     
     /// Load a index from the given index DTO
-    let loadIndex (dto : Index) (t : T) = 
+    let loadIndex (dto : Index) (t : IndexManager) = 
         maybe { 
             do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
             if dto.Active then 
@@ -119,21 +120,24 @@ module IndexManager =
         }
     
     /// Loads all indices from the given path
-    let loadAllIndex (t : T) = 
+    let loadAllIndex (t : IndexManager) = 
         let loadFromFile (path) = 
             match t.ThreadSafeFileWriter.ReadFile<Index>(path) with
-            | Ok(dto) -> Some (dto)
-            | Fail(error) -> Logger.Log(error); None
+            | Ok(dto) -> Some(dto)
+            | Fail(error) -> 
+                Logger.Log(error)
+                None
         
         let queueOnThreadPool (dto : Index) = 
             fun _ -> 
-                try t 
-                    |> loadIndex dto 
+                try 
+                    t
+                    |> loadIndex dto
                     |> (Logger.Log >> ignore)
                 with e -> 
                     Logger.Log
                         (sprintf "Index Loading Error. Index Name: %s" dto.IndexName, e, MessageKeyword.Node, 
-                            MessageLevel.Error)
+                         MessageLevel.Error)
             |> ThreadPool.QueueUserWorkItem
             |> ignore
         
@@ -143,7 +147,7 @@ module IndexManager =
         |> Seq.iter queueOnThreadPool
     
     /// Add a new index to the node
-    let addIndex (index : Index) (t : T) = 
+    let addIndex (index : Index) (t : IndexManager) = 
         maybe { 
             do! validate index
             match t |> indexExists index.IndexName with
@@ -155,7 +159,7 @@ module IndexManager =
         }
     
     /// Shut down an existing index without saving the configuration as Inactive
-    let shutdownIndex (indexName : string) (t : T) = 
+    let shutdownIndex (indexName : string) (t : IndexManager) = 
         maybe { 
             let! indexState = t |> indexState indexName
             match indexState.IndexStatus with
@@ -166,14 +170,15 @@ module IndexManager =
                 do! t |> updateState (createIndexState (indexState.IndexDto, IndexStatus.Offline))
             return indexState
         }
-
+    
     /// Close an existing index by shutting it down and saving it as Inactive
-    let closeIndex (indexName : string) (t : T) = 
-        t |> shutdownIndex indexName
+    let closeIndex (indexName : string) (t : IndexManager) = 
+        t
+        |> shutdownIndex indexName
         >>= (fun indexState -> t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto))
     
     /// open an existing index and set the status to online
-    let openIndex (indexName : string) (t : T) = 
+    let openIndex (indexName : string) (t : IndexManager) = 
         maybe { 
             let! indexState = t |> indexState indexName
             match indexState.IndexStatus with
@@ -185,7 +190,7 @@ module IndexManager =
         }
     
     /// Update an existing index with the new provided details
-    let updateIndex (index : Index) (t : T) = 
+    let updateIndex (index : Index) (t : IndexManager) = 
         let wasActive = index.Active
         t
         |> closeIndex index.IndexName
@@ -194,22 +199,18 @@ module IndexManager =
             t |> loadIndex index
     
     /// Deletes an existing index
-    let deleteIndex (indexName : string) (t : T) = 
+    let deleteIndex (indexName : string) (t : IndexManager) = 
         maybe { 
             // Try closing the index
             do! match t |> closeIndex indexName with
                 | Ok(_) -> okUnit
                 | Fail(e) when e.OperationMessage().ErrorCode = "IndexIsAlreadyOffline" -> okUnit
                 | Fail(e) -> fail <| e
-
             t.Store.TryRemove(indexName) |> ignore
-
             // Delete the index configuration file
             do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName)
-
             // Data might not be present for this index
-            if (Directory.Exists(DataFolder +/ indexName))
-            then delDir (DataFolder +/ indexName)
+            if (Directory.Exists(DataFolder +/ indexName)) then delDir (DataFolder +/ indexName)
         }
     
     /// Create a new 
@@ -221,7 +222,7 @@ module IndexManager =
           GetComputedScript = getComputedScript }
     
     /// Returns the disk usage of an index
-    let getDiskUsage (indexName : string) (t : T) = 
+    let getDiskUsage (indexName : string) (t : IndexManager) = 
         match t.Store.ContainsKey indexName with
         | true -> ok <| getFolderSize (DataFolder +/ indexName)
         | _ -> fail <| IndexNotFound indexName

@@ -66,10 +66,10 @@
     <Compile Include="ServiceTests.fs" />
     <Compile Include="ProtocolTests.fs" />
     <Compile Include="ScriptingTests.fs" />
+    <Compile Include="FieldSchemaTests.fs" />
     <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
     <Compile Include="QueueTests.fs" />
-    <Compile Include="OrmTests.fs" />
     <Compile Include="QueryFunctionTests.fs" />
     <Compile Include="ParserTests.fs" />
     <Content Include="HandlerTests.fs" />

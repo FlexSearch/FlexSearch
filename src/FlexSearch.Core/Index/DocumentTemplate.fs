@@ -21,37 +21,37 @@ open FlexSearch.Core
 open FlexSearch.Api.Model
 open System.Linq
 
+/// This is responsible for creating a wrapper around Document which can be cached and re-used.
+/// Note: Make sure that the template is not accessed by multiple threads.
+type DocumentTemplate = 
+    { Setting : IndexSetting
+      TemplateFields : array<FieldTemplate>
+      Template : LuceneDocument
+      MetaDataFieldCount : int }
+
+[<Compile(ModuleSuffix)>]
 module DocumentTemplate = 
     type NumericDocValuesField = FlexLucene.Document.NumericDocValuesField
     
-    /// This is responsible for creating a wrapper around Document which can be cached and re-used.
-    /// Note: Make sure that the template is not accessed by multiple threads.
-    type T = 
-        { Setting : IndexSetting.T
-          TemplateFields : array<TemplateField>
-          Template : LuceneDocument
-          MetaDataFieldCount : int }
-    
-    let inline protectedFields (fieldName) = fieldName = MetaFields.IdField || fieldName = MetaFields.LastModifiedField
+    let inline protectedFields (fieldName) = fieldName = IdField.Name || fieldName = TimeStampField.Name
     
     /// Create a new document template
-    let create (s : IndexSetting.T) = 
+    let create (s : IndexSetting) = 
         let template = new LuceneDocument()
-        let fields = new ResizeArray<TemplateField>()
+        let fields = new ResizeArray<FieldTemplate>()
         
-        let add (field : TemplateField) = 
-            template.Add(field.LuceneField)
-            if field.DocValue.IsSome then template.Add(field.DocValue.Value)
+        let add (field : FieldTemplate) = 
+            template.Add(field.Fields.[0])
+            if field.DocValues.IsSome then template.Add(field.DocValues.Value.[0])
             fields.Add(field)
         
-        let metaDataFields = getLuceneMetaFields()
+        let metaDataFields = FieldSchema.getMetaFieldsTemplates()
         metaDataFields |> Array.iter (fun f -> add (f))
         for field in s.Fields.Skip(metaDataFields.Count()) do
-            let docValue = 
-                if field.GenerateDocValue then Field.createDocValueField (field)
-                else None
-            add ({ LuceneField = Field.createDefaultLuceneField (field)
-                   DocValue = docValue })
+            let hasDocValues = FieldSchema.hasDocValues field
+            FieldSchema.hasDocValues field
+            |> field.FieldType.CreateFieldTemplate field.SchemaName
+            |> add
         { Setting = s
           TemplateFields = fields.ToArray()
           Template = template
@@ -59,40 +59,9 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let updateTempate (document : Document) (modifyIndex : int64) (template : T) = 
-        // Update meta fields
-        // Id Field
-        template.TemplateFields.[0].LuceneField.SetStringValue(document.Id)
-        // Timestamp fields
-        template.TemplateFields.[1].LuceneField.SetLongValue(document.TimeStamp)
-        template.TemplateFields.[1].DocValue.Value.SetLongValue(document.TimeStamp)
-        template.TemplateFields.[2].LuceneField.SetLongValue(modifyIndex)
-        template.TemplateFields.[2].DocValue.Value.SetLongValue(modifyIndex)
-        // Performance of F# iter is very slow here.
-        for i = template.MetaDataFieldCount to template.TemplateFields.Length - 1 do
-            let field = template.Setting.Fields.[i]
-            
-            let value = 
-                // If it is computed field then generate and add it otherwise follow standard path
-                match field.Source with
-                | Some(s, options) -> 
-                    try 
-                        // Wrong values for the data type will still be handled as update Lucene field will
-                        // check the data type
-                        let value = s.Invoke(document.IndexName, field.FieldName, document.Fields, options)
-                        Some <| value
-                    with _ -> None
-                | None -> 
-                    match document.Fields.TryGetValue(field.FieldName) with
-                    | (true, value) -> Some <| value
-                    | _ -> None
-            match value with
-            | Some(v) -> 
-                v |> Field.updateLuceneField field template.TemplateFields.[i].LuceneField false
-                if field.GenerateDocValue then 
-                    v |> Field.updateLuceneField field template.TemplateFields.[i].DocValue.Value true
-            | None -> 
-                Field.updateLuceneFieldToDefault field false template.TemplateFields.[i].LuceneField
-                if field.GenerateDocValue then 
-                    Field.updateLuceneFieldToDefault field true template.TemplateFields.[i].DocValue.Value
+    let updateTempate (document : Document) (modifyIndex : int64) (template : DocumentTemplate) = 
+        for i = 0 to template.Setting.Fields.Count - 1 do
+            let f = template.Setting.Fields.[i]
+            let tf = template.TemplateFields.[i]
+            f.FieldType.UpdateDocument document f.SchemaName f.Source tf
         template.Template

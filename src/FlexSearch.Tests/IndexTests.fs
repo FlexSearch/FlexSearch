@@ -9,38 +9,59 @@ open Swensen.Unquote
 open System.IO
 open System.Linq
 open System.Threading
+open System.Collections.Generic
+open FsCheck
 
 type TransactionWriterTests() = 
     
     let getTransactionLogEntry() = 
         let fixture = new Ploeh.AutoFixture.Fixture()
-        use stream = new MemoryStream()
         let context = new SpecimenContext(fixture)
-        let txEntry = context.Create<TransactionLog.T>()
-        TransactionLog.serializer (stream, txEntry)
-        (txEntry, stream.ToArray())
+        let txEntry = context.Create<TransactionEntry>()
+        txEntry
     
     member __.``Transaction can be added and retrieved``() = 
-        if File.Exists(DataHelpers.rootFolder +/ "0") then File.Delete(DataHelpers.rootFolder +/ "0")
-        let writer = new TransactionLog.TxWriter(DataHelpers.rootFolder, 0L)
+        let writer = new TxWriter(0L)
         let entries = Array.create 5 (getTransactionLogEntry())
-        entries |> Array.iter (fun entry -> writer.Append(snd entry, 0L))
-        let txEntries = entries |> Array.map (fun entry -> fst entry)
-        // TODO: Will have to find a cleaner way than using Thread.Sleep
-        // Maybe convert from MailboxProcessor to ActionBlock
-        Thread.Sleep(5000)
+        entries |> Array.iter (fun entry -> writer.AppendEntry(entry, 0L))
         let result = writer.ReadLog(0L) |> Seq.toArray
         test <@ result.Length = 5 @>
-        test <@ result.[0].Id = txEntries.[0].Id @>
-        test <@ result.[1].Id = txEntries.[1].Id @>
-        test <@ result.[2].Id = txEntries.[2].Id @>
-        test <@ result.[3].Id = txEntries.[3].Id @>
-        test <@ result.[4].Id = txEntries.[4].Id @>
+        test <@ result.[0].Id = entries.[0].Id @>
+        test <@ result.[1].Id = entries.[1].Id @>
+        test <@ result.[2].Id = entries.[2].Id @>
+        test <@ result.[3].Id = entries.[3].Id @>
+        test <@ result.[4].Id = entries.[4].Id @>
 
-type CommitTests() = 
+    member __.``Random Log read write test using FSCheck``() =
+        let writer = new TxWriter(0L)
+        let entries = Gen.listOf Arb.generate<TransactionEntry> |> Gen.eval 1000 (Random.StdGen(20000, 100))
+        entries |> List.iter (fun entry -> writer.AppendEntry(entry, 0L))
+        let result = writer.ReadLog(0L) |> Seq.toList
+        test <@ entries.Length = result.Length @>
+        for i = 0 to entries.Length - 1 do
+            let entryId = entries.[i].Id
+            let resultId = result.[i].Id
+            test <@ entryId = resultId @>
+            test <@ entries.[i].ModifyIndex = result.[i].ModifyIndex @>
+            test <@ entries.[i].Operation = result.[i].Operation @>
+            let entryKeys = entries.[i].Data.Keys.ToArray()
+            let resultKeys = result.[i].Data.Keys.ToArray()
+            test <@ entryKeys = resultKeys @>
+            let entryValues = entries.[i].Data.Values.ToArray()
+            let resultValues = result.[i].Data.Values.ToArray()
+            test <@ entryValues = resultValues @>
+
+type CommitTests() =
+    let setIndexSettings(index : Index) =
+        index.IndexConfiguration.AutoCommit <- false
+        index.IndexConfiguration.AutoRefresh <- false
+        index.IndexConfiguration.CommitOnClose <- false
+        index.IndexConfiguration.DeleteLogsOnClose <- false
+
     member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index, 
                                                                                       indexService : IIndexService, 
                                                                                       documentService : IDocumentService) = 
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
         test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
@@ -55,7 +76,8 @@ type CommitTests() =
 
     member __.``Changes will be applied in the same order as receiveced 1`` (index : Index, 
                                                                              indexService : IIndexService, 
-                                                                             documentService : IDocumentService) = 
+                                                                             documentService : IDocumentService) =
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
         test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
@@ -69,7 +91,8 @@ type CommitTests() =
 
     member __.``Changes will be applied in the same order as receiveced 2`` (index : Index, 
                                                                              indexService : IIndexService, 
-                                                                             documentService : IDocumentService) = 
+                                                                             documentService : IDocumentService) =
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
         test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
@@ -82,45 +105,17 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
 
-    member __.``TxLog file is changed immediately after a commit``( index : Index, 
-                                                                    indexService : IIndexService, 
-                                                                    documentService : IDocumentService) = 
-        // Reduce max buffered docs count so that we can flush quicker
-        index.IndexConfiguration.MaxBufferedDocs <- 3
-        let random = new System.Random()
-        let commitCount = random.Next(5, 20)
-        let documentsPerCommit = random.Next(1, 10)
-         
-        test <@ succeeded <| indexService.AddIndex(index) @>
-        let writer = extract <| indexService.IsIndexOnline(index.IndexName)
-        
-        for i = 1 to commitCount do
-            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = (i - 1) * documentsPerCommit @>
-            let previousGen  = writer.ShardWriters.[0].Generation.Value
-            // Do a commit before hand so that we can see the tx file change
-            test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
-            // Commit should cause a flush
-            // TODO: Fix this
-            // test <@ writer.ShardWriters.[0].OutstandingFlushes.Value = 1L @>
-            // New generation must be 1 higer than the last
-            test <@ writer.ShardWriters.[0].Generation.Value = previousGen + 1L  @>
-            
-            for j = 1 to documentsPerCommit do 
-                test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
-            let txFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
-            // Test if the TxLog file is present with the current generation
-            test <@ File.Exists(txFile) @>
-
     member __.``Older TxLog files are deleted immediately after a commit``( index : Index, 
                                                                             indexService : IIndexService, 
                                                                             documentService : IDocumentService) = 
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         let writer = extract <| indexService.IsIndexOnline(index.IndexName)
         for i = 1 to 10 do
             test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
-            let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.ShardWriters.[0].TxLogPath).Count()
-            let olderTxFile = writer.ShardWriters.[0].TxLogPath +/ writer.ShardWriters.[0].Generation.Value.ToString()
+            let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ "txlogs").Count()
+            let olderTxFile = writer.Settings.BaseFolder +/ "txlogs" +/ writer.Generation.Value.ToString()
             test <@ File.Exists(olderTxFile) @>
             test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
-            let afterCommitTotalNoFiles = Directory.EnumerateFiles(writer.ShardWriters.[0].TxLogPath).Count()
+            let afterCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ "txlogs").Count()
             test <@ afterCommitTotalNoFiles <= beforeCommitTotalNoFiles @>

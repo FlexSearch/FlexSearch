@@ -20,6 +20,7 @@ namespace FlexSearch.Core
 open FlexSearch.Core
 open FlexLucene.Index
 open FlexLucene.Search
+open System.Collections.Generic
 
 /// Term Query
 [<Name("term_match"); Sealed>]
@@ -27,15 +28,18 @@ type FlexTermQuery() =
     interface IFlexQuery with
         member __.QueryName() = [| "eq"; "=" |]
         member __.GetQuery(flexIndexField, values, parameters) = 
-            match FieldType.isNumericField (flexIndexField.FieldType) with
-            | true -> getRangeQuery values.[0] (true, true) (NoInfinite, NoInfinite) flexIndexField
+            match FieldSchema.isNumericField flexIndexField with
+            | true -> 
+                flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], values.[0]) 
+                    (true, true)
             | false -> 
                 // If there are multiple terms returned by the parser then we will create a boolean query
                 // with all the terms as sub clauses with And operator
                 // This behaviour will result in matching of both the terms in the results which may not be
                 // adjacent to each other. The adjacency case should be handled through phrase query
-                zeroOneOrManyQuery <| getTerms (flexIndexField, values) <| getTermQuery flexIndexField.SchemaName 
-                <| getBooleanClause parameters
+                zeroOneOrManyQuery 
+                <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
+                <| getTermQuery flexIndexField.SchemaName <| getBooleanClause parameters
 
 /// Fuzzy Query
 [<Name("fuzzy_match"); Sealed>]
@@ -45,7 +49,8 @@ type FlexFuzzyQuery() =
         member __.GetQuery(flexIndexField, values, parameters) = 
             let slop = parameters |> intFromOptDict "slop" 1
             let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-            zeroOneOrManyQuery <| getTerms (flexIndexField, values) 
+            zeroOneOrManyQuery 
+            <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
             <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClauseOccur.MUST
 
 /// Match all Query
@@ -61,7 +66,7 @@ type FlexPhraseQuery() =
     interface IFlexQuery with
         member __.QueryName() = [| "match" |]
         member __.GetQuery(flexIndexField, values, parameters) = 
-            let terms = getTerms (flexIndexField, values)
+            let terms = FieldSchema.getTerms (values, new List<string>()) flexIndexField 
             let query = new PhraseQuery()
             for term in terms do
                 query.Add(new Term(flexIndexField.SchemaName, term))
@@ -101,25 +106,29 @@ type FlexGreaterQuery() =
     interface IFlexQuery with
         member __.QueryName() = [| ">" |]
         member __.GetQuery(flexIndexField, values, _) = 
-            getRangeQuery values.[0] (false, true) (NoInfinite, MaxInfinite) flexIndexField
+            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], Constants.Infinite) 
+                (false, true)
 
 [<Name("greater_than_equal"); Sealed>]
 type FlexGreaterThanEqualQuery() = 
     interface IFlexQuery with
         member __.QueryName() = [| ">=" |]
         member __.GetQuery(flexIndexField, values, _) = 
-            getRangeQuery values.[0] (true, true) (NoInfinite, MaxInfinite) flexIndexField
+            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], Constants.Infinite) 
+                (true, true)
 
 [<Name("less_than"); Sealed>]
 type FlexLessThanQuery() = 
     interface IFlexQuery with
         member __.QueryName() = [| "<" |]
         member __.GetQuery(flexIndexField, values, _) = 
-            getRangeQuery values.[0] (true, false) (MinInfinite, NoInfinite) flexIndexField
+            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (Constants.Infinite, values.[0]) 
+                (true, false)
 
 [<Name("less_than_equal"); Sealed>]
 type FlexLessThanEqualQuery() = 
     interface IFlexQuery with
         member __.QueryName() = [| "<=" |]
         member __.GetQuery(flexIndexField, values, _) = 
-            getRangeQuery values.[0] (true, true) (MinInfinite, NoInfinite) flexIndexField
+            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (Constants.Infinite, values.[0]) 
+                (true, true)

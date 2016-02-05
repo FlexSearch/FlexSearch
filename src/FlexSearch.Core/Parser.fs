@@ -15,7 +15,6 @@ open System.Collections.Generic
 open System.Linq
 
 // Represents the parts/items which can be used in the query string
-type FieldName = string
 type Constant = 
     | SingleValue of string
     | ValueList of string list
@@ -196,7 +195,6 @@ module Parsers =
     /// </summary> 
     [<Sealed>]
     type FlexParser() = 
-        inherit PooledObject()
         let opp = new OperatorPrecedenceParser<Predicate, unit, unit>()
         let expr = opp.ExpressionParser
         

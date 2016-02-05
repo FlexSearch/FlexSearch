@@ -94,13 +94,13 @@
     <Compile Include="Settings.fs" />
     <Compile Include="Protocols.fs" />
     <Compile Include="Queues.fs" />
-    <Compile Include="Http.fs" />
-    <Compile Include="DomainExtensions.fs" />
+    <Compile Include="Alias.fs" />
     <Compile Include="Compiler.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Analysis.fs" />
     <Compile Include="LuceneHelpers.fs" />
     <Compile Include="Index\Field.fs" />
+    <Compile Include="Index\FieldSchema.fs" />
     <Compile Include="Index\Index.fs" />
     <Compile Include="Index\Builder.fs" />
     <Compile Include="Index\TransactionLog.fs" />
@@ -112,13 +112,11 @@
     <Compile Include="Search\Search.fs" />
     <Compile Include="Search\FlexQueries.fs" />
     <Compile Include="Search\QueryFunctions.fs" />
-    <Compile Include="Orm.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
+    <Compile Include="Http\Http.fs" />
+    <Compile Include="Http\HttpService.fs" />
     <Compile Include="Benchmark.fs" />
-    <Compile Include="HttpService.fs" />
-    <Compile Include="Connectors.fs" />
-    <Compile Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
@@ -166,6 +164,7 @@
       <HintPath>..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FSharp.Data.TypeProviders" />
     <Reference Include="FSharpx.Async">
       <HintPath>..\packages\FSharpx.Async.1.12.0\lib\net40\FSharpx.Async.dll</HintPath>
       <Private>True</Private>
@@ -424,6 +423,10 @@
       <HintPath>..\packages\Microsoft.Extensions.Logging.TraceSource.1.0.0-rc2-15958\lib\net451\Microsoft.Extensions.Logging.TraceSource.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Extensions.ObjectPool">
+      <HintPath>..\packages\Microsoft.Extensions.ObjectPool.1.0.0-rc2-15967\lib\net451\Microsoft.Extensions.ObjectPool.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Extensions.Options">
       <HintPath>..\packages\Microsoft.Extensions.Options.1.0.0-rc2-15942\lib\net451\Microsoft.Extensions.Options.dll</HintPath>
       <Private>True</Private>
@@ -495,6 +498,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Diagnostics.DiagnosticSource">
       <HintPath>..\packages\System.Diagnostics.DiagnosticSource.4.0.0-rc2-23623\lib\dotnet5.2\System.Diagnostics.DiagnosticSource.dll</HintPath>
       <Private>True</Private>

@@ -22,7 +22,26 @@ open FlexSearch.Api.Constants
 open FlexSearch.Api.Model
 open FlexLucene.Codecs.Bloom
 open System.Threading
+open Microsoft.Extensions.ObjectPool
+open System.IO
+open System
 
+/// An IndexWriter creates and maintains an index. It contains a list of ShardWriters,
+/// each of which encapsulating the functionality of IndexWriter, TrackingIndexWriter and
+/// SearcherManger through an easy to manage abstraction.
+type IndexWriter = 
+    { Template : DefaultObjectPool<DocumentTemplate>
+      Caches : VersionCache []
+      ShardWriters : ShardWriter []
+      Settings : IndexSetting
+      TxWriterPool : DefaultObjectPool<TxWriter>
+      ModifyIndex : AtomicLong
+      Generation : AtomicLong
+      mutable Status : IndexStatus
+      Token : CancellationTokenSource }
+    member this.GetSchemaName(fieldName : string) = this.Settings.Fields.Item(fieldName).SchemaName
+
+[<Compile(ModuleSuffix)>]
 module IndexWriter = 
     ///  Method to map a string based id to a Lucene shard 
     /// Uses MurmurHash2 algorithm
@@ -31,17 +50,6 @@ module IndexWriter =
         else 
             let byteArray = System.Text.Encoding.UTF8.GetBytes(id)
             MurmurHash2.Hash32(byteArray, 0, byteArray.Length) % shardCount
-    
-    /// An IndexWriter creates and maintains an index. It contains a list of ShardWriters,
-    /// each of which encapsulating the functionality of IndexWriter, TrackingIndexWriter and
-    /// SearcherManger through an easy to manage abstraction.
-    type T = 
-        { Template : ThreadLocal<DocumentTemplate.T>
-          Caches : VersionCache.T array
-          ShardWriters : ShardWriter.T array
-          Settings : IndexSetting.T
-          Token : CancellationTokenSource }
-        member this.GetSchemaName(fieldName : string) = this.Settings.Fields.Item(fieldName).SchemaName
     
     /// Create index settings from the Index DTO
     let createIndexSetting (index : Index, analyzerService, scriptService) = 
@@ -63,21 +71,30 @@ module IndexWriter =
             fail <| error
     
     /// Close the index    
-    let close (writer : T) = 
+    let close (writer : IndexWriter) = 
         writer.Token.Cancel()
         writer.ShardWriters |> Array.iter ShardWriter.close
+        // Make sure all the files are removed from TxLog otherwise the index will
+        // go into unnecessary recovery mode.
+        if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
     
     /// Refresh the index    
-    let refresh (s : T) = s.ShardWriters |> Array.iter ShardWriter.refresh
+    let refresh (s : IndexWriter) = s.ShardWriters |> Array.iter ShardWriter.refresh
     
     /// Commit unsaved data to the index
-    let commit (forceCommit : bool) (s : T) = 
+    let commit (forceCommit : bool) (s : IndexWriter) = 
+        // Increment the generation before committing so that all transactions start going to the
+        // new log file
+        let newGen = s.Generation.Increment()
         s.ShardWriters |> Array.iter (ShardWriter.commit forceCommit)
-    
-    let memoryManager = new Microsoft.IO.RecyclableMemoryStreamManager()
+        // Delete all the Tx files which are older than two generation
+        loopDir (s.Settings.BaseFolder +/ "txlog") |> Seq.iter (fun filePath -> 
+                                                          let (success, gen) = 
+                                                              Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
+                                                          if success && (newGen - 2L) <= gen then File.Delete(filePath))
     
     /// Add or update a document
-    let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : T) = 
+    let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : IndexWriter) = 
         maybe { 
             let shardNo = document.Id |> mapToShard s.ShardWriters.Length
             let newVersion = GetCurrentTimeAsLong()
@@ -87,65 +104,65 @@ module IndexWriter =
             do! s.Caches.[shardNo]
                 |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
                 |> boolToResult UnableToUpdateMemory
-
-            let txId = s.ShardWriters.[shardNo].GetNextIndex()
+            let txId = s.ModifyIndex.Increment()
             // Create new binary document
-            s.Settings.Fields
-            let doc = s.Template.Value |> DocumentTemplate.updateTempate document txId
-            
+            let template = s.Template.Get()
+            let doc = template |> DocumentTemplate.updateTempate document txId
             if addToTxLog then 
                 let opCode = 
-                    if create then TransactionLog.Operation.Create
-                    else TransactionLog.Operation.Update
+                    if create then TxOperation.Create
+                    else TxOperation.Update
                 
-                let txEntry = TransactionLog.T.Create(txId, opCode, document)
-                use stream = memoryManager.GetStream()
-                TransactionLog.serializer (stream, txEntry)
-                s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
+                let txEntry = TransactionEntry.Create(txId, opCode, document.Fields, document.Id)
+                let txWriter = s.TxWriterPool.Get()
+                txWriter.AppendEntry(txEntry, s.Generation.Value)
+                s.TxWriterPool.Return(txWriter)
             // Release the dictionary back to the pool so that it could be recycled
-            dictionaryPool.Release(document.Fields)
+            dictionaryPool.Return(document.Fields)
+            s.Template.Return(template)
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
-               else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(MetaFields.IdField)), doc)
+               else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(IdField.Name)), doc)
         }
     
     /// Add a document to the index
-    let addDocument (document : Document) (s : T) = s |> addOrUpdateDocument (document, true, true)
+    let addDocument (document : Document) (s : IndexWriter) = s |> addOrUpdateDocument (document, true, true)
     
     /// Add a document to the index
-    let updateDocument (document : Document) (s : T) = s |> addOrUpdateDocument (document, false, true)
+    let updateDocument (document : Document) (s : IndexWriter) = s |> addOrUpdateDocument (document, false, true)
     
     /// Delete all documents in the index
-    let deleteAllDocuments (s : T) = s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))
+    let deleteAllDocuments (s : IndexWriter) = 
+        s.ShardWriters |> Array.Parallel.iter (fun s -> ShardWriter.deleteAll (s))
     
     /// Deletes all documents returned by search query
     // TODO: maybe include this in transaction log
     let deleteAllDocumentsFromSearch q iw = iw.ShardWriters |> Array.Parallel.iter (ShardWriter.deleteFromSearch q)
     
     /// Delete a document from index
-    let deleteDocument (id : string) (s : T) = 
+    let deleteDocument (id : string) (s : IndexWriter) = 
         maybe { 
             let shardNo = id |> mapToShard s.ShardWriters.Length
             do! s.Caches.[shardNo]
                 |> VersionCache.delete (id, VersionCache.deletedValue)
                 |> boolToResult UnableToUpdateMemory
-            let txId = s.ShardWriters.[shardNo].GetNextIndex()
-            let txEntry = TransactionLog.T.Create(txId, id)
-            use stream = memoryManager.GetStream()
-            TransactionLog.serializer (stream, txEntry)
-            s.ShardWriters.[shardNo].TxWriter.Append(stream.ToArray(), s.ShardWriters.[shardNo].Generation.Value)
-            s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(MetaFields.IdField))
+            let txId = s.ModifyIndex.Increment()
+            let txEntry = TransactionEntry.Create(txId, id)
+            let txWriter = s.TxWriterPool.Get()
+            txWriter.AppendEntry(txEntry, s.Generation.Value)
+            s.TxWriterPool.Return txWriter
+            s.ShardWriters.[shardNo] |> ShardWriter.deleteDocument id (s.GetSchemaName(IdField.Name))
         }
     
-    let getRealTimeSearchers (s : T) = 
+    let getRealTimeSearchers (s : IndexWriter) = 
         Array.init s.ShardWriters.Length (fun x -> ShardWriter.getRealTimeSearcher <| s.ShardWriters.[x])
     
-    let getRealTimeSearcher (shardNo : int) (s : T) = 
+    let getRealTimeSearcher (shardNo : int) (s : IndexWriter) = 
         assert (s.ShardWriters.Length <= shardNo)
         ShardWriter.getRealTimeSearcher <| s.ShardWriters.[shardNo]
     
     /// Returns the total number of docs present in the index
-    let getDocumentCount (s : T) = 
+    let getDocumentCount (s : IndexWriter) = 
         s.ShardWriters |> Array.fold (fun count shard -> ShardWriter.getDocumentCount (shard) + count) 0
     
     /// <summary>
@@ -155,7 +172,7 @@ module IndexWriter =
     /// <param name="delay">Delay to be applied</param>
     /// <param name="work">Method to perform the work</param>
     /// <param name="indexWriter">Index on which the job is to be scheduled</param>
-    let scheduleIndexJob delay (work : T -> unit) indexWriter = 
+    let scheduleIndexJob delay (work : IndexWriter -> unit) indexWriter = 
         let rec loop time (cts : CancellationTokenSource) = 
             async { 
                 do! Async.Sleep(time)
@@ -169,33 +186,49 @@ module IndexWriter =
         loop delay indexWriter.Token
     
     /// Replay all the uncommitted transactions from the logs
-    let replayTransactionLogs (indexWriter : T) = 
-        let replayShardTransaction (shardWriter : ShardWriter.T) = 
-            shardWriter.Status <- ShardStatus.Recovering
+    let replayTransactionLogs (indexWriter : IndexWriter) = 
+        let txWriter = indexWriter.TxWriterPool.Get()
+        indexWriter.Status <- IndexStatus.Opening
+        let replayShardTransaction (gen : int64) = 
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
-            let logEntries = 
-                shardWriter.TxWriter.ReadLog(shardWriter.Generation.Value) // TODO: Find a more memory efficient way of sorting the transaction log file
-                                                                           |> Seq.sortBy (fun l -> l.TransactionId)
+            // TODO: Find a more memory efficient way of sorting the transaction log file
+            let logEntries = txWriter.ReadLog(gen) |> Seq.sortBy (fun l -> l.ModifyIndex)
             for entry in logEntries do
+                let shardNo = entry.Id |> mapToShard indexWriter.ShardWriters.Length
                 match entry.Operation with
-                | TransactionLog.Operation.Create | TransactionLog.Operation.Update -> 
-                    let doc = indexWriter.Template.Value |> DocumentTemplate.updateTempate entry.Document entry.TransactionId
-                    shardWriter 
-                    |> ShardWriter.updateDocument (entry.Id, indexWriter.GetSchemaName(MetaFields.IdField), doc)
-                | TransactionLog.Operation.Delete -> 
-                    shardWriter |> ShardWriter.deleteDocument entry.Id (indexWriter.GetSchemaName(MetaFields.IdField))
+                | TxOperation.Create | TxOperation.Update -> 
+                    let template = indexWriter.Template.Get()
+                    let document = new Document(entry.Id, indexWriter.Settings.IndexName, Fields = entry.Data)
+                    let doc = template |> DocumentTemplate.updateTempate document entry.ModifyIndex
+                    let doc = template |> DocumentTemplate.updateTempate document entry.ModifyIndex
+                    indexWriter.ShardWriters.[shardNo] 
+                    |> ShardWriter.updateDocument (entry.Id, indexWriter.GetSchemaName(IdField.Name), doc)
+                | TxOperation.Delete -> 
+                    indexWriter.ShardWriters.[shardNo] 
+                    |> ShardWriter.deleteDocument entry.Id (indexWriter.GetSchemaName(IdField.Name))
                 | _ -> ()
-            // Just refresh the index so that the changes are picked up
-            // in subsequent searches. We can also commit here but it will
-            // introduce blank commits in case there are no logs to replay.
-            shardWriter |> ShardWriter.refresh
-            shardWriter.Status <- ShardStatus.Online
-        indexWriter.ShardWriters |> Array.Parallel.iter replayShardTransaction
+            // Force commit after iterating through each file
+            indexWriter |> commit true
+        indexWriter.Settings.BaseFolder +/ "txlogs"
+        |> loopFiles
+        |> Seq.iter (Path.GetFileName
+                     >> Int64.Parse
+                     >> replayShardTransaction)
+        // Just refresh the index so that the changes are picked up
+        // in subsequent searches. We can also commit here but it will
+        // introduce blank commits in case there are no logs to replay.
+        indexWriter.ShardWriters |> Array.iter ShardWriter.refresh
+        indexWriter.Status <- IndexStatus.Online
     
     /// Create a new index instance
-    let create (settings : IndexSetting.T) = 
-        let template = new ThreadLocal<DocumentTemplate.T>((fun _ -> DocumentTemplate.create (settings)), true)
+    let create (settings : IndexSetting) = 
+        let factory = fun _ -> DocumentTemplate.create (settings)
+        let policy = new DefaultObjectPoolPolicy<DocumentTemplate>(factory, fun _ -> true)
+        // Intitialize TxWriter pool
+        let txPath = settings.BaseFolder +/ "txlogs" |> createDir
+        let txFactory = fun _ -> new TxWriter(0L, txPath)
+        let txPolicy = new DefaultObjectPoolPolicy<TxWriter>(txFactory, fun _ -> true)
         
         // Create a shard for the index
         let createShard (n) = 
@@ -205,14 +238,24 @@ module IndexWriter =
             ShardWriter.create (n, settings.IndexConfiguration, indexWriterConfig, settings.BaseFolder, dir)
         
         let shardWriters = Array.init settings.ShardConfiguration.ShardCount createShard
-        let caches = shardWriters |> Array.map (fun x -> VersionCache.create (settings, x))
+        let caches = shardWriters |> Array.map (VersionCache.create settings)
+        
+        let modifyIndex = 
+            shardWriters
+            |> Array.map ShardWriter.getMaxModifyIndex
+            |> Array.max
         
         let indexWriter = 
-            { Template = template
+            { Template = new DefaultObjectPool<DocumentTemplate>(policy)
+              TxWriterPool = new DefaultObjectPool<TxWriter>(txPolicy)
               ShardWriters = shardWriters
               Caches = caches
+              ModifyIndex = new AtomicLong(modifyIndex)
+              Generation = new AtomicLong(0L)
               Settings = settings
+              Status = IndexStatus.Offline
               Token = new System.Threading.CancellationTokenSource() }
+        
         indexWriter |> replayTransactionLogs
         // Add the scheduler for the index
         // Commit Scheduler

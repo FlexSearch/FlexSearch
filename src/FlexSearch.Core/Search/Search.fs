@@ -32,7 +32,7 @@ open System.ComponentModel.Composition
 /// FlexQuery interface     
 type IFlexQuery = 
     abstract QueryName : unit -> string []
-    abstract GetQuery : Field.T * string [] * Dictionary<string, string> option -> Result<Query>
+    abstract GetQuery : FieldSchema * string [] * Dictionary<string, string> option -> Result<Query>
 
 /// Interface for implementing query functions.
 /// Query functions can be of two types: constant and variable.
@@ -45,7 +45,7 @@ type IFlexQuery =
 /// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
     abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
-    abstract GetVariableResult : Field.T * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>
+    abstract GetVariableResult : FieldSchema * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>
 
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
@@ -81,14 +81,14 @@ module SearchDsl =
                 else fail <| MissingFieldValue fieldName
             | _ -> fail <| MissingFieldValue fieldName
 
-    let validateSearchField (fields : IReadOnlyDictionary<string, Field.T>)  fieldName =
+    let validateSearchField (fields : IReadOnlyDictionary<string, FieldSchema>)  fieldName =
             maybe {
                 let! field = fields |> keyExists2 (fieldName, fieldNotFound)
-                do! FieldType.searchable field.FieldType |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
+                do! FieldSchema.isSearchable field |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
                 return field
             }
 
-    let generateQuery (fields : IReadOnlyDictionary<string, Field.T>, predicate : Predicate, 
+    let generateQuery (fields : IReadOnlyDictionary<string, FieldSchema>, predicate : Predicate, 
                        searchQuery : SearchQuery, isProfileBased : Dictionary<string, string> option, 
                        queryTypes : Dictionary<string, IFlexQuery>,
                        queryFunctionTypes : Dictionary<string, IFlexQueryFunction>) = 
@@ -130,7 +130,7 @@ module SearchDsl =
             | None -> v |> computeFieldValueAsArray fieldName
         
         let queryGenerationWrapper fieldName operator constant parameters 
-                                   (queryGetter : Field.T -> IFlexQuery -> string[] option -> Result<Query>) =
+                                   (queryGetter : FieldSchema -> IFlexQuery -> string[] option -> Result<Query>) =
             maybe {
                     // First validate the field
                     let! field = fieldName |> validateSearchField fields
@@ -205,9 +205,9 @@ module SearchDsl =
         generateQuery predicate
     
     /// Returns a document from the index
-    let getDocument (indexWriter : IndexWriter.T, search : SearchQuery, document : LuceneDocument) = 
+    let getDocument (indexWriter : IndexWriter, search : SearchQuery, document : LuceneDocument) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        let getValue(field: Field.T) =
+        let getValue(field: FieldSchema) =
             let value = document.Get(field.SchemaName)
             if notNull value then 
                 if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then
@@ -221,7 +221,7 @@ module SearchDsl =
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
-                if [MetaFields.IdField; MetaFields.LastModifiedField; MetaFields.ModifyIndex; MetaFields.State]
+                if [IdField.Name; TimeStampField.Name; ModifyIndexField.Name; StateField.Name]
                    |> Seq.contains field.FieldName
                 then ()
                 else getValue(field)
@@ -233,7 +233,7 @@ module SearchDsl =
                 | _ -> ()
         fields
     
-    let search (indexWriter : IndexWriter.T, query : Query, searchQuery : SearchQuery) = 
+    let search (indexWriter : IndexWriter, query : Query, searchQuery : SearchQuery) = 
         (!>) "Input Query:%s \nGenerated Query : %s" (searchQuery.QueryString) (query.ToString())
         let indexSearchers = indexWriter |> IndexWriter.getRealTimeSearchers
         // Each thread only works on a separate part of the array and as no parts are shared across
@@ -252,8 +252,8 @@ module SearchDsl =
             | _ -> 
                 match indexWriter.Settings.Fields.TryGetValue(searchQuery.OrderBy) with
                 | (true, field) -> 
-                    if field.GenerateDocValue then
-                        new Sort(new SortField(field.SchemaName, FieldType.sortField field.FieldType, sortOrder))
+                    if field |> FieldSchema.hasDocValues then
+                        new Sort(new SortField(field.SchemaName, field.FieldType.SortFieldType, sortOrder))
                     else
                         Sort.RELEVANCE
                 | _ -> Sort.RELEVANCE
@@ -262,9 +262,9 @@ module SearchDsl =
             if not <| String.IsNullOrWhiteSpace(searchQuery.DistinctBy) then 
                 match indexWriter.Settings.Fields.TryGetValue(searchQuery.DistinctBy) with
                 | true, field -> 
-                    match field.FieldType with
-                    | FieldType.ExactText(_) -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
-                    | _ -> None
+                    match field |> FieldSchema.isTokenized with
+                    | false -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
+                    | true -> None
                 | _ -> None
             else None
         
@@ -273,7 +273,7 @@ module SearchDsl =
             | 0 -> 10 + searchQuery.Skip
             | _ -> searchQuery.Count + searchQuery.Skip
         
-        let searchShard(x : ShardWriter.T) =
+        let searchShard(x : ShardWriter) =
             // This is to enable proper sorting
             let topFieldCollector = 
                 TopFieldCollector.Create(sort, count, null, true, true, true)
@@ -324,7 +324,7 @@ module SearchDsl =
         
         let processDocument (hit : ScoreDoc, document : LuceneDocument) = 
             let timeStamp = 
-                let t = document.Get(indexWriter.GetSchemaName(MetaFields.LastModifiedField))
+                let t = document.Get(indexWriter.GetSchemaName(TimeStampField.Name))
                 if isNull t then
                     0L
                 else
@@ -332,7 +332,7 @@ module SearchDsl =
             let fields = getDocument (indexWriter, searchQuery, document)
             
             let resultDoc = new Model.Document()
-            resultDoc.Id <- document.Get(indexWriter.GetSchemaName(MetaFields.IdField))
+            resultDoc.Id <- document.Get(indexWriter.GetSchemaName(IdField.Name))
             resultDoc.IndexName <- indexWriter.Settings.IndexName
             resultDoc.TimeStamp <- timeStamp
             resultDoc.Fields <- fields

@@ -120,7 +120,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
                            new Field("population", Constants.FieldType.Long)
                            new Field("agriproducts", Constants.FieldType.Text, IndexAnalyzer = "foodsynonymsanalyzer")
                            new Field("areacomparative")
-                           new Field("background", Constants.FieldType.Highlight)
+                           new Field("background", Constants.FieldType.Text)
                            new Field("capital")
                            new Field("climate")
                            new Field("economy")

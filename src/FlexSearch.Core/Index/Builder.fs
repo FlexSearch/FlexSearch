@@ -22,6 +22,8 @@ open FlexLucene.Analysis.Standard
 open FlexLucene.Codecs.Bloom
 open FlexLucene.Document
 open FlexLucene.Index
+open FlexLucene.Store
+open FlexLucene.Codecs
 open FlexLucene.Search
 open FlexLucene.Search.Similarities
 open FlexSearch.Core
@@ -37,15 +39,59 @@ open java.util
 open System.Diagnostics
 open System.Threading.Tasks
 
+[<RequireQualifiedAccess; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module FieldSimilarity = 
+    open FlexLucene.Search.Similarities
+    
+    /// Converts the enum similarity to Lucene Similarity
+    let getLuceneT = 
+        function 
+        | Similarity.TFIDF -> ok (new DefaultSimilarity() :> Similarity)
+        | Similarity.BM25 -> ok (new BM25Similarity() :> Similarity)
+        | unknown -> fail (UnSupportedSimilarity(unknown.ToString()))
+    
+    /// Default similarity provider used by FlexSearch
+    [<SealedAttribute>]
+    type Provider(mappings : IReadOnlyDictionary<string, Similarity>, defaultFormat : Similarity) = 
+        inherit PerFieldSimilarityWrapper()
+        override __.Get(fieldName) = 
+            match mappings.TryGetValue(fieldName) with
+            | true, format -> format
+            | _ -> defaultFormat
+
+[<RequireQualifiedAccess; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module DirectoryType = 
+    /// Create a index directory from the given directory type    
+    let getIndexDirectory (directoryType : DirectoryType, path : string) = 
+        // Note: Might move to SingleInstanceLockFactory to provide other services to open
+        // the index in read-only mode
+        let lockFactory = NativeFSLockFactory.GetDefault()
+        let file = (new java.io.File(path)).toPath()
+        try 
+            match directoryType with
+            | DirectoryType.FileSystem -> ok (FSDirectory.Open(file, lockFactory) :> FlexLucene.Store.Directory)
+            | DirectoryType.MemoryMapped -> ok (MMapDirectory.Open(file, lockFactory) :> FlexLucene.Store.Directory)
+            | DirectoryType.Ram -> ok (new RAMDirectory() :> FlexLucene.Store.Directory)
+            | unknown -> fail (UnsupportedDirectoryType(unknown.ToString()))
+        with e -> fail (ErrorOpeningIndexWriter(path, exceptionPrinter (e), new ResizeArray<_>()))
+
+[<RequireQualifiedAccessAttribute; CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module IndexConfiguration = 
+    let inline getIndexWriterConfiguration (codec : Codec) (similarity : LuceneSimilarity) 
+               (indexAnalyzer : LuceneAnalyzer) (configuration : IndexConfiguration) = 
+        let iwc = new IndexWriterConfig(indexAnalyzer)
+        iwc.SetOpenMode(IndexWriterConfigOpenMode.CREATE_OR_APPEND) |> ignore
+        iwc.SetRAMBufferSizeMB(float configuration.RamBufferSizeMb) |> ignore
+        iwc.SetCodec(codec).SetSimilarity(similarity) |> ignore
+        iwc
+
 /// Builder related to creating Index Settings
 [<AutoOpenAttribute>]
 module IndexSettingBuilder = 
-    open IndexSetting
-    
     /// Builder object which will be passed around to build
     /// index setting
     type BuilderObject = 
-        { Setting : IndexSetting.T }
+        { Setting : IndexSetting }
     
     let withIndexName (indexName, path) = 
         Directory.CreateDirectory(path) |> ignore
@@ -68,19 +114,19 @@ module IndexSettingBuilder =
     
     /// Creates per field analyzer for an index from the index field data. These analyzers are used for searching and
     /// indexing rather than the individual field analyzer
-    let buildAnalyzer (fields : Field.FieldCollection, isIndexAnalyzer : bool) = 
+    let buildAnalyzer (fields : FieldCollection, isIndexAnalyzer : bool) = 
         let analyzer = new AnalyzerWrapper()
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field[], analyzerService, scriptService) (build) = 
+    let withFields (fields : Field [], analyzerService : GetAnalyzer, scriptService : GetScript) (build) = 
         let ic = build.Setting.IndexConfiguration
-        let resultLookup = new Dictionary<string, Field.T>(StringComparer.OrdinalIgnoreCase)
-        let result = new Field.FieldCollection()
+        let resultLookup = new Dictionary<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
+        let result = new FieldCollection()
         // Add system fields
-        MetaFields.getMetaFields (ic.UseBloomFilterForId) |> Seq.iter (fun x -> result.Add(x))
+        FieldSchema.getMetaSchemaFields |> Seq.iter (fun x -> result.Add(x))
         for field in fields do
-            let fieldObject = returnOrFail (Field.build (field, ic, analyzerService, scriptService))
+            let fieldObject = returnOrFail <| FieldSchema.build field analyzerService scriptService
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
         // Perf: Intern all the field names in the string pool. This is done as the field names will be
@@ -94,7 +140,7 @@ module IndexSettingBuilder =
                                               IndexAnalyzer = buildAnalyzer (result, true) } }
     
     /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : SearchQuery[], parser : IFlexParser) (build) = 
+    let withSearchProfiles (profiles : SearchQuery [], parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
             let predicate = returnOrFail <| parser.Parse profile.QueryString
@@ -114,7 +160,7 @@ module IndexSettingBuilder =
 /// Builders related to creating Lucene IndexWriterConfig
 module IndexWriterConfigBuilder = 
     /// Returns an instance of per field similarity provider 
-    let getSimilarityProvider (s : IndexSetting.T) = 
+    let getSimilarityProvider (s : IndexSetting) = 
         let defaultSimilarity = 
             Similarity.TFIDF
             |> FieldSimilarity.getLuceneT
@@ -132,12 +178,12 @@ module IndexWriterConfigBuilder =
         new FieldSimilarity.Provider(mappings, defaultSimilarity)
     
     /// Build Index writer settings with the given index settings
-    let buildWithSettings (s : IndexSetting.T) = 
+    let buildWithSettings (s : IndexSetting) = 
         let iwc = new IndexWriterConfig(s.IndexAnalyzer)
         
         let codec = 
             s.IndexConfiguration.IndexVersion
-            |> Codec.getCodec s.IndexConfiguration.UseBloomFilterForId
+            |> Codec.getCodec
             |> extract
         
         let similarityProvider = s |> getSimilarityProvider
@@ -150,5 +196,5 @@ module IndexWriterConfigBuilder =
         iwc
     
     /// Used for updating real time Index writer settings
-    let updateWithSettings (s : IndexSetting.T) (iwc : LiveIndexWriterConfig) = 
+    let updateWithSettings (s : IndexSetting) (iwc : LiveIndexWriterConfig) = 
         iwc.SetRAMBufferSizeMB(double s.IndexConfiguration.RamBufferSizeMb)

@@ -50,7 +50,7 @@ module IndexServiceTests =
     type UpdateIndexTests() =
         let modifyFirstField (index : Index) =
             let fields = index.Fields
-            fields.[0].Store <- false
+            fields.[0].AllowSort <- false
             index
 
         let modifyFirstFieldName (index : Index) =
@@ -89,7 +89,7 @@ id,et1,et2,i1,i2
             
             let updated = indexService.GetIndex index.IndexName
             test <@ succeeded updated @>
-            test <@ (extract updated).Fields.[0].Store = false @>
+            test <@ (extract updated).Fields.[0].AllowSort = false @>
 
         member __.``Should be able to access old documents after updating index fields``
                   ( indexService : IIndexService, 
@@ -172,7 +172,7 @@ id,et1,et2,i1,i2
             documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
             let conf = new IndexConfiguration()
-            conf.IndexVersion <- IndexVersion.Lucene_4_x_x
+            conf.IndexVersion <- IndexVersion.FlexSearch_1B
             test <@ failed <| indexService.UpdateIndexConfiguration(index.IndexName, conf) @>
 
     type CommonTests() =

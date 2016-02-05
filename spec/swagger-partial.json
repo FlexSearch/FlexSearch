@@ -256,11 +256,10 @@
           "default": 60,
           "minimum": 30
         },
-        "commitEveryNFlushes": {
-          "description": "Determines how often the data be committed to the physical medium. Commits are more expensive then flushes so keep the setting as high as possible. Making this setting too high will result in excessive ram usage.",
-          "type": "integer",
-          "format": "int32",
-          "default": 3
+        "deleteLogsOnClose": {
+          "description": "Determines whether to clear all transaction logs before closing an index. This setting is for advance use and should be left to default.",
+          "type": "boolean",
+          "default": true
         },
         "commitOnClose": {
           "description": "Determines whether to commit first before closing an index",
@@ -313,13 +312,8 @@
         "indexVersion": {
           "description": "Corresponds to Lucene Index version. There will always be a default codec associated with each index version.",
           "type": "string",
-          "enum": [ "Lucene_4_x_x", "Lucene_5_0_0" ],
-          "default": "Lucene_5_0_0"
-        },
-        "useBloomFilterForId": {
-          "description": "Signifies if bloom filter should be used for encoding Id field.",
-          "type": "boolean",
-          "default": true
+          "enum": [ "FlexSearch_1A", "FlexSearch_1B" ],
+          "default": "FlexSearch_1B"
         },
         "allowReads": {
           "description": "",
@@ -343,11 +337,6 @@
           "type": "boolean",
           "default": false
         },
-        "analyze": {
-          "description": "Signifies if the field should be analyzed using an analyzer.",
-          "type": "boolean",
-          "default": true
-        },
         "fieldName": {
           "description": "Name of the field",
           "type": "string"
@@ -355,34 +344,13 @@
         "fieldType": {
           "description": "",
           "type": "string",
-          "enum": [ "Int", "Double", "Float", "ExactText", "Text", "Highlight", "Bool", "Date", "DateTime", "Custom", "Stored", "Long" ],
+          "enum": [ "Int", "Double", "Float", "ExactText", "Text", "Bool", "Date", "DateTime", "Stored", "Long" ],
           "default": "Text"
-        },
-        "fieldProperty": {
-          "description": "Field Properties",
-          "type": "string",
-          "enum": ["Indexed", "Tokenized", "Stored", "OmitNorms", "OmitTfPostions", "StoreTermVectors", "StoreTermPositions", "StoreTermOffsets", "Required", "OmitPositions", "StoreOffsets", "DocValues", "Sorted", "StoreTermPayloads"] 
-        },
-        "index": {
-          "default": true,
-          "description": "Signifies if a field should be indexed. A field can only be stored without indexing.",
-          "type": "boolean"
         },
         "indexAnalyzer": {
           "description": "",
           "type": "string",
           "default": "standard"
-        },
-        "indexOptions": {
-          "default": "DocsAndFreqsAndPositions",
-          "description": "",
-          "enum": [ "DocsOnly", "DocsAndFreqs", "DocsAndFreqsAndPositions", "DocsAndFreqsAndPositionsAndOffsets" ],
-          "type": "string"
-        },
-        "omitNorms": {
-          "description": "",
-          "type": "boolean",
-          "default": true
         },
         "scriptName": {
           "description": "",
@@ -399,17 +367,6 @@
           "type": "string",
           "enum": [ "BM25", "TFIDF" ],
           "default": "TFIDF"
-        },
-        "store": {
-          "description": "",
-          "type": "boolean",
-          "default": true
-        },
-        "termVector": {
-          "description": "",
-          "type": "string",
-          "enum": [ "DoNotStoreTermVector", "StoreTermVector", "StoreTermVectorsWithPositions", "StoreTermVectorsWithPositionsandOffsets" ],
-          "default": "DoNotStoreTermVector"
         }
       }
     },
@@ -553,6 +510,11 @@
           "type": "string"
         },
         "timeStamp": {
+          "description": "",
+          "type": "integer",
+          "format": "int64"
+        },
+        "modifyIndex": {
           "description": "",
           "type": "integer",
           "format": "int64"

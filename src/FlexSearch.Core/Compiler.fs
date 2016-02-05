@@ -27,12 +27,6 @@ module Scripts =
     open System
     open System.Collections.Generic
     
-    type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
-    
-    type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string, string>, bool * float32>
-    
-    type SearchProfileDelegate = Action<SearchQuery, Dictionary<string, string>>
-    
     type T = 
         /// Default signature which is used by computed scripts
         /// Format -> indexName, fieldName, fields, parameters

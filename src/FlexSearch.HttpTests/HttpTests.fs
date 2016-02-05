@@ -87,7 +87,7 @@ type ``Index Update Tests``() =
     member __.``Trying to update index fields should return success`` (api : IndicesApi, index : Index, 
                                                                        handler : LoggingHandler) = 
         api.CreateIndexWithHttpInfo(index) |> isCreated
-        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldType.Text, Store = true) |])
+        let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldType.Text) |])
         api.UpdateIndexFields(fields, index.IndexName) |> isSuccessful
         handler |> log "put-indices-id-2"
         api.DeleteIndex(index.IndexName) |> isSuccessful

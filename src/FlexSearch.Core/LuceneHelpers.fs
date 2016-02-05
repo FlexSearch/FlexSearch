@@ -40,21 +40,6 @@ open System.Linq
 open java.io
 open java.util
 
-[<AutoOpen>]
-module Mapping =
-    // type mappings to avoid name conflict
-    type LuceneAnalyzer = FlexLucene.Analysis.Analyzer
-
-    type LuceneDocument = FlexLucene.Document.Document
-
-    type LuceneField = FlexLucene.Document.Field
-
-    type LuceneFieldType = FlexLucene.Document.FieldType
-
-    type LuceneSimilarity = FlexLucene.Search.Similarities.Similarity
-
-    type LuceneTextField = FlexLucene.Document.TextField
-
 /// Determines whether it's an infinite value and if it's minimum or maximum
 type Infinite = 
     | MinInfinite
@@ -64,16 +49,19 @@ type Infinite =
 [<AutoOpenAttribute>]
 module JavaHelpers = 
     // These are needed to satisfy certain Lucene query requirements
-    let inline GetJavaDouble(value : Double) = java.lang.Double(value)
-    let inline GetJavaInt(value : int) = java.lang.Integer(value)
-    let inline GetJavaLong(value : int64) = java.lang.Long(value)
     let JavaLongMax = java.lang.Long(java.lang.Long.MAX_VALUE)
     let JavaLongMin = java.lang.Long(java.lang.Long.MIN_VALUE)
     let JavaDoubleMax = java.lang.Double(java.lang.Double.MAX_VALUE)
     let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
+    let JavaFloatMax = java.lang.Float(java.lang.Float.MAX_VALUE)
+    let JavaFloatMin = java.lang.Float(java.lang.Float.MIN_VALUE)
     let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
     let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
-    
+    let javaInt (value : int) = new java.lang.Integer(value)
+    let javaDouble (value : double) = new java.lang.Double(value)
+    let javaLong (value : int64) = new java.lang.Long(value)
+    let javaFloat (value : float32) = new java.lang.Float(value)
+
     /// Get a new Java hashmap
     let hashMap() = new HashMap()
     
@@ -102,6 +90,14 @@ module JavaHelpers =
         | MaxInfinite -> JavaLongMax
         | MinInfinite -> JavaLongMin
         | _ -> java.lang.Long(value)
+    
+    let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) (parse : string -> bool * 'T) (converter : 'T -> 'U) =
+        if number = Constants.Infinite then
+             ok <| infiniteValue
+        else 
+            match parse number with
+            | true, v -> ok <| converter v
+            | _ -> fail <| DataCannotBeParsed(schemaName, dataType)
 
 [<AutoOpenAttribute>]
 module QueryHelpers = 
@@ -114,15 +110,6 @@ module QueryHelpers =
     
     /// Get term for the given fieldname and value
     let inline getTerm (fieldName : string) (text : string) = new Term(fieldName, text)
-        
-    // Find terms associated with the search string
-    let inline getTerms (flexField : Field.T, values : string[]) = 
-        let result = new List<string>()
-        for value in values do
-            match Field.getSearchAnalyzer (flexField) with
-            | Some(a) -> result.AddRange(parseTextUsingAnalyzer (a, flexField.SchemaName, value))
-            | None -> result.Add(value)
-        result
 
     // ----------------------------------------------------------------------------
     // Queries
@@ -185,33 +172,33 @@ module QueryHelpers =
         | _ -> getBoolQueryFromTerms boolClause innerQueryProvider terms
         |> ok
     
-    // ------------------------
-    // Range Queries
-    // ------------------------
-    let getRangeQuery value (includeLower, includeUpper) (infiniteMin, infiniteMax) (fIdxFld : Field.T) = 
-        match FieldType.isNumericField fIdxFld.FieldType with
-        | true -> 
-            match fIdxFld.FieldType with
-            | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
-                match Int64.TryParse(value) with
-                | true, value' -> 
-                    NumericRangeQuery.NewLongRange
-                        (fIdxFld.SchemaName, value' |> getJavaLong infiniteMin, value' |> getJavaLong infiniteMax, 
-                         includeLower, includeUpper) :> Query |> ok
-                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime")
-            | FieldType.Int -> 
-                match Int32.TryParse(value) with
-                | true, value' -> 
-                    NumericRangeQuery.NewIntRange
-                        (fIdxFld.SchemaName, value' |> getJavaInt infiniteMin, value' |> getJavaInt infiniteMax, 
-                         includeLower, includeUpper) :> Query |> ok
-                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Integer")
-            | FieldType.Double -> 
-                match Double.TryParse(value) with
-                | true, value' -> 
-                    NumericRangeQuery.NewDoubleRange
-                        (fIdxFld.SchemaName, value' |> getJavaDouble infiniteMin, value' |> getJavaDouble infiniteMax, 
-                         includeLower, includeUpper) :> Query |> ok
-                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Double")
-            | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime, Integer, Double")
-        | false -> fail <| ExpectingNumericData fIdxFld.FieldName
+//    // ------------------------
+//    // Range Queries
+//    // ------------------------
+//    let getRangeQuery value (includeLower, includeUpper) (infiniteMin, infiniteMax) (fIdxFld : Field.T) = 
+//        match FieldType.isNumericField fIdxFld.FieldType with
+//        | true -> 
+//            match fIdxFld.FieldType with
+//            | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
+//                match Int64.TryParse(value) with
+//                | true, value' -> 
+//                    NumericRangeQuery.NewLongRange
+//                        (fIdxFld.SchemaName, value' |> getJavaLong infiniteMin, value' |> getJavaLong infiniteMax, 
+//                         includeLower, includeUpper) :> Query |> ok
+//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime")
+//            | FieldType.Int -> 
+//                match Int32.TryParse(value) with
+//                | true, value' -> 
+//                    NumericRangeQuery.NewIntRange
+//                        (fIdxFld.SchemaName, value' |> getJavaInt infiniteMin, value' |> getJavaInt infiniteMax, 
+//                         includeLower, includeUpper) :> Query |> ok
+//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Integer")
+//            | FieldType.Double -> 
+//                match Double.TryParse(value) with
+//                | true, value' -> 
+//                    NumericRangeQuery.NewDoubleRange
+//                        (fIdxFld.SchemaName, value' |> getJavaDouble infiniteMin, value' |> getJavaDouble infiniteMax, 
+//                         includeLower, includeUpper) :> Query |> ok
+//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Double")
+//            | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime, Integer, Double")
+//        | false -> fail <| ExpectingNumericData fIdxFld.FieldName

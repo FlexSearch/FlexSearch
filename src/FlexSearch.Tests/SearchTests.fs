@@ -225,7 +225,7 @@ id,et1,t2,i1,i2
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "_id" |]
-            |> withOrderBy MetaFields.LastModifiedField
+            |> withOrderBy TimeStampField.Name
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 5
         result |> assertFieldValue 0 "_id" "1"
@@ -238,7 +238,7 @@ id,et1,t2,i1,i2
         let result = 
             getQuery (index.IndexName, "i1 eq '1'")
             |> withColumns [| "_id" |]
-            |> withOrderByDesc MetaFields.LastModifiedField
+            |> withOrderByDesc TimeStampField.Name
 
             |> searchAndExtract searchService
         

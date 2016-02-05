@@ -12,16 +12,11 @@ type ``Field Dto Default value tests``() =
         test <@ Constants.StandardAnalyzer = sut.SearchAnalyzer @>
     member __.``'standardanalyzer' should be the default 'IndexAnalyzer'``() = 
         test <@ Constants.StandardAnalyzer = sut.IndexAnalyzer @>
-    member __.``'Analyze' should default to 'true'``() = test <@ sut.Analyze = true @>
-    member __.``'Store' should default to 'true'``() = test <@ sut.Store = true @>
-    member __.``'Index' should default to 'true'``() = test <@ sut.Index = true @>
     member __.``'FieldType' should default to 'Text'``() = test <@ sut.FieldType = Constants.FieldType.Text @>
 
 type ``Index Field tests``() = 
     
     [<InlineDataAttribute(Constants.FieldType.Text)>]
-    [<InlineDataAttribute(Constants.FieldType.Highlight)>]
-    [<InlineDataAttribute(Constants.FieldType.Custom)>]
     [<Ignore>]
     member __.``Correct Index Analyzer should be specified for {fieldType} field types`` (fieldType : Constants.FieldType) = 
         let field = new Field()
@@ -31,8 +26,6 @@ type ``Index Field tests``() =
         test <@ field.Validate() @>
     
     [<InlineDataAttribute(Constants.FieldType.Text)>]
-    [<InlineDataAttribute(Constants.FieldType.Highlight)>]
-    [<InlineDataAttribute(Constants.FieldType.Custom)>]
     [<Ignore>]
     member __.``Correct Search Analyzer should be specified for {fieldType} field types`` (fieldType : Constants.FieldType) = 
         let field = new Field()
