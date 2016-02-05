@@ -14,6 +14,7 @@ More information is available at http://www.flexsearch.net/
 In order to build FlexSearch you need to run the following commands:
 ```
 git submodule init
+git submodule update
 .\build
 ```
 
