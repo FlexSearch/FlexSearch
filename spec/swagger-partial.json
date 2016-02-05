@@ -256,11 +256,10 @@
           "default": 60,
           "minimum": 30
         },
-        "commitEveryNFlushes": {
-          "description": "Determines how often the data be committed to the physical medium. Commits are more expensive then flushes so keep the setting as high as possible. Making this setting too high will result in excessive ram usage.",
-          "type": "integer",
-          "format": "int32",
-          "default": 3
+        "deleteLogsOnClose": {
+          "description": "Determines whether to clear all transaction logs before closing an index. This setting is for advance use and should be left to default.",
+          "type": "boolean",
+          "default": true
         },
         "commitOnClose": {
           "description": "Determines whether to commit first before closing an index",
