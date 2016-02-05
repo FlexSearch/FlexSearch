@@ -6,8 +6,8 @@
     "angular": "~1.4.0",
     "angular-animate": "~1.4.0",
     "angular-chart.js": "~0.7.2",
-    "angular-material": "~1.0.4",
-    "angular-material-data-table": "*",
+    "angular-material": "~1.0.0",
+    
     "angular-material-icons": "~0.6.0",
     "angular-route": "~1.4.0",
     "angular-sanitize": "~1.4.0",

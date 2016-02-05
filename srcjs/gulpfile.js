@@ -46,7 +46,7 @@ var taskNames = getFolders('src/apps').map(function (appFolder) {
     };
 
     gutil.log("gulping " + appFolder);
-    gulps.map(g => g(options));
+    gulps.map(function(g) { g(options); });
     
     gulp.task(appFolder, ['clean-' + appFolder], function () {
         gutil.log("Building app " + appFolder + "...");

@@ -162,7 +162,7 @@ Target "MovePortal" <| fun _ ->
         FileHelper.CopyRecursive (dir <!!> "dist\\") targetAppPath true |> ignore
         ensureDirectory(targetAppPath <!!> @"\styles")
         File.Copy(dir <!!> @"dist\fonts\ui-grid.ttf", targetAppPath <!!> @"styles\ui-grid.ttf", true)
-        File.Copy(portalDir <!!> @"dist\fonts\ui-grid.woff", targetAppPath <!!> @"styles\ui-grid.woff", true))
+        File.Copy(dir <!!> @"dist\fonts\ui-grid.woff", targetAppPath <!!> @"styles\ui-grid.woff", true))
 
     // Copy the homepage templates
     File.Copy(portalDir <!!> @"src\home.html", webDir <!!> "home.html")
