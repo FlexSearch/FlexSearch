@@ -32,6 +32,7 @@ open System.Security.AccessControl
 open System.Security.Principal
 open System.Text
 open System.Threading
+open System.Linq
 
 [<Sealed>]
 /// <summary>
@@ -114,7 +115,11 @@ module Helpers =
     open System.Collections.Generic
     
     let (+/) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
-    let loopDir (dir : string) = Directory.EnumerateDirectories(dir)
+    let loopDir (dir : string) = 
+        if Directory.Exists dir then
+            Directory.EnumerateDirectories(dir)
+        else Enumerable.Empty<string>()
+
     let loopFiles (dir : string) = Directory.EnumerateFiles(dir)
     let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
     let emptyDir (path) = loopDir path |> Seq.iter (loopFiles >> Seq.iter File.Delete)

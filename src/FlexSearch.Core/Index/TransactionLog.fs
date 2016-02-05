@@ -81,7 +81,7 @@ type TxWriter(gen : int64, ?path0 : string) =
     
     /// Reads existing Transaction Log and returns all the entries
     member __.ReadLog(gen : int64) = 
-        let localPath = if path0.IsSome then path +/ currentGen.ToString() else path
+        let localPath = if path0.IsSome then path +/ gen.ToString() else path
         if File.Exists(localPath) then 
             try 
                 seq { 

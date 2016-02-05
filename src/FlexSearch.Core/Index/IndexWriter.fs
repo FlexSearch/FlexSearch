@@ -76,13 +76,22 @@ module IndexWriter =
         writer.ShardWriters |> Array.iter ShardWriter.close
         // Make sure all the files are removed from TxLog otherwise the index will
         // go into unnecessary recovery mode.
-        emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
+        if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
     
     /// Refresh the index    
     let refresh (s : IndexWriter) = s.ShardWriters |> Array.iter ShardWriter.refresh
     
     /// Commit unsaved data to the index
-    let commit (forceCommit : bool) (s : IndexWriter) = s.ShardWriters |> Array.iter (ShardWriter.commit forceCommit)
+    let commit (forceCommit : bool) (s : IndexWriter) = 
+        // Increment the generation before committing so that all transactions start going to the
+        // new log file
+        let newGen = s.Generation.Increment()
+        s.ShardWriters |> Array.iter (ShardWriter.commit forceCommit)
+        // Delete all the Tx files which are older than two generation
+        loopDir (s.Settings.BaseFolder +/ "txlog") |> Seq.iter (fun filePath -> 
+                                                          let (success, gen) = 
+                                                              Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
+                                                          if success && (newGen - 2L) <= gen then File.Delete(filePath))
     
     /// Add or update a document
     let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : IndexWriter) = 

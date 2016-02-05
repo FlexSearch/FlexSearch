@@ -51,10 +51,17 @@ type TransactionWriterTests() =
             let resultValues = result.[i].Data.Values.ToArray()
             test <@ entryValues = resultValues @>
 
-type CommitTests() = 
+type CommitTests() =
+    let setIndexSettings(index : Index) =
+        index.IndexConfiguration.AutoCommit <- false
+        index.IndexConfiguration.AutoRefresh <- false
+        index.IndexConfiguration.CommitOnClose <- false
+        index.IndexConfiguration.DeleteLogsOnClose <- false
+
     member __.``Uncommitted changes can be recovered from TxLog in case of failure`` (index : Index, 
                                                                                       indexService : IIndexService, 
                                                                                       documentService : IDocumentService) = 
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
         test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
@@ -69,7 +76,8 @@ type CommitTests() =
 
     member __.``Changes will be applied in the same order as receiveced 1`` (index : Index, 
                                                                              indexService : IIndexService, 
-                                                                             documentService : IDocumentService) = 
+                                                                             documentService : IDocumentService) =
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
         test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
@@ -83,7 +91,8 @@ type CommitTests() =
 
     member __.``Changes will be applied in the same order as receiveced 2`` (index : Index, 
                                                                              indexService : IIndexService, 
-                                                                             documentService : IDocumentService) = 
+                                                                             documentService : IDocumentService) =
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         // Add test document
         test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
@@ -96,38 +105,10 @@ type CommitTests() =
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 1 @>
         test <@ succeeded <| documentService.GetDocument(index.IndexName, "1") @>
 
-    member __.``TxLog file is changed immediately after a commit``( index : Index, 
-                                                                    indexService : IIndexService, 
-                                                                    documentService : IDocumentService) = 
-        // Reduce max buffered docs count so that we can flush quicker
-        index.IndexConfiguration.MaxBufferedDocs <- 3
-        let random = new System.Random()
-        let commitCount = random.Next(5, 20)
-        let documentsPerCommit = random.Next(1, 10)
-         
-        test <@ succeeded <| indexService.AddIndex(index) @>
-        let writer = extract <| indexService.IsIndexOnline(index.IndexName)
-        
-        for i = 1 to commitCount do
-            test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = (i - 1) * documentsPerCommit @>
-            let previousGen  = writer.Generation.Value
-            // Do a commit before hand so that we can see the tx file change
-            test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
-            // Commit should cause a flush
-            // TODO: Fix this
-            // test <@ writer.ShardWriters.[0].OutstandingFlushes.Value = 1L @>
-            // New generation must be 1 higer than the last
-            test <@ writer.Generation.Value = previousGen + 1L  @>
-            
-            for j = 1 to documentsPerCommit do 
-                test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
-            let txFile = writer.Settings.BaseFolder +/ "txlogs" +/ writer.Generation.Value.ToString()
-            // Test if the TxLog file is present with the current generation
-            test <@ File.Exists(txFile) @>
-
     member __.``Older TxLog files are deleted immediately after a commit``( index : Index, 
                                                                             indexService : IIndexService, 
                                                                             documentService : IDocumentService) = 
+        setIndexSettings index
         test <@ succeeded <| indexService.AddIndex(index) @>
         let writer = extract <| indexService.IsIndexOnline(index.IndexName)
         for i = 1 to 10 do

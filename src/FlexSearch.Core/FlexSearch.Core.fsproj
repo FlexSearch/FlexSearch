@@ -117,8 +117,6 @@
     <Compile Include="Http\Http.fs" />
     <Compile Include="Http\HttpService.fs" />
     <Compile Include="Benchmark.fs" />
-    <Compile Include="Connectors.fs" />
-    <Compile Include="DuplicateDetection.fs" />
     <Compile Include="Bootstrapper.fs" />
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />

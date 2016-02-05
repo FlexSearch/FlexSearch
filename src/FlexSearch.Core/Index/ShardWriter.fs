@@ -64,6 +64,8 @@ module ShardWriter =
     let close (sw : ShardWriter) = 
         try 
             sw.SearcherManager.Close()
+            if sw.Settings.CommitOnClose then
+                sw |> commit false
             sw.IndexWriter.Close()
         with e -> ()
     
