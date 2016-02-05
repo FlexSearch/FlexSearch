@@ -34,8 +34,10 @@ type MessageLogValues(errorCode, message, props) =
             |> List.toSeq
 
     override this.ToString() =
-        sprintf "Error Code: %s%sMessage: %s%sData: %s%s" errorCode Environment.NewLine message Environment.NewLine props Environment.NewLine
-
+        let errorCodeStr = if String.IsNullOrEmpty(errorCode) then "" else sprintf "Error Code: %s%s" errorCode Environment.NewLine
+        let msg = sprintf "Message: %s%s" message Environment.NewLine 
+        let propsStr = if String.IsNullOrEmpty(props) then "" else  sprintf "Data: %s%s" props Environment.NewLine
+        errorCodeStr + msg + propsStr
 
 module Logging =
     let _sourceSwitch = 
