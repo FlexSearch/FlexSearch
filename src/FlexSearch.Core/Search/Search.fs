@@ -34,6 +34,8 @@ type IFlexQuery =
     abstract QueryName : unit -> string []
     abstract GetQuery : FieldSchema * string [] * Dictionary<string, string> option -> Result<Query>
 
+type ComputedConstants = Dictionary<string, string> option
+
 /// Interface for implementing query functions.
 /// Query functions can be of two types: constant and variable.
 ///
@@ -44,8 +46,9 @@ type IFlexQuery =
 /// should be a constant value. Variable query functions modify the given SearchQuery so 
 /// that it mimics the intended function. They don't return a constant value.
 type IFlexQueryFunction = 
-    abstract GetConstantResult : Constant list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
-    abstract GetVariableResult : FieldSchema * FieldFunction * IFlexQuery * string [] option * Dictionary<string, string> option * Dictionary<string, IFlexQueryFunction> -> Result<Query>
+    abstract GetConstantResult : ComputableValue list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
+    abstract GetVariableResult : Function * IFlexQuery * string [] option * ComputedConstants * FlexQueryFunctionsBag -> Result<Query>
+and FlexQueryFunctionsBag = Dictionary<string, IFlexQueryFunction>
 
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
@@ -96,86 +99,86 @@ module SearchDsl =
         assert (queryFunctionTypes.Count > 0)
         let generateMatchAllQuery = ref false
         
-        let computeFieldValueAsArray (fieldName : string) (v : Constant) = 
-            match v with
-            | SingleValue(v) -> 
-                if String.IsNullOrWhiteSpace(v) then fail <| MissingFieldValue(fieldName)
-                else ok <| [| v |]
-            | ValueList(v) -> 
-                if v.Length = 0 then fail <| MissingFieldValue(fieldName)
-                else ok <| v.ToArray()
-            | Constant.Function(name,prms) -> 
-                handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
-                >>= (fun x -> match x with 
-                              | Some(value) -> ok [| value |]
-                              | None -> fail <| ValueCouldntBeRetrieved(fieldName))
-            | SearchProfileField(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
-        
-        let computeConstant (fieldName, v : Constant) = 
-            match isProfileBased with
-            | Some(source) -> 
-                match v with
-                | SingleValue(v1) -> ok [| v1 |]
-                | SearchProfileField(spfn) -> 
-                    spfn |> getFieldFromSource source 
-                    >>= fun x -> ok [| x |] 
-                | Constant.Function(funcName,parameters) -> 
-                    handleFunctionValue funcName (parameters |> Seq.toList) queryFunctionTypes (Some(source))
-                    >>= (fun result -> match result with 
-                                       | Some(value) -> ok [| value |]
-                                       // If None is returned and we're in a Search Profile search, then
-                                       // we can ignore this condition, thus generate a matchall query
-                                       | None -> generateMatchAllQuery := true; ok [||])
-                | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
-            | None -> v |> computeFieldValueAsArray fieldName
-        
-        let queryGenerationWrapper fieldName operator constant parameters 
-                                   (queryGetter : FieldSchema -> IFlexQuery -> string[] option -> Result<Query>) =
-            maybe {
-                    // First validate the field
-                    let! field = fieldName |> validateSearchField fields
-                    // Then get the type of query operator being used. We might not have
-                    // an operator if there is no RHS value
-                    let! query = match constant with
-                                 | Some(_) -> queryTypes |> keyExists (operator, queryNotFound)
-                                 | None -> ok Unchecked.defaultof<IFlexQuery>
-                    // Then calculate the value of the constant expression on the RHS of the query,
-                    // if we have such a value (see FuncCondition)
-                    let! computedConstant = match constant with
-                                            | Some(c) -> computeConstant (fieldName, c) >>= (Some >> ok)
-                                            | None -> ok None
-                    
-                    if generateMatchAllQuery.Value = true then return! ok <| getMatchAllDocsQuery()
-                    else 
-                        let! q = queryGetter field query computedConstant
-
-                        // Apply boost if given
-                        q.SetBoost(float32 <| doubleFromOptDict "boost" 1.0 parameters)
-                        return q
-                }
-
-        /// Generate the query from the CONSTANT condition
-        /// This happens when the LHS of the query only has a field and no functions
-        let getConstantCondition (fieldName, operator, constant : Constant, p) = 
-            fun field (query : IFlexQuery) (computedConstant : string [] option) -> 
-                query.GetQuery(field, computedConstant.Value.ToArray(), p)
-            |> queryGenerationWrapper fieldName operator (Some constant) p
-            
-        /// Generate the query from the VARIABLE condition
-        /// This happens when the LHS of the query has a function
-        let getVariableCondition (fieldFunction : FieldFunction) operator constant p =
-            match fieldFunction with 
-            | FieldFunction(funcName, fieldName, prms) ->
-                let queryGetter field query computedConstant =
-                    maybe {
-                        // Get the appropriate LHS query function
-                        let! fieldQueryFunc = funcName |> getQueryFunction queryFunctionTypes
-                        // Compute the final query by analyzing the variable, operator and constant
-                        return! fieldQueryFunc.GetVariableResult(field, fieldFunction, query, computedConstant, p, queryFunctionTypes)
-                    }
-
-                queryGetter
-                |> queryGenerationWrapper fieldName operator constant p
+//        let computeFieldValueAsArray (fieldName : string) (v : Constant) = 
+//            match v with
+//            | SingleValue(v) -> 
+//                if String.IsNullOrWhiteSpace(v) then fail <| MissingFieldValue(fieldName)
+//                else ok <| [| v |]
+//            | ValueList(v) -> 
+//                if v.Length = 0 then fail <| MissingFieldValue(fieldName)
+//                else ok <| v.ToArray()
+//            | Constant.Function(name,prms) -> 
+//                handleFunctionValue name (prms |> Seq.toList) queryFunctionTypes None 
+//                >>= (fun x -> match x with 
+//                              | Some(value) -> ok [| value |]
+//                              | None -> fail <| ValueCouldntBeRetrieved(fieldName))
+//            | SearchProfileField(n) -> fail <| FieldNamesNotSupportedOutsideSearchProfile("N/A", n)
+//        
+//        let computeConstant (fieldName, v : Constant) = 
+//            match isProfileBased with
+//            | Some(source) -> 
+//                match v with
+//                | SingleValue(v1) -> ok [| v1 |]
+//                | SearchProfileField(spfn) -> 
+//                    spfn |> getFieldFromSource source 
+//                    >>= fun x -> ok [| x |] 
+//                | Constant.Function(funcName,parameters) -> 
+//                    handleFunctionValue funcName (parameters |> Seq.toList) queryFunctionTypes (Some(source))
+//                    >>= (fun result -> match result with 
+//                                       | Some(value) -> ok [| value |]
+//                                       // If None is returned and we're in a Search Profile search, then
+//                                       // we can ignore this condition, thus generate a matchall query
+//                                       | None -> generateMatchAllQuery := true; ok [||])
+//                | _ -> fail <| SearchProfileUnsupportedFieldValue(fieldName)
+//            | None -> v |> computeFieldValueAsArray fieldName
+//        
+//        let queryGenerationWrapper fieldName operator constant parameters 
+//                                   (queryGetter : FieldSchema -> IFlexQuery -> string[] option -> Result<Query>) =
+//            maybe {
+//                    // First validate the field
+//                    let! field = fieldName |> validateSearchField fields
+//                    // Then get the type of query operator being used. We might not have
+//                    // an operator if there is no RHS value
+//                    let! query = match constant with
+//                                 | Some(_) -> queryTypes |> keyExists (operator, queryNotFound)
+//                                 | None -> ok Unchecked.defaultof<IFlexQuery>
+//                    // Then calculate the value of the constant expression on the RHS of the query,
+//                    // if we have such a value (see FuncCondition)
+//                    let! computedConstant = match constant with
+//                                            | Some(c) -> computeConstant (fieldName, c) >>= (Some >> ok)
+//                                            | None -> ok None
+//                    
+//                    if generateMatchAllQuery.Value = true then return! ok <| getMatchAllDocsQuery()
+//                    else 
+//                        let! q = queryGetter field query computedConstant
+//
+//                        // Apply boost if given
+//                        q.SetBoost(float32 <| doubleFromOptDict "boost" 1.0 parameters)
+//                        return q
+//                }
+//
+//        /// Generate the query from the CONSTANT condition
+//        /// This happens when the LHS of the query only has a field and no functions
+//        let getConstantCondition (fieldName, operator, constant : Constant, p) = 
+//            fun field (query : IFlexQuery) (computedConstant : string [] option) -> 
+//                query.GetQuery(field, computedConstant.Value.ToArray(), p)
+//            |> queryGenerationWrapper fieldName operator (Some constant) p
+//            
+//        /// Generate the query from the VARIABLE condition
+//        /// This happens when the LHS of the query has a function
+//        let getVariableCondition (fieldFunction : FieldFunction) operator constant p =
+//            match fieldFunction with 
+//            | FieldFunction(funcName, fieldName, prms) ->
+//                let queryGetter field query computedConstant =
+//                    maybe {
+//                        // Get the appropriate LHS query function
+//                        let! fieldQueryFunc = funcName |> getQueryFunction queryFunctionTypes
+//                        // Compute the final query by analyzing the variable, operator and constant
+//                        return! fieldQueryFunc.GetVariableResult(field, fieldFunction, query, computedConstant, p, queryFunctionTypes)
+//                    }
+//
+//                queryGetter
+//                |> queryGenerationWrapper fieldName operator constant p
 
         /// Main rec function responsible for generating predicate
         let rec generateQuery (pred : Predicate) = 
@@ -183,11 +186,11 @@ module SearchDsl =
                 match pred with
                 | NotPredicate(pr) -> let! notQuery = generateQuery (pr)
                                       return getBooleanQuery() |> addMustNotClause notQuery :> Query
-                | Condition(var, o, cnst, p) -> 
-                    match var with
-                    | Field(f) -> return! getConstantCondition (f, o, cnst, p)
-                    | Function(f) -> return! getVariableCondition f o (Some cnst) p
-                | FuncCondition(ff) -> return! getVariableCondition ff null None None
+//                | Condition(var, o, cnst, p) -> 
+//                    match var with
+//                    | Field(f) -> return! getConstantCondition (f, o, cnst, p)
+//                    | Function(f) -> return! getVariableCondition f o (Some cnst) p
+//                | FuncCondition(ff) -> return! getVariableCondition ff null None None
                 | OrPredidate(lhs, rhs) -> 
                     let! lhsQuery = generateQuery (lhs)
                     let! rhsQuery = generateQuery (rhs)

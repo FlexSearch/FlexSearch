@@ -14,24 +14,44 @@ open System
 open System.Collections.Generic
 open System.Linq
 
-// Represents the parts/items which can be used in the query string
-type Constant = 
-    | SingleValue of string
-    | ValueList of string list
-    | SearchProfileField of FieldName
-    | Function of Name : string * Params : Constant seq
-type FieldFunction = FieldFunction of Name : string * FieldName : FieldName * Params : Constant seq
-type Variable =
-    | Field of FieldName
-    | Function of FieldFunction
+type VariableName = string
+type FunctionName = string
+
+// Note: The naming of the **Function**s is given by their first parameter:
+// 1. If the 1st parameter is something that is computable without Lucene, then it's a ComputableFunction
+// 2. If the 1st parameter is a Field, then it's a FieldFunction
+// 3. If the 1st parameter is a SearchQuery, then it's a QueryFunction
+
+// Computable values are values / functions / expressions that can be calculated before submitting a query (without Lucene).
+// They ultimately translate/compute into a string value.
+type ComputableValue =
+    | Variable of VariableName                                      // e.g. @IGNORE, @firstname
+    | Constant of string                                            // e.g. 'Vladimir', '26'
+    | ComputableFunction of FunctionName * ComputableValue list     // e.g. min('34', '25'), min('34', add('1', @firstname))
+// The computable function cannot appear in a query by itself. We cannot have a query 
+// that only contains: q="min('10','5')". These are functions that are contained in 
+// higher order functions, such as FieldFunctions
+
+// These are functions that can appear in a query by themselves. 
+// They ultimately translate into a SearchQuery.
+type Function =
+    // e.g. anyOf(firstname, 'Vladimir', 'Seemant'); like(addressLine1, concat('Flat ', @flatNumber))
+    // In the example above, anyOf & like are FieldFunctions because they operate on a field. The field
+    // will always be the first parameter. 
+    // However, 'concat' is not a FieldFunction because it can be computed without using Lucene; it's 
+    // a ComputableFunction.
+    | FieldFunction of FunctionName * FieldName * ComputableValue list
+    // e.g. boost(anyOf(firstname, 'Vladimir', 'Seemant'), 32)
+    // This is a function that has only two parameters: 1st one is of type Function (that ultimately
+    // translates to a SearchQuery), the second one is the value to apply to the Search Query
+    | QueryFunction of FunctionName * Function * ComputableValue
 
 /// <summary>
 /// Acceptable Predicates for a query
 /// </summary>
 type Predicate = 
     | NotPredicate of Predicate
-    | Condition of Variable : Variable * Operator : string * Constant : Constant * Parameters : Dictionary<string, string> option
-    | FuncCondition of FieldFunction
+    | Clause of Function
     | OrPredidate of Lhs : Predicate * Rhs : Predicate
     | AndPredidate of Lhs : Predicate * Rhs : Predicate
 
@@ -63,10 +83,8 @@ module Parsers =
             (manyChars (normalChar <|> escapedChar <|> backslash))
         .>> ws
                 
-    let stringLiteral = stringLiteralAsString |>> SingleValue 
+    let constant = stringLiteralAsString |>> Constant 
         
-    let listOfValues = (str_ws "[" >>. sepBy1 stringLiteralAsString (str_ws ",") .>> str_ws "]") |>> ValueList .>> ws
-    
     /// Identifier implementation. Alphanumeric character without spaces
     let identifier = 
         many1SatisfyL (fun c -> " ():'," |> String.exists ((=)c) |> not)
@@ -77,61 +95,74 @@ module Parsers =
     let funcName = many1SatisfyL 
                         (anyCheck [isLetter; isDigit; (=) '_']) 
                         "Function name should only have letters, digits and underscores"
+                   .>> ws
+
     // Field parser
-    let field : Parser<FieldName, unit> = identifier
+    let field : Parser<FieldName, unit> = ws >>. identifier
     
-    // Search profile field parser
-    let spField = str_ws "#" >>. identifier |>> SearchProfileField
+    // Search Profile parser
+    let variable = 
+        str_ws "@" >>. identifier 
+        .>> followedByL (choice [str_ws ","; str_ws ")"])
+                        "The variable name should be followed by either a comma or a closing round bracket"  
+        |>> Variable
 
-    let constFunc, constFuncImpl = createParserForwardedToRef<Constant, unit>()
-    let fieldFunc, fieldFuncImpl = createParserForwardedToRef<FieldFunction, unit>()
+    let computableFunc, computableFuncImpl = createParserForwardedToRef<ComputableValue, unit>()
+    let fieldFunc, fieldFuncImpl = createParserForwardedToRef<Function, unit>()
+    let queryFunc, queryFuncImpl = createParserForwardedToRef<Function, unit>()
 
-    // Constant function parser
+    let ``function`` = choice [ attempt fieldFunc; queryFunc ]
+    let computableValue = choice [ constant; variable; attempt computableFunc ]
+
+    // Computable function parser
     // E.g. average('24')
     //      upper_Case('lower')
     //      concat('T', lower('HIS'))
     //      concat(#firstname, ' is a badass')
-    do constFuncImpl := 
-        let searchProfileField = 
-            spField .>> followedByL 
-                (choice [str_ws ","; str_ws ")"])
-                "The field name should be followed by either a comma or a closing round bracket" 
-        let parameters = sepBy (choice [ stringLiteral; listOfValues; attempt constFunc; searchProfileField ])
+    do computableFuncImpl := 
+        let parameters = sepBy computableValue
                                (str_ws ",")
-        pipe2 (ws >>. funcName )
+        pipe2 (ws >>. funcName)
               (str_ws "(" >>. parameters .>> str_ws ")")
-              (fun name prms -> Constant.Function(name, prms))
+              (fun name prms -> ComputableFunction(name, prms))
 
     // FieldFunction parser
-    // E.g. average(cost)
-    //      upper_Case(firstname)
-    //      endswith(firstname, 'Luke')
+    // E.g. exact(fistname, 'Vladimir')
+    //      atLeast2Of(firstname, 'Vladimir', 'Alexandru', 'Negacevschi')
+    //      upTo3WordsApart(firstname, concat('Luke ', @nickname))
     do fieldFuncImpl :=
-        let parameters = optional (str_ws ",") >>. sepBy (choice [ stringLiteral; listOfValues; attempt constFunc ])
-                                      (str_ws ",")
+        let parameters = optional (str_ws ",") >>. sepBy computableValue
+                                                         (str_ws ",")
 
-        pipe2 (ws >>. funcName )
+        pipe2 (ws >>. funcName)
               (str_ws "(" >>. field .>>. parameters .>> str_ws ")")
               (fun funcName (fldName,prms) -> FieldFunction(funcName, fldName, prms))
 
-    let ParseConstFunction text =
-        match run (ws >>. constFunc .>> eof) text with
-        | Success(result, _, _) -> ok result
-        | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
-    
-    let ParseFieldFunction text =
-        match run (ws >>. fieldFunc .>> eof) text with
+    // QueryFunction parser
+    // E.g. boost(anyOf(firstname, 'Vladimir', 'Alexandru'), 32)
+    //      boost(anyOf(firstname, 'Vladimir', 'Alexandru'), @boostValue)
+    //      boost(anyOf(firstname, 'Vladimir', 'Alexandru'), min(@boostValue, 32))
+    do queryFuncImpl :=
+        pipe3 (ws >>. funcName) 
+              (str_ws "(" >>. ``function``)
+              (str_ws "," >>. computableValue .>> str_ws ")")
+              (fun funcName ff cv -> QueryFunction(funcName, ff, cv))
+
+    // Method to implement clause matching.
+    // A clause can be either a query function or a field function
+    // E.g. exact(firstname, 'Vladimir')
+    //      boost(endswith(firstname, 'blue'))
+    let clause = choice [ attempt fieldFunc; queryFunc] |>> Clause
+
+    let tryParsing parser text =
+        match run (ws >>. parser .>> eof) text with
         | Success(result, _, _) -> ok result
         | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg) 
 
-    // Constant parser
-    // Note: THe order of choice is important as stringLiteral uses
-    // character backtracking.This is done to avoid the use of attempt.
-    let constant = choice [ spField; stringLiteral; listOfValues; constFunc ]
-
-    // Variable parser
-    let variable = choice [ attempt (field .>> notFollowedBy (pstring "(") |>> Field)
-                            fieldFunc |>> Function ]
+    // Used for testing
+    let ParseComputableFunction text = tryParsing computableFunc text
+    let ParseFieldFunction text = tryParsing fieldFunc text
+    let ParseQueryFunction text = tryParsing queryFunc text
 
     let DictionaryOfList(elements : (string * string) list) = 
         let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -163,23 +194,6 @@ module Parsers =
         if withBrackets then queryStringParserWithBracket |> parse input
         else queryStringParser |> parse input
     
-    /// <summary>
-    /// Boost parser implemented using optional argument for optimization
-    /// </summary>
-    //let boost = opt (str_ws "boost" >>. pint32 .>> ws)
-    let parameters = opt (ws >>. keyValuePairsBetweenBracket .>> ws)
-    
-    // Method to implement predicate matching
-    // Syntax: {FieldName|FieldFunction} {Operator} {SingleValue|MultiFieldValue|Function} {optional Boost}
-    //         OR 
-    //         {FieldFunction}
-    // Example: firstname eq 'a'
-    //          endswith(firstname, 'blue')
-    let predicate = 
-        let normalCond = pipe4 variable identifier constant parameters (fun v o c b -> Condition(v, o, c, b))
-        let funcCond = fieldFunc |>> FuncCondition
-        choice [ attempt normalCond; funcCond]
-    
     type Assoc = Associativity
     
     /// Generates all possible case combinations for the key words
@@ -201,7 +215,7 @@ module Parsers =
         let term = 
             // Use >>? to avoid the usage of attempt
             choice [ (str_ws "(" >>? expr .>> str_ws ")")
-                     predicate ]
+                     clause ]
         
         let Parser : Parser<_, unit> = ws >>. expr .>> eof
         

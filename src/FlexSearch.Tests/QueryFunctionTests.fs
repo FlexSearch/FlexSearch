@@ -20,8 +20,8 @@ type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>)
                                   Some(dict)
 
     let isEqualTo expected sourceList inputText = 
-        match ParseConstFunction inputText with
-        | Ok(Constant.Function(fn, ps)) -> 
+        match ParseComputableFunction inputText with
+        | Ok(ComputableFunction(fn, ps)) -> 
             let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
             test <@ result = (ok <| Some expected) @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
@@ -32,8 +32,8 @@ type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>)
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
     let fails sourceList inputText =
-        match ParseConstFunction inputText with
-        | Ok(Constant.Function(fn, ps)) -> 
+        match ParseComputableFunction inputText with
+        | Ok(ComputableFunction(fn, ps)) -> 
             let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
             test <@ match result with Fail(_) -> true | _ -> false @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
