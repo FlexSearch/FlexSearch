@@ -612,3 +612,41 @@ type EventAggregator() =
     let event = new Event<EventType>()
     member __.Event() = event.Publish
     member __.Push(e : EventType) = event.Trigger(e)
+
+open Microsoft.Extensions.ObjectPool
+type TrackingObjectPool<'T when 'T : equality and 'T : not struct> (policy : IPooledObjectPolicy<'T>, maximumRetained : int) =
+    let _items : 'T[] = Array.init maximumRetained (fun i -> Unchecked.defaultof<'T>)
+    let _policy : IPooledObjectPolicy<'T> = if policy |> isNull 
+                                            then raise <| new ArgumentNullException("policy")
+                                            else policy
+    
+    let rec iterator index (array : 'X[] when 'X : equality and 'X : not struct)  = 
+        if index >= array.Length then None
+        else 
+            let item = array.[index]
+            if item <> Unchecked.defaultof<'X> 
+               && Interlocked.CompareExchange(ref array.[index], Unchecked.defaultof<'X>, item) = item
+            then Some(item)
+            else iterator (index + 1) array
+
+    let rec replaceFirstNullWith index obj (array : 'X[]) =
+        if index >= array.Length then ()
+        else
+            if array.[index] = Unchecked.defaultof<'X> then array.[index] <- obj
+            else replaceFirstNullWith (index + 1) obj array
+
+    new (policy : IPooledObjectPolicy<'T>) = TrackingObjectPool(policy, Environment.ProcessorCount * 2)
+
+    member __.Get() = 
+        match _items |> iterator 0 with
+        | Some(item) -> item
+        | _ -> _policy.Create()
+    member __.Return(t : 'T) =
+        if not <| _policy.Return(t) then ()
+        else _items |> replaceFirstNullWith 0 t
+    member __.GetAll() = _items |> Array.where ((<>) Unchecked.defaultof<'T>)
+        
+
+    
+
+    

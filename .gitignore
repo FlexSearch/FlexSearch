@@ -250,3 +250,4 @@ Tools
 /.fake
 client
 spec/swagger-full.json
+scripts/obj.Test

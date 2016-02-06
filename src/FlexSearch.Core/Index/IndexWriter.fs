@@ -30,11 +30,11 @@ open System
 /// each of which encapsulating the functionality of IndexWriter, TrackingIndexWriter and
 /// SearcherManger through an easy to manage abstraction.
 type IndexWriter = 
-    { Template : DefaultObjectPool<DocumentTemplate>
+    { Template : TrackingObjectPool<DocumentTemplate>
       Caches : VersionCache []
       ShardWriters : ShardWriter []
       Settings : IndexSetting
-      TxWriterPool : DefaultObjectPool<TxWriter>
+      TxWriterPool : TrackingObjectPool<TxWriter>
       ModifyIndex : AtomicLong
       Generation : AtomicLong
       mutable Status : IndexStatus
@@ -74,6 +74,9 @@ module IndexWriter =
     let close (writer : IndexWriter) = 
         writer.Token.Cancel()
         writer.ShardWriters |> Array.iter ShardWriter.close
+        // Dispose of all the TxWriters to release lock on log files
+        writer.TxWriterPool.GetAll() 
+        |> Array.iter (fun txw -> (txw :> IDisposable).Dispose())
         // Make sure all the files are removed from TxLog otherwise the index will
         // go into unnecessary recovery mode.
         if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
@@ -215,6 +218,8 @@ module IndexWriter =
         |> Seq.iter (Path.GetFileName
                      >> Int64.Parse
                      >> replayShardTransaction)
+        // Return the Tx writer to the pool
+        txWriter |> indexWriter.TxWriterPool.Return
         // Just refresh the index so that the changes are picked up
         // in subsequent searches. We can also commit here but it will
         // introduce blank commits in case there are no logs to replay.
@@ -246,8 +251,8 @@ module IndexWriter =
             |> Array.max
         
         let indexWriter = 
-            { Template = new DefaultObjectPool<DocumentTemplate>(policy)
-              TxWriterPool = new DefaultObjectPool<TxWriter>(txPolicy)
+            { Template = new TrackingObjectPool<DocumentTemplate>(policy)
+              TxWriterPool = new TrackingObjectPool<TxWriter>(txPolicy)
               ShardWriters = shardWriters
               Caches = caches
               ModifyIndex = new AtomicLong(modifyIndex)
