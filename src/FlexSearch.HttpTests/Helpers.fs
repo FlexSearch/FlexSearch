@@ -147,7 +147,9 @@ module TestCommandHelpers =
         |> hasErrorCode errorCode 
         |> ignore
         r
-    let isSuccessful (r : FlexResponse) = r.Error =? null
+    let isSuccessful (r : FlexResponse) = 
+        if r.Error |> isNull then () 
+        else r.Error.Message =? null
     let isCreated (r : ApiResponse<'T> when 'T :> FlexResponse) = r.StatusCode =? int HttpStatusCode.Created
 
 [<AutoOpen>]
