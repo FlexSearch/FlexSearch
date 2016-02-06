@@ -64,7 +64,7 @@ type TxWriter(gen : int64, ?path0 : string) =
     let mutable fileStream = Unchecked.defaultof<_>
     let populateFS() = 
         let localPath = if path0.IsSome then path +/ currentGen.ToString() else path
-        fileStream <- new FileStream(localPath, FileMode.OpenOrCreate, FileSystemRights.AppendData, 
+        fileStream <- new FileStream(localPath, FileMode.OpenOrCreate, FileSystemRights.AppendData ||| FileSystemRights.WriteData, 
                                      FileShare.ReadWrite, 1024, FileOptions.Asynchronous)
     do populateFS()
     
