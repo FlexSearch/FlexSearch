@@ -7,6 +7,7 @@ open System
 open System.Diagnostics
 open System.IO
 open System.Linq
+open System.Text
 open System.Text.RegularExpressions
 
 let work tempDir fsDir = 
@@ -60,14 +61,29 @@ module CSharp =
         
             line
 
+        let deleteProperty propName fileStr =
+            Regex.Replace(fileStr, 
+                          sprintf @"\/\/\/[\s]*<summary>[^<]+<\/[^<]*%s[\s]*{[\s]*get;[^/]+" propName, 
+                          "")
+
+        let perFileCleanup (fileName : string) (contents : string) =
+            // Delete properties from extended classes
+            if contents.Contains(": FlexResponse") then
+                ["Error"; "ErrorDescription"; "ErrorField"]
+                |> Seq.fold (fun acc value -> acc |> deleteProperty value) contents
+            else contents
+
         let cleanupFile(f : string) =
             let mutable file = File.ReadAllLines(f)
-            let lines = 
-                file 
-                |> Array.map (codeCorrection f)
-                |> Array.filter (String.IsNullOrWhiteSpace >> not)
+            let fileSb = new StringBuilder()
+            file 
+            |> Array.map (codeCorrection f)
+            |> Array.filter (String.IsNullOrWhiteSpace >> not)
+            |> Array.iter (fileSb.AppendLine >> ignore)
 
-            File.WriteAllLines(f, lines)
+            fileSb.ToString()
+            |> perFileCleanup f
+            |> fun fileContents -> File.WriteAllText(f, fileContents)
         
         modelsTempDir
         |> loopFiles
