@@ -24,29 +24,42 @@ open System.Collections.Generic
 open SearchQueryHelpers
 open FlexLucene.Search
 
+[<AutoOpen>]
+module Common =
+    let anyAllOfBase fieldSchema arguments queryName isAllOf =
+        match FieldSchema.isNumericField fieldSchema with
+        | true -> 
+            arguments |> checkItHasNPopulatedArguments 1 queryName
+            >>= fun _ -> fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
+                                                                   (arguments.[0].Value, arguments.[0].Value) 
+                                                                   (true, true)
+        | false -> 
+            // If there are multiple terms returned by the parser then we will create a boolean query
+            // with all the terms as sub clauses with And operator
+            // This behaviour will result in matching of both the terms in the results which may not be
+            // adjacent to each other. The adjacency case should be handled through phrase query
+            arguments |> checkAtLeastNPopulatedArguments 1 queryName
+            >>= fun _ -> 
+                zeroOneOrManyQuery 
+                <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
+                <| getTermQuery fieldSchema.SchemaName 
+                <| if isAllOf then BooleanClauseOccur.MUST else BooleanClauseOccur.SHOULD
+
 /// Term Query
 [<Name("allof"); Sealed>]
-type FlexTermQuery() = 
+type AllOfQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments) = 
             let queryName = __.GetType() |> getTypeNameFromAttribute
-            match FieldSchema.isNumericField fieldSchema with
-            | true -> 
-                arguments |> checkItHasNPopulatedArguments 1 queryName
-                >>= fun _ -> fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-                                                                       (arguments.[0].Value, arguments.[0].Value) 
-                                                                       (true, true)
-            | false -> 
-                // If there are multiple terms returned by the parser then we will create a boolean query
-                // with all the terms as sub clauses with And operator
-                // This behaviour will result in matching of both the terms in the results which may not be
-                // adjacent to each other. The adjacency case should be handled through phrase query
-                arguments |> checkAtLeastNPopulatedArguments 1 queryName
-                >>= fun _ -> 
-                    zeroOneOrManyQuery 
-                    <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
-                    <| getTermQuery fieldSchema.SchemaName 
-                    <| BooleanClauseOccur.MUST
+            anyAllOfBase fieldSchema arguments queryName true
+
+[<Name("anyof"); Sealed>]
+type AnyOfQuery() = 
+    interface IFieldFunction with
+        member __.GetQuery(fieldSchema, arguments) = 
+            let queryName = __.GetType() |> getTypeNameFromAttribute
+            anyAllOfBase fieldSchema arguments queryName false
+            
 
 ///// Fuzzy Query
 //[<Name("fuzzy_match"); Sealed>]
