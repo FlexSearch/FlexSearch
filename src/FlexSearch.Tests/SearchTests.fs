@@ -382,7 +382,7 @@ id,et1,et2,i1,i2
             getQuery (index.IndexName, "et1:''")
             |> withSearchProfile "matchself"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the required field value is not passed then the search will fail as the default behaviour is to throw error``() =
         let result = 
@@ -390,21 +390,21 @@ id,et1,et2,i1,i2
             getQuery (index.IndexName, "et2:''")
             |> withSearchProfile "matchself"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the passed value is blank then the search will fail for self match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
             |> withSearchProfile "matchselferror"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the required field value is not passed then the search will fail for self match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
             |> withSearchProfile "matchselferror"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et1")) @>
+        test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the passed value is blank then the search will ignore the clause for self match configuration of [*]``() =
         let result = 
@@ -456,7 +456,7 @@ id,et1,et2,i1,i2
             getQuery (index.IndexName, "et2:''")
             |> withSearchProfile "crossmatch"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et2")) @>
+        test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field is not passed then the search will fail as the default behaviour is to throw error``() =
         let result = 
@@ -464,21 +464,21 @@ id,et1,et2,i1,i2
             getQuery (index.IndexName, "et1:''")
             |> withSearchProfile "crossmatch"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et2")) @>
+        test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will fail for cross match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
             |> withSearchProfile "crossmatcherror"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et2")) @>
+        test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the required field value is not passed then the search will fail for cross match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
             |> withSearchProfile "crossmatcherror"
             |> searchService.Search
-        test <@ result = fail(MissingFieldValue("et2")) @>
+        test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will ignore the clause for cross match configuration of [*]``() =
         let result = 

@@ -485,6 +485,11 @@
           "description": "Returns an empty string for null values saved in the index rather than the null constant",
           "type": "boolean",
           "default": true
+        },
+        "variables": {
+          "description": "The mapping between the variable names (the ones prefixed by '@') given in the query string and their actual values",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
         }
       }
     },

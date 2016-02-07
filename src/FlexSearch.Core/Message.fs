@@ -232,7 +232,7 @@ type SearchMessage =
     | QueryNotFound of queryName : string
     | InvalidFieldName of fieldName : string
     | StoredFieldCannotBeSearched of fieldName : string
-    | MissingFieldValue of fieldName : string
+    | MissingVariableValue of fieldName : string
     | FunctionNotFound of context : string
     | FunctionExecutionError of functionName : string * ``exception`` : Exception
     | UnknownMissingVauleOption of fieldName : string
@@ -262,7 +262,7 @@ type SearchMessage =
             | QueryNotFound(q) -> sprintf "Query not found: %s" q
             | InvalidFieldName(f) -> sprintf "Invalid field name: %s" f
             | StoredFieldCannotBeSearched(f) -> sprintf "Stored field cannot be searched: %s" f
-            | MissingFieldValue(f) -> sprintf "Missing field value: %s" f
+            | MissingVariableValue(f) -> sprintf "Missing variable value from search query: %s" f
             | FunctionNotFound(f) -> sprintf "Function not found: %s" f
             | FunctionExecutionError(n,e) -> sprintf "Error when executing function %s: %s" n e.Message
             | UnknownMissingVauleOption(f) -> sprintf "Unknown missing field value option: %s" f

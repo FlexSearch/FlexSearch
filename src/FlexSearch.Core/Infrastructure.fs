@@ -280,6 +280,15 @@ module Operators =
     /// Result is propagated unchanged.
     let inline failureTee f result = eitherTee ignore f result
     
+    /// Propagates an array of Results so that it fails on the first unsuccessful application of 'f'.
+    /// Returns all the applications of f
+    let inline (>>>=) array (f : 'a -> Result<'b>) =
+        array
+        |> Seq.fold (fun acc value -> 
+                        acc >>= fun oks -> 
+                                    f value >>= fun r -> r :: oks |> ok ) 
+                    (ok [])
+
     /// Converts an option into a Result.
     let inline failIfNone message result = 
         match result with
