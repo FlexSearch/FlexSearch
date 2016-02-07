@@ -34,20 +34,20 @@ module Scripts =
         /// Script which can be used to filter search query results
         /// Format -> searchQuery, id, score, fields -> filtering result * score
         | PostSearchScript of script : PostSearchDeletegate
-        /// Script to process search profile data
-        | SearchProfileScript of script : SearchProfileDelegate
+        /// Script to process search query data
+        | PreSearchScript of script : PreSearchDelegate
     
     [<Internal>]
     type ScriptType = 
         | Computed = 1
         | PostSearch = 2
-        | SearchProfile = 3
+        | PreSearch = 3
     
     let pattern (scriptType : ScriptType) = 
         match scriptType with
         | ScriptType.Computed -> "computed_*.csx"
         | ScriptType.PostSearch -> "postsearch_*.csx"
-        | ScriptType.SearchProfile -> "searchprofile_*.csx"
+        | ScriptType.PreSearch -> "presearch_*.csx"
         | _ -> failwithf "Unknown ScriptType"
 
 [<AutoOpen>]
@@ -113,9 +113,9 @@ using System.Collections.Generic;
         | ScriptType.PostSearch -> 
             PostSearchScript 
             <| (Delegate.CreateDelegate(typeof<PostSearchDeletegate>, methodInfo) :?> PostSearchDeletegate)
-        | ScriptType.SearchProfile -> 
-            SearchProfileScript 
-            <| (Delegate.CreateDelegate(typeof<SearchProfileDelegate>, methodInfo) :?> SearchProfileDelegate)
+        | ScriptType.PreSearch -> 
+            PreSearchScript 
+            <| (Delegate.CreateDelegate(typeof<PreSearchDelegate>, methodInfo) :?> PreSearchDelegate)
         | _ -> failwithf "Unknown ScriptType"
     
     /// Compiles a script with the given source code

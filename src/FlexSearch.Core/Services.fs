@@ -36,7 +36,7 @@ open System.ComponentModel.Composition
 type IIndexService = 
     abstract GetIndex : indexName:string -> Result<Index>
     abstract UpdateIndexFields : indexName:string * fields:Field [] -> Result<unit>
-    abstract AddOrUpdateSearchProfile : indexName:string * profile:SearchQuery -> Result<unit>
+    abstract AddOrUpdatePredefinedQuery : indexName:string * profile:SearchQuery -> Result<unit>
     abstract UpdateIndexConfiguration : indexName:string * indexConfiguration:IndexConfiguration -> Result<unit>
     abstract DeleteIndex : indexName:string -> Result<unit>
     abstract AddIndex : index:Index -> Result<CreationId>
@@ -69,7 +69,7 @@ type IDocumentService =
 type ISearchService = 
     abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string> -> Result<SearchResults>
     abstract Search : searchQuery:SearchQuery -> Result<SearchResults>
-    abstract Search : searchQuery:SearchQuery * searchProfileString:string -> Result<SearchResults>
+    abstract Search : searchQuery:SearchQuery * predefinedQueryString:string -> Result<SearchResults>
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
@@ -108,7 +108,7 @@ type IScriptService =
     /// function('param1','param2','param3',....)
     abstract GetScriptSig : scriptSig:string -> Result<string * string []>
     abstract GetComputedScript : scriptSig:string -> Result<ComputedDelegate * string []>
-    abstract GetSearchProfileScript : scriptSig:string -> Result<SearchProfileDelegate>
+    abstract GetPreSearchScript : scriptSig:string -> Result<PreSearchDelegate>
 
 [<Sealed>]
 type ScriptService() = 
@@ -119,7 +119,7 @@ type ScriptService() =
     do 
         Compiler.compileAllScripts (ScriptType.Computed) |> addScripts
         Compiler.compileAllScripts (ScriptType.PostSearch) |> addScripts
-        Compiler.compileAllScripts (ScriptType.SearchProfile) |> addScripts
+        Compiler.compileAllScripts (ScriptType.PreSearch) |> addScripts
     
     let getScript (scriptName, scriptType) = 
         match scripts.TryGetValue(scriptName + (scriptType.ToString())) with
@@ -139,11 +139,11 @@ type ScriptService() =
                         | _ -> fail <| ScriptNotFound(functionName, ScriptType.Computed.ToString())
             }
         
-        member __.GetSearchProfileScript(scriptName) = 
+        member __.GetPreSearchScript(scriptName) = 
             maybe { 
-                let! script = getScript (scriptName, ScriptType.SearchProfile)
+                let! script = getScript (scriptName, ScriptType.PreSearch)
                 return! match script with
-                        | SearchProfileScript(s) -> ok <| s
+                        | PreSearchScript(s) -> ok <| s
                         | _ -> fail <| ScriptNotFound(scriptName, ScriptType.Computed.ToString())
             }
 
@@ -289,13 +289,13 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
                              im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
 
-        member __.AddOrUpdateSearchProfile(indexName:string , profile:SearchQuery) = 
+        member __.AddOrUpdatePredefinedQuery(indexName:string , profile:SearchQuery) = 
             match im.Store.TryGetValue(indexName) with
             | true, state -> 
                 let index = state.IndexDto
-                match index.SearchProfiles |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
-                | Some(spNo) -> index.SearchProfiles.[spNo] <- profile
-                | _ -> index.SearchProfiles <- [| profile |] |> Array.append index.SearchProfiles
+                match index.PredefinedQueries |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
+                | Some(spNo) -> index.PredefinedQueries.[spNo] <- profile
+                | _ -> index.PredefinedQueries <- [| profile |] |> Array.append index.PredefinedQueries
                 
                 im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
@@ -331,52 +331,48 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
     let getSearchPredicate (writers : IndexWriter, search : SearchQuery, 
                             inputValues : Dictionary<string, string> option) = 
         maybe { 
-            if String.IsNullOrWhiteSpace(search.SearchProfile) <> true then 
+            if String.IsNullOrWhiteSpace(search.PredefinedQuery) <> true then 
                 // Search profile based
-                match writers.Settings.SearchProfiles.TryGetValue(search.SearchProfile) with
+                match writers.Settings.PredefinedQueries.TryGetValue(search.PredefinedQuery) with
                 | true, p -> 
                     let (p', sq) = p
                     // This is a search profile based query. So copy over essential
                     // values from Search profile to query. Keep the search query
                     /// values if override is set to true
-                    if not search.OverrideProfileOptions then 
+                    if not search.OverridePredefinedQueryOptions then 
                         search.Columns <- sq.Columns
                         search.DistinctBy <- sq.DistinctBy
                         search.Skip <- sq.Skip
                         search.OrderBy <- sq.OrderBy
                         search.CutOff <- sq.CutOff
                         search.Count <- sq.Count
-                    let! values = match inputValues with
-                                  | Some(values) -> ok(values)
-                                  | None -> Parsers.ParseQueryString(search.QueryString, false)
                     // Check if search profile script is defined. If yes then execute it.
-                    do! if isNotBlank sq.SearchProfileScript then 
-                            match scriptService.GetSearchProfileScript(sq.SearchProfileScript) with
+                    do! if isNotBlank sq.PreSearchScript then 
+                            match scriptService.GetPreSearchScript(sq.PreSearchScript) with
                             | Ok(script) -> 
                                 try 
-                                    script.Invoke(sq, values)
+                                    script.Invoke(sq)
                                     okUnit
                                 with e -> 
                                     Logger.Log
-                                        ("SearchProfile Query execution error", e, MessageKeyword.Search, 
+                                        ("Predefined Query execution error", e, MessageKeyword.Search, 
                                          MessageLevel.Warning)
                                     okUnit
                             | Fail(err) -> fail <| err
                         else okUnit
-                    return (p', Some(values))
-                | _ -> return! fail <| UnknownSearchProfile(search.IndexName, search.SearchProfile)
+                    return p'
+                | _ -> return! fail <| UnknownPredefinedQuery(search.IndexName, search.PredefinedQuery)
             else let! predicate = parser.Parse(search.QueryString)
-                 return (predicate, None)
+                 return predicate
         }
     
     let generateSearchQuery (writer : IndexWriter, searchQuery : SearchQuery, 
                              inputValues : Dictionary<string, string> option) = 
         maybe { 
-            let! (predicate, searchProfile) = getSearchPredicate (writer, searchQuery, inputValues)
+            let! predicate = getSearchPredicate (writer, searchQuery, inputValues)
             match predicate with
             | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
             | _ -> 
-                // TODO use the searchProfile values from the script
                 return!
                   { Fields = writer.Settings.Fields.ReadOnlyDictionary
                     ComputedFunctions = computedFunctions
@@ -397,11 +393,11 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
 
     interface ISearchService with
         
-        member __.Search(searchQuery : SearchQuery, searchProfileString : string) = 
+        member __.Search(searchQuery : SearchQuery, predefinedQueryString : string) = 
             maybe { 
                 let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 // Parse the search profile to see if it is a valid query
-                let! predicate = parser.Parse(searchProfileString)
+                let! predicate = parser.Parse(predefinedQueryString)
                 let! searchData = Parsers.ParseQueryString(searchQuery.QueryString, false)
                 match predicate with
                 | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
@@ -442,7 +438,7 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         /// Get a document by Id        
         member __.GetDocument(indexName, documentId) = 
             maybe { 
-                let q = new SearchQuery(indexName, (sprintf "%s = '%s'" IdField.Name documentId))
+                let q = new SearchQuery(indexName, (sprintf "allof(%s, '%s')" IdField.Name documentId))
                 q.ReturnScore <- false
                 q.Columns <- [| "*" |]
                 match searchService.Search(q) with

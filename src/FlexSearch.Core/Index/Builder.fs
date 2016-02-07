@@ -101,7 +101,7 @@ module IndexSettingBuilder =
               SearchAnalyzer = Unchecked.defaultof<_>
               Fields = Unchecked.defaultof<_>
               //FieldsLookup = Unchecked.defaultof<_>
-              SearchProfiles = Unchecked.defaultof<_>
+              PredefinedQueries = Unchecked.defaultof<_>
               IndexConfiguration = Unchecked.defaultof<_>
               BaseFolder = path
               ShardConfiguration = Unchecked.defaultof<_> }
@@ -140,16 +140,16 @@ module IndexSettingBuilder =
                                               IndexAnalyzer = buildAnalyzer (result, true) } }
     
     /// Build search profiles from the Index object
-    let withSearchProfiles (profiles : SearchQuery [], parser : IFlexParser) (build) = 
+    let withPredefinedQueries (profiles : SearchQuery [], parser : IFlexParser) (build) = 
         let result = new Dictionary<string, Predicate * SearchQuery>(StringComparer.OrdinalIgnoreCase)
         for profile in profiles do
             let predicate = returnOrFail <| parser.Parse profile.QueryString
             result.Add(profile.QueryName, (predicate, profile))
-        { build with Setting = { build.Setting with SearchProfiles = result } }
+        { build with Setting = { build.Setting with PredefinedQueries = result } }
     
     /// Build the final index setting object
     let build (build) = 
-        assert (notNull build.Setting.SearchProfiles)
+        assert (notNull build.Setting.PredefinedQueries)
         assert (notNull build.Setting.Fields)
         assert (notNull build.Setting.IndexConfiguration)
         assert (notNull build.Setting.ShardConfiguration)

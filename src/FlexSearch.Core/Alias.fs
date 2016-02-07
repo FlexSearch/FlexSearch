@@ -62,7 +62,7 @@ type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>
     
 type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string, string>, bool * float32>
     
-type SearchProfileDelegate = Action<SearchQuery, Dictionary<string, string>>
+type PreSearchDelegate = Action<SearchQuery>
 
 type GetScript = string -> Result<ComputedDelegate * string []>
 

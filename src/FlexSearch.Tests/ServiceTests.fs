@@ -68,15 +68,15 @@ module IndexServiceTests =
 id,et1,et2,i1,i2
 1,a,h,37,95
 2,b,g,49,31"""
-            index.SearchProfiles <- [| new SearchQuery(index.IndexName, "et1 = 'a'", QueryName = "profile") |]
+            index.PredefinedQueries <- [| new SearchQuery(index.IndexName, "et1 = 'a'", QueryName = "profile") |]
             indexTestData (testData, index, indexService, documentService)
 
-            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile")
+            let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile")
                          |> searchAndExtract searchService
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "1" @>
 
-            indexService.AddOrUpdateSearchProfile(index.IndexName, newProfile) |> (?)
+            indexService.AddOrUpdatePredefinedQuery(index.IndexName, newProfile) |> (?)
     
         
 
@@ -128,7 +128,7 @@ id,et1,et2,i1,i2
             |> setUpAndModifyProfile index indexService documentService searchService
             
             // Search using the new profile and check that the second record is returned
-            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile")
+            let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile")
                          |> searchAndExtract searchService
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "2" @>
@@ -142,7 +142,7 @@ id,et1,et2,i1,i2
             |> setUpAndModifyProfile index indexService documentService searchService
             
             // Search using the new profile and check that the second record is returned
-            let result = new SearchQuery(index.IndexName, "", SearchProfile = "profile2")
+            let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile2")
                          |> searchAndExtract searchService
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "2" @>

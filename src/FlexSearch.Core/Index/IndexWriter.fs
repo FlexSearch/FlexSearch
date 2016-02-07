@@ -58,7 +58,7 @@ module IndexWriter =
             |> withShardConfiguration (index.ShardConfiguration)
             |> withIndexConfiguration (index.IndexConfiguration)
             |> withFields (index.Fields, analyzerService, scriptService)
-            |> withSearchProfiles (index.SearchProfiles, new FlexParser())
+            |> withPredefinedQueries (index.PredefinedQueries, new FlexParser())
             |> build
             |> ok
         with

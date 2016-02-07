@@ -18,12 +18,12 @@ let withColumns (columns : string []) (query : SearchQuery) =
     query.Columns <- columns
     query
 
-let withSearchProfile (profileName : string) (query : SearchQuery) = 
-    query.SearchProfile <- profileName
+let withPredefinedQuery (profileName : string) (query : SearchQuery) = 
+    query.PredefinedQuery <- profileName
     query
 
-let withProfileOverride (query : SearchQuery) =
-    query.OverrideProfileOptions <- true
+let withPredefinedQueryOverride (query : SearchQuery) =
+    query.OverridePredefinedQueryOptions <- true
     query
 
 let withHighlighting (option : HighlightOption) (query : SearchQuery) = 
@@ -351,7 +351,7 @@ id,et1,et2,i1,i2
 8,h,a,41,56"""
     do 
         // Add test profiles
-        index.SearchProfiles <- 
+        index.PredefinedQueries <- 
             [| 
                 getQuery(index.IndexName, "et1 = #et1") |> withName "matchself"
                 getQuery(index.IndexName, "et1 = #et1") |> withName "matchselferror"
@@ -373,14 +373,14 @@ id,et1,et2,i1,i2
     member __.``When no value is passed in search profile then the field should match against itself``() =
         let result = 
             getQuery (index.IndexName, "et1:'a'")
-            |> withSearchProfile "matchself"
+            |> withPredefinedQuery "matchself"
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
 
     member __.``When the passed value is blank then the search will fail as the default behaviour is to throw error``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "matchself"
+            |> withPredefinedQuery "matchself"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
@@ -388,28 +388,28 @@ id,et1,et2,i1,i2
         let result = 
             // Can't use blank query string other wise the query validation will fail
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "matchself"
+            |> withPredefinedQuery "matchself"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the passed value is blank then the search will fail for self match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "matchselferror"
+            |> withPredefinedQuery "matchselferror"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the required field value is not passed then the search will fail for self match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "matchselferror"
+            |> withPredefinedQuery "matchselferror"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the passed value is blank then the search will ignore the clause for self match configuration of [*]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "matchselfignore"
+            |> withPredefinedQuery "matchselfignore"
             |> searchAndExtract searchService
         // We should get all the records back as the query will be short circuited to match all query
         result |> assertReturnedDocsCount 8
@@ -417,16 +417,16 @@ id,et1,et2,i1,i2
     member __.``When the required field value is not passed then the search will ignore the clause for self match configuration of [*]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "matchselfignore"
+            |> withPredefinedQuery "matchselfignore"
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8
 
     member __.``When the required field value is blank then the search will use the default value for self match configuration of []``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "matchselfdefault"
+            |> withPredefinedQuery "matchselfdefault"
             |> withColumns [| "*" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "d"
@@ -434,9 +434,9 @@ id,et1,et2,i1,i2
     member __.``When the required field value is not passed then the search will use the default value for self match configuration of []``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "matchselfdefault"
+            |> withPredefinedQuery "matchselfdefault"
             |> withColumns [| "*" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "d"
@@ -444,9 +444,9 @@ id,et1,et2,i1,i2
     member __.``Cross matching can be done by specifying the target field inside <> brackets``() =
         let result = 
             getQuery (index.IndexName, "et2:'a'")
-            |> withSearchProfile "crossmatch"
+            |> withPredefinedQuery "crossmatch"
             |> withColumns [| "*" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "a"
@@ -454,7 +454,7 @@ id,et1,et2,i1,i2
     member __.``When the cross matched field value is blank then the search will fail as the default behaviour is to throw error``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "crossmatch"
+            |> withPredefinedQuery "crossmatch"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
@@ -462,44 +462,44 @@ id,et1,et2,i1,i2
         let result = 
             // Can't use blank query string other wise the query validation will fail
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "crossmatch"
+            |> withPredefinedQuery "crossmatch"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will fail for cross match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "crossmatcherror"
+            |> withPredefinedQuery "crossmatcherror"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the required field value is not passed then the search will fail for cross match configuration of [!]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "crossmatcherror"
+            |> withPredefinedQuery "crossmatcherror"
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will ignore the clause for cross match configuration of [*]``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "crossmatchignore"
+            |> withPredefinedQuery "crossmatchignore"
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8
 
     member __.``When the required field value is not passed then the search will ignore the clasue for cross match configuration of [*]``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "crossmatchignore"
+            |> withPredefinedQuery "crossmatchignore"
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8
 
     member __.``When the cross matched field value is blank then the search will use the default value for cross match configuration of []``() =
         let result = 
             getQuery (index.IndexName, "et2:''")
-            |> withSearchProfile "crossmatchdefault"
+            |> withPredefinedQuery "crossmatchdefault"
             |> withColumns [| "*" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "d"
@@ -507,9 +507,9 @@ id,et1,et2,i1,i2
     member __.``When the required field value is not passed then the search will use the default value for cross match configuration of []``() =
         let result = 
             getQuery (index.IndexName, "et1:''")
-            |> withSearchProfile "crossmatchdefault"
+            |> withPredefinedQuery "crossmatchdefault"
             |> withColumns [| "*" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "d"
@@ -517,9 +517,9 @@ id,et1,et2,i1,i2
     member __.``Constant field value matching is possible by passing the constant value between two quotes``() =
         let result = 
             getQuery (index.IndexName, "any:'any'")
-            |> withSearchProfile "constantmatch"
+            |> withPredefinedQuery "constantmatch"
             |> withColumns [| "*" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "h"
@@ -527,9 +527,9 @@ id,et1,et2,i1,i2
     member __.``Matching with functions is possible by writing functions in javascript fashion``() =
         let result = 
             getQuery (index.IndexName, "i1:'40',i2:'23'")
-            |> withSearchProfile "crossmatchwithfunc"
+            |> withPredefinedQuery "crossmatchwithfunc"
             |> withColumns [| "_id" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "3"
@@ -537,9 +537,9 @@ id,et1,et2,i1,i2
     member __.``Matching with nested functions is possible by making a function parameter a function call``() =
         let result = 
             getQuery (index.IndexName, "i1:'40',i2:'23'")
-            |> withSearchProfile "crossmatchwithnestedfunc"
+            |> withPredefinedQuery "crossmatchwithnestedfunc"
             |> withColumns [| "_id" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "3"
@@ -547,9 +547,9 @@ id,et1,et2,i1,i2
     member __.``Matching with functions having constant only parameters is possible``() =
         let result = 
             getQuery (index.IndexName, "i1:'40',i2:'23'")
-            |> withSearchProfile "matchwithfuncconstonly"
+            |> withPredefinedQuery "matchwithfuncconstonly"
             |> withColumns [| "_id" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "7"
@@ -557,9 +557,9 @@ id,et1,et2,i1,i2
     member __.``Matching with functions having field only parameters is possible``() =
         let result = 
             getQuery (index.IndexName, "i1:'40',i2:'30'")
-            |> withSearchProfile "crossmatchwithfieldonlyfunc"
+            |> withPredefinedQuery "crossmatchwithfieldonlyfunc"
             |> withColumns [| "_id" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "6"
@@ -567,9 +567,9 @@ id,et1,et2,i1,i2
     member __.``Nested crossmatching is possible by matching a different field if the main one is blank``() =
         let result =
             getQuery (index.IndexName, "et2: 'b'")
-            |> withSearchProfile "nestedcrossmatch"
+            |> withPredefinedQuery "nestedcrossmatch"
             |> withColumns [| "_id" |]
-            |> withProfileOverride
+            |> withPredefinedQueryOverride
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "2"

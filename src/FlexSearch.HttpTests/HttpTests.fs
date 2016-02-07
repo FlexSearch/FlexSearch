@@ -97,7 +97,7 @@ type ``Index Update Tests``() =
                                                                                handler : LoggingHandler) = 
         api.CreateIndexWithHttpInfo(index) |> isCreated
         let sp = new SearchQuery(index.IndexName, "et1 matchall 'x'", QueryName = "all")
-        api.UpdateIndexSearchProfile(sp, index.IndexName) |> isSuccessful
+        api.UpdateIndexPredefinedQuery(sp, index.IndexName) |> isSuccessful
         handler |> log "put-indices-id-3"
         api.DeleteIndex(index.IndexName) |> isSuccessful
     

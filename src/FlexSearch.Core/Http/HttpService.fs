@@ -46,7 +46,7 @@ module ServiceHelpers =
                     OrderByDirection.Ascending
                 else
                     OrderByDirection.Descending
-        query.SearchProfile <- request.HttpContext |> stringFromQueryString "searchprofile" query.SearchProfile
+        query.PredefinedQuery <- request.HttpContext |> stringFromQueryString "predefinedquery" query.PredefinedQuery
         query.IndexName <- request.ResId.Value
         query
 
@@ -131,12 +131,12 @@ type PutIndexFieldsHandler(indexService : IIndexService) =
     override __.Process(request, body) = 
         SomeResponse(indexService.UpdateIndexFields(request.ResId.Value, body.Value.Fields), Ok, Conflict)
 
-[<Name("PUT-/indices/:id/searchprofile")>]
+[<Name("PUT-/indices/:id/predefinedquery")>]
 [<Sealed>]
-type PutIndexSearchProfileHandler(indexService : IIndexService) = 
+type PutIndexPredefinedQueryHandler(indexService : IIndexService) = 
     inherit HttpHandlerBase<SearchQuery, unit>()
     override __.Process(request, body) =
-        SomeResponse(indexService.AddOrUpdateSearchProfile(request.ResId.Value, body.Value), Ok, Conflict)
+        SomeResponse(indexService.AddOrUpdatePredefinedQuery(request.ResId.Value, body.Value), Ok, Conflict)
 
 [<Name("PUT-/indices/:id/configuration")>]
 [<Sealed>]
@@ -476,13 +476,13 @@ type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) =
         | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
-[<Name("POST-/indices/:id/searchprofiletest")>]
+[<Name("POST-/indices/:id/predefinedquerytest")>]
 [<Sealed>]
-type PostSearchProfileTestHandler(searchService : ISearchService) = 
-    inherit HttpHandlerBase<SearchProfileTestDto, SearchResults>()
+type PostPredefinedQueryTestHandler(searchService : ISearchService) = 
+    inherit HttpHandlerBase<PredefinedQueryTestDto, SearchResults>()
     override __.Process(request, body) =
         body.Value.SearchQuery.IndexName <- request.ResId.Value
-        match searchService.Search(body.Value.SearchQuery, body.Value.SearchProfile) with
+        match searchService.Search(body.Value.SearchQuery, body.Value.PredefinedQuery) with
         | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 

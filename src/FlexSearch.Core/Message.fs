@@ -236,21 +236,21 @@ type SearchMessage =
     | FunctionNotFound of context : string
     | FunctionExecutionError of functionName : string * ``exception`` : Exception
     | UnknownMissingVauleOption of fieldName : string
-    | SearchProfileUnsupportedFieldValue of fieldName : string
+    | PredefinedQueryUnsupportedFieldValue of fieldName : string
     | DataCannotBeParsed of fieldName : string * expectedDataType : string
     | ExpectingNumericData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string * queryString : string
     | MethodCallParsingError of error : string
-    | UnknownSearchProfile of indexName : string * profileName : string
+    | UnknownPredefinedQuery of indexName : string * queryName : string
     | PurelyNegativeQueryNotSupported
-    | FieldNamesNotSupportedOutsideSearchProfile of functionName : string * fieldName : string
+    | FieldNamesNotSupportedOutsidePredefinedQuery of functionName : string * fieldName : string
     | FunctionParamTypeMismatch of functionName : string * expectedType : string * actualType : string
     | NumberOfFunctionParametersMismatch of functionName : string * expected : int * actual : int
     | NotEnoughParameters of functionName : string
     | VariableFunctionNotSupported of functionName : string
     | ValueCouldntBeRetrieved of fieldName : string
-    | ExpectingSearchProfile of context: string
+    | ExpectingPredefinedQuery of context: string
     | RhsValueNotFound of functionName : string
     | RhsValueNotSupported of functionName : string
     | ArgumentNotSupplied of functionName : string * argumentNumber : int
@@ -274,16 +274,16 @@ type SearchMessage =
                 sprintf "Query operator field type not supported for field '%s'" f
             | QueryStringParsingError(e,q) -> sprintf "Query string parsing error: \n%s\n\nQuery String:\n%s" e q
             | MethodCallParsingError(e) -> sprintf "Unable to parse the method call: \n%s" e
-            | UnknownSearchProfile(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
+            | UnknownPredefinedQuery(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
             | PurelyNegativeQueryNotSupported -> "Purely negative queries (not top query) not supported"
-            | SearchProfileUnsupportedFieldValue(fn) -> sprintf "Search Profile does not support array values as an input for field '%s'." fn
-            | FieldNamesNotSupportedOutsideSearchProfile(func,fld) -> sprintf "Field names not supported outside Search Profiles. Occured in function %s for field %s" func fld
+            | PredefinedQueryUnsupportedFieldValue(fn) -> sprintf "Search Profile does not support array values as an input for field '%s'." fn
+            | FieldNamesNotSupportedOutsidePredefinedQuery(func,fld) -> sprintf "Field names not supported outside Predefined Queries. Occured in function %s for field %s" func fld
             | FunctionParamTypeMismatch(fn,e,a) -> sprintf "Function parameter type mismatch for function %s. Expected %s, but got %s." fn e a
             | NumberOfFunctionParametersMismatch(fn,e,a) -> sprintf "Expected %d parameters for function %s, but got %d" e fn a
             | NotEnoughParameters(fn) -> sprintf "Not enough parameters for function %s" fn
             | VariableFunctionNotSupported(fn) -> sprintf "Function %s is not supported on the LHS of a predicate (cannot be variable)." fn
             | ValueCouldntBeRetrieved(fn) -> sprintf "The value of the field %s couldn't be retrieved" fn
-            | ExpectingSearchProfile(c) -> sprintf "Expected to have a search profile. Further context: %s" c
+            | ExpectingPredefinedQuery(c) -> sprintf "Expected to have a search profile. Further context: %s" c
             | RhsValueNotFound(fn) -> sprintf "Function %s expects a value on the right hand side of the operator. This function cannot be used in function-only (non-operator) conditions." fn
             | RhsValueNotSupported(fn) -> sprintf "Function %s does not support conditions with an operator" fn
             | ArgumentNotSupplied(fn, n) -> sprintf "Argument number %d cannot be empty for function %s" n fn

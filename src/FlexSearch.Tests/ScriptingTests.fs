@@ -5,23 +5,24 @@ open FlexSearch.Core
 open Swensen.Unquote
 open System.Collections.Generic
 
-type SearchProfileScriptTests() = 
+type PreSearchScriptTests() = 
     member __.``Script should compile``() = 
         let scriptSrc = """
-void Execute(SearchQuery query, Dictionary<string, string> fields){
+void Execute(SearchQuery query){
 	string value = String.Empty;
+    var fields = query.Variables;
 	var queryString = query.QueryString;
     if (fields.TryGetValue("test", out value)) {	
 		fields["test"] = "test1";
 	}
 }
 """
-        let (_, sut) = Compiler.compileScript (scriptSrc, "test", ScriptType.SearchProfile) |> extract
+        let (_, sut) = Compiler.compileScript (scriptSrc, "test", ScriptType.PreSearch) |> extract
         let testDict = new Dictionary<string, string>()
         testDict.Add("test", "test0")
         match sut with
-        | SearchProfileScript(computedDelegate) -> 
-            let result = computedDelegate.Invoke(new SearchQuery(), testDict)
+        | PreSearchScript(computedDelegate) -> 
+            let result = computedDelegate.Invoke(new SearchQuery(Variables = testDict))
             test <@ testDict.["test"] = "test1" @>
         | _ -> failwithf "Wrong Script Type returned"
 

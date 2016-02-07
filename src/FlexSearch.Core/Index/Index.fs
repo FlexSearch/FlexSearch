@@ -178,7 +178,7 @@ type IndexSetting =
       SearchAnalyzer : AnalyzerWrapper
       /// Contains all the fields used in the index
       Fields : FieldCollection
-      SearchProfiles : IReadOnlyDictionary<string, Predicate * SearchQuery>
+      PredefinedQueries : IReadOnlyDictionary<string, Predicate * SearchQuery>
       IndexConfiguration : IndexConfiguration
       BaseFolder : string
       ShardConfiguration : ShardConfiguration }

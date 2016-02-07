@@ -4,13 +4,14 @@ open FlexSearch.Core
 open Swensen.Unquote
 open System
 open System.Collections.Generic
+open System.Linq
 
-type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>) =
-    let queryFunctions =
-        let result = new Dictionary<string, IFlexQueryFunction>(StringComparer.OrdinalIgnoreCase)
-        for pair in queryFunctions do
-            result.Add(pair.Value.GetType() |> getTypeNameFromAttribute, pair.Value)
-        result
+type ``Function Tests``(computedFunctions : Dictionary<string, IComputedFunction>) =
+    let searchBaggage =
+      { Fields = new Dictionary<string, FieldSchema>()
+        ComputedFunctions = computedFunctions
+        FieldFunctions = new Dictionary<string, IFieldFunction>()
+        QueryFunctions = new Dictionary<string, IQueryFunction>() }
 
     let toSource givenList = match givenList with
                               | [] -> None
@@ -19,10 +20,11 @@ type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>)
                                   list |> Seq.iter (fun pair -> dict.Add pair)
                                   Some(dict)
 
-    let isEqualTo expected sourceList inputText = 
+    let isEqualTo expected (variables : (string * string) list) inputText = 
         match ParseComputableFunction inputText with
-        | Ok(ComputableFunction(fn, ps)) -> 
-            let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
+        | Ok(cv) -> 
+            let v = variables.ToDictionary(fst, snd)
+            let result = computeValue searchBaggage v "" cv
             test <@ result = (ok <| Some expected) @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
@@ -31,10 +33,11 @@ type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>)
         | Ok(ff) -> test <@ ff = expected @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
-    let fails sourceList inputText =
+    let fails (variables : (string * string) list) inputText =
         match ParseComputableFunction inputText with
-        | Ok(ComputableFunction(fn, ps)) -> 
-            let result = handleFunctionValue fn (ps |> Seq.toList) queryFunctions (toSource sourceList)
+        | Ok(cv) -> 
+            let v = variables.ToDictionary(fst, snd)
+            let result = computeValue searchBaggage v "" cv
             test <@ match result with Fail(_) -> true | _ -> false @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
@@ -45,7 +48,7 @@ type ``Function Tests``(queryFunctions : Dictionary<string, IFlexQueryFunction>)
         "Add('1','2')" |> isEqualTo "3" []
 
     member __.``Adding 1 to a numeric field should return field + 1``() =
-        "add('1',#field)" |> isEqualTo "3" ["field","2"]
+        "add('1',#field)" |> isEqualTo "3" [("field","2")]
 
     member __.``Adding 1 to a function that adds 1 to 1 should return 3``() =
         "add('1',add('1','1'))" |> isEqualTo "3" []

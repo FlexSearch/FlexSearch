@@ -109,7 +109,7 @@
       "required": [ "indexName", "query", "connectionString" ]
     },
     "duplicateDetectionRequest": {
-      "description": "Represents a request to execute dedupe against a given index and search profile",
+      "description": "Represents a request to execute dedupe against a given index and predefined query",
       "type": "object",
       "properties": {
         "selectionQuery": {
@@ -133,8 +133,8 @@
           "description": "The name of the index on which to run the session",
           "type": "string"
         },
-        "profileName": {
-          "description": "The name of the profile used for deduplication.",
+        "predefinedQueryName": {
+          "description": "The name of the query used for deduplication.",
           "type": "string"
         },
         "maxRecordsToScan": {
@@ -148,7 +148,7 @@
           "default": 500000
         }
       },
-      "required": [ "displayName", "indexName", "profileName" ]
+      "required": [ "displayName", "indexName", "predefinedQueryName" ]
     },
     "fieldsUpdateRequest": {
       "description": "Represents a request to update a field in an index",
@@ -406,7 +406,7 @@
       "required": [ "indexName", "queryString" ],
       "properties": {
         "queryName": {
-          "description": "Unique name of the query. This is only required if you are setting up a search profile.",
+          "description": "Unique name of the query. This is only required if you are setting up a predefined query.",
           "type": "string",
           "default": ""
         },
@@ -466,18 +466,18 @@
           "type": "boolean",
           "default": true
         },
-        "searchProfile": {
-          "description": "Profile Name to be used for profile based searching.",
+        "predefinedQuery": {
+          "description": "Predefined Query to be used when searching based on a template.",
           "type": "string",
           "default": ""
         },
-        "searchProfileScript": {
-          "description": "Script which can be used to select a search profile. This can help in dynamic selection of search profile based on the incoming data.",
+        "preSearchScript": {
+          "description": "Script that is executed before submitting the search to Lucene. It can be used to modify the incoming Variables",
           "type": "string",
           "default": ""
         },
-        "overrideProfileOptions": {
-          "description": "Can be used to override the configuration saved in the search profile with the one which is passed as the Search Query",
+        "overridePredefinedQueryOptions": {
+          "description": "Can be used to override the configuration saved in the predefined query with the one which is passed as the Search Query",
           "type": "boolean",
           "default": false
         },
@@ -555,7 +555,7 @@
             "$ref": "#/definitions/field"
           }
         },
-        "searchProfiles": {
+        "predefinedQueries": {
           "description": "",
           "type": "array",
           "items": {
@@ -676,14 +676,14 @@
         }
       }
     },
-    "searchProfileTestDto": {
+    "predefinedQueryTestDto": {
       "description": "",
       "type": "object",
       "properties": {
         "searchQuery": {
           "$ref": "#/definitions/searchQuery"
         },
-        "searchProfile": {
+        "predefinedQuery": {
           "description": "",
           "type": "string"
         }
@@ -1320,7 +1320,7 @@
         }
       }
     },
-    "/indices/{indexName}/duplicatedetection/{profileName}": {
+    "/indices/{indexName}/duplicatedetection/{predefinedQueryName}": {
       "post": {
         "tags": [ "common" ],
         "summary": "Duplicate Detection Handler\n",
@@ -1341,9 +1341,9 @@
             "type": "string"
           },
           {
-            "name": "profileName",
+            "name": "predefinedQueryName",
             "in": "path",
-            "description": "Profile name",
+            "description": "Predefined query name",
             "required": true,
             "type": "string"
           }
@@ -1550,17 +1550,17 @@
         }
       }
     },
-    "/indices/{id}/searchprofiletest": {
+    "/indices/{id}/predefinedQuerytest": {
       "post": {
         "tags": [ "search" ],
-        "summary": "Test a search profile",
-        "description": "This endpoint is useful to test such profiles dynamically, you can test search\nprofiles without adding them to the index. This becomes useful when trying out\ndifferent search profiles. It is advisable to not to use this service directly\nbut through the search UI provided as part of the portal.\n",
-        "operationId": "doSearchProfileTest",
+        "summary": "Test a predefined query",
+        "description": "This endpoint is useful to test such queries dynamically, you can test predefined\nqueries without adding them to the index. This becomes useful when trying out\ndifferent predefined queries. It is advisable to not to use this service directly\nbut through the search UI provided as part of the portal.\n",
+        "operationId": "doPredefinedQueryTest",
         "parameters": [
           {
             "in": "body",
-            "schema": { "$ref": "#/definitions/searchProfileTestDto" },
-            "name": "SearchProfileTestDto",
+            "schema": { "$ref": "#/definitions/predefinedQueryTestDto" },
+            "name": "PredefinedQueryTestDto",
             "required": true
           },
           {
@@ -1637,12 +1637,12 @@
         }
       }
     },
-    "/indices/{id}/searchprofile": {
+    "/indices/{id}/predefinedQuery": {
       "put": {
         "tags": [ "indices" ],
-        "summary": "Adds or updates a search profile for the given index",
+        "summary": "Adds or updates a predefined query for the given index",
         "description": "",
-        "operationId": "updateIndexSearchProfile",
+        "operationId": "updateIndexPredefinedQuery",
         "parameters": [
           {
             "in": "body",
