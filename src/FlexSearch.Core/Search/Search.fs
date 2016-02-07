@@ -33,7 +33,12 @@ type ComputedValues = string option []
 type ComputedValue = string option
 type Variables = Dictionary<string, string>
 
-type IFieldFunction = abstract GetQuery : FieldSchema * ComputedValues -> Result<Query>
+// The reason why we also have the function name as a parameter is that the function name from the 
+// query string might be different than the name of the actual IFieldFunction instance.
+// E.g. function name from query string: upTo2WordsApart
+//      function name from IFieldFunction instance : upToWordsApart
+// This enables us to take the number from the function name and use it as a parameter
+type IFieldFunction = abstract GetQuery : FieldSchema * ComputedValues * FunctionName -> Result<Query>
 type IComputedFunction = abstract GetQuery : ComputedValues -> Result<ComputedValue>
 type IQueryFunction = abstract GetQuery : Query * ComputedValue -> Result<Query>
 
@@ -52,9 +57,13 @@ type SearchBaggage =
 module SearchDsl = 
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
+    let inline extractFunctionName (str : string) = 
+        str |> Seq.where (fun c -> Char.IsLetter c || c = '_') 
+            |> string
+            |> fun s -> s.ToLower()
 
     let getFunction<'T> (name : string) (functions : Dictionary<string, 'T>) =
-        match functions.TryGetValue <| name.ToLower() with
+        match functions.TryGetValue <| extractFunctionName name with
         | true, func -> ok func
         | _ -> fail <| FunctionNotFound name
 
@@ -104,7 +113,7 @@ module SearchDsl =
         maybe {
             let! fieldSchema = baggage.Fields |> getFieldSchema fieldName
             let! searchFunction = baggage.FieldFunctions |> getFunction funcName
-            return! searchFunction.GetQuery(fieldSchema, cvs)
+            return! searchFunction.GetQuery(fieldSchema, cvs, funcName)
         }
 
     let computeQueryFunction baggage funcName query computedValue = 

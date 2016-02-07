@@ -17,33 +17,50 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open System
+
 module SearchQueryHelpers =
     let getPopulatedArguments (arguments : ComputedValues) =
         arguments
         |> Array.where (fun a -> a.IsSome)
         |> Array.map (fun a -> a.Value)
 
-    let checkItHasNArguments n functionName (arguments : ComputedValues) =
+    let checkItHasNArguments n (instance : 'T) (arguments : ComputedValues) =
         if arguments.Length = n then okUnit
-        else fail <| NumberOfFunctionParametersMismatch(functionName, n, arguments.Length)
+        else 
+            let functionName = instance.GetType() |> getTypeNameFromAttribute
+            fail <| NumberOfFunctionParametersMismatch(functionName, n, arguments.Length)
 
-    let checkItHasNPopulatedArguments n functionName (arguments : ComputedValues) =
+    let checkItHasNPopulatedArguments n (instance : 'T) (arguments : ComputedValues) =
         if arguments.Length <> n 
-        then fail <| NumberOfFunctionParametersMismatch(functionName, n, arguments.Length)
+        then
+            let functionName = instance.GetType() |> getTypeNameFromAttribute 
+            fail <| NumberOfFunctionParametersMismatch(functionName, n, arguments.Length)
         else arguments
              |> Seq.zip [1..arguments.Length]
-             >>>= fun (idx, arg) -> if arg.IsSome then okUnit else fail <| ArgumentNotSupplied(functionName, idx)
+             >>>= fun (idx, arg) -> if arg.IsSome then okUnit
+                                    else let functionName = instance.GetType() |> getTypeNameFromAttribute
+                                         fail <| ArgumentNotSupplied(functionName, idx)
 
-    let checkAtLeastNPopulatedArguments n functionName (arguments : ComputedValues) =
+    let checkAtLeastNPopulatedArguments n (instance : 'T) (arguments : ComputedValues) =
         arguments
         |> getPopulatedArguments
         |> Seq.length
-        |> fun count -> if count >= n then okUnit else fail <| ExpectedAtLeastNParamsMismatch(functionName, n, count)
+        |> fun count -> if count >= n then okUnit 
+                        else
+                            let functionName = instance.GetType() |> getTypeNameFromAttribute 
+                            fail <| ExpectedAtLeastNParamsMismatch(functionName, n, count)
 
-    let byDefault defaultValue (value : ComputedValue) =
+    let byDefault defaultValue (value : 'T option) =
         match value with
         | Some(v) -> v
         | None -> defaultValue
+
+    let extractDigits (str : string) =
+        str |> Seq.where (fun c -> Char.IsDigit c)
+            |> string
+            |> fun s -> if String.IsNullOrEmpty s then None 
+                        else Some(Int32.Parse s)
 
     
 

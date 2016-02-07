@@ -282,69 +282,61 @@ type Country = FlexSearch.Core.Country
 open System.Linq
 
 type ``Search Tests``() = 
-    [<Example("post-indices-search-term-1", "Term search using '=' operator")>]
+    [<Example("post-indices-search-term-1", "Term search using 'allOf' operator")>]
     member __.``Term Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
-        api |> query "agriproducts = 'rice' and agriproducts = 'wheat'" expected 1
+        api |> query "allof(agriproducts, 'rice') and allof(agriproducts, 'wheat')" expected 1
     
     [<Example("post-indices-search-term-2", "Term search using multiple words")>]
     member __.``Term Query Test 2`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
-        api |> query "agriproducts = 'rice wheat'" expected 1
+        api |> query "allof(agriproducts, 'rice wheat')" expected 1
     
-    [<Example("post-indices-search-term-3", "Term search using '=' operator")>]
+    [<Example("post-indices-search-term-3", "Term search using 'allOf' operator")>]
     member __.``Term Query Test 3`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
-        api |> query "agriproducts eq 'rice' or agriproducts eq 'wheat'" expected 1
+        api |> query "allof(agriproducts, 'rice') or allof(agriproducts, 'wheat')" expected 1
     
-    [<Example("post-indices-search-term-4", "Term search using '=' operator")>]
+    [<Example("post-indices-search-term-4", "Term search using 'anyOf' operator")>]
     member __.``Term Query Test 4`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
-        api |> query "agriproducts eq 'rice wheat' {clausetype : 'or'}" expected 1
+        api |> query "anyOf(agriproducts, 'rice wheat')" expected 1
     
     [<Example("post-indices-search-fuzzy-1", "Fuzzy search using 'fuzzy' operator")>]
-    member __.``Fuzzy Query Test 1`` (api : SearchApi) = api |> query "countryname fuzzy 'Iran'" 2 3
-    
-    [<Example("post-indices-search-fuzzy-2", "Fuzzy search using '~=' operator")>]
-    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "countryname ~= 'Iran'" 2 3
+    member __.``Fuzzy Query Test 1`` (api : SearchApi) = api |> query "fuzzy(countryname, 'Iran')" 2 3
     
     [<Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
-    member __.``Fuzzy Query Test 3`` (api : SearchApi) = api |> query "countryname ~= 'China' {slop : '2'}" 3 3
+    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy2(countryname, 'China')" 3 3
     
-    [<Example("post-indices-search-phrase-1", "Phrase search using match operator")>]
+    [<Example("post-indices-search-phrase-1", "Phrase search using exact operator")>]
     member __.``Phrase Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.GovernmentType.Contains("federal parliamentary democracy")).Count()
-        api |> query "governmenttype match 'federal parliamentary democracy'" expected 4
+        api |> query "exact(governmenttype, 'federal parliamentary democracy')" expected 4
     
     [<Example("post-indices-search-phrase-2", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 2`` (api : SearchApi) = 
-        api |> query "governmenttype match 'parliamentary monarchy' {slop : '4'}" 6 4
+        api |> query "upto4wordsapart(governmenttype, 'parliamentary monarchy')" 6 4
     
     [<Example("post-indices-search-phrase-3", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 3`` (api : SearchApi) = 
-        api |> query "governmenttype match 'monarchy parliamentary' {slop : '4'}" 3 4
+        api |> query "upto4wordsapart(governmenttype, 'monarchy parliamentary')" 3 4
     
     [<Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
     member __.``Wildcard Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni"))
-        api |> query "countryname like '*uni*'" (expected.Count()) 3
-    
-    [<Example("post-indices-search-wildcard-2", "Wildcard search using '%=' operator")>]
-    member __.``Wildcard Query Test 2`` (api : SearchApi, indexData : Country list) = 
-        let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni")).Count()
-        api |> query "countryname %= '*uni*'" expected 3
+        api |> query "like(countryname, '*uni*')" (expected.Count()) 3
     
     [<Example("post-indices-search-wildcard-3", "Wildcard search with single character operator")>]
-    member __.``Wildcard Query Test 3`` (api : SearchApi, indexData : Country list) = 
+    member __.``Wildcard Query Test 2`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> 
                      System.Text.RegularExpressions.Regex.Match(x.CountryName.ToLowerInvariant(), "unit[a-z]?d").Success)
                      .Count()
-        api |> query "countryname %= 'Unit?d'" expected 1
+        api |> query "like(countryname, 'Unit?d')" expected 1
     
     [<Example("post-indices-search-regex-1", "Regex search using regex operator")>]
     member __.``Regex Query Test 1`` (api : SearchApi, indexData : Country list) = 
@@ -352,36 +344,36 @@ type ``Search Tests``() =
             indexData.Where(fun x -> 
                      System.Text.RegularExpressions.Regex.Match(x.AgriProducts.ToLowerInvariant(), "[ms]ilk").Success)
                      .Count()
-        api |> query "agriproducts regex '[ms]ilk'" expected 3
+        api |> query "regex(agriproducts, '[ms]ilk')" expected 3
     
     [<Example("post-indices-search-matchall-1", "Match all search using 'matchall' operator")>]
     member __.``Matchall Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Count()
-        api |> query "countryname matchall '*'" expected 50
+        api |> query "matchall(countryname, '*')" expected 50
     
-    [<Example("post-indices-search-range-1", "Greater than '>' operator")>]
+    [<Example("post-indices-search-range-1", "Greater than 'gt' operator")>]
     member __.``NumericRange Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population > 1000000L).Count()
-        api |> query "population > '1000000'" expected 48
+        api |> query "gt(population, '1000000')" expected 48
     
-    [<Example("post-indices-search-range-2", "Greater than or equal to '>=' operator")>]
+    [<Example("post-indices-search-range-2", "Greater than or equal to 'ge' operator")>]
     member __.``NumericRange Query Test 2`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population >= 1000000L).Count()
-        api |> query "population >= '1000000'" expected 48
+        api |> query "ge(population, '1000000')" expected 48
     
-    [<Example("post-indices-search-range-3", "Smaller than '<' operator")>]
+    [<Example("post-indices-search-range-3", "Smaller than 'lt' operator")>]
     member __.``NumericRange Query Test 3`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population < 1000000L).Count()
-        api |> query "population < '1000000'" expected 48
+        api |> query "lt(population, '1000000')" expected 48
     
-    [<Example("post-indices-search-range-4", "Smaller than or equal to '<=' operator")>]
+    [<Example("post-indices-search-range-4", "Smaller than or equal to 'le' operator")>]
     member __.``NumericRange Query Test 4`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population <= 1000000L).Count()
-        api |> query "population <= '1000000'" expected 48
+        api |> query "le(population, '1000000')" expected 48
     
     [<Example("post-indices-search-highlighting-1", "Text highlighting example")>]
     member __.``Search Highlight Feature Test1`` (api : SearchApi) = 
-        let query = new SearchQuery("country", "background = 'most prosperous countries'")
+        let query = new SearchQuery("country", "anyOf(background, 'most prosperous countries')")
         let highlight = [| "background" |]
         query.Highlights <- new HighlightOption(highlight)
         query.Highlights.FragmentsToReturn <- 2
