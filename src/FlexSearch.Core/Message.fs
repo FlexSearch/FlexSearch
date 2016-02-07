@@ -253,6 +253,8 @@ type SearchMessage =
     | ExpectingSearchProfile of context: string
     | RhsValueNotFound of functionName : string
     | RhsValueNotSupported of functionName : string
+    | ArgumentNotSupplied of functionName : string * argumentNumber : int
+    | ExpectedAtLeastNParamsMismatch of functionName : string * atLeast : int * actual : int
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Nothing)
         
@@ -284,6 +286,8 @@ type SearchMessage =
             | ExpectingSearchProfile(c) -> sprintf "Expected to have a search profile. Further context: %s" c
             | RhsValueNotFound(fn) -> sprintf "Function %s expects a value on the right hand side of the operator. This function cannot be used in function-only (non-operator) conditions." fn
             | RhsValueNotSupported(fn) -> sprintf "Function %s does not support conditions with an operator" fn
+            | ArgumentNotSupplied(fn, n) -> sprintf "Argument number %d cannot be empty for function %s" n fn
+            | ExpectedAtLeastNParamsMismatch(fn,al,a) -> sprintf "Expected at least %d arguments for the function %s, but found %d" al fn a
             |> caseToMsg this
 
 type IndexingMessage = 

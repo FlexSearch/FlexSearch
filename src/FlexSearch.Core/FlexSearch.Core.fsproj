@@ -110,6 +110,7 @@
     <Compile Include="Index\IndexWriter.fs" />
     <Compile Include="Index\IndexManager.fs" />
     <Compile Include="Search\Search.fs" />
+    <Compile Include="Search\SearchQueryHelpers.fs" />
     <Compile Include="Search\FlexQueries.fs" />
     <Compile Include="Search\QueryFunctions.fs" />
     <Compile Include="Services.fs" />
@@ -564,7 +565,7 @@ xcopy "$(SolutionDir)packages\System.Numerics.Vectors.4.1.1-rc2-23623\lib\net46\
   <Import Project="..\packages\ToString.Fody.1.7.2.0\build\dotnet\ToString.Fody.targets" Condition="Exists('..\packages\ToString.Fody.1.7.2.0\build\dotnet\ToString.Fody.targets')" />
   <!--<Import Project="..\packages\FSharpLint.0.2.6\build\FSharpLint.targets" Condition="Exists('..\packages\FSharpLint.0.2.6\build\FSharpLint.targets')" />-->
   <!--<Import Project="..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />-->
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

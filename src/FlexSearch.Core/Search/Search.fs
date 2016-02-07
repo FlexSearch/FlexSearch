@@ -29,28 +29,6 @@ open System.Collections.Generic
 open System.Linq
 open System.ComponentModel.Composition
 
-/// FlexQuery interface     
-type IFlexQuery = 
-    abstract QueryName : unit -> string []
-    abstract GetQuery : FieldSchema * string [] * Dictionary<string, string> option -> Result<Query>
-
-type ComputedConstants = Dictionary<string, string> option
-
-/// Interface for implementing query functions.
-/// Query functions can be of two types: constant and variable.
-///
-/// Constant query functions don't have any field names in them. They ultimately 
-/// compute to a constant value.
-///
-/// In variable query functions, the first parameter is a field name. Any other parameter
-/// should be a constant value. Variable query functions modify the given SearchQuery so 
-/// that it mimics the intended function. They don't return a constant value.
-type IFlexQueryFunction = 
-    abstract GetConstantResult : ComputableValue list * Dictionary<string, IFlexQueryFunction> * Dictionary<string, string> option -> Result<string option>
-    abstract GetVariableResult : Function * IFlexQuery * string [] option * ComputedConstants * FlexQueryFunctionsBag -> Result<Query>
-and FlexQueryFunctionsBag = Dictionary<string, IFlexQueryFunction>
-
-
 type ComputedValues = string option []
 type ComputedValue = string option
 type Variables = Dictionary<string, string>

@@ -327,23 +327,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
             }
                 
 [<Sealed>]
-type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQueries : Dictionary<string, IFlexQuery>, flexQueryFuncs : Dictionary<string, IFlexQueryFunction>,  indexService : IIndexService) = 
-    // Generate query types from query factory. This is necessary as a single query can support multiple
-    // query names
-    let queryTypes = 
-        let result = new Dictionary<string, IFlexQuery>(StringComparer.OrdinalIgnoreCase)
-        for pair in flexQueries do
-            for queryName in pair.Value.QueryName() do
-                result.Add(queryName, pair.Value)
-        result
-    
-    // Generate query function types from factory. This is necessary when passing functions in the query string
-    let queryFunctionTypes =
-        let result = new Dictionary<string, IFlexQueryFunction>(StringComparer.OrdinalIgnoreCase)
-        for pair in flexQueryFuncs do
-            result.Add(pair.Value.GetType() |> getTypeNameFromAttribute, pair.Value)
-        result
-
+type SearchService(parser : IFlexParser, scriptService : IScriptService, computedFunctions : Dictionary<string, IComputedFunction>, fieldFunctions : Dictionary<string, IFieldFunction>, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
     let getSearchPredicate (writers : IndexWriter, search : SearchQuery, 
                             inputValues : Dictionary<string, string> option) = 
         maybe { 
@@ -385,16 +369,20 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQue
                  return (predicate, None)
         }
     
-    let generateSearchQuery (writers : IndexWriter, searchQuery : SearchQuery, 
-                             inputValues : Dictionary<string, string> option, queryTypes) = 
+    let generateSearchQuery (writer : IndexWriter, searchQuery : SearchQuery, 
+                             inputValues : Dictionary<string, string> option) = 
         maybe { 
-            let! (predicate, searchProfile) = getSearchPredicate (writers, searchQuery, inputValues)
+            let! (predicate, searchProfile) = getSearchPredicate (writer, searchQuery, inputValues)
             match predicate with
             | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
             | _ -> 
-                return! SearchDsl.generateQuery 
-                            (writers.Settings.Fields.ReadOnlyDictionary, predicate, searchQuery, searchProfile, 
-                             queryTypes, queryFunctionTypes)
+                // TODO use the searchProfile values from the script
+                return!
+                  { Fields = writer.Settings.Fields.ReadOnlyDictionary
+                    ComputedFunctions = computedFunctions
+                    FieldFunctions = fieldFunctions
+                    QueryFunctions = queryFunctions }
+                  |> SearchDsl.generateQuery predicate searchQuery
         }
     
     let searchWrapper (writers, query, searchQuery) = 
@@ -404,7 +392,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQue
     
     let search (searchQuery : SearchQuery, inputFields : Dictionary<string, string> option) = 
         maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                let! query = generateSearchQuery (writers, searchQuery, inputFields, queryTypes)
+                let! query = generateSearchQuery (writers, searchQuery, inputFields)
                 return! searchWrapper (writers, query, searchQuery) }
 
     interface ISearchService with
@@ -417,9 +405,12 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQue
                 let! searchData = Parsers.ParseQueryString(searchQuery.QueryString, false)
                 match predicate with
                 | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
-                | _ -> let! query = SearchDsl.generateQuery 
-                                        (writers.Settings.Fields.ReadOnlyDictionary, predicate, searchQuery, Some(searchData), 
-                                         queryTypes, queryFunctionTypes)
+                | _ -> // TODO use the searchData
+                       let! query = { Fields = writers.Settings.Fields.ReadOnlyDictionary
+                                      ComputedFunctions = computedFunctions
+                                      FieldFunctions = fieldFunctions
+                                      QueryFunctions = queryFunctions }
+                                    |> SearchDsl.generateQuery predicate searchQuery
                        return! searchWrapper (writers, query, searchQuery)
             }
         
@@ -430,7 +421,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, flexQue
         // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
         member __.GetLuceneQuery(searchQuery: SearchQuery) =
             maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                    return! generateSearchQuery (writers, searchQuery, None, queryTypes) }
+                    return! generateSearchQuery (writers, searchQuery, None) }
 
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 

@@ -21,114 +21,121 @@ open FlexSearch.Core
 open FlexLucene.Index
 open FlexLucene.Search
 open System.Collections.Generic
+open SearchQueryHelpers
+open FlexLucene.Search
 
 /// Term Query
-[<Name("term_match"); Sealed>]
+[<Name("allof"); Sealed>]
 type FlexTermQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "eq"; "=" |]
-        member __.GetQuery(flexIndexField, values, parameters) = 
-            match FieldSchema.isNumericField flexIndexField with
+    interface IFieldFunction with
+        member __.GetQuery(fieldSchema, arguments) = 
+            let queryName = __.GetType() |> getTypeNameFromAttribute
+            match FieldSchema.isNumericField fieldSchema with
             | true -> 
-                flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], values.[0]) 
-                    (true, true)
+                arguments |> checkItHasNPopulatedArguments 1 queryName
+                >>= fun _ -> fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
+                                                                       (arguments.[0].Value, arguments.[0].Value) 
+                                                                       (true, true)
             | false -> 
                 // If there are multiple terms returned by the parser then we will create a boolean query
                 // with all the terms as sub clauses with And operator
                 // This behaviour will result in matching of both the terms in the results which may not be
                 // adjacent to each other. The adjacency case should be handled through phrase query
-                zeroOneOrManyQuery 
-                <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
-                <| getTermQuery flexIndexField.SchemaName <| getBooleanClause parameters
+                arguments |> checkAtLeastNPopulatedArguments 1 queryName
+                >>= fun _ -> 
+                    zeroOneOrManyQuery 
+                    <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
+                    <| getTermQuery fieldSchema.SchemaName 
+                    <| BooleanClauseOccur.MUST
 
-/// Fuzzy Query
-[<Name("fuzzy_match"); Sealed>]
-type FlexFuzzyQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "fuzzy"; "~=" |]
-        member __.GetQuery(flexIndexField, values, parameters) = 
-            let slop = parameters |> intFromOptDict "slop" 1
-            let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-            zeroOneOrManyQuery 
-            <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
-            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClauseOccur.MUST
-
-/// Match all Query
-[<Name("match_all"); Sealed>]
-type FlexMatchAllQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "matchall" |]
-        member __.GetQuery(_, _, _) = ok <| getMatchAllDocsQuery()
-
-/// Phrase Query
-[<Name("phrase_match"); Sealed>]
-type FlexPhraseQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "match" |]
-        member __.GetQuery(flexIndexField, values, parameters) = 
-            let terms = FieldSchema.getTerms (values, new List<string>()) flexIndexField 
-            let query = new PhraseQuery()
-            for term in terms do
-                query.Add(new Term(flexIndexField.SchemaName, term))
-            let slop = parameters |> intFromOptDict "slop" 0
-            query.SetSlop(slop)
-            ok <| (query :> Query)
-
-/// Wildcard Query
-[<Name("like"); Sealed>]
-type FlexWildcardQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "like"; "%=" |]
-        member __.GetQuery(flexIndexField, values, _) = 
-            // Like query does not go through analysis phase as the analyzer would remove the
-            // special character
-            zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
-            <| getWildCardQuery flexIndexField.SchemaName <| BooleanClauseOccur.MUST
-
-/// Regex Query
-[<Name("regex"); Sealed>]
-type RegexQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "regex" |]
-        member __.GetQuery(flexIndexField, values, _) = 
-            // Regex query does not go through analysis phase as the analyzer would remove the
-            // special character
-            zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
-            <| getRegexpQuery flexIndexField.SchemaName <| BooleanClauseOccur.MUST
-
-// ----------------------------------------------------------------------------
-// Range Queries
-// Note: These queries don't go through analysis phase as the analyzer would 
-// remove the special character
-// ---------------------------------------------------------------------------- 
-[<Name("greater"); Sealed>]
-type FlexGreaterQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| ">" |]
-        member __.GetQuery(flexIndexField, values, _) = 
-            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], Constants.Infinite) 
-                (false, true)
-
-[<Name("greater_than_equal"); Sealed>]
-type FlexGreaterThanEqualQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| ">=" |]
-        member __.GetQuery(flexIndexField, values, _) = 
-            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], Constants.Infinite) 
-                (true, true)
-
-[<Name("less_than"); Sealed>]
-type FlexLessThanQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "<" |]
-        member __.GetQuery(flexIndexField, values, _) = 
-            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (Constants.Infinite, values.[0]) 
-                (true, false)
-
-[<Name("less_than_equal"); Sealed>]
-type FlexLessThanEqualQuery() = 
-    interface IFlexQuery with
-        member __.QueryName() = [| "<=" |]
-        member __.GetQuery(flexIndexField, values, _) = 
-            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (Constants.Infinite, values.[0]) 
-                (true, true)
+///// Fuzzy Query
+//[<Name("fuzzy_match"); Sealed>]
+//type FlexFuzzyQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "fuzzy"; "~=" |]
+//        member __.GetQuery(flexIndexField, values, parameters) = 
+//            let slop = parameters |> intFromOptDict "slop" 1
+//            let prefixLength = parameters |> intFromOptDict "prefixlength" 0
+//            zeroOneOrManyQuery 
+//            <| FieldSchema.getTerms (values, new List<string>()) flexIndexField 
+//            <| getFuzzyQuery flexIndexField.SchemaName slop prefixLength <| BooleanClauseOccur.MUST
+//
+///// Match all Query
+//[<Name("match_all"); Sealed>]
+//type FlexMatchAllQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "matchall" |]
+//        member __.GetQuery(_, _, _) = ok <| getMatchAllDocsQuery()
+//
+///// Phrase Query
+//[<Name("phrase_match"); Sealed>]
+//type FlexPhraseQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "match" |]
+//        member __.GetQuery(flexIndexField, values, parameters) = 
+//            let terms = FieldSchema.getTerms (values, new List<string>()) flexIndexField 
+//            let query = new PhraseQuery()
+//            for term in terms do
+//                query.Add(new Term(flexIndexField.SchemaName, term))
+//            let slop = parameters |> intFromOptDict "slop" 0
+//            query.SetSlop(slop)
+//            ok <| (query :> Query)
+//
+///// Wildcard Query
+//[<Name("like"); Sealed>]
+//type FlexWildcardQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "like"; "%=" |]
+//        member __.GetQuery(flexIndexField, values, _) = 
+//            // Like query does not go through analysis phase as the analyzer would remove the
+//            // special character
+//            zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
+//            <| getWildCardQuery flexIndexField.SchemaName <| BooleanClauseOccur.MUST
+//
+///// Regex Query
+//[<Name("regex"); Sealed>]
+//type RegexQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "regex" |]
+//        member __.GetQuery(flexIndexField, values, _) = 
+//            // Regex query does not go through analysis phase as the analyzer would remove the
+//            // special character
+//            zeroOneOrManyQuery <| (values |> Seq.map (fun x -> x.ToLowerInvariant())) 
+//            <| getRegexpQuery flexIndexField.SchemaName <| BooleanClauseOccur.MUST
+//
+//// ----------------------------------------------------------------------------
+//// Range Queries
+//// Note: These queries don't go through analysis phase as the analyzer would 
+//// remove the special character
+//// ---------------------------------------------------------------------------- 
+//[<Name("greater"); Sealed>]
+//type FlexGreaterQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| ">" |]
+//        member __.GetQuery(flexIndexField, values, _) = 
+//            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], Constants.Infinite) 
+//                (false, true)
+//
+//[<Name("greater_than_equal"); Sealed>]
+//type FlexGreaterThanEqualQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| ">=" |]
+//        member __.GetQuery(flexIndexField, values, _) = 
+//            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (values.[0], Constants.Infinite) 
+//                (true, true)
+//
+//[<Name("less_than"); Sealed>]
+//type FlexLessThanQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "<" |]
+//        member __.GetQuery(flexIndexField, values, _) = 
+//            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (Constants.Infinite, values.[0]) 
+//                (true, false)
+//
+//[<Name("less_than_equal"); Sealed>]
+//type FlexLessThanEqualQuery() = 
+//    interface IFlexQuery with
+//        member __.QueryName() = [| "<=" |]
+//        member __.GetQuery(flexIndexField, values, _) = 
+//            flexIndexField.FieldType.GetRangeQuery.Value flexIndexField.SchemaName (Constants.Infinite, values.[0]) 
+//                (true, true)
