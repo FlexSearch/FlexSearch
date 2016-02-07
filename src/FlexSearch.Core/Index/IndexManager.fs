@@ -72,7 +72,6 @@ module IndexManager =
             match t.Store.TryUpdate(state.IndexDto.IndexName, newState, state) with
             | true -> 
                 t.EventAggregrator.Push(IndexStatusChange(state.IndexDto.IndexName, newState.IndexStatus.ToString()))
-                // TODO change status on shard as well
                 okUnit
             | false -> 
                 fail 
@@ -164,9 +163,12 @@ module IndexManager =
             let! indexState = t |> indexState indexName
             match indexState.IndexStatus with
             | IndexStatus.Closing | IndexStatus.Offline -> return! fail <| IndexIsAlreadyOffline(indexName)
+            | IndexStatus.Opening -> return! fail <| IndexIsOpening(indexName) 
             | _ -> 
                 indexState.IndexDto.Active <- false
-                indexState.IndexWriter.Value |> IndexWriter.close
+                match indexState.IndexWriter with 
+                | Some(iw) -> iw |> IndexWriter.close
+                | _ ->  return! fail <| IndexWriterNotCreatedYet(indexName)
                 do! t |> updateState (createIndexState (indexState.IndexDto, IndexStatus.Offline))
             return indexState
         }

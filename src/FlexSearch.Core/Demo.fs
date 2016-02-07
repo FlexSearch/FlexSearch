@@ -166,9 +166,11 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     member this.DemoData() = GetJsonData()
     member this.GetDemoIndex() = GetDemoIndexInfo()
     member this.Setup() = 
-        match indexService.IndexExists("country") with
-        | true -> okUnit
-        | _ -> 
-            match CreateIndex() with
-            | Ok(_) -> okUnit
-            | Fail(e) -> Fail(e)
+        match indexService.IndexOnline("country") with
+        | Ok() -> okUnit
+        | _ -> CreateIndex()
+//               if indexService.IndexExists("country") 
+//               then indexService.DeleteIndex("country")
+//               else okUnit
+//               >>= CreateIndex
+            

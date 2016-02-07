@@ -295,11 +295,13 @@ type IndexingMessage =
     | IndexShouldBeOnline of indexName : string
     | IndexIsAlreadyOnline of indexName : string
     | IndexIsAlreadyOffline of indexName : string
+    | IndexIsOpening of indexName : string
     | IndexInOpenState of indexName : string
     | IndexInInvalidState of indexName : string
     | UnableToUpdateIndexStatus of indexName : string * oldStatus : string * newStatus : string
     | ErrorOpeningIndexWriter of indexPath : string * exp : string * data : ResizeArray<KeyValuePair<string, string>>
     | IndexNotFound of indexName : string
+    | IndexWriterNotCreatedYet of indexName : string
     | DocumentIdAlreadyExists of indexName : string * id : string
     | DocumentIdNotFound of indexName : string * id : string
     | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
@@ -311,6 +313,8 @@ type IndexingMessage =
             | IndexShouldBeOnline(i) -> sprintf "Index '%s' should be online" i
             | IndexIsAlreadyOnline(i) -> sprintf "Index '%s' is already online" i
             | IndexIsAlreadyOffline(i) -> sprintf "Index '%s' is already offline" i
+            | IndexIsOpening(i) -> sprintf "Index '%s' is opening" i
+            | IndexWriterNotCreatedYet(i) -> sprintf "Index writer is not created yet for index '%s'" i
             | IndexInOpenState(i) -> sprintf "Index '%s' is in an open state" i
             | IndexInInvalidState(i) -> sprintf "Index '%s' is in an invalid state" i
             | UnableToUpdateIndexStatus(i, os, ns) -> sprintf "Unable to update the status of the index '%s' from '%s' to '%s'." i os ns

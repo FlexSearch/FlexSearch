@@ -281,7 +281,10 @@ type Country = FlexSearch.Core.Country
 
 open System.Linq
 
-type ``Search Tests``() = 
+type ``Search Tests``(demoApi : ServerApi) = 
+    do demoApi.SetupDemo() |> isSuccessful
+       
+
     [<Example("post-indices-search-term-1", "Term search using 'allOf' operator")>]
     member __.``Term Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = 
