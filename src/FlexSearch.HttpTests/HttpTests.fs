@@ -115,7 +115,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Trying to update index search profile should return success`` (api : IndicesApi, index : Index, 
                                                                                handler : LoggingHandler) = 
         api.CreateIndexWithHttpInfo(index) |> isCreated
-        let sp = new SearchQuery(index.IndexName, "et1 matchall 'x'", QueryName = "all")
+        let sp = new SearchQuery(index.IndexName, "matchall(et1, 'x')", QueryName = "all")
         api.UpdateIndexPredefinedQuery(sp, index.IndexName) |> isSuccessful
         handler |> log "put-indices-id-3"
         api.DeleteIndex(index.IndexName) |> isSuccessful
