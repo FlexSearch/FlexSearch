@@ -10,9 +10,28 @@ open TestCommandHelpers
 open Swensen.Unquote
 open System.Net
 open System
+open System.Linq
 
-type ``Index Creation Tests``() = 
+// An alias so that we avoid opening FlexSearch.Core
+type Country = FlexSearch.Core.Country
+
+type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) = 
+    let testIndex indexName = 
+        let index = new Index(IndexName = indexName, Active = true)
+        index.Fields <- [| new Field("firstname", FlexSearch.Api.Constants.FieldType.Text)
+                           new Field("lastname") |]
+        index
     
+    let createDocument (api : CommonApi) indexName = 
+        api.CreateIndexWithHttpInfo(testIndex indexName) |> isCreated
+        let document = new Document(indexName = indexName, id = "1")
+        document.Fields.Add("firstname", "Seemant")
+        document.Fields.Add("lastname", "Rajvanshi")
+        let result = api.CreateDocument(document, indexName)
+        (result, document)
+
+    do serverApi.SetupDemo() |> isSuccessful
+
     [<Example("post-indices-id-1", "Creating an index without any data")>]
     member __.``Creating an index without any parameters should return 200`` (api : IndicesApi, indexName : string, 
                                                                               handler : LoggingHandler) = 
@@ -71,7 +90,7 @@ type ``Index Creation Tests``() =
         handler |> log "post-indices-id-5"
         api.DeleteIndex(index.IndexName) |> isSuccessful
 
-type ``Index Update Tests``() = 
+//type ``Index Update Tests``() = 
     
 //    [<Example("put-indices-id-1", "")>]
 //    member __.``Trying to update an index is not supported`` (api : IndicesApi, index : Index, 
@@ -110,7 +129,7 @@ type ``Index Update Tests``() =
         handler |> log "put-indices-id-4"
         api.DeleteIndex(index.IndexName) |> isSuccessful
 
-type ``Delete Index Tests``() = 
+//type ``Delete Index Tests``() = 
     [<Example("delete-indices-id-1", "")>]
     member __.``Delete an index by id`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
         api.CreateIndexWithHttpInfo(index) |> isCreated
@@ -126,7 +145,7 @@ type ``Delete Index Tests``() =
         |> ignore
         handler |> log "delete-indices-id-2"
 
-type ``Get Index Tests``() = 
+//type ``Get Index Tests``() = 
     [<Example("get-indices-id-1", "")>]
     member __.``Getting an index detail by name`` (api : IndicesApi, handler : LoggingHandler) = 
         let actual = api.GetIndexWithHttpInfo("contact")
@@ -135,7 +154,7 @@ type ``Get Index Tests``() =
         actual |> hasStatusCode HttpStatusCode.OK |> ignore
         handler |> log "get-indices-id-1"
 
-type ``Get Non existing Index Tests``() = 
+//type ``Get Non existing Index Tests``() = 
     [<Example("get-indices-id-2", "")>]
     member __.``Getting an non existing index will return error`` (api : IndicesApi, indexName : string, 
                                                                    handler : LoggingHandler) = 
@@ -145,7 +164,7 @@ type ``Get Non existing Index Tests``() =
         |> ignore
         handler |> log "get-indices-id-2"
 
-type ``Index Other Services Tests``() = 
+//type ``Index Other Services Tests``() = 
     
     [<Example("get-indices-id-status-1", "Get status of an index (offine)")>]
     member __.``Newly created index is always offline`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
@@ -198,23 +217,7 @@ type ``Index Other Services Tests``() =
         |> fun r -> r.Data.Length >=? 1
         handler |> log "get-indices-1"
 
-type ``Document Tests``(demoApi : ServerApi) = 
-    
-    let testIndex indexName = 
-        let index = new Index(IndexName = indexName, Active = true)
-        index.Fields <- [| new Field("firstname", FlexSearch.Api.Constants.FieldType.Text)
-                           new Field("lastname") |]
-        index
-    
-    let createDocument (api : CommonApi) indexName = 
-        api.CreateIndexWithHttpInfo(testIndex indexName) |> isCreated
-        let document = new Document(indexName = indexName, id = "1")
-        document.Fields.Add("firstname", "Seemant")
-        document.Fields.Add("lastname", "Rajvanshi")
-        let result = api.CreateDocument(document, indexName)
-        (result, document)
-    
-    do demoApi.SetupDemo() |> isSuccessful
+//type ``Document Tests``(demoApi : ServerApi) = 
 
     [<Example("get-indices-id-documents-1", "")>]
     member __.``Get top 10 documents from an index`` (api : DocumentsApi, indexName : string, handler : LoggingHandler) = 
@@ -271,19 +274,14 @@ type ``Document Tests``(demoApi : ServerApi) =
         handler |> log "get-indices-id-documents-id-2"
         api.DeleteIndex(indexName) |> isSuccessful
 
-type ``Demo index Test``() = 
+//type ``Demo index Test``() = 
     member __.``Setting up the demo index creates the country index`` (serverApi : ServerApi, indicesApi : IndicesApi, handler : LoggingHandler) = 
         serverApi.SetupDemo() |> isSuccessful
         indicesApi.GetIndex("country") |> isSuccessful
 
-// An alias so that we avoid opening FlexSearch.Core
-type Country = FlexSearch.Core.Country
 
-open System.Linq
 
-type ``Search Tests``(demoApi : ServerApi) = 
-    do demoApi.SetupDemo() |> isSuccessful
-       
+//type ``Search Tests``(demoApi : ServerApi, commonApi : CommonApi) = 
 
     [<Example("post-indices-search-term-1", "Term search using 'allOf' operator")>]
     member __.``Term Query Test 1`` (api : SearchApi, indexData : Country list) = 
@@ -384,3 +382,9 @@ type ``Search Tests``(demoApi : ServerApi) =
         api.PostSearch(query, query.IndexName)
         |> fun r -> r |> isSuccessful; r
         |> fun r -> r.Data.Documents.Length >=? 0
+
+    interface IDisposable with
+        member __.Dispose() = 
+            indicesApi.DeleteIndex("country") |> isSuccessful
+            indicesApi.DeleteIndex("contact") |> isSuccessful
+            

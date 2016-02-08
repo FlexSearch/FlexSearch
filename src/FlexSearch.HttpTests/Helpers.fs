@@ -97,6 +97,19 @@ module TestCommandHelpers =
     open FlexSearch.Core.Helpers
     open System.Net
 
+    let isNotNullOrEmpty (str : string) = String.IsNullOrEmpty(str) |> not
+    let hasStatusCode (statusCode : HttpStatusCode) (r : ApiResponse<'T>) = r.StatusCode =? int statusCode; r
+    let hasErrorCode (errorCode : string) (r : 'T when 'T :> FlexResponse) = r.Error.ErrorCode =? errorCode; r
+    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> FlexResponse) = 
+        r.Data 
+        |> hasErrorCode errorCode 
+        |> ignore
+        r
+    let isSuccessful (r : FlexResponse) = 
+        if r.Error |> isNull then () 
+        else r.Error.Message =? null
+    let isCreated (r : ApiResponse<'T> when 'T :> FlexResponse) = r.StatusCode =? int HttpStatusCode.Created
+
     let newIndex indexName = new Index(IndexName = indexName)
     let formatter = new FlexSearch.Core.NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
 
@@ -116,6 +129,7 @@ module TestCommandHelpers =
         searchQuery.Count <- 10
         searchQuery.Columns <- [| "countryname"; "agriproducts"; "governmenttype"; "population" |]
         let response = api.PostSearch(searchQuery, "country")
+        response |> isSuccessful
         response.Data.TotalAvailable =? recordsReturned
         /// Log the result if log path is defined
         if Global.RequestLogPath <> String.Empty && Directory.Exists(Global.RequestLogPath) then 
@@ -138,19 +152,7 @@ module TestCommandHelpers =
                 File.WriteAllText(Global.RequestLogPath +/ fileName + ".json", formatter.SerializeToString(result))
             | None -> ()
 
-    let isNotNullOrEmpty (str : string) = String.IsNullOrEmpty(str) |> not
-
-    let hasStatusCode (statusCode : HttpStatusCode) (r : ApiResponse<'T>) = r.StatusCode =? int statusCode; r
-    let hasErrorCode (errorCode : string) (r : 'T when 'T :> FlexResponse) = r.Error.ErrorCode =? errorCode; r
-    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> FlexResponse) = 
-        r.Data 
-        |> hasErrorCode errorCode 
-        |> ignore
-        r
-    let isSuccessful (r : FlexResponse) = 
-        if r.Error |> isNull then () 
-        else r.Error.Message =? null
-    let isCreated (r : ApiResponse<'T> when 'T :> FlexResponse) = r.StatusCode =? int HttpStatusCode.Created
+    
 
 [<AutoOpen>]
 module FixtureSetup =
