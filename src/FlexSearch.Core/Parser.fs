@@ -118,7 +118,7 @@ module Parsers =
     // E.g. average('24')
     //      upper_Case('lower')
     //      concat('T', lower('HIS'))
-    //      concat(#firstname, ' is a badass')
+    //      concat(@firstname, ' is a badass')
     do computableFuncImpl := 
         let parameters = sepBy computableValue
                                (str_ws ",")

@@ -48,7 +48,7 @@ type ``Function Tests``(computedFunctions : Dictionary<string, IComputedFunction
         "Add('1','2')" |> isEqualTo "3" []
 
     member __.``Adding 1 to a numeric field should return field + 1``() =
-        "add('1',#field)" |> isEqualTo "3" [("field","2")]
+        "add('1',@field)" |> isEqualTo "3" [("field","2")]
 
     member __.``Adding 1 to a function that adds 1 to 1 should return 3``() =
         "add('1',add('1','1'))" |> isEqualTo "3" []
