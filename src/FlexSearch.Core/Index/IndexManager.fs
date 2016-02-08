@@ -143,6 +143,8 @@ module IndexManager =
         loopFiles (path)
         |> Seq.map loadFromFile
         |> Seq.choose id
+        // Don't reload the country index, that's only meant for testing
+        |> Seq.where (fun i -> i.IndexName <> "country")
         |> Seq.iter queueOnThreadPool
     
     /// Add a new index to the node
