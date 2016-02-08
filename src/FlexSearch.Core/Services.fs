@@ -398,7 +398,6 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
                 let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
                 // Parse the search profile to see if it is a valid query
                 let! predicate = parser.Parse(predefinedQueryString)
-                let! searchData = Parsers.ParseQueryString(searchQuery.QueryString, false)
                 match predicate with
                 | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
                 | _ -> // TODO use the searchData

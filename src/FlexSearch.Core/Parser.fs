@@ -164,41 +164,10 @@ module Parsers =
     let ParseFieldFunction text = tryParsing fieldFunc text
     let ParseQueryFunction text = tryParsing queryFunc text
 
-    let DictionaryOfList(elements : (string * string) list) = 
-        let result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        for (key, value) in elements do
-            result.Add(key, value)
-        result
-    
-    // ----------------------------------------------------------------------------
-    // Query string parser 
-    // Format: fieldname:'value',fieldname:'value',fieldname:'value'
-    // ----------------------------------------------------------------------------
-    let private keyValue = identifier .>>. (str_ws ":" >>. ws >>. stringLiteralAsString) .>> ws
-    let private keyValuePairs = (sepBy keyValue (str_ws ",")) |>> DictionaryOfList .>> ws
-    let private keyValuePairsBetweenBracket = between (str_ws "{") (str_ws "}") keyValuePairs .>> ws
-    let private queryStringParser : Parser<_, unit> = ws >>. keyValuePairs .>> eof
-    let private queryStringParserWithBracket : Parser<_, unit> = ws >>. keyValuePairsBetweenBracket .>> eof
-    
-    /// <summary>
-    /// Search profile query string parser 
-    /// Format: fieldname:'value',fieldname:'value',fieldname:'value'
-    /// </summary>
-    /// <param name="input"></param>
-    let ParseQueryString(input : string, withBrackets : bool) = 
-        let parse (queryString) (parser) = 
-            match run parser queryString with
-            | Success(result, _, _) -> ok result
-            | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError(errorMsg, queryString)
-        assert (input <> null)
-        if withBrackets then queryStringParserWithBracket |> parse input
-        else queryStringParser |> parse input
-    
     type Assoc = Associativity
     
     /// Generates all possible case combinations for the key words
     let private orCases = [ "or"; "oR"; "Or"; "OR" ]
-    
     let private andCases = [ "and"; "anD"; "aNd"; "aND"; "And"; "AnD"; "ANd"; "AND" ]
     let private notCases = [ "not"; "noT"; "nOt"; "nOT"; "Not"; "NoT"; "NOt"; "NOT" ]
     
