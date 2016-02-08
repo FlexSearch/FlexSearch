@@ -68,7 +68,7 @@ module IndexServiceTests =
 id,et1,et2,i1,i2
 1,a,h,37,95
 2,b,g,49,31"""
-            index.PredefinedQueries <- [| new SearchQuery(index.IndexName, "et1 = 'a'", QueryName = "profile") |]
+            index.PredefinedQueries <- [| new SearchQuery(index.IndexName, "allof(et1, 'a')", QueryName = "profile") |]
             indexTestData (testData, index, indexService, documentService)
 
             let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile")
@@ -124,7 +124,7 @@ id,et1,et2,i1,i2
                     index : Index,
                     documentService : IDocumentService,
                     searchService : ISearchService) =
-            new SearchQuery(index.IndexName, "et1 = 'b'", QueryName = "profile") 
+            new SearchQuery(index.IndexName, "allof(et1, 'b')", QueryName = "profile") 
             |> setUpAndModifyProfile index indexService documentService searchService
             
             // Search using the new profile and check that the second record is returned
@@ -138,7 +138,7 @@ id,et1,et2,i1,i2
                     index : Index,
                     documentService : IDocumentService,
                     searchService : ISearchService) =
-            new SearchQuery(index.IndexName, "et1 = 'b'", QueryName = "profile2") 
+            new SearchQuery(index.IndexName, "allof(et1, 'b')", QueryName = "profile2") 
             |> setUpAndModifyProfile index indexService documentService searchService
             
             // Search using the new profile and check that the second record is returned
@@ -279,7 +279,7 @@ module DocumentServiceTests =
             test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = 10 @>
 
             // Create a query that brings back 4 docs
-            let query = new SearchQuery(index.IndexName, "i1 <= '4'")
+            let query = new SearchQuery(index.IndexName, "le(i1, '4')")
             let searchRes = searchService.Search(query)
             test <@ succeeded searchRes @>
             test <@ (extract searchRes).RecordsReturned = 4 @>
