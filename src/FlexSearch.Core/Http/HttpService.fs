@@ -476,16 +476,6 @@ type DeleteDocumentsFromSearchHandler(documentService : IDocumentService) =
         | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
-[<Name("POST-/indices/:id/predefinedquerytest")>]
-[<Sealed>]
-type PostPredefinedQueryTestHandler(searchService : ISearchService) = 
-    inherit HttpHandlerBase<PredefinedQueryTestDto, SearchResults>()
-    override __.Process(request, body) =
-        body.Value.SearchQuery.IndexName <- request.ResId.Value
-        match searchService.Search(body.Value.SearchQuery, body.Value.PredefinedQuery) with
-        | Ok(result) -> SuccessResponse(result, Ok)
-        | Fail(error) -> FailureResponse(error, BadRequest)
-
 [<Name("GET-/memory")>]
 [<Sealed>]
 type GetMemoryDetails() =

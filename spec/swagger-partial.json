@@ -676,19 +676,6 @@
         }
       }
     },
-    "predefinedQueryTestDto": {
-      "description": "",
-      "type": "object",
-      "properties": {
-        "searchQuery": {
-          "$ref": "#/definitions/searchQuery"
-        },
-        "predefinedQuery": {
-          "description": "",
-          "type": "string"
-        }
-      }
-    },
     "noBody": {
       "description": "",
       "type": "object"
@@ -1546,35 +1533,6 @@
         "responses": {
           "default": {
             "description": "Pong"
-          }
-        }
-      }
-    },
-    "/indices/{id}/predefinedQuerytest": {
-      "post": {
-        "tags": [ "search" ],
-        "summary": "Test a predefined query",
-        "description": "This endpoint is useful to test such queries dynamically, you can test predefined\nqueries without adding them to the index. This becomes useful when trying out\ndifferent predefined queries. It is advisable to not to use this service directly\nbut through the search UI provided as part of the portal.\n",
-        "operationId": "doPredefinedQueryTest",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/predefinedQueryTestDto" },
-            "name": "PredefinedQueryTestDto",
-            "required": true
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/searchResultsResponse" }
           }
         }
       }

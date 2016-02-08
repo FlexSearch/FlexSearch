@@ -67,9 +67,7 @@ type IDocumentService =
 
 /// Search related operations
 type ISearchService = 
-    abstract Search : searchQuery:SearchQuery * inputFields:Dictionary<string, string> -> Result<SearchResults>
     abstract Search : searchQuery:SearchQuery -> Result<SearchResults>
-    abstract Search : searchQuery:SearchQuery * predefinedQueryString:string -> Result<SearchResults>
     abstract GetLuceneQuery : searchQuery:SearchQuery -> Result<FlexLucene.Search.Query>
 
 /// Queuing related operations
@@ -328,8 +326,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
                 
 [<Sealed>]
 type SearchService(parser : IFlexParser, scriptService : IScriptService, computedFunctions : Dictionary<string, IComputedFunction>, fieldFunctions : Dictionary<string, IFieldFunction>, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
-    let getSearchPredicate (writers : IndexWriter, search : SearchQuery, 
-                            inputValues : Dictionary<string, string> option) = 
+    let getSearchPredicate (writers : IndexWriter, search : SearchQuery) = 
         maybe { 
             if String.IsNullOrWhiteSpace(search.PredefinedQuery) <> true then 
                 // Search profile based
@@ -366,10 +363,9 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
                  return predicate
         }
     
-    let generateSearchQuery (writer : IndexWriter, searchQuery : SearchQuery, 
-                             inputValues : Dictionary<string, string> option) = 
+    let generateSearchQuery (writer : IndexWriter, searchQuery : SearchQuery) = 
         maybe { 
-            let! predicate = getSearchPredicate (writer, searchQuery, inputValues)
+            let! predicate = getSearchPredicate (writer, searchQuery)
             match predicate with
             | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
             | _ -> 
@@ -386,37 +382,18 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
             ok <| SearchDsl.search (writers, query, searchQuery)
         with e -> fail <| SearchError(exceptionPrinter e)
     
-    let search (searchQuery : SearchQuery, inputFields : Dictionary<string, string> option) = 
+    let search (searchQuery : SearchQuery) = 
         maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                let! query = generateSearchQuery (writers, searchQuery, inputFields)
+                let! query = generateSearchQuery (writers, searchQuery)
                 return! searchWrapper (writers, query, searchQuery) }
 
     interface ISearchService with
-        
-        member __.Search(searchQuery : SearchQuery, predefinedQueryString : string) = 
-            maybe { 
-                let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                // Parse the search profile to see if it is a valid query
-                let! predicate = parser.Parse(predefinedQueryString)
-                match predicate with
-                | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
-                | _ -> // TODO use the searchData
-                       let! query = { Fields = writers.Settings.Fields.ReadOnlyDictionary
-                                      ComputedFunctions = computedFunctions
-                                      FieldFunctions = fieldFunctions
-                                      QueryFunctions = queryFunctions }
-                                    |> SearchDsl.generateQuery predicate searchQuery
-                       return! searchWrapper (writers, query, searchQuery)
-            }
-        
-        member __.Search(searchQuery : SearchQuery, inputFields : Dictionary<string, string>) = 
-            search (searchQuery, Some <| inputFields)
-        member __.Search(searchQuery : SearchQuery) = search (searchQuery, None)
+        member __.Search(searchQuery : SearchQuery) = search searchQuery
 
         // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
         member __.GetLuceneQuery(searchQuery: SearchQuery) =
             maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                    return! generateSearchQuery (writers, searchQuery, None) }
+                    return! generateSearchQuery (writers, searchQuery) }
 
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 

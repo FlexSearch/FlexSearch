@@ -157,7 +157,7 @@ id,et1,t1,i1,s1
     //            |> searchForFlatAndExtract searchService
     //        test <@ result.[0].ContainsKey(Constants.Type) @>
     member __.``Search will return the _score column populated as a field of the Documents object``() = 
-        let result = getQuery (index.IndexName, "i1 eq '1'") |> searchExtractDocList searchService
+        let result = getQuery (index.IndexName, "allof(i1 , '1')") |> searchExtractDocList searchService
         result.[0].Score >? 0.0
     
     member __.``No score will be returned if ReturnScore is set to false``() = 
@@ -210,7 +210,7 @@ id,t1,t2,i1
                                                                                                         expected1 : string, 
                                                                                                         expected2 : string) = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1 ,'1')")
             |> withCount 2
             |> withSkip skip
             |> searchAndExtract searchService
