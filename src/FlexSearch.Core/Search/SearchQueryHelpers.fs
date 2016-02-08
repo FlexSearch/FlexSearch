@@ -58,7 +58,7 @@ module SearchQueryHelpers =
 
     let extractDigits (str : string) =
         str |> Seq.where (fun c -> Char.IsDigit c)
-            |> string
+            |> String.Concat
             |> fun s -> if String.IsNullOrEmpty s then None 
                         else Some(Int32.Parse s)
 
