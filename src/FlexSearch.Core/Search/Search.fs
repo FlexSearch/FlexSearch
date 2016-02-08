@@ -59,7 +59,7 @@ module SearchDsl =
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
     let inline extractFunctionName (str : string) = 
         str |> Seq.where (fun c -> Char.IsLetter c || c = '_') 
-            |> string
+            |> String.Concat
             |> fun s -> s.ToLower()
 
     let getFunction<'T> (name : string) (functions : Dictionary<string, 'T>) =
