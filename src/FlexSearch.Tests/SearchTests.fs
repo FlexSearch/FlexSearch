@@ -178,6 +178,9 @@ id,et1,t1,i1,s1
             |> searchAndExtract searchService
         result |> assertFieldPresent "s1"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+
 type ``Paging Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
@@ -214,6 +217,9 @@ id,t1,t2,i1
         result |> assertReturnedDocsCount 2
         test <@ result.Documents.[0].Id = expected1 @>
         test <@ result.Documents.[1].Id = expected2 @>
+
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 type ``Sorting Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -318,6 +324,9 @@ id,et1,t2,i1,i2
         result |> assertFieldValue 3 "i2" "4"
         result |> assertFieldValue 4 "i2" "5"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+
 type ``Highlighting Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,h1
@@ -341,6 +350,9 @@ id,et1,h1
         test <@ result.Documents.[0].Highlights.[0].Contains("approach") @>
         test <@ result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>") @>
         test <@ result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") @>
+
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 type ``Search profile Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -602,6 +614,9 @@ id,et1,et2,i1,i2
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "2"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+
 type ``DistinctBy Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
@@ -627,6 +642,9 @@ id,et1,t1,i1,s1
             |> searchAndExtract searchService
         test <@ result.Documents.Length = 5 @>
         test <@ result.RecordsReturned = 5 @>
+
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 // ----------------------------------------------------------------------------
 // Query type tests
@@ -664,6 +682,9 @@ id,et1,t1
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+
 type ``Term Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
@@ -697,6 +718,9 @@ id,t1,t2,i1
     member this.``Searching for t1 'aaron' & t2 'johnson or Garner' should return 2 record``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+
 type ``Term Match Complex Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1
@@ -712,6 +736,9 @@ id,et1,t1
         searchService 
         |> verifyReturnedDocsCount index.IndexName 1 
                "anyof(t1, 'CompSci abbreviated approach undefinedword')"
+
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 type ``Fuzzy WildCard Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -743,6 +770,9 @@ id,t1,t2,i1
     member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 2 "regex(t1, '[mb]oat')"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+
 type ``Range Query Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,i1
@@ -770,6 +800,8 @@ id,i1
     member __.``Searching for records with i1 <= '20' should return 5``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 5 "le(i1 , '20')"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 // ----------------------------------------------------------------------------
 // Analyzer specific search tests
@@ -793,6 +825,9 @@ id,t1
 
     member __.``Searching for t1 = 'fish' should return 1 record as fish and phish are not phonetic equivalents``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'fish')"
+
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 // ----------------------------------------------------------------------------
 // Filed type specific search tests
@@ -828,6 +863,8 @@ CC,AA,FALSE
     member __.``Searching for _id = 'cc' should return 1 records as field is case insensitive``() = 
         searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, 'cc')"
 
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
 // ----------------------------------------------------------------------------
 // Queries with functions tests
@@ -945,3 +982,6 @@ CC,AA,FALSE,40
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "et1" "fsharp"
+
+    interface IDisposable with
+        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
