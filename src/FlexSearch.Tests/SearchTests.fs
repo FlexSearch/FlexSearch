@@ -22,6 +22,10 @@ let withPredefinedQuery (profileName : string) (query : SearchQuery) =
     query.PredefinedQuery <- profileName
     query
 
+let withVariables (variables: (string * string) list) (query : SearchQuery) =
+    query.Variables <- variables.ToDictionary(fst, snd)
+    query
+
 let withPredefinedQueryOverride (query : SearchQuery) =
     query.OverridePredefinedQueryOptions <- true
     query
@@ -97,27 +101,27 @@ let verifyReturnedDocsCount (indexName : string) (expectedCount : int) (queryStr
 type ``Column Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
-1,a,jhonson,1,test1
+1,a,johnson,1,test1
 2,c,hewitt,1,test2
 3,b,Garner,1,test3
 4,e,Garner,1,test4
-5,d,jhonson,1,test5"""
+5,d,johnson,1,test5"""
     do indexTestData (testData, index, indexService, documentService)
     
     member __.``Searching with no columns specified will return no additional columns``() = 
-        let result = getQuery (index.IndexName, "i1 eq '1'") |> searchAndExtract searchService
+        let result = getQuery (index.IndexName, "allof(i1, '1')") |> searchAndExtract searchService
         result |> assertFieldCount 0
     
     member __.``Searching with columns specified with '*' will return all column``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "*" |]
             |> searchAndExtract searchService
         result |> assertFieldCount index.Fields.Length
     
     member __.``Searching with columns specified as 'topic' will return just one column``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "et1" |]
             |> searchAndExtract searchService
         result |> assertFieldCount 1
@@ -125,7 +129,7 @@ id,et1,t1,i1,s1
     
     member __.``Searching with columns specified as 'topic' & 'surname' will return just one column``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "et1"; "t1" |]
             |> searchAndExtract searchService
         result |> assertFieldCount 2
@@ -134,14 +138,14 @@ id,et1,t1,i1,s1
     
     member __.``Search will return the id column populated as a field of the Document object``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "et1"; "t1" |]
             |> searchExtractDocList searchService
         String.IsNullOrEmpty(result.[0].Id) =? false
     
     member __.``Search will return the lastmodified column as a field of the Document object``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "et1"; "t1" |]
             |> searchExtractDocList searchService
         result.[0].TimeStamp >? 0L
@@ -158,18 +162,18 @@ id,et1,t1,i1,s1
     
     member __.``No score will be returned if ReturnScore is set to false``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withNoScore
             |> searchAndExtract searchService
         test <@ result.Documents.[0].Score = 0.0 @>
     
     member __.``Stored field cannot be searched``() = 
-        let query = getQuery (index.IndexName, "s1 eq '1'")
+        let query = getQuery (index.IndexName, "allof(s1, '1')")
         test <@ searchService.Search(query) = fail (StoredFieldCannotBeSearched("s1")) @>
     
     member __.``Stored fields can be retrieved``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "s1" |]
             |> searchAndExtract searchService
         result |> assertFieldPresent "s1"
@@ -177,17 +181,17 @@ id,et1,t1,i1,s1
 type ``Paging Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
-1,Aaron,jhonson,1
+1,Aaron,johnson,1
 2,aron,hewitt,1
 3,Airon,Garner,1
 4,aroon,Garner,1
-5,aronn,jhonson,1
-6,aroonn,jhonson,1"""
+5,aronn,johnson,1
+6,aroonn,johnson,1"""
     do indexTestData (testData, index, indexService, documentService)
     
     member __.``Searching for 'i1 = 1' with Count = 2 will return 2 records``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withCount 2
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 2
@@ -214,16 +218,16 @@ id,t1,t2,i1
 type ``Sorting Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t2,i1,i2
-1,a,jhonson,1,1
+1,a,johnson,1,1
 2,c,hewitt,1,3
 3,b,Garner,1,2
 4,e,Garner,1,4
-5,d,jhonson,1,5"""
+5,d,johnson,1,5"""
     do indexTestData (testData, index, indexService, documentService)
 
     member __.``Searching for 'i1 = 1' with orderby _lastmodified should return 5 records``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "_id" |]
             |> withOrderBy TimeStampField.Name
             |> searchAndExtract searchService
@@ -236,7 +240,7 @@ id,et1,t2,i1,i2
 
     member __.``Searching for 'i1 = 1' with orderby _lastmodified and direction desc should return 5 records``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "_id" |]
             |> withOrderByDesc TimeStampField.Name
 
@@ -250,7 +254,7 @@ id,et1,t2,i1,i2
     
     member __.``Searching for 'i1 = 1' with orderby et1 should return 5 records``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "et1" |]
             |> withOrderBy "et1"
             |> searchAndExtract searchService
@@ -263,7 +267,7 @@ id,et1,t2,i1,i2
 
     member __.``Searching for 'i1 = 1' with orderby et1 and direction desc should return 5 records``() = 
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "et1" |]
             |> withOrderByDesc "et1"
 
@@ -277,7 +281,7 @@ id,et1,t2,i1,i2
 
     member __.``Sorting is possible on int field``() =
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "i2" |]
             |> withOrderBy "i2"
             |> searchAndExtract searchService
@@ -290,7 +294,7 @@ id,et1,t2,i1,i2
 
     member __.``Sorting in descending order is possible on int field``() =
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "i2" |]
             |> withOrderByDesc "i2"
             |> searchAndExtract searchService
@@ -303,7 +307,7 @@ id,et1,t2,i1,i2
 
     member __.``Sorting is not possible on text field``() =
         let result = 
-            getQuery (index.IndexName, "i1 eq '1'")
+            getQuery (index.IndexName, "allof(i1, '1')")
             |> withColumns [| "i2" |]
             |> withOrderBy "t2"
             |> searchAndExtract searchService
@@ -353,78 +357,86 @@ id,et1,et2,i1,i2
         // Add test profiles
         index.PredefinedQueries <- 
             [| 
-                getQuery(index.IndexName, "et1 = #et1") |> withName "matchself"
-                getQuery(index.IndexName, "et1 = #et1") |> withName "matchselferror"
-                getQuery(index.IndexName, "et1 = isblank(#et1, #IGNORE)") |> withName "matchselfignore"
-                getQuery(index.IndexName, "et1 = isblank(#et1, 'd')") |> withName "matchselfdefault"
-                getQuery(index.IndexName, "et1 = #et2") |> withName "crossmatch"
-                getQuery(index.IndexName, "et1 = #et2") |> withName "crossmatcherror"
-                getQuery(index.IndexName, "et1 = isblank(#et2, #IGNORE)") |> withName "crossmatchignore"
-                getQuery(index.IndexName, "et1 = isblank(#et2, 'd')") |> withName "crossmatchdefault"
-                getQuery(index.IndexName, "et1 = 'h'") |> withName "constantmatch"
-                getQuery(index.IndexName, "i1 = add(#i2,#i1,'-2')") |> withName "crossmatchwithfunc"
-                getQuery(index.IndexName, "i1 = add(#i2,add(#i1,'-2'))") |> withName "crossmatchwithnestedfunc"
-                getQuery(index.IndexName, "i1 = add('10','18')") |> withName "matchwithfuncconstonly"
-                getQuery(index.IndexName, "i1 = add(#i2,#i2)") |> withName "crossmatchwithfieldonlyfunc"
-                getQuery(index.IndexName, "et1 = isblank(#et1, #et2)") |> withName "nestedcrossmatch"
+                getQuery(index.IndexName, "allof(et1, @et1)") |> withName "matchself"
+                getQuery(index.IndexName, "allof(et1, @et1)") |> withName "matchselferror"
+                getQuery(index.IndexName, "allof(et1, isblank(@et1, @IGNORE))") |> withName "matchselfignore"
+                getQuery(index.IndexName, "allof(et1, isblank(@et1, 'd'))") |> withName "matchselfdefault"
+                getQuery(index.IndexName, "allof(et1, @et2)") |> withName "crossmatch"
+                getQuery(index.IndexName, "allof(et1, @et2)") |> withName "crossmatcherror"
+                getQuery(index.IndexName, "allof(et1, isblank(@et2, @IGNORE))") |> withName "crossmatchignore"
+                getQuery(index.IndexName, "allof(et1, isblank(@et2, 'd'))") |> withName "crossmatchdefault"
+                getQuery(index.IndexName, "allof(et1, 'h')") |> withName "constantmatch"
+                getQuery(index.IndexName, "allof(i1, add(@i2,@i1,'-2'))") |> withName "crossmatchwithfunc"
+                getQuery(index.IndexName, "allof(i1, add(@i2,add(@i1,'-2')))") |> withName "crossmatchwithnestedfunc"
+                getQuery(index.IndexName, "allof(i1, add('10','18'))") |> withName "matchwithfuncconstonly"
+                getQuery(index.IndexName, "allof(i1, add(@i2,@i2))") |> withName "crossmatchwithfieldonlyfunc"
+                getQuery(index.IndexName, "allof(et1, isblank(@et1, @et2))") |> withName "nestedcrossmatch"
             |]
         indexTestData (testData, index, indexService, documentService)
     
     member __.``When no value is passed in search profile then the field should match against itself``() =
         let result = 
-            getQuery (index.IndexName, "et1:'a'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchself"
+            |> withVariables [("et1", "a")]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
 
     member __.``When the passed value is blank then the search will fail as the default behaviour is to throw error``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchself"
+            |> withVariables [("et1", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the required field value is not passed then the search will fail as the default behaviour is to throw error``() =
         let result = 
             // Can't use blank query string other wise the query validation will fail
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchself"
+            |> withVariables [("et2", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the passed value is blank then the search will fail for self match configuration of [!]``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchselferror"
+            |> withVariables [("et1", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the required field value is not passed then the search will fail for self match configuration of [!]``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchselferror"
+            |> withVariables [("et2", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et1")) @>
 
     member __.``When the passed value is blank then the search will ignore the clause for self match configuration of [*]``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchselfignore"
+            |> withVariables [("et1", "")]
             |> searchAndExtract searchService
         // We should get all the records back as the query will be short circuited to match all query
         result |> assertReturnedDocsCount 8
 
     member __.``When the required field value is not passed then the search will ignore the clause for self match configuration of [*]``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchselfignore"
+            |> withVariables [("et2", "")]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8
 
     member __.``When the required field value is blank then the search will use the default value for self match configuration of []``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchselfdefault"
+            |> withVariables [("et1", "")]
             |> withColumns [| "*" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -433,8 +445,9 @@ id,et1,et2,i1,i2
 
     member __.``When the required field value is not passed then the search will use the default value for self match configuration of []``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchselfdefault"
+            |> withVariables [("et2", "")]
             |> withColumns [| "*" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -443,8 +456,9 @@ id,et1,et2,i1,i2
 
     member __.``Cross matching can be done by specifying the target field inside <> brackets``() =
         let result = 
-            getQuery (index.IndexName, "et2:'a'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatch"
+            |> withVariables [("et2", "a")]
             |> withColumns [| "*" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -453,51 +467,58 @@ id,et1,et2,i1,i2
 
     member __.``When the cross matched field value is blank then the search will fail as the default behaviour is to throw error``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatch"
+            |> withVariables [("et2", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field is not passed then the search will fail as the default behaviour is to throw error``() =
         let result = 
             // Can't use blank query string other wise the query validation will fail
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatch"
+            |> withVariables [("et1", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will fail for cross match configuration of [!]``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatcherror"
+            |> withVariables [("et2", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the required field value is not passed then the search will fail for cross match configuration of [!]``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatcherror"
+            |> withVariables [("et1", "")]
             |> searchService.Search
         test <@ result = fail(MissingVariableValue("et2")) @>
 
     member __.``When the cross matched field value is blank then the search will ignore the clause for cross match configuration of [*]``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchignore"
+            |> withVariables [("et2", "")]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8
 
     member __.``When the required field value is not passed then the search will ignore the clasue for cross match configuration of [*]``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchignore"
+            |> withVariables [("et1", "")]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 8
 
     member __.``When the cross matched field value is blank then the search will use the default value for cross match configuration of []``() =
         let result = 
-            getQuery (index.IndexName, "et2:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchdefault"
+            |> withVariables [("et2", "")]
             |> withColumns [| "*" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -506,8 +527,9 @@ id,et1,et2,i1,i2
 
     member __.``When the required field value is not passed then the search will use the default value for cross match configuration of []``() =
         let result = 
-            getQuery (index.IndexName, "et1:''")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchdefault"
+            |> withVariables [("et1", "")]
             |> withColumns [| "*" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -516,8 +538,9 @@ id,et1,et2,i1,i2
 
     member __.``Constant field value matching is possible by passing the constant value between two quotes``() =
         let result = 
-            getQuery (index.IndexName, "any:'any'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "constantmatch"
+            |> withVariables [("any", "any")]
             |> withColumns [| "*" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -526,8 +549,9 @@ id,et1,et2,i1,i2
 
     member __.``Matching with functions is possible by writing functions in javascript fashion``() =
         let result = 
-            getQuery (index.IndexName, "i1:'40',i2:'23'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchwithfunc"
+            |> withVariables [("i1", "40"); ("i2", "23")]
             |> withColumns [| "_id" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -536,8 +560,9 @@ id,et1,et2,i1,i2
 
     member __.``Matching with nested functions is possible by making a function parameter a function call``() =
         let result = 
-            getQuery (index.IndexName, "i1:'40',i2:'23'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchwithnestedfunc"
+            |> withVariables [("i1", "40"); ("i2", "23")]
             |> withColumns [| "_id" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -546,8 +571,9 @@ id,et1,et2,i1,i2
 
     member __.``Matching with functions having constant only parameters is possible``() =
         let result = 
-            getQuery (index.IndexName, "i1:'40',i2:'23'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "matchwithfuncconstonly"
+            |> withVariables [("i1", "40"); ("i2", "23")]
             |> withColumns [| "_id" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -556,8 +582,9 @@ id,et1,et2,i1,i2
 
     member __.``Matching with functions having field only parameters is possible``() =
         let result = 
-            getQuery (index.IndexName, "i1:'40',i2:'30'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchwithfieldonlyfunc"
+            |> withVariables [("i1", "40"); ("i2", "23")]
             |> withColumns [| "_id" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -566,8 +593,9 @@ id,et1,et2,i1,i2
 
     member __.``Nested crossmatching is possible by matching a different field if the main one is blank``() =
         let result =
-            getQuery (index.IndexName, "et2: 'b'")
+            getQuery (index.IndexName, null)
             |> withPredefinedQuery "nestedcrossmatch"
+            |> withVariables [("et2", "b")]
             |> withColumns [| "_id" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -577,15 +605,15 @@ id,et1,et2,i1,i2
 type ``DistinctBy Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
-1,a,jhonson,1,test1
+1,a,johnson,1,test1
 2,a,hewitt,1,test2
 3,b,Garner,1,test3
 4,b,Garner,1,test4
-5,c,jhonson,1,test5"""
+5,c,johnson,1,test5"""
     do indexTestData (testData, index, indexService, documentService)
     member __.``Setting distinctby removes duplicates from the serach results``() = 
         let result = 
-            getQuery (index.IndexName, "_id matchall '*'")
+            getQuery (index.IndexName, "matchall(_id, '*')")
             |> withDistinctBy "et1"
             |> searchAndExtract searchService
         // The document returned count will still be 5 as we are filtering records
@@ -594,7 +622,7 @@ id,et1,t1,i1,s1
 
     member __.``Distinctby only works with ExactText fields``() = 
         let result = 
-            getQuery (index.IndexName, "_id matchall '*'")
+            getQuery (index.IndexName, "matchall(_id, '*')")
             |> withDistinctBy "t1"
             |> searchAndExtract searchService
         test <@ result.Documents.Length = 5 @>
@@ -612,62 +640,62 @@ id,et1,t1
     do indexTestData (testData, index, indexService, documentService)
     
     member __.``Searching for 'practical approach' with a slop of 1 will return 1 result``() = 
-        getQuery (index.IndexName, "t1 match 'practical approach' {slop:'1'}")
+        getQuery (index.IndexName, "upto1wordsapart(t1, 'practical approach')")
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
     
     member __.``Searching for 'practical approach' with a default slop of 1 will return 1 result``() = 
-        getQuery (index.IndexName, "t1 match 'practical approach'")
+        getQuery (index.IndexName, "uptowordsapart(t1, 'practical approach')")
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
     
     member __.``Searching for 'approach practical' will not return anything as the order matters``() = 
-        getQuery (index.IndexName, "t1 match 'approach practical'")
+        getQuery (index.IndexName, "uptowordsapart(t1, 'approach practical')")
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 0
     
     member __.``Searching for 'approach computation' with a slop of 2 will return 1 result``() = 
-        getQuery (index.IndexName, "t1 match 'approach computation' {slop:'2'}")
+        getQuery (index.IndexName, "upto2wordsapart(t1, 'approach computation')")
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
     
     member __.``Searching for 'comprehensive process leads' with a slop of 1 will return 1 result``() = 
-        getQuery (index.IndexName, "t1 match 'comprehensive process leads' {slop:'1'}")
+        getQuery (index.IndexName, "upto1wordsapart(t1, 'comprehensive process leads')")
         |> searchAndExtract searchService
         |> assertReturnedDocsCount 1
 
 type ``Term Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
-1,Aaron,jhonson,23
+1,Aaron,johnson,23
 2,aaron,hewitt,32
 3,Fred,Garner,44
 4,aaron,Garner,43
-5,fred,jhonson,332"""
+5,fred,johnson,332"""
     do indexTestData (testData, index, indexService, documentService)
     member __.``Term match query supports array style syntax``() =
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "_id eq ['1','2'] {clausetype:'or'}"
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "anyof(_id, '1','2')"
     member __.``Searching for 'id eq 1' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id eq '1'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, '1')"
     member __.``Searching for int field 'i1 eq 44' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "i1 eq '44'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(i1, '44')"
     member __.``Searching for 'aaron' should return 3 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "t1 eq 'aaron'"
-    member __.``Searching for 'aaron' & 'jhonson' should return 1 record``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 eq 'aaron' and t2 eq 'jhonson'"
-    member __.``Searching for t1 eq 'aaron' and (t2 eq 'jhonson' or t2 eq 'Garner') should return 2 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "allof(t1, 'aaron')"
+    member __.``Searching for 'aaron' & 'johnson' should return 1 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'aaron') and allof(t2, 'johnson')"
+    member __.``Searching for t1 eq 'aaron' and (t2 eq 'johnson' or t2 eq 'Garner') should return 2 record``() = 
         searchService 
-        |> verifyReturnedDocsCount index.IndexName 2 "t1 eq 'aaron' and (t2 eq 'jhonson' or t2 eq 'Garner')"
+        |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
     member __.``Searching for 'id = 1' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = '1'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, '1')"
     member __.``Searching for int field 'i1 = 44' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "i1 = '44'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(i1, '44')"
     member __.``Searching for t1 = 'aaron' should return 3 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "t1 = 'aaron'"
-    member __.``Searching for t1 = 'aaron' and t2 = 'jhonson' should return 1 record``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 = 'aaron' and t2 = 'jhonson'"
-    member this.``Searching for t1 'aaron' & t2 'jhonson or Garner' should return 2 record``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 = 'aaron' and (t2 = 'jhonson' or t2 = 'Garner')"
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "allof(t1, 'aaron')"
+    member __.``Searching for t1 = 'aaron' and t2 = 'johnson' should return 1 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'aaron') and allof(t2, 'johnson')"
+    member this.``Searching for t1 'aaron' & t2 'johnson or Garner' should return 2 record``() = 
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
 
 type ``Term Match Complex Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -677,55 +705,43 @@ id,et1,t1
 """
     do indexTestData (testData, index, indexService, documentService)
     member __.``Searching for multiple words will create a new query which will search all the words but not in specific order``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 eq 'CompSci abbreviated approach'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'CompSci abbreviated approach')"
     member __.``Searching for multiple words will create a new query which will search all the words using AND style construct but not in specific order``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 0 "t1 eq 'CompSci abbreviated approach undefinedword'"
+        searchService |> verifyReturnedDocsCount index.IndexName 0 "allof(t1, 'CompSci abbreviated approach undefinedword')"
     member __.``Setting 'clausetype' in condition properties can override the default clause construction from AND style to OR``() = 
         searchService 
         |> verifyReturnedDocsCount index.IndexName 1 
-               "t1 eq 'CompSci abbreviated approach undefinedword' {clausetype:'or'}"
+               "anyof(t1, 'CompSci abbreviated approach undefinedword')"
 
 type ``Fuzzy WildCard Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,t1,t2,i1
-1,Aaron,jhonson,23
+1,Aaron,johnson,23
 2,aron,hewitt,32
 3,Airon,Garner,44
 4,aroon,Garner,43
-5,aronn,jhonson,332
-6,aroonn,jhonson,332
-7,boat,,jhonson,332
-8,moat,jhonson,332
+5,aronn,johnson,332
+6,aroonn,johnson,332
+7,boat,,johnson,332
+8,moat,johnson,332
 """
     do indexTestData (testData, index, indexService, documentService)
     member __.``Searching for 't1 = aron' with default slop of 1 should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 fuzzy 'aron'"
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "fuzzy(t1, 'aron')"
     member __.``Searching for 't1 = aron' with specified slop of 1 should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 fuzzy 'aron' {slop:'1'}"
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "fuzzy1(t1, 'aron')"
     member __.``Searching for 't1 = aron' with slop of 2 should return 6 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 6 "t1 fuzzy 'aron'  {slop:'2'}"
-    member __.``Searching for 't1 ~= aron' with default slop of 1 should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 ~= 'aron'"
-    member __.``Searching for 't1 ~= aron' with specified slop of 1 should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "t1 ~= 'aron' {slop:'1'}"
-    member __.``Searching for 't1 ~= aron' with slop of 2 should return 6 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 6 "t1 ~= 'aron'  {slop:'2'}"
+        searchService |> verifyReturnedDocsCount index.IndexName 6 "fuzzy2(t1, 'aron')"
     member __.``Searching for 't1 = aron?' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 like 'aron?'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "like(t1, 'aron?')"
     member __.``Searching for 't1 = aron*' should return 2 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 like 'aron*'"
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "like(t1, 'aron*')"
     member __.``Searching for 't1 = ar?n' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 like 'ar?n'"
-    member __.``Searching for 't1 %= aron?' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'aron?'"
-    member __.``Searching for 't1 %= aron*' should return 2 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 %= 'aron*'"
-    member __.``Searching for 't1 %= ar?n' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'ar?n'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "like(t1, 'ar?n')"
     member __.``Searching for 't1 = AR?N' should return 1 records as matching is case in-sensitive even though like bypasses analysis``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 %= 'AR?N'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "like(t1, 'AR?N')"
     member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 regex '[mb]oat'"
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "regex(t1, '[mb]oat')"
 
 type ``Range Query Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -738,21 +754,21 @@ id,i1
 """
     do indexTestData (testData, index, indexService, documentService)
     member __.``Searching for records with i1 in range 1 to 20 inclusive upper & lower bound should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 >= '1' and i1 <= '20'"
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "ge(i1, '1') and le(i1, '20')"
     member __.``Searching for records with cvv in range 1 to 20 exclusive upper & lower bound should return 3 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "i1 > '1' and i1 < '20'"
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "gt(i1, '1') and lt(i1, '20')"
     member __.``Searching for records with cvv in range 1 to 20 inclusive upper & exclusive lower bound should return 4 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 >= '1' and i1 < '20'"
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "ge(i1, '1') and lt(i1, '20')"
     member __.``Searching for records with cvv in range 1 to 20 excluding upper & including lower bound should return 4 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 > '1' and i1 <= '20'"
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "gt(i1 , '1') and le(i1 , '20')"
     member __.``Searching for records with i1 > '1' should return 4"``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 > '1'"
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "gt(i1 , '1')"
     member __.``Searching for records with i1 >= '1' should return 5``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 >= '1'"
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "ge(i1 , '1')"
     member __.``Searching for records with i1 < '20' should return 4``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "i1 < '20'"
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "lt(i1 , '20')"
     member __.``Searching for records with i1 <= '20' should return 5``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "i1 <= '20'"
+        searchService |> verifyReturnedDocsCount index.IndexName 5 "le(i1 , '20')"
 
 
 // ----------------------------------------------------------------------------
@@ -773,10 +789,10 @@ id,t1
         indexTestData (testData, index, indexService, documentService)
 
     member __.``Searching for t1 = 'smith' should return 2 records as smith and smyth are phonetic equivalents``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "t1 = 'smith'"
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'smith')"
 
     member __.``Searching for t1 = 'fish' should return 1 record as fish and phish are not phonetic equivalents``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "t1 = 'fish'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'fish')"
 
 // ----------------------------------------------------------------------------
 // Filed type specific search tests
@@ -795,22 +811,22 @@ CC,AA,FALSE
         indexTestData (testData, index, indexService, documentService)
 
     member __.``Searching for et1 = 'a' should return 1 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "et1 = 'a'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(et1, 'a')"
 
     member __.``Searching for et1 = 'aa' should return 4 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "et1 = 'aa'"
+        searchService |> verifyReturnedDocsCount index.IndexName 4 "allof(et1 , 'aa')"
 
     member __.``Searching for b1 = 'true' should return 3 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "b1 = 'true'"
+        searchService |> verifyReturnedDocsCount index.IndexName 3 "allof(b1 , 'true')"
 
     member __.``Searching for b1 = 'FALSE' should return 2 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "b1 = 'FALSE'"
+        searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(b1 , 'FALSE')"
 
     member __.``Searching for _id = 'CC' should return 1 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = 'CC'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, 'CC')"
 
     member __.``Searching for _id = 'cc' should return 1 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "_id = 'cc'"
+        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, 'cc')"
 
 
 // ----------------------------------------------------------------------------
@@ -831,7 +847,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 = add('10','30') should return record CC which is equal to 40``() = 
         let result = 
-            getQuery (index.IndexName, "i1 = add('10','30')")
+            getQuery (index.IndexName, "allof(i1 , add('10','30'))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
@@ -839,7 +855,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 = add( '10', '30' ) using spaces should return record CC which is equal to 40``() = 
         let result = 
-            getQuery (index.IndexName, "i1 = add( '10', '30' )")
+            getQuery (index.IndexName, "allof(i1, add( '10', '30' ))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
@@ -847,7 +863,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 = add('10', add('10','20')) having nested functions should return record CC which is equal to 40``() = 
         let result = 
-            getQuery (index.IndexName, "i1 = add('10', add('10','20'))")
+            getQuery (index.IndexName, "allof(i1, add('10', add('10','20')))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
@@ -855,7 +871,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 > add('10','30') should return 3 records``() = 
         let result = 
-            getQuery (index.IndexName, "i1 > add('10','30')")
+            getQuery (index.IndexName, "gt(i1 , add('10','30'))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 3
@@ -863,7 +879,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 = add('80', '-4') should support negative numbers``() = 
         let result = 
-            getQuery (index.IndexName, "i1 = add('80', '-4')")
+            getQuery (index.IndexName, "allof(i1 , add('80', '-4'))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
@@ -871,7 +887,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 = add('10', '10', '10', '10') should support more than 2 parameters``() = 
         let result = 
-            getQuery (index.IndexName, "i1 = add('10', '10', '10', '10')")
+            getQuery (index.IndexName, "allof(i1 , add('10', '10', '10', '10'))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
@@ -879,7 +895,7 @@ CC,AA,FALSE,40
 
     member __.``Searching for i1 = add('3') should support only one parameter``() = 
         let result = 
-            getQuery (index.IndexName, "i1 = add('3')")
+            getQuery (index.IndexName, "allof(i1 , add('3'))")
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
@@ -887,21 +903,21 @@ CC,AA,FALSE,40
 
     member __.``Searching using lower on the LHS of the operation is supported``() =
         let result =
-            getQuery (index.IndexName, "lower(et1) = 'aa'")
+            getQuery (index.IndexName, "allof(lower(et1) , 'aa')")
             |> withColumns [| "_id" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 4
 
     member __.``Searching using upper on the LHS of the operation is supported``() =
         let result =
-            getQuery (index.IndexName, "upper(et1) = 'AA'")
+            getQuery (index.IndexName, "allof(upper(et1), 'AA')")
             |> withColumns [| "_id" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 4
 
     member __.``Searching using upper on the LHS of a 'regex' operation is supported``() =
         let result =
-            getQuery (index.IndexName, "upper(et1) regex 'A.'")
+            getQuery (index.IndexName, "regex(upper(et1), 'A.')")
             |> withColumns [| "_id" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 4
