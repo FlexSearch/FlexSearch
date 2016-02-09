@@ -24,9 +24,10 @@ open System.Collections.Generic
 open SearchQueryHelpers
 open FlexLucene.Search
 
-// ------------- Convention ------------ //
-// When a search function returns a null Query, it means that that query shouldn't be
-// added to the parent query
+// ----------------------------------------------------------------------------
+// Field Functions
+// These functions generate a Lucene Query based on input
+// ---------------------------------------------------------------------------- 
 
 [<AutoOpen>]
 module Common =
@@ -58,6 +59,8 @@ module Common =
                 query.Add(new Term(fieldSchema.SchemaName, term))
             query.SetSlop(slop)
             ok <| (query :> Query)
+
+
 
 /// Term Query
 [<Name("allof"); Sealed>]

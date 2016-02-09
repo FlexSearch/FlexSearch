@@ -18,6 +18,7 @@
 namespace FlexSearch.Core
 
 open System
+open SearchQueryHelpers
 
 //[<AutoOpen>]
 //module QueryFunctionHelpers = 
@@ -128,170 +129,99 @@ open System
 //    let getSomeString str = match str with
 //                            | Some(s) -> s
 //                            | None -> ""
-//
-//// ----------------------------------------------------------------------------
-//// Functions in queries
-//// These functions are executed by the FlexSearch server before it goes to 
-//// Lucene search.
-//// ---------------------------------------------------------------------------- 
-//[<Name("add"); Sealed>]
-//type AddFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                Seq.sum
-//                |> doForNumericParameters parameters
-//                                   (__.GetType() |> getTypeNameFromAttribute) 
-//                                   source 
-//                                   queryFunctionTypes
-//                                   getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("multiply"); Sealed>]
-//type MultiplyFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                Seq.fold (*) 1.0
-//                |> doForNumericParameters parameters
-//                                   (__.GetType() |> getTypeNameFromAttribute) 
-//                                   source 
-//                                   queryFunctionTypes
-//                                   getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("max"); Sealed>]
-//type MaxFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                Seq.max
-//                |> doForNumericParameters parameters
-//                                   (__.GetType() |> getTypeNameFromAttribute) 
-//                                   source 
-//                                   queryFunctionTypes 
-//                                   getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("min"); Sealed>]
-//type MinFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                Seq.min
-//                |> doForNumericParameters parameters
-//                                   (__.GetType() |> getTypeNameFromAttribute) 
-//                                   source 
-//                                   queryFunctionTypes 
-//                                   getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("avg"); Sealed>]
-//type AvgFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                Seq.average
-//                |> doForNumericParameters parameters
-//                                   (__.GetType() |> getTypeNameFromAttribute) 
-//                                   source 
-//                                   queryFunctionTypes 
-//                                   getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("len"); Sealed>]
-//type LenFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                String.length >> fun x -> x.ToString()
-//                |> doForSingleParameter parameters
-//                                        (__.GetType() |> getTypeNameFromAttribute) 
-//                                        source 
-//                                        queryFunctionTypes 
-//                                        getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("upper"); Sealed>]
-//type UpperFunc() =
-//    interface IFlexQueryFunction with
-//        // Since all matches are case insensitive matches, it makes no difference if
-//        // we do a toUpper or toLower on the indexed data.
-//        member __.GetVariableResult(flexField,fieldFunction,flexQuery,constant,p,_) = 
-//            match constant with
-//            | Some(c) -> flexQuery.GetQuery(flexField, c, p)
-//            | None -> fail <| RhsValueNotFound(__.GetType() |> getTypeNameFromAttribute)
-//
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                fun (x : string) -> x.ToUpper()
-//                |> doForSingleParameter parameters
-//                                        (__.GetType() |> getTypeNameFromAttribute) 
-//                                        source 
-//                                        queryFunctionTypes 
-//                                        getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("lower"); Sealed>]
-//type LowerFunc() =
-//    interface IFlexQueryFunction with
-//        // Since all matches are case insensitive matches, it makes no difference if
-//        // we do a toUpper or toLower on the indexed data.
-//        member __.GetVariableResult(flexField,fieldFunction,flexQuery,constant,p,_) = 
-//            match constant with
-//            | Some(c) -> flexQuery.GetQuery(flexField, c, p)
-//            | None -> fail <| RhsValueNotFound(__.GetType() |> getTypeNameFromAttribute)
-//
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                fun (x : string) -> x.ToLower()
-//                |> doForSingleParameter parameters
-//                                        (__.GetType() |> getTypeNameFromAttribute) 
-//                                        source 
-//                                        queryFunctionTypes 
-//                                        getSomeValue
-//                >>= (Some >> ok)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
-//[<Name("substr"); Sealed>]
-//type SubstrFunc() =
-//    interface IFlexQueryFunction with
-//        member __.GetVariableResult(_,_,_,_,_,_) = 
-//            fail <| VariableFunctionNotSupported (__.GetType() |> getTypeNameFromAttribute) 
-//        member __.GetConstantResult(parameters, queryFunctionTypes, source) = 
-//            try
-//                let typeName = "substr"
-//
-//                let parsedParams = getFirstNStringParams 3 typeName source queryFunctionTypes parameters
-//
-//                parsedParams
-//                >>= fun ps -> 
-//                    match ps |> List.map getSomeString with
-//                    | [inputString; startStr; lengthStr] -> 
-//                        inputString.Substring(Convert.ToInt32 startStr, Convert.ToInt32 lengthStr) 
-//                        |> (Some >> ok)
-//                    | _ -> fail <| NumberOfFunctionParametersMismatch(typeName, 3, ps.Length)
-//            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
+
+// ----------------------------------------------------------------------------
+// Computed Functions
+// These functions are executed by the FlexSearch server before it goes to 
+// Lucene search.
+// ---------------------------------------------------------------------------- 
+[<Name("add"); Sealed>]
+type AddFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments
+            |> getArgumentsAsNumbers __
+            >>= (Seq.sum >> printDouble >> Some >> ok)
+
+[<Name("multiply"); Sealed>]
+type MultiplyFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments
+            |> getArgumentsAsNumbers __
+            >>= (Seq.fold (*) 1.0 >> printDouble >> Some >> ok)
+
+[<Name("max"); Sealed>]
+type MaxFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkAtLeastNPopulatedArguments 1 __
+            >>= fun _ -> 
+                arguments 
+                |> getArgumentsAsNumbers __
+                >>= (Seq.max >> printDouble >> Some >> ok)
+
+[<Name("min"); Sealed>]
+type MinFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkAtLeastNPopulatedArguments 1 __
+            >>= fun _ -> 
+                arguments 
+                |> getArgumentsAsNumbers __
+                >>= (Seq.min >> printDouble >> Some >> ok)
+
+[<Name("avg"); Sealed>]
+type AvgFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkAtLeastNPopulatedArguments 1 __
+            >>= fun _ -> 
+                arguments 
+                |> getArgumentsAsNumbers __
+                >>= (Seq.average >> printDouble >> Some >> ok)
+
+[<Name("len"); Sealed>]
+type LenFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkItHasNPopulatedArguments 1 __
+            >>= fun _ -> arguments.[0].Value.Length 
+                         |> (string >> Some >> ok)
+                
+
+[<Name("upper"); Sealed>]
+type UpperFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkItHasNPopulatedArguments 1 __
+            >>= fun _ -> arguments.[0].Value.ToUpper()
+                         |> (Some >> ok)
+
+[<Name("lower"); Sealed>]
+type LowerFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkItHasNPopulatedArguments 1 __
+            >>= fun _ -> arguments.[0].Value.ToLower()
+                         |> (Some >> ok)
+
+[<Name("substr"); Sealed>]
+type SubstrFunc() =
+    interface IComputedFunction with
+        member __.GetQuery(arguments : ComputedValues) = 
+            arguments |> checkItHasNPopulatedArguments 3 __
+            // Get start parameter
+            >>= fun _ -> arguments.[1].Value |> getInt __ 2 
+            // Get length parameter
+            >+= (arguments.[2].Value |> getInt __ 3)
+            // Compute substring
+            >>= fun (offset, length) ->
+                fun _ -> arguments.[0].Value.Substring(offset, length)
+                         |> (Some >> ok)
+                |> tryExec __
+                         
+
 //[<Name("isblank"); Sealed>]
 //type IsBlankFunc() =
 //    interface IFlexQueryFunction with
@@ -324,7 +254,7 @@ open System
 //                                                | None -> fail <| ExpectingSearchProfile("If first parameter of isblank function is a field, then a search profile query is needed")
 //                    | x -> fail <| FunctionParamTypeMismatch(typeName, "Search profile field", sprintf "%A" x)
 //            with | e -> fail <| FunctionExecutionError(__.GetType() |> getTypeNameFromAttribute, e)
-//
+
 //[<Name("endswith"); Sealed>]
 //type EndsWithFunc() = 
 //    interface IFlexQueryFunction with

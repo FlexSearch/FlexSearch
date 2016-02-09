@@ -23,8 +23,7 @@ open System
 module SearchQueryHelpers =
     let getPopulatedArguments (arguments : ComputedValues) =
         arguments
-        |> Array.where (fun a -> a.IsSome)
-        |> Array.map (fun a -> a.Value)
+        |> Array.choose id
 
     let checkItHasNArguments n (instance : 'T) (arguments : ComputedValues) =
         if arguments.Length = n then okUnit
@@ -68,4 +67,35 @@ module SearchQueryHelpers =
         then getMatchAllDocsQuery() |> ok
         else f()
     
+    let getNumeric instance argumentNumber (str : string) = 
+        match Double.TryParse str with
+        | true, value -> ok value
+        | _ -> let functionName = instance.GetType() |> getTypeNameFromAttribute
+               fail <| ExpectingNumericData(sprintf "\nFunction name: %s\nArgument number: %d\nActual data: %s"
+                                                    functionName
+                                                    argumentNumber
+                                                    str)
 
+    let getInt instance argumentNumber (str : string) = 
+        match Int32.TryParse str with
+        | true, value -> ok value
+        | _ -> let functionName = instance.GetType() |> getTypeNameFromAttribute
+               fail <| ExpectingIntegerData(sprintf "\nFunction name: %s\nArgument number: %d\nActual data: %s"
+                                                    functionName
+                                                    argumentNumber
+                                                    str)
+
+    let getArgumentsAsNumbers instance (arguments : ComputedValues) =
+        let populatedArgs = arguments |> getPopulatedArguments
+        populatedArgs
+        |> Seq.zip [1 .. populatedArgs.Length]
+        >>>= fun (idx, arg) -> getNumeric instance idx arg
+                
+    let printDouble (d : double) = d.ToString("F")
+
+    let tryExec instance (func : unit -> Result<'T>) =
+        try func()
+        with e -> let functionName = instance.GetType() |> getTypeNameFromAttribute
+                  fail <| FunctionExecutionError(functionName, e)
+
+    

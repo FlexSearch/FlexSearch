@@ -239,6 +239,7 @@ type SearchMessage =
     | PredefinedQueryUnsupportedFieldValue of fieldName : string
     | DataCannotBeParsed of fieldName : string * expectedDataType : string
     | ExpectingNumericData of fieldName : string
+    | ExpectingIntegerData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
     | QueryStringParsingError of error : string * queryString : string
     | MethodCallParsingError of error : string
@@ -270,6 +271,7 @@ type SearchMessage =
             | UnknownMissingVauleOption(f) -> sprintf "Unknown missing field value option: %s" f
             | DataCannotBeParsed(f, e) -> sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
+            | ExpectingIntegerData(f) -> sprintf "Expecting numeric data: %s" f
             | QueryOperatorFieldTypeNotSupported(f) -> 
                 sprintf "Query operator field type not supported for field '%s'" f
             | QueryStringParsingError(e,q) -> sprintf "Query string parsing error: \n%s\n\nQuery String:\n%s" e q
