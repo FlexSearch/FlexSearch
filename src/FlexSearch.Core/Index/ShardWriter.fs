@@ -67,7 +67,7 @@ module ShardWriter =
             if sw.Settings.CommitOnClose then
                 sw |> commit false
             sw.IndexWriter.Close()
-        with e -> ()
+        with e -> Logger.Log(e, MessageKeyword.Index, MessageLevel.Warning)
     
     /// Adds a document to this index.
     let addDocument (document : LuceneDocument) (sw : ShardWriter) = 

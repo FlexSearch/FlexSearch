@@ -122,7 +122,10 @@ module Helpers =
 
     let loopFiles (dir : string) = Directory.EnumerateFiles(dir)
     let createDir (dir : string) = Directory.CreateDirectory(dir) |> ignore
-    let emptyDir (path) = loopDir path |> Seq.iter (loopFiles >> Seq.iter File.Delete)
+    let rec emptyDir path = 
+        loopFiles path |> Seq.iter File.Delete
+        loopDir path |> Seq.iter (fun dirPath -> emptyDir dirPath
+                                                 Directory.Delete(dirPath, true))
     
     let delDir (path) = 
         emptyDir path
