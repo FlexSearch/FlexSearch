@@ -81,6 +81,7 @@ let loadAllPlugins() =
     for file in Directory.EnumerateFiles(Constants.PluginFolder, "*.dll", SearchOption.TopDirectoryOnly) do
         try 
             System.Reflection.Assembly.LoadFile(file) |> ignore
+            Logger.Log("Loaded external plugin " + Path.GetFileName(file), MessageKeyword.Startup, MessageLevel.Info)
         with e -> Logger.Log("Error loading plug-in library.", e, MessageKeyword.Startup, MessageLevel.Warning)
     
 open FlexSearch.Server.HomepageGenerator
@@ -96,4 +97,5 @@ let load() =
     initializeListeners()
     subscribeToUnhandledExceptions()
     generateHomePage()
+    loadAllPlugins()
     loadSettings()
