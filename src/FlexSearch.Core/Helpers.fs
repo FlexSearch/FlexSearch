@@ -128,8 +128,16 @@ module Helpers =
                                                  Directory.Delete(dirPath, true))
     
     let delDir (path) = 
-        emptyDir path
-        Directory.Delete(path, true)
+        let mutable attempt = 0
+        let rec delete(path) =
+            if attempt <= 3 then
+                try
+                    emptyDir path
+                    Directory.Delete(path, true)
+                with _ -> 
+                    attempt <- attempt + 1
+                    delete path
+        delete path
     
     /// Check for null
     let inline isNull (x : ^a when ^a : not struct) = obj.ReferenceEquals(x, Unchecked.defaultof<_>)
