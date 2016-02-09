@@ -67,6 +67,7 @@ module DataHelpers =
                 document.Fields.Add(headers.[i].Trim(), items.[i].Trim())
             test <@ succeeded <| documentService.AddDocument(document) @>
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+        test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = lines.Count() - 1 @>
 
     let container = Main.setupDependencies true <| Settings.T.GetDefault()
     let serverSettings = container.Resolve<Settings.T>()
