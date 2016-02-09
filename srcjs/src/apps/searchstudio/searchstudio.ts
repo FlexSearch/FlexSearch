@@ -69,7 +69,7 @@ module flexportal {
       
       // Function to help in Autocomplete
       var generateQueryComments = function() {
-        var queryComments = "-- DO NOT MODIFY THIS LINE _id _lastmodified _score matchall like fuzzy eq match regex ";
+        var queryComments = "-- DO NOT MODIFY THIS LINE _id _lastmodified _score allOf anyOf like fuzzy matchall regex upToWordsApart isBlank exact gt ge lt le ";
         if($scope.ActiveIndex)
           queryComments += $scope.ActiveIndex.Fields.map(f => f.Name).join(' ');
         return queryComments + '\n'; 
