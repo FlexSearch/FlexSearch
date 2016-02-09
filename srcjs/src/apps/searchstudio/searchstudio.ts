@@ -168,7 +168,7 @@ module flexportal {
             Value: undefined,
             Show: true }; 
           });
-          idx.SearchProfiles = i.searchProfiles.map(sp => { 
+          idx.SearchProfiles = i.predefinedQueries.map(sp => { 
             return {
               Name: sp.queryName, 
               QueryString: sp.queryString } });
@@ -186,27 +186,27 @@ module flexportal {
         // Search Profile test
         if($scope.ProfileMode) {
             // Build the Search Query String
-            var searchQueryString = index.Fields
+            var variables : {[key: string] : string} = {};
+            index.Fields
                 .filter(f => f.Value != undefined && f.Value != "")
-                .map(f => f.Name + ":'" + f.Value + "'")
-                .join(",");
+                .forEach((value, index) => variables[value.Name] = value.Value);
             
             // Colate the columns to retrieve
             var columns = index.Fields
                 .filter(f => f.Show)
                 .map(f => f.Name);
-                
-            var spReq : API.Client.SearchProfileTestDto = {
-                searchProfile: extractSearchQueryFromACE(),
-                searchQuery: {
-                    indexName: index.Name,
-                    queryString: searchQueryString || "_id matchall 'x'",
-                    columns: columns.length == 0 ? undefined : columns,
-                    count: $scope.RecordsToRetrieve
-                } 
+            
+            var sq = {
+                indexName: index.Name,
+                queryString: extractSearchQueryFromACE() || "_id matchall 'x'",
+                variables: variables,
+                columns: columns.length == 0 ? undefined : columns,
+                count: $scope.RecordsToRetrieve
             };
             
-            flexQuery = searchApi.doSearchProfileTestHandled(spReq, index.Name); 
+            console.log("SearchQuery: ", sq);
+            
+            flexQuery = searchApi.postSearchHandled(sq, index.Name); 
         }
         // Plain Search test
         else {

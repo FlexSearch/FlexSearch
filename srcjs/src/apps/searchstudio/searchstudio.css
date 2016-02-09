@@ -6,3 +6,7 @@ md-progress-linear {
 	z-index: 10;
 	margin-top: -5px !important;
 }
+
+.search-fields, .profile-fields {
+    min-height: 45px;
+}

@@ -9,14 +9,14 @@
         </md-toolbar>
         <md-subheader ng-show="ActiveIndex">{{ProfileMode ? "Populate fields from the below list to be used in the Search Profile test" : "Select the fields
             from the below list to output in the search result"}}</md-subheader>
-        <md-content flex layout="row" layout-align="center">
+        <div flex layout="row" layout-align="center" >
             <md-content flex layout="column" class="scrollable">
-                <div ng-show="ActiveIndex">
+                <div ng-show="ActiveIndex" style="padding-bottom: 30px;">
                     <md-checkbox class="md-primary" ng-model="ReturnAllColumns" ng-init="ReturnAllColumns=true" ng-click="onReturnAllColumnsClick()">Return all columns</md-checkbox>
                     <md-divider></md-divider>
                 </div>
                 <!-- Fields for Search page -->
-                <div ng-repeat="field in ActiveIndex.Fields" ng-show="!ProfileMode">
+                <div ng-repeat="field in ActiveIndex.Fields" ng-show="!ProfileMode" class="search-fields">
                     <md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results">{{field.Name}}</md-checkbox>
                 </div>
                 <!-- Fields for Search profile page -->
@@ -32,15 +32,15 @@
                     </div>
                 </div>
             </md-content>
-        </md-content>
+        </div>
     </div>
     <md-whiteframe id="session-comparison-box" flex layout="column">
         <md-toolbar>
             <div class="md-toolbar-tools">
                 <h3>Search Studio</h3>
                 <div flex></div>
-                <md-switch class="md-primary md-warn" ng-model="ProfileMode" ng-click="updatePage()" aria-label="Profile Mode">
-                    Profile Mode
+                <md-switch class="md-primary md-warn" ng-model="ProfileMode" ng-click="updatePage()" aria-label="Predefined Query Mode">
+                    Predefined Query Mode
                 </md-switch>
                 <md-button ng-click="submit(Indices[IndexNumber])" type="submit" ng-disabled="form.$invalid || !validateSubmit()">
                     <md-icon ng-class="md-light">send</md-icon>Submit</md-button>

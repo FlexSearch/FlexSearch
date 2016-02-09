@@ -140,7 +140,7 @@ module apiHelpers {
             fileName: fileName,
             threadCount: threadCount,
             indexName: indexName,
-            profileName: searchProfile,
+            predefinedQueryName: searchProfile,
             maxRecordsToScan: maxRecordsToScan,
             duplicatesCount: maxDupsToReturn
         }, indexName, searchProfile);
