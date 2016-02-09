@@ -169,8 +169,8 @@ module flexportal {
         .then(() => $q.all(
           $scope.Indices.map(i => this.indicesApi.getIndexSizeHandled(i.indexName))))
         // Store the disk size of the indices
-        .then(sizes => {
-          $scope.Indices.forEach((idx, i) => idx.DiskSize = sizes[i]);
+        .then((sizes : API.Client.IndexSizeResponse[]) => {
+          $scope.Indices.forEach((idx, i) => idx.DiskSize = sizes[i].data);
           $scope.ChartsDataStore['disk'] = {
             Data: $scope.Indices.map(i => i.DiskSize),
             Labels: $scope.Indices.map(i => i.indexName)
@@ -197,7 +197,7 @@ module flexportal {
           var shards = ClusterController.toPercentage(
             $scope.Indices.map(i => i.shardConfiguration.shardCount));
           var profiles = ClusterController.toPercentage(
-            $scope.Indices.map(i => i.searchProfiles.length));
+            $scope.Indices.map(i => i.predefinedQueries.length));
           var fields = ClusterController.toPercentage(
             $scope.Indices.map(i => i.fields.length));
           
@@ -223,6 +223,8 @@ module flexportal {
             
             radarData.datasets.push(ds);
           })
+          
+          console.log("Radar data:", radarData);
           
           ClusterController.createChart("radar", $('#overall'), $scope.RadarChart, 
             radarData, { responsive: false });
