@@ -28,6 +28,20 @@ type ``Function Tests``(computedFunctions : Dictionary<string, IComputedFunction
             test <@ result = (ok <| Some expected) @>
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
+    let getNumeric r =
+        match r with 
+        | Ok(Some(x)) -> Double.Parse(x)
+        | Ok(None) -> failwith "received nothing"
+        | Fail(e) -> failwith <| e.OperationMessage().Message
+
+    let isEqualToN expected (variables : (string * string) list) inputText = 
+        match ParseComputableFunction inputText with
+        | Ok(cv) -> 
+            let v = variables.ToDictionary(fst, snd)
+            let result = computeValue searchBaggage v "" cv
+            test <@ getNumeric result = expected @>
+        | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
+
     let parsesTo expected inputText =
         match ParseFieldFunction inputText with
         | Ok(ff) -> test <@ ff = expected @>
@@ -42,43 +56,43 @@ type ``Function Tests``(computedFunctions : Dictionary<string, IComputedFunction
         | x -> raise <| invalidOp (sprintf "Couldn't parse to a function call. Received instead:\n%A" x)
 
     member __.``Adding 1 to 2 should return 3``() =
-        "add('1','2')" |> isEqualTo "3" []
+        "add('1','2')" |> isEqualToN 3.0 []
 
     member __.``Query function names should be case insensitive``() =
-        "Add('1','2')" |> isEqualTo "3" []
+        "Add('1','2')" |> isEqualToN 3.0 []
 
     member __.``Adding 1 to a numeric field should return field + 1``() =
-        "add('1',@field)" |> isEqualTo "3" [("field","2")]
+        "add('1',@field)" |> isEqualToN 3.0 [("field","2")]
 
     member __.``Adding 1 to a function that adds 1 to 1 should return 3``() =
-        "add('1',add('1','1'))" |> isEqualTo "3" []
+        "add('1',add('1','1'))" |> isEqualToN 3.0 []
         
     member __.``Adding 3 four times should return 12``() =
-        "add('3','3','3','3')" |> isEqualTo "12" []
+        "add('3','3','3','3')" |> isEqualToN 12.0 []
 
     member __.``Adding -1 to a number should substract 1 from that number``() =
-        "add('-1','5')" |> isEqualTo "4" []
+        "add('-1','5')" |> isEqualToN 4.0 []
 
     member __.``2 * 2 should return 4``() =
-        "multiply('2','2')" |> isEqualTo "4" []
+        "multiply('2','2')" |> isEqualToN 4.0 []
 
     member __.``A number multiplied by -1 should return that negative number``() =
-        "multiply('-1','50')" |> isEqualTo "-50" []
+        "multiply('-1','50')" |> isEqualToN -50.0 []
 
     member __.``Max should return the maximum of the given numbers``() =
-        "max('2','2','7','5','4')" |> isEqualTo "7" []
+        "max('2','2','7','5','4')" |> isEqualToN 7.0 []
 
     member __.``Min should return the minimum of the given numbers``() =
-        "min('3','2','7','5','4')" |> isEqualTo "2" []
+        "min('3','2','7','5','4')" |> isEqualToN 2.0 []
 
     member __.``Avg should return the average of the given numbers``() =
-        "avg('3','2','7','5','4')" |> isEqualTo "4.2" []
+        "avg('3','2','7','5','4')" |> isEqualToN 4.2 []
 
     member __.``Len should return the length of a given string``() =
-        "len('this is sparta!!')" |> isEqualTo "16" []
+        "len('this is sparta!!')" |> isEqualToN 16.0 []
 
     member __.``Len should return 0 for empty string``() =
-        "len('')" |> isEqualTo "0" []
+        "len('')" |> isEqualToN 0.0 []
 
     member __.``Len should throw an error if more than one parameter is given``() =
         "len('some string', 'some other parameter')" |> fails []
