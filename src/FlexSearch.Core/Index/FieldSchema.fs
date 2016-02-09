@@ -134,7 +134,7 @@ module FieldSchema =
     let allowSorting (schema : FieldSchema) = schema |> hasDocValues
     
     /// Signifies if the field is numeric
-    let isNumericField (schema : FieldSchema) = schema.TypeIdentity.Value &&& Numeric <> 0
+    let isNumericField (schema : FieldSchema) = schema.TypeIdentity.Value &&& Numeric = 0
     
     /// Generate the identity value from the given array
     let generateIdentity (values : int []) = { Value = values |> Array.fold (|||) 0 }
