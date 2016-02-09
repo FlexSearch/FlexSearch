@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open FlexLucene.Search
 open System
 
 module SearchQueryHelpers =
@@ -62,5 +63,9 @@ module SearchQueryHelpers =
             |> fun s -> if String.IsNullOrEmpty s then None 
                         else Some(Int32.Parse s)
 
+    let ignoreOrExecuteFunction (arguments : ComputedValues) (f : unit -> Result<Query>) =
+        if arguments |> getPopulatedArguments |> Array.isEmpty 
+        then getMatchAllDocsQuery() |> ok
+        else f()
     
 

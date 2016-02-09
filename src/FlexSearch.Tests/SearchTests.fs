@@ -340,7 +340,7 @@ id,et1,h1
         hlighlightOptions.PreTag <- "<imp>"
         hlighlightOptions.PostTag <- "</imp>"
         let result = 
-            getQuery (index.IndexName, "h1 match 'practical approach'")
+            getQuery (index.IndexName, "allof(h1, 'practical approach')")
             |> withColumns [| "*" |]
             |> withHighlighting hlighlightOptions
             |> searchAndExtract searchService

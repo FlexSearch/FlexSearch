@@ -115,7 +115,10 @@ module QueryHelpers =
     // Queries
     // ----------------------------------------------------------------------------
     let inline getMatchAllDocsQuery() = new MatchAllDocsQuery() :> Query
-    let inline getBooleanQuery() = new BooleanQuery()
+    let inline getBooleanQuery() = 
+        let q = new BooleanQuery()
+        q.SetMinimumNumberShouldMatch(1)
+        q
     let inline getTermQuery fieldName text = new TermQuery(getTerm fieldName text) :> Query
     let inline getFuzzyQuery fieldName slop prefixLength text = 
         new FuzzyQuery((getTerm fieldName text), slop, prefixLength) :> Query

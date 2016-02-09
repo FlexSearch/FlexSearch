@@ -24,6 +24,10 @@ open System.Collections.Generic
 open SearchQueryHelpers
 open FlexLucene.Search
 
+// ------------- Convention ------------ //
+// When a search function returns a null Query, it means that that query shouldn't be
+// added to the parent query
+
 [<AutoOpen>]
 module Common =
     let anyAllOfBase fieldSchema arguments (instance : 'T) isAllOf =
@@ -60,28 +64,32 @@ module Common =
 type AllOfQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, _) = 
-            anyAllOfBase fieldSchema arguments __ true
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> anyAllOfBase fieldSchema arguments __ true
 
 [<Name("anyof"); Sealed>]
 type AnyOfQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, _) = 
-            anyAllOfBase fieldSchema arguments __ false
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> anyAllOfBase fieldSchema arguments __ false
             
 
 /// Fuzzy Query
 [<Name("fuzzy"); Sealed>]
 type FlexFuzzyQuery() = 
     interface IFieldFunction with
-        member __.GetQuery(fieldSchema, arguments, funcName) = 
-            let slop = extractDigits funcName |> byDefault 1
-            // TODO
-            //let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-            arguments |> checkAtLeastNPopulatedArguments 1 __
-            >>= fun _ -> 
-                zeroOneOrManyQuery 
-                <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
-                <| getFuzzyQuery fieldSchema.SchemaName slop 0 <| BooleanClauseOccur.MUST
+        member __.GetQuery(fieldSchema, arguments, funcName) =
+            ignoreOrExecuteFunction arguments
+            <| fun _ ->
+                let slop = extractDigits funcName |> byDefault 1
+                // TODO
+                //let prefixLength = parameters |> intFromOptDict "prefixlength" 0
+                arguments |> checkAtLeastNPopulatedArguments 1 __
+                >>= fun _ -> 
+                    zeroOneOrManyQuery 
+                    <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
+                    <| getFuzzyQuery fieldSchema.SchemaName slop 0 <| BooleanClauseOccur.MUST
 
 /// Match all Query
 [<Name("matchall"); Sealed>]
@@ -92,41 +100,48 @@ type FlexMatchAllQuery() =
 [<Name("uptowordsapart"); Sealed>]
 type UpToNWordsApartQuery() = 
     interface IFieldFunction with
-        member __.GetQuery(fieldSchema, arguments, funcName) = 
-            let slop = extractDigits funcName |> byDefault 0
-            phraseMatch fieldSchema arguments __ funcName slop
+        member __.GetQuery(fieldSchema, arguments, funcName) =
+            ignoreOrExecuteFunction arguments
+            <| fun _ ->  
+                let slop = extractDigits funcName |> byDefault 0
+                phraseMatch fieldSchema arguments __ funcName slop
 
 [<Name("exact"); Sealed>]
 type ExactMatchQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, funcName) = 
-            phraseMatch fieldSchema arguments __ funcName 0
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> phraseMatch fieldSchema arguments __ funcName 0
 
 /// Wildcard Query
 [<Name("like"); Sealed>]
 type FlexWildcardQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, _) =
-            arguments |> checkAtLeastNPopulatedArguments 1 __
-            >>= fun _ -> 
-                // Like query does not go through analysis phase as the analyzer would remove the
-                // special character
-                zeroOneOrManyQuery 
-                <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
-                <| getWildCardQuery fieldSchema.SchemaName 
-                <| BooleanClauseOccur.MUST
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> 
+                arguments |> checkAtLeastNPopulatedArguments 1 __
+                >>= fun _ -> 
+                    // Like query does not go through analysis phase as the analyzer would remove the
+                    // special character
+                    zeroOneOrManyQuery 
+                    <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
+                    <| getWildCardQuery fieldSchema.SchemaName 
+                    <| BooleanClauseOccur.MUST
 
 /// Regex Query
 [<Name("regex"); Sealed>]
 type RegexQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, _) = 
-            // Regex query does not go through analysis phase as the analyzer would remove the
-            // special character
-            zeroOneOrManyQuery 
-            <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
-            <| getRegexpQuery fieldSchema.SchemaName 
-            <| BooleanClauseOccur.MUST
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> 
+                // Regex query does not go through analysis phase as the analyzer would remove the
+                // special character
+                zeroOneOrManyQuery 
+                <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
+                <| getRegexpQuery fieldSchema.SchemaName 
+                <| BooleanClauseOccur.MUST
 
 // ----------------------------------------------------------------------------
 // Range Queries
@@ -136,39 +151,47 @@ type RegexQuery() =
 [<Name("gt"); Sealed>]
 type FlexGreaterQuery() = 
     interface IFieldFunction with
-        member __.GetQuery(fieldSchema, arguments, _) = 
-            arguments |> checkItHasNPopulatedArguments 1 __
-            >>= fun _ ->
-                fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-                                                          (arguments.[0].Value, Constants.Infinite) 
-                                                          (false, true)
+        member __.GetQuery(fieldSchema, arguments, _) =
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> 
+                arguments |> checkItHasNPopulatedArguments 1 __
+                >>= fun _ ->
+                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
+                                                              (arguments.[0].Value, Constants.Infinite) 
+                                                              (false, true)
 
 [<Name("ge"); Sealed>]
 type FlexGreaterThanEqualQuery() = 
     interface IFieldFunction with
-        member __.GetQuery(fieldSchema, arguments, _) = 
-            arguments |> checkItHasNPopulatedArguments 1 __
-            >>= fun _ ->
-                fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-                                                             (arguments.[0].Value, Constants.Infinite) 
-                                                             (true, true)
+        member __.GetQuery(fieldSchema, arguments, _) =
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> 
+                arguments |> checkItHasNPopulatedArguments 1 __
+                >>= fun _ ->
+                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
+                                                              (arguments.[0].Value, Constants.Infinite) 
+                                                              (true, true)
 
 [<Name("lt"); Sealed>]
 type FlexLessThanQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, _) = 
-            arguments |> checkItHasNPopulatedArguments 1 __
-            >>= fun _ ->
-                fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-                                                          (Constants.Infinite, arguments.[0].Value) 
-                                                          (true, false)
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> 
+                arguments |> checkItHasNPopulatedArguments 1 __
+                >>= fun _ ->
+                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
+                                                              (Constants.Infinite, arguments.[0].Value) 
+                                                              (true, false)
 
 [<Name("le"); Sealed>]
 type FlexLessThanEqualQuery() = 
     interface IFieldFunction with
         member __.GetQuery(fieldSchema, arguments, _) = 
-            arguments |> checkItHasNPopulatedArguments 1 __
-            >>= fun _ ->
-                fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-                                                          (Constants.Infinite, arguments.[0].Value) 
-                                                          (true, true)
+            ignoreOrExecuteFunction arguments
+            <| fun _ -> 
+                arguments |> checkItHasNPopulatedArguments 1 __
+                >>= fun _ ->
+                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
+                                                              (Constants.Infinite, arguments.[0].Value) 
+                                                              (true, true)
