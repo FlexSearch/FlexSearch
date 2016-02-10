@@ -66,8 +66,6 @@
     <Compile Include="ServiceTests.fs" />
     <Compile Include="ProtocolTests.fs" />
     <Compile Include="ScriptingTests.fs" />
-    <Compile Include="FieldSchemaTests.fs" />
-    <Compile Include="IndexTests.fs" />
     <Compile Include="SearchTests.fs" />
     <Compile Include="QueueTests.fs" />
     <Compile Include="QueryFunctionTests.fs" />
@@ -79,6 +77,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="AnalysisTests.fs" />
+    <Compile Include="Index\FieldSchemaTests.fs" />
+    <Compile Include="Index\IndexTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">
