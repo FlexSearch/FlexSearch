@@ -297,7 +297,7 @@ type TextField() as self =
 /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
 /// intend to use for sorting or access through the field cache.
 type ExactTextField(?defaultFieldName) as self = 
-    inherit FieldBase<String>(StringField.TYPE_STORED, SortFieldType.SCORE, "null", defaultFieldName)
+    inherit FieldBase<String>(StringField.TYPE_STORED, SortFieldType.STRING, "null", defaultFieldName)
     let getRangeQuery schemaName (lowerRange : string, upperRange : string) (inclusiveMinimum, inclusiveMaximum) = 
         ok 
         <| (new TermRangeQuery(schemaName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes lowerRange), 
