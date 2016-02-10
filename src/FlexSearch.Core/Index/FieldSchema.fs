@@ -198,7 +198,7 @@ module FieldSchema =
         let getAnalyzers (field : FlexField) = 
             maybe { 
                 // These are the only two field types which support custom analyzer
-                if field.FieldType = FieldType.Text || field.FieldType = FieldType.ExactText then 
+                if field.FieldType = FieldType.Text then 
                     let! searchAnalyzer = getAnalyzer field.SearchAnalyzer
                     let! indexAnalyzer = getAnalyzer field.IndexAnalyzer
                     return Some <| { IndexAnalyzer = indexAnalyzer
