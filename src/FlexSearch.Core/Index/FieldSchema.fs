@@ -170,8 +170,6 @@ module FieldSchema =
             properties.Add(Int)
         else if numericType = FieldTypeNumericType.LONG then
             properties.Add(Long)
-        else if numericType = FieldTypeNumericType.DOUBLE then
-            properties.Add(Double)
         properties.ToArray() |> generateIdentity
     
     /// Build a Schema field from the Field DTO
