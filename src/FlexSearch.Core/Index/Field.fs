@@ -158,7 +158,7 @@ type IntField() =
             { 
             let! lower = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") lowerRange JavaIntMin 
                              Int32.TryParse javaInt
-            let! upper = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") upperRange JavaIntMin 
+            let! upper = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") upperRange JavaIntMax 
                              Int32.TryParse javaInt
             return NumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new IntField() :> FieldBase
