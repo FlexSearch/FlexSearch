@@ -310,7 +310,7 @@ type ExactTextField(?defaultFieldName) as self =
         else value.ToLowerInvariant() // ToLower is necessary to make searching case insensitive
     
     override __.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
-        { Fields = [| CreateField.text <| self.GetSchemaName schemaName |]
+        { Fields = [| CreateField.string <| self.GetSchemaName schemaName |]
           DocValues = 
               if generateDV then Some <| [| CreateField.stringDV <| self.GetSchemaName schemaName |]
               else None }
