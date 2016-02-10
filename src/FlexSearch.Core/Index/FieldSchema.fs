@@ -161,6 +161,17 @@ module FieldSchema =
         if fieldType.StoreTermVectorPositions() then properties.Add(StoreTermPositions)
         if fieldType.StoreTermVectorPayloads() then properties.Add(StoreTermPayloads)
         if field.AllowSort then properties.Add(DocValues)
+        let numericType = fieldType.NumericType()
+        if numericType = FieldTypeNumericType.DOUBLE then
+            properties.Add(Double)
+        else if numericType = FieldTypeNumericType.FLOAT then
+            properties.Add(Float)
+        else if numericType = FieldTypeNumericType.INT then
+            properties.Add(Int)
+        else if numericType = FieldTypeNumericType.LONG then
+            properties.Add(Long)
+        else if numericType = FieldTypeNumericType.DOUBLE then
+            properties.Add(Double)
         properties.ToArray() |> generateIdentity
     
     /// Build a Schema field from the Field DTO
