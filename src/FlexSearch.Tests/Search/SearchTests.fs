@@ -7,7 +7,30 @@ open Swensen.Unquote
 open System.Linq
 open System
 
-
+/// defines the minimum set of tests that should be implemented for a 
+/// new operator
+[<AbstractClass>]
+type SearchTestsBase() =
+    abstract WorksWithExactField : unit -> unit
+    abstract WorksWithIdField : unit -> unit
+    abstract WorksWithLastModifiedField : unit -> unit
+    abstract WorksWithModifyIndex : unit -> unit
+    abstract WorksWithIntField : unit -> unit
+    abstract WorksWithLongField : unit -> unit
+    abstract WorksWithDoubleField : unit -> unit
+    abstract WorksWithFloatField : unit -> unit
+    abstract WorksWithDateTimeField : unit -> unit
+    abstract WorksWithDateField : unit -> unit
+    abstract WorksWithBoolField : unit -> unit
+    abstract WorksWithStoredField : unit -> unit
+    abstract WorksWithAndClause : unit -> unit
+    abstract WorksWithOrClause : unit -> unit
+    abstract WorksWithNotClause : unit -> unit
+    abstract WorksWithFilterClause : unit -> unit
+    abstract WorksWithAndOrClause : unit -> unit
+    abstract WorksWithMultipleParams : unit -> unit
+    abstract WorksWithFunctions : unit -> unit
+    abstract WorksWithConstants : unit -> unit
 
 type ``Column Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
@@ -596,62 +619,21 @@ id,et1,t1
     interface IDisposable with
         member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
 
-type ``Term Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
-    let testData = """
-id,t1,t2,i1
-1,Aaron,johnson,23
-2,aaron,hewitt,32
-3,Fred,Garner,44
-4,aaron,Garner,43
-5,fred,johnson,332"""
-    do indexTestData (testData, index, indexService, documentService)
-    member __.``Term match query supports array style syntax``() =
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "anyof(_id, '1','2')"
-    member __.``Searching for 'id eq 1' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, '1')"
-    member __.``Searching for int field 'i1 eq 44' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(i1, '44')"
-    member __.``Searching for 'aaron' should return 3 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "allof(t1, 'aaron')"
-    member __.``Searching for 'aaron' & 'johnson' should return 1 record``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'aaron') and allof(t2, 'johnson')"
-    member __.``Searching for t1 eq 'aaron' and (t2 eq 'johnson' or t2 eq 'Garner') should return 2 record``() = 
-        searchService 
-        |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
-    member __.``Searching for 'id = 1' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, '1')"
-    member __.``Searching for int field 'i1 = 44' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(i1, '44')"
-    member __.``Searching for t1 = 'aaron' should return 3 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "allof(t1, 'aaron')"
-    member __.``Searching for t1 = 'aaron' and t2 = 'johnson' should return 1 record``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'aaron') and allof(t2, 'johnson')"
-    member this.``Searching for t1 'aaron' & t2 'johnson or Garner' should return 2 record``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
-
-    interface IDisposable with
-        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
-
-type ``Term Match Complex Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Term Match Complex Tests``(ih : IntegrationHelper) = 
     let testData = """
 id,et1,t1
 1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
 2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artifacts such as machine code of computer programs.
 """
-    do indexTestData (testData, index, indexService, documentService)
+    do ih |> indexData testData
     member __.``Searching for multiple words will create a new query which will search all the words but not in specific order``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'CompSci abbreviated approach')"
+        ih |> verifyResultCount 1 "allof(t1, 'CompSci abbreviated approach')"
     member __.``Searching for multiple words will create a new query which will search all the words using AND style construct but not in specific order``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 0 "allof(t1, 'CompSci abbreviated approach undefinedword')"
+        ih |> verifyResultCount 0 "allof(t1, 'CompSci abbreviated approach undefinedword')"
     member __.``Setting 'clausetype' in condition properties can override the default clause construction from AND style to OR``() = 
-        searchService 
-        |> verifyReturnedDocsCount index.IndexName 1 
-               "anyof(t1, 'CompSci abbreviated approach undefinedword')"
+        ih |> verifyResultCount 1 "anyof(t1, 'CompSci abbreviated approach undefinedword')"
 
-    interface IDisposable with
-        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
-
-type ``Fuzzy WildCard Match Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Fuzzy WildCard Match Tests``(ih : IntegrationHelper) = 
     let testData = """
 id,t1,t2,i1
 1,Aaron,johnson,23
@@ -663,28 +645,25 @@ id,t1,t2,i1
 7,boat,,johnson,332
 8,moat,johnson,332
 """
-    do indexTestData (testData, index, indexService, documentService)
+    do ih |> indexData testData
     member __.``Searching for 't1 = aron' with default slop of 1 should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "fuzzy(t1, 'aron')"
+        ih |> verifyResultCount 5 "fuzzy(t1, 'aron')"
     member __.``Searching for 't1 = aron' with specified slop of 1 should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "fuzzy1(t1, 'aron')"
+        ih |> verifyResultCount 5 "fuzzy1(t1, 'aron')"
     member __.``Searching for 't1 = aron' with slop of 2 should return 6 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 6 "fuzzy2(t1, 'aron')"
+        ih |> verifyResultCount 6 "fuzzy2(t1, 'aron')"
     member __.``Searching for 't1 = aron?' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "like(t1, 'aron?')"
+        ih |> verifyResultCount 1 "like(t1, 'aron?')"
     member __.``Searching for 't1 = aron*' should return 2 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "like(t1, 'aron*')"
+        ih |> verifyResultCount 2 "like(t1, 'aron*')"
     member __.``Searching for 't1 = ar?n' should return 1 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "like(t1, 'ar?n')"
+        ih |> verifyResultCount 1 "like(t1, 'ar?n')"
     member __.``Searching for 't1 = AR?N' should return 1 records as matching is case in-sensitive even though like bypasses analysis``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "like(t1, 'AR?N')"
+        ih |> verifyResultCount 1 "like(t1, 'AR?N')"
     member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "regex(t1, '[mb]oat')"
+        ih |> verifyResultCount 2 "regex(t1, '[mb]oat')"
 
-    interface IDisposable with
-        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
-
-type ``Range Query Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Range Query Tests``(ih : IntegrationHelper) = 
     let testData = """
 id,i1
 1,1
@@ -693,31 +672,28 @@ id,i1
 4,15
 5,20
 """
-    do indexTestData (testData, index, indexService, documentService)
+    do ih |> indexData testData
     member __.``Searching for records with i1 in range 1 to 20 inclusive upper & lower bound should return 5 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "ge(i1, '1') and le(i1, '20')"
+        ih |> verifyResultCount 5 "ge(i1, '1') and le(i1, '20')"
     member __.``Searching for records with cvv in range 1 to 20 exclusive upper & lower bound should return 3 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "gt(i1, '1') and lt(i1, '20')"
+        ih |> verifyResultCount 3 "gt(i1, '1') and lt(i1, '20')"
     member __.``Searching for records with cvv in range 1 to 20 inclusive upper & exclusive lower bound should return 4 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "ge(i1, '1') and lt(i1, '20')"
+        ih |> verifyResultCount 4 "ge(i1, '1') and lt(i1, '20')"
     member __.``Searching for records with cvv in range 1 to 20 excluding upper & including lower bound should return 4 records``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "gt(i1 , '1') and le(i1 , '20')"
+        ih |> verifyResultCount 4 "gt(i1 , '1') and le(i1 , '20')"
     member __.``Searching for records with i1 > '1' should return 4"``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "gt(i1 , '1')"
+        ih |> verifyResultCount 4 "gt(i1 , '1')"
     member __.``Searching for records with i1 >= '1' should return 5``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "ge(i1 , '1')"
+        ih |> verifyResultCount 5 "ge(i1 , '1')"
     member __.``Searching for records with i1 < '20' should return 4``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "lt(i1 , '20')"
+        ih |> verifyResultCount 4 "lt(i1 , '20')"
     member __.``Searching for records with i1 <= '20' should return 5``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 5 "le(i1 , '20')"
-
-    interface IDisposable with
-        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+        ih |> verifyResultCount 5 "le(i1 , '20')"
 
 // ----------------------------------------------------------------------------
 // Analyzer specific search tests
 // ----------------------------------------------------------------------------
-type ``Phonetic matching tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Phonetic matching tests``(ih : IntegrationHelper) = 
     let testData = """
 id,t1
 1,smith
@@ -727,23 +703,20 @@ id,t1
 5,phish
 """
     do 
-        index.Fields.First(fun x -> x.FieldName = "t1").SearchAnalyzer <- "refinedsoundex"
-        index.Fields.First(fun x -> x.FieldName = "t1").IndexAnalyzer <- "refinedsoundex"
-        indexTestData (testData, index, indexService, documentService)
+        ih.Index.Fields.First(fun x -> x.FieldName = "t1").SearchAnalyzer <- "refinedsoundex"
+        ih.Index.Fields.First(fun x -> x.FieldName = "t1").IndexAnalyzer <- "refinedsoundex"
+        ih |> indexData testData
 
     member __.``Searching for t1 = 'smith' should return 2 records as smith and smyth are phonetic equivalents``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(t1, 'smith')"
+        ih |> verifyResultCount 2 "allof(t1, 'smith')"
 
     member __.``Searching for t1 = 'fish' should return 1 record as fish and phish are not phonetic equivalents``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(t1, 'fish')"
-
-    interface IDisposable with
-        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+        ih |> verifyResultCount 1 "allof(t1, 'fish')"
 
 // ----------------------------------------------------------------------------
 // Filed type specific search tests
 // ----------------------------------------------------------------------------
-type ``Exact Matching Field tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
+type ``Exact Matching Field tests``(ih : IntegrationHelper) = 
 
     let testData = """
 id,et1,b1
@@ -754,28 +727,25 @@ id,et1,b1
 CC,AA,FALSE
 """
     do 
-        indexTestData (testData, index, indexService, documentService)
+        ih |> indexData testData
 
     member __.``Searching for et1 = 'a' should return 1 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(et1, 'a')"
+        ih |> verifyResultCount 1 "allof(et1, 'a')"
 
     member __.``Searching for et1 = 'aa' should return 4 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 4 "allof(et1 , 'aa')"
+        ih |> verifyResultCount 4 "allof(et1 , 'aa')"
 
     member __.``Searching for b1 = 'true' should return 3 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 3 "allof(b1 , 'true')"
+        ih |> verifyResultCount 3 "allof(b1 , 'true')"
 
     member __.``Searching for b1 = 'FALSE' should return 2 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 2 "allof(b1 , 'FALSE')"
+        ih |> verifyResultCount 2 "allof(b1 , 'FALSE')"
 
     member __.``Searching for _id = 'CC' should return 1 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, 'CC')"
+        ih |> verifyResultCount 1 "allof(_id, 'CC')"
 
     member __.``Searching for _id = 'cc' should return 1 records as field is case insensitive``() = 
-        searchService |> verifyReturnedDocsCount index.IndexName 1 "allof(_id, 'cc')"
-
-    interface IDisposable with
-        member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>
+        ih |> verifyResultCount 1 "allof(_id, 'cc')"
 
 // ----------------------------------------------------------------------------
 // Queries with functions tests

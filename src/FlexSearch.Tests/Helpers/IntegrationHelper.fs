@@ -33,6 +33,10 @@ type IntegrationHelper =
       DocumentService : IDocumentService
       JobService : IJobService
       QueueService : IQueueService }
+    interface IDisposable with
+        member this.Dispose() =
+            // Delete index if it exists otherwise we don't care
+            this.IndexService.DeleteIndex(this.Index.IndexName) |> ignore
 
 [<AttributeUsage(AttributeTargets.Method)>]
 type IgnoreAttribute() = 
@@ -87,6 +91,9 @@ module DataHelpers =
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = lines.Count() - 1 @>
     
+    let indexData (testData : string) (ih: IntegrationHelper) =
+        indexTestData(testData, ih.Index, ih.IndexService, ih.DocumentService)
+
     let container = Main.setupDependencies true <| Settings.T.GetDefault()
     let serverSettings = container.Resolve<Settings.T>()
     let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
@@ -198,7 +205,6 @@ module SearchHelpers =
         test <@ result.Documents.[0].Fields.ContainsKey(expected) @>
     
     /// This is a helper method to combine searching and asserting on returned document count 
-    let verifyReturnedDocsCount (indexName : string) (expectedCount : int) (queryString : string) 
-        (searchService : ISearchService) = 
-        let result = getQuery (indexName, queryString) |> searchAndExtract searchService
-        result |> assertReturnedDocsCount expectedCount
+    let verifyResultCount (expectedCount : int) (queryString : string) (ih : IntegrationHelper) = 
+        let result = getQuery (ih.Index.IndexName, queryString) |> searchAndExtract ih.SearchService
+        result |> assertReturnedDocsCount expectedCount 
