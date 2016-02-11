@@ -399,6 +399,7 @@ module DocumentServiceTests =
             let document = new Document(indexName = index.IndexName, id = "1")
             test <@ succeeded <| documentService.AddDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
+            test <@ succeeded <| indexService.Commit(index.IndexName) @>
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
             test 

@@ -61,6 +61,8 @@
   </Target>
   <ItemGroup>
     <Compile Include="Helpers.fs" />
+    <Compile Include="Index\FieldSchemaTests.fs" />
+    <Compile Include="Index\IndexTests.fs" />
     <Compile Include="InfrastructureTests.fs" />
     <Compile Include="DomainTests.fs" />
     <Compile Include="ServiceTests.fs" />
@@ -77,8 +79,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="AnalysisTests.fs" />
-    <Compile Include="Index\FieldSchemaTests.fs" />
-    <Compile Include="Index\IndexTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Autofac">
