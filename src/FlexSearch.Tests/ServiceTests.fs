@@ -1,5 +1,5 @@
-﻿module ServiceTests
-
+﻿namespace FlexSearch.Tests.ServiceTests
+open FlexSearch.Tests
 open FlexSearch.Api.Model
 open FlexSearch.Api.Constants
 open FlexSearch.Core

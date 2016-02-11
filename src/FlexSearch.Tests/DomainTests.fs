@@ -1,5 +1,6 @@
-﻿module DomainTests
+﻿namespace FlexSearch.Tests.DomainTests
 
+open FlexSearch.Tests
 open FlexSearch.Api.Model
 open FlexSearch.Api
 open FlexSearch.Core

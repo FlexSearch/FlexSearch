@@ -1,5 +1,5 @@
-﻿module InfrastructureTests
-
+﻿namespace FlexSearch.Tests.InfrastructureTests
+open FlexSearch.Tests
 open FlexSearch.Core
 open Helpers
 open Swensen.Unquote

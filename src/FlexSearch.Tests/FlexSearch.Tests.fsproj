@@ -60,7 +60,8 @@
     <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
   </Target>
   <ItemGroup>
-    <Compile Include="Helpers.fs" />
+    <Compile Include="Helpers\IntegrationHelper.fs" />
+    <Compile Include="Helpers\Helpers.fs" />
     <Compile Include="Index\FieldSchemaTests.fs" />
     <Compile Include="Index\IndexTests.fs" />
     <Compile Include="InfrastructureTests.fs" />

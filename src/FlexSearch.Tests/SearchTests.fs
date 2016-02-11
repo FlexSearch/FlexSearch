@@ -1,5 +1,5 @@
-﻿module SearchTests
-
+﻿namespace FlexSearch.Tests.SearchTests
+open FlexSearch.Tests
 open FlexSearch.Api.Model
 open FlexSearch.Api.Constants
 open FlexSearch.Core
@@ -7,96 +7,7 @@ open Swensen.Unquote
 open System.Linq
 open System
 
-/// General search related helpers
-let getQuery (indexName, queryString) = new SearchQuery(indexName, queryString)
 
-let withName(name) (query : SearchQuery) =
-    query.QueryName <- name
-    query
-
-let withColumns (columns : string []) (query : SearchQuery) = 
-    query.Columns <- columns
-    query
-
-let withPredefinedQuery (profileName : string) (query : SearchQuery) = 
-    query.PredefinedQuery <- profileName
-    query
-
-let withVariables (variables: (string * string) list) (query : SearchQuery) =
-    query.Variables <- variables.ToDictionary(fst, snd)
-    query
-
-let withPredefinedQueryOverride (query : SearchQuery) =
-    query.OverridePredefinedQueryOptions <- true
-    query
-
-let withHighlighting (option : HighlightOption) (query : SearchQuery) = 
-    query.Highlights <- option
-    query
-
-let withOrderBy (column : string) (query : SearchQuery) = 
-    query.OrderBy <- column
-    query
-
-let withOrderByDesc (column : string) (query : SearchQuery) = 
-    query.OrderBy <- column
-    query.OrderByDirection <- OrderByDirection.Descending
-    query
-
-let withDistinctBy (column : string) (query : SearchQuery) = 
-    query.DistinctBy <- column
-    query
-
-let withNoScore (query : SearchQuery) = 
-    query.ReturnScore <- false
-    query
-
-let withCount (count : int) (query : SearchQuery) = 
-    query.Count <- count
-    query
-
-let withSkip (skip : int) (query : SearchQuery) = 
-    query.Skip <- skip
-    query
-
-let searchAndExtract (searchService : ISearchService) (query) = 
-    let result = searchService.Search(query)
-    test <@ succeeded <| result @>
-    (extract <| result)
-
-let searchExtractDocList (searchService : ISearchService) (query : SearchQuery) = 
-    let result = searchService.Search(query)
-    test <@ succeeded <| result @>
-    (extract <| result).Documents.ToList()
-
-/// Assertions
-/// Checks if the total number of fields returned by the query matched the expected
-/// count
-let assertFieldCount (expected : int) (result : SearchResults) = test <@ result.Documents.[0].Fields.Count = expected @>
-
-/// Check if the total number of document returned by the query matched the expected
-/// count
-let assertReturnedDocsCount (expected : int) (result : SearchResults) = 
-    test <@ result.Documents.Length = expected @>
-    test <@ result.RecordsReturned = expected @>
-
-let assertFieldValue (documentNo : int) (fieldName : string) (expectedFieldValue : string) (result : SearchResults) = 
-    test <@ result.Documents.Length >= documentNo + 1 @>
-    test <@ result.Documents.[documentNo].Fields.[fieldName] = expectedFieldValue @>
-
-/// Check if the total number of available document returned by the query matched the expected
-/// count
-let assertAvailableDocsCount (expected : int) (result : SearchResults) = test <@ result.TotalAvailable = expected @>
-
-/// Check if the field is present in the document returned by the query
-let assertFieldPresent (expected : string) (result : SearchResults) = 
-    test <@ result.Documents.[0].Fields.ContainsKey(expected) @>
-
-/// This is a helper method to combine searching and asserting on returned document count 
-let verifyReturnedDocsCount (indexName : string) (expectedCount : int) (queryString : string) 
-    (searchService : ISearchService) = 
-    let result = getQuery (indexName, queryString) |> searchAndExtract searchService
-    result |> assertReturnedDocsCount expectedCount
 
 type ``Column Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
