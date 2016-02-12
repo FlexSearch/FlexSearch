@@ -156,7 +156,9 @@ module SearchDsl =
         maybe {
             match predicate with
             | NotPredicate(pr) -> let! notQuery = generateQuery pr searchQuery baggage
-                                  return getBooleanQuery() |> addMustNotClause notQuery
+                                  return getBooleanQuery() 
+                                         |> addMustNotClause notQuery
+                                         |> addMatchAllClause
                                          :> Query
             | Clause(func) -> return! func |> compute baggage searchQuery.Variables
             | OrPredidate(lhs, rhs) -> 

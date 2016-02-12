@@ -153,6 +153,10 @@ module QueryHelpers =
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.SHOULD))
         baseQuery
     
+    let inline addMatchAllClause (baseQuery : BooleanQuery) = 
+        baseQuery.Add(new BooleanClause(getMatchAllDocsQuery(), BooleanClauseOccur.SHOULD))
+        baseQuery
+
     // ----------------------------------------------------------------------------
     // Query generators
     // ----------------------------------------------------------------------------
