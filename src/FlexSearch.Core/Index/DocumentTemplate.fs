@@ -60,6 +60,7 @@ module DocumentTemplate =
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
     let updateTempate (document : Document) (modifyIndex : int64) (template : DocumentTemplate) = 
+        document.ModifyIndex <- modifyIndex
         for i = 0 to template.Setting.Fields.Count - 1 do
             let f = template.Setting.Fields.[i]
             let tf = template.TemplateFields.[i]
