@@ -33,11 +33,13 @@ open Swensen.Unquote
 type SearchParserTests() = 
     member __.``Single escape character should be accepted``() = test1 FlexSearch.Core.Parsers.constant "'abc \\' pqr'"
     
-    [<InlineData("anyOf(abc, 'a')")>]
+    [<InlineData("anyof(abc, 'a')")>]
     [<InlineData("not anyOf(abc, 'a')")>]
     [<InlineData("(anyOf(abc, '1'))")>]
-    [<InlineData("boost(anyOf(abc, 'as'), '21')")>]
-    [<InlineData("applyDelete(boost(anyOf(abc, 'as'), '21'), 'true')")>]
+    [<InlineData("anyOf(abc, 'as', -filter)")>]
+    [<InlineData("anyOf(abc, 'as', -filter, -boost '21')")>]
+    [<InlineData("anyOf(abc, 'as', -boost '21', -filter)")>]
+    [<InlineData("anyOf(abc, 'as', '21', 'true',-boost)")>]
     [<InlineData("anyOf(abc, 'a') and anyOf(pqr, 'b')")>]
     [<InlineData("anyOf(abc, 'a') or anyOf(pqr, 'b')")>]
     [<InlineData("anyOf(abc, 'a') and ( anyOf(pqr, 'b'))")>]
@@ -52,40 +54,13 @@ type SearchParserTests() =
     [<InlineData("ge(abc, '1\\'2')")>]
     [<InlineData("not (anyOf(abc, 'sdsd') and anyOf(abc, 'asasa')) and anyOf(pqr, 'asas')")>]
     [<InlineData("anyOf(abc, 'a') AND anyOf(pr, 'b')")>]
-    [<Ignore>]
+    [<InlineData("anyOf(i1, @i2,@i1,'-2')")>]
     member __.``Simple expression should parse`` (sut : string) = test2 sut
     
-    [<InlineData("anyOf(abc, add('1','2'))")>]
-    [<InlineData("anyOf(abc, add('1'))")>]
-    [<InlineData("anyOf(abc, add(@field1,@field2))")>]
-    [<InlineData("anyOf(i1, add(@i2,@i1,'-2'))")>]
-    [<InlineData("anyof(abc, add('1',max(@field1,@field2)))")>]
-    [<InlineData("anyOf(abc, any('true','false','false'))")>]
-    [<InlineData("gt(abc, sqrt(add(haversin(@delta),multiply(cos(@fi1),cos(@fi2)))))")>]
-    [<InlineData("boost(endswith(field, 'value'), '32')")>]
-    member __.``Expression with function should parse`` (sut : string) = test2 sut
-    
-    [<InlineData("anyOf(abc, isnull(fieldName))")>]
-    [<InlineData("anyOf(abc, add('2', fieldName))")>]
-    member __.``Expression with function that has field name without hashtag shouldn't parse`` (sut : string) = 
-        testFails sut
-    
-    [<InlineData("anyOf(abc, fieldName)")>]
-    [<InlineData("anyOf(abc, fieldName1, fieldName2)")>]
-    member __.``Expression with value as field name without quotes shouldn't parse`` (sut : string) = testFails sut
-    
-    [<InlineData("anyOf(abc, #fieldName)")>]
-    [<InlineData("anyOf(abc, @fieldName))")>]
-    [<InlineData("anyOf((abc, 'x')")>]
-    [<InlineData("anyOf((abc, @fieldName))")>]
-    [<InlineData("boost(anyOf(abc, @fieldName), anyOf(abc, @fieldName))")>]
-    [<InlineData("boost('32', anyOf(abc, @fieldName))")>]
-    member __.``Random expressions that should fail`` (sut : string) = testFails sut
     
     [<InlineData("anyof(abc,'1234')")>]
     [<InlineData("anyOf ( abc ,'a1234')")>]
     [<InlineData("anyOf ( abc , 'a1234' )")>]
-    [<Ignore>]
     member __.``Expressions with spacing issues should parse`` (sut : string) = test2 sut
 
 type MethodParserTests() = 

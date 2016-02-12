@@ -87,41 +87,41 @@ module SearchDsl =
             else fail <| MissingVariableValue name
         | _ -> fail <| MissingVariableValue name
 
-    let rec getFieldNameFromFunction (func : Function) =
-        match func with
-        | FieldFunction(_,fieldName,_) -> fieldName
-        | QueryFunction(_,func',_) -> getFieldNameFromFunction func'
+//    let rec getFieldNameFromFunction (func : Function) =
+//        match func with
+//        | FieldFunction(_,fieldName,_) -> fieldName
+//        | QueryFunction(_,func',_) -> getFieldNameFromFunction func'
 
-    let computeVariable baggage variables (fieldNameFromContext : FieldName) (computableValue : ComputableValue) = 
-        match computableValue with
-        | Variable(variableName) ->
-            match variableName.ToUpper() with
-            | "IGNORE" -> ok None
-            | "DEFAULT" -> baggage.Fields |> getFieldDefaultValue fieldNameFromContext
-                           >>= (Some >> ok)
-            | _ -> variables |> getVariable variableName
-                   >>= (Some >> ok)
-        | _ -> fail <| SearchError(sprintf "Expected to parse a variable, but got instead: %A" computableValue)
+//    let computeVariable baggage variables (fieldNameFromContext : FieldName) (computableValue : ComputableValue) = 
+//        match computableValue with
+//        | Variable(variableName) ->
+//            match variableName.ToUpper() with
+//            | "IGNORE" -> ok None
+//            | "DEFAULT" -> baggage.Fields |> getFieldDefaultValue fieldNameFromContext
+//                           >>= (Some >> ok)
+//            | _ -> variables |> getVariable variableName
+//                   >>= (Some >> ok)
+//        | _ -> fail <| SearchError(sprintf "Expected to parse a variable, but got instead: %A" computableValue)
 
-    let rec computeValue baggage variables (fieldNameFromContext : FieldName) (computableValue : ComputableValue) = 
-        match computableValue with
-        | Constant(value) -> value |> Some |> ok
-        | Variable(_) as var -> var |> computeVariable baggage variables fieldNameFromContext 
-        | ComputableFunction(funcName, cvs) -> 
-            if extractFunctionName funcName = ignoreFunctionHandlerName 
-            // Special case for functions that handle @IGNORE
-            then if cvs.Length <> 2 
-                 then fail <| NumberOfFunctionParametersMismatch(ignoreFunctionHandlerName, 2, cvs.Length)
-                 else match computeVariable baggage variables fieldNameFromContext cvs.[0] with
-                      | Fail(_) -> computeValue baggage variables fieldNameFromContext cvs.[1]
-                      | origValue -> origValue
-            else
-                cvs
-                >>>= (computeValue baggage variables fieldNameFromContext)
-                >>= (Seq.toArray >> ok)
-                >>= fun computedValues -> 
-                        baggage.ComputedFunctions |> getFunction funcName
-                        >>= fun computedFunction -> computedFunction.GetQuery computedValues
+//    let rec computeValue baggage variables (fieldNameFromContext : FieldName) (computableValue : ComputableValue) = 
+//        match computableValue with
+//        | Constant(value) -> value |> Some |> ok
+//        | Variable(_) as var -> var |> computeVariable baggage variables fieldNameFromContext 
+//        | ComputableFunction(funcName, cvs) -> 
+//            if extractFunctionName funcName = ignoreFunctionHandlerName 
+//            // Special case for functions that handle @IGNORE
+//            then if cvs.Length <> 2 
+//                 then fail <| NumberOfFunctionParametersMismatch(ignoreFunctionHandlerName, 2, cvs.Length)
+//                 else match computeVariable baggage variables fieldNameFromContext cvs.[0] with
+//                      | Fail(_) -> computeValue baggage variables fieldNameFromContext cvs.[1]
+//                      | origValue -> origValue
+//            else
+//                cvs
+//                >>>= (computeValue baggage variables fieldNameFromContext)
+//                >>= (Seq.toArray >> ok)
+//                >>= fun computedValues -> 
+//                        baggage.ComputedFunctions |> getFunction funcName
+//                        >>= fun computedFunction -> computedFunction.GetQuery computedValues
 
     let computeFieldFunc baggage funcName fieldName cvs = 
         maybe {
@@ -134,20 +134,20 @@ module SearchDsl =
         baggage.QueryFunctions |> getFunction funcName
         >>= fun searchFunction -> searchFunction.GetQuery(query, computedValue)
 
-    let rec compute (baggage : SearchBaggage) (variables : Variables) (func : Function) =
-        match func with
-        | FieldFunction(funcName, fieldName, cvs) ->
-            cvs
-            >>>= (computeValue baggage variables fieldName )
-            >>= (Seq.toArray >> ok)
-            >>= (computeFieldFunc baggage funcName fieldName)
-        | QueryFunction(funcName, ``function``, funcArg) ->
-            ``function`` 
-            |> compute baggage variables
-            >>= fun query -> if funcArg.IsNone then ok (query, None)
-                             else computeValue baggage variables (getFieldNameFromFunction ``function``) funcArg.Value
-                                  >>= fun computedValue -> (query, computedValue) |> ok
-            >>= fun (q,cv) -> computeQueryFunction baggage funcName q cv
+//    let rec compute (baggage : SearchBaggage) (variables : Variables) (func : Function) =
+//        match func with
+//        | FieldFunction(funcName, fieldName, cvs) ->
+//            cvs
+//            >>>= (computeValue baggage variables fieldName )
+//            >>= (Seq.toArray >> ok)
+//            >>= (computeFieldFunc baggage funcName fieldName)
+//        | QueryFunction(funcName, ``function``, funcArg) ->
+//            ``function`` 
+//            |> compute baggage variables
+//            >>= fun query -> if funcArg.IsNone then ok (query, None)
+//                             else computeValue baggage variables (getFieldNameFromFunction ``function``) funcArg.Value
+//                                  >>= fun computedValue -> (query, computedValue) |> ok
+//            >>= fun (q,cv) -> computeQueryFunction baggage funcName q cv
 
     let rec generateQuery (predicate : Predicate)
                           (searchQuery : SearchQuery)
@@ -161,7 +161,7 @@ module SearchDsl =
                                          |> addMustNotClause notQuery
                                          |> addMatchAllClause
                                          :> Query
-            | Clause(funcName, fn, fparams) -> return! func |> compute baggage searchQuery.Variables
+            | Clause(_) -> return getBooleanQuery() :> Query
             | OrPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateQuery lhs searchQuery baggage
                 let! rhsQuery = generateQuery rhs searchQuery baggage

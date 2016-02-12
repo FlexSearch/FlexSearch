@@ -22,13 +22,7 @@ type FunctionName = string
 type FunctionParameter = 
     | Variable of VariableName // e.g. @IGNORE, @firstname
     | Constant of string // e.g. 'Vladimir', '26'
-    | Boost of int32 // e.g. Boost 12
-    | ConstantScore of int32 // e.g. ConstantScore 12
-    | UseDefault of string // e.g. UseDefault 'abc'
-    | Filter
-    | MatchAll
-    | MatchNone
-    | MatchDefault
+    | Switch of Name : string * value : string option // e.g. -UseDefault, -Filter, -ConstantScore: '32'
 
 /// Acceptable Predicates for a query
 type Predicate = 
@@ -36,6 +30,9 @@ type Predicate =
     | Clause of FunctionName * FieldName * FunctionParameter list
     | OrPredidate of Lhs : Predicate * Rhs : Predicate
     | AndPredidate of Lhs : Predicate * Rhs : Predicate
+    static member Or x y = OrPredidate(x, y)
+    static member And x y = AndPredidate(x, y)
+    static member Not x = NotPredicate(x)
 
 /// FlexParser interface
 type IFlexParser = 
@@ -61,55 +58,26 @@ module Parsers =
         let backslash = (pchar '\\') .>> followedBy (satisfy <| (<>) '\'')
         between (pstring "\'") (pstring "\'") (manyChars (normalChar <|> escapedChar <|> backslash)) .>> ws
     
-    let constant = stringLiteralAsString |>> Constant
-    
     /// Identifier implementation. Alphanumeric character without spaces
     let identifier = 
         many1SatisfyL (fun c -> 
             " ():',"
             |> String.exists ((=) c)
-            |> not) "Field name should be alpha number without '(', ')' and ' '."
-        .>> ws
-    
-    let anyCheck checks item = checks |> Seq.fold (fun acc value -> acc || value item) false
-    
-    let funcName = 
-        many1SatisfyL (anyCheck [ isLetter
-                                  isDigit
-                                  (=) '_' ]) "Function name should only have letters, digits and underscores"
+            |> not) "Field/Operator name should be alpha number without '(', ')' and ' '."
         .>> ws
     
     // Field parser
-    let field : Parser<FieldName, unit> = ws >>. identifier
-    
+    let field : Parser<FieldName, unit> = ws >>. identifier .>> str_ws ","
+    let funcName : Parser<FieldName, unit> = ws >>. identifier
+    let constant = stringLiteralAsString |>> Variable
     // Search Profile parser
-    let variable = 
-        str_ws "@" >>. identifier 
-        .>> followedByL (choice [ str_ws ","
-                                  str_ws ")" ]) 
-                "The variable name should be followed by either a comma or a closing round bracket"
-        |>> Variable
-    
-    let filter = str_ws "filter" |>> fun _ -> Filter
-    let matchAll = str_ws "matchall" |>> fun _ -> MatchAll
-    let matchNone = str_ws "matchNone" |>> fun _ -> MatchNone
-    let matchDefault = str_ws "matchDefault" |>> fun _ -> MatchDefault
-    let boost = str_ws "boost" >>. pint32 |>> Boost
-    let constantScore = str_ws "constantscore" >>. pint32 |>> ConstantScore
-    let useDefault = str_ws "UseDefault" >>. identifier |>> UseDefault
-    let computableValue = 
-        choice [ constant; variable; filter; matchAll; matchNone; matchDefault; boost; constantScore; useDefault ]
-    let parameters = sepBy computableValue (str_ws ",")
+    let variable = str_ws "@" >>. identifier |>> Constant
+    let switch = pipe2 (str_ws "-" >>. identifier) (opt stringLiteralAsString) (fun name value -> Switch(name, value))
+    let functionParameters = choice [ constant; variable; switch ]
+    let parameters = sepBy functionParameters (str_ws ",")
     let clause = 
-        pipe2 (ws >>. funcName) (str_ws "(" >>. field .>>. parameters .>> str_ws ")") 
-            (fun funcName (fn, parameters) -> Clause(funcName, fn, parameters))
-    
-    let tryParsing parser text = 
-        match run (ws >>. parser .>> eof) text with
-        | Success(result, _, _) -> ok result
-        | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg)
-    
-    type Assoc = Associativity
+        pipe3 (ws >>. funcName) (str_ws "(" >>. field) (parameters .>> str_ws ")") 
+            (fun funcName fn parameters -> Clause(funcName, fn, parameters))
     
     /// Generates all possible case combinations for the key words
     let private orCases = [ "or"; "oR"; "Or"; "OR" ]
@@ -130,20 +98,18 @@ module Parsers =
             choice [ (str_ws "(" >>? expr .>> str_ws ")")
                      clause ]
         
-        let Parser : Parser<_, unit> = ws >>. expr .>> eof
+        let parser : Parser<_, unit> = ws >>. expr .>> eof
         
         do 
             opp.TermParser <- term
-            orCases 
-            |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 1, Assoc.Left, fun x y -> OrPredidate(x, y))))
-            andCases 
-            |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 2, Assoc.Left, fun x y -> AndPredidate(x, y))))
-            notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, fun x -> NotPredicate(x))))
+            orCases |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 1, Associativity.Left, Predicate.Or)))
+            andCases |> List.iter (fun x -> opp.AddOperator(InfixOperator(x, ws, 2, Associativity.Left, Predicate.And)))
+            notCases |> List.iter (fun x -> opp.AddOperator(PrefixOperator(x, ws, 3, true, Predicate.Not)))
         
         interface IFlexParser with
             member __.Parse(input : string) = 
-                assert (input <> null)
-                match run Parser input with
+                assert (isNotNull input)
+                match run parser input with
                 | Success(result, _, _) -> ok result
                 | Failure(errorMsg, _, _) -> Operators.fail <| QueryStringParsingError(errorMsg, input)
     
@@ -162,5 +128,5 @@ module Parsers =
             match run parser queryString with
             | Success(result, _, _) -> ok result
             | Failure(errorMsg, _, _) -> Operators.fail <| MethodCallParsingError(errorMsg)
-        assert (input <> null)
+        assert (isNotNull input)
         funParser |> parse input
