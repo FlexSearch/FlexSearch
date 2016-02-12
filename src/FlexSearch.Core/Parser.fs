@@ -59,6 +59,7 @@ module Parsers =
         between (pstring "\'") (pstring "\'") (manyChars (normalChar <|> escapedChar <|> backslash)) .>> ws
     
     /// Identifier implementation. Alphanumeric character without spaces
+    ///Ex: identifier, firstname
     let identifier = 
         many1SatisfyL (fun c -> 
             " ():',"
@@ -66,22 +67,36 @@ module Parsers =
             |> not) "Field/Operator name should be alpha number without '(', ')' and ' '."
         .>> ws
     
-    // Field parser
+    /// A field to be used in a function
     let field : Parser<FieldName, unit> = ws >>. identifier .>> str_ws ","
+    
     let funcName : Parser<FieldName, unit> = ws >>. identifier
-    let constant = stringLiteralAsString |>> Variable
-    // Search Profile parser
-    let variable = str_ws "@" >>. identifier |>> Constant
+    
+    /// Format: String literal enclosed between single quotes 
+    let constant = stringLiteralAsString |>> Constant
+    
+    /// Format: Starts with @ followed by an identifier
+    /// Ex: @firstname 
+    let variable = str_ws "@" >>. identifier |>> Variable
+    
+    /// Format: Starts with - followed by an identifier. A switch 
+    /// may end with a value
+    /// -boost '32', -useDefault 
     let switch = pipe2 (str_ws "-" >>. identifier) (opt stringLiteralAsString) (fun name value -> Switch(name, value))
+    
+    /// NOTE: The current choice can be replaced with a more efficient
+    /// low level parser implementation to improve performance 
     let functionParameters = choice [ constant; variable; switch ]
+    
     let parameters = sepBy functionParameters (str_ws ",")
+    
+    /// FORMAT: functionName ( fieldName, parameters )
     let clause = 
         pipe3 (ws >>. funcName) (str_ws "(" >>. field) (parameters .>> str_ws ")") 
             (fun funcName fn parameters -> Clause(funcName, fn, parameters))
     
-    /// Generates all possible case combinations for the key words
+    // Generate all possible case combinations for the key words
     let private orCases = [ "or"; "oR"; "Or"; "OR" ]
-    
     let private andCases = [ "and"; "anD"; "aNd"; "aND"; "And"; "AnD"; "ANd"; "AND" ]
     let private notCases = [ "not"; "noT"; "nOt"; "nOT"; "Not"; "NoT"; "NOt"; "NOT" ]
     
