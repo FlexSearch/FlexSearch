@@ -161,7 +161,7 @@ module SearchDsl =
                                          |> addMustNotClause notQuery
                                          |> addMatchAllClause
                                          :> Query
-            | Clause(func) -> return! func |> compute baggage searchQuery.Variables
+            | Clause(funcName, fn, fparams) -> return! func |> compute baggage searchQuery.Variables
             | OrPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateQuery lhs searchQuery baggage
                 let! rhsQuery = generateQuery rhs searchQuery baggage
