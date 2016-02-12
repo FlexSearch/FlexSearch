@@ -186,6 +186,7 @@ module FieldSchema =
             match field.FieldType with
             | FieldType.Int -> IntField.Instance
             | FieldType.Double -> DoubleField.Instance
+            | FieldType.Float -> FloatField.Instance
             | FieldType.Bool -> BoolField.Instance
             | FieldType.Date -> DateField.Instance
             | FieldType.DateTime -> DateTimeField.Instance
