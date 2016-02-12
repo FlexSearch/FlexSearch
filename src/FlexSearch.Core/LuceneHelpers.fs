@@ -91,13 +91,20 @@ module JavaHelpers =
         | MinInfinite -> JavaLongMin
         | _ -> java.lang.Long(value)
     
-    let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) (parse : string -> bool * 'T) (converter : 'T -> 'U) =
+    let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) (parse : float -> 'T) (converter : 'T -> 'U) =
         if number = Constants.Infinite then
              ok <| infiniteValue
-        else 
-            match parse number with
-            | true, v -> ok <| converter v
-            | _ -> fail <| DataCannotBeParsed(schemaName, dataType)
+        else
+            // First parse the input as a double 
+            match Double.TryParse number with
+            | true, v -> ok v
+            | _ -> fail <| DataCannotBeParsed(schemaName, dataType, number)
+            // Then parse the double value as the target value: 'T
+            >>= fun doubleValue -> try parse doubleValue |> ok
+                                   with e -> fail <| DataCannotBeParsed(schemaName, dataType, number)
+            // Then convert the target value 'T to 'U
+            >>= (converter >> ok)
+            
 
 [<AutoOpenAttribute>]
 module QueryHelpers = 

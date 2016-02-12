@@ -563,7 +563,7 @@ id,et1,et2,i1,i2
         let result = 
             getQuery (index.IndexName, null)
             |> withPredefinedQuery "crossmatchwithfieldonlyfunc"
-            |> withVariables [("i1", "40"); ("i2", "23")]
+            |> withVariables [("i1", "40"); ("i2", "30")]
             |> withColumns [| "_id" |]
             |> withPredefinedQueryOverride
             |> searchAndExtract searchService
@@ -858,7 +858,7 @@ CC,AA,FALSE,40
             |> withColumns [| "_id" |]
             |> searchService.Search
         
-        test <@ result = (fail <| RhsValueNotFound("upper")) @>
+        test <@ result = (fail <| FunctionNotFound("upper")) @>
 
     member __.``endswith should be allowed in function-only conditions``() =
         let result = 

@@ -157,9 +157,9 @@ type IntField() =
         maybe 
             { 
             let! lower = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") lowerRange JavaIntMin 
-                             Int32.TryParse javaInt
+                             Convert.ToInt32 javaInt
             let! upper = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") upperRange JavaIntMax 
-                             Int32.TryParse javaInt
+                             Convert.ToInt32 javaInt
             return NumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new IntField() :> FieldBase
     
@@ -185,9 +185,9 @@ type DoubleField() =
         maybe 
             { 
             let! lower = parseNumber<double, java.lang.Double> (schemaName, "Double") lowerRange JavaDoubleMin 
-                             Double.TryParse javaDouble
+                             Convert.ToDouble javaDouble
             let! upper = parseNumber<double, java.lang.Double> (schemaName, "Double") upperRange JavaDoubleMax 
-                             Double.TryParse javaDouble
+                             Convert.ToDouble javaDouble
             return NumericRangeQuery.NewDoubleRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new DoubleField() :> FieldBase
     override this.Validate(value : string) = pDouble this.DefaultValue value
@@ -211,9 +211,9 @@ type FloatField() as self =
         maybe 
             { 
             let! lower = parseNumber<float32, java.lang.Float> (schemaName, "Float") lowerRange JavaFloatMin 
-                             Single.TryParse javaFloat
+                             Convert.ToSingle javaFloat
             let! upper = parseNumber<float32, java.lang.Float> (schemaName, "Float") upperRange JavaFloatMax 
-                             Single.TryParse javaFloat
+                             Convert.ToSingle javaFloat
             return NumericRangeQuery.NewFloatRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new FloatField() :> FieldBase
     override __.Validate(value : string) = pFloat self.DefaultValue value
@@ -236,10 +236,10 @@ type LongField(defaultValue : int64, ?defaultFieldName) as self =
     let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
         maybe 
             { 
-            let! lower = parseNumber<int64, java.lang.Long> (schemaName, "Long") lowerRange JavaLongMin Int64.TryParse 
-                             javaLong
-            let! upper = parseNumber<int64, java.lang.Long> (schemaName, "Long") upperRange JavaLongMax Int64.TryParse 
-                             javaLong
+            let! lower = parseNumber<int64, java.lang.Long> (schemaName, "Long") lowerRange JavaLongMin 
+                             Convert.ToInt64 javaLong
+            let! upper = parseNumber<int64, java.lang.Long> (schemaName, "Long") upperRange JavaLongMax
+                             Convert.ToInt64 javaLong
             return NumericRangeQuery.NewLongRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new LongField(0L) :> FieldBase
     override __.Validate(value : string) = pLong self.DefaultValue value

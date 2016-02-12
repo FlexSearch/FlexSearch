@@ -237,7 +237,7 @@ type SearchMessage =
     | FunctionExecutionError of functionName : string * ``exception`` : Exception
     | UnknownMissingVauleOption of fieldName : string
     | PredefinedQueryUnsupportedFieldValue of fieldName : string
-    | DataCannotBeParsed of fieldName : string * expectedDataType : string
+    | DataCannotBeParsed of fieldName : string * expectedDataType : string * actualValue : string
     | ExpectingNumericData of fieldName : string
     | ExpectingIntegerData of fieldName : string
     | QueryOperatorFieldTypeNotSupported of fieldName : string
@@ -269,7 +269,7 @@ type SearchMessage =
             | FunctionNotFound(f) -> sprintf "Function not found: %s" f
             | FunctionExecutionError(n,e) -> sprintf "Error when executing function %s: %s" n e.Message
             | UnknownMissingVauleOption(f) -> sprintf "Unknown missing field value option: %s" f
-            | DataCannotBeParsed(f, e) -> sprintf "Data cannot be parsed for field '%s'. Expected data type %s." f e
+            | DataCannotBeParsed(f,e,a) -> sprintf "Data cannot be parsed for field '%s'. Expected data type %s. Actual value %s" f e a
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
             | ExpectingIntegerData(f) -> sprintf "Expecting numeric data: %s" f
             | QueryOperatorFieldTypeNotSupported(f) -> 
