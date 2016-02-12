@@ -113,6 +113,7 @@
     <Compile Include="Search\SearchQueryHelpers.fs" />
     <Compile Include="Search\FieldFunctions.fs" />
     <Compile Include="Search\ComputedFunctions.fs" />
+    <Compile Include="Search\QueryFunctions.fs" />
     <Compile Include="Services.fs" />
     <Compile Include="Demo.fs" />
     <Compile Include="Http\Http.fs" />

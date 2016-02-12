@@ -43,8 +43,9 @@ type Function =
     | FieldFunction of FunctionName * FieldName * ComputableValue list
     // e.g. boost(anyOf(firstname, 'Vladimir', 'Seemant'), 32)
     // This is a function that has only two parameters: 1st one is of type Function (that ultimately
-    // translates to a SearchQuery), the second one is the value to apply to the Search Query
-    | QueryFunction of FunctionName * Function * ComputableValue
+    // translates to a SearchQuery), the second one is the value to apply to the Search Query.
+    // The second parameter is optional.
+    | QueryFunction of FunctionName * Function * ComputableValue option
 
 /// <summary>
 /// Acceptable Predicates for a query
@@ -142,10 +143,11 @@ module Parsers =
     // E.g. boost(anyOf(firstname, 'Vladimir', 'Alexandru'), 32)
     //      boost(anyOf(firstname, 'Vladimir', 'Alexandru'), @boostValue)
     //      boost(anyOf(firstname, 'Vladimir', 'Alexandru'), min(@boostValue, 32))
+    //      boost(anyOf(firstname, 'Vladimir', 'Alexandru'))
     do queryFuncImpl :=
         pipe3 (ws >>. funcName) 
               (str_ws "(" >>. ``function``)
-              (str_ws "," >>. computableValue .>> str_ws ")")
+              (opt (str_ws "," >>. computableValue ) .>> str_ws ")")
               (fun funcName ff cv -> QueryFunction(funcName, ff, cv))
 
     // Method to implement clause matching.

@@ -214,13 +214,15 @@ module SearchHelpers =
     let assertFieldPresent (expected : string) (result : SearchResults) = 
         test <@ result.Documents.[0].Fields.ContainsKey(expected) @>
     
+    let getResult (queryString : string) (ih : IntegrationHelper) = 
+        getQuery (ih.Index.IndexName, queryString) 
+        |> withColumns [| "*" |] 
+        |> searchAndExtract ih.SearchService
+
     /// This is a helper method to combine searching and asserting on returned document count 
     let verifyResultCount (expectedCount : int) (queryString : string) (ih : IntegrationHelper) = 
-        let result = 
-            getQuery (ih.Index.IndexName, queryString) 
-            |> withColumns [| "*" |] 
-            |> searchAndExtract ih.SearchService
-        result |> assertReturnedDocsCount expectedCount
+        getResult queryString ih
+        |> assertReturnedDocsCount expectedCount
     
     let storedFieldCannotBeSearched (queryString : string) (ih : IntegrationHelper) = 
         let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
@@ -229,3 +231,12 @@ module SearchHelpers =
             if f.OperationMessage().ErrorCode <> "StoredFieldCannotBeSearched" then 
                 failwithf "Expecting Stored field cannot be searched error."
         | _ -> failwithf "Expecting Stored field cannot be searched error."
+
+    let verifyScore (expectedScore : int) (queryString : string) (ih : IntegrationHelper) =
+        getResult queryString ih
+        |> fun r -> test <@ r.BestScore = float32 expectedScore @>
+
+    let getScore (queryString : string) (ih : IntegrationHelper) =
+        getResult queryString ih
+        |> fun r -> r.BestScore
+

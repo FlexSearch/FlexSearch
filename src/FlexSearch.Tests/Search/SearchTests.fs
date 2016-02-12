@@ -27,11 +27,17 @@ type SearchTestsBase(ih: IntegrationHelper) =
     abstract ``Works with And clause`` : unit -> unit
     abstract ``Works with Or clause`` : unit -> unit
     abstract ``Works with Not clause`` : unit -> unit
-    abstract ``Works with Filter clause`` : unit -> unit
+    [<Ignore>]
+    abstract ``Filter query`` : unit -> string
     abstract ``Works with AndOr clause`` : unit -> unit
     abstract ``Works with Multiple params`` : unit -> unit
     abstract ``Works with Functions`` : unit -> unit
     abstract ``Works with Constants`` : unit -> unit
+    member __.``Works with Filter clause``() = 
+        let query = __.``Filter query``()
+        let andScore = ih |> getScore query
+        let filterScore = ih |> getScore (sprintf "%s and filter(%s)" query query)
+        andScore =? filterScore
 
 (*
 Test implementation to copy around
@@ -845,27 +851,6 @@ CC,AA,FALSE,40
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
         result |> assertFieldValue 0 "_id" "3"
-
-    member __.``Searching using lower on the LHS of the operation is supported``() =
-        let result =
-            getQuery (index.IndexName, "allof(lower(et1) , 'aa')")
-            |> withColumns [| "_id" |]
-            |> searchAndExtract searchService
-        result |> assertReturnedDocsCount 4
-
-    member __.``Searching using upper on the LHS of the operation is supported``() =
-        let result =
-            getQuery (index.IndexName, "allof(upper(et1), 'AA')")
-            |> withColumns [| "_id" |]
-            |> searchAndExtract searchService
-        result |> assertReturnedDocsCount 4
-
-    member __.``Searching using upper on the LHS of a 'regex' operation is supported``() =
-        let result =
-            getQuery (index.IndexName, "regex(upper(et1), 'A.')")
-            |> withColumns [| "_id" |]
-            |> searchAndExtract searchService
-        result |> assertReturnedDocsCount 4
 
     member __.``Function-only conditions shouldn't be allowed for all functions``() =
         let result =

@@ -2,6 +2,7 @@
 
 open FlexSearch.Tests
 open FlexSearch.Tests.SearchTests
+open Swensen.Unquote
 
 type ``Operator: 'allOf' Tests``(ih : IntegrationHelper) = 
     inherit SearchTestsBase(ih)
@@ -20,7 +21,7 @@ type ``Operator: 'allOf' Tests``(ih : IntegrationHelper) =
     override __.``Works with And clause``() = ih |> verifyResultCount 1 "allof(et1, 'fred') AND allof(l1, '1500')"
     override __.``Works with Or clause``() = ih |> verifyResultCount 2 "allof(et1, 'erik') OR allof(l1, '4000')"
     override __.``Works with Not clause``() = ih |> verifyResultCount 2 "allof(et1, 'aaron') AND NOT allof(l1, '1000')"
-    override __.``Works with Filter clause``() = ()
+    override __.``Filter query``() = "allof(et1, 'aaron')"
     override __.``Works with AndOr clause``() = 
         ih |> verifyResultCount 3 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
     override __.``Works with Multiple params``() = ih |> verifyResultCount 0 "allof(et1, 'aaron', 'erik')"

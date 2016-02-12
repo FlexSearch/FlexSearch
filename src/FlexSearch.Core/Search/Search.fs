@@ -141,11 +141,12 @@ module SearchDsl =
             >>>= (computeValue baggage variables fieldName )
             >>= (Seq.toArray >> ok)
             >>= (computeFieldFunc baggage funcName fieldName)
-        | QueryFunction(funcName, ``function``, value) ->
+        | QueryFunction(funcName, ``function``, funcArg) ->
             ``function`` 
             |> compute baggage variables
-            >>= fun query -> computeValue baggage variables (getFieldNameFromFunction ``function``) value
-                             >>= fun computedValue -> (query, computedValue) |> ok
+            >>= fun query -> if funcArg.IsNone then ok (query, None)
+                             else computeValue baggage variables (getFieldNameFromFunction ``function``) funcArg.Value
+                                  >>= fun computedValue -> (query, computedValue) |> ok
             >>= fun (q,cv) -> computeQueryFunction baggage funcName q cv
 
     let rec generateQuery (predicate : Predicate)
