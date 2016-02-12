@@ -1,30 +1,28 @@
 ﻿namespace FlexSearch.Tests
 
 open FlexSearch.Tests
+open FlexSearch.Tests.SearchTests
 
 type ``Operator: 'allOf' Tests``(ih : IntegrationHelper) = 
-    let testData = """
-id,t1,t2,i1
-1,Aaron,johnson,23
-2,aaron,hewitt,32
-3,Fred,Garner,44
-4,aaron,Garner,43
-5,fred,johnson,332"""
-    do ih |> indexData testData
-    member __.``Term match query supports array style syntax``() = ih |> verifyResultCount 2 "anyof(_id, '1','2')"
-    member __.``Searching for 'id eq 1' should return 1 records``() = ih |> verifyResultCount 1 "allof(_id, '1')"
-    member __.``Searching for int field 'i1 eq 44' should return 1 records``() = 
-        ih |> verifyResultCount 1 "allof(i1, '44')"
-    member __.``Searching for 'aaron' should return 3 records``() = ih |> verifyResultCount 3 "allof(t1, 'aaron')"
-    member __.``Searching for 'aaron' & 'johnson' should return 1 record``() = 
-        ih |> verifyResultCount 1 "allof(t1, 'aaron') and allof(t2, 'johnson')"
-    member __.``Searching for t1 eq 'aaron' and (t2 eq 'johnson' or t2 eq 'Garner') should return 2 record``() = 
-        ih |> verifyResultCount 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
-    member __.``Searching for 'id = 1' should return 1 records``() = ih |> verifyResultCount 1 "allof(_id, '1')"
-    member __.``Searching for int field 'i1 = 44' should return 1 records``() = 
-        ih |> verifyResultCount 1 "allof(i1, '44')"
-    member __.``Searching for t1 = 'aaron' should return 3 records``() = ih |> verifyResultCount 3 "allof(t1, 'aaron')"
-    member __.``Searching for t1 = 'aaron' and t2 = 'johnson' should return 1 record``() = 
-        ih |> verifyResultCount 1 "allof(t1, 'aaron') and allof(t2, 'johnson')"
-    member this.``Searching for t1 'aaron' & t2 'johnson or Garner' should return 2 record``() = 
-        ih |> verifyResultCount 2 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
+    inherit SearchTestsBase(ih)
+    override __.``Works with Exact Field``() = ih |> verifyResultCount 4 "allof(et1, 'aaron')"
+    override __.``Works with Id Field``() = ih |> verifyResultCount 1 "allof(_id, '1')"
+    override __.``Works with TimeStamp Field``() = ih |> verifyResultCount 10 "allof(_timestamp, @IGNORE)"
+    override __.``Works with ModifyIndex Field``() = ih |> verifyResultCount 1 "allof(_modifyindex, '2')"
+    override __.``Works with Int Field``() = ih |> verifyResultCount 1 "allof(i1, '-100')"
+    override __.``Works with Long Field``() = ih |> verifyResultCount 1 "allof(l1, '-1000')"
+    override __.``Works with Double Field``() = ih |> verifyResultCount 1 "allof(db1, '-1000')"
+    override __.``Works with Float Field``() = ih |> verifyResultCount 1 "allof(f1, '-1000')"
+    override __.``Works with DateTime Field``() = ih |> verifyResultCount 1 "allof(dt1, '20101010101010')"
+    override __.``Works with Date Field``() = ih |> verifyResultCount 1 "allof(d1, '20101010')"
+    override __.``Works with Bool Field``() = ih |> verifyResultCount 5 "allof(b1, 'T')"
+    override __.``Works with Stored Field``() = ih |> storedFieldCannotBeSearched "allof(s1, '*')"
+    override __.``Works with And clause``() = ih |> verifyResultCount 1 "allof(et1, 'fred') AND allof(l1, '1500')"
+    override __.``Works with Or clause``() = ih |> verifyResultCount 2 "allof(et1, 'erik') OR allof(l1, '4000')"
+    override __.``Works with Not clause``() = ih |> verifyResultCount 2 "allof(et1, 'aaron') AND NOT allof(l1, '1000')"
+    override __.``Works with Filter clause``() = ()
+    override __.``Works with AndOr clause``() = 
+        ih |> verifyResultCount 3 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
+    override __.``Works with Multiple params``() = ih |> verifyResultCount 0 "allof(et1, 'aaron', 'erik')"
+    override __.``Works with Functions``() = ih |> verifyResultCount 2 "allof(l1, upper('1000'))"
+    override __.``Works with Constants``() = ih |> verifyResultCount 4 "allof(et1, 'aaron', @IGNORE)"

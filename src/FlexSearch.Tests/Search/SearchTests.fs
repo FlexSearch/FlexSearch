@@ -7,30 +7,57 @@ open Swensen.Unquote
 open System.Linq
 open System
 
-/// defines the minimum set of tests that should be implemented for a 
+/// Defines the minimum set of tests that should be implemented for a 
 /// new operator
 [<AbstractClass>]
-type SearchTestsBase() =
-    abstract WorksWithExactField : unit -> unit
-    abstract WorksWithIdField : unit -> unit
-    abstract WorksWithLastModifiedField : unit -> unit
-    abstract WorksWithModifyIndex : unit -> unit
-    abstract WorksWithIntField : unit -> unit
-    abstract WorksWithLongField : unit -> unit
-    abstract WorksWithDoubleField : unit -> unit
-    abstract WorksWithFloatField : unit -> unit
-    abstract WorksWithDateTimeField : unit -> unit
-    abstract WorksWithDateField : unit -> unit
-    abstract WorksWithBoolField : unit -> unit
-    abstract WorksWithStoredField : unit -> unit
-    abstract WorksWithAndClause : unit -> unit
-    abstract WorksWithOrClause : unit -> unit
-    abstract WorksWithNotClause : unit -> unit
-    abstract WorksWithFilterClause : unit -> unit
-    abstract WorksWithAndOrClause : unit -> unit
-    abstract WorksWithMultipleParams : unit -> unit
-    abstract WorksWithFunctions : unit -> unit
-    abstract WorksWithConstants : unit -> unit
+type SearchTestsBase(ih: IntegrationHelper) =
+    do ih |> indexData testData
+    abstract ``Works with Exact Field`` : unit -> unit
+    abstract ``Works with Id Field`` : unit -> unit
+    abstract ``Works with TimeStamp Field`` : unit -> unit
+    abstract ``Works with ModifyIndex Field`` : unit -> unit
+    abstract ``Works with Int Field`` : unit -> unit
+    abstract ``Works with Long Field`` : unit -> unit
+    abstract ``Works with Double Field`` : unit -> unit
+    abstract ``Works with Float Field`` : unit -> unit
+    abstract ``Works with DateTime Field`` : unit -> unit
+    abstract ``Works with Date Field`` : unit -> unit
+    abstract ``Works with Bool Field`` : unit -> unit
+    abstract ``Works with Stored Field`` : unit -> unit
+    abstract ``Works with And clause`` : unit -> unit
+    abstract ``Works with Or clause`` : unit -> unit
+    abstract ``Works with Not clause`` : unit -> unit
+    abstract ``Works with Filter clause`` : unit -> unit
+    abstract ``Works with AndOr clause`` : unit -> unit
+    abstract ``Works with Multiple params`` : unit -> unit
+    abstract ``Works with Functions`` : unit -> unit
+    abstract ``Works with Constants`` : unit -> unit
+
+(*
+Test implementation to copy around
+type OperatorTestsBase(ih : IntegrationHelper) =
+    inherit SearchTestsBase(ih)
+    override __.``Works with Exact Field``() = ()
+    override __.``Works with Id Field``() = ()
+    override __.``Works with TimeStamp Field``() = ()
+    override __.``Works with ModifyIndex Field``() = ()
+    override __.``Works with Int Field``() = ()
+    override __.``Works with Long Field``() = ()
+    override __.``Works with Double Field``() = ()
+    override __.``Works with Float Field``() = ()
+    override __.``Works with DateTime Field``() = ()
+    override __.``Works with Date Field``() = ()
+    override __.``Works with Bool Field``() = ()
+    override __.``Works with Stored Field``() = ()
+    override __.``Works with And clause``() = ()
+    override __.``Works with Or clause``() = ()
+    override __.``Works with Not clause``() = ()
+    override __.``Works with Filter clause``() = ()
+    override __.``Works with AndOr clause``() = ()
+    override __.``Works with Multiple params``() = ()
+    override __.``Works with Functions``() = ()
+    override __.``Works with Constants``() = ()
+*)
 
 type ``Column Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """

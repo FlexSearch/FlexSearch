@@ -34,7 +34,7 @@ type IntegrationHelper =
       JobService : IJobService
       QueueService : IQueueService }
     interface IDisposable with
-        member this.Dispose() =
+        member this.Dispose() = 
             // Delete index if it exists otherwise we don't care
             this.IndexService.DeleteIndex(this.Index.IndexName) |> ignore
 
@@ -49,6 +49,19 @@ module DataHelpers =
     Debug.Listeners.Add(writer) |> ignore
     
     let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
+    let testData = """
+id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1
+1,t,20101010,20101010101010,100,1000,1000,1000,1000,aaron,aaron,hewitt,aaaaa
+2,T,20111201,20111201111213,100,1000,1000,1000,1000,AAron,AAron,Garner,bbbbb
+3,f,20101210,20101210070611,-100,-1000,-1000,-1000,-1000,Fred,Fred,hewitt,ccccc
+4,F,20151201,20151201010159,150,1500,1500,1500,1500,fred,fred,Garner,ddddd
+5,true,20101101,20101101131312,-150,-1500,-1500,-1500,-1500,aaron,aaron,johnson,eeeee
+6,false,20130211,20130211070809,200,2000,2000,2000,2000,airen,airen,johnson,fffff
+7,True,20111201,20111201091011,250,2500,2500,2500,2500,aaron,aaron,Garner,ggggg
+8,False,20161217,20161217151618,300,3000,3000,3000,3000,ford,ford,johnson,hhhhh
+9,TRUE,20111111,20101111111111,-300,-3000,-3000,-3000,-3000,erik,erik,hendrick,iiiii
+10,FALSE,20100310,20100310111213,400,4000,4000,4000,4000,aren,aren,Hewitt,jjjjj
+"""
     
     /// Basic test index with all field types
     let getTestIndex() = 
@@ -58,15 +71,14 @@ module DataHelpers =
         index.Active <- true
         index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.MemoryMapped
         index.Fields <- [| new Field("b1", Constants.FieldType.Bool)
-                           new Field("b2", Constants.FieldType.Bool)
                            new Field("d1", Constants.FieldType.Date, AllowSort = true)
                            new Field("dt1", Constants.FieldType.DateTime, AllowSort = true)
-                           new Field("db1", Constants.FieldType.Double, AllowSort = true)
-                           new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
-                           new Field("h1", Constants.FieldType.Text)
                            new Field("i1", Constants.FieldType.Int, AllowSort = true)
                            new Field("i2", Constants.FieldType.Int, AllowSort = true)
                            new Field("l1", Constants.FieldType.Long, AllowSort = true)
+                           new Field("db1", Constants.FieldType.Double, AllowSort = true)
+                           new Field("f1", Constants.FieldType.Float, AllowSort = true)
+                           new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
                            new Field("t1", Constants.FieldType.Text)
                            new Field("t2", Constants.FieldType.Text)
                            new Field("s1", Constants.FieldType.Stored) |]
@@ -91,18 +103,16 @@ module DataHelpers =
         test <@ succeeded <| indexService.Refresh(index.IndexName) @>
         test <@ extract <| documentService.TotalDocumentCount(index.IndexName) = lines.Count() - 1 @>
     
-    let indexData (testData : string) (ih: IntegrationHelper) =
-        indexTestData(testData, ih.Index, ih.IndexService, ih.DocumentService)
-
+    let indexData (testData : string) (ih : IntegrationHelper) = 
+        indexTestData (testData, ih.Index, ih.IndexService, ih.DocumentService)
     let container = Main.setupDependencies true <| Settings.T.GetDefault()
     let serverSettings = container.Resolve<Settings.T>()
     let handlerModules = container.Resolve<Dictionary<string, IHttpHandler>>()
-    
+
 [<AutoOpen>]
 module TestHelper = 
     // Runs a test against the given result and checks if it succeeded
     let (?) r = test <@ succeeded r @>
-    
     // ----------------------------------------------------------------------------
     // Index service wrappers
     // ----------------------------------------------------------------------------    
@@ -206,5 +216,16 @@ module SearchHelpers =
     
     /// This is a helper method to combine searching and asserting on returned document count 
     let verifyResultCount (expectedCount : int) (queryString : string) (ih : IntegrationHelper) = 
-        let result = getQuery (ih.Index.IndexName, queryString) |> searchAndExtract ih.SearchService
-        result |> assertReturnedDocsCount expectedCount 
+        let result = 
+            getQuery (ih.Index.IndexName, queryString) 
+            |> withColumns [| "*" |] 
+            |> searchAndExtract ih.SearchService
+        result |> assertReturnedDocsCount expectedCount
+    
+    let storedFieldCannotBeSearched (queryString : string) (ih : IntegrationHelper) = 
+        let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
+        match result with
+        | Fail(f) -> 
+            if f.OperationMessage().ErrorCode <> "StoredFieldCannotBeSearched" then 
+                failwithf "Expecting Stored field cannot be searched error."
+        | _ -> failwithf "Expecting Stored field cannot be searched error."
