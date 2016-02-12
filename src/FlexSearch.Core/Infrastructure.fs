@@ -291,6 +291,7 @@ module Operators =
                         acc >>= fun oks -> 
                                     f value >>= fun r -> r :: oks |> ok ) 
                     (ok [])
+        >>= (List.rev >> ok)
 
     /// Converts an option into a Result.
     let inline failIfNone message result = 
