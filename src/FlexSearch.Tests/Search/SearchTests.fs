@@ -802,7 +802,7 @@ CC,AA,FALSE,40
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
-        result |> assertFieldValue 0 "_id" "CC"
+        result |> assertFieldValue 0 "_id" "cc"
 
     member __.``Searching for i1 = add( '10', '30' ) using spaces should return record CC which is equal to 40``() = 
         let result = 
@@ -810,7 +810,7 @@ CC,AA,FALSE,40
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
-        result |> assertFieldValue 0 "_id" "CC"
+        result |> assertFieldValue 0 "_id" "cc"
 
     member __.``Searching for i1 = add('10', add('10','20')) having nested functions should return record CC which is equal to 40``() = 
         let result = 
@@ -818,7 +818,7 @@ CC,AA,FALSE,40
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
-        result |> assertFieldValue 0 "_id" "CC"
+        result |> assertFieldValue 0 "_id" "cc"
 
     member __.``Searching for i1 > add('10','30') should return 3 records``() = 
         let result = 
@@ -842,7 +842,7 @@ CC,AA,FALSE,40
             |> withColumns [| "_id"; "i1" |]
             |> searchAndExtract searchService
         result |> assertReturnedDocsCount 1
-        result |> assertFieldValue 0 "_id" "CC"
+        result |> assertFieldValue 0 "_id" "cc"
 
     member __.``Searching for i1 = add('3') should support only one parameter``() = 
         let result = 
