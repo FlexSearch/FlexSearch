@@ -69,6 +69,7 @@ id,et1,et2,i1,i2
 1,a,h,37,95
 2,b,g,49,31"""
             index.PredefinedQueries <- [| new SearchQuery(index.IndexName, "allof(et1, 'a')", QueryName = "profile") |]
+            index.IndexConfiguration.CommitOnClose <- true
             indexTestData (testData, index, indexService, documentService)
 
             let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile")
@@ -96,6 +97,7 @@ id,et1,et2,i1,i2
                     index : Index,
                     documentService : IDocumentService) =
             index.Active <- true
+            index.IndexConfiguration.CommitOnClose <- true
             indexService.AddIndex(index) |> (?)
             documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
@@ -109,6 +111,7 @@ id,et1,et2,i1,i2
                     index : Index,
                     documentService : IDocumentService) =
             index.Active <- true
+            index.IndexConfiguration.CommitOnClose <- true
             indexService.AddIndex(index) |> (?)
             documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
@@ -153,6 +156,7 @@ id,et1,et2,i1,i2
                     documentService : IDocumentService,
                     searchService : ISearchService) =
             index.Active <- true
+            index.IndexConfiguration.CommitOnClose <- true
             indexService.AddIndex(index) |> (?)
             documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
@@ -168,6 +172,7 @@ id,et1,et2,i1,i2
                     documentService : IDocumentService,
                     searchService : ISearchService) =
             index.Active <- true
+            index.IndexConfiguration.CommitOnClose <- true
             indexService.AddIndex(index) |> (?)
             documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
