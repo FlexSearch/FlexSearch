@@ -207,6 +207,11 @@ module FixtureSetup =
 
     let countryList = JsonConvert.DeserializeObject<List<FlexSearch.Core.Country>>(Resources.DemoIndexData)
 
+    let apiGenerator (ctor : ApiClient -> 'T) = 
+        let handler = new LoggingHandler(httpMessageHandler)
+        let api = new ApiClient(handler)
+        (ctor(api), handler)
+
     let fixtureCustomization () =
         let fixture = new Ploeh.AutoFixture.Fixture()
         // We override Auto fixture's string generation mechanism to return this string which will be
@@ -221,6 +226,13 @@ module FixtureSetup =
         fixture.Inject<JobsApi>(new JobsApi(flexClient))
         fixture.Inject<SearchApi>(new SearchApi(flexClient))
         fixture.Inject<ServerApi>(new ServerApi(flexClient))
+        fixture.Register<ServerApi * LoggingHandler>(fun _ -> apiGenerator ServerApi)
+        fixture.Register<IndicesApi * LoggingHandler>(fun _ -> apiGenerator IndicesApi)
+        fixture.Register<CommonApi * LoggingHandler>(fun _ -> apiGenerator CommonApi)
+        fixture.Register<DocumentsApi * LoggingHandler>(fun _ -> apiGenerator DocumentsApi)
+        fixture.Register<AnalyzerApi * LoggingHandler>(fun _ -> apiGenerator AnalyzerApi)
+        fixture.Register<JobsApi * LoggingHandler>(fun _ -> apiGenerator JobsApi)
+        fixture.Register<SearchApi * LoggingHandler>(fun _ -> apiGenerator SearchApi)
         fixture.Inject<LoggingHandler>(new LoggingHandler(httpMessageHandler))
         fixture.Inject<FlexSearch.Core.Country list>(countryList |> Seq.toList)
         fixture

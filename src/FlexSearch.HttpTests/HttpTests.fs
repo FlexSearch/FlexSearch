@@ -33,14 +33,13 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     do serverApi.SetupDemo() |> isSuccessful
 
     [<Example("post-indices-id-1", "Creating an index without any data")>]
-    member __.``Creating an index without any parameters should return 200`` (api : IndicesApi, indexName : string, 
-                                                                              handler : LoggingHandler) = 
+    member __.``Creating an index without any parameters should return 200`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) = 
         api.CreateIndexWithHttpInfo(newIndex indexName) |> isCreated
         handler |> log "post-indices-id-1"
         api.DeleteIndex(indexName) |> isSuccessful
     
     [<Example("post-indices-id-2", "Duplicate index cannot be created")>]
-    member __.``Duplicate index cannot be created`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
+    member __.``Duplicate index cannot be created`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         api.CreateIndex(index) |> isSuccessful
         api.CreateIndexWithHttpInfo(index)
         |> hasStatusCode HttpStatusCode.Conflict
@@ -49,21 +48,19 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         handler |> log "post-indices-id-2"
         api.DeleteIndex(index.IndexName) |> isSuccessful
         
-    member __.``Create response contains the id of the created index`` (api : IndicesApi, index : Index, 
-                                                                        handler : LoggingHandler) = 
+    member __.``Create response contains the id of the created index`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         let actual = api.CreateIndexWithHttpInfo(index)
         actual |> isCreated
         actual.Data.Data.Id =? index.IndexName
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
-    member __.``Index cannot be created without IndexName`` (api : IndicesApi, handler : LoggingHandler) = 
+    member __.``Index cannot be created without IndexName`` ((api : IndicesApi, handler : LoggingHandler)) = 
         api.CreateIndexWithHttpInfo(newIndex "") 
         |> hasStatusCode HttpStatusCode.BadRequest
         |> ignore
     
     [<Example("post-indices-id-3", "")>]
-    member __.``Create index with two field 'firstname' & 'lastname'`` (api : IndicesApi, indexName : string, 
-                                                                        handler : LoggingHandler) = 
+    member __.``Create index with two field 'firstname' & 'lastname'`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) =
         let index = newIndex indexName
         index.Fields <- [| new Field("firstname")
                            new Field("lastname") |]
@@ -72,7 +69,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(indexName) |> isSuccessful
     
     //    [<Example("post-indices-id-4", "")>]
-    //    member __.``Create an index with dynamic fields`` (api : IndicesApi, indexName : string, handler : LoggingHandler) = 
+    //    member __.``Create an index with dynamic fields`` (api : IndicesApi, indexName : string) = 
     //        let index = newIndex indexName
     //        index.Fields <- [| new Field.Dto("firstname")
     //                           new Field.Dto("lastname")
@@ -82,8 +79,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     //        api.CreateIndex(index).Result |> isCreated
     //        api.DeleteIndex(index.IndexName).Result |> isSuccessful
     [<Example("post-indices-id-5", "")>]
-    member __.``Create an index by setting all properties`` (api : IndicesApi, index : Index, 
-                                                             handler : LoggingHandler) = 
+    member __.``Create an index by setting all properties`` ((api : IndicesApi, handler : LoggingHandler), index : Index) =
         api.CreateIndexWithHttpInfo(index)
         |> hasStatusCode HttpStatusCode.Created
         |> ignore
@@ -103,8 +99,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 //        actual |> hasStatusCode HttpStatusCode.BadRequest
     
     [<Example("put-indices-id-2", "")>]
-    member __.``Trying to update index fields should return success`` (api : IndicesApi, index : Index, 
-                                                                       handler : LoggingHandler) = 
+    member __.``Trying to update index fields should return success`` ((api : IndicesApi, handler : LoggingHandler), index : Index) =
         api.CreateIndexWithHttpInfo(index) |> isCreated
         let fields = new FieldsUpdateRequest(Fields = [| new Field("et1", FieldType.Text) |])
         api.UpdateIndexFields(fields, index.IndexName) |> isSuccessful
@@ -112,8 +107,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     [<Example("put-indices-id-3", "")>]
-    member __.``Trying to update index search profile should return success`` (api : IndicesApi, index : Index, 
-                                                                               handler : LoggingHandler) = 
+    member __.``Trying to update index search profile should return success`` ((api : IndicesApi, handler : LoggingHandler), index : Index) =
         api.CreateIndexWithHttpInfo(index) |> isCreated
         let sp = new SearchQuery(index.IndexName, "matchall(et1, 'x')", QueryName = "all")
         api.UpdateIndexPredefinedQuery(sp, index.IndexName) |> isSuccessful
@@ -121,8 +115,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     [<Example("put-indices-id-4", "")>]
-    member __.``Trying to update index configuration should return success`` (api : IndicesApi, index : Index, 
-                                                                              handler : LoggingHandler) = 
+    member __.``Trying to update index configuration should return success`` ((api : IndicesApi, handler : LoggingHandler),  index : Index) = 
         api.CreateIndexWithHttpInfo(index) |> isCreated
         let conf = new IndexConfiguration(CommitTimeSeconds = 100)
         api.UpdateIndexConfiguration(conf, index.IndexName) |> isSuccessful
@@ -131,14 +124,13 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 
 //type ``Delete Index Tests``() = 
     [<Example("delete-indices-id-1", "")>]
-    member __.``Delete an index by id`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
+    member __.``Delete an index by id`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         api.CreateIndexWithHttpInfo(index) |> isCreated
         api.DeleteIndex(index.IndexName) |> isSuccessful
         handler |> log "delete-indices-id-1"
 
     [<Example("delete-indices-id-2", "")>]
-    member __.``Trying to delete an non existing index will return error`` (api : IndicesApi, indexName : string, 
-                                                                            handler : LoggingHandler) = 
+    member __.``Trying to delete an non existing index will return error`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) = 
         api.DeleteIndexWithHttpInfo(indexName)
         |> hasApiErrorCode "IndexNotFound"
         |> hasStatusCode HttpStatusCode.BadRequest
@@ -147,7 +139,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 
 //type ``Get Index Tests``() = 
     [<Example("get-indices-id-1", "")>]
-    member __.``Getting an index detail by name`` (api : IndicesApi, handler : LoggingHandler) = 
+    member __.``Getting an index detail by name`` ((api : IndicesApi, handler : LoggingHandler)) = 
         let actual = api.GetIndexWithHttpInfo("contact")
         actual.Data |> isSuccessful
         actual.Data.Data.IndexName =? "contact"
@@ -156,8 +148,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 
 //type ``Get Non existing Index Tests``() = 
     [<Example("get-indices-id-2", "")>]
-    member __.``Getting an non existing index will return error`` (api : IndicesApi, indexName : string, 
-                                                                   handler : LoggingHandler) = 
+    member __.``Getting an non existing index will return error`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) = 
         api.GetIndexWithHttpInfo(indexName)
         |> hasApiErrorCode "IndexNotFound"
         |> hasStatusCode HttpStatusCode.NotFound
@@ -167,7 +158,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 //type ``Index Other Services Tests``() = 
     
     [<Example("get-indices-id-status-1", "Get status of an index (offine)")>]
-    member __.``Newly created index is always offline`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
+    member __.``Newly created index is always offline`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         index.Active <- false
         api.CreateIndexWithHttpInfo(index) |> isCreated
         let actual = api.GetStatus(index.IndexName)
@@ -177,7 +168,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     [<Example("put-indices-id-status-1", "")>]
-    member __.``Set status of an index 'online'`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
+    member __.``Set status of an index 'online'`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         index.Active <- false
         api.CreateIndex(index) |> isSuccessful
         api.UpdateStatus(index.IndexName, "online") |> isSuccessful
@@ -185,7 +176,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         handler |> log "put-indices-id-status-1"
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
-    member __.``Set status of an index 'offline'`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
+    member __.``Set status of an index 'offline'`` (api : IndicesApi, index : Index) = 
         api.CreateIndex(index) |> isSuccessful
         api.GetStatus(index.IndexName)
         |> fun r -> r.Data.IndexStatus =? IndexStatus.Online; r
@@ -197,13 +188,13 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     [<Example("get-indices-id-exists-1", "")>]
-    member __.``Check if a given index exists`` (api : IndicesApi, handler : LoggingHandler) = 
+    member __.``Check if a given index exists`` ((api : IndicesApi, handler : LoggingHandler)) = 
         api.IndexExists("contact")
         |> fun r -> r.Data.Exists =? true; r
         |> isSuccessful
         handler |> log "get-indices-id-exists-1"
 
-    member __.``Checking if a given index exists should not return error if index not present`` (api : IndicesApi, handler : LoggingHandler) = 
+    member __.``Checking if a given index exists should not return error if index not present`` ((api : IndicesApi, handler : LoggingHandler)) = 
         let actual = api.IndexExists("index-which-does-not-exist")
         actual |> isSuccessful
         actual.Data.Exists =? false
@@ -211,7 +202,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 
     
     [<Example("get-indices-1", "")>]
-    member __.``Get all indices`` (api : IndicesApi, handler : LoggingHandler) = 
+    member __.``Get all indices`` ((api : IndicesApi, handler : LoggingHandler)) = 
         api.GetAllIndex()
         // Should have at least contact index
         |> fun r -> r.Data.Length >=? 1
@@ -220,21 +211,21 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
 //type ``Document Tests``(demoApi : ServerApi) = 
 
     [<Example("get-indices-id-documents-1", "")>]
-    member __.``Get top 10 documents from an index`` (api : DocumentsApi, indexName : string, handler : LoggingHandler) = 
+    member __.``Get top 10 documents from an index`` ((api : DocumentsApi, handler : LoggingHandler), indexName : string) = 
         let actual = api.GetDocuments("country")
         actual |> isSuccessful
         handler |> log "get-indices-id-documents-1"
         actual.Data.RecordsReturned =? 10
     
     [<Example("post-indices-id-documents-id-2", "")>]
-    member __.``Add a document to an index`` (api : CommonApi, indexName : string, handler : LoggingHandler) = 
+    member __.``Add a document to an index`` ((api : CommonApi, handler : LoggingHandler), indexName : string) = 
         let actual = createDocument api indexName
         actual |> fst |> isSuccessful
         handler |> log "post-indices-id-documents-id-2"
         (actual |> fst).Data.Id =? "1"
         api.DeleteIndex(indexName) |> isSuccessful
     
-    member __.``Cannot add a document without an id`` (api : CommonApi, indexName : string, handler : LoggingHandler) = 
+    member __.``Cannot add a document without an id`` ((api : CommonApi, handler : LoggingHandler), indexName : string) = 
         api.CreateIndexWithHttpInfo(testIndex indexName) |> isCreated
         let document = new Document(indexName = indexName, id = "")
         api.CreateDocumentWithHttpInfo(document, indexName) 
@@ -244,7 +235,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(indexName) |> isSuccessful
     
     [<Example("put-indices-id-documents-id-1", "")>]
-    member __.``Update a document to an index`` (api : CommonApi, indexName : string, handler : LoggingHandler) = 
+    member __.``Update a document to an index`` ((api : CommonApi, handler : LoggingHandler), indexName : string) = 
         // Create the document
         let (result, document) = createDocument api indexName
         result |> isSuccessful
@@ -256,7 +247,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(indexName) |> isSuccessful
     
     [<Example("get-indices-id-documents-id-1", "")>]
-    member __.``Get a document from an index`` (api : DocumentsApi, handler : LoggingHandler) = 
+    member __.``Get a document from an index`` ((api : DocumentsApi, handler : LoggingHandler)) = 
         let actual = api.GetDocument("country", "1")
         actual |> isSuccessful
         actual.Data.Id =? "1"
@@ -264,8 +255,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         handler |> log "get-indices-id-documents-id-1"
     
     [<Example("get-indices-id-documents-id-2", "")>]
-    member __.``Non existing document should return Not found`` (api : CommonApi, indexName : string, 
-                                                                 handler : LoggingHandler) = 
+    member __.``Non existing document should return Not found`` ((api : CommonApi, handler : LoggingHandler), indexName : string) = 
         createDocument api indexName
         |> fst |> isSuccessful
         api.GetDocumentWithHttpInfo(indexName, "2")
