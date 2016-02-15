@@ -177,7 +177,7 @@ id,et1,et2,i1,i2
             documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
 
             let conf = new IndexConfiguration()
-            conf.IndexVersion <- IndexVersion.FlexSearch_1B
+            conf.IndexVersion <- IndexVersion.FlexSearch_1A
             test <@ failed <| indexService.UpdateIndexConfiguration(index.IndexName, conf) @>
 
     type CommonTests() =
