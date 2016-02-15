@@ -60,7 +60,16 @@ module Common =
             query.SetSlop(slop)
             ok <| (query :> Query)
 
-
+    let endsStartsWithQuery fieldSchema arguments (instance : 'T) isEndsWith wildCardQuery =
+        ignoreOrExecuteFunction arguments
+        <| fun _ -> 
+            arguments |> checkItHasNPopulatedArguments 1 instance
+            >>= fun _ -> 
+                // Use the existing implementation of "like"
+                let likeQ = wildCardQuery :> IFieldFunction
+                let pattern = if isEndsWith then "*" + arguments.[0].Value
+                              else arguments.[0].Value + "*"
+                likeQ.GetQuery(fieldSchema, [| Some(pattern) |], "")
 
 /// Term Query
 [<Name("allof"); Sealed>]
@@ -145,6 +154,20 @@ type RegexQuery() =
                 <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
                 <| getRegexpQuery fieldSchema.SchemaName 
                 <| BooleanClauseOccur.MUST
+
+[<Name("endswith"); Sealed>]
+type EndsWithQuery() = 
+    interface IFieldFunction with
+        member __.GetQuery(fieldSchema, arguments, _) = 
+            new FlexWildcardQuery()
+            |> endsStartsWithQuery fieldSchema arguments __ true
+
+[<Name("startswith"); Sealed>]
+type StartsWithQuery() = 
+    interface IFieldFunction with
+        member __.GetQuery(fieldSchema, arguments, _) = 
+            new FlexWildcardQuery()
+            |> endsStartsWithQuery fieldSchema arguments __ false
 
 // ----------------------------------------------------------------------------
 // Range Queries
