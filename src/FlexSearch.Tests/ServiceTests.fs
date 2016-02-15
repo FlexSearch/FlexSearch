@@ -122,6 +122,18 @@ id,et1,et2,i1,i2
             (?) doc
             test <@ (extract doc).Fields.ContainsKey("modified") @>
 
+        member __.``Should not be able to delete a field from an index``
+                  ( indexService : IIndexService, 
+                    index : Index,
+                    documentService : IDocumentService) =
+            index.Active <- true
+            index.IndexConfiguration.CommitOnClose <- true
+            indexService.AddIndex(index) |> (?)
+            documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) |> (?)
+
+            let modified = index.Fields |> Array.skip 1
+            test <@ indexService.UpdateIndexFields(index.IndexName, modified) |> failed @> 
+
         member __.``Should be able to access old documents after modifying search profile``
                   ( indexService : IIndexService, 
                     index : Index,

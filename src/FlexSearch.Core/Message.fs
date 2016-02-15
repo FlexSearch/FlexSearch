@@ -307,6 +307,7 @@ type IndexingMessage =
     | DocumentIdAlreadyExists of indexName : string * id : string
     | DocumentIdNotFound of indexName : string * id : string
     | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
+    | IndexFieldDeletionNotAllowed of indexName : string * originalFieldCount : int * actualFieldCount : int
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Info)
         member this.OperationMessage() = 
@@ -324,6 +325,7 @@ type IndexingMessage =
             | IndexNotFound(i) -> sprintf "Index '%s' was not found" i
             | DocumentIdAlreadyExists(idx, id) -> sprintf "Document ID '%s' already exists for index '%s'" id idx
             | DocumentIdNotFound(idx, id) -> sprintf "Document ID '%s' not found on index '%s'" id idx
+            | IndexFieldDeletionNotAllowed(i,o,a) -> sprintf "Deleting a field from an index (%s) is not allowed. Original field count: %d. Actual field count: %d." i o a
             | IndexingVersionConflict(idx, id, v) -> 
                 sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
                     v
