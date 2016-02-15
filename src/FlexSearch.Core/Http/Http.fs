@@ -135,9 +135,9 @@ module Http =
                     jsonFormatter.Serialize(response, streamWriter.BaseStream)
                     streamWriter.Write ");"
                 | _ -> formatter.Serialize(response, ctxt.Response.Body)
-                // *Try* flushing the stream as opposed to always doing it because
-                // the stream might have already been closed by the serializer.
-                try ctxt.Response.Body.Flush() with _ -> ()
+                // There isn't a need to flush the stream any more because it is already
+                // closed by the Serializer.
+                //try ctxt.Response.Body.Flush() with _ -> ()
             | _ -> 
                 Logger.Log("Couldn't find a formatter for format: " + format, MessageKeyword.Default, MessageLevel.Error)
                 ctxt.Response.StatusCode <- int HttpStatusCode.InternalServerError
