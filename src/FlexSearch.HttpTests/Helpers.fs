@@ -182,7 +182,8 @@ module FixtureSetup =
         index
 
     let httpMessageHandler = Global.server.CreateHandler()
-    let flexClient = new ApiClient(httpMessageHandler)
+    let catchAllLoggingHandler = new LoggingHandler(httpMessageHandler)
+    let flexClient = new ApiClient(catchAllLoggingHandler)
 
     let mockIndexSettings = 
         let index = new Index()
@@ -233,7 +234,6 @@ module FixtureSetup =
         fixture.Register<AnalyzerApi * LoggingHandler>(fun _ -> apiGenerator AnalyzerApi)
         fixture.Register<JobsApi * LoggingHandler>(fun _ -> apiGenerator JobsApi)
         fixture.Register<SearchApi * LoggingHandler>(fun _ -> apiGenerator SearchApi)
-        fixture.Inject<LoggingHandler>(new LoggingHandler(httpMessageHandler))
         fixture.Inject<FlexSearch.Core.Country list>(countryList |> Seq.toList)
         fixture
 

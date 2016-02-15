@@ -265,7 +265,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.DeleteIndex(indexName) |> isSuccessful
 
 //type ``Demo index Test``() = 
-    member __.``Setting up the demo index creates the country index`` (serverApi : ServerApi, indicesApi : IndicesApi, handler : LoggingHandler) = 
+    member __.``Setting up the demo index creates the country index`` (serverApi : ServerApi, (indicesApi : IndicesApi, handler : LoggingHandler)) = 
         serverApi.SetupDemo() |> isSuccessful
         indicesApi.GetIndex("country") |> isSuccessful
 
