@@ -105,6 +105,11 @@ module JavaHelpers =
             // Then convert the target value 'T to 'U
             >>= (converter >> ok)
             
+    let rec getItemAt n (iterator : java.util.Iterator) =
+        if n = 0 then iterator.next()
+        else if iterator.hasNext() 
+             then iterator.next() |> ignore; getItemAt (n-1) iterator
+             else null
 
 [<AutoOpenAttribute>]
 module QueryHelpers = 

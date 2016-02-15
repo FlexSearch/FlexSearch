@@ -181,13 +181,25 @@ module SearchDsl =
     /// Returns a document from the index
     let getDocument (indexWriter : IndexWriter, search : SearchQuery, document : LuceneDocument) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        let getValue(field: FieldSchema) =
-            let value = document.Get(field.SchemaName)
-            if notNull value then 
+        let addField fieldName value = 
+            if notNull value then
                 if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then
-                    fields.Add(field.FieldName, String.Empty)
+                    fields.Add(fieldName, String.Empty)
                 else
-                    fields.Add(field.FieldName, value)
+                    fields.Add(fieldName, value)
+        let getValue (field: FieldSchema) (fieldPos : int) =
+            let value = document.Get(field.SchemaName)
+            
+            if notNull value then value
+            else
+                // We assume that that the order of fields inside documents from the same index will 
+                // never change. Fields can be added, but not removed. Therefore, we can get fields
+                // from a Lucene document based on its position.
+                let luceneField = document.Iterator() |> getItemAt fieldPos 
+                if notNull luceneField 
+                then (luceneField :?> FlexLucene.Document.Field).StringValue()
+                else null
+            |> addField field.FieldName
 
         match search.Columns with
         // Return no other columns when nothing is passed
@@ -198,12 +210,12 @@ module SearchDsl =
                 if [IdField.Name; TimeStampField.Name; ModifyIndexField.Name; StateField.Name]
                    |> Seq.contains field.FieldName
                 then ()
-                else getValue(field)
+                else getValue field <| indexWriter.Settings.Fields.IndexOf(field)
         // Return only the requested columns
         | _ -> 
             for fieldName in search.Columns do
                 match indexWriter.Settings.Fields.TryGetValue(fieldName) with
-                | (true, field) -> getValue(field)
+                | (true, field) -> getValue field <| indexWriter.Settings.Fields.IndexOf field
                 | _ -> ()
         fields
     
