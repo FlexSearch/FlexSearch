@@ -165,7 +165,7 @@ Target "MovePortal" <| fun _ ->
         File.Copy(dir <!!> @"dist\fonts\ui-grid.woff", targetAppPath <!!> @"styles\ui-grid.woff", true))
 
     // Copy the homepage templates
-    File.Copy(portalDir <!!> @"src\home.html", webDir <!!> "home.html")
+    File.Copy(portalDir <!!> @"src\homeTemplate.html", webDir <!!> "homeTemplate.html")
     File.Copy(portalDir <!!> @"src\cardTemplate.html", webDir <!!> "cardTemplate.html")
     // Copy the assets, fonts and styles
     ["assets"; "fonts"; "styles"]

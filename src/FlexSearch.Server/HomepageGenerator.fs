@@ -55,7 +55,7 @@ module HomepageGenerator =
         else File.ReadAllText path |> ok
 
     let private getHomeHtml (srcFolder : string) = 
-        let path = srcFolder +/ "home.html"
+        let path = srcFolder +/ "homeTemplate.html"
         if not <| File.Exists path then fail <| FileNotFound(path)
         else File.ReadAllText path |> ok
 
