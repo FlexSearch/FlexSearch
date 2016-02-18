@@ -79,9 +79,9 @@ module CSharp =
                 ["Error"; "ErrorDescription"; "ErrorField"]
                 |> Seq.fold deleteProperty contents
             else contents
-            // Response classes shouldn't implement IDataTransferObject
+            // Response classes and OperationMessage shouldn't implement IDataTransferObject
             |> fun contents' -> 
-                if fileName.EndsWith("Response.cs") then
+                if fileName.EndsWith("Response.cs") || fileName.Contains("OperationMessage.cs") then
                     ["Validated"; "ErrorDescription"; "ErrorField"]
                     |> Seq.fold deleteProperty contents'
                     |> fun contents'' -> Regex.Replace(contents'', "IDataTransferObject,[\s]", "")
