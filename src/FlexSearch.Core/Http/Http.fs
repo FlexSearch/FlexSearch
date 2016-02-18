@@ -45,13 +45,6 @@ open Microsoft.AspNet.FileProviders
 open Microsoft.Net.Http.Server
 open Microsoft.Extensions.Logging
 
-type NoBody() = 
-    interface IDataTransferObject with
-        member val Validated = true with get
-        member val ErrorDescription = String.Empty with get
-        member val ErrorField = String.Empty with get
-        member __.Validate() = true
-
 [<AutoOpenAttribute>]
 module Http = 
     // ----------------------------------------------------------------------------
