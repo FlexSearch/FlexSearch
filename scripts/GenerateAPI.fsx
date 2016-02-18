@@ -61,17 +61,32 @@ module CSharp =
         
             line
 
-        let deleteProperty propName fileStr =
+        let tag name = sprintf @"[\s]*<%s>[^<]+<\/%s>" name name
+
+        let deleteProperty fileStr propName  =
             Regex.Replace(fileStr, 
                           sprintf @"\/\/\/[\s]*<summary>[^<]+<\/[^<]*%s[\s]*{[\s]*get;[^/]+" propName, 
                           "")
 
+        let deleteMethod fileStr methName  =
+            Regex.Replace(fileStr, 
+                          sprintf @"\/\/\/%s[^<]*%s[^<]*%s\(\)[\s]*{[^/]+" (tag "summary") (tag "returns") methName, 
+                          "")
+
         let perFileCleanup (fileName : string) (contents : string) =
-            // Delete properties from extended classes
+            // Delete properties from extended FlexResponse class
             if contents.Contains(": FlexResponse") then
                 ["Error"; "ErrorDescription"; "ErrorField"]
-                |> Seq.fold (fun acc value -> acc |> deleteProperty value) contents
+                |> Seq.fold deleteProperty contents
             else contents
+            // Response classes shouldn't implement IDataTransferObject
+            |> fun contents' -> 
+                if fileName.EndsWith("Response.cs") then
+                    ["Validated"; "ErrorDescription"; "ErrorField"]
+                    |> Seq.fold deleteProperty contents'
+                    |> fun contents'' -> Regex.Replace(contents'', "IDataTransferObject,[\s]", "")
+                    |> fun contents'' -> deleteMethod contents'' "Validate"
+                else contents'
 
         let cleanupFile(f : string) =
             let mutable file = File.ReadAllLines(f)
