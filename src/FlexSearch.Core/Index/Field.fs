@@ -369,8 +369,13 @@ type TimeStampField() =
     static member Name = "_timestamp"
     static member Instance = new TimeStampField() :> FieldBase
     override this.UpdateDocument document schemaName fieldSource template = 
-        // The timestamp value will always be auto generated
-        this.UpdateFieldTemplate template (GetCurrentTimeAsLong())
+        // The timestamp value will always be auto generated beforehand. This is
+        // because it needs to be used in the VersionCache. If it's generated at
+        // this point, then it might generate an IndexVersionConflict during the
+        // versionCheck
+
+        // TODO: Validate the timestamp format
+        this.UpdateFieldTemplate template document.TimeStamp
 
 /// Used for representing the id of an index
 type IdField() = 
