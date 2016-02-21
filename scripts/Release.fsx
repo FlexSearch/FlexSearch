@@ -181,8 +181,13 @@ Target "DeployTypeScriptClient" <| fun _ ->
     let target = deployDir <!!> "clients\\ts"
     ensureDirectory target
     emptyDir target
-    FileHelper.CopyRecursive (portalDir <!!> "src\\common\\client\\") (deployDir <!!> "clients\\ts") true |> ignore
+    FileHelper.CopyRecursive (portalDir <!!> "src\\common\\client\\") target true |> ignore
 
+Target "DeployJavaScriptClient" <| fun _ ->
+    let target = deployDir <!!> "clients\\js"
+    ensureDirectory target
+    emptyDir target
+    FileHelper.CopyRecursive (scriptDir <!!> @"obj\src") target true |> ignore
 
 // Documentation related
 //Target "GenerateSwagger" <| fun _ ->
@@ -201,6 +206,7 @@ Target "DeployTypeScriptClient" <| fun _ ->
 ==> "MoveFiles" 
 ==> "MovePortal"
 ==> "DeployTypeScriptClient"
+==> "DeployJavaScriptClient"
 ==> "Zip"
 ==> "Test"
 
