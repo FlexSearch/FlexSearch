@@ -18,11 +18,19 @@ type VariableName = string
 
 type FunctionName = string
 
+/// A switch is a configurable parameter that can be passed to
+/// a query to fine tune its behavior. It supports two formats:
+/// Simple switch without a value like: -UseDefault -Filter etc.
+/// Switch with a value like: -ConstantScore '32'
+type Switch = 
+    { Name : string
+      Value : string option }
+
 // Valid parameters that can be passed to a clause
 type FunctionParameter = 
     | Variable of VariableName // e.g. @IGNORE, @firstname
     | Constant of string // e.g. 'Vladimir', '26'
-    | Switch of Name : string * value : string option // e.g. -UseDefault, -Filter, -ConstantScore: '32'
+    | Switch of Switch // e.g. -UseDefault, -Filter, -ConstantScore: '32'
 
 /// Acceptable Predicates for a query
 type Predicate = 
@@ -82,7 +90,10 @@ module Parsers =
     /// Format: Starts with - followed by an identifier. A switch 
     /// may end with a value
     /// -boost '32', -useDefault 
-    let switch = pipe2 (str_ws "-" >>. identifier) (opt stringLiteralAsString) (fun name value -> Switch(name, value))
+    let switch = 
+        pipe2 (str_ws "-" >>. identifier) (opt stringLiteralAsString) (fun name value -> 
+            Switch({ Name = name
+                     Value = value }))
     
     /// NOTE: The current choice can be replaced with a more efficient
     /// low level parser implementation to improve performance 
