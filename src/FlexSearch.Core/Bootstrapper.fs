@@ -155,8 +155,6 @@ module Main =
         |> registerInstance<EventAggregator> (eventAggregator)
         |> registerInstance<Settings.T> (serverSettings)
         // Interface scanning
-        |> registerInterfaceAssemblies<IComputedFunction>
-        |> registerInterfaceAssemblies<IFieldFunction>
         |> registerInterfaceAssemblies<IQueryFunction>
         |> registerInterfaceAssemblies<IHttpHandler>
         // Register Utilities
@@ -177,8 +175,6 @@ module Main =
         // Register the services required for shutdown
         |> registerExistingInstanceAs<IRequireNotificationForShutdown>
         // Register the groups/factories of services
-        |> registerGroup<IComputedFunction>
-        |> registerGroup<IFieldFunction>
         |> registerGroup<IQueryFunction>
         |> registerGroup<IHttpHandler>
 

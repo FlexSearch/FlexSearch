@@ -29,24 +29,87 @@ open System.Collections.Generic
 open System.Linq
 open System.ComponentModel.Composition
 
-type ComputedValues = string option []
-type ComputedValue = string option
 type Variables = Dictionary<string, string>
 
-// The reason why we also have the function name as a parameter is that the function name from the 
-// query string might be different than the name of the actual IFieldFunction instance.
-// E.g. function name from query string: upTo2WordsApart
-//      function name from IFieldFunction instance : upToWordsApart
-// This enables us to take the number from the function name and use it as a parameter
-type IFieldFunction = abstract GetQuery : FieldSchema * ComputedValues * FunctionName -> Result<Query>
-type IComputedFunction = abstract GetQuery : ComputedValues -> Result<ComputedValue>
-type IQueryFunction = abstract GetQuery : Query * ComputedValue -> Result<Query>
+/// Signifies the behaviour of the clause when no value
+/// is provided for searching
+type ClauseMatchRule = 
+    /// Default behaviour that is to thrown error when no
+    /// value is provided for searching
+    | ThrowError = 0
+    /// Convert the clause to a match all clause which allows
+    /// matching against all values
+    | All = 1
+    /// Convert the clause to a match none clause which matches
+    /// no values
+    | None = 2
+    /// Use the default value for the field for searching
+    | FieldDefault = 3
+    /// Use the user defined value to search
+    | UseDefault = 4
+
+type ClauseProperties = 
+    { MatchRule : ClauseMatchRule
+      Filter : bool
+      DefaultValue : string option
+      Boost : float32 option
+      ConstantScore : float32 option
+      Switches : IEnumerable<Switch> }
+    static member Create(parameters : FunctionParameter list) = 
+        let mutable matchRule = ClauseMatchRule.ThrowError
+        let mutable defaultValue = None
+        let mutable boost = None
+        let mutable constantScore = None
+        let mutable filter = false
+        let switches = new List<Switch>()
+        // Could use List.choose here but it is a lot slower
+        for p in parameters do
+            match p with
+            | Switch(s) -> 
+                match s.Name with
+                | InvariantEqual "MatchAll" -> matchRule <- ClauseMatchRule.All
+                | InvariantEqual "MatchNone" -> matchRule <- ClauseMatchRule.None
+                | InvariantEqual "MatchFieldDefault" -> matchRule <- ClauseMatchRule.FieldDefault
+                | InvariantEqual "UseDefault" -> 
+                    match s.Value with
+                    | Some v -> 
+                        if isBlank v then matchRule <- ClauseMatchRule.FieldDefault
+                        else 
+                            matchRule <- ClauseMatchRule.UseDefault
+                            defaultValue <- Some v
+                    | None -> matchRule <- ClauseMatchRule.FieldDefault
+                | InvariantEqual "Boost" -> 
+                    match s.Value with
+                    | Some v -> 
+                        if isNotBlank v then 
+                            let boostValue = pFloat 1.0f v
+                            if boostValue <> 1.0f then boost <- Some boostValue
+                    | None -> ()
+                | InvariantEqual "ConstantScore" -> 
+                    match s.Value with
+                    | Some v -> 
+                        if isNotBlank v then 
+                            let constantValue = pFloat 1.0f v
+                            if constantValue <> 1.0f then constantScore <- Some constantValue
+                    | None -> ()
+                | InvariantEqual "Filter" -> filter <- true
+                | _ -> switches.Add(s)
+            | _ -> ()
+        { MatchRule = matchRule
+          Filter = filter
+          DefaultValue = defaultValue
+          Boost = boost
+          ConstantScore = constantScore
+          Switches = switches }
+
+/// Used to represent a search operator like allOf etc.
+[<Interface>]
+type IQueryFunction = 
+    abstract GetQuery : FieldSchema * values:IEnumerable<string> * properties:ClauseProperties -> Result<Query>
 
 type SearchBaggage = 
-  { Fields : IReadOnlyDictionary<string, FieldSchema>
-    ComputedFunctions : Dictionary<string, IComputedFunction>
-    FieldFunctions : Dictionary<string, IFieldFunction>
-    QueryFunctions : Dictionary<string, IQueryFunction> }
+    { Fields : IReadOnlyDictionary<string, FieldSchema>
+      QueryFunctions : Dictionary<string, IQueryFunction> }
 
 // ----------------------------------------------------------------------------
 // Contains all predefined flex queries. Also contains the search factory service.
@@ -54,156 +117,139 @@ type SearchBaggage =
 // all classes defined here are dynamically discovered using MEF
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
-module SearchDsl =
-    let ignoreFunctionHandlerName = "isblank" 
+module SearchDsl = 
+    let ignoreFunctionHandlerName = "isblank"
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
-    let inline extractFunctionName (str : string) = 
-        str |> Seq.where (fun c -> Char.IsLetter c || c = '_') 
-            |> String.Concat
-            |> fun s -> s.ToLower()
-
-    let getFunction<'T> (name : string) (functions : Dictionary<string, 'T>) =
-        match functions.TryGetValue <| extractFunctionName name with
-        | true, func -> ok func
-        | _ -> fail <| FunctionNotFound name
-
-    let getFieldSchema fieldName (fields : IReadOnlyDictionary<string, FieldSchema>) =
-        maybe {
+    
+    let getFieldSchema fieldName (fields : IReadOnlyDictionary<string, FieldSchema>) = 
+        maybe { 
             let! field = fields |> keyExists2 (fieldName, fieldNotFound)
             do! FieldSchema.isSearchable field |> boolToResult (StoredFieldCannotBeSearched(field.FieldName))
-            return field }
-
-    let getFieldDefaultValue fieldName (fields : IReadOnlyDictionary<string, FieldSchema>) =
-        fields |> keyExists2 (fieldName, fieldNotFound)
-        >>= fun field -> field.FieldType.DefaultStringValue |> ok
-
+            return field
+        }
+    
     // Gets a variable value from the search query.
     // Empty/blank values are considered an error
-    let getVariable (name : VariableName) (variables : Variables) =
+    let getVariable (name : VariableName) (variables : Variables) = 
         match variables.TryGetValue <| name.ToLower() with
         | true, value -> 
             if isNotBlank value then ok value
             else fail <| MissingVariableValue name
         | _ -> fail <| MissingVariableValue name
-
-//    let rec getFieldNameFromFunction (func : Function) =
-//        match func with
-//        | FieldFunction(_,fieldName,_) -> fieldName
-//        | QueryFunction(_,func',_) -> getFieldNameFromFunction func'
-
-//    let computeVariable baggage variables (fieldNameFromContext : FieldName) (computableValue : ComputableValue) = 
-//        match computableValue with
-//        | Variable(variableName) ->
-//            match variableName.ToUpper() with
-//            | "IGNORE" -> ok None
-//            | "DEFAULT" -> baggage.Fields |> getFieldDefaultValue fieldNameFromContext
-//                           >>= (Some >> ok)
-//            | _ -> variables |> getVariable variableName
-//                   >>= (Some >> ok)
-//        | _ -> fail <| SearchError(sprintf "Expected to parse a variable, but got instead: %A" computableValue)
-
-//    let rec computeValue baggage variables (fieldNameFromContext : FieldName) (computableValue : ComputableValue) = 
-//        match computableValue with
-//        | Constant(value) -> value |> Some |> ok
-//        | Variable(_) as var -> var |> computeVariable baggage variables fieldNameFromContext 
-//        | ComputableFunction(funcName, cvs) -> 
-//            if extractFunctionName funcName = ignoreFunctionHandlerName 
-//            // Special case for functions that handle @IGNORE
-//            then if cvs.Length <> 2 
-//                 then fail <| NumberOfFunctionParametersMismatch(ignoreFunctionHandlerName, 2, cvs.Length)
-//                 else match computeVariable baggage variables fieldNameFromContext cvs.[0] with
-//                      | Fail(_) -> computeValue baggage variables fieldNameFromContext cvs.[1]
-//                      | origValue -> origValue
-//            else
-//                cvs
-//                >>>= (computeValue baggage variables fieldNameFromContext)
-//                >>= (Seq.toArray >> ok)
-//                >>= fun computedValues -> 
-//                        baggage.ComputedFunctions |> getFunction funcName
-//                        >>= fun computedFunction -> computedFunction.GetQuery computedValues
-
-    let computeFieldFunc baggage funcName fieldName cvs = 
-        maybe {
+    
+    /// Checks if there is a need to generate query or not? In case there are no tokens then
+    /// the main query could be replaced with match all or match none queries.
+    /// Also if the match rule is set to use defaults then we can inject the default value.
+    let byPassMainQueryGeneration (fieldName, fieldSchema : FieldSchema, values : List<string>, 
+                                   properties : ClauseProperties) = 
+        if values.Count = 0 then 
+            // Check if there is a configured behaviour for the missing value
+            match properties.MatchRule with
+            | ClauseMatchRule.All -> 
+                getMatchAllDocsQuery()
+                |> Some
+                |> Ok
+            | ClauseMatchRule.None -> 
+                getMatchNoDocsQuery()
+                |> Some
+                |> Ok
+            | ClauseMatchRule.FieldDefault -> 
+                values.Add(fieldSchema.FieldType.DefaultStringValue)
+                None |> Ok
+            | ClauseMatchRule.UseDefault -> 
+                values.Add(properties.DefaultValue.Value)
+                None |> Ok
+            | _ -> fail <| MissingVariableValue(fieldName)
+        else None |> Ok
+    
+    /// Generate the leaf node clause for a given Clause predicate 
+    let getClause (funcName, fieldName, parameters : FunctionParameter list) (searchQuery : SearchQuery) 
+        (baggage : SearchBaggage) = 
+        maybe { 
             let! fieldSchema = baggage.Fields |> getFieldSchema fieldName
-            let! searchFunction = baggage.FieldFunctions |> getFunction funcName
-            return! searchFunction.GetQuery(fieldSchema, cvs, funcName)
+            let! func = baggage.QueryFunctions |> keyExists2 (funcName, queryNotFound)
+            let properties = ClauseProperties.Create(parameters)
+            let tokens = stringListPool.Get()
+            for p in parameters do
+                match p with
+                | Constant(c) -> fieldSchema |> FieldSchema.getTokens (c, tokens)
+                | Variable(v) -> 
+                    match searchQuery.Variables.TryGetValue <| v.ToLower() with
+                    | true, value -> 
+                        if isNotBlank value then fieldSchema |> FieldSchema.getTokens (value, tokens)
+                    | _ -> ()
+                | _ -> ()
+            // We can bypass main query if we don't have any tokens to search
+            let! byPassMainQuery = byPassMainQueryGeneration (fieldName, fieldSchema, tokens, properties)
+            match byPassMainQuery with
+            | Some(q) -> 
+                // Make sure to return the item to the pool
+                stringListPool.Return(tokens)
+                return q
+            | None -> 
+                let mutable q = func.GetQuery(fieldSchema, tokens, properties)
+                // It is safe to return the item to the pool as we have used
+                // it in query generation.
+                stringListPool.Return(tokens)
+                match q with
+                | Ok(q') -> 
+                    let mutable q'' = q'
+                    if properties.Boost.IsSome then q'' <- getBoostQuery (q', properties.Boost.Value)
+                    if properties.ConstantScore.IsSome then 
+                        q'' <- getConstantScoreQuery (q'', properties.ConstantScore.Value)
+                    return q''
+                | _ -> return! q
         }
-
-    let computeQueryFunction baggage funcName query computedValue = 
-        baggage.QueryFunctions |> getFunction funcName
-        >>= fun searchFunction -> searchFunction.GetQuery(query, computedValue)
-
-//    let rec compute (baggage : SearchBaggage) (variables : Variables) (func : Function) =
-//        match func with
-//        | FieldFunction(funcName, fieldName, cvs) ->
-//            cvs
-//            >>>= (computeValue baggage variables fieldName )
-//            >>= (Seq.toArray >> ok)
-//            >>= (computeFieldFunc baggage funcName fieldName)
-//        | QueryFunction(funcName, ``function``, funcArg) ->
-//            ``function`` 
-//            |> compute baggage variables
-//            >>= fun query -> if funcArg.IsNone then ok (query, None)
-//                             else computeValue baggage variables (getFieldNameFromFunction ``function``) funcArg.Value
-//                                  >>= fun computedValue -> (query, computedValue) |> ok
-//            >>= fun (q,cv) -> computeQueryFunction baggage funcName q cv
-
-    let rec generateQuery (predicate : Predicate)
-                          (searchQuery : SearchQuery)
-                          (baggage : SearchBaggage) =
-        assert (baggage.FieldFunctions.Count > 0)
-
-        maybe {
+    
+    let rec generateQuery (predicate : Predicate) (searchQuery : SearchQuery) (baggage : SearchBaggage) = 
+        maybe { 
             match predicate with
-            | NotPredicate(pr) -> let! notQuery = generateQuery pr searchQuery baggage
-                                  return getBooleanQuery() 
-                                         |> addMustNotClause notQuery
-                                         |> addMatchAllClause
-                                         :> Query
-            | Clause(_) -> return getBooleanQuery() :> Query
+            | NotPredicate(pr) -> 
+                let! notQuery = generateQuery pr searchQuery baggage
+                return getBooleanQuery()
+                       |> addMustNotClause notQuery
+                       |> addMatchAllClause :> Query
+            | Clause(funcName, fieldName, parameters) -> 
+                return! getClause (funcName, fieldName, parameters) searchQuery baggage
             | OrPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateQuery lhs searchQuery baggage
                 let! rhsQuery = generateQuery rhs searchQuery baggage
                 return getBooleanQuery()
-                        |> addShouldClause lhsQuery
-                        |> addShouldClause rhsQuery 
-                        :> Query
+                       |> addShouldClause lhsQuery
+                       |> addShouldClause rhsQuery :> Query
             | AndPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateQuery lhs searchQuery baggage
                 let! rhsQuery = generateQuery rhs searchQuery baggage
                 return getBooleanQuery()
-                        |> addMustClause lhsQuery
-                        |> addMustClause rhsQuery 
-                        :> Query }
-
-
+                       |> addMustClause lhsQuery
+                       |> addMustClause rhsQuery :> Query
+        }
+    
     /// Returns a document from the index
     let getDocument (indexWriter : IndexWriter, search : SearchQuery, document : LuceneDocument) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        let getValue(field: FieldSchema) =
+        
+        let getValue (field : FieldSchema) = 
             let value = document.Get(field.SchemaName)
             if notNull value then 
-                if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then
+                if value = Constants.StringDefaultValue && search.ReturnEmptyStringForNull then 
                     fields.Add(field.FieldName, String.Empty)
-                else
-                    fields.Add(field.FieldName, value)
-
+                else fields.Add(field.FieldName, value)
         match search.Columns with
         // Return no other columns when nothing is passed
         | _ when search.Columns.Length = 0 -> ()
         // Return all columns when *
         | _ when search.Columns.First() = "*" -> 
             for field in indexWriter.Settings.Fields do
-                if [IdField.Name; TimeStampField.Name; ModifyIndexField.Name; StateField.Name]
-                   |> Seq.contains field.FieldName
-                then ()
-                else getValue(field)
+                if [ IdField.Name; TimeStampField.Name; ModifyIndexField.Name; StateField.Name ] 
+                   |> Seq.contains field.FieldName then ()
+                else getValue (field)
         // Return only the requested columns
         | _ -> 
             for fieldName in search.Columns do
                 match indexWriter.Settings.Fields.TryGetValue(fieldName) with
-                | (true, field) -> getValue(field)
+                | (true, field) -> getValue (field)
                 | _ -> ()
         fields
     
@@ -215,21 +261,20 @@ module SearchDsl =
         // array per search is high
         let topDocsCollection : TopFieldDocs array = Array.zeroCreate indexSearchers.Length
         
-        let sortOrder =
+        let sortOrder = 
             match searchQuery.OrderByDirection with
             | Constants.OrderByDirection.Ascending -> false
             | _ -> true
-
+        
         let sort = 
             match searchQuery.OrderBy with
             | null -> Sort.RELEVANCE
             | _ -> 
                 match indexWriter.Settings.Fields.TryGetValue(searchQuery.OrderBy) with
                 | (true, field) -> 
-                    if field |> FieldSchema.hasDocValues then
+                    if field |> FieldSchema.hasDocValues then 
                         new Sort(new SortField(field.SchemaName, field.FieldType.SortFieldType, sortOrder))
-                    else
-                        Sort.RELEVANCE
+                    else Sort.RELEVANCE
                 | _ -> Sort.RELEVANCE
         
         let distinctBy = 
@@ -247,13 +292,12 @@ module SearchDsl =
             | 0 -> 10 + searchQuery.Skip
             | _ -> searchQuery.Count + searchQuery.Skip
         
-        let searchShard(x : ShardWriter) =
+        let searchShard (x : ShardWriter) = 
             // This is to enable proper sorting
-            let topFieldCollector = 
-                TopFieldCollector.Create(sort, count, null, true, true, true)
+            let topFieldCollector = TopFieldCollector.Create(sort, count, null, true, true, true)
             indexSearchers.[x.ShardNo].IndexSearcher.Search(query, topFieldCollector)
             topDocsCollection.[x.ShardNo] <- topFieldCollector.TopDocs()
-            
+        
         indexWriter.ShardWriters |> Array.Parallel.iter searchShard
         let totalDocs = TopDocs.Merge(sort, count, topDocsCollection)
         let hits = totalDocs.ScoreDocs
@@ -299,12 +343,10 @@ module SearchDsl =
         let processDocument (hit : ScoreDoc, document : LuceneDocument) = 
             let timeStamp = 
                 let t = document.Get(indexWriter.GetSchemaName(TimeStampField.Name))
-                if isNull t then
-                    0L
-                else
-                    int64 t
-            let fields = getDocument (indexWriter, searchQuery, document)
+                if isNull t then 0L
+                else int64 t
             
+            let fields = getDocument (indexWriter, searchQuery, document)
             let resultDoc = new Model.Document()
             resultDoc.Id <- document.Get(indexWriter.GetSchemaName(IdField.Name))
             resultDoc.IndexName <- indexWriter.Settings.IndexName
@@ -345,7 +387,5 @@ module SearchDsl =
                     (indexSearchers.[i] :> IDisposable).Dispose()
             }
         
-        new SearchResults(RecordsReturned = recordsReturned,
-                          BestScore = totalDocs.GetMaxScore(),
-                          TotalAvailable = totalAvailable,
-                          Documents = results.ToArray())
+        new SearchResults(RecordsReturned = recordsReturned, BestScore = totalDocs.GetMaxScore(), 
+                          TotalAvailable = totalAvailable, Documents = results.ToArray())

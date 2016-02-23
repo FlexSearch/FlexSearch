@@ -229,7 +229,9 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         
         member __.Analyze(analyzerName : string, input : string) = 
             maybe { let! analyzer = getAnalyzer (analyzerName)
-                    return parseTextUsingAnalyzer(analyzer, "", input).ToArray() }
+                    let tokens = new List<string>()
+                    parseTextUsingAnalyzer(analyzer, "", input, tokens)
+                    return tokens.ToArray() }
 
 [<Sealed>]
 type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
@@ -325,7 +327,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
             }
                 
 [<Sealed>]
-type SearchService(parser : IFlexParser, scriptService : IScriptService, computedFunctions : Dictionary<string, IComputedFunction>, fieldFunctions : Dictionary<string, IFieldFunction>, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
+type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
     let getSearchPredicate (writers : IndexWriter, search : SearchQuery) = 
         maybe { 
             if String.IsNullOrWhiteSpace(search.PredefinedQuery) <> true then 
@@ -371,8 +373,6 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
             | _ -> 
                 return!
                   { Fields = writer.Settings.Fields.ReadOnlyDictionary
-                    ComputedFunctions = computedFunctions
-                    FieldFunctions = fieldFunctions
                     QueryFunctions = queryFunctions }
                   |> SearchDsl.generateQuery predicate searchQuery
         }

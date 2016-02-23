@@ -63,6 +63,17 @@ type SearchParserTests() =
     [<InlineData("anyOf ( abc , 'a1234' )")>]
     member __.``Expressions with spacing issues should parse`` (sut : string) = test2 sut
 
+    [<InlineData("anyof(a,'a') and anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') AND anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') And anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') or anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') OR anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') Or anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') and not anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') AND NOT anyof(a,'a')")>]
+    [<InlineData("anyof(a,'a') And Not anyof(a,'a')")>]
+    member __.``Operator casing tests`` (sut : string) = test2 sut
+
 type MethodParserTests() = 
     
     member __.``Simple method call syntax should succeed``() = 

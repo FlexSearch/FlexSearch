@@ -35,7 +35,6 @@ module Pools =
     /// A reusable dictionary pool
     let dictionaryPool = 
         let initialCapacity = 50
-        let itemsInPool = 300
         let factory() = new Dictionary<string, string>(initialCapacity, StringComparer.OrdinalIgnoreCase)
         
         let onRelease (dict : Dictionary<string, string>) = 
@@ -46,6 +45,16 @@ module Pools =
     
     /// Global memory pool to be shared across the engine
     let memory = new Microsoft.IO.RecyclableMemoryStreamManager()
+    
+    /// Global pool for string list
+    let stringListPool = 
+        let initialCapacity = 50
+        let factory() = new List<string>(initialCapacity)
+        
+        let onRelease (item : List<string>) = 
+            item.Clear()
+            true
+        new DefaultObjectPool<List<string>>(new DefaultObjectPoolPolicy<List<string>>(factory, onRelease))
 
 [<AutoOpen>]
 module BytePool = 

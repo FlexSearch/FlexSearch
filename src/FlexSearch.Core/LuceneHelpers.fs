@@ -122,6 +122,12 @@ module QueryHelpers =
     // Queries
     // ----------------------------------------------------------------------------
     let inline getMatchAllDocsQuery() = new MatchAllDocsQuery() :> Query
+    let inline getMatchNoDocsQuery() = new MatchNoDocsQuery() :> Query
+    let inline getBoostQuery(subQuery : Query, boost) = new BoostQuery(subQuery, boost) :> Query
+    let inline getConstantScoreQuery(subQuery : Query, score) = 
+        let q = new ConstantScoreQuery(subQuery) :> Query
+        q.SetBoost(score)
+        q
     let inline getBooleanQuery() =  new BooleanQuery()
     let inline getTermQuery fieldName text = new TermQuery(getTerm fieldName text) :> Query
     let inline getFuzzyQuery fieldName slop prefixLength text = 

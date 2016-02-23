@@ -148,8 +148,7 @@ module Analysis =
     /// This will enable us to avoid using the Lucene query parser
     /// We cannot use simple white space based token generation as it really depends 
     /// upon the analyzer used
-    let inline parseTextUsingAnalyzer (analyzer : FlexLucene.Analysis.Analyzer, fieldName, queryText) = 
-        let tokens = new List<string>()
+    let inline parseTextUsingAnalyzer (analyzer : FlexLucene.Analysis.Analyzer, fieldName, queryText, tokens : List<string>) = 
         let source : TokenStream = analyzer.TokenStream(fieldName, new StringReader(queryText))
         // Get the CharTermAttribute from the TokenStream
         let termAtt = source.AddAttribute(flexCharTermAttribute.Value)
@@ -162,4 +161,3 @@ module Analysis =
             with _ -> ()
         finally
             source.Close()
-        tokens
