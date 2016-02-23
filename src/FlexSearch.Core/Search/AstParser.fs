@@ -105,7 +105,7 @@ type ClauseProperties =
 /// Used to represent a search operator like allOf etc.
 [<Interface>]
 type IQueryFunction = 
-    abstract GetQuery : FieldSchema * values:IEnumerable<string> * properties:ClauseProperties -> Result<Query>
+    abstract GetQuery : FieldSchema * values:List<string> * properties:ClauseProperties -> Result<Query>
 
 type SearchBaggage = 
     { Fields : IReadOnlyDictionary<string, FieldSchema>
@@ -194,6 +194,7 @@ module AstParser =
                     if properties.Boost.IsSome then q'' <- getBoostQuery (q', properties.Boost.Value)
                     if properties.ConstantScore.IsSome then 
                         q'' <- getConstantScoreQuery (q'', properties.ConstantScore.Value)
+                    if properties.Filter then q'' <- getBooleanQuery() |> addFilterClause q'' :> Query
                     return q''
                 | _ -> return! q
         }
