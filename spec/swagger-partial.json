@@ -1193,7 +1193,7 @@
         }
       }
     },
-    "/indices/{id}/documents": {
+    "/indices/{indexName}/documents": {
       "get": {
         "tags": [ "documents" ],
         "summary": "Returns top 10 document from the index",
@@ -1201,7 +1201,7 @@
         "operationId": "getDocuments",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1228,7 +1228,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1249,7 +1249,7 @@
         "operationId": "deleteDocuments",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
