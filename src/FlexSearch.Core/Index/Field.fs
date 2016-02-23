@@ -74,7 +74,7 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
     /// Generates the internal representation of the field. This is mostly
     /// useful when searching if the field does not have an associated analyzer.
     abstract ToInternal : string -> string
-
+    
     /// Create a new Field template for the given field. 
     abstract CreateFieldTemplate : SchemaName -> generateDocValues:bool -> FieldTemplate
     
@@ -83,8 +83,13 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
     abstract UpdateDocument : FlexDocument -> SchemaName -> FieldSource option -> FieldTemplate -> unit
     
     /// Get a range query for the given type
-    abstract GetRangeQuery : option<SchemaName -> (LowerRange * UpperRange) -> (InclusiveMinimum * InclusiveMaximum) -> Result<Query>>
+    abstract GetRangeQuery : SchemaName
+     -> LowerRange -> UpperRange -> InclusiveMinimum -> InclusiveMaximum -> Result<Query>
     
+    /// A specialized case of range query which is useful when both upper and lower range 
+    /// are equal
+    member this.GetNumericQuery schemaName lowerRange = this.GetRangeQuery schemaName lowerRange lowerRange true true
+
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the
 /// instance could be cached. Any Index specific information should go to FieldSchema
@@ -118,9 +123,8 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     // Validate the given string for the Field. This works in
     // conjunction with the UpdateFieldTemplate
     abstract Validate : value:string -> 'T
-
     /// Provide a default ToInternal representation by wrapping around validate method.
-    override this.ToInternal (value) = this.Validate(value).ToString()
+    override this.ToInternal(value) = this.Validate(value).ToString()
 
 /// Helpers for creating Lucene field types
 [<RequireQualifiedAccess>]
@@ -153,14 +157,6 @@ module CreateField =
 /// Field that indexes integer values for efficient range filtering and sorting.
 type IntField() = 
     inherit FieldBase<int32>(IntField.TYPE_STORED, SortFieldType.INT, 0, None)
-    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
-        maybe 
-            { 
-            let! lower = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") lowerRange JavaIntMin 
-                             Convert.ToInt32 javaInt
-            let! upper = parseNumber<int32, java.lang.Integer> (schemaName, "Integer") upperRange JavaIntMax 
-                             Convert.ToInt32 javaInt
-            return NumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new IntField() :> FieldBase
     
     override this.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
@@ -176,19 +172,16 @@ type IntField() =
             template.DocValues.Value.[0].SetLongValue(int64 value)
     
     override this.Validate(value : string) = pInt this.DefaultValue value
-    override __.GetRangeQuery = Some <| getRangeQuery
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        maybe 
+            { 
+            let! lower = parseInt schemaName lowerRange JavaIntMin
+            let! upper = parseInt schemaName upperRange JavaIntMax
+            return NumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes double values for efficient range filtering and sorting.
 type DoubleField() = 
     inherit FieldBase<double>(DoubleField.TYPE_STORED, SortFieldType.DOUBLE, 0.0, None)
-    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
-        maybe 
-            { 
-            let! lower = parseNumber<double, java.lang.Double> (schemaName, "Double") lowerRange JavaDoubleMin 
-                             Convert.ToDouble javaDouble
-            let! upper = parseNumber<double, java.lang.Double> (schemaName, "Double") upperRange JavaDoubleMax 
-                             Convert.ToDouble javaDouble
-            return NumericRangeQuery.NewDoubleRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new DoubleField() :> FieldBase
     override this.Validate(value : string) = pDouble this.DefaultValue value
     
@@ -202,19 +195,16 @@ type DoubleField() =
         template.Fields.[0].SetDoubleValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetDoubleValue(value)
     
-    override __.GetRangeQuery = Some <| getRangeQuery
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        maybe 
+            { 
+            let! lower = parseDouble schemaName lowerRange JavaDoubleMin
+            let! upper = parseDouble schemaName upperRange JavaDoubleMax
+            return NumericRangeQuery.NewDoubleRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes float values for efficient range filtering and sorting.
 type FloatField() as self = 
     inherit FieldBase<float32>(FloatField.TYPE_STORED, SortFieldType.FLOAT, float32 0.0, None)
-    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
-        maybe 
-            { 
-            let! lower = parseNumber<float32, java.lang.Float> (schemaName, "Float") lowerRange JavaFloatMin 
-                             Convert.ToSingle javaFloat
-            let! upper = parseNumber<float32, java.lang.Float> (schemaName, "Float") upperRange JavaFloatMax 
-                             Convert.ToSingle javaFloat
-            return NumericRangeQuery.NewFloatRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new FloatField() :> FieldBase
     override __.Validate(value : string) = pFloat self.DefaultValue value
     
@@ -228,19 +218,16 @@ type FloatField() as self =
         template.Fields.[0].SetFloatValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetFloatValue(value)
     
-    override __.GetRangeQuery = Some <| getRangeQuery
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        maybe 
+            { 
+            let! lower = parseFloat schemaName lowerRange JavaFloatMin
+            let! upper = parseFloat schemaName upperRange JavaFloatMax
+            return NumericRangeQuery.NewFloatRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes long values for efficient range filtering and sorting.
 type LongField(defaultValue : int64, ?defaultFieldName) as self = 
     inherit FieldBase<int64>(LongField.TYPE_STORED, SortFieldType.LONG, defaultValue, defaultFieldName)
-    let getRangeQuery schemaName (lowerRange, upperRange) (inclusiveMinimum, inclusiveMaximum) = 
-        maybe 
-            { 
-            let! lower = parseNumber<int64, java.lang.Long> (schemaName, "Long") lowerRange JavaLongMin 
-                             Convert.ToInt64 javaLong
-            let! upper = parseNumber<int64, java.lang.Long> (schemaName, "Long") upperRange JavaLongMax
-                             Convert.ToInt64 javaLong
-            return NumericRangeQuery.NewLongRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
     static member Instance = new LongField(0L) :> FieldBase
     override __.Validate(value : string) = pLong self.DefaultValue value
     
@@ -254,7 +241,12 @@ type LongField(defaultValue : int64, ?defaultFieldName) as self =
         template.Fields.[0].SetLongValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetLongValue(value)
     
-    override __.GetRangeQuery = Some <| getRangeQuery
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        maybe 
+            { 
+            let! lower = parseLong schemaName lowerRange JavaLongMin
+            let! upper = parseLong schemaName upperRange JavaLongMax
+            return NumericRangeQuery.NewLongRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes date time values for efficient range filtering and sorting.
 /// It only supports a fixed YYYYMMDDHHMMSS format.
@@ -291,18 +283,17 @@ type TextField() as self =
     
     override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
         template.Fields.[0].SetStringValue(value)
-    override this.GetRangeQuery = None
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        ok 
+        <| (new TermRangeQuery(schemaName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes lowerRange), 
+                               new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes upperRange), inclusiveMinimum, 
+                               inclusiveMaximum) :> Query)
 
 /// A field that is indexed but not tokenized: the entire String value is indexed as a single token. 
 /// For example this might be used for a 'country' field or an 'id' field, or any field that you 
 /// intend to use for sorting or access through the field cache.
 type ExactTextField(?defaultFieldName) as self = 
     inherit FieldBase<String>(StringField.TYPE_STORED, SortFieldType.STRING, "null", defaultFieldName)
-    let getRangeQuery schemaName (lowerRange : string, upperRange : string) (inclusiveMinimum, inclusiveMaximum) = 
-        ok 
-        <| (new TermRangeQuery(schemaName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes lowerRange), 
-                               new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes upperRange), inclusiveMinimum, 
-                               inclusiveMaximum) :> Query)
     static member Instance = new ExactTextField() :> FieldBase
     
     override this.Validate(value : string) = 
@@ -319,7 +310,11 @@ type ExactTextField(?defaultFieldName) as self =
         template.Fields.[0].SetStringValue(value)
         if template.DocValues.IsSome then template.DocValues.Value.[0].SetBytesValue(Encoding.UTF8.GetBytes(value))
     
-    override __.GetRangeQuery = Some <| getRangeQuery
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        ok 
+        <| (new TermRangeQuery(schemaName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes lowerRange), 
+                               new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes upperRange), inclusiveMinimum, 
+                               inclusiveMaximum) :> Query)
 
 /// Field that indexes boolean values.
 type BoolField() = 
@@ -355,7 +350,8 @@ type StoredField() as self =
     
     override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
         template.Fields.[0].SetStringValue(value)
-    override __.GetRangeQuery = None
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        fail <| StoredFieldCannotBeSearched(schemaName)
 
 /// ----------------------------------------------------------------------
 /// Extended field types
