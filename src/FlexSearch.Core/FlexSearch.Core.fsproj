@@ -109,7 +109,8 @@
     <Compile Include="Index\VersionCache.fs" />
     <Compile Include="Index\IndexWriter.fs" />
     <Compile Include="Index\IndexManager.fs" />
-    <Compile Include="Search\Search.fs" />
+    <Compile Include="Search\AstParser.fs" />
+    <Compile Include="Search\Searcher.fs" />
     <Compile Include="Search\SearchQueryHelpers.fs" />
     <Compile Include="Search\QueryFunctions.fs" />
     <Compile Include="Services.fs" />

@@ -374,12 +374,12 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFu
                 return!
                   { Fields = writer.Settings.Fields.ReadOnlyDictionary
                     QueryFunctions = queryFunctions }
-                  |> SearchDsl.generateQuery predicate searchQuery
+                  |> generateQuery predicate searchQuery
         }
     
     let searchWrapper (writers, query, searchQuery) = 
         try 
-            ok <| SearchDsl.search (writers, query, searchQuery)
+            ok <| search (writers, query, searchQuery)
         with e -> fail <| SearchError(exceptionPrinter e)
     
     let search (searchQuery : SearchQuery) = 
