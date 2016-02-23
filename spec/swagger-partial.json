@@ -1051,7 +1051,8 @@
         ],
         "responses": {
           "default": {
-            "description": "Successful operation"
+            "description": "Successful operation",
+            "schema": { "$ref": "#/definitions/flexResponse" }
           }
         }
       }
