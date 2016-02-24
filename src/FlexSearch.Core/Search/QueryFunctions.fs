@@ -71,13 +71,14 @@ module Common =
         | 0 -> failwithf "Query should never be called with 0 tokens"
         | 1 -> 
             let p = getPhraseQuery slop
-            p.Add(getTerm fieldSchema.SchemaName tokens.Segments.[0])
+            for t in tokens.Segments do
+                p.Add(getTerm fieldSchema.SchemaName t)
             ok <| (p :> Query)
         | _ -> 
             let q = getBooleanQuery()
             for (startPos, len) in tokens.Positions do
                 let p = getPhraseQuery slop
-                for i = startPos to startPos + len do
+                for i = startPos to startPos + len - 1 do
                     p.Add(getTerm fieldSchema.SchemaName tokens.Segments.[i])
                 addBooleanClause p BooleanClauseOccur.SHOULD q |> ignore
             ok <| (q :> Query)

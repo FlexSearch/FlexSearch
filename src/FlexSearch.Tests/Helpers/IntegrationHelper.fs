@@ -233,6 +233,14 @@ module SearchHelpers =
                 failwithf "Expecting Stored field cannot be searched error."
         | _ -> failwithf "Expecting Stored field cannot be searched error."
 
+    let fieldTypeNotSupported (queryString : string) (ih : IntegrationHelper) = 
+        let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
+        match result with
+        | Fail(f) -> 
+            if f.OperationMessage().ErrorCode <> "QueryOperatorFieldTypeNotSupported" then 
+                failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
+        | _ -> failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
+
     let verifyScore (expectedScore : int) (queryString : string) (ih : IntegrationHelper) =
         getResult queryString ih
         |> fun r -> test <@ r.BestScore = float32 expectedScore @>
