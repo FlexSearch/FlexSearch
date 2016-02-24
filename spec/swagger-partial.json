@@ -1497,7 +1497,7 @@
         }
       }
     },
-    "/indices/{id}/status": {
+    "/indices/{indexName}/status": {
       "get": {
         "tags": [ "indices" ],
         "summary": "Returns the status of an index",
@@ -1505,7 +1505,7 @@
         "operationId": "getStatus",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1562,7 +1562,7 @@
         }
       }
     },
-    "/indices/{id}/fields": {
+    "/indices/{indexName}/fields": {
       "put": {
         "tags": [ "indices" ],
         "summary": "Update the Index Fields",
@@ -1576,7 +1576,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1591,7 +1591,7 @@
         }
       }
     },
-    "/indices/{id}/predefinedQuery": {
+    "/indices/{indexName}/predefinedQuery": {
       "put": {
         "tags": [ "indices" ],
         "summary": "Adds or updates a predefined query for the given index",
@@ -1605,7 +1605,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1665,7 +1665,7 @@
         }
       }
     },
-    "/indices/{id}/sql": {
+    "/indices/{indexName}/sql": {
       "post": {
         "tags": [ "common" ],
         "summary": "Connector for importing data from Microsoft SQL into the system.\n",
@@ -1680,7 +1680,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
