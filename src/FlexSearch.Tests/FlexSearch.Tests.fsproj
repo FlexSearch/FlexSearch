@@ -65,7 +65,7 @@
     <Compile Include="Index\FieldSchemaTests.fs" />
     <Compile Include="Index\IndexTests.fs" />
     <Compile Include="Search\SearchTests.fs" />
-    <Compile Include="Search\AllOfTests.fs" />
+    <Compile Include="Search\QueryTests.fs" />
     <Compile Include="InfrastructureTests.fs" />
     <Compile Include="DomainTests.fs" />
     <Compile Include="ServiceTests.fs" />

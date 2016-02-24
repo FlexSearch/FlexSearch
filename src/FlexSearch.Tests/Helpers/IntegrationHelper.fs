@@ -50,17 +50,17 @@ module DataHelpers =
     
     let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let testData = """
-id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1
-1,t,20101010,20101010101010,100,1000,1000,1000,1000,aaron,aaron,hewitt,aaaaa
-2,T,20111201,20111201111213,100,1000,1000,1000,1000,AAron,AAron,Garner,bbbbb
-3,f,20101210,20101210070611,-100,-1000,-1000,-1000,-1000,Fred,Fred,hewitt,ccccc
-4,F,20151201,20151201010159,150,1500,1500,1500,1500,fred,fred,Garner,ddddd
-5,true,20101101,20101101131312,-150,-1500,-1500,-1500,-1500,aaron,aaron,johnson,eeeee
-6,false,20130211,20130211070809,200,2000,2000,2000,2000,airen,airen,johnson,fffff
-7,True,20111201,20111201091011,250,2500,2500,2500,2500,aaron,aaron,Garner,ggggg
-8,False,20161217,20161217151618,300,3000,3000,3000,3000,ford,ford,johnson,hhhhh
-9,TRUE,20111111,20101111111111,-300,-3000,-3000,-3000,-3000,erik,erik,hendrick,iiiii
-10,FALSE,20100310,20100310111213,400,4000,4000,4000,4000,aren,aren,Hewitt,jjjjj
+id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1,t3
+1,t,20101010,20101010101010,100,1000,1000,1000,1000,aaron,aaron,hewitt,aaaaa,federal parliamentary democracy and a Commonwealth realm
+2,T,20111201,20111201111213,100,1000,1000,1000,1000,AAron,AAron,Garner,bbbbb,federal parliamentary democracy under a constitutional monarchy
+3,f,20101210,20101210070611,-100,-1000,-1000,-1000,-1000,Fred,Fred,hewitt,ccccc,parliamentary monarchy
+4,F,20151201,20151201010159,150,1500,1500,1500,1500,fred,fred,Garner,ddddd,parliamentary constitutional monarchy
+5,true,20101101,20101101131312,-150,-1500,-1500,-1500,-1500,aaron,aaron,johnson,eeeee,parliamentary democracy within a constitutional monarchy
+6,false,20130211,20130211070809,200,2000,2000,2000,2000,airen,airen,johnson,fffff,constitutional monarchy with a parliamentary system of government and a Commonwealth realm
+7,True,20111201,20111201091011,250,2500,2500,2500,2500,aaron,aaron,Garner,ggggg,Islamic republic
+8,False,20161217,20161217151618,300,3000,3000,3000,3000,ford,ford,johnson,hhhhh,republic; multiparty presidential regime
+9,TRUE,20111111,20101111111111,-300,-3000,-3000,-3000,-3000,erik,erik,hendrick,iiiii,republic
+10,FALSE,20100310,20100310111213,400,4000,4000,4000,4000,aren,aren,Hewitt,jjjjj,monarchy parliamentary
 """
     
     /// Basic test index with all field types
@@ -81,7 +81,8 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1
                            new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
                            new Field("t1", Constants.FieldType.Text)
                            new Field("t2", Constants.FieldType.Text)
-                           new Field("s1", Constants.FieldType.Stored) |]
+                           new Field("s1", Constants.FieldType.Stored)
+                           new Field("t3", Constants.FieldType.Text) |]
         index
     
     /// Utility method to add data to an index

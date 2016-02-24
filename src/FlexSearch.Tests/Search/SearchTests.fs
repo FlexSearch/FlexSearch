@@ -17,6 +17,7 @@ type SearchTestsBase(ih: IntegrationHelper) =
     abstract ``Works with TimeStamp Field`` : unit -> unit
     abstract ``Works with ModifyIndex Field`` : unit -> unit
     abstract ``Works with Int Field`` : unit -> unit
+    abstract ``Works with Multiple Int input`` : unit -> unit
     abstract ``Works with Long Field`` : unit -> unit
     abstract ``Works with Double Field`` : unit -> unit
     abstract ``Works with Float Field`` : unit -> unit
@@ -28,15 +29,14 @@ type SearchTestsBase(ih: IntegrationHelper) =
     abstract ``Works with Or clause`` : unit -> unit
     abstract ``Works with Not clause`` : unit -> unit
     [<Ignore>]
-    abstract ``Filter query`` : unit -> string
+    abstract ``Filter query`` : unit -> string * string
     abstract ``Works with AndOr clause`` : unit -> unit
     abstract ``Works with Multiple params`` : unit -> unit
-    abstract ``Works with Functions`` : unit -> unit
     abstract ``Works with Constants`` : unit -> unit
-    member __.``Works with Filter clause``() = 
-        let query = __.``Filter query``()
-        let andScore = ih |> getScore query
-        let filterScore = ih |> getScore (sprintf "%s and filter(%s)" query query)
+    member this.``Works with Filter clause``() = 
+        let (query1, query2) = this.``Filter query``()
+        let andScore = ih |> getScore query1
+        let filterScore = ih |> getScore query2
         andScore =? filterScore
 
 (*
@@ -48,6 +48,7 @@ type OperatorTestsBase(ih : IntegrationHelper) =
     override __.``Works with TimeStamp Field``() = ()
     override __.``Works with ModifyIndex Field``() = ()
     override __.``Works with Int Field``() = ()
+    override __.````Works with Multiple Int input``() = ()
     override __.``Works with Long Field``() = ()
     override __.``Works with Double Field``() = ()
     override __.``Works with Float Field``() = ()
