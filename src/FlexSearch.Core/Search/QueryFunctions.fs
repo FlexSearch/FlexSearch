@@ -23,99 +23,138 @@ open FlexLucene.Search
 open System.Collections.Generic
 open SearchQueryHelpers
 open FlexLucene.Search
+open System.Linq
+open System
 
 // ----------------------------------------------------------------------------
 // Field Functions
 // These functions generate a Lucene Query based on input
 // ---------------------------------------------------------------------------- 
-
 [<AutoOpen>]
-module Common =
-    let anyAllOfBase fieldSchema arguments (instance : 'T) isAllOf = ()
-//        match FieldSchema.isNumericField fieldSchema with
-//        | true -> 
-//            arguments |> checkItHasNPopulatedArguments 1 instance
-//            >>= fun _ -> fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-//                                                                   (arguments.[0].Value, arguments.[0].Value) 
-//                                                                   (true, true)
-//        | false -> 
-//            // If there are multiple terms returned by the parser then we will create a boolean query
-//            // with all the terms as sub clauses with And operator
-//            // This behaviour will result in matching of both the terms in the results which may not be
-//            // adjacent to each other. The adjacency case should be handled through phrase query
-//            arguments |> checkAtLeastNPopulatedArguments 1 instance
-//            >>= fun _ -> 
-//                zeroOneOrManyQuery 
-//                <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
-//                <| getTermQuery fieldSchema.SchemaName 
-//                <| if isAllOf then BooleanClauseOccur.MUST else BooleanClauseOccur.SHOULD
-//
-//    let phraseMatch fieldSchema arguments (instance : 'T) funcName slop =
-//        arguments |> checkAtLeastNPopulatedArguments 1 instance
-//        >>= fun _ -> 
-//            let terms = FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
-//            let query = new PhraseQuery()
-//            for term in terms do
-//                query.Add(new Term(fieldSchema.SchemaName, term))
-//            query.SetSlop(slop)
-//            ok <| (query :> Query)
+module Common = 
+    /// Get integer value for a key from the clause
+    let inline intFromParameters key defaultValue (parameters : ClauseProperties) = 
+        let f = 
+            parameters.Switches.FirstOrDefault
+                (fun x -> String.Equals(x.Name, key, StringComparison.InvariantCultureIgnoreCase))
+        if isNotNull f then 
+            match f.Value with
+            | Some(v) -> pInt defaultValue v
+            | None -> defaultValue
+        else defaultValue
+    
+    // ----------------------------------------------------------------------------
+    // Query generators
+    // ----------------------------------------------------------------------------
+    let getBoolQueryFromTerms boolClauseType innerQueryProvider terms = 
+        let boolQuery = getBooleanQuery()
+        terms |> Seq.iter (fun term -> 
+                     let innerQuery = innerQueryProvider term
+                     boolQuery
+                     |> addBooleanClause innerQuery boolClauseType
+                     |> ignore)
+        boolQuery :> Query
+    
+    /// Generates simple or boolean query depending upon the number of tokens.
+    /// NOTE: This should only be used when generated query is term based with
+    /// no positional relevance
+    let zeroOneOrManyQuery (tokens : Tokens) innerQueryProvider boolClause = 
+        match tokens.Count() with
+        | 0 -> getMatchAllDocsQuery()
+        | 1 -> innerQueryProvider (tokens.Segments.[0])
+        | _ -> getBoolQueryFromTerms boolClause innerQueryProvider tokens.Segments
+        |> ok
+    
+    let phraseMatch (slop) (fieldSchema : FieldSchema) (tokens : Tokens) =
+        assert (tokens.Count() > 0)
+        match tokens.Count() with
+        | 0 -> failwithf "Query should never be called with 0 tokens"
+        | 1 -> 
+            let p = getPhraseQuery slop
+            p.Add(getTerm fieldSchema.SchemaName tokens.Segments.[0])
+            ok <| (p :> Query)
+        | _ -> 
+            let q = getBooleanQuery()
+            for (startPos, len) in tokens.Positions do
+                let p = getPhraseQuery slop
+                for i = startPos to startPos + len do
+                    p.Add(getTerm fieldSchema.SchemaName tokens.Segments.[i])
+                addBooleanClause p BooleanClauseOccur.SHOULD q |> ignore
+            ok <| (q :> Query)
 
+/// AllOf Query is useful for matching all terms in the input
+/// in any order
+[<Name("allof"); Sealed>]
+type AllOfQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = true
+        member __.GetNumericQuery(fieldSchema, tokens, parameters) = 
+            fieldSchema.FieldType.GetNumericBooleanQuery fieldSchema.SchemaName tokens.Segments BooleanClauseOccur.MUST
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            zeroOneOrManyQuery tokens (getTermQuery fieldSchema.SchemaName) BooleanClauseOccur.MUST
 
+/// AnyOf Query is useful for matching any number terms in the input
+/// in any order
+[<Name("anyof"); Sealed>]
+type AnyOfQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = true
+        member __.GetNumericQuery(fieldSchema, tokens, parameters) = 
+            fieldSchema.FieldType.GetNumericBooleanQuery fieldSchema.SchemaName tokens.Segments 
+                BooleanClauseOccur.SHOULD
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            zeroOneOrManyQuery tokens (getTermQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
 
-///// Term Query
-//[<Name("allof"); Sealed>]
-//type AllOfQuery() = 
-//    interface IQueryFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) = 
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> anyAllOfBase fieldSchema arguments __ true
-//
-//[<Name("anyof"); Sealed>]
-//type AnyOfQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) = 
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> anyAllOfBase fieldSchema arguments __ false
-//            
-//
-///// Fuzzy Query
-//[<Name("fuzzy"); Sealed>]
-//type FlexFuzzyQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, funcName) =
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ ->
-//                let slop = extractDigits funcName |> byDefault 1
-//                // TODO
-//                //let prefixLength = parameters |> intFromOptDict "prefixlength" 0
-//                arguments |> checkAtLeastNPopulatedArguments 1 __
-//                >>= fun _ -> 
-//                    zeroOneOrManyQuery 
-//                    <| FieldSchema.getTerms (arguments |> getPopulatedArguments, new List<string>()) fieldSchema 
-//                    <| getFuzzyQuery fieldSchema.SchemaName slop 0 <| BooleanClauseOccur.MUST
-//
-///// Match all Query
-//[<Name("matchall"); Sealed>]
-//type FlexMatchAllQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(_,_,_) = ok <| getMatchAllDocsQuery()
-//
-//[<Name("uptowordsapart"); Sealed>]
-//type UpToNWordsApartQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, funcName) =
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ ->  
-//                let slop = extractDigits funcName |> byDefault 0
-//                phraseMatch fieldSchema arguments __ funcName slop
-//
-//[<Name("exact"); Sealed>]
-//type ExactMatchQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, funcName) = 
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> phraseMatch fieldSchema arguments __ funcName 0
-//
+/// Fuzzy Query is useful for fuzzy matching any number of terms in the input
+/// in any order
+[<Name("fuzzy"); Sealed>]
+type FuzzyQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = true
+        member __.GetNumericQuery(fieldSchema, _, _) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "fuzzy")
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            let slop = parameters |> intFromParameters "slop" 1
+            let prefixLength = parameters |> intFromParameters "prefixLength" 0
+            zeroOneOrManyQuery tokens (getFuzzyQuery fieldSchema.SchemaName slop prefixLength) BooleanClauseOccur.SHOULD
+
+/// Match all Query
+[<Name("matchall"); Sealed>]
+type MatchAllQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(_, _, _) = ok <| getMatchAllDocsQuery()
+        member __.GetQuery(_, _, _) = ok <| getMatchAllDocsQuery()
+
+/// Match none Query
+[<Name("matchnone"); Sealed>]
+type MatchNoneQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(_, _, _) = ok <| getMatchNoDocsQuery()
+        member __.GetQuery(_, _, _) = ok <| getMatchNoDocsQuery()
+
+/// Simple phrase match query which allows positional match of tokens
+[<Name("uptonwordsapart"); Sealed>]
+type UpToNWordsApartQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = true
+        member __.GetNumericQuery(fieldSchema, _, _) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "uptoNWordsApart")
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            let slop = parameters |> intFromParameters "slop" 1
+            phraseMatch slop fieldSchema tokens
+
+/// Specialized case of UpToNWordsApart query where slop is hard coded to 1
+[<Name("exact"); Sealed>]
+type ExactQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = true
+        member __.GetNumericQuery(fieldSchema, _, _) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "exact")
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            phraseMatch 1 fieldSchema tokens
+            
 ///// Wildcard Query
 //[<Name("like"); Sealed>]
 //type FlexWildcardQuery() = 

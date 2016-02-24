@@ -89,6 +89,18 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
     /// A specialized case of range query which is useful when both upper and lower range 
     /// are equal
     member this.GetNumericQuery schemaName lowerRange = this.GetRangeQuery schemaName lowerRange lowerRange true true
+    
+    member this.GetNumericBooleanQuery schemaName (values : List<string>) (occur : BooleanClauseOccur) = 
+        assert (values.Count <> 0)
+        maybe { 
+            if values.Count = 1 then return! this.GetNumericQuery schemaName values.[0]
+            else 
+                let main = getBooleanQuery()
+                for value in values do
+                    let! q = this.GetNumericQuery schemaName value
+                    addBooleanClause q occur main |> ignore
+                return main :> Query
+        }
 
 /// Information needed to represent a field in FlexSearch document
 /// This should only contain information which is fixed for a given type so that the

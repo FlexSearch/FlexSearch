@@ -135,7 +135,10 @@ module QueryHelpers =
     let inline getTermQuery fieldName text = new TermQuery(getTerm fieldName text) :> Query
     let inline getFuzzyQuery fieldName slop prefixLength text = 
         new FuzzyQuery((getTerm fieldName text), slop, prefixLength) :> Query
-    let inline getPhraseQuery() = new PhraseQuery()
+    let inline getPhraseQuery slop = 
+        let p = new PhraseQuery()
+        p.SetSlop(slop)
+        p
     let inline getWildCardQuery fieldName text = new WildcardQuery(getTerm fieldName text) :> Query
     let inline getRegexpQuery fieldName text = new RegexpQuery(getTerm fieldName text) :> Query
     
@@ -176,52 +179,3 @@ module QueryHelpers =
     let inline addFilterClause inheritedQuery (baseQuery : BooleanQuery) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.FILTER))
         baseQuery
-    
-    // ----------------------------------------------------------------------------
-    // Query generators
-    // ----------------------------------------------------------------------------
-    let getBoolQueryFromTerms boolClauseType innerQueryProvider terms = 
-        let boolQuery = getBooleanQuery()
-        terms |> Seq.iter (fun term -> 
-                     let innerQuery = innerQueryProvider term
-                     boolQuery
-                     |> addBooleanClause innerQuery boolClauseType
-                     |> ignore)
-        boolQuery :> Query
-    
-    let zeroOneOrManyQuery terms innerQueryProvider boolClause = 
-        match terms |> Seq.length with
-        | 0 -> getMatchAllDocsQuery()
-        | 1 -> innerQueryProvider (terms |> Seq.head)
-        | _ -> getBoolQueryFromTerms boolClause innerQueryProvider terms
-        |> ok
-//    // ------------------------
-//    // Range Queries
-//    // ------------------------
-//    let getRangeQuery value (includeLower, includeUpper) (infiniteMin, infiniteMax) (fIdxFld : Field.T) = 
-//        match FieldType.isNumericField fIdxFld.FieldType with
-//        | true -> 
-//            match fIdxFld.FieldType with
-//            | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
-//                match Int64.TryParse(value) with
-//                | true, value' -> 
-//                    NumericRangeQuery.NewLongRange
-//                        (fIdxFld.SchemaName, value' |> getJavaLong infiniteMin, value' |> getJavaLong infiniteMax, 
-//                         includeLower, includeUpper) :> Query |> ok
-//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime")
-//            | FieldType.Int -> 
-//                match Int32.TryParse(value) with
-//                | true, value' -> 
-//                    NumericRangeQuery.NewIntRange
-//                        (fIdxFld.SchemaName, value' |> getJavaInt infiniteMin, value' |> getJavaInt infiniteMax, 
-//                         includeLower, includeUpper) :> Query |> ok
-//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Integer")
-//            | FieldType.Double -> 
-//                match Double.TryParse(value) with
-//                | true, value' -> 
-//                    NumericRangeQuery.NewDoubleRange
-//                        (fIdxFld.SchemaName, value' |> getJavaDouble infiniteMin, value' |> getJavaDouble infiniteMax, 
-//                         includeLower, includeUpper) :> Query |> ok
-//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Double")
-//            | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime, Integer, Double")
-//        | false -> fail <| ExpectingNumericData fIdxFld.FieldName

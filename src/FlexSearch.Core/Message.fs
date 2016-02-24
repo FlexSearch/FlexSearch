@@ -240,7 +240,7 @@ type SearchMessage =
     | DataCannotBeParsed of fieldName : string * expectedDataType : string * actualValue : string
     | ExpectingNumericData of fieldName : string
     | ExpectingIntegerData of fieldName : string
-    | QueryOperatorFieldTypeNotSupported of fieldName : string
+    | QueryOperatorFieldTypeNotSupported of fieldName : string * operatorName: string
     | QueryStringParsingError of error : string * queryString : string
     | MethodCallParsingError of error : string
     | UnknownPredefinedQuery of indexName : string * queryName : string
@@ -272,8 +272,8 @@ type SearchMessage =
             | DataCannotBeParsed(f,e,a) -> sprintf "Data cannot be parsed for field '%s'. Expected data type %s. Actual value %s" f e a
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
             | ExpectingIntegerData(f) -> sprintf "Expecting numeric data: %s" f
-            | QueryOperatorFieldTypeNotSupported(f) -> 
-                sprintf "Query operator field type not supported for field '%s'" f
+            | QueryOperatorFieldTypeNotSupported(f, o) -> 
+                sprintf "Query operator : '%s' does not support the field type. Field '%s'" o f
             | QueryStringParsingError(e,q) -> sprintf "Query string parsing error: \n%s\n\nQuery String:\n%s" e q
             | MethodCallParsingError(e) -> sprintf "Unable to parse the method call: \n%s" e
             | UnknownPredefinedQuery(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
