@@ -59,6 +59,7 @@
     <Compile Include="Client\ApiResponse.cs" />
     <Compile Include="Extensions\CsvIndexingRequest.cs" />
     <Compile Include="Extensions\Field.cs" />
+    <Compile Include="Extensions\SearchQuery.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IDataTransferObject.cs" />
     <Compile Include="IExtraValidation.cs" />

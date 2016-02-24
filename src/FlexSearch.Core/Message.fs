@@ -308,6 +308,7 @@ type IndexingMessage =
     | DocumentIdNotFound of indexName : string * id : string
     | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
     | IndexFieldDeletionNotAllowed of indexName : string * originalFieldCount : int * actualFieldCount : int
+    | PredefinedQueryHasNoName of indexName : string * context : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Info)
         member this.OperationMessage() = 
@@ -329,6 +330,7 @@ type IndexingMessage =
             | IndexingVersionConflict(idx, id, v) -> 
                 sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
                     v
+            | PredefinedQueryHasNoName(i,c) -> sprintf "The provided Predefined Query for the index '%s' doesn't have a name. %s" i c
             |> caseToMsg this
 
 type ModuleInitMessage = 

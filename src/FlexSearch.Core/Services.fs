@@ -292,13 +292,15 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
 
         member __.AddOrUpdatePredefinedQuery(indexName:string , profile:SearchQuery) = 
             match im.Store.TryGetValue(indexName) with
-            | true, state -> 
+            | true, state when not <| String.IsNullOrEmpty(profile.QueryName) -> 
                 let index = state.IndexDto
                 match index.PredefinedQueries |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
                 | Some(spNo) -> index.PredefinedQueries.[spNo] <- profile
                 | _ -> index.PredefinedQueries <- [| profile |] |> Array.append index.PredefinedQueries
                 
                 im |> IndexManager.updateIndex index
+            | true, state when String.IsNullOrEmpty(profile.QueryName) ->
+                fail <| PredefinedQueryHasNoName(indexName, "The provided query string is: " + profile.QueryString)
             | _ -> fail <| IndexNotFound indexName
 
         member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) =
@@ -331,9 +333,9 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
 type SearchService(parser : IFlexParser, scriptService : IScriptService, computedFunctions : Dictionary<string, IComputedFunction>, fieldFunctions : Dictionary<string, IFieldFunction>, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
     let getSearchPredicate (writers : IndexWriter, search : SearchQuery) = 
         maybe { 
-            if String.IsNullOrWhiteSpace(search.PredefinedQuery) <> true then 
+            if not <| String.IsNullOrWhiteSpace(search.QueryName)  then 
                 // Search profile based
-                match writers.Settings.PredefinedQueries.TryGetValue(search.PredefinedQuery) with
+                match writers.Settings.PredefinedQueries.TryGetValue(search.QueryName) with
                 | true, p -> 
                     let (p', sq) = p
                     // This is a search profile based query. So copy over essential
@@ -361,7 +363,7 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, compute
                             | Fail(err) -> fail <| err
                         else okUnit
                     return p'
-                | _ -> return! fail <| UnknownPredefinedQuery(search.IndexName, search.PredefinedQuery)
+                | _ -> return! fail <| UnknownPredefinedQuery(search.IndexName, search.QueryName)
             else let! predicate = parser.Parse(search.QueryString)
                  return predicate
         }

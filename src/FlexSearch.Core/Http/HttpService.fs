@@ -46,7 +46,7 @@ module ServiceHelpers =
                     OrderByDirection.Ascending
                 else
                     OrderByDirection.Descending
-        query.PredefinedQuery <- request.HttpContext |> stringFromQueryString "predefinedquery" query.PredefinedQuery
+        query.QueryName <- request.HttpContext |> stringFromQueryString "queryname" query.QueryName
         query.IndexName <- request.ResId.Value
         query
 

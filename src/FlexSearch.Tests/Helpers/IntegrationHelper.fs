@@ -140,7 +140,7 @@ module SearchHelpers =
         query
     
     let withPredefinedQuery (profileName : string) (query : SearchQuery) = 
-        query.PredefinedQuery <- profileName
+        query.QueryName <- profileName
         query
     
     let withVariables (variables : (string * string) list) (query : SearchQuery) = 

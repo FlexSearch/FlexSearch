@@ -466,11 +466,6 @@
           "type": "boolean",
           "default": true
         },
-        "predefinedQuery": {
-          "description": "Predefined Query to be used when searching based on a template.",
-          "type": "string",
-          "default": ""
-        },
         "preSearchScript": {
           "description": "Script that is executed before submitting the search to Lucene. It can be used to modify the incoming Variables",
           "type": "string",

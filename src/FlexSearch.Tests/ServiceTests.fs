@@ -47,6 +47,11 @@ module IndexServiceTests =
             test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
             test <@ indexService.GetIndexState(index.IndexName) = ok(IndexStatus.Offline) @>
 
+        member __.``Cannot create an index with predefined queries that have no name``(indexService : IIndexService, index : Index) =
+            index.Active <- true
+            index.PredefinedQueries <- [| new SearchQuery(index.IndexName, "allof(et1, 'b')") |]
+            test <@ indexService.AddIndex index |> failed @>
+
     type UpdateIndexTests() =
         let modifyFirstField (index : Index) =
             let fields = index.Fields
@@ -72,7 +77,7 @@ id,et1,et2,i1,i2
             index.IndexConfiguration.CommitOnClose <- true
             indexTestData (testData, index, indexService, documentService)
 
-            let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile")
+            let result = new SearchQuery(index.IndexName, "", QueryName = "profile")
                          |> searchAndExtract searchService
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "1" @>
@@ -134,7 +139,7 @@ id,et1,et2,i1,i2
             let modified = index.Fields |> Array.skip 1
             test <@ indexService.UpdateIndexFields(index.IndexName, modified) |> failed @> 
 
-        member __.``Should be able to access old documents after modifying search profile``
+        member __.``Should be able to access old documents after modifying predefined query``
                   ( indexService : IIndexService, 
                     index : Index,
                     documentService : IDocumentService,
@@ -143,12 +148,12 @@ id,et1,et2,i1,i2
             |> setUpAndModifyProfile index indexService documentService searchService
             
             // Search using the new profile and check that the second record is returned
-            let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile")
+            let result = new SearchQuery(index.IndexName, "", QueryName = "profile")
                          |> searchAndExtract searchService
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "2" @>
 
-        member __.``Should be able to access old documents after adding new search profile``
+        member __.``Should be able to access old documents after adding new predefined query``
                   ( indexService : IIndexService, 
                     index : Index,
                     documentService : IDocumentService,
@@ -157,10 +162,19 @@ id,et1,et2,i1,i2
             |> setUpAndModifyProfile index indexService documentService searchService
             
             // Search using the new profile and check that the second record is returned
-            let result = new SearchQuery(index.IndexName, "", PredefinedQuery = "profile2")
+            let result = new SearchQuery(index.IndexName, "", QueryName = "profile2")
                          |> searchAndExtract searchService
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "2" @>
+
+        member __.``Should not be able to add a predefined query without a name``
+                ( indexService : IIndexService, 
+                    index : Index) =
+            index.Active <- true
+            indexService.AddIndex index |> (?)
+            let q = new SearchQuery(index.IndexName, "allof(et1, 'b')")
+            test <@ indexService.AddOrUpdatePredefinedQuery(index.IndexName, q) |> failed @>
+            indexService.DeleteIndex index.IndexName |> (?)
 
         member __.``Should be able to access old documents after changing index configuration``
                   ( indexService : IIndexService, 
