@@ -130,7 +130,9 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
                            new Field("nationality")
                            new Field("coordinates", Constants.FieldType.ExactText) |]
         index.PredefinedQueries <- 
-            [| new SearchQuery("country", "allof(agriproducts, 'wheat', 'corn', 'grapes') AND like(countryname, isblank(@countryName, @IGNORE))", QueryName = "agriSearch") |]
+            [| new SearchQuery("country", "allof(agriproducts, 'wheat', 'corn', 'grapes') AND like(countryname, isblank(@countryName, @IGNORE))", 
+                               QueryName = "agriSearch",
+                               Columns = [| "countryname"; "agriproducts" |]) |]
         index
     
     let buildSynonymFile fileName = 
