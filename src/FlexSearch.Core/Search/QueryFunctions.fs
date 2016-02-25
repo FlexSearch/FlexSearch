@@ -43,6 +43,14 @@ module Common =
             | None -> defaultValue
         else defaultValue
     
+    /// Checks if a given switch exists    
+    let inline switchExists key (parameters : ClauseProperties) = 
+        let f = 
+            parameters.Switches.FirstOrDefault
+                (fun x -> String.Equals(x.Name, key, StringComparison.InvariantCultureIgnoreCase))
+        if isNotNull f then Some()
+        else None
+    
     // ----------------------------------------------------------------------------
     // Query generators
     // ----------------------------------------------------------------------------
@@ -65,7 +73,7 @@ module Common =
         | _ -> getBoolQueryFromTerms boolClause innerQueryProvider tokens.Segments
         |> ok
     
-    let phraseMatch (slop) (fieldSchema : FieldSchema) (tokens : Tokens) =
+    let phraseMatch (slop) (fieldSchema : FieldSchema) (tokens : Tokens) = 
         assert (tokens.Count() > 0)
         match tokens.Count() with
         | 0 -> failwithf "Query should never be called with 0 tokens"
@@ -82,6 +90,17 @@ module Common =
                     p.Add(getTerm fieldSchema.SchemaName tokens.Segments.[i])
                 addBooleanClause p BooleanClauseOccur.SHOULD q |> ignore
             ok <| (q :> Query)
+    
+    let multiPhraseMatch (slop) (fieldSchema : FieldSchema) (tokens : Tokens) = 
+        assert (tokens.Count() > 0)
+        let q = new MultiPhraseQuery()
+        q.SetSlop slop
+        for (startPos, len) in tokens.Positions do
+            let terms = new List<Term>()
+            for i = startPos to startPos + len - 1 do
+                terms.Add(getTerm fieldSchema.SchemaName tokens.Segments.[i])
+            q.Add(terms.ToArray())
+        ok <| (q :> Query)
 
 /// AllOf Query is useful for matching all terms in the input
 /// in any order
@@ -135,27 +154,21 @@ type MatchNoneQuery() =
         member __.GetNumericQuery(_, _, _) = ok <| getMatchNoDocsQuery()
         member __.GetQuery(_, _, _) = ok <| getMatchNoDocsQuery()
 
-/// Simple phrase match query which allows positional match of tokens
-[<Name("uptonwordsapart"); Sealed>]
-type UpToNWordsApartQuery() = 
+/// Phrase match query which allows positional match of tokens.
+/// It also supports multi phrase query which allows multiple
+/// terms to be matched at the same position.
+[<Name("phrasematch"); Sealed>]
+type PhraseMatchQuery() = 
     interface IQueryFunction with
         member __.UseAnalyzer = true
         member __.GetNumericQuery(fieldSchema, _, _) = 
-            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "uptoNWordsApart")
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "phraseMatch")
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             let slop = parameters |> intFromParameters "slop" 1
-            phraseMatch slop fieldSchema tokens
-
-/// Specialized case of UpToNWordsApart query where slop is hard coded to 1
-[<Name("exact"); Sealed>]
-type ExactQuery() = 
-    interface IQueryFunction with
-        member __.UseAnalyzer = true
-        member __.GetNumericQuery(fieldSchema, _, _) = 
-            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "exact")
-        member __.GetQuery(fieldSchema, tokens, parameters) = 
-            phraseMatch 1 fieldSchema tokens
-            
+            let multiPhrase = parameters |> switchExists "multiphrase"
+            match multiPhrase with
+            | Some _ -> multiPhraseMatch slop fieldSchema tokens
+            | None -> phraseMatch slop fieldSchema tokens
 ///// Wildcard Query
 //[<Name("like"); Sealed>]
 //type FlexWildcardQuery() = 

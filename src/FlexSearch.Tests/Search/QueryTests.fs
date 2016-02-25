@@ -56,31 +56,43 @@ type ``Operator: 'anyOf' Tests``(ih : IntegrationHelper) =
     member __.``Order of tokens does not matter``() = ih |> verifyResultCount 7 "anyof(t3, 'parliamentary', 'monarchy')"
     member __.``Tokens don't have to be adjacent to each other``() = ih |> verifyResultCount 3 "anyof(t3, 'federal', 'democracy')"
 
-type ``Operator: 'uptoNWordsApart' Tests``(ih : IntegrationHelper) = 
+type ``Operator: 'phraseMatch' Tests``(ih : IntegrationHelper) = 
     inherit SearchTestsBase(ih)
-    override __.``Works with Exact Field``() = ih |> verifyResultCount 4 "uptoNWordsApart(et1, 'aaron')"
-    override __.``Works with Id Field``() = ih |> verifyResultCount 2 "uptoNWordsApart(_id, '1', '2')"
-    override __.``Works with TimeStamp Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(_timestamp, '*')"
-    override __.``Works with ModifyIndex Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(_modifyindex, '*')"
-    override __.``Works with Int Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(i1, '*')"
-    override __.``Works with Multiple Int input``() = ih |> fieldTypeNotSupported "uptoNWordsApart(i1, '*')"
-    override __.``Works with Long Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(l1, '*')"
-    override __.``Works with Double Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(db1, '*')"
-    override __.``Works with Float Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(f1, '*')"
-    override __.``Works with DateTime Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(dt1, '*')"
-    override __.``Works with Date Field``() = ih |> fieldTypeNotSupported "uptoNWordsApart(d1, '*')"
-    override __.``Works with Bool Field``() = ih |> verifyResultCount 5 "uptoNWordsApart(b1, 'T')"
-    override __.``Works with Stored Field``() = ih |> storedFieldCannotBeSearched "uptoNWordsApart(s1, '*')"
-    override __.``Works with And clause``() = ih |> verifyResultCount 2 "uptoNWordsApart(et1, 'fred') AND anyOf(l1, '1500', '-1000')"
-    override __.``Works with Or clause``() = ih |> verifyResultCount 2 "uptoNWordsApart(et1, 'erik') OR anyof(l1, '4000')"
-    override __.``Works with Not clause``() = ih |> verifyResultCount 2 "uptoNWordsApart(et1, 'aaron') AND NOT anyof(l1, '1000')"
-    override __.``Filter query``() = ("anyof(et1, 'aaron')", "uptoNWordsApart(et1, 'aaron') and uptoNWordsApart(et1, 'aaron', -filter)")
+    override __.``Works with Exact Field``() = ih |> verifyResultCount 4 "phraseMatch(et1, 'aaron')"
+    override __.``Works with Id Field``() = ih |> verifyResultCount 2 "phraseMatch(_id, '1', '2')"
+    override __.``Works with TimeStamp Field``() = ih |> fieldTypeNotSupported "phraseMatch(_timestamp, '*')"
+    override __.``Works with ModifyIndex Field``() = ih |> fieldTypeNotSupported "phraseMatch(_modifyindex, '*')"
+    override __.``Works with Int Field``() = ih |> fieldTypeNotSupported "phraseMatch(i1, '*')"
+    override __.``Works with Multiple Int input``() = ih |> fieldTypeNotSupported "phraseMatch(i1, '*')"
+    override __.``Works with Long Field``() = ih |> fieldTypeNotSupported "phraseMatch(l1, '*')"
+    override __.``Works with Double Field``() = ih |> fieldTypeNotSupported "phraseMatch(db1, '*')"
+    override __.``Works with Float Field``() = ih |> fieldTypeNotSupported "phraseMatch(f1, '*')"
+    override __.``Works with DateTime Field``() = ih |> fieldTypeNotSupported "phraseMatch(dt1, '*')"
+    override __.``Works with Date Field``() = ih |> fieldTypeNotSupported "phraseMatch(d1, '*')"
+    override __.``Works with Bool Field``() = ih |> verifyResultCount 5 "phraseMatch(b1, 'T')"
+    override __.``Works with Stored Field``() = ih |> storedFieldCannotBeSearched "phraseMatch(s1, '*')"
+    override __.``Works with And clause``() = ih |> verifyResultCount 2 "phraseMatch(et1, 'fred') AND anyOf(l1, '1500', '-1000')"
+    override __.``Works with Or clause``() = ih |> verifyResultCount 2 "phraseMatch(et1, 'erik') OR anyof(l1, '4000')"
+    override __.``Works with Not clause``() = ih |> verifyResultCount 2 "phraseMatch(et1, 'aaron') AND NOT anyof(l1, '1000')"
+    override __.``Filter query``() = ("anyof(et1, 'aaron')", "phraseMatch(et1, 'aaron') and phraseMatch(et1, 'aaron', -filter)")
     override __.``Works with AndOr clause``() = 
-        ih |> verifyResultCount 3 "uptoNWordsApart(t1, 'aaron') and (uptoNWordsApart(t2, 'johnson') or uptoNWordsApart(t2, 'Garner'))"
-    override __.``Works with Multiple params``() = ih |> verifyResultCount 5 "uptoNWordsApart(et1, 'aaron', 'erik')"
-    override __.``Works with Constants``() = ih |> verifyResultCount 4 "uptoNWordsApart(et1, 'aaron', @IGNORE)"
-    member __.``Default slop of 1 will always find adjacent terms`` () = ih |> verifyResultCount 3 "uptoNWordsApart(t3, 'parliamentary democracy')"
-    member __.``Slop of 2 will allow terms to be upto 2 words apart`` () = ih |> verifyResultCount 3 "uptoNWordsApart(t3, 'parliamentary democracy', -slop '2')"
-    member __.``Slop of 2 will allow terms to be upto 2 words apart - Case 2`` () = ih |> verifyResultCount 2 "uptoNWordsApart(t3, 'federal democracy', -slop '2')"
-    member __.``Slop of 4 will allow terms to be upto 4 words apart - Case 3`` () = ih |> verifyResultCount 6 "uptoNWordsApart(t3, 'parliamentary monarchy', -slop '4')"
-    member __.``Slop of 2 will allow terms to interchange position`` () = ih |> verifyResultCount 3 "uptoNWordsApart(t3, 'parliamentary monarchy', -slop '2')"
+        ih |> verifyResultCount 3 "phraseMatch(t1, 'aaron') and (phraseMatch(t2, 'johnson') or phraseMatch(t2, 'Garner'))"
+    override __.``Works with Multiple params``() = ih |> verifyResultCount 5 "phraseMatch(et1, 'aaron', 'erik')"
+    override __.``Works with Constants``() = ih |> verifyResultCount 4 "phraseMatch(et1, 'aaron', @IGNORE)"
+    member __.``Default slop of 1 will always find adjacent terms`` () = ih |> verifyResultCount 3 "phraseMatch(t3, 'parliamentary democracy')"
+    member __.``Default slop of 1 will always find adjacent terms - Case 2`` () = ih |> verifyResultCount 1 "phraseMatch(t3, 'monarchy parliamentary')"
+    member __.``Slop of 2 will allow terms to be upto 2 words apart`` () = ih |> verifyResultCount 3 "phraseMatch(t3, 'parliamentary democracy', -slop '2')"
+    member __.``Slop of 2 will allow terms to be upto 2 words apart - Case 2`` () = ih |> verifyResultCount 2 "phraseMatch(t3, 'federal democracy', -slop '2')"
+    member __.``Slop of 4 will allow terms to be upto 4 words apart - Case 3`` () = ih |> verifyResultCount 6 "phraseMatch(t3, 'parliamentary monarchy', -slop '4')"
+    member __.``Slop of 2 will allow terms to interchange position`` () = ih |> verifyResultCount 3 "phraseMatch(t3, 'parliamentary monarchy', -slop '2')"
+    member __.``MultiPhrase switch will allow matching at the same position`` () = 
+        // The below should match both phrases containing 'parliamentary democracy' and 'parliamentary system'
+        ih |> verifyResultCount 4 "phraseMatch(t3, 'parliamentary', 'democracy system', -multiphrase)"
+    member __.``MultiPhrase switch will allow matching at the same position - Case 2`` () = 
+        // The below should match both phrases containing 'parliamentary democracy', 'parliamentary system'
+        // and 'parliamentary constitutional'
+        ih |> verifyResultCount 5 "phraseMatch(t3, 'parliamentary', 'democracy system constitutional', -multiphrase)"
+    member __.``MultiPhrase switch will allow matching at the same position - Case 3`` () = 
+        // The below should match both phrases containing 'parliamentary monarchy' and 'constitutional monarchy'
+        ih |> verifyResultCount 5 "phraseMatch(t3, 'constitutional parliamentary', 'monarchy', -multiphrase)"
+    
