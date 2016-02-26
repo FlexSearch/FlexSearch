@@ -169,85 +169,62 @@ type PhraseMatchQuery() =
             match multiPhrase with
             | Some _ -> multiPhraseMatch slop fieldSchema tokens
             | None -> phraseMatch slop fieldSchema tokens
-///// Wildcard Query
-//[<Name("like"); Sealed>]
-//type FlexWildcardQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) =
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> 
-//                arguments |> checkAtLeastNPopulatedArguments 1 __
-//                >>= fun _ -> 
-//                    // Like query does not go through analysis phase as the analyzer would remove the
-//                    // special character
-//                    zeroOneOrManyQuery 
-//                    <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
-//                    <| getWildCardQuery fieldSchema.SchemaName 
-//                    <| BooleanClauseOccur.MUST
-//
-///// Regex Query
-//[<Name("regex"); Sealed>]
-//type RegexQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) = 
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> 
-//                // Regex query does not go through analysis phase as the analyzer would remove the
-//                // special character
-//                zeroOneOrManyQuery 
-//                <| (arguments |> getPopulatedArguments |> Seq.map (fun x -> x.ToLowerInvariant())) 
-//                <| getRegexpQuery fieldSchema.SchemaName 
-//                <| BooleanClauseOccur.MUST
-//
+
+/// Wild card Query
+[<Name("like"); Sealed>]
+type WildcardQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(fieldSchema, _, _) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "like")
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            zeroOneOrManyQuery tokens (getWildCardQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
+
+/// Regex Query
+[<Name("regex"); Sealed>]
+type RegexQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(fieldSchema, _, _) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "regex")
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            zeroOneOrManyQuery tokens (getRegexpQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
+
 //// ----------------------------------------------------------------------------
 //// Range Queries
-//// Note: These queries don't go through analysis phase as the analyzer would 
-//// remove the special character
 //// ---------------------------------------------------------------------------- 
-//[<Name("gt"); Sealed>]
-//type FlexGreaterQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) =
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> 
-//                arguments |> checkItHasNPopulatedArguments 1 __
-//                >>= fun _ ->
-//                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-//                                                              (arguments.[0].Value, Constants.Infinite) 
-//                                                              (false, true)
-//
-//[<Name("ge"); Sealed>]
-//type FlexGreaterThanEqualQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) =
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> 
-//                arguments |> checkItHasNPopulatedArguments 1 __
-//                >>= fun _ ->
-//                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-//                                                              (arguments.[0].Value, Constants.Infinite) 
-//                                                              (true, true)
-//
-//[<Name("lt"); Sealed>]
-//type FlexLessThanQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) = 
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> 
-//                arguments |> checkItHasNPopulatedArguments 1 __
-//                >>= fun _ ->
-//                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-//                                                              (Constants.Infinite, arguments.[0].Value) 
-//                                                              (true, false)
-//
-//[<Name("le"); Sealed>]
-//type FlexLessThanEqualQuery() = 
-//    interface IFieldFunction with
-//        member __.GetQuery(fieldSchema, arguments, _) = 
-//            ignoreOrExecuteFunction arguments
-//            <| fun _ -> 
-//                arguments |> checkItHasNPopulatedArguments 1 __
-//                >>= fun _ ->
-//                    fieldSchema.FieldType.GetRangeQuery.Value fieldSchema.SchemaName 
-//                                                              (Constants.Infinite, arguments.[0].Value) 
-//                                                              (true, true)
+[<Name("gt"); Sealed>]
+type GreaterThanQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(fieldSchema, tokens, _) = 
+            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite false true
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "gt")
+
+[<Name("ge"); Sealed>]
+type GreaterThanEqualQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(fieldSchema, tokens, _) = 
+            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite true true
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "gte")
+
+[<Name("lt"); Sealed>]
+type LessThanQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(fieldSchema, tokens, _) = 
+            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true false
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "lt")
+
+[<Name("le"); Sealed>]
+type LessThanEqualQuery() = 
+    interface IQueryFunction with
+        member __.UseAnalyzer = false
+        member __.GetNumericQuery(fieldSchema, tokens, _) = 
+            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true true
+        member __.GetQuery(fieldSchema, tokens, parameters) = 
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "lte")

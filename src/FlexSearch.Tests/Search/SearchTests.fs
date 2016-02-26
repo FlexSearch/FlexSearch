@@ -680,20 +680,7 @@ id,t1,t2,i1
 8,moat,johnson,332
 """
     do ih |> indexData testData
-    member __.``Searching for 't1 = aron' with default slop of 1 should return 5 records``() = 
-        ih |> verifyResultCount 5 "fuzzy(t1, 'aron')"
-    member __.``Searching for 't1 = aron' with specified slop of 1 should return 5 records``() = 
-        ih |> verifyResultCount 5 "fuzzy1(t1, 'aron')"
-    member __.``Searching for 't1 = aron' with slop of 2 should return 6 records``() = 
-        ih |> verifyResultCount 6 "fuzzy2(t1, 'aron')"
-    member __.``Searching for 't1 = aron?' should return 1 records``() = 
-        ih |> verifyResultCount 1 "like(t1, 'aron?')"
-    member __.``Searching for 't1 = aron*' should return 2 records``() = 
-        ih |> verifyResultCount 2 "like(t1, 'aron*')"
-    member __.``Searching for 't1 = ar?n' should return 1 records``() = 
-        ih |> verifyResultCount 1 "like(t1, 'ar?n')"
-    member __.``Searching for 't1 = AR?N' should return 1 records as matching is case in-sensitive even though like bypasses analysis``() = 
-        ih |> verifyResultCount 1 "like(t1, 'AR?N')"
+    
     member __.``Searching for 't1 = [mb]oat' should return 2 records``() = 
         ih |> verifyResultCount 2 "regex(t1, '[mb]oat')"
 
