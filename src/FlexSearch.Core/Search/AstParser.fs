@@ -203,13 +203,17 @@ module AstParser =
                 match p with
                 | Constant(c) -> 
                     if func.UseAnalyzer then fieldSchema |> FieldSchema.getTokens (c, tokens.Segments)
-                    else tokens.Segments.Add(c)
+                    else 
+                        // Makes the search case insensitive
+                        tokens.Segments.Add(c.ToLowerInvariant())
                 | Variable(v) -> 
                     match searchQuery.Variables.TryGetValue <| v.ToLower() with
                     | true, value -> 
                         if isNotBlank value then 
                             if func.UseAnalyzer then fieldSchema |> FieldSchema.getTokens (value, tokens.Segments)
-                            else tokens.Segments.Add(value)
+                            else 
+                                // Makes the search case insensitive
+                                tokens.Segments.Add(value.ToLowerInvariant())
                     | _ -> ()
                 | _ -> ()
                 if pos <> tokens.Segments.Count then
