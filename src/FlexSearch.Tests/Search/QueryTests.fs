@@ -100,6 +100,20 @@ type ``Operator: 'anyOf' Tests``(ih : IntegrationHelper, defaultOperator : strin
     member __.``Tokens don't have to be adjacent to each other``() = 
         ih |> verifyResultCount 3 "anyof(t3, 'federal', 'democracy')"
 
+type ``Operator: 'anyOf' and 'allOf' additional Tests``(ih : IntegrationHelper) = 
+    let testData = """
+id,et1,t1
+1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
+2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artifacts such as machine code of computer programs.
+"""
+    do ih |> indexData testData
+    member __.``Searching for multiple words will create a new query which will search all the words but not in specific order``() = 
+        ih |> verifyResultCount 1 "allof(t1, 'CompSci abbreviated approach')"
+    member __.``Searching for multiple words will create a new query which will search all the words using AND style construct but not in specific order``() = 
+        ih |> verifyResultCount 0 "allof(t1, 'CompSci abbreviated approach undefinedword')"
+    member __.``Setting 'clausetype' in condition properties can override the default clause construction from AND style to OR``() = 
+        ih |> verifyResultCount 1 "anyof(t1, 'CompSci abbreviated approach undefinedword')"
+
 type ``Operator: 'phraseMatch' Tests``(ih : IntegrationHelper) = 
     inherit SearchTestsBase(ih)
     override __.``Works with Exact Field``() = ih |> verifyResultCount 4 "phraseMatch(et1, 'aaron')"
@@ -150,6 +164,24 @@ type ``Operator: 'phraseMatch' Tests``(ih : IntegrationHelper) =
         // The below should match both phrases containing 'parliamentary monarchy' and 'constitutional monarchy'
         ih |> verifyResultCount 5 "phraseMatch(t3, 'constitutional parliamentary', 'monarchy', -multiphrase)"
 
+type ``Operator: 'phraseMatch' additional Tests``(ih : IntegrationHelper) = 
+    let testData = """
+id,et1,t1
+1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
+2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artifacts such as machine code of computer programs.
+"""
+    do ih |> indexData testData
+    member __.``Searching for 'practical approach' with a slop of 1 will return 1 result``() = 
+        ih |> verifyResultCount 1 "phraseMatch(t1, 'practical approach', -slop '1')"
+    member __.``Searching for 'practical approach' with a default slop of 1 will return 1 result``() = 
+        ih |> verifyResultCount 1 "phraseMatch(t1, 'practical approach')"
+    member __.``Searching for 'approach practical' will not return anything as the order matters``() = 
+        ih |> verifyResultCount 0 "phraseMatch(t1, 'approach practical')"
+    member __.``Searching for 'approach computation' with a slop of 2 will return 1 result``() = 
+        ih |> verifyResultCount 1 "phraseMatch(t1, 'approach computation', -slop '2')"
+    member __.``Searching for 'comprehensive process leads' with a slop of 1 will return 1 result``() = 
+        ih |> verifyResultCount 1 "phraseMatch(t1, 'comprehensive process leads')"
+
 type ``Operator: 'like' Tests``(ih : IntegrationHelper) = 
     inherit AnyOfTestsBase(ih, "like", false)
     member __.QueryTest1() = ih |> verifyResultCount 1 "like(t1, 'are?')"
@@ -168,3 +200,98 @@ type ``Operator: 'regex' Tests``(ih : IntegrationHelper) =
     inherit AnyOfTestsBase(ih, "regex", false)
     member __.QueryTest1() = ih |> verifyResultCount 1 "regex(t1, '[fl]ord')"
     member __.``Matching is case in-sensitive``() = ih |> verifyResultCount 1 "regex(t1, '[fl]ORD')"
+
+// ----------------------------------------------------------------------------
+// Numeric Query type tests
+// ----------------------------------------------------------------------------
+[<AbstractClass>]
+type NumericTestsBase(ih : IntegrationHelper, operator : string) = 
+    inherit SearchTestsBase(ih)
+    override __.``Works with Exact Field``() = ih |> fieldTypeNotSupported (sprintf "%s(et1, '*')" operator)
+    override __.``Works with Id Field``() = ih |> fieldTypeNotSupported (sprintf "%s(_id, '*')" operator)
+    override __.``Works with TimeStamp Field``() = 
+        ih |> verifyResultCount 10 (sprintf "%s(_timestamp, @IGNORE, -matchall)" operator)
+    override __.``Works with ModifyIndex Field``() = 
+        ih |> verifyResultCount 10 (sprintf "%s(_modifyindex, @IGNORE, -matchall)" operator)
+    override __.``Works with Int Field``() = ih |> verifyResultCount 10 (sprintf "%s(i1, @IGNORE, -matchall)" operator)
+    override __.``Works with Multiple Int input``() = ()
+    override __.``Works with Long Field``() = ih |> verifyResultCount 10 (sprintf "%s(l1, @IGNORE, -matchall)" operator)
+    override __.``Works with Double Field``() = 
+        ih |> verifyResultCount 10 (sprintf "%s(db1, @IGNORE, -matchall)" operator)
+    override __.``Works with Float Field``() = 
+        ih |> verifyResultCount 10 (sprintf "%s(f1, @IGNORE, -matchall)" operator)
+    override __.``Works with DateTime Field``() = 
+        ih |> verifyResultCount 10 (sprintf "%s(dt1, @IGNORE, -matchall)" operator)
+    override __.``Works with Date Field``() = ih |> verifyResultCount 10 (sprintf "%s(d1, @IGNORE, -matchall)" operator)
+    override __.``Works with Bool Field``() = ih |> fieldTypeNotSupported (sprintf "%s(b1, '*')" operator)
+    override __.``Works with Stored Field``() = ih |> storedFieldCannotBeSearched (sprintf "%s(s1, '*')" operator)
+    override __.``Works with Constants``() = ih |> verifyResultCount 10 (sprintf "%s(i1, @IGNORE, -matchall)" operator)
+
+type ``Operator: 'gt' Tests``(ih : IntegrationHelper) = 
+    inherit NumericTestsBase(ih, "gt")
+    override __.``Filter query``() = ("gt(i2, '3000')", "gt(i2, '3000') and gt(i2, '3000', -filter)")
+    override __.``Works with And clause``() = ih |> verifyResultCount 2 "gt(i2, '999') and allof(i1, '100')"
+    override __.``Works with Or clause``() = ih |> verifyResultCount 7 "gt(i2, '999') or allof(i1, '100')"
+    override __.``Works with Not clause``() = ih |> verifyResultCount 5 "gt(i2, '999') and not allof(i1, '100')"
+    override __.``Works with AndOr clause``() = 
+        ih |> verifyResultCount 3 "gt(i2, '999') and (allof(i1, '200') or allof(i1, '100'))"
+    override __.``Works with Multiple params``() = 
+        /// Here the 2nd parameter will be ignored
+        ih |> verifyResultCount 1 "gt(i2, '3000', '4000')"
+
+type ``Operator: 'ge' Tests``(ih : IntegrationHelper) = 
+    inherit NumericTestsBase(ih, "ge")
+    override __.``Filter query``() = ("ge(i2, '3000')", "ge(i2, '3000') and ge(i2, '3000', -filter)")
+    override __.``Works with And clause``() = ih |> verifyResultCount 2 "ge(i2, '1000') and allof(i1, '100')"
+    override __.``Works with Or clause``() = ih |> verifyResultCount 7 "ge(i2, '1000') or allof(i1, '100')"
+    override __.``Works with Not clause``() = ih |> verifyResultCount 5 "ge(i2, '1000') and not allof(i1, '100')"
+    override __.``Works with AndOr clause``() = 
+        ih |> verifyResultCount 3 "ge(i2, '1000') and (allof(i1, '200') or allof(i1, '100'))"
+    override __.``Works with Multiple params``() = 
+        /// Here the 2nd parameter will be ignored
+        ih |> verifyResultCount 1 "ge(i2, '3001', '4000')"
+
+type ``Operator: 'lt' Tests``(ih : IntegrationHelper) = 
+    inherit NumericTestsBase(ih, "lt")
+    override __.``Filter query``() = ("lt(i2, '3000')", "lt(i2, '3000') and lt(i2, '3000', -filter)")
+    override __.``Works with And clause``() = ih |> verifyResultCount 2 "lt(i2, '1001') and allof(i1, '100')"
+    override __.``Works with Or clause``() = ih |> verifyResultCount 5 "lt(i2, '1001') or allof(i1, '100')"
+    override __.``Works with Not clause``() = ih |> verifyResultCount 3 "lt(i2, '1001') and not allof(i1, '100')"
+    override __.``Works with AndOr clause``() = 
+        ih |> verifyResultCount 2 "lt(i2, '1001') and (allof(i1, '200') or allof(i1, '100'))"
+    override __.``Works with Multiple params``() = 
+        /// Here the 2nd parameter will be ignored
+        ih |> verifyResultCount 9 "lt(i2, '3001', '4000')"
+
+type ``Operator: 'le' Tests``(ih : IntegrationHelper) = 
+    inherit NumericTestsBase(ih, "le")
+    override __.``Filter query``() = ("le(i2, '3000')", "le(i2, '3000') and le(i2, '3000', -filter)")
+    override __.``Works with And clause``() = ih |> verifyResultCount 2 "le(i2, '1000') and allof(i1, '100')"
+    override __.``Works with Or clause``() = ih |> verifyResultCount 5 "le(i2, '1000') or allof(i1, '100')"
+    override __.``Works with Not clause``() = ih |> verifyResultCount 3 "le(i2, '1000') and not allof(i1, '100')"
+    override __.``Works with AndOr clause``() = 
+        ih |> verifyResultCount 2 "le(i2, '1000') and (allof(i1, '200') or allof(i1, '100'))"
+    override __.``Works with Multiple params``() = 
+        /// Here the 2nd parameter will be ignored
+        ih |> verifyResultCount 9 "le(i2, '3001', '4000')"
+
+/// Some extra tests for checking numeric queries as the below are easier to
+/// reason with due to simpler data set.
+type ``Operator: Range Query Tests``(ih : IntegrationHelper) = 
+    let testData = """
+id,i1
+1,1
+2,5
+3,10
+4,15
+5,20
+"""
+    do ih |> indexData testData
+    member __.QueryTest1() = ih |> verifyResultCount 5 "ge(i1, '1') and le(i1, '20')"
+    member __.QueryTest2() = ih |> verifyResultCount 3 "gt(i1, '1') and lt(i1, '20')"
+    member __.QueryTest3() = ih |> verifyResultCount 4 "ge(i1, '1') and lt(i1, '20')"
+    member __.QueryTest4() = ih |> verifyResultCount 4 "gt(i1 , '1') and le(i1 , '20')"
+    member __.QueryTest5() = ih |> verifyResultCount 4 "gt(i1 , '1')"
+    member __.QueryTest6() = ih |> verifyResultCount 5 "ge(i1 , '1')"
+    member __.QueryTest7() = ih |> verifyResultCount 4 "lt(i1 , '20')"
+    member __.QueryTest8() = ih |> verifyResultCount 5 "le(i1 , '20')"
