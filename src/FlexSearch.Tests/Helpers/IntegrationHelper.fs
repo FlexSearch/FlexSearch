@@ -79,6 +79,7 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1,t3
                            new Field("db1", Constants.FieldType.Double, AllowSort = true)
                            new Field("f1", Constants.FieldType.Float, AllowSort = true)
                            new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
+                           new Field("et2", Constants.FieldType.ExactText, AllowSort = true)
                            new Field("t1", Constants.FieldType.Text)
                            new Field("t2", Constants.FieldType.Text)
                            new Field("s1", Constants.FieldType.Stored)

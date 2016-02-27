@@ -209,7 +209,7 @@ type GreaterThanEqualQuery() =
         member __.GetNumericQuery(fieldSchema, tokens, _) = 
             fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite true true
         member __.GetQuery(fieldSchema, tokens, parameters) = 
-            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "gte")
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "ge")
 
 [<Name("lt"); Sealed>]
 type LessThanQuery() = 
@@ -227,4 +227,4 @@ type LessThanEqualQuery() =
         member __.GetNumericQuery(fieldSchema, tokens, _) = 
             fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true true
         member __.GetQuery(fieldSchema, tokens, parameters) = 
-            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "lte")
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "le")

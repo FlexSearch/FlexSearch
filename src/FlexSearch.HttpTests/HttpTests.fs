@@ -311,20 +311,20 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Fuzzy Query Test 1`` (api : SearchApi) = api |> query "fuzzy(countryname, 'Iran')" 2 3
     
     [<Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
-    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy2(countryname, 'China')" 3 3
+    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy(countryname, 'China', -slop '2')" 3 3
     
     [<Example("post-indices-search-phrase-1", "Phrase search using exact operator")>]
     member __.``Phrase Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.GovernmentType.Contains("federal parliamentary democracy")).Count()
-        api |> query "exact(governmenttype, 'federal parliamentary democracy')" expected 4
+        api |> query "phrasematch(governmenttype, 'federal parliamentary democracy')" expected 4
     
     [<Example("post-indices-search-phrase-2", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 2`` (api : SearchApi) = 
-        api |> query "upto4wordsapart(governmenttype, 'parliamentary monarchy')" 6 4
+        api |> query "phraseMatch(governmenttype, 'parliamentary monarchy', -slop '4')" 6 4
     
     [<Example("post-indices-search-phrase-3", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 3`` (api : SearchApi) = 
-        api |> query "upto4wordsapart(governmenttype, 'monarchy parliamentary')" 3 4
+        api |> query "phraseMatch(governmenttype, 'monarchy parliamentary', -slop '4')" 3 4
     
     [<Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
     member __.``Wildcard Query Test 1`` (api : SearchApi, indexData : Country list) = 
