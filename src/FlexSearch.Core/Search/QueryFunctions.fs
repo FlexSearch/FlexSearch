@@ -67,7 +67,7 @@ module Common =
     /// NOTE: This should only be used when generated query is term based with
     /// no positional relevance
     let zeroOneOrManyQuery (tokens : Tokens) innerQueryProvider boolClause = 
-        match tokens.Count() with
+        match tokens.Segments.Count with
         | 0 -> getMatchAllDocsQuery()
         | 1 -> innerQueryProvider (tokens.Segments.[0])
         | _ -> getBoolQueryFromTerms boolClause innerQueryProvider tokens.Segments
