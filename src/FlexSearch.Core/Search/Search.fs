@@ -161,7 +161,10 @@ module SearchDsl =
                                          |> addMustNotClause notQuery
                                          |> addMatchAllClause
                                          :> Query
-            | Clause(func) -> return! func |> compute baggage searchQuery.Variables
+            | Clause(func) -> 
+                // Make the variable names case insensitive
+                let vars = new Dictionary<string,string>(searchQuery.Variables, StringComparer.OrdinalIgnoreCase)
+                return! func |> compute baggage vars
             | OrPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateQuery lhs searchQuery baggage
                 let! rhsQuery = generateQuery rhs searchQuery baggage
