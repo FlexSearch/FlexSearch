@@ -7,29 +7,31 @@
                 </md-select>
             </div>
         </md-toolbar>
-        <md-subheader ng-show="ActiveIndex">{{ProfileMode ? "Populate fields from the below list to be used in the Search Profile test" : "Select the fields
-            from the below list to output in the search result"}}</md-subheader>
-        <div flex layout="row" layout-align="center" >
+        <md-subheader class="md-warn" ng-show="ActiveIndex">Select the fields from the below list to output in the search result</md-subheader>
+        <div flex layout="row" layout-align="center">
             <md-content flex layout="column" class="scrollable">
                 <div ng-show="ActiveIndex" style="padding-bottom: 30px;">
                     <md-checkbox class="md-primary" ng-model="ReturnAllColumns" ng-init="ReturnAllColumns=true" ng-click="onReturnAllColumnsClick()">Return all columns</md-checkbox>
                     <md-divider></md-divider>
                 </div>
-                <!-- Fields for Search page -->
-                <div ng-repeat="field in ActiveIndex.Fields" ng-show="!ProfileMode" class="search-fields">
+                <!-- Fields to return -->
+                <div ng-repeat="field in ActiveIndex.Fields" class="search-fields">
                     <md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results">{{field.Name}}</md-checkbox>
                 </div>
-                <!-- Fields for Search profile page -->
-                <div layout="row" class="profile-fields" layout-align="space-between center" ng-repeat="field in ActiveIndex.Fields" ng-show="ProfileMode">
-                    <div>
-                        <md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results" />
-                    </div>
-                    <div flex layout="row" layout-align="center">
-                        <md-input-container layout-fill ng-show="ProfileMode">
-                            <label>{{field.Name}}</label>
-                            <input ng-model="field.Value">
-                        </md-input-container>
-                    </div>
+                
+            </md-content>
+        </div>
+        
+        <md-subheader ng-show="ActiveIndex && ProfileMode" class="md-warn">Predefined Query Variables - type in the values to test</md-subheader>
+        <div layout="row" layout-align="center" ng-show="ProfileMode && ActiveIndex">
+            <md-content flex layout="column" class="scrollable">
+                <code class="no-vars" ng-hide="ActiveIndex.Variables.length">No variables (@variable_name) present in the query</code>
+                <!-- Variables -->
+                <div ng-repeat="var in ActiveIndex.Variables" ng-class="{extraTopPadding:$first}">
+                    <md-input-container layout-fill >
+                        <label>{{var.Name}}</label>
+                        <input ng-model="var.Value">
+                    </md-input-container>
                 </div>
             </md-content>
         </div>

@@ -8,5 +8,14 @@ md-progress-linear {
 }
 
 .search-fields, .profile-fields {
-    min-height: 45px;
+    min-height: 45px !important;
+}
+
+.extraTopPadding {
+    padding-top: 20px;
+}
+
+code.no-vars {
+    padding: 0px 20px;
+    padding-bottom: 50px;
 }

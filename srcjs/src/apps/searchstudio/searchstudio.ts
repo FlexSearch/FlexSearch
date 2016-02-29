@@ -5,8 +5,14 @@ module flexportal {
 
   export class SearchIndex {
     Name: string
-    Fields: { Name: string; Value: string; Show: boolean }[]
+    Fields: { Name: string; Show: boolean }[]
     SearchProfiles: { Name: string; QueryString: string }[]
+    Variables: Variable[]
+  }
+
+  class Variable {
+      Name: string
+      Value: string
   }
 
   export class SearchResponse {
@@ -65,7 +71,16 @@ module flexportal {
       
       // Function to update the Search query with the given value. It makes sure
       // that the query comments are appended.
-      $scope.updateSearchQuery = value => $scope.SearchQuery = generateQueryComments() + value;
+      $scope.updateSearchQuery = value => {
+          $scope.SearchQuery = generateQueryComments() + value;
+          $scope.ActiveIndex.Variables = [];
+          var vPattern = /@([^\(\)\s,]+)/g;
+          var match;
+          do {
+              match = vPattern.exec($scope.SearchQuery);
+              $scope.ActiveIndex.Variables.push({Name: match[1], Value: null});
+          } while (match);
+      };
       
       // Function to help in Autocomplete
       var generateQueryComments = function() {
@@ -125,17 +140,7 @@ module flexportal {
       };
       
       $scope.validateSubmit = function() {
-        // At least one input on the left navigation should be filled in
-        // during Search Profile Mode
-        var c1 = !$scope.ProfileMode || ($scope.ActiveIndex && 
-          $scope.ActiveIndex.Fields
-          .filter(f => f.Value != undefined)
-          .length > 0);
-          
-        // The Search Query shouldn't be empty during Search Mode
-        var c2 = $scope.ProfileMode || !!(extractSearchQueryFromACE());
-        
-        return c1 && c2;
+        return !!(extractSearchQueryFromACE());
       };
       
       // Pagination
@@ -187,7 +192,7 @@ module flexportal {
         if($scope.ProfileMode) {
             // Build the Search Query String
             var variables : {[key: string] : string} = {};
-            index.Fields
+            index.Variables
                 .filter(f => f.Value != undefined && f.Value != "")
                 .forEach((value, index) => variables[value.Name] = value.Value);
             
