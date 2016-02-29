@@ -164,7 +164,6 @@ module Main =
         // Register services
         |> registerSingletonWithParam<AnalyzerService, IAnalyzerService> "testMode" testServer
         |> registerSingletonWithParam<IndexService, IIndexService> "testMode" testServer
-        |> registerSingleton<ScriptService, IScriptService>
         |> registerSingleton<DocumentService, IDocumentService>
         |> registerSingleton<QueueService, IQueueService>
         |> registerSingleton<SearchService, ISearchService>

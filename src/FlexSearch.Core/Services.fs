@@ -94,57 +94,6 @@ type IAnalyzerService =
     abstract GetAllAnalyzers : unit -> Model.Analyzer []
     abstract Analyze : analyzerName:string * input:string -> Result<string []>
 
-/// Script related services
-type IScriptService = 
-    
-    /// Signature : fun (indexName, fieldName, source, options) -> string
-    abstract GetScript : scriptName:string * scriptType:ScriptType -> Result<Scripts.T>
-    
-    /// This methods verifies that the script call itself is valid and return the funtion along
-    /// with the paramters that can be passed to the funtion
-    /// Usually a script call looks like below
-    /// function('param1','param2','param3',....)
-    abstract GetScriptSig : scriptSig:string -> Result<string * string []>
-    abstract GetComputedScript : scriptSig:string -> Result<ComputedDelegate * string []>
-    abstract GetPreSearchScript : scriptSig:string -> Result<PreSearchDelegate>
-
-[<Sealed>]
-type ScriptService() = 
-    let scripts = conDict<Scripts.T>()
-    let addScripts (s : seq<string * Scripts.T>) = 
-        s |> Seq.iter (fun (scriptName, script) -> scripts.TryAdd(scriptName, script) |> ignore)
-    
-    do 
-        Compiler.compileAllScripts (ScriptType.Computed) |> addScripts
-        Compiler.compileAllScripts (ScriptType.PostSearch) |> addScripts
-        Compiler.compileAllScripts (ScriptType.PreSearch) |> addScripts
-    
-    let getScript (scriptName, scriptType) = 
-        match scripts.TryGetValue(scriptName + (scriptType.ToString())) with
-        | true, func -> ok <| func
-        | _ -> fail <| ScriptNotFound(scriptName, String.Empty)
-    
-    interface IScriptService with
-        member __.GetScript(scriptName, scriptType) = getScript (scriptName, scriptType)
-        member __.GetScriptSig(scriptSig) = ParseFunctionCall(scriptSig)
-        
-        member __.GetComputedScript(scriptSig) = 
-            maybe { 
-                let! (functionName, parameters) = ParseFunctionCall(scriptSig)
-                let! script = getScript (functionName, ScriptType.Computed)
-                return! match script with
-                        | ComputedScript(s) -> ok <| (s, parameters)
-                        | _ -> fail <| ScriptNotFound(functionName, ScriptType.Computed.ToString())
-            }
-        
-        member __.GetPreSearchScript(scriptName) = 
-            maybe { 
-                let! script = getScript (scriptName, ScriptType.PreSearch)
-                return! match script with
-                        | PreSearchScript(s) -> ok <| s
-                        | _ -> fail <| ScriptNotFound(scriptName, ScriptType.Computed.ToString())
-            }
-
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
     let testMode = defaultArg testMode true
@@ -234,11 +183,11 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
                     return tokens.ToArray() }
 
 [<Sealed>]
-type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
+type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
     let im = 
         IndexManager.create 
-            (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
+            (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer)
     
     let getAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
     do 
@@ -327,7 +276,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
             }
                 
 [<Sealed>]
-type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
+type SearchService(parser : IFlexParser, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
     let getSearchPredicate (writers : IndexWriter, search : SearchQuery) = 
         maybe { 
             if String.IsNullOrWhiteSpace(search.PredefinedQuery) <> true then 
@@ -346,18 +295,19 @@ type SearchService(parser : IFlexParser, scriptService : IScriptService, queryFu
                         search.CutOff <- sq.CutOff
                         search.Count <- sq.Count
                     // Check if search profile script is defined. If yes then execute it.
-                    do! if isNotBlank sq.PreSearchScript then 
-                            match scriptService.GetPreSearchScript(sq.PreSearchScript) with
-                            | Ok(script) -> 
-                                try 
-                                    script.Invoke(sq)
-                                    okUnit
-                                with e -> 
-                                    Logger.Log
-                                        ("Predefined Query execution error", e, MessageKeyword.Search, 
-                                         MessageLevel.Warning)
-                                    okUnit
-                            | Fail(err) -> fail <| err
+                    do! if isNotBlank sq.PreSearchScript then
+                            okUnit 
+//                            match scriptService.GetPreSearchScript(sq.PreSearchScript) with
+//                            | Ok(script) -> 
+//                                try 
+//                                    script.Invoke(sq)
+//                                    okUnit
+//                                with e -> 
+//                                    Logger.Log
+//                                        ("Predefined Query execution error", e, MessageKeyword.Search, 
+//                                         MessageLevel.Warning)
+//                                    okUnit
+//                            | Fail(err) -> fail <| err
                         else okUnit
                     return p'
                 | _ -> return! fail <| UnknownPredefinedQuery(search.IndexName, search.PredefinedQuery)

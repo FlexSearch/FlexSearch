@@ -52,12 +52,12 @@ module IndexWriter =
             MurmurHash2.Hash32(byteArray, 0, byteArray.Length) % shardCount
     
     /// Create index settings from the Index DTO
-    let createIndexSetting (index : Index, analyzerService, scriptService) = 
+    let createIndexSetting (index : Index, analyzerService) = 
         try 
             withIndexName (index.IndexName, Constants.DataFolder +/ index.IndexName)
             |> withShardConfiguration (index.ShardConfiguration)
             |> withIndexConfiguration (index.IndexConfiguration)
-            |> withFields (index.Fields, analyzerService, scriptService)
+            |> withFields (index.Fields, analyzerService)
             |> withPredefinedQueries (index.PredefinedQueries, new FlexParser())
             |> build
             |> ok

@@ -80,7 +80,7 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
     
     /// Update a field template from the given FlexDocument. This is a higher level method which
     /// bring together a number of lower level method from FieldBase
-    abstract UpdateDocument : FlexDocument -> SchemaName -> FieldSource option -> FieldTemplate -> unit
+    abstract UpdateDocument : FlexDocument -> SchemaName -> FieldTemplate -> unit
     
     /// Get a range query for the given type
     abstract GetRangeQuery : SchemaName
@@ -115,20 +115,10 @@ type FieldBase<'T>(luceneFieldType, sortFieldType, defaultValue, defaultFieldNam
     /// method should be chained from Validate
     abstract UpdateFieldTemplate : FieldTemplate -> 'T -> unit
     
-    override this.UpdateDocument document schemaName fieldSource template = 
-        // If it is computed field then generate and add it otherwise follow standard path
-        match fieldSource with
-        | Some(s, options) -> 
-            try 
-                // Wrong values for the data type will still be handled as update Lucene field will
-                // check the data type
-                let value = s.Invoke(document.IndexName, schemaName, document.Fields, options)
-                value
-            with _ -> this.DefaultStringValue
-        | None -> 
-            match document.Fields.TryGetValue(schemaName) with
-            | (true, value) -> value
-            | _ -> this.DefaultStringValue
+    override this.UpdateDocument document schemaName template = 
+        match document.Fields.TryGetValue(schemaName) with
+        | (true, value) -> value
+        | _ -> this.DefaultStringValue
         |> this.Validate
         |> this.UpdateFieldTemplate template
     
@@ -376,7 +366,7 @@ type TimeStampField() =
     static do addToMetaFields TimeStampField.Name
     static member Name = "_timestamp"
     static member Instance = new TimeStampField() :> FieldBase
-    override this.UpdateDocument document schemaName fieldSource template = 
+    override this.UpdateDocument document schemaName template = 
         // The timestamp value will always be auto generated
         this.UpdateFieldTemplate template (GetCurrentTimeAsLong())
 
@@ -386,7 +376,7 @@ type IdField() =
     static do addToMetaFields IdField.Name
     static member Name = "_id"
     static member Instance = new IdField() :> FieldBase
-    override this.UpdateDocument document schemaName fieldSource template = 
+    override this.UpdateDocument document schemaName template = 
         this.Validate document.Id |> this.UpdateFieldTemplate template
 
 /// Used for representing the id of an index
@@ -397,7 +387,7 @@ type StateField() =
     static member Instance = new StateField() :> FieldBase
     static member Active = "active"
     static member Inactive = "inactive"
-    override this.UpdateDocument document schemaName fieldSource template = 
+    override this.UpdateDocument document schemaName template = 
         // Set it to Active for all normal indexing requests
         this.UpdateFieldTemplate template StateField.Active
     /// Helper method to set the state to Inactive
@@ -412,5 +402,5 @@ type ModifyIndexField() =
     static do addToMetaFields ModifyIndexField.Name
     static member Name = "_modifyindex"
     static member Instance = new ModifyIndexField() :> FieldBase
-    override this.UpdateDocument document schemaName fieldSource template = 
+    override this.UpdateDocument document schemaName template = 
         this.UpdateFieldTemplate template document.ModifyIndex

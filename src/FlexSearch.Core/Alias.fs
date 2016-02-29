@@ -58,11 +58,13 @@ type Token = string
 
 type GetAnalyzer = string -> Result<LuceneAnalyzer>
 
-type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
-
-type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string, string>, bool * float32>
+type PreIndexDelegate = Action<Document>
 
 type PreSearchDelegate = Action<SearchQuery>
+
+type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
+
+type PostSearchDelegate = Func<SearchQuery, Document, bool * float32>
 
 type GetScript = string -> Result<ComputedDelegate * string []>
 

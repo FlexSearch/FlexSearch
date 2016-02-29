@@ -13,7 +13,6 @@ type SchemaTest() =
             SchemaName = ""
             FieldType = IntField.Instance
             TypeIdentity = indentity
-            Source = None
             Similarity = Similarity.BM25
             Analyzers = None }
                   

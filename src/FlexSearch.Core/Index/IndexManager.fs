@@ -42,8 +42,7 @@ type IndexManager =
     { Store : ConcurrentDictionary<string, IndexState>
       EventAggregrator : EventAggregator
       ThreadSafeFileWriter : ThreadSafeFileWriter
-      GetAnalyzer : string -> Result<LuceneAnalyzer>
-      GetComputedScript : string -> Result<ComputedDelegate * string []> }
+      GetAnalyzer : string -> Result<LuceneAnalyzer> }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module IndexManager = 
@@ -112,7 +111,7 @@ module IndexManager =
         maybe { 
             do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
             if dto.Active then 
-                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer, t.GetComputedScript)
+                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer)
                 let indexWriter = IndexWriter.create (setting)
                 do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
             else do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
@@ -218,12 +217,11 @@ module IndexManager =
         }
     
     /// Create a new 
-    let create (eventAggregrator, threadSafeFileWriter, getAnalyzer, getComputedScript) = 
+    let create (eventAggregrator, threadSafeFileWriter, getAnalyzer) = 
         { Store = conDict<IndexState>()
           EventAggregrator = eventAggregrator
           ThreadSafeFileWriter = threadSafeFileWriter
-          GetAnalyzer = getAnalyzer
-          GetComputedScript = getComputedScript }
+          GetAnalyzer = getAnalyzer }
     
     /// Returns the disk usage of an index
     let getDiskUsage (indexName : string) (t : IndexManager) = 

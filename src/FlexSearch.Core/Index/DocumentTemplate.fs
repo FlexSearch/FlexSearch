@@ -64,5 +64,5 @@ module DocumentTemplate =
         for i = 0 to template.Setting.Fields.Count - 1 do
             let f = template.Setting.Fields.[i]
             let tf = template.TemplateFields.[i]
-            f.FieldType.UpdateDocument document f.SchemaName f.Source tf
+            f.FieldType.UpdateDocument document f.SchemaName tf
         template.Template
