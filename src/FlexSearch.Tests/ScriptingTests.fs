@@ -11,10 +11,7 @@ type ``Script - Compilation test``() =
     member __.``Script should compile``() = 
         let scriptSrc = """
 #if INTERACTIVE
-#I "bin\debug"
-#r "ProjectZ.dll"
-#load "FileA.fs"
-#load "FileB.fs"
+#r "../../FlexSearch.Api.dll"
 #endif
 
 module Script
@@ -23,10 +20,11 @@ open System
 open FlexSearch.Api.Model
 open FlexSearch.Api.Constants
 open System.Collections.Generic
+open Helpers
 
 let calculate () = 3 + 4
 let preIndex(document : Document) = 
-    document.Fields.["test"] <- "test"
+    document.Set("test", "test1")
 let preSearchTest(query : SearchQuery) = ()"""
         let fn = Path.GetTempFileName()
         let sn = Path.ChangeExtension(fn, "fsx")
@@ -36,5 +34,5 @@ let preSearchTest(query : SearchQuery) = ()"""
         test <@ result.PreSearchScripts.Keys.ToArray() = [| "Test" |] @>
         let doc = new Document()
         result.PreIndexScript.Value.Invoke(doc)
-        test <@ doc.Fields.["test"] = "test" @>
+        test <@ doc.Fields.["test"] = "test1" @>
 

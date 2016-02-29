@@ -46,6 +46,7 @@ module FSharpCompiler =
     open System
     
     let apiDllPath = Constants.rootFolder +/ "FlexSearch.Api.dll"
+    let helpersFile = Constants.ScriptFolder +/ "helpers.fsx"
     
     let generateDelegate (m : MethodInfo) = 
         let parameters = m.GetParameters()
@@ -64,6 +65,7 @@ module FSharpCompiler =
             scs.CompileToDynamicAssembly([| "-o"
                                             Path.GetTempFileName()
                                             "-a"
+                                            helpersFile
                                             filePath
                                             "-r"
                                             "System.Runtime"
@@ -92,4 +94,8 @@ module FSharpCompiler =
                 ok <| { PreIndexScript = preIndexScript
                         PreSearchScripts = preSearchScripts
                         PostSearchScripts = new Dictionary<string, PostSearchDelegate>() }
-        | _ -> fail << Logger.LogR <| ScriptCannotBeCompiled(filePath, String.Join("/n", errors))
+        | _ -> 
+            fail << Logger.LogR <| ScriptCannotBeCompiled(filePath, 
+                                                          errors
+                                                          |> Array.map (fun x -> sprintf "%s\n" x.Message)
+                                                          |> String.Concat)

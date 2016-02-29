@@ -252,7 +252,7 @@ module Operators =
     let inline extract result = 
         match result with
         | Ok(a) -> a
-        | Fail(e) -> failwithf "%s" (e.ToString())
+        | Fail(e) -> failwithf "%A" (e.OperationMessage())
     
     /// If the wrapped function is a success and the given result is a success the function is applied on the value. 
     /// Otherwise the exisiting error messages are propagated.
