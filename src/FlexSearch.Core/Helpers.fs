@@ -457,30 +457,6 @@ type ProtoBufferFormatter() =
         member __.Serialize(body : obj, stream : Stream) : unit = serialize (body, stream)
         member __.SupportedHeaders = [| "application/x-protobuf"; "application/octet-stream" |]
 
-[<Sealed>]
-type YamlFormatter() = 
-    let options = YamlDotNet.Serialization.SerializationOptions.EmitDefaults
-    let serializer = new YamlDotNet.Serialization.Serializer(options)
-    let deserializer = new YamlDotNet.Serialization.Deserializer(ignoreUnmatched = true)
-    
-    let serialize (body : obj, stream : Stream) = 
-        use textWriter = new StreamWriter(stream)
-        serializer.Serialize(textWriter, body)
-    
-    interface IFormatter with
-        
-        member __.SerializeToString(body : obj) = 
-            use textWriter = new StringWriter()
-            serializer.Serialize(textWriter, body)
-            textWriter.ToString()
-        
-        member __.DeSerialize<'T>(stream : Stream) = 
-            use textReader = new StreamReader(stream)
-            deserializer.Deserialize<'T>(textReader)
-        
-        member __.Serialize(body : obj, stream : Stream) : unit = serialize (body, stream)
-        member __.SupportedHeaders = [| "application/yaml" |]
-
 [<AutoOpenAttribute>]
 module Debug = 
     open System.Diagnostics
