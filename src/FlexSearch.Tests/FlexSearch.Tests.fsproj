@@ -438,6 +438,11 @@
       <Project>{87b212a4-3565-4f73-91a4-bd9bae3ae6dd}</Project>
       <Private>True</Private>
     </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Assets\FlexSearch.Assets.csproj">
+      <Name>FlexSearch.Assets</Name>
+      <Project>{5e795f60-4faa-47a4-ba1b-18fdc95e1dac}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
       <Name>FlexSearch.Core</Name>
       <Project>{9e4f3c02-6eae-46b0-9c3f-2ee8eb4ea560}</Project>

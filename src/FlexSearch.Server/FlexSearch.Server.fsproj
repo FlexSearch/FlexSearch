@@ -71,27 +71,6 @@
     <!--<Error Condition="!Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets'))" />-->
   </Target>
   <ItemGroup>
-    <None Include="Conf\Config.ini">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <Content Include="Conf\Readme.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Conf\Demo.csv">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Conf\Demo.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Data\Readme.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Plugins\Readme.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Web\Reports\DuplicateDetectionTemplate.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />
     <Content Include="packages.config" />
@@ -455,6 +434,11 @@
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
       <Name>FlexSearch.Api</Name>
       <Project>{87b212a4-3565-4f73-91a4-bd9bae3ae6dd}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Assets\FlexSearch.Assets.csproj">
+      <Name>FlexSearch.Assets</Name>
+      <Project>{5e795f60-4faa-47a4-ba1b-18fdc95e1dac}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">
