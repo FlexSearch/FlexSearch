@@ -141,10 +141,6 @@
       <HintPath>..\packages\Autofac.Mef.4.0.0\lib\net45\Autofac.Integration.Mef.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="FastMember">
-      <HintPath>..\packages\FastMember.1.1.0-beta1\lib\net40\FastMember.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="FlexLucene">
       <HintPath>..\packages\FlexLucene.5.4.0.0\lib\net40\FlexLucene.dll</HintPath>
       <Private>True</Private>
@@ -155,6 +151,10 @@
     </Reference>
     <Reference Include="FParsecCS">
       <HintPath>..\packages\FParsec.1.0.2\lib\net40-client\FParsecCS.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.Compiler.Service">
+      <HintPath>..\packages\FSharp.Compiler.Service.2.0.0.6\lib\net45\FSharp.Compiler.Service.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="FSharp.Control.AsyncSeq">
@@ -350,14 +350,6 @@
       <HintPath>..\packages\Microsoft.AspNet.WebUtilities.1.0.0-rc2-16106\lib\net451\Microsoft.AspNet.WebUtilities.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Dnx.Compilation.Abstractions">
@@ -535,10 +527,6 @@
     <Reference Include="ToString">
       <HintPath>..\packages\ToString.Fody.1.7.2.0\lib\dotnet\ToString.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="YamlDotNet">
-      <HintPath>..\packages\YamlDotNet.3.8.0-pre162\lib\net35\YamlDotNet.dll</HintPath>
-      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
