@@ -19,3 +19,18 @@ code.no-vars {
     padding: 0px 20px;
     padding-bottom: 50px;
 }
+
+button.refresh-btn.md-button {
+    min-width: 0px !important;
+    width: 30px;
+    margin-left: 0px;
+    padding-left: 0px;
+}
+
+.vars-subheader.md-subheader .md-subheader-inner {
+    padding-bottom: 0px;
+}
+
+div.variables {
+    min-height: 250px !important;
+}

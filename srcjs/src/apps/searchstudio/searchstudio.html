@@ -22,8 +22,17 @@
             </md-content>
         </div>
         
-        <md-subheader ng-show="ActiveIndex && ProfileMode" class="md-warn">Predefined Query Variables - type in the values to test</md-subheader>
-        <div layout="row" layout-align="center" ng-show="ProfileMode && ActiveIndex">
+        <md-subheader ng-show="ActiveIndex && ProfileMode" class="md-warn vars-subheader">
+            <div flex layout="row">
+                <div>
+                    <md-button ng-click="refreshVars()" type="submit" class="refresh-btn">
+                        <md-icon ng-class="md-light">refresh</md-icon>
+                    </md-button>
+                </div>
+                <div flex layout="row" layout-align="center center"><div>Predefined Query Variables - type in the values to test</div></div>
+            </div>
+        </md-subheader>
+        <div flex layout="row" layout-align="center" ng-show="ProfileMode && ActiveIndex" class="variables">
             <md-content flex layout="column" class="scrollable">
                 <code class="no-vars" ng-hide="ActiveIndex.Variables.length">No variables (@variable_name) present in the query</code>
                 <!-- Variables -->

@@ -38,6 +38,7 @@ module flexportal {
     ReturnAllColumns : boolean
     onReturnAllColumnsClick(): void
     updateSearchQuery(value): void    
+    refreshVars() : void
     
     // Pagination specific
     getPage(pageNumber: number): void
@@ -69,17 +70,22 @@ module flexportal {
     constructor($scope: ISearchStudioScope, indicesApi: API.Client.IndicesApi, searchApi: API.Client.SearchApi) {
       $scope.Criteria = "normal";
       
-      // Function to update the Search query with the given value. It makes sure
-      // that the query comments are appended.
-      $scope.updateSearchQuery = value => {
-          $scope.SearchQuery = generateQueryComments() + value;
+      $scope.refreshVars = () => {
           $scope.ActiveIndex.Variables = [];
           var vPattern = /@([^\(\)\s,]+)/g;
           var match;
           do {
               match = vPattern.exec($scope.SearchQuery);
-              $scope.ActiveIndex.Variables.push({Name: match[1], Value: null});
+              if (match && match[1].toUpperCase() != "IGNORE")
+                $scope.ActiveIndex.Variables.push({Name: match[1], Value: null});
           } while (match);
+      };
+      
+      // Function to update the Search query with the given value. It makes sure
+      // that the query comments are appended.
+      $scope.updateSearchQuery = value => {
+          $scope.SearchQuery = generateQueryComments() + value;
+          $scope.refreshVars();
       };
       
       // Function to help in Autocomplete
