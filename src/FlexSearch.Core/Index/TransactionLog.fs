@@ -51,22 +51,30 @@ type TransactionEntry =
           Operation = TxOperation.Delete
           Data = Unchecked.defaultof<_>
           Id = id }
-
+    
     static member MsgPackSerializer = SerializationContext.Default.GetSerializer<TransactionEntry>()
     static member Serializer(stream, entry : TransactionEntry) = TransactionEntry.MsgPackSerializer.Pack(stream, entry)
     static member DeSerializer(stream) = TransactionEntry.MsgPackSerializer.Unpack(stream)
 
 /// TxWriter is used for writing transaction entries to a text file using MessagePack serializer.
-/// NOTE: This is not threadsafe and should be used as a pooled resource for performance.
-type TxWriter(gen : int64, ?path0 : string) = 
-    let path = defaultArg path0 (Path.GetTempFileName())
+/// NOTE: This is not thread safe and should be used as a pooled resource for performance.
+type TxWriter(gen : int64, ?folderPath : string, ?filePath : string) = 
+    let path = defaultArg folderPath (Path.GetTempFileName())
     let mutable currentGen = gen
     let mutable fileStream = Unchecked.defaultof<_>
+    
     let populateFS() = 
-        let localPath = if path0.IsSome then path +/ currentGen.ToString() else path
-        fileStream <- new FileStream(localPath, FileMode.OpenOrCreate, FileSystemRights.AppendData ||| FileSystemRights.WriteData, 
-                                     FileShare.ReadWrite, 1024, FileOptions.Asynchronous)
-    do populateFS()
+        let localPath = 
+            if filePath.IsSome then filePath.Value
+            else path +/ currentGen.ToString()
+        fileStream <- new FileStream(localPath, FileMode.OpenOrCreate, 
+                                     FileSystemRights.AppendData ||| FileSystemRights.WriteData, 
+                                     FileShare.ReadWrite ||| FileShare.Delete, 1024, FileOptions.Asynchronous)
+    
+    do 
+        if folderPath.IsNone && filePath.IsNone then 
+            failwithf "At least one of folderPath or filePath must be provided."
+        populateFS()
     
     member __.AppendEntry(entry : TransactionEntry, gen : int64) = 
         if gen <> currentGen then 
@@ -76,25 +84,26 @@ type TxWriter(gen : int64, ?path0 : string) =
         use stream = Pools.memory.GetStream()
         TransactionEntry.Serializer(stream, entry)
         // Avoid using ToArray as it allocates a lot of memory
-        fileStream.Write(stream.GetBuffer(), 0, int stream.Position)     
+        fileStream.Write(stream.GetBuffer(), 0, int stream.Position)
         fileStream.Flush()
     
     /// Reads existing Transaction Log and returns all the entries
-    member __.ReadLog(gen : int64) = 
-        let localPath = if path0.IsSome then path +/ gen.ToString() else path
+    static member ReadLog(localPath) = 
         if File.Exists(localPath) then 
             try 
-                seq { 
-                    use fs = 
-                        new FileStream(localPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                // NOTE: This is done to ensure that the FileStream can be opened successfully. Seq block
+                // does not support try catch so there is no way to capture any errors coming out of seq block.
+                use __ = new FileStream(localPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                seq {
+                    use fs = new FileStream(localPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite) 
                     while fs.Position <> fs.Length do
                         yield TransactionEntry.MsgPackSerializer.Unpack(fs)
                 }
             with e -> 
-                Logger.Log <| TransactionLogReadFailure(path +/ gen.ToString(), exceptionPrinter e)
+                Logger.Log <| TransactionLogReadFailure(localPath, exceptionPrinter e)
                 Seq.empty
         else Seq.empty
-        
+    
     interface IDisposable with
         member __.Dispose() : unit = 
             if not (isNull fileStream) then fileStream.Close()

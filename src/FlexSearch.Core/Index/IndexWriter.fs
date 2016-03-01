@@ -30,11 +30,11 @@ open System
 /// each of which encapsulating the functionality of IndexWriter, TrackingIndexWriter and
 /// SearcherManger through an easy to manage abstraction.
 type IndexWriter = 
-    { Template : TrackingObjectPool<DocumentTemplate>
+    { Template : ObjectPool<DocumentTemplate>
       Caches : VersionCache []
       ShardWriters : ShardWriter []
       Settings : IndexSetting
-      TxWriterPool : TrackingObjectPool<TxWriter>
+      TxWriterPool : ObjectPool<TxWriter>
       ModifyIndex : AtomicLong
       Generation : AtomicLong
       mutable Status : IndexStatus
@@ -59,6 +59,7 @@ module IndexWriter =
             |> withIndexConfiguration (index.IndexConfiguration)
             |> withFields (index.Fields, analyzerService)
             |> withPredefinedQueries (index.PredefinedQueries, new FlexParser())
+            |> withScripts
             |> build
             |> ok
         with
@@ -74,9 +75,6 @@ module IndexWriter =
     let close (writer : IndexWriter) = 
         writer.Token.Cancel()
         writer.ShardWriters |> Array.iter ShardWriter.close
-        // Dispose of all the TxWriters to release lock on log files
-        writer.TxWriterPool.GetAll() 
-        |> Array.iter (fun txw -> (txw :> IDisposable).Dispose())
         // Make sure all the files are removed from TxLog otherwise the index will
         // go into unnecessary recovery mode.
         if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
@@ -190,13 +188,12 @@ module IndexWriter =
     
     /// Replay all the uncommitted transactions from the logs
     let replayTransactionLogs (indexWriter : IndexWriter) = 
-        let txWriter = indexWriter.TxWriterPool.Get()
         indexWriter.Status <- IndexStatus.Opening
-        let replayShardTransaction (gen : int64) = 
+        let replayShardTransaction (path) = 
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
             // TODO: Find a more memory efficient way of sorting the transaction log file
-            let logEntries = txWriter.ReadLog(gen) |> Seq.sortBy (fun l -> l.ModifyIndex)
+            let logEntries = TxWriter.ReadLog(path) |> Seq.sortBy (fun l -> l.ModifyIndex)
             for entry in logEntries do
                 let shardNo = entry.Id |> mapToShard indexWriter.ShardWriters.Length
                 match entry.Operation with
@@ -215,11 +212,7 @@ module IndexWriter =
             indexWriter |> commit true
         indexWriter.Settings.BaseFolder +/ "txlogs"
         |> loopFiles
-        |> Seq.iter (Path.GetFileName
-                     >> Int64.Parse
-                     >> replayShardTransaction)
-        // Return the Tx writer to the pool
-        txWriter |> indexWriter.TxWriterPool.Return
+        |> Seq.iter replayShardTransaction
         // Just refresh the index so that the changes are picked up
         // in subsequent searches. We can also commit here but it will
         // introduce blank commits in case there are no logs to replay.
@@ -229,11 +222,11 @@ module IndexWriter =
     /// Create a new index instance
     let create (settings : IndexSetting) = 
         let factory = fun _ -> DocumentTemplate.create (settings)
-        let policy = new DefaultObjectPoolPolicy<DocumentTemplate>(factory, fun _ -> true)
+        let policy = new ObjectPoolPolicy<DocumentTemplate>(factory, fun _ -> true)
         // Intitialize TxWriter pool
         let txPath = settings.BaseFolder +/ "txlogs" |> createDir
         let txFactory = fun _ -> new TxWriter(0L, txPath)
-        let txPolicy = new DefaultObjectPoolPolicy<TxWriter>(txFactory, fun _ -> true)
+        let txPolicy = new ObjectPoolPolicy<TxWriter>(txFactory, fun _ -> true)
         
         // Create a shard for the index
         let createShard (n) = 
@@ -251,8 +244,8 @@ module IndexWriter =
             |> Array.max
         
         let indexWriter = 
-            { Template = new TrackingObjectPool<DocumentTemplate>(policy)
-              TxWriterPool = new TrackingObjectPool<TxWriter>(txPolicy)
+            { Template = new DefaultObjectPool<DocumentTemplate>(policy)
+              TxWriterPool = new DefaultObjectPool<TxWriter>(txPolicy)
               ShardWriters = shardWriters
               Caches = caches
               ModifyIndex = new AtomicLong(modifyIndex)

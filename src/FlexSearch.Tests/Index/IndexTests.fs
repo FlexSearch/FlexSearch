@@ -21,10 +21,11 @@ type TransactionWriterTests() =
         txEntry
     
     member __.``Transaction can be added and retrieved``() = 
-        let writer = new TxWriter(0L)
+        let tempFile = Path.GetTempFileName()
+        let writer = new TxWriter(0L, filePath = tempFile)
         let entries = Array.create 5 (getTransactionLogEntry())
         entries |> Array.iter (fun entry -> writer.AppendEntry(entry, 0L))
-        let result = writer.ReadLog(0L) |> Seq.toArray
+        let result = TxWriter.ReadLog(tempFile) |> Seq.toArray
         test <@ result.Length = 5 @>
         test <@ result.[0].Id = entries.[0].Id @>
         test <@ result.[1].Id = entries.[1].Id @>
@@ -33,10 +34,11 @@ type TransactionWriterTests() =
         test <@ result.[4].Id = entries.[4].Id @>
 
     member __.``Random Log read write test using FSCheck``() =
-        let writer = new TxWriter(0L)
+        let tempFile = Path.GetTempFileName()
+        let writer = new TxWriter(0L, filePath = tempFile)
         let entries = Gen.listOf Arb.generate<TransactionEntry> |> Gen.eval 1000 (Random.StdGen(20000, 100))
         entries |> List.iter (fun entry -> writer.AppendEntry(entry, 0L))
-        let result = writer.ReadLog(0L) |> Seq.toList
+        let result = TxWriter.ReadLog(tempFile) |> Seq.toList
         test <@ entries.Length = result.Length @>
         for i = 0 to entries.Length - 1 do
             let entryId = entries.[i].Id
