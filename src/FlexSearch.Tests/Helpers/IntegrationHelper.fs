@@ -66,8 +66,11 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1,t3
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
-        index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, 
-                                                           AutoRefresh = false)
+        index.IndexConfiguration <- new IndexConfiguration()
+        index.IndexConfiguration.AutoCommit <- false
+        index.IndexConfiguration.AutoRefresh <- false
+        index.IndexConfiguration.CommitOnClose <- false
+        index.IndexConfiguration.DeleteLogsOnClose <- false
         index.Active <- true
         index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.MemoryMapped
         index.Fields <- [| new Field("b1", Constants.FieldType.Bool)
@@ -118,15 +121,28 @@ module TestHelper =
     // ----------------------------------------------------------------------------
     // Index service wrappers
     // ----------------------------------------------------------------------------    
-    let addIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.AddIndex(ih.Index) @>
-    let closeIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.CloseIndex(ih.Index.IndexName) @>
-    let refreshIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Refresh(ih.Index.IndexName) @>
-    let commitIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Commit(ih.Index.IndexName) @>
+    let addIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.AddIndex(ih.Index) @>
+    let addIndexFail reason (ih : IntegrationHelper) = test <@ ih.IndexService.AddIndex(ih.Index) = fail(reason) @>
+    let closeIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.CloseIndex(ih.Index.IndexName) @>
+    let closeIndexFail (ih : IntegrationHelper) = test <@ ih.IndexService.CloseIndex(ih.Index.IndexName) = fail(IndexIsAlreadyOffline(ih.Index.IndexName)) @>
+    let openIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.OpenIndex(ih.Index.IndexName) @>
+    let openIndexFail (ih : IntegrationHelper) = test <@ ih.IndexService.OpenIndex(ih.Index.IndexName)  = fail(IndexIsAlreadyOnline(ih.Index.IndexName)) @>
+    let refreshIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Refresh(ih.Index.IndexName) @>
+    let commitIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Commit(ih.Index.IndexName) @>
+    let testIndexOnline (ih : IntegrationHelper) = test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok(IndexStatus.Online) @>
+    let testIndexOffline (ih : IntegrationHelper) = test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok(IndexStatus.Offline) @>
+
     // ----------------------------------------------------------------------------
     // Document service wrappers
     // ----------------------------------------------------------------------------
-    let totalDocs (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
-    let getDoc id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
+    let totalDocsExt (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
+    let totalDocs (count : int) (ih : IntegrationHelper) = test<@ extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName) = count @>
+    let getDocExt id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
+    let getDocPass id (ih : IntegrationHelper) = test <@ succeeded <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
+    let getDocsFail id (ih : IntegrationHelper) = test <@ failed <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
+    let addDocByIdPass (id: string) (ih: IntegrationHelper) =
+        test <@ succeeded <| ih.DocumentService.AddDocument(new Document(id, ih.Index.IndexName)) @>
+    let deleteDocByIdPass id (ih : IntegrationHelper) = test <@ succeeded <| ih.DocumentService.DeleteDocument(ih.Index.IndexName, "1") @>
 
 [<AutoOpen>]
 module SearchHelpers = 

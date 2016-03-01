@@ -63,7 +63,9 @@
     <Compile Include="Helpers\IntegrationHelper.fs" />
     <Compile Include="Helpers\Helpers.fs" />
     <Compile Include="Index\FieldSchemaTests.fs" />
-    <Compile Include="Index\IndexTests.fs" />
+    <Compile Include="Index\TxWriterTests.fs" />
+    <Compile Include="Index\CommitTests.fs" />
+    <Compile Include="Index\IndexServiceTests.fs" />
     <Compile Include="Search\SearchTests.fs" />
     <Compile Include="Search\QueryTests.fs" />
     <Compile Include="InfrastructureTests.fs" />
