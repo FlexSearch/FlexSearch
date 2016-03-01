@@ -144,7 +144,7 @@ module AstParser =
             tokens.Positions.Clear()
             true
 
-        new DefaultObjectPool<Tokens>(new DefaultObjectPoolPolicy<Tokens>(factory, onRelease))
+        new DefaultObjectPool<Tokens>(new ObjectPoolPolicy<Tokens>(factory, onRelease))
     
     let inline queryNotFound queryName = QueryNotFound <| queryName
     let inline fieldNotFound fieldName = InvalidFieldName <| fieldName
