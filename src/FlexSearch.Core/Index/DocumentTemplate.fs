@@ -59,8 +59,12 @@ module DocumentTemplate =
     
     /// Update the lucene Document based upon the passed FlexDocument.
     /// Note: Do not update the document from multiple threads.
-    let updateTempate (document : Document) (modifyIndex : int64) (template : DocumentTemplate) = 
-        document.ModifyIndex <- modifyIndex
+    let updateTempate (document : Document) (scripts : Scripts) (template : DocumentTemplate) = 
+        try 
+            match scripts.PreIndexScript with
+            | Some(s) -> s.Invoke(document)
+            | _ -> ()
+        with e -> Logger.Log("Script execution error.", e, MessageKeyword.Document, MessageLevel.Error)
         for i = 0 to template.Setting.Fields.Count - 1 do
             let f = template.Setting.Fields.[i]
             let tf = template.TemplateFields.[i]
