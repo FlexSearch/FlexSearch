@@ -81,19 +81,6 @@ type VersioningTests() =
         ih |> openIndexPass
         test <@ (ih |> getDocExt "1").ModifyIndex > 1L @>
     
-    //    member __.``Fields returned by the document service should match the total number of fields in the index`` (indexService : IIndexService, 
-    //                                                                                                                documentService : IDocumentService, 
-    //                                                                                                                index : Index) = 
-    //        test <@ succeeded <| indexService.AddIndex(index) @>
-    //        let document = new Document(indexName = index.IndexName, id = "1")
-    //        test <@ succeeded <| documentService.AddDocument(document) @>
-    //        test <@ succeeded <| indexService.Refresh(index.IndexName) @>
-    //        test <@ succeeded <| indexService.Commit(index.IndexName) @>
-    //        test <@ succeeded <| indexService.CloseIndex(index.IndexName) @>
-    //        test <@ succeeded <| indexService.OpenIndex(index.IndexName) @>
-    //        test 
-    //            <@ (extract <| documentService.GetDocument(index.IndexName, document.Id)).Fields.Count = index.Fields.Length @>
-    //    
     member __.``Version Cache gets cleared after a refresh is called`` (ih : IntegrationHelper) = 
         ih |> addIndexPass
         ih |> addDocByIdPass "1"
@@ -115,7 +102,7 @@ type VersioningTests() =
         ih
         |> addOrUpdateDocument doc
         |> testSuccess
-
+    
     member __.``Document version can be reterieved even after all caches are cleared - 2`` (ih : IntegrationHelper) = 
         ih |> addIndexPass
         ih |> addDocByIdPass "1"
@@ -128,7 +115,7 @@ type VersioningTests() =
         |> addOrUpdateDocument doc
         |> testFail (IndexingVersionConflict(ih.IndexName, "1", "2"))
     
-    member __.``The modifyIndex will auto increment``(ih : IntegrationHelper) =
+    member __.``The modifyIndex will auto increment`` (ih : IntegrationHelper) = 
         ih |> addIndexPass
         ih |> addDocByIdPass "1"
         ih |> addDocByIdPass "2"
@@ -137,17 +124,17 @@ type VersioningTests() =
         test <@ (ih |> getDocExt "1").ModifyIndex = 2L @>
         test <@ (ih |> getDocExt "2").ModifyIndex = 3L @>
         test <@ (ih |> getDocExt "3").ModifyIndex = 4L @>
-
-    member __.``After reopening modifyIndex will continue from last highest modifedIndex value``(ih : IntegrationHelper) =
-        __.``The modifyIndex will auto increment``(ih)
+    
+    member __.``After reopening modifyIndex will continue from last highest modifedIndex value`` (ih : IntegrationHelper) = 
+        __.``The modifyIndex will auto increment`` (ih)
         ih |> commitIndexPass
         ih |> closeIndexPass
         ih |> openIndexPass
         ih |> addDocByIdPass "4"
         ih |> refreshIndexPass
         test <@ (ih |> getDocExt "4").ModifyIndex = 5L @>
-
-    member __.``Versioning information is loaded from cache till refresh is called``(ih : IntegrationHelper) =
+    
+    member __.``Versioning information is loaded from cache till refresh is called`` (ih : IntegrationHelper) = 
         ih |> addIndexPass
         ih |> addDocByIdPass "1"
         let indexWriter = extract <| ih.IndexService.IsIndexOnline(ih.IndexName)
@@ -156,4 +143,3 @@ type VersioningTests() =
         ih
         |> addOrUpdateDocument doc
         |> testFail (IndexingVersionConflict(ih.IndexName, "1", "2"))
-        

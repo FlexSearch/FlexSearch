@@ -67,6 +67,7 @@
     <Compile Include="Index\CommitTests.fs" />
     <Compile Include="Index\IndexServiceTests.fs" />
     <Compile Include="Index\VersioningTests.fs" />
+    <Compile Include="Index\DocumentServiceTests.fs" />
     <Compile Include="Search\SearchTests.fs" />
     <Compile Include="Search\QueryTests.fs" />
     <Compile Include="InfrastructureTests.fs" />

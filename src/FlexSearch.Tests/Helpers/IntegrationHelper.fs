@@ -121,39 +121,50 @@ module TestHelper =
     let (?) r = test <@ succeeded r @>
     let testSuccess r = test <@ succeeded r @>
     let testFail (reason) (r : Result<_>) = test <@ r = fail reason @>
-    
     // ----------------------------------------------------------------------------
     // Index service wrappers
     // ----------------------------------------------------------------------------    
     let addIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.AddIndex(ih.Index) @>
-    let addIndexFail reason (ih : IntegrationHelper) = test <@ ih.IndexService.AddIndex(ih.Index) = fail(reason) @>
+    let addIndexFail reason (ih : IntegrationHelper) = test <@ ih.IndexService.AddIndex(ih.Index) = fail (reason) @>
     let closeIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.CloseIndex(ih.Index.IndexName) @>
-    let closeIndexFail (ih : IntegrationHelper) = test <@ ih.IndexService.CloseIndex(ih.Index.IndexName) = fail(IndexIsAlreadyOffline(ih.Index.IndexName)) @>
+    let closeIndexFail (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.CloseIndex(ih.Index.IndexName) = fail (IndexIsAlreadyOffline(ih.Index.IndexName)) @>
     let openIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.OpenIndex(ih.Index.IndexName) @>
-    let openIndexFail (ih : IntegrationHelper) = test <@ ih.IndexService.OpenIndex(ih.Index.IndexName)  = fail(IndexIsAlreadyOnline(ih.Index.IndexName)) @>
+    let openIndexFail (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.OpenIndex(ih.Index.IndexName) = fail (IndexIsAlreadyOnline(ih.Index.IndexName)) @>
     let refreshIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Refresh(ih.Index.IndexName) @>
     let commitIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Commit(ih.Index.IndexName) @>
-    let testIndexOnline (ih : IntegrationHelper) = test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok(IndexStatus.Online) @>
-    let testIndexOffline (ih : IntegrationHelper) = test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok(IndexStatus.Offline) @>
-
+    let testIndexOnline (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok (IndexStatus.Online) @>
+    let testIndexOffline (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok (IndexStatus.Offline) @>
     // ----------------------------------------------------------------------------
     // Document service wrappers
     // ----------------------------------------------------------------------------
     let createDocument id indexName = new Document(id, indexName)
-    let withModifyIndex (index) (doc : Document) = doc.ModifyIndex <- index; doc
-    let addDocument (doc: Document) (ih : IntegrationHelper) =
-        ih.DocumentService.AddDocument(doc)
-    let addOrUpdateDocument (doc: Document) (ih : IntegrationHelper) =
-        ih.DocumentService.AddOrUpdateDocument(doc)
-    let totalDocsExt (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
-    let totalDocs (count : int) (ih : IntegrationHelper) = test<@ extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName) = count @>
-    let getDocExt id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
-    let getDocPass id (ih : IntegrationHelper) = test <@ succeeded <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
-    let getDocsFail id (ih : IntegrationHelper) = test <@ failed <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
-    let addDocByIdPass (id: string) (ih: IntegrationHelper) =
-        test <@ succeeded <| ih.DocumentService.AddDocument(new Document(id, ih.Index.IndexName)) @>
     
-    let deleteDocByIdPass id (ih : IntegrationHelper) = test <@ succeeded <| ih.DocumentService.DeleteDocument(ih.Index.IndexName, "1") @>
+    let withModifyIndex (index) (doc : Document) = 
+        doc.ModifyIndex <- index
+        doc
+    
+    let withField fieldName fieldValue (doc : Document) = 
+        doc.Fields.Add(fieldName, fieldValue)
+        doc
+    
+    let addDocument (doc : Document) (ih : IntegrationHelper) = ih.DocumentService.AddDocument(doc)
+    let addOrUpdateDocument (doc : Document) (ih : IntegrationHelper) = ih.DocumentService.AddOrUpdateDocument(doc)
+    let totalDocsExt (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
+    let totalDocs (count : int) (ih : IntegrationHelper) = 
+        test <@ extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName) = count @>
+    let getDocExt id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
+    let getDocPass id (ih : IntegrationHelper) = 
+        test <@ succeeded <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
+    let getDocsFail id (ih : IntegrationHelper) = 
+        test <@ failed <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
+    let addDocByIdPass (id : string) (ih : IntegrationHelper) = 
+        test <@ succeeded <| ih.DocumentService.AddDocument(new Document(id, ih.Index.IndexName)) @>
+    let deleteDocByIdPass id (ih : IntegrationHelper) = 
+        test <@ succeeded <| ih.DocumentService.DeleteDocument(ih.Index.IndexName, "1") @>
 
 [<AutoOpen>]
 module SearchHelpers = 
@@ -244,14 +255,13 @@ module SearchHelpers =
         test <@ result.Documents.[0].Fields.ContainsKey(expected) @>
     
     let getResult (queryString : string) (ih : IntegrationHelper) = 
-        getQuery (ih.Index.IndexName, queryString) 
-        |> withColumns [| "*" |] 
+        getQuery (ih.Index.IndexName, queryString)
+        |> withColumns [| "*" |]
         |> searchAndExtract ih.SearchService
-
+    
     /// This is a helper method to combine searching and asserting on returned document count 
     let verifyResultCount (expectedCount : int) (queryString : string) (ih : IntegrationHelper) = 
-        getResult queryString ih
-        |> assertReturnedDocsCount expectedCount
+        getResult queryString ih |> assertReturnedDocsCount expectedCount
     
     let storedFieldCannotBeSearched (queryString : string) (ih : IntegrationHelper) = 
         let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
@@ -260,7 +270,7 @@ module SearchHelpers =
             if f.OperationMessage().ErrorCode <> "StoredFieldCannotBeSearched" then 
                 failwithf "Expecting Stored field cannot be searched error."
         | _ -> failwithf "Expecting Stored field cannot be searched error."
-
+    
     let fieldTypeNotSupported (queryString : string) (ih : IntegrationHelper) = 
         let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
         match result with
@@ -268,12 +278,7 @@ module SearchHelpers =
             if f.OperationMessage().ErrorCode <> "QueryOperatorFieldTypeNotSupported" then 
                 failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
         | _ -> failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
-
-    let verifyScore (expectedScore : int) (queryString : string) (ih : IntegrationHelper) =
-        getResult queryString ih
-        |> fun r -> test <@ r.BestScore = float32 expectedScore @>
-
-    let getScore (queryString : string) (ih : IntegrationHelper) =
-        getResult queryString ih
-        |> fun r -> r.BestScore
-
+    
+    let verifyScore (expectedScore : int) (queryString : string) (ih : IntegrationHelper) = 
+        getResult queryString ih |> fun r -> test <@ r.BestScore = float32 expectedScore @>
+    let getScore (queryString : string) (ih : IntegrationHelper) = getResult queryString ih |> fun r -> r.BestScore
