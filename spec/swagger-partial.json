@@ -352,11 +352,6 @@
           "type": "string",
           "default": "standard"
         },
-        "scriptName": {
-          "description": "",
-          "type": "string",
-          "default": ""
-        },
         "searchAnalyzer": {
           "description": "",
           "type": "string",
