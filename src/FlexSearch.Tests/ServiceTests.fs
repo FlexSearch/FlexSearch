@@ -242,6 +242,7 @@ module DocumentServiceTests =
             test <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = "0" @>
             // Update the document
             document.Fields.["t1"] <- "1"
+            document.TimeStamp <- 0L
             test <@ succeeded <| documentService.AddOrUpdateDocument(document) @>
             test <@ succeeded <| indexService.Refresh(index.IndexName) @>
             test <@ (extract <| documentService.GetDocument(index.IndexName, id)).Fields.["t1"] = "1" @>
