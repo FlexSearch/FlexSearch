@@ -98,15 +98,14 @@ module IndexWriter =
     let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : IndexWriter) = 
         maybe { 
             let shardNo = document.Id |> mapToShard s.ShardWriters.Length
-            let newVersion = GetCurrentTimeAsLong()
-            let! existingVersion = s.Caches.[shardNo] |> VersionCache.versionCheck (document, newVersion)
+            let modifyIndex = s.ModifyIndex.Increment()
+            let! existingVersion = s.Caches.[shardNo] |> VersionCache.versionCheck (document, modifyIndex)
             // After version check is passed update the cache
-            document.TimeStamp <- newVersion
             do! s.Caches.[shardNo]
-                |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
+                |> VersionCache.addOrUpdate (document.Id, modifyIndex, existingVersion)
                 |> boolToResult UnableToUpdateMemory
-            let txId = s.ModifyIndex.Increment()
-            document.ModifyIndex <- txId
+            
+            document.ModifyIndex <- modifyIndex
             // Create new binary document
             let template = s.Template.Get()
             let doc = template |> DocumentTemplate.updateTempate document s.Settings.Scripts
@@ -115,7 +114,7 @@ module IndexWriter =
                     if create then TxOperation.Create
                     else TxOperation.Update
                 
-                let txEntry = TransactionEntry.Create(txId, opCode, document.Fields, document.Id)
+                let txEntry = TransactionEntry.Create(modifyIndex, opCode, document.Fields, document.Id)
                 let txWriter = s.TxWriterPool.Get()
                 txWriter.AppendEntry(txEntry, s.Generation.Value)
                 s.TxWriterPool.Return(txWriter)
@@ -146,7 +145,7 @@ module IndexWriter =
         maybe { 
             let shardNo = id |> mapToShard s.ShardWriters.Length
             do! s.Caches.[shardNo]
-                |> VersionCache.delete (id, VersionCache.deletedValue)
+                |> VersionCache.delete (id, VersionCache.DeletedValue)
                 |> boolToResult UnableToUpdateMemory
             let txId = s.ModifyIndex.Increment()
             let txEntry = TransactionEntry.Create(txId, id)
@@ -242,6 +241,12 @@ module IndexWriter =
             shardWriters
             |> Array.map ShardWriter.getMaxModifyIndex
             |> Array.max
+            // Modify index should never be smaller than 2 as
+            // it affect concurrency check criteria than when
+            // modifyIndex is 1 then document should exist.
+            // we set the index to 1L as it will be incremented
+            // on the first index request.
+            |> (fun x -> if x < 2L  then 1L else x)
         
         let indexWriter = 
             { Template = new DefaultObjectPool<DocumentTemplate>(policy)

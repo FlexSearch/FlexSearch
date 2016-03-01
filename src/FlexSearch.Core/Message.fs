@@ -325,7 +325,7 @@ type IndexingMessage =
             | DocumentIdAlreadyExists(idx, id) -> sprintf "Document ID '%s' already exists for index '%s'" id idx
             | DocumentIdNotFound(idx, id) -> sprintf "Document ID '%s' not found on index '%s'" id idx
             | IndexingVersionConflict(idx, id, v) -> 
-                sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
+                sprintf "Indexing version conflict for index '%s': given ID is %s, but the existing version is %s" idx id 
                     v
             |> caseToMsg this
 

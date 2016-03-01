@@ -395,9 +395,9 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         member __.AddDocument(document) = 
             maybe { 
                 do! validate document
-                if document.TimeStamp > 0L then 
+                if document.ModifyIndex > 0L then 
                     return! fail 
-                            <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
+                            <| IndexingVersionConflict(document.IndexName, document.Id, document.ModifyIndex.ToString())
                 else 
                     let! writer = indexService.IsIndexOnline <| document.IndexName
                     do! writer |> IndexWriter.addDocument document

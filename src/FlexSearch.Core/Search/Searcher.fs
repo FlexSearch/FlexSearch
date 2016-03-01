@@ -169,6 +169,7 @@ module Searcher =
         resultDoc.Id <- document.Get(s.IndexWriter.GetSchemaName(IdField.Name))
         resultDoc.IndexName <- s.IndexWriter.Settings.IndexName
         resultDoc.TimeStamp <- timeStamp
+        resultDoc.ModifyIndex <- int64 <| document.Get(s.IndexWriter.GetSchemaName(ModifyIndexField.Name))
         resultDoc.Fields <- fields
         resultDoc.Score <- if s.SearchQuery.ReturnScore then float (hit.Score)
                            else 0.0

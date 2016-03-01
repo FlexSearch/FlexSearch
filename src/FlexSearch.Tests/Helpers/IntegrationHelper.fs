@@ -33,6 +33,7 @@ type IntegrationHelper =
       DocumentService : IDocumentService
       JobService : IJobService
       QueueService : IQueueService }
+    member this.IndexName = this.Index.IndexName
     interface IDisposable with
         member this.Dispose() = 
             // Delete index if it exists otherwise we don't care
@@ -118,6 +119,9 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1,t3
 module TestHelper = 
     // Runs a test against the given result and checks if it succeeded
     let (?) r = test <@ succeeded r @>
+    let testSuccess r = test <@ succeeded r @>
+    let testFail (reason) (r : Result<_>) = test <@ r = fail reason @>
+    
     // ----------------------------------------------------------------------------
     // Index service wrappers
     // ----------------------------------------------------------------------------    
@@ -135,6 +139,12 @@ module TestHelper =
     // ----------------------------------------------------------------------------
     // Document service wrappers
     // ----------------------------------------------------------------------------
+    let createDocument id indexName = new Document(id, indexName)
+    let withModifyIndex (index) (doc : Document) = doc.ModifyIndex <- index; doc
+    let addDocument (doc: Document) (ih : IntegrationHelper) =
+        ih.DocumentService.AddDocument(doc)
+    let addOrUpdateDocument (doc: Document) (ih : IntegrationHelper) =
+        ih.DocumentService.AddOrUpdateDocument(doc)
     let totalDocsExt (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
     let totalDocs (count : int) (ih : IntegrationHelper) = test<@ extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName) = count @>
     let getDocExt id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
@@ -142,6 +152,7 @@ module TestHelper =
     let getDocsFail id (ih : IntegrationHelper) = test <@ failed <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
     let addDocByIdPass (id: string) (ih: IntegrationHelper) =
         test <@ succeeded <| ih.DocumentService.AddDocument(new Document(id, ih.Index.IndexName)) @>
+    
     let deleteDocByIdPass id (ih : IntegrationHelper) = test <@ succeeded <| ih.DocumentService.DeleteDocument(ih.Index.IndexName, "1") @>
 
 [<AutoOpen>]
