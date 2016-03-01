@@ -23,6 +23,10 @@ type Scripts =
     { PreIndexScript : PreIndexDelegate option
       PostSearchScripts : IReadOnlyDictionary<string, PostSearchDelegate>
       PreSearchScripts : IReadOnlyDictionary<string, PreSearchDelegate> }
+    static member Default = 
+        { PreIndexScript = None
+          PostSearchScripts = new Dictionary<string, PostSearchDelegate>()
+          PreSearchScripts = new Dictionary<string, PreSearchDelegate>() }
 
 type ScriptType = 
     /// Default signature which is used by computed scripts
