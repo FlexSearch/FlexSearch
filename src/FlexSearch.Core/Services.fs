@@ -296,18 +296,17 @@ type SearchService(parser : IFlexParser, queryFunctions : Dictionary<string, IQu
                         search.Count <- sq.Count
                     // Check if search profile script is defined. If yes then execute it.
                     do! if isNotBlank sq.PreSearchScript then
-                            okUnit 
-//                            match scriptService.GetPreSearchScript(sq.PreSearchScript) with
-//                            | Ok(script) -> 
-//                                try 
-//                                    script.Invoke(sq)
-//                                    okUnit
-//                                with e -> 
-//                                    Logger.Log
-//                                        ("Predefined Query execution error", e, MessageKeyword.Search, 
-//                                         MessageLevel.Warning)
-//                                    okUnit
-//                            | Fail(err) -> fail <| err
+                            match writers.Settings.Scripts.PreSearchScripts.TryGetValue(sq.PreSearchScript) with
+                            | true ,script -> 
+                                try 
+                                    script.Invoke(sq)
+                                    okUnit
+                                with e -> 
+                                    Logger.Log
+                                        ("Predefined Query execution error", e, MessageKeyword.Search, 
+                                         MessageLevel.Warning)
+                                    okUnit
+                            | _ -> fail <| ScriptNotFound(sq.PreSearchScript)
                         else okUnit
                     return p'
                 | _ -> return! fail <| UnknownPredefinedQuery(search.IndexName, search.PredefinedQuery)

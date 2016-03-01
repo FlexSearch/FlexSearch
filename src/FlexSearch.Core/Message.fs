@@ -189,7 +189,7 @@ module BuilderError =
     let private invalidPropertyName = sf2 "Property name is invalid. Expected '%s' but found '%s'"
     let private analyzerIsMandatory = sf1 "Analyzer is mandatory for field '%s'"
     let private duplicateFieldValue = sf2 "A duplicate entry (%s) has been found in the group '%s'"
-    let private scriptNotFound = sf2 "The script '%s' was not found against the field '%s'"
+    let private scriptNotFound = sf1 "The script '%s' was not found"
     let private resourceNotFound = sf2 "The resource '%s' of type %s was not found"
     let private unSupportedSimilarity = sf1 "Unsupported similarity: %s"
     let private unSupportedIndexVersion = sf1 "Unsupported index version: %s"
@@ -202,7 +202,7 @@ module BuilderError =
         | InvalidPropertyName of fieldName : string * value : string
         | AnalyzerIsMandatory of fieldName : string
         | DuplicateFieldValue of groupName : string * fieldName : string
-        | ScriptNotFound of scriptName : string * fieldName : string
+        | ScriptNotFound of scriptName : string
         | ResourceNotFound of resourceName : string * resourceType : string
         | UnSupportedSimilarity of similarityName : string
         | UnSupportedIndexVersion of indexVersion : string
@@ -217,7 +217,7 @@ module BuilderError =
                 | InvalidPropertyName(fn, v) -> sprintf invalidPropertyName fn v
                 | AnalyzerIsMandatory(fn) -> sprintf analyzerIsMandatory fn
                 | DuplicateFieldValue(gn, fn) -> sprintf duplicateFieldValue fn gn
-                | ScriptNotFound(sn, fn) -> sprintf scriptNotFound sn fn
+                | ScriptNotFound(sn) -> sprintf scriptNotFound sn
                 | ResourceNotFound(rn, rt) -> sprintf resourceNotFound rn rt
                 | UnSupportedSimilarity(s) -> sprintf unSupportedSimilarity s
                 | UnSupportedIndexVersion(i) -> sprintf unSupportedIndexVersion i
