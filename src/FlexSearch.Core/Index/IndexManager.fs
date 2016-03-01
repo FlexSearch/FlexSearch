@@ -119,13 +119,16 @@ module IndexManager =
     
     /// Loads all indices from the given path
     let loadAllIndex (t : IndexManager) = 
-        let loadFromFile (path) = 
-            match t.ThreadSafeFileWriter.ReadFile<Index>(path) with
-            | Ok(dto) -> Some(dto)
-            | Fail(error) -> 
-                Logger.Log(error)
-                None
-        
+        let loadFromFile (path) =
+            let settings = path +/ "index.json" 
+            if File.Exists(settings) then
+                match t.ThreadSafeFileWriter.ReadFile<Index>(settings) with
+                | Ok(dto) -> Some(dto)
+                | Fail(error) -> 
+                    Logger.Log(error)
+                    None
+            else None
+
         let queueOnThreadPool (dto : Index) = 
             fun _ -> 
                 try 
@@ -139,7 +142,7 @@ module IndexManager =
             |> ThreadPool.QueueUserWorkItem
             |> ignore
         
-        loopFiles (path)
+        loopDir (path)
         |> Seq.map loadFromFile
         |> Seq.choose id
         // Don't reload the country index, that's only meant for testing
@@ -153,7 +156,7 @@ module IndexManager =
             match t |> indexExists index.IndexName with
             | Ok(_) -> return! fail <| IndexAlreadyExists(index.IndexName)
             | _ -> 
-                do! t.ThreadSafeFileWriter.WriteFile(path +/ index.IndexName, index)
+                do! t.ThreadSafeFileWriter.WriteFile(path +/ index.IndexName +/ "index", index)
                 do! t |> loadIndex index
                 return CreationId(index.IndexName)
         }
@@ -178,7 +181,7 @@ module IndexManager =
     let closeIndex (indexName : string) (t : IndexManager) = 
         t
         |> shutdownIndex indexName
-        >>= (fun indexState -> t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto))
+        >>= (fun indexState -> t.ThreadSafeFileWriter.WriteFile(path +/ indexName +/ "index", indexState.IndexDto))
     
     /// open an existing index and set the status to online
     let openIndex (indexName : string) (t : IndexManager) = 
@@ -188,7 +191,7 @@ module IndexManager =
             | IndexStatus.Opening | IndexStatus.Online -> return! fail <| IndexIsAlreadyOnline(indexName)
             | _ -> 
                 indexState.IndexDto.Active <- true
-                do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName, indexState.IndexDto)
+                do! t.ThreadSafeFileWriter.WriteFile(path +/ indexName +/ "index", indexState.IndexDto)
                 do! t |> loadIndex indexState.IndexDto
         }
     
@@ -211,9 +214,10 @@ module IndexManager =
                 | Fail(e) -> fail <| e
             t.Store.TryRemove(indexName) |> ignore
             // Delete the index configuration file
-            do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName)
+            do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName +/ "index")
             // Data might not be present for this index
             if (Directory.Exists(DataFolder +/ indexName)) then delDir (DataFolder +/ indexName)
+            delDir <| path +/ "indexName"
         }
     
     /// Create a new 
