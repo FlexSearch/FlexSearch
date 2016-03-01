@@ -106,9 +106,10 @@ module IndexWriter =
                 |> VersionCache.addOrUpdate (document.Id, newVersion, existingVersion)
                 |> boolToResult UnableToUpdateMemory
             let txId = s.ModifyIndex.Increment()
+            document.ModifyIndex <- txId
             // Create new binary document
             let template = s.Template.Get()
-            let doc = template |> DocumentTemplate.updateTempate document txId
+            let doc = template |> DocumentTemplate.updateTempate document s.Settings.Scripts
             if addToTxLog then 
                 let opCode = 
                     if create then TxOperation.Create
@@ -199,9 +200,8 @@ module IndexWriter =
                 match entry.Operation with
                 | TxOperation.Create | TxOperation.Update -> 
                     let template = indexWriter.Template.Get()
-                    let document = new Document(entry.Id, indexWriter.Settings.IndexName, Fields = entry.Data)
-                    let doc = template |> DocumentTemplate.updateTempate document entry.ModifyIndex
-                    let doc = template |> DocumentTemplate.updateTempate document entry.ModifyIndex
+                    let document = new Document(entry.Id, indexWriter.Settings.IndexName, Fields = entry.Data, ModifyIndex = entry.ModifyIndex)
+                    let doc = template |> DocumentTemplate.updateTempate document indexWriter.Settings.Scripts
                     indexWriter.ShardWriters.[shardNo] 
                     |> ShardWriter.updateDocument (entry.Id, indexWriter.GetSchemaName(IdField.Name), doc)
                 | TxOperation.Delete -> 
