@@ -67,12 +67,11 @@ module CSharp =
                           "")
 
         let perFileCleanup (fileName : string) (contents : string) =
-            // Delete properties from extended classes
-            if contents.Contains(": FlexResponse") then
-                ["Error"; "ErrorDescription"; "ErrorField"]
-                |> Seq.fold (fun acc value -> acc |> deleteProperty value) contents
-            else contents
-
+            if contents.Contains("public OperationMessage Error { get; set; }") then
+                contents.Replace("////,IResponseError", ",IResponseError").Replace(" = new OperationMessage();", "")
+            else
+                contents.Replace(" = new OperationMessage();", "")
+            
         let cleanupFile(f : string) =
             let mutable file = File.ReadAllLines(f)
             let fileSb = new StringBuilder()

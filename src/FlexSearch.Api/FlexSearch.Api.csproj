@@ -62,6 +62,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="IDataTransferObject.cs" />
     <Compile Include="IExtraValidation.cs" />
+    <Compile Include="IResponseError.cs" />
     <Compile Include="Model\*.*">
     </Compile>
   </ItemGroup>

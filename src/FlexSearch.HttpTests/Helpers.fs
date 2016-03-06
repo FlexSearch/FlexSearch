@@ -96,19 +96,19 @@ module TestCommandHelpers =
     open ResponseLogging
     open FlexSearch.Core.Helpers
     open System.Net
-
+    open FlexSearch.Api
     let isNotNullOrEmpty (str : string) = String.IsNullOrEmpty(str) |> not
     let hasStatusCode (statusCode : HttpStatusCode) (r : ApiResponse<'T>) = r.StatusCode =? int statusCode; r
-    let hasErrorCode (errorCode : string) (r : 'T when 'T :> FlexResponse) = r.Error.ErrorCode =? errorCode; r
-    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> FlexResponse) = 
+    let hasErrorCode (errorCode : string) (r : 'T when 'T :> IResponseError) = r.Error.OperationCode =? errorCode; r
+    let hasApiErrorCode (errorCode : string) (r : ApiResponse<'T> when 'T :> IResponseError) = 
         r.Data 
         |> hasErrorCode errorCode 
         |> ignore
         r
-    let isSuccessful (r : FlexResponse) = 
+    let isSuccessful (r : IResponseError) = 
         if r.Error |> isNull then () 
         else r.Error.Message =? null
-    let isCreated (r : ApiResponse<'T> when 'T :> FlexResponse) = r.StatusCode =? int HttpStatusCode.Created
+    let isCreated (r : ApiResponse<'T> when 'T :> IResponseError) = r.StatusCode =? int HttpStatusCode.Created
 
     let newIndex indexName = new Index(IndexName = indexName)
     let formatter = new FlexSearch.Core.NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
@@ -128,7 +128,7 @@ module TestCommandHelpers =
         let searchQuery = new SearchQuery("country", queryString)
         searchQuery.Count <- 10
         searchQuery.Columns <- [| "countryname"; "agriproducts"; "governmenttype"; "population" |]
-        let response = api.PostSearch(searchQuery, "country")
+        let response = api.Search("country", searchQuery)
         response |> isSuccessful
         response.Data.TotalAvailable =? recordsReturned
         /// Log the result if log path is defined

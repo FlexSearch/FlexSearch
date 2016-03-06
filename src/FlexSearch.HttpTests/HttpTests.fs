@@ -53,7 +53,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
                                                                         handler : LoggingHandler) = 
         let actual = api.CreateIndexWithHttpInfo(index)
         actual |> isCreated
-        actual.Data.Data.Id =? index.IndexName
+        actual.Data.Data.OperationCode =? "Created"
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     member __.``Index cannot be created without IndexName`` (api : IndicesApi, handler : LoggingHandler) = 
@@ -170,7 +170,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Newly created index is always offline`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
         index.Active <- false
         api.CreateIndexWithHttpInfo(index) |> isCreated
-        let actual = api.GetStatus(index.IndexName)
+        let actual = api.GetIndexStatus(index.IndexName)
         actual |> isSuccessful
         actual.Data.IndexStatus =? IndexStatus.Offline
         handler |> log "get-indices-id-status-1"
@@ -180,20 +180,20 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Set status of an index 'online'`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
         index.Active <- false
         api.CreateIndex(index) |> isSuccessful
-        api.UpdateStatus(index.IndexName, "online") |> isSuccessful
-        api.GetStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Online
+        api.UpdateIndexStatus(index.IndexName, "online") |> isSuccessful
+        api.GetIndexStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Online
         handler |> log "put-indices-id-status-1"
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     member __.``Set status of an index 'offline'`` (api : IndicesApi, index : Index, handler : LoggingHandler) = 
         api.CreateIndex(index) |> isSuccessful
-        api.GetStatus(index.IndexName)
+        api.GetIndexStatus(index.IndexName)
         |> fun r -> r.Data.IndexStatus =? IndexStatus.Online; r
         |> isSuccessful
 
-        api.UpdateStatus(index.IndexName, "offline") |> isSuccessful
+        api.UpdateIndexStatus(index.IndexName, "offline") |> isSuccessful
 
-        api.GetStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Offline
+        api.GetIndexStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Offline
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     [<Example("get-indices-id-exists-1", "")>]
@@ -212,7 +212,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     
     [<Example("get-indices-1", "")>]
     member __.``Get all indices`` (api : IndicesApi, handler : LoggingHandler) = 
-        api.GetAllIndex()
+        api.GetAllIndices()
         // Should have at least contact index
         |> fun r -> r.Data.Length >=? 1
         handler |> log "get-indices-1"
@@ -250,7 +250,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         result |> isSuccessful
         // Update the document
         document.Fields.["lastname"] <- "Rajvanshi1"
-        let actual = api.UpdateDocument(document, indexName, document.Id)
+        let actual = api.CreateOrUpdateDocument(document, indexName, document.Id)
         handler |> log "put-indices-id-documents-id-2"
         actual |> isSuccessful
         api.DeleteIndex(indexName) |> isSuccessful
@@ -379,7 +379,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         query.Highlights <- new HighlightOption(highlight)
         query.Highlights.FragmentsToReturn <- 2
         query.Columns <- [| "country"; "background" |]
-        api.PostSearch(query, query.IndexName)
+        api.Search(query.IndexName, query)
         |> fun r -> r |> isSuccessful; r
         |> fun r -> r.Data.Documents.Length >=? 0
 
