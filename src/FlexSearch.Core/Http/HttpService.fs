@@ -236,7 +236,7 @@ type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) =
 [<Name("POST-/analyzers/:id/analyze")>]
 [<Sealed>]
 type AnalyzeTextHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<AnalysisRequest, string []>()
+    inherit HttpHandlerBase<AnalyzeText, string []>()
     override __.Process(request, body) = 
         SomeResponse(analyzerService.Analyze(request.ResId.Value, body.Value.Text), Ok, BadRequest)
 
