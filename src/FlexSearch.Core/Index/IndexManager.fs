@@ -210,7 +210,7 @@ module IndexManager =
             // Try closing the index
             do! match t |> closeIndex indexName with
                 | Ok(_) -> okUnit
-                | Fail(e) when e.OperationMessage().ErrorCode = "IndexIsAlreadyOffline" -> okUnit
+                | Fail(e) when e.OperationMessage().OperationCode = "IndexIsAlreadyOffline" -> okUnit
                 | Fail(e) -> fail <| e
             t.Store.TryRemove(indexName) |> ignore
             // Delete the index configuration file

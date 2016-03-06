@@ -19,20 +19,13 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api.Constants
 open FlexSearch.Api
+open FlexSearch.Api.Model
 open Microsoft.FSharp.Reflection
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Reflection
 open Microsoft.Extensions.Logging
-
-/// Extrenal representation of messages which will be send to
-/// the end user. 
-[<CLIMutableAttribute>]
-type OperationMessage = 
-    { Properties : array<string * string>
-      Message : string
-      ErrorCode : string }
 
 [<NotForDocumentation>]
 type MessageKeyword =
@@ -58,12 +51,12 @@ type IMessage =
     abstract OperationMessage : unit -> OperationMessage
     abstract LogProperty : unit -> MessageKeyword * MessageLevel
 
-/// Implmentation of IMesage to be used for validation
+/// Implementation of IMesage to be used for validation
 type ValidationMessage(model : IDataTransferObject) =
     interface IMessage with
         member __.OperationMessage() =
             //TODO: Implement properly
-            { Properties = Array.empty; Message = model.ErrorDescription; ErrorCode = ""}
+            new OperationMessage(model.ErrorDescription, "")
         member __.LogProperty() = (MessageKeyword.Node, MessageLevel.Error)
 
 /// Represents the result of a computation.
@@ -96,9 +89,9 @@ module MessageHelpers =
     /// Converts a case to operation message
     let caseToMsg (x : 'a) msg = 
         let (caseName, props) = getCaseInfo (x)
-        { // TODO: Find a more efficient way to generate properties
-          Message = msg
-          Properties = props |> Array.map (fun p -> 
+        let om = new OperationMessage(msg, caseName)
+        // TODO: Find a more efficient way to generate properties
+        for p in props do
             let value = 
                 try
                     let v = p.GetValue(x)
@@ -107,8 +100,8 @@ module MessageHelpers =
                     else
                         v.ToString()
                 with _ -> String.Empty
-            (p.Name, value))
-          ErrorCode = caseName }
+            om.Properties.Add(new KeyValuePair<string, string>(p.Name, value))
+        om
     
     /// Converts an operation message to string
     let msgToString (om : OperationMessage) = sprintf "%A" om

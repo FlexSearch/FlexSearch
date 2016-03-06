@@ -267,7 +267,7 @@ module SearchHelpers =
         let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
         match result with
         | Fail(f) -> 
-            if f.OperationMessage().ErrorCode <> "StoredFieldCannotBeSearched" then 
+            if f.OperationMessage().OperationCode <> "StoredFieldCannotBeSearched" then 
                 failwithf "Expecting Stored field cannot be searched error."
         | _ -> failwithf "Expecting Stored field cannot be searched error."
     
@@ -275,7 +275,7 @@ module SearchHelpers =
         let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
         match result with
         | Fail(f) -> 
-            if f.OperationMessage().ErrorCode <> "QueryOperatorFieldTypeNotSupported" then 
+            if f.OperationMessage().OperationCode <> "QueryOperatorFieldTypeNotSupported" then 
                 failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
         | _ -> failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
     

@@ -112,7 +112,7 @@ type PostIndexByIdHandler(indexService : IIndexService) =
         match indexService.AddIndex(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
         | Fail(error) -> 
-            if error.OperationMessage().ErrorCode = "IndexAlreadyExists" then FailureResponse(error, Conflict)
+            if error.OperationMessage().OperationCode = "IndexAlreadyExists" then FailureResponse(error, Conflict)
             else FailureResponse(error, BadRequest)
 
 /// Delete an index
@@ -332,7 +332,7 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
         match documentService.AddDocument(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
         | Fail(error) -> 
-            if error.OperationMessage().ErrorCode = "DocumentIdAlreadyExists" then FailureResponse(error, Conflict)
+            if error.OperationMessage().OperationCode = "DocumentIdAlreadyExists" then FailureResponse(error, Conflict)
             else FailureResponse(error, BadRequest)
 
 /// <summary>
