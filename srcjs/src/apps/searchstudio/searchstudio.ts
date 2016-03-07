@@ -79,6 +79,10 @@ module flexportal {
               if (match && match[1].toUpperCase() != "IGNORE")
                 $scope.ActiveIndex.Variables.push({Name: match[1], Value: null});
           } while (match);
+          // Distinct items only
+          $scope.ActiveIndex.Variables = _.uniq($scope.ActiveIndex.Variables, function(item, x, y){
+              return item.Name;
+          });
       };
       
       // Function to update the Search query with the given value. It makes sure
