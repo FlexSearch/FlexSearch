@@ -151,7 +151,7 @@ module flexportal {
         // Store the indexes on the main index
         .then(statuses => {
           $scope.Indices.forEach((idx, i) => idx.StatusReason = (<API.Client.GetStatusResponse>statuses[i]).data.indexStatus.toString());
-          var grouped = _.groupBy(statuses, s => s);
+          var grouped = _.groupBy($scope.Indices, s => s.StatusReason);
           $scope.ChartsDataStore['indices'] = {
             Data: _.map(grouped, g => g.length),
             Labels: Object.keys(grouped)
