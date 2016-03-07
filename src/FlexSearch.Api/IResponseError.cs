@@ -1,4 +1,6 @@
-﻿using FlexSearch.Api.Model;
+﻿
+
+using FlexSearch.Api.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;

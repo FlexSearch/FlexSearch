@@ -1,0 +1,237 @@
+﻿<!--<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Flexible and fast open source .net based search engine">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{TopicTitle}} - {{Name}}</title>
+    <link rel="shortcut icon" href="{{Path}}favicon.ico">
+    <link type="text/css" rel="stylesheet" href="//cdn.jsdelivr.net/g/bootstrap@3.3.6(css/bootstrap.min.css),bootstrap.block-grid@1.1.4,highlight.js@9.2.0(styles/github.min.css)">
+    <link href="{{Path}}css/themify-icons.css" rel="stylesheet" type="text/css" media="all" />
+    <link rel="stylesheet" href="{{Path}}css/theme-gunmetal.css" type="text/css" />
+    <link rel="stylesheet" href="{{Path}}css/custom.css" type="text/css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/fontawesome/4.5.0/css/font-awesome.min.css">
+    <link href='//fonts.googleapis.com/css?family=Raleway:100,400,300,500,600,700%7COpen+Sans:400,500,600%7CRoboto:100,300,400,600,700'
+          rel='stylesheet' type='text/css'>
+</head>
+<body role="document">-->
+<h1>{{{appName}}}</h1>
+<p>{{{appDescription}}}</p>
+
+<h2><a name="__Methods">Methods</a></h2>
+    [ Jump to <a href="#__Models">Models</a> ]
+
+<h2>List of Operations </h2>
+<div class="method-summary">{{access}}</div>
+{{#apiInfo}}
+<ul>
+    {{#apis}}
+    {{#operations}}
+    {{#operation}}
+    <li><a href="#{{nickname}}"><code><span class="http-method">{{httpMethod}}</span> {{path}}</code></a></li>
+    {{/operation}}
+    {{/operations}}
+    {{/apis}}
+</ul>
+{{/apiInfo}}
+<hr />
+{{#apiInfo}}
+{{#apis}}
+{{#operations}}
+{{#operation}}
+<h4 id="{{nickname}}">{{summary}}</h4>
+<p><pre class="{{httpMethod}}"><code><span>{{httpMethod}}</span> <strong>{{path}}</strong></code></pre></p>
+<p>{{notes}}</p>
+
+<table class="table table-bordered table-striped table-condensed">
+    <thead>
+        <tr>
+            <th width="30%">Property Name</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                HTTP Method
+            </td>
+            <td>
+                <code>{{httpMethod}}</code>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                SDK Method Name
+            </td>
+            <td>
+                <code>{{nickname}}</code>
+            </td>
+        </tr>
+        {{#hasPathParams}}
+        <tr>
+            <td>Path parameters</td>
+            <td>
+                <ul>
+                    {{#pathParams}}
+                    <li><code>{{paramName}}</code> {{#required}}(required){{/required}} : {{description}}</li>
+                    {{/pathParams}}
+                </ul>
+            </td>
+        </tr>
+        {{/hasPathParams}}
+        {{#hasQueryParams}}
+        <tr>
+            <td>
+                Query parameters
+            </td>
+            <td>
+                <ul>
+                    {{#queryParams}}
+                    <li><code>{{paramName}}</code> {{#required}}(required){{/required}} : {{description}}</li>
+                    {{/queryParams}}
+                </ul>
+            </td>
+        </tr>
+        {{/hasQueryParams}}
+        {{#hasBodyParam}}
+        <tr>
+            <td>Request body</td>
+            <td>
+                {{#bodyParams}}
+                <a href="#{{paramName}}"><code>{{paramName}}</code></a> {{#required}}(required){{/required}}
+                {{/bodyParams}}
+            </td>
+        </tr>
+        {{/hasBodyParam}}
+        {{#returnType}}
+        <tr>
+            <td>Return type</td>
+            <td>
+                {{#hasReference}}{{^returnSimpleType}}{{returnContainer}}[{{/returnSimpleType}}<a href="#{{returnBaseType}}">{{returnBaseType}}</a>{{^returnSimpleType}}]{{/returnSimpleType}}{{/hasReference}}
+                {{^hasReference}}{{returnType}}{{/hasReference}}
+            </td>
+        </tr>
+        {{/returnType}}
+        <tr>
+            <td>
+                Responses
+            </td>
+            <td>
+                <ul>
+                    {{#responses}}
+                    <li><strong>{{code}}</strong> : {{message}}</li>
+                    {{/responses}}
+                </ul>
+            </td>
+        </tr>
+</table>
+<p class="small">[ Jump to <a href="#__Methods">Methods</a> ]</p>
+<hr />
+{{/operation}}
+{{/operations}}
+{{/apis}}
+{{/apiInfo}}
+<h2><a name="__Models">Models</a></h2>
+    [ Jump to <a href="#__Methods">Methods</a> ]
+<h2>List of Models</h2>
+<p>
+    <ul>
+        {{#models}}
+        {{#model}}
+        <li><a href="#{{name}}"><code>{{classname}}</code></a></li>
+        {{/model}}
+        {{/models}}
+    </ul>
+</p>
+<hr />
+{{#models}}
+{{#model}}
+
+<h4 id="{{name}}">{{classname}}</h4>
+<p>
+    {{description}}
+</p>
+<table class="table table-striped table-bordered table-condensed">
+    <thead>
+        <tr>
+            <th width="30%">Property Name</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{#vars}}
+        <tr>
+            <td>
+                <p>
+                    {{#required}}
+                    <img src="/img/icons/star32.png" alt="Required" width="16" height="16" title="Required">
+                    {{/required}}
+                    {{^required}}
+                    <img src="/img/icons/undefined.png" alt="Optional" width="16" height="16" title="Optional">
+                    {{/required}}
+                    {{#isContainer}}
+                    <img src="/img/icons/linedpaperplus32.png" alt="Optional" width="16" height="16" title="Complex Object">
+                    {{/isContainer}}
+                    {{name}} : <a href='#{{complexType}}'><code>{{datatype}}</code></a>
+                </p>
+            <td>
+                <p>
+                    {{unescapedDescription}}
+                    {{#isEnum}}
+                    The property is an enum which has the following valid values:
+                    <ul>
+                        {{#_enum}}
+                        <li><code>{{this}}</code></>{{/_enum}}</li>
+                    </ul>
+                    {{/isEnum}}
+                </p>
+            </td>
+        </tr>
+        {{/vars}}
+    </tbody>
+</table>
+<p class="small">[ Jump to <a href="#__Models">Models</a> ]</p>
+<hr />
+{{/model}}
+{{/models}}
+<h2>DataTypes</h2>
+<table class="table table-bordered table-condensed table-striped">
+    <tbody>
+        <tr>
+            <th>Data Type</th>
+            <th>Range</th>
+        </tr>
+        <tr id="byte">
+            <td><code>Byte</code></td>
+            <td>0 .. 255</td>
+        </tr>
+        <tr id="integer">
+            <td><code>Integer</code></td>
+            <td>-2,147,483,648 .. 2,147,483,647</td>
+        </tr>
+        <tr id="long">
+            <td><code>Long</code></td>
+            <td>-9,223,372,036,854,775,808 .. 9,223,372,036,854,775,807</td>
+        </tr>
+        <tr id="float">
+            <td><code>Float</code></td>
+            <td>-3.402823e38 .. 3.402823e38</td>
+        </tr>
+        <tr id="double">
+            <td><code>Double</code></td>
+            <td>-1.79769313486232e308 .. 1.79769313486232e308</td>
+        </tr>
+        <tr id="string">
+            <td><code>String</code></td>
+            <td>A string of Unicode characters.</td>
+        </tr>
+        <tr id="boolean">
+            <td><code>Boolean</code></td>
+            <td>True or False.</td>
+        </tr>
+    </tbody>
+</table>
+<!--</body>
+</html>-->
