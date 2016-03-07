@@ -1,5 +1,4 @@
 /// <reference path="../../../typings/tsd.d.ts" />
-/// <reference path="domain.ts" />
 /// <reference path="grid.ts" />
 /// <reference path="apiHelpers.ts" />
 /// <reference path="../client/api.d.ts" />
