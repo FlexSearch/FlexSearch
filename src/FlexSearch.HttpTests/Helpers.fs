@@ -18,12 +18,14 @@ open FlexSearch.Api.Api
 open FlexSearch.Api.Client
 open FlexSearch.Api.Model
 open FSharpx.Task
-
+open Newtonsoft.Json
 
 module Global =
     open Microsoft.AspNet.TestHost
+    open FlexSearch.Core.Helpers
 
-    let mutable RequestLogPath = String.Empty
+    let mutable RequestLogPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase +/ "../../../../documentation/_partials/data"
+    createDir RequestLogPath
     let server = 
         let serverBuilder = 
             let settings = FlexSearch.Core.Settings.T.GetDefault()
@@ -149,7 +151,7 @@ module TestCommandHelpers =
                 result.Query <- searchQuery
                 result.Result <- response.Data
                 result.Description <- desc
-                File.WriteAllText(Global.RequestLogPath +/ fileName + ".json", formatter.SerializeToString(result))
+                File.WriteAllText(Global.RequestLogPath +/ fileName + ".json", JsonConvert.SerializeObject(result, Formatting.Indented))
             | None -> ()
 
     
