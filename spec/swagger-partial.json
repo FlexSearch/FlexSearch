@@ -531,7 +531,7 @@
           "$ref": "#/definitions/shardConfiguration"
         },
         "indexConfiguration": {
-          "description" :  "<<Index Configuration>>"
+          "description" :  "<<Index Configuration>>",
           "$ref": "#/definitions/indexConfiguration"
         },
         "active": {
