@@ -860,6 +860,13 @@
         "data": { "$ref": "#/definitions/operationMessage" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
+    },
+    "duplicateDetectionResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "string" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     }
   },
   "host": "localhost:9800",
@@ -1643,6 +1650,46 @@
           "400": {
             "description": "Bad Request",
             "schema": { "$ref": "#/definitions/updateIndexPredefinedQueryResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/duplicatedetection/{predefinedQueryName}": {
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Duplicate Detection Handler\n",
+        "description": "",
+        "operationId": "duplicateDetection",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/duplicateDetectionRequest" },
+            "name": "DuplicateDetectionRequest",
+            "required": true
+          },
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "predefinedQueryName",
+            "in": "path",
+            "description": "Predefined query name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job ID",
+            "schema": { "$ref": "#/definitions/duplicateDetectionResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/duplicateDetectionResponse" }
           }
         }
       }
