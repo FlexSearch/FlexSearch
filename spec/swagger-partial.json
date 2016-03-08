@@ -1264,7 +1264,7 @@
         }
       },
       "post": {
-        "tags": [ "search" ],
+        "tags": [ "search", "common" ],
         "summary": "Search in a index",
         "description": "Search across the index for documents. Any parameter passed as part of query string takes precedence over the same parameter in the request body. This operation supports both GET & POST verbs.",
         "operationId": "search",
