@@ -106,12 +106,12 @@ module Logging =
         | keyword, level ->
             let om = message.OperationMessage()
             let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
-            logMethod keyword level null <| new MessageLogValues(om.ErrorCode, om.Message, properties)
+            logMethod keyword level null <| new MessageLogValues(om.OperationCode, om.Message, properties)
     
     let logExplicit (message : IMessage) keyword level =
         let om = message.OperationMessage()
         let properties = om.Properties |> Seq.fold (fun acc v -> acc + sprintf "%A; \r\n" v) ""
-        logMethod keyword level null <| new MessageLogValues(om.ErrorCode, om.Message, properties)
+        logMethod keyword level null <| new MessageLogValues(om.OperationCode, om.Message, properties)
 
     let logErrorChoice (message : Result<_>) = 
         match message with

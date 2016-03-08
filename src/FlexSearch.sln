@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{527581E3-C4E4-447D-918D-675C7D7FB9E5}"
 EndProject
@@ -20,6 +20,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Api", "FlexSearch.Api\FlexSearch.Api.csproj", "{87B212A4-3565-4F73-91A4-BD9BAE3AE6DD}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.HttpTests", "FlexSearch.HttpTests\FlexSearch.HttpTests.fsproj", "{7F186B8A-0296-408B-92BE-BF3563D22354}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Assets", "FlexSearch.Assets\FlexSearch.Assets.csproj", "{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -86,6 +88,18 @@ Global
 		{7F186B8A-0296-408B-92BE-BF3563D22354}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{7F186B8A-0296-408B-92BE-BF3563D22354}.Release|x64.ActiveCfg = Release|Any CPU
 		{7F186B8A-0296-408B-92BE-BF3563D22354}.Release|x64.Build.0 = Release|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Debug|x64.Build.0 = Debug|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Release|x64.ActiveCfg = Release|Any CPU
+		{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -6,19 +6,8 @@
     "title": "FlexSearch REST Services"
   },
   "definitions": {
-    "enums": {
-      "description": "Container for global enums",
-      "type": "object",
-      "properties": {
-        "shardStatus": {
-          "description": "Signifies the Shard status",
-          "type": "string",
-          "enum": [ "Opening", "Recovering", "Online", "Offline", "Closing", "Faulted" ]
-        }
-      }
-    },
     "operationMessage": {
-      "description": "Holds all of the information regarding an error",
+      "description": "Represents an operational message returned from the operation. This can be used to represent both success and failure messages.",
       "type": "object",
       "properties": {
         "properties": {
@@ -29,30 +18,15 @@
           }
         },
         "message": {
-          "description": "The Error message",
+          "description": "Operation message",
           "type": "string"
         },
-        "errorCode": {
-          "description": "The Error Code",
+        "operationCode": {
+          "description": "Operation Code",
           "type": "string"
         }
       },
-      "required": [ "message", "errorCode" ]
-    },
-    "analysisRequest": {
-      "description": "A request object which can be used to analyze a text input using an analyzer.",
-      "type": "object",
-      "required": [ "text", "analyzerName" ],
-      "properties": {
-        "text": {
-          "description": "The text to be analyzed by the analyzer.",
-          "type": "string"
-        },
-        "analyzerName": {
-          "description": "The name of the analyzer.",
-          "type": "string"
-        }
-      }
+      "required": [ "message", "operationCode" ]
     },
     "csvIndexingRequest": {
       "description": "Represents a request which can be sent to CSV connector to index CSV data.",
@@ -352,11 +326,6 @@
           "type": "string",
           "default": "standard"
         },
-        "scriptName": {
-          "description": "",
-          "type": "string",
-          "default": ""
-        },
         "searchAnalyzer": {
           "description": "",
           "type": "string",
@@ -465,6 +434,11 @@
           "description": " If true then scores are returned as a part of search result.",
           "type": "boolean",
           "default": true
+        },
+        "predefinedQuery": {
+          "description": "Predefined Query to be used when searching based on a template.",
+          "type": "string",
+          "default": ""
         },
         "preSearchScript": {
           "description": "Script that is executed before submitting the search to Lucene. It can be used to modify the incoming Variables",
@@ -675,189 +649,236 @@
       "description": "",
       "type": "object"
     },
-    "flexResponse": {
+    "getAllAnalyzersResponse": {
       "type": "object",
-      "description": "Base type of an HTTP response containing the Error part",
       "properties": {
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/analyzer" }
+        },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
+    "getAnalyzerResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/analyzer" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "createOrUpdateAnalyzerResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "deleteAnalyzerResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "analyzeText": {
+      "description": "A request object which can be used to analyze a text input using an analyzer.",
+      "type": "object",
+      "required": [ "text", "analyzerName" ],
+      "properties": {
+        "text": {
+          "description": "The text to be analyzed by the analyzer.",
+          "type": "string"
+        },
+        "analyzerName": {
+          "description": "The name of the analyzer.",
+          "type": "string"
+        }
+      }
+    },
     "analyzeTextResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": { "type": "string" }
-            }
-          }
-        }
-      ]
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "analyzerResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/analyzer" } }
-        }
-      ]
+    "getDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/document" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "jobSuccessResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "description": "Gives you the ID of the successfully submitted job",
-          "type": "object",
-          "properties": { "data": { "type": "string" } }
-        }
-      ]
+    "createOrUpdateDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "documentResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/document" } }
-        }
-      ]
+    "deleteDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "searchResultsResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/searchResults" } }
-        }
-      ]
+    "getDocumentsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/searchResults" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "creationIdResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/creationId" } }
-        }
-      ]
+    "createDocumentResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/creationId" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "indexResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/index" } }
-        }
-      ]
+    "deleteAllDocumentsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "analyzersResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/analyzer" }
-            }
-          }
-        }
-      ]
+    "searchResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/searchResults" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "indicesResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": {
-            "data": {
-              "type": "array",
-              "items": { "$ref": "#/definitions/index" }
-            }
-          }
-        }
-      ]
+    "getIndexResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/index" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "deleteIndexResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "getAllIndicesResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/index" }
+        },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "createIndexResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
     "indexExistsResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/indexExists" } }
-        }
-      ]
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/indexExists" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
-    "indexSizeResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "type": "number" } }
-        }
-      ]
-    },
-    "jobResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/job" } }
-        }
-      ]
-    },
-    "memoryDetailsResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/memoryDetails" } }
-        }
-      ]
+    "getIndexSizeResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "number" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     },
     "getStatusResponse": {
-      "allOf": [
-        { "$ref": "#/definitions/flexResponse" },
-        {
-          "type": "object",
-          "properties": { "data": { "$ref": "#/definitions/indexStatusResponse" } }
-        }
-      ]
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/indexStatusResponse" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "updateIndexStatusResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "updateIndexConfigurationResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "updateIndexFieldsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "updateIndexPredefinedQueryResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "getJobResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/job" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "getServerMemoryDetailsResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/memoryDetails" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "pingResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "setupDemoResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/operationMessage" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     }
-  },
-  "externalDocs": {
-    "description": "Find out more about Swagger",
-    "url": "http://swagger.io"
   },
   "host": "localhost:9800",
   "schemes": [ "http" ],
   "paths": {
-    "/analyzers/{id}/analyze": {
-      "post": {
+    "/analyzers": {
+      "get": {
         "tags": [ "analyzer" ],
-        "summary": "Analyze input next",
-        "description": "This endpoint is useful to understand the effect of a particular analyser on\nthe input text. You can use the service with both custom and built-in analysers.\nThe returned response contains the tokenised input.\n",
-        "operationId": "analyzeText",
-        "parameters": [
-          {
-            "in": "body",
-            "description": "Text to analyze",
-            "schema": { "$ref": "#/definitions/analysisRequest" },
-            "name": "AnalysisRequest",
-            "required": true
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Analyzer name",
-            "required": true,
-            "type": "string"
-          }
-        ],
+        "summary": "Get all analyzers",
+        "description": "Returns all the analyzers present in the system.",
+        "operationId": "getAllAnalyzers",
         "responses": {
-          "default": {
-            "description": "Successful operation",
-            "schema": { "$ref": "#/definitions/analyzeTextResponse" }
+          "200": {
+            "description": "An array of analyzers",
+            "schema": { "$ref": "#/definitions/getAllAnalyzersResponse" }
+          },
+          "400": {
+            "description": "Unexpected error",
+            "schema": { "$ref": "#/definitions/getAllAnalyzersResponse" }
           }
         }
       }
@@ -865,8 +886,8 @@
     "/analyzers/{id}": {
       "get": {
         "tags": [ "analyzer" ],
-        "summary": "Returns an analyzer by ID",
-        "description": "",
+        "summary": "Get analyzer",
+        "description": "Returns an analyzer by name.",
         "operationId": "getAnalyzer",
         "parameters": [
           {
@@ -878,16 +899,20 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Analyzer",
-            "schema": { "$ref": "#/definitions/analyzerResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getAnalyzerResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getAnalyzerResponse" }
           }
         }
       },
       "put": {
         "tags": [ "analyzer" ],
-        "summary": "Create or update an analyser",
-        "description": "",
+        "summary": "Create or update an analyzer",
+        "description": "This service is idempotent.",
         "operationId": "createOrUpdateAnalyzer",
         "parameters": [
           {
@@ -905,15 +930,20 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Successful operation"
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/createOrUpdateAnalyzerResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/createOrUpdateAnalyzerResponse" }
           }
         }
       },
       "delete": {
         "tags": [ "analyzer" ],
-        "summary": "Deletes an analyser by ID",
-        "description": "",
+        "summary": "Delete an analyzer",
+        "description": "Deletes an analyzer by name.",
         "operationId": "deleteAnalyzer",
         "parameters": [
           {
@@ -925,23 +955,91 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Successful operation"
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/deleteAnalyzerResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/deleteAnalyzerResponse" }
           }
         }
       }
     },
-    "/indices/{id}/csv": {
+    "/analyzers/{id}/analyzetext": {
       "post": {
-        "tags": [ "common" ],
-        "summary": "Connector for importing CSV file data into the system.\n",
-        "description": "",
-        "operationId": "csv",
+        "tags": [ "analyzer" ],
+        "summary": "Analyze input text",
+        "description": "This endpoint is useful to understand the effect of a particular analyzer on the input text. You can use the service with both custom and built-in analyzers. The returned response contains the tOKenized input.",
+        "operationId": "analyzeText",
         "parameters": [
           {
             "in": "body",
-            "schema": { "$ref": "#/definitions/csvIndexingRequest" },
-            "name": "CsvIndexingRequest",
+            "description": "Text to analyze",
+            "schema": { "$ref": "#/definitions/analyzeText" },
+            "name": "AnalyzeText",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Analyzer name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/analyzeTextResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/analyzeTextResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/documents": {
+      "get": {
+        "tags": [ "documents" ],
+        "summary": "Returns top 10 document from the index",
+        "description": "This endpoint is useful to determine the structure of the documents indexed. At times it is quicker to get the count of all the documents present in the index\nusing the service rather then using the search API.\n",
+        "operationId": "getDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getDocumentsResponse" }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": { "$ref": "#/definitions/getDocumentsResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getDocumentsResponse" }
+          }
+        }
+      },
+      "post": {
+        "tags": [ "documents", "common" ],
+        "summary": "Create a document",
+        "description": "Creates a new document. Unlike a database system FlexSearch doesn't impose the requirement of a unique\nID per document. You can add multiple documents by the same ID but this can\nimpose a problem while adding or retrieving them. You can enforce a unique ID\ncheck by using the `timestamp` field. To understand more about ID check and\nconcurrency control, please refer to the article `concurrency control` under\nconcepts section.\n",
+        "operationId": "createDocument",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/document" },
+            "name": "Document",
             "required": true
           },
           {
@@ -953,9 +1051,42 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "The job ID",
-            "schema": { "$ref": "#/definitions/jobSuccessResponse" }
+          "201": {
+            "description": "Created",
+            "schema": { "$ref": "#/definitions/createDocumentResponse" }
+          },
+          "409": {
+            "description": "Conflict",
+            "schema": { "$ref": "#/definitions/createDocumentResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/createDocumentResponse" }
+          }
+        }
+      },
+      "delete": {
+        "tags": [ "documents", "common" ],
+        "summary": "Delete all documents",
+        "description": "This will remove all the documents present in an index. This is useful when you want to re-index all the documents.",
+        "operationId": "deleteAllDocuments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/deleteAllDocumentsResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/deleteAllDocumentsResponse" }
           }
         }
       }
@@ -983,17 +1114,21 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Document",
-            "schema": { "$ref": "#/definitions/documentResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getDocumentResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getDocumentResponse" }
           }
         }
       },
       "put": {
         "tags": [ "documents", "common" ],
         "summary": "Create or update a document",
-        "description": "It is advisable to use create document endpoint when you are sure that the\ndocument does not exist in an index. This service will always perform an ID\nbased look up to determine if a document already exists. In case of non-unique\nID based index, this will replace all the documents with the currently passed\ndocument. This endpoint can be used with concurrency control semantics.\n",
-        "operationId": "updateDocument",
+        "description": "It is advisable to use create document endpoint when you are sure that the document does not exist in an index. This service will always perform an ID based loOK up to determine if a document already exists. In case of non-unique\nID based index, this will replace all the documents with the currently passed document. This endpoint can be used with concurrency control semantics.",
+        "operationId": "createOrUpdateDocument",
         "parameters": [
           {
             "in": "body",
@@ -1017,16 +1152,20 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Successful operation",
-            "schema": { "$ref": "#/definitions/flexResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/createOrUpdateDocumentResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/createOrUpdateDocumentResponse" }
           }
         }
       },
       "delete": {
         "tags": [ "documents" ],
-        "summary": "Delete a document by ID",
-        "description": "In case of non-unique ID field, this will delete all the documents associated\nwith that ID.\n",
+        "summary": "Delete a document",
+        "description": "In case of non-unique ID field, this will delete all the documents associated with that ID.",
         "operationId": "deleteDocument",
         "parameters": [
           {
@@ -1045,9 +1184,13 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Successful operation",
-            "schema": { "$ref": "#/definitions/flexResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/deleteDocumentResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/deleteDocumentResponse" }
           }
         }
       }
@@ -1055,8 +1198,8 @@
     "/indices/{indexName}/search": {
       "get": {
         "tags": [ "search" ],
-        "summary": "Search and index",
-        "description": "Search across the index for documents using SQL like query syntax.\n\n<div class= \"note\">\nAny parameter passed as part of query string takes precedence over the same\nparameter in the request body.\n</div>\n\nRefer to the search DSL section to learn more about FlexSearch's querying capability.\n",
+        "summary": "Search in a index",
+        "description": "Search across the index for documents. Any parameter passed as part of query string takes precedence over the same parameter in the request body. This operation supports both GET & POST verbs.",
         "operationId": "getSearch",
         "parameters": [
           {
@@ -1101,53 +1244,42 @@
             "description": "Index name",
             "required": true,
             "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/searchResultsResponse" }
-          }
-        }
-      },
-      "post": {
-        "tags": [ "search", "common" ],
-        "summary": "Search and index",
-        "description": "Search across the index for documents using SQL like query syntax.\n\n<div class= \"note\">\nAny parameter passed as part of query string takes precedence over the same\nparameter in the request body.\n</div>\n\nRefer to the search DSL section to learn more about FlexSearch's querying capability.\n",
-        "operationId": "postSearch",
-        "parameters": [
+          },
           {
             "in": "body",
             "schema": { "$ref": "#/definitions/searchQuery" },
             "name": "SearchQuery",
             "required": true
-          },
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index name",
-            "required": true,
-            "type": "string"
           }
         ],
         "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/searchResultsResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/searchResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/searchResponse" }
           }
         }
       },
-      "delete": {
+      "post": {
         "tags": [ "search" ],
-        "summary": "Deletes document by query",
-        "description": "Deletes all document returned by the search query for the given index. Returns the records identified\nby the search query.",
-        "operationId": "deleteDocumentsFromSearch",
+        "summary": "Search in a index",
+        "description": "Search across the index for documents. Any parameter passed as part of query string takes precedence over the same parameter in the request body. This operation supports both GET & POST verbs.",
+        "operationId": "search",
         "parameters": [
           {
             "name": "q",
             "in": "query",
             "description": "Short hand for 'QueryString'.",
             "type": "string"
+          },
+          {
+            "name": "c",
+            "in": "query",
+            "description": "Columns to be retrieved. Use * to retrieve all columns.",
+            "type": "integer"
           },
           {
             "name": "count",
@@ -1179,82 +1311,22 @@
             "description": "Index name",
             "required": true,
             "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/searchResultsResponse" }
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/documents": {
-      "get": {
-        "tags": [ "documents" ],
-        "summary": "Returns top 10 document from the index",
-        "description": "This endpoint is useful to determine the structure of the documents indexed. At\ntimes it is quicker to get the count of all the documents present in the index\nusing the service rather then using the search API.\n",
-        "operationId": "getDocuments",
-        "parameters": [
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "SearchResults",
-            "schema": { "$ref": "#/definitions/searchResultsResponse" }
-          }
-        }
-      },
-      "post": {
-        "tags": [ "documents", "common" ],
-        "summary": "Creates a new document",
-        "description": "Unlike a database system FlexSearch doesn't impose the requirement of a unique\nID per document. You can add multiple documents by the same ID but this can\nimpose a problem while adding or retrieving them. You can enforce a unique ID\ncheck by using the `timestamp` field. To understand more about ID check and\nconcurrency control, please refer to the article `concurrency control` under\nconcepts section.\n",
-        "operationId": "createDocument",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/document" },
-            "name": "Document",
-            "required": true
           },
           {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index name",
-            "required": true,
-            "type": "string"
+            "in": "body",
+            "schema": { "$ref": "#/definitions/searchQuery" },
+            "name": "SearchQuery",
+            "required": true
           }
         ],
         "responses": {
-          "default": {
-            "description": "CreateResponse",
-            "schema": { "$ref": "#/definitions/creationIdResponse" }
-          }
-        }
-      },
-      "delete": {
-        "tags": [ "documents", "common" ],
-        "summary": "Deletes all documents present in the index",
-        "description": "This will remove all the documents present in an index. This is useful when you\nwant to reindex all the documents.\n",
-        "operationId": "deleteDocuments",
-        "parameters": [
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response"
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/searchResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/searchResponse" }
           }
         }
       }
@@ -1262,8 +1334,8 @@
     "/indices/{id}": {
       "get": {
         "tags": [ "indices" ],
-        "summary": "Returns an index by the ID",
-        "description": "This service will return a status of 404 when index is not present on the server.\n",
+        "summary": "Get an index",
+        "description": "This service will return a status of 404 when index is not present on the server.",
         "operationId": "getIndex",
         "parameters": [
           {
@@ -1275,16 +1347,24 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Index",
-            "schema": { "$ref": "#/definitions/indexResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getIndexResponse" }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": { "$ref": "#/definitions/getIndexResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getIndexResponse" }
           }
         }
       },
       "delete": {
         "tags": [ "indices", "common" ],
-        "summary": "Deletes an index by ID",
-        "description": "Index deletion happens in two parts, first the index configuration file is\ndeleted from the configurations folder, then the index is deleted from the data\nfolder. In case any error is encountered the cleanup will be performed on the\nserver restart.\n",
+        "summary": "Deletes an index",
+        "description": "Index deletion happens in two parts, first the index configuration file is deleted from the configurations folder, then the index is deleted from the data folder. In case any error is encountered the cleanup will be performed on the server restart.",
         "operationId": "deleteIndex",
         "parameters": [
           {
@@ -1296,59 +1376,13 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/flexResponse" }
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/duplicatedetection/{predefinedQueryName}": {
-      "post": {
-        "tags": [ "common" ],
-        "summary": "Duplicate Detection Handler\n",
-        "description": "",
-        "operationId": "duplicateDetection",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/duplicateDetectionRequest" },
-            "name": "DuplicateDetectionRequest",
-            "required": true
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/deleteIndexResponse" }
           },
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index name",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "predefinedQueryName",
-            "in": "path",
-            "description": "Predefined query name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Job ID",
-            "schema": { "$ref": "#/definitions/jobSuccessResponse" }
-          }
-        }
-      }
-    },
-    "/analyzers": {
-      "get": {
-        "tags": [ "analyzer" ],
-        "summary": "Returns all analysers",
-        "description": "",
-        "operationId": "getAllAnalyzer",
-        "responses": {
-          "default": {
-            "description": "All Analyzers",
-            "schema": { "$ref": "#/definitions/analyzersResponse" }
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/deleteIndexResponse" }
           }
         }
       }
@@ -1356,13 +1390,17 @@
     "/indices": {
       "get": {
         "tags": [ "indices" ],
-        "summary": "Returns all the indexes",
+        "summary": "Get all indices",
         "description": "",
-        "operationId": "getAllIndex",
+        "operationId": "getAllIndices",
         "responses": {
-          "default": {
-            "description": "All indices",
-            "schema": { "$ref": "#/definitions/indicesResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getAllIndicesResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getAllIndicesResponse" }
           }
         }
       },
@@ -1380,9 +1418,17 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "CreateResponse",
-            "schema": { "$ref": "#/definitions/creationIdResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/createIndexResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/createIndexResponse" }
+          },
+          "409": {
+            "description": "Conflict",
+            "schema": { "$ref": "#/definitions/createIndexResponse" }
           }
         }
       }
@@ -1391,7 +1437,7 @@
       "get": {
         "tags": [ "indices" ],
         "summary": "Check if an index exists",
-        "description": "This endpoint can be used to check if an index is present in the system. This\nendpoint is a lighter alternative to accessing the index by an ID as the\nresponse is smaller in size.\n",
+        "description": "This endpoint can be used to check if an index is present in the system. This endpoint is a lighter alternative to accessing the index by an ID as the response is smaller in size.",
         "operationId": "indexExists",
         "parameters": [
           {
@@ -1403,23 +1449,13 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "IndexExistsResponse",
+          "200": {
+            "description": "OK",
             "schema": { "$ref": "#/definitions/indexExistsResponse" }
-          }
-        }
-      }
-    },
-    "/favicon.ico": {
-      "get": {
-        "tags": [ "server" ],
-        "summary": "Returns favourite icon",
-        "description": "An internal end point which is used to return favourite icon when it is\nrequested by a web browser.\n",
-        "operationId": "getFavicon",
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "type": "file" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/indexExistsResponse" }
           }
         }
       }
@@ -1428,7 +1464,7 @@
       "get": {
         "tags": [ "indices" ],
         "summary": "Returns the size of an index",
-        "description": "The return size may be higher than the actual size of the documents present in\nthe index. The return value includes the space occupied by the transaction logs\nand older segment files which are not cleaned up as part of the last comment.\n",
+        "description": "The return size may be higher than the actual size of the documents present in the index. The return value includes the space occupied by the transaction logs and older segment files which are not cleaned up as part of the last comment.",
         "operationId": "getIndexSize",
         "parameters": [
           {
@@ -1440,9 +1476,173 @@
           }
         ],
         "responses": {
-          "default": {
-            "description": "Index size in bytes",
-            "schema": { "$ref": "#/definitions/indexSizeResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getIndexSizeResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getIndexSizeResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/status": {
+      "get": {
+        "tags": [ "indices" ],
+        "summary": "Returns the status of an index",
+        "description": "This endpoint can be used to determine if an index is online or off-line.",
+        "operationId": "getIndexStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getStatusResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getStatusResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/status/{status}": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Update the status of an index",
+        "description": "This endpoint can be used to set an index online or off-line.",
+        "operationId": "updateIndexStatus",
+        "parameters": [
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "in": "path",
+            "description": "offline / online",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/updateIndexStatusResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/updateIndexStatusResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/configuration": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Update the configuration of an index",
+        "description": "The Index Version cannot be modified.",
+        "operationId": "updateIndexConfiguration",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/indexConfiguration" },
+            "name": "IndexConfiguration",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/updateIndexConfigurationResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/updateIndexConfigurationResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/fields": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Update the Index Fields",
+        "description": "Any analyzer which is to be used as part of an index field should be defined before adding the field to the index. Always re-index the data after a field update, otherwise you may get unexpected results. New fields added as part of fields update will not have any data available for the older records, in such cases if the indexing is not done the engine will use default values for the field type. If an existing field is removed then the data associated with that field will not be accessible even though the data will not be removed from the index itself.",
+        "operationId": "updateIndexFields",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/fieldsUpdateRequest" },
+            "name": "FieldsUpdateRequest",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/updateIndexFieldsResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/updateIndexFieldsResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{id}/predefinedQuery": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Adds or updates a predefined query for the given index",
+        "description": "",
+        "operationId": "updateIndexPredefinedQuery",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/searchQuery" },
+            "name": "SearchQuery",
+            "required": true
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/updateIndexPredefinedQueryResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/updateIndexPredefinedQueryResponse" }
           }
         }
       }
@@ -1465,7 +1665,7 @@
         "responses": {
           "default": {
             "description": "Job",
-            "schema": { "$ref": "#/definitions/jobResponse" }
+            "schema": { "$ref": "#/definitions/getJobResponse" }
           }
         }
       }
@@ -1475,47 +1675,15 @@
         "tags": [ "server" ],
         "summary": "Returns memory used by the server",
         "description": "",
-        "operationId": "getMemoryDetails",
+        "operationId": "getServerMemoryDetails",
         "responses": {
-          "default": {
-            "description": "MemoryDetailsResponse",
-            "schema": { "$ref": "#/definitions/memoryDetailsResponse" }
-          }
-        }
-      }
-    },
-    "/": {
-      "get": {
-        "tags": [ "server" ],
-        "summary": "Redirect requests from base URL",
-        "description": "An internal endpoint which is used to redirect requests to the root URL to the\nFlexSearch portal.\n",
-        "operationId": "getRoot",
-        "responses": {
-          "default": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/status": {
-      "get": {
-        "tags": [ "indices" ],
-        "summary": "Returns the status of an index",
-        "description": "This endpoint can be used to determine if an index is online or off-line.\n",
-        "operationId": "getStatus",
-        "parameters": [
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "IndexStatusResponse",
-            "schema": { "$ref": "#/definitions/getStatusResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/getServerMemoryDetailsResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/getServerMemoryDetailsResponse" }
           }
         }
       }
@@ -1524,128 +1692,12 @@
       "get": {
         "tags": [ "server" ],
         "summary": "Ping server",
-        "description": "A simple endpoint which can be used to check the server is running. This is\nuseful for checking the status of the server from a load balancer or fire-wall.\n",
+        "description": "A simple endpoint which can be used to check the server is running. This is useful for checking the status of the server from a load balancer or fire-wall.",
         "operationId": "ping",
         "responses": {
-          "default": {
-            "description": "Pong"
-          }
-        }
-      }
-    },
-    "/indices/{id}/configuration": {
-      "put": {
-        "tags": [ "indices" ],
-        "summary": "Update the configuration of an index",
-        "description": "<div class=\"important\">\nThe Index Version cannot be modified\n</div>\n",
-        "operationId": "updateIndexConfiguration",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/indexConfiguration" },
-            "name": "IndexConfiguration",
-            "required": true
-          },
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/flexResponse" }
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/fields": {
-      "put": {
-        "tags": [ "indices" ],
-        "summary": "Update the Index Fields",
-        "description": "Any analyser which is to be used as part of an index field should be defined\nbefore adding the field to the index.\n\n<div class=\"note\">\nAlways reindex the data after a field update, otherwise you may get unexpected\nresults.\n</div>\n\n<div class=\"important\">\nNew fields added as part of fields update will not have any data available for\nthe older records, in such cases if the indexing is not done the engine will use\ndefault values for the field type. If an existing field is removed then the data\nassociated with that field will not be accessible even though the data will not\nbe removed from the index itself.\n</div>\n",
-        "operationId": "updateIndexFields",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/fieldsUpdateRequest" },
-            "name": "FieldsUpdateRequest",
-            "required": true
-          },
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/flexResponse" }
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/predefinedQuery": {
-      "put": {
-        "tags": [ "indices" ],
-        "summary": "Adds or updates a predefined query for the given index",
-        "description": "",
-        "operationId": "updateIndexPredefinedQuery",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/searchQuery" },
-            "name": "SearchQuery",
-            "required": true
-          },
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/flexResponse" }
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/status/{status}": {
-      "put": {
-        "tags": [ "indices" ],
-        "summary": "Update the status of an index",
-        "description": "This endpoint can be used to set an index online or off-line.\n",
-        "operationId": "updateStatus",
-        "parameters": [
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "status",
-            "in": "path",
-            "description": "offline / online",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/flexResponse" }
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/pingResponse" }
           }
         }
       }
@@ -1658,39 +1710,13 @@
         "operationId": "setupDemo",
         "parameters": [ ],
         "responses": {
-          "default": {
-            "description": "Successful response",
-            "schema": { "$ref": "#/definitions/flexResponse" }
-          }
-        }
-      }
-    },
-    "/indices/{indexName}/sql": {
-      "post": {
-        "tags": [ "common" ],
-        "summary": "Connector for importing data from Microsoft SQL into the system.\n",
-        "description": "",
-        "operationId": "sql",
-        "parameters": [
-          {
-            "in": "body",
-            "schema": { "$ref": "#/definitions/sqlIndexingRequest" },
-            "name": "SqlIndexingRequest",
-            "description": "The SQL request",
-            "required": true
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/setupDemoResponse" }
           },
-          {
-            "name": "indexName",
-            "in": "path",
-            "description": "Index Name",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "The job ID",
-            "schema": { "$ref": "#/definitions/jobSuccessResponse" }
+          "400": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/setupDemoResponse" }
           }
         }
       }

@@ -130,7 +130,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
                            new Field("nationality")
                            new Field("coordinates", Constants.FieldType.ExactText) |]
         index.PredefinedQueries <- 
-            [| new SearchQuery("country", "allof(agriproducts, 'wheat', 'corn', 'grapes') AND like(countryname, isblank(@countryName, @IGNORE))", 
+            [| new SearchQuery("country", "allof(agriproducts, 'wheat', 'corn', 'grapes') AND like(countryname, @countryName, -matchall)", 
                                QueryName = "agriSearch",
                                Columns = [| "countryname"; "agriproducts" |]) |]
         index

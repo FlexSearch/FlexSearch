@@ -17,128 +17,89 @@
 // ----------------------------------------------------------------------------
 namespace FlexSearch.Core
 
+open System.Collections.Generic
+
+type Scripts = 
+    { PreIndexScript : PreIndexDelegate option
+      PostSearchScripts : IReadOnlyDictionary<string, PostSearchDelegate>
+      PreSearchScripts : IReadOnlyDictionary<string, PreSearchDelegate> }
+    static member Default = 
+        { PreIndexScript = None
+          PostSearchScripts = new Dictionary<string, PostSearchDelegate>()
+          PreSearchScripts = new Dictionary<string, PreSearchDelegate>() }
+
+type ScriptType = 
+    /// Default signature which is used by computed scripts
+    | PreIndexScript of script : PreIndexDelegate
+    /// Script which can be used to filter search query results
+    /// Format -> searchQuery, id, score, fields -> filtering result * score
+    | PostSearchScript of script : PostSearchDelegate
+    /// Script to process search query data
+    | PreSearchScript of script : PreSearchDelegate
+
 /// Scripts can be used to automate various processing in FlexSearch. Script Type signifies
 /// the type of operation that the current script can perform. These can vary from scripts
 /// used for computing fields dynamically at index time or scripts which can be used to alter
 /// FlexSearch's default scoring.
-[<AutoOpen>]
-module Scripts =
-    open FlexSearch.Api.Model 
-    open System
-    open System.Collections.Generic
-    
-    type T = 
-        /// Default signature which is used by computed scripts
-        /// Format -> indexName, fieldName, fields, parameters
-        | ComputedScript of script : ComputedDelegate
-        /// Script which can be used to filter search query results
-        /// Format -> searchQuery, id, score, fields -> filtering result * score
-        | PostSearchScript of script : PostSearchDeletegate
-        /// Script to process search query data
-        | PreSearchScript of script : PreSearchDelegate
-    
-    [<Internal>]
-    type ScriptType = 
-        | Computed = 1
-        | PostSearch = 2
-        | PreSearch = 3
-    
-    let pattern (scriptType : ScriptType) = 
-        match scriptType with
-        | ScriptType.Computed -> "computed_*.csx"
-        | ScriptType.PostSearch -> "postsearch_*.csx"
-        | ScriptType.PreSearch -> "presearch_*.csx"
-        | _ -> failwithf "Unknown ScriptType"
-
-[<AutoOpen>]
-module Compiler = 
-    open FlexSearch.Api.Model
-    open Microsoft.CodeAnalysis.CSharp
-    open Microsoft.CodeAnalysis
+module FSharpCompiler = 
+    open Microsoft.FSharp.Compiler.SimpleSourceCodeServices
     open System.IO
-    open System.Text
-    open System.Linq
     open System.Reflection
+    open System.Linq
+    open FlexSearch.Api.Model
     open System
     
-    let scriptingNamespace = "Flexsearch.Scripting"
-    let scriptMethodName = "Execute"
-    let usingStatements = """
-using System;
-using FlexSearch.Api.Model;
-using FlexSearch.Api.Constants;
-using System.Collections.Generic;
-"""
+    let apiDllPath = Constants.rootFolder +/ "FlexSearch.Api.dll"
+    let helpersFile = Constants.ScriptFolder +/ "helpers.fsx"
     
-    let metaDataReference = 
-        [| MetadataReference.CreateFromFile(typeof<System.Object>.Assembly.Location) :> MetadataReference
-           MetadataReference.CreateFromFile(typeof<OperationMessage>.Assembly.Location) :> MetadataReference
-           MetadataReference.CreateFromFile(typeof<SearchQuery>.Assembly.Location) :> MetadataReference |]
+    let generateDelegate (m : MethodInfo) = 
+        let parameters = m.GetParameters()
+        if m.ReturnType = typeof<System.Void> && parameters.Count() = 1 then 
+            if parameters.[0].ParameterType = typeof<Document> && m.Name = "preIndex" then 
+                Some <| PreIndexScript(Delegate.CreateDelegate(typeof<PreIndexDelegate>, m) :?> PreIndexDelegate)
+            else if parameters.[0].ParameterType = typeof<SearchQuery> && m.Name.StartsWith("preSearch") then 
+                Some <| PreSearchScript(Delegate.CreateDelegate(typeof<PreSearchDelegate>, m) :?> PreSearchDelegate)
+            else None
+        else None
     
-    let generateSyntaxTree (scriptName) (text : string) = 
-        let syntax = 
-            if text.Contains("namespace") then text
+    let compile (filePath : string) = 
+        let scs = SimpleSourceCodeServices()
+        
+        let errors, exitCode, dynAssembly = 
+            scs.CompileToDynamicAssembly([| "-o"
+                                            Path.GetTempFileName()
+                                            "-a"
+                                            helpersFile
+                                            filePath
+                                            "-r"
+                                            "System.Runtime"
+                                            "-r"
+                                            apiDllPath |], execute = None)
+        
+        let preSearchScripts = new Dictionary<string, PreSearchDelegate>(StringComparer.InvariantCultureIgnoreCase)
+        let mutable preIndexScript = None
+        match dynAssembly with
+        | Some(asm) -> 
+            let t = asm.GetType("Script")
+            if isNull t then 
+                fail << Logger.LogR 
+                <| ScriptCannotBeCompiled(filePath, "Script does not contain mandatory 'Script' module.")
             else 
-                sprintf "namespace %s { %s public static class %s { public static %s } }" scriptingNamespace 
-                    usingStatements scriptName text
-        CSharpSyntaxTree.ParseText(syntax)
-    
-    let generateCompilationUnit (syntaxTree : SyntaxTree) = 
-        CSharpCompilation.Create
-            (Path.GetRandomFileName(), [| syntaxTree |], metaDataReference, 
-             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-    
-    let generateAssembly (scriptName : string) (cu : CSharpCompilation) = 
-        use ms = new MemoryStream()
-        let result = cu.Emit(ms)
-        match result.Success with
-        | false -> 
-            let errors = 
-                Seq.fold (fun (acc : StringBuilder) (elem : Diagnostic) -> acc.AppendLine(elem.GetMessage())) 
-                    (new StringBuilder()) (result.Diagnostics.Where(fun x -> x.Severity = DiagnosticSeverity.Error))
-            failwith (errors.ToString())
-        | true -> 
-            ms.Seek(0L, SeekOrigin.Begin) |> ignore
-            let assm = Assembly.Load(ms.ToArray())
-            let typ = assm.GetType(sprintf "%s.%s" scriptingNamespace scriptName)
-            match typ.GetMethod(scriptMethodName) with
-            | null -> failwith "The given script does not contain a method named 'Execute'"
-            | _ -> typ
-    
-    let generateDeletegate (scriptType : ScriptType) (typ : Type) = 
-        let methodInfo = typ.GetMethod(scriptMethodName)
-        match scriptType with
-        | ScriptType.Computed -> 
-            ComputedScript <| (Delegate.CreateDelegate(typeof<ComputedDelegate>, methodInfo) :?> ComputedDelegate)
-        | ScriptType.PostSearch -> 
-            PostSearchScript 
-            <| (Delegate.CreateDelegate(typeof<PostSearchDeletegate>, methodInfo) :?> PostSearchDeletegate)
-        | ScriptType.PreSearch -> 
-            PreSearchScript 
-            <| (Delegate.CreateDelegate(typeof<PreSearchDelegate>, methodInfo) :?> PreSearchDelegate)
-        | _ -> failwithf "Unknown ScriptType"
-    
-    /// Compiles a script with the given source code
-    let compileScript (sourceCode, scriptName, scriptType : ScriptType) = 
-        try 
-            sourceCode
-            |> generateSyntaxTree scriptName
-            |> generateCompilationUnit
-            |> generateAssembly scriptName
-            |> generateDeletegate scriptType
-            |> fun x -> (sprintf "%s%s" scriptName (string scriptType), x)
-            |> ok
-        with e -> fail << Logger.LogR <| ScriptCannotBeCompiled(scriptName, exceptionPrinter e)
-    
-    /// Compiles a script from the file
-    let compileFromFile (filePath, scriptType : ScriptType) = 
-        let code = File.ReadAllText(filePath)
-        let fileName = Path.GetFileNameWithoutExtension(filePath)
-        compileScript (code, fileName |> after '_', scriptType)
-    
-    /// Compiles all the scripts of a given type
-    let compileAllScripts (scriptType : ScriptType) = 
-        Directory.EnumerateFiles(Constants.ScriptFolder, scriptType |> pattern, SearchOption.TopDirectoryOnly)
-        |> Seq.map (fun x -> compileFromFile (x, scriptType))
-        |> Seq.filter resultToBool
-        |> Seq.map extract
+                for m in t.GetMethods() do
+                    match generateDelegate m with
+                    | Some(scriptType) -> 
+                        match scriptType with
+                        | PreIndexScript(d) -> preIndexScript <- Some d
+                        | PreSearchScript(d) -> 
+                            let scriptName = m.Name.Replace("preSearch", "")
+                            preSearchScripts.Add(scriptName, d)
+                        | _ -> ()
+                    | _ -> ()
+                ok <| { PreIndexScript = preIndexScript
+                        PreSearchScripts = preSearchScripts
+                        PostSearchScripts = new Dictionary<string, PostSearchDelegate>() }
+        | _ -> 
+            fail << Logger.LogR <| ScriptCannotBeCompiled(filePath, 
+                                                          errors
+                                                          |> Array.map (fun x -> sprintf "%s\n" x.Message)
+                                                          |> String.Concat)

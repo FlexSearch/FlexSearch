@@ -22,7 +22,7 @@ open System
 open System.Collections.Concurrent
 open System.Threading
 
-type DefaultObjectPoolPolicy<'T>(factory : unit -> 'T, onRelease : 'T -> bool) = 
+type ObjectPoolPolicy<'T>(factory : unit -> 'T, onRelease : 'T -> bool) = 
     interface IPooledObjectPolicy<'T> with
         member __.Create() = factory()
         member __.Return(value : 'T) = onRelease (value)
@@ -35,17 +35,26 @@ module Pools =
     /// A reusable dictionary pool
     let dictionaryPool = 
         let initialCapacity = 50
-        let itemsInPool = 300
         let factory() = new Dictionary<string, string>(initialCapacity, StringComparer.OrdinalIgnoreCase)
         
         let onRelease (dict : Dictionary<string, string>) = 
             dict.Clear()
             true
-        new DefaultObjectPool<Dictionary<string, string>>(new DefaultObjectPoolPolicy<Dictionary<string, string>>(factory, 
+        new DefaultObjectPool<Dictionary<string, string>>(new ObjectPoolPolicy<Dictionary<string, string>>(factory, 
                                                                                                               onRelease))
     
     /// Global memory pool to be shared across the engine
     let memory = new Microsoft.IO.RecyclableMemoryStreamManager()
+    
+    /// Global pool for string list
+    let stringListPool = 
+        let initialCapacity = 50
+        let factory() = new List<string>(initialCapacity)
+        
+        let onRelease (item : List<string>) = 
+            item.Clear()
+            true
+        new DefaultObjectPool<List<string>>(new ObjectPoolPolicy<List<string>>(factory, onRelease))
 
 [<AutoOpen>]
 module BytePool = 
@@ -58,7 +67,7 @@ module BytePool =
     let private generatePool (sizeInKB : int, itemsInPool : int) = 
         let factory() = Array.create (sizeInKB * 1024) (0uy)
         let onRelease (item : _) = true
-        new DefaultObjectPool<byte []>(new DefaultObjectPoolPolicy<byte []>(factory, onRelease))
+        new DefaultObjectPool<byte []>(new ObjectPoolPolicy<byte []>(factory, onRelease))
     
     let smallPoolSize = 128
     let largePoolSize = 4096
@@ -77,36 +86,3 @@ module BytePool =
         if item.Length = smallPoolSizeBytes then smallPool.Return(item)
         else 
             if item.Length = largePoolSizeBytes then largePool.Return(item)
-
-open Microsoft.Extensions.ObjectPool
-type TrackingObjectPool<'T when 'T : equality and 'T : not struct> (policy : IPooledObjectPolicy<'T>, maximumRetained : int) =
-    let _items : 'T[] = Array.init maximumRetained (fun i -> Unchecked.defaultof<'T>)
-    let _policy : IPooledObjectPolicy<'T> = if policy |> isNull 
-                                            then raise <| new ArgumentNullException("policy")
-                                            else policy
-    
-    let rec iterator index (array : 'X[] when 'X : equality and 'X : not struct)  = 
-        if index >= array.Length then None
-        else 
-            let item = array.[index]
-            if item <> Unchecked.defaultof<'X> 
-               && Interlocked.CompareExchange(ref array.[index], Unchecked.defaultof<'X>, item) = item
-            then Some(item)
-            else iterator (index + 1) array
-
-    let rec replaceFirstNullWith index obj (array : 'X[]) =
-        if index >= array.Length then ()
-        else
-            if array.[index] = Unchecked.defaultof<'X> then array.[index] <- obj
-            else replaceFirstNullWith (index + 1) obj array
-
-    new (policy : IPooledObjectPolicy<'T>) = TrackingObjectPool(policy, Environment.ProcessorCount * 2)
-
-    member __.Get() = 
-        match _items |> iterator 0 with
-        | Some(item) -> item
-        | _ -> _policy.Create()
-    member __.Return(t : 'T) =
-        if not <| _policy.Return(t) then ()
-        else _items |> replaceFirstNullWith 0 t
-    member __.GetAll() = _items |> Array.where ((<>) Unchecked.defaultof<'T>)

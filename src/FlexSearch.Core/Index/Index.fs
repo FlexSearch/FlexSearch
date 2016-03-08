@@ -178,9 +178,11 @@ type IndexSetting =
       SearchAnalyzer : AnalyzerWrapper
       /// Contains all the fields used in the index
       Fields : FieldCollection
+      Scripts : Scripts
       PredefinedQueries : IReadOnlyDictionary<string, Predicate * SearchQuery>
       IndexConfiguration : IndexConfiguration
       BaseFolder : string
+      SettingsFolder : string
       ShardConfiguration : ShardConfiguration }
 
 /// Wrapper around SearcherManager to expose .net IDisposable functionality

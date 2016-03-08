@@ -37,8 +37,7 @@ type FieldSchema =
       FieldType : FieldBase
       Analyzers : FieldAnalyzers option
       Similarity : Similarity
-      TypeIdentity : FieldTypeIndentity
-      Source : (Func<string, string, IReadOnlyDictionary<string, string>, string [], string> * string []) option }
+      TypeIdentity : FieldTypeIndentity }
 
 /// KeyedCollection wrapper for Field collections
 type FieldCollection() = 
@@ -173,15 +172,7 @@ module FieldSchema =
         properties.ToArray() |> generateIdentity
     
     /// Build a Schema field from the Field DTO
-    let build (field : FlexField) (getAnalyzer : GetAnalyzer) 
-        (getScript : GetScript) = 
-        let getSource (field : FlexField) = 
-            if (isBlank field.ScriptName) then ok <| None
-            else 
-                match getScript field.ScriptName with
-                | Ok(func) -> ok <| Some(func)
-                | _ -> fail <| ScriptNotFound(field.ScriptName, field.FieldName)
-        
+    let build (field : FlexField) (getAnalyzer : GetAnalyzer) = 
         let getFieldType (field : FlexField) = 
             match field.FieldType with
             | FieldType.Int -> IntField.Instance
@@ -208,7 +199,6 @@ module FieldSchema =
             }
         
         maybe { 
-            let! source = getSource field
             let basicFieldType = getFieldType field
             let! analyzers = getAnalyzers field
             let typeIdentity = createFromFieldType (basicFieldType.LuceneFieldType) field
@@ -216,7 +206,6 @@ module FieldSchema =
                      SchemaName = field.FieldName
                      FieldType = basicFieldType
                      TypeIdentity = typeIdentity
-                     Source = source
                      Similarity = field.Similarity
                      Analyzers = analyzers }
         }
@@ -227,17 +216,14 @@ module FieldSchema =
     /// Note: An instance of List is passed so that we can avoid memory allocation and
     /// reuse the list from the object pool.
     /// Note: Avoid using the below for numeric types. 
-    let inline getTerms (values : string[], result : List<string>) (fs : FieldSchema) = 
+    let inline getTokens (value : string, result : List<string>) (fs : FieldSchema) = 
         match fs.Analyzers with
         | Some(analyzers) ->
-            for value in values do
-                result.AddRange(parseTextUsingAnalyzer (analyzers.SearchAnalyzer, fs.SchemaName, value))
+            parseTextUsingAnalyzer (analyzers.SearchAnalyzer, fs.SchemaName, value, result)
         | _ -> 
             // The field does not have an associated analyzer so just add the input to
             // the result by using the field specific formatting
-            for value in values do
-                result.Add(fs.FieldType.ToInternal value)
-        result
+            result.Add(fs.FieldType.ToInternal value)
 
     ///----------------------------------------------------------------------
     /// Meta data fields related
@@ -250,7 +236,6 @@ module FieldSchema =
           SchemaName = name
           FieldType = basicFieldType
           TypeIdentity = createFromFieldType (basicFieldType.LuceneFieldType) field
-          Source = None
           Similarity = FlexSearch.Api.Constants.Similarity.TFIDF
           Analyzers = None }
     

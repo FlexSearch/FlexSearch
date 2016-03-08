@@ -112,7 +112,7 @@ type PostIndexByIdHandler(indexService : IIndexService) =
         match indexService.AddIndex(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
         | Fail(error) -> 
-            if error.OperationMessage().ErrorCode = "IndexAlreadyExists" then FailureResponse(error, Conflict)
+            if error.OperationMessage().OperationCode = "IndexAlreadyExists" then FailureResponse(error, Conflict)
             else FailureResponse(error, BadRequest)
 
 /// Delete an index
@@ -236,7 +236,7 @@ type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) =
 [<Name("POST-/analyzers/:id/analyze")>]
 [<Sealed>]
 type AnalyzeTextHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<AnalysisRequest, string []>()
+    inherit HttpHandlerBase<AnalyzeText, string []>()
     override __.Process(request, body) = 
         SomeResponse(analyzerService.Analyze(request.ResId.Value, body.Value.Text), Ok, BadRequest)
 
@@ -332,7 +332,7 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
         match documentService.AddDocument(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
         | Fail(error) -> 
-            if error.OperationMessage().ErrorCode = "DocumentIdAlreadyExists" then FailureResponse(error, Conflict)
+            if error.OperationMessage().OperationCode = "DocumentIdAlreadyExists" then FailureResponse(error, Conflict)
             else FailureResponse(error, BadRequest)
 
 /// <summary>

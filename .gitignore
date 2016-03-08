@@ -251,3 +251,5 @@ Tools
 client
 spec/swagger-full.json
 scripts/obj.Test
+documentation/_partials/api.html
+documentation/_partials/index.html

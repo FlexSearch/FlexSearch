@@ -32,7 +32,7 @@ type VersionCache =
     { mutable Current : ConcurrentDictionary<string, int64>
       mutable Old : ConcurrentDictionary<string, int64>
       IdFieldName : string
-      LastModifiedFieldName : string
+      ModifyIndexFieldName : string
       ShardWriter : ShardWriter }
     
     interface ReferenceManagerRefreshListener with
@@ -72,14 +72,14 @@ module VersionCache =
             { Current = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
               Old = new ConcurrentDictionary<string, int64>(StringComparer.OrdinalIgnoreCase)
               IdFieldName = settings.Fields.[IdField.Name].SchemaName
-              LastModifiedFieldName = settings.Fields.[TimeStampField.Name].SchemaName
+              ModifyIndexFieldName = settings.Fields.[ModifyIndexField.Name].SchemaName
               ShardWriter = shardWriter }
         shardWriter |> ShardWriter.addRefreshListener (store)
         store
     
     /// Will be used to represent the deleted document version
     [<LiteralAttribute>]
-    let deletedValue = 0L
+    let DeletedValue = 0L
     
     /// An optimized key based lookup to get the version value using Lucene's DocValues
     let primaryKeyLookup (id : string, r : IndexReader) (cache : VersionCache) = 
@@ -89,13 +89,13 @@ module VersionCache =
             let readerContext = r.Leaves().get(counter) :?> LeafReaderContext
             let reader = readerContext.Reader()
             let terms = reader.Terms(cache.IdFieldName)
-            assert (terms <> null)
+            assert (notNull terms)
             let termsEnum = terms.Iterator()
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
                 let docsEnums = termsEnum.Docs(null, null, 0)
-                let nDocs = reader.GetNumericDocValues(cache.LastModifiedFieldName)
-                nDocs.Get(docsEnums.NextDoc())
+                let nDocs = reader.GetNumericDocValues(cache.ModifyIndexFieldName)
+                nDocs.Get(docsEnums.DocID())
             | false -> 
                 if counter - 1 > 0 then loop (counter - 1)
                 else 0L
@@ -112,7 +112,7 @@ module VersionCache =
             else cache.Current.TryUpdate(id, version, comparison)
         | _ -> cache.Current.TryAdd(id, version)
     
-    let delete (id : string, version : Int64) (cache : VersionCache) = addOrUpdate (id, deletedValue, version) cache
+    let delete (id : string, version : Int64) (cache : VersionCache) = addOrUpdate (id, DeletedValue, version) cache
     
     let getValue (id : string) (cache : VersionCache) = 
         match cache.Current.TryGetValue(id) with
@@ -130,7 +130,7 @@ module VersionCache =
     
     /// Check and returns the current version number of the document
     let versionCheck (doc : Document, newVersion) (cache : VersionCache) = 
-        match doc.TimeStamp with
+        match doc.ModifyIndex with
         | 0L -> 
             // We don't care what the version is let's proceed with normal operation
             // and bypass id check.
@@ -149,7 +149,7 @@ module VersionCache =
             // the document
             let existingVersion = cache |> getValue (doc.Id)
             if existingVersion <> 0L then 
-                if existingVersion <> doc.TimeStamp || existingVersion > newVersion then 
+                if existingVersion <> doc.ModifyIndex || existingVersion > newVersion then 
                     fail <| IndexingVersionConflict(doc.IndexName, doc.Id, existingVersion.ToString())
                 else ok <| existingVersion
             else fail <| DocumentIdNotFound(doc.IndexName, doc.Id)

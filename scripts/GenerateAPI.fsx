@@ -74,19 +74,10 @@ module CSharp =
                           "")
 
         let perFileCleanup (fileName : string) (contents : string) =
-            // Delete properties from extended FlexResponse class
-            if contents.Contains(": FlexResponse") then
-                ["Error"; "ErrorDescription"; "ErrorField"]
-                |> Seq.fold deleteProperty contents
-            else contents
-            // Response classes and OperationMessage shouldn't implement IDataTransferObject
-            |> fun contents' -> 
-                if fileName.EndsWith("Response.cs") || fileName.Contains("OperationMessage.cs") then
-                    ["Validated"; "ErrorDescription"; "ErrorField"]
-                    |> Seq.fold deleteProperty contents'
-                    |> fun contents'' -> Regex.Replace(contents'', "IDataTransferObject,[\s]", "")
-                    |> fun contents'' -> deleteMethod contents'' "Validate"
-                else contents'
+            if contents.Contains("public OperationMessage Error { get; set; }") then
+                contents.Replace("////,IResponseError", ",IResponseError").Replace(" = new OperationMessage();", "")
+            else
+                contents.Replace(" = new OperationMessage();", "")
 
         let cleanupFile(f : string) =
             let mutable file = File.ReadAllLines(f)
@@ -236,6 +227,43 @@ module JavaScript =
         brk()
         !> "JavaScript Model generation finished"
 
+module Html =
+    let tempHtmlDir = scriptDir <!!> @"obj\src"
+    let targetHtmlDir = rootDir <!!> @"documentation\_partials"
+
+    let generateHtmlModel() =
+        !>> "Cleaning Models directory"    
+        [tempHtmlDir; targetHtmlDir] |> Seq.iter (ensureDir >> ignore)
+        [tempHtmlDir;] |> Seq.iter emptyDir
+        javaExec <| sprintf """-jar %s generate -i %s -l html -t %s -o %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-full.json") (specDir <!!> "html-template") targetHtmlDir
+        let generatedFiles = File.Exists(targetHtmlDir <!!> "index.html")
+        if generatedFiles then
+            // rename file to api.html
+            File.Copy(targetHtmlDir <!!> "index.html", targetHtmlDir <!!> "api.html", true)
+            brk()
+            !> (sprintf "HTML files generated.")
+            brk()
+        else
+            brk()
+            !> "Swagger code generation failed." 
+            brk()
+    
+    let copy() =
+        // Copy the files
+        copyFiles tempHtmlDir targetHtmlDir
+        // Copy the directories
+        loopDir tempHtmlDir
+        |> Seq.iter (fun src -> copyDir src targetHtmlDir)
+    
+    let generateHtml() =
+        brk()
+        !> "Generating HTML API models"
+        generateHtmlModel()
+        !>> "Copying the files to the API directory"
+        copy()
+        brk()
+        !> "HTML Model generation finished"
+
 /// Generate API model from the swagger definition
 let generateModel() =
     // First generate the full swagger file according to the glossary
@@ -243,5 +271,5 @@ let generateModel() =
     CSharp.generateCSharp()
     TypeScript.generateTypeScript()
     JavaScript.generateJavaScript()
-
+    Html.generateHtml()
 generateModel()

@@ -27,8 +27,6 @@ module AutoFixture =
         fixture.Inject<IDocumentService>(container.Resolve<IDocumentService>()) |> ignore
         fixture.Inject<IJobService>(container.Resolve<IJobService>()) |> ignore
         fixture.Inject<IQueueService>(container.Resolve<IQueueService>()) |> ignore
-        fixture.Inject<Dictionary<string, IComputedFunction>>
-            (container.Resolve<Dictionary<string, IComputedFunction>>()) |> ignore
         fixture
 
 [<AutoOpenAttribute>]

@@ -91,32 +91,33 @@ module JavaHelpers =
         | MinInfinite -> JavaLongMin
         | _ -> java.lang.Long(value)
     
-    let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) (parse : float -> 'T) (converter : 'T -> 'U) =
-        if number = Constants.Infinite then
-             ok <| infiniteValue
+    let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) 
+        (parse : string -> (bool * 'T)) (converter : 'T -> 'U) = 
+        if number = Constants.Infinite then ok <| infiniteValue
         else
-            // First parse the input as a double 
-            match Double.TryParse number with
-            | true, v -> ok v
+            match parse number with
+            | true, v -> ok <| converter v
             | _ -> fail <| DataCannotBeParsed(schemaName, dataType, number)
-            // Then parse the double value as the target value: 'T
-            >>= fun doubleValue -> try parse doubleValue |> ok
-                                   with e -> fail <| DataCannotBeParsed(schemaName, dataType, number)
-            // Then convert the target value 'T to 'U
-            >>= (converter >> ok)
             
     let rec getItemAt n (iterator : java.util.Iterator) =
         if n = 0 then iterator.next()
         else if iterator.hasNext() 
              then iterator.next() |> ignore; getItemAt (n-1) iterator
              else null
+    let parseDouble (schemaName) (number : string) (infiniteValue : JDouble) = 
+        parseNumber<Double, JDouble> (schemaName, "Double") number infiniteValue Double.TryParse javaDouble
+    let parseFloat (schemaName) (number : string) (infiniteValue : JFloat) = 
+        parseNumber<Single, JFloat> (schemaName, "Float") number infiniteValue Single.TryParse javaFloat
+    let parseInt (schemaName) (number : string) (infiniteValue : JInt) = 
+        parseNumber<int32, JInt> (schemaName, "Integer") number infiniteValue Int32.TryParse javaInt
+    let parseLong (schemaName) (number : string) (infiniteValue : JLong) = 
+        parseNumber<int64, JLong> (schemaName, "Long") number infiniteValue Int64.TryParse javaLong
 
 [<AutoOpenAttribute>]
 module QueryHelpers = 
     open FlexLucene.Search
     
     type String with
-        
         /// Get term for the given field
         member this.Term(fld : string) = new Term(fld, this)
     
@@ -127,11 +128,22 @@ module QueryHelpers =
     // Queries
     // ----------------------------------------------------------------------------
     let inline getMatchAllDocsQuery() = new MatchAllDocsQuery() :> Query
-    let inline getBooleanQuery() =  new BooleanQuery()
+    let inline getMatchNoDocsQuery() = new MatchNoDocsQuery() :> Query
+    let inline getBoostQuery (subQuery : Query, boost) = new BoostQuery(subQuery, boost) :> Query
+    
+    let inline getConstantScoreQuery (subQuery : Query, score) = 
+        let q = new ConstantScoreQuery(subQuery) :> Query
+        q.SetBoost(score)
+        q
+    
+    let inline getBooleanQuery() = new BooleanQuery()
     let inline getTermQuery fieldName text = new TermQuery(getTerm fieldName text) :> Query
     let inline getFuzzyQuery fieldName slop prefixLength text = 
         new FuzzyQuery((getTerm fieldName text), slop, prefixLength) :> Query
-    let inline getPhraseQuery() = new PhraseQuery()
+    let inline getPhraseQuery slop = 
+        let p = new PhraseQuery()
+        p.SetSlop(slop)
+        p
     let inline getWildCardQuery fieldName text = new WildcardQuery(getTerm fieldName text) :> Query
     let inline getRegexpQuery fieldName text = new RegexpQuery(getTerm fieldName text) :> Query
     
@@ -172,53 +184,3 @@ module QueryHelpers =
     let inline addFilterClause inheritedQuery (baseQuery : BooleanQuery) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.FILTER))
         baseQuery
-
-    // ----------------------------------------------------------------------------
-    // Query generators
-    // ----------------------------------------------------------------------------
-    let getBoolQueryFromTerms boolClauseType innerQueryProvider terms = 
-        let boolQuery = getBooleanQuery()
-        terms |> Seq.iter (fun term -> 
-                     let innerQuery = innerQueryProvider term
-                     boolQuery
-                     |> addBooleanClause innerQuery boolClauseType
-                     |> ignore)
-        boolQuery :> Query
-    
-    let zeroOneOrManyQuery terms innerQueryProvider boolClause = 
-        match terms |> Seq.length with
-        | 0 -> getMatchAllDocsQuery()
-        | 1 -> innerQueryProvider (terms |> Seq.head)
-        | _ -> getBoolQueryFromTerms boolClause innerQueryProvider terms
-        |> ok
-    
-//    // ------------------------
-//    // Range Queries
-//    // ------------------------
-//    let getRangeQuery value (includeLower, includeUpper) (infiniteMin, infiniteMax) (fIdxFld : Field.T) = 
-//        match FieldType.isNumericField fIdxFld.FieldType with
-//        | true -> 
-//            match fIdxFld.FieldType with
-//            | FieldType.Date | FieldType.DateTime | FieldType.Long -> 
-//                match Int64.TryParse(value) with
-//                | true, value' -> 
-//                    NumericRangeQuery.NewLongRange
-//                        (fIdxFld.SchemaName, value' |> getJavaLong infiniteMin, value' |> getJavaLong infiniteMax, 
-//                         includeLower, includeUpper) :> Query |> ok
-//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime")
-//            | FieldType.Int -> 
-//                match Int32.TryParse(value) with
-//                | true, value' -> 
-//                    NumericRangeQuery.NewIntRange
-//                        (fIdxFld.SchemaName, value' |> getJavaInt infiniteMin, value' |> getJavaInt infiniteMax, 
-//                         includeLower, includeUpper) :> Query |> ok
-//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Integer")
-//            | FieldType.Double -> 
-//                match Double.TryParse(value) with
-//                | true, value' -> 
-//                    NumericRangeQuery.NewDoubleRange
-//                        (fIdxFld.SchemaName, value' |> getJavaDouble infiniteMin, value' |> getJavaDouble infiniteMax, 
-//                         includeLower, includeUpper) :> Query |> ok
-//                | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Double")
-//            | _ -> fail <| DataCannotBeParsed(fIdxFld.FieldName, "Long, Date, DateTime, Integer, Double")
-//        | false -> fail <| ExpectingNumericData fIdxFld.FieldName

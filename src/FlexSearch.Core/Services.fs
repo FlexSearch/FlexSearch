@@ -62,7 +62,7 @@ type IDocumentService =
     abstract DeleteDocument : indexName:string * id:string -> Result<unit>
     abstract DeleteDocumentsFromSearch : indexName:string * query:SearchQuery -> Result<SearchResults>
     abstract DeleteAllDocuments : indexName:string -> Result<unit>
-    abstract AddDocument : document: Document -> Result<CreationId>
+    abstract AddDocument : document:Document -> Result<CreationId>
     abstract TotalDocumentCount : indexName:string -> Result<int>
 
 /// Search related operations
@@ -85,7 +85,6 @@ type IJobService =
     abstract UpdateJob : jobId:string * JobStatus * count:int * msg:string -> unit
 
 ///  Analyzer/Analysis related services
-
 type IAnalyzerService = 
     abstract GetAnalyzer : analyzerName:string -> Result<LuceneAnalyzer>
     abstract GetAnalyzerInfo : analyzerName:string -> Result<Model.Analyzer>
@@ -93,57 +92,6 @@ type IAnalyzerService =
     abstract UpdateAnalyzer : analyzer:Model.Analyzer -> Result<unit>
     abstract GetAllAnalyzers : unit -> Model.Analyzer []
     abstract Analyze : analyzerName:string * input:string -> Result<string []>
-
-/// Script related services
-type IScriptService = 
-    
-    /// Signature : fun (indexName, fieldName, source, options) -> string
-    abstract GetScript : scriptName:string * scriptType:ScriptType -> Result<Scripts.T>
-    
-    /// This methods verifies that the script call itself is valid and return the funtion along
-    /// with the paramters that can be passed to the funtion
-    /// Usually a script call looks like below
-    /// function('param1','param2','param3',....)
-    abstract GetScriptSig : scriptSig:string -> Result<string * string []>
-    abstract GetComputedScript : scriptSig:string -> Result<ComputedDelegate * string []>
-    abstract GetPreSearchScript : scriptSig:string -> Result<PreSearchDelegate>
-
-[<Sealed>]
-type ScriptService() = 
-    let scripts = conDict<Scripts.T>()
-    let addScripts (s : seq<string * Scripts.T>) = 
-        s |> Seq.iter (fun (scriptName, script) -> scripts.TryAdd(scriptName, script) |> ignore)
-    
-    do 
-        Compiler.compileAllScripts (ScriptType.Computed) |> addScripts
-        Compiler.compileAllScripts (ScriptType.PostSearch) |> addScripts
-        Compiler.compileAllScripts (ScriptType.PreSearch) |> addScripts
-    
-    let getScript (scriptName, scriptType) = 
-        match scripts.TryGetValue(scriptName + (scriptType.ToString())) with
-        | true, func -> ok <| func
-        | _ -> fail <| ScriptNotFound(scriptName, String.Empty)
-    
-    interface IScriptService with
-        member __.GetScript(scriptName, scriptType) = getScript (scriptName, scriptType)
-        member __.GetScriptSig(scriptSig) = ParseFunctionCall(scriptSig)
-        
-        member __.GetComputedScript(scriptSig) = 
-            maybe { 
-                let! (functionName, parameters) = ParseFunctionCall(scriptSig)
-                let! script = getScript (functionName, ScriptType.Computed)
-                return! match script with
-                        | ComputedScript(s) -> ok <| (s, parameters)
-                        | _ -> fail <| ScriptNotFound(functionName, ScriptType.Computed.ToString())
-            }
-        
-        member __.GetPreSearchScript(scriptName) = 
-            maybe { 
-                let! script = getScript (scriptName, ScriptType.PreSearch)
-                return! match script with
-                        | PreSearchScript(s) -> ok <| s
-                        | _ -> fail <| ScriptNotFound(scriptName, ScriptType.Computed.ToString())
-            }
 
 [<Sealed>]
 type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) = 
@@ -157,7 +105,8 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
         filters.Add(new Filter(FilterName = "phonetic", Parameters = filterParams))
         let analyzerDefinition = 
             new Model.Analyzer(AnalyzerName = encoder.ToLowerInvariant(), 
-                             Tokenizer = new Model.Tokenizer(TokenizerName = "whitespace"), Filters = filters.ToArray())
+                               Tokenizer = new Model.Tokenizer(TokenizerName = "whitespace"), 
+                               Filters = filters.ToArray())
         (analyzerDefinition, Analysis.buildFromAnalyzerDto (analyzerDefinition) |> extract)
     
     let path = 
@@ -228,17 +177,19 @@ type AnalyzerService(threadSafeWriter : ThreadSafeFileWriter, ?testMode : bool) 
             | _ -> fail <| AnalyzerNotFound(analyzerName)
         
         member __.Analyze(analyzerName : string, input : string) = 
-            maybe { let! analyzer = getAnalyzer (analyzerName)
-                    return parseTextUsingAnalyzer(analyzer, "", input).ToArray() }
+            maybe { 
+                let! analyzer = getAnalyzer (analyzerName)
+                let tokens = new List<string>()
+                parseTextUsingAnalyzer (analyzer, "", input, tokens)
+                return tokens.ToArray()
+            }
 
 [<Sealed>]
-type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, scriptService : IScriptService, ?testMode : bool) = 
+type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadSafeFileWriter, analyzerService : IAnalyzerService, ?testMode : bool) = 
     let testMode = defaultArg testMode true
-    let im = 
-        IndexManager.create 
-            (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer, scriptService.GetComputedScript)
-    
+    let im = IndexManager.create (eventAggregrator, threadSafeWriter, analyzerService.GetAnalyzer)
     let getAllIndex() = im.Store.Values.ToArray() |> Array.map (fun x -> x.IndexDto)
+    
     do 
         if not testMode then im |> IndexManager.loadAllIndex
     
@@ -280,7 +231,7 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
             | Ok(state) -> ok <| state.IndexStatus
             | Fail(error) -> fail <| error
         
-        member __.UpdateIndexFields(indexName:string, fields : Field []) = 
+        member __.UpdateIndexFields(indexName : string, fields : Field []) = 
             match im.Store.TryGetValue(indexName) with
             | true, state -> 
                 if fields.Length < state.IndexDto.Fields.Length
@@ -290,29 +241,28 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
                      im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
 
-        member __.AddOrUpdatePredefinedQuery(indexName:string , profile:SearchQuery) = 
+        member __.AddOrUpdatePredefinedQuery(indexName : string, profile : SearchQuery) = 
             match im.Store.TryGetValue(indexName) with
             | true, state when not <| String.IsNullOrEmpty(profile.QueryName) -> 
                 let index = state.IndexDto
                 match index.PredefinedQueries |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
                 | Some(spNo) -> index.PredefinedQueries.[spNo] <- profile
                 | _ -> index.PredefinedQueries <- [| profile |] |> Array.append index.PredefinedQueries
-                
                 im |> IndexManager.updateIndex index
             | true, state when String.IsNullOrEmpty(profile.QueryName) ->
                 fail <| PredefinedQueryHasNoName(indexName, "The provided query string is: " + profile.QueryString)
             | _ -> fail <| IndexNotFound indexName
 
-        member __.UpdateIndexConfiguration(indexName:string, indexConfiguration:IndexConfiguration) =
+        member __.UpdateIndexConfiguration(indexName : string, indexConfiguration : IndexConfiguration) = 
             match im.Store.TryGetValue indexName with
             | true, state ->
                 let index = state.IndexDto
-                
                 // Don't allow for index version to be modified
-                if index.IndexConfiguration.IndexVersion <> indexConfiguration.IndexVersion
-                then fail <| UnSupportedIndexVersion(indexConfiguration.IndexVersion.ToString())
-                else index.IndexConfiguration <- indexConfiguration
-                     im |> IndexManager.updateIndex index
+                if index.IndexConfiguration.IndexVersion <> indexConfiguration.IndexVersion then 
+                    fail <| UnSupportedIndexVersion(indexConfiguration.IndexVersion.ToString())
+                else 
+                    index.IndexConfiguration <- indexConfiguration
+                    im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
 
         member __.DeleteIndex(indexName : string) = im |> IndexManager.deleteIndex (indexName)
@@ -330,86 +280,33 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
             }
                 
 [<Sealed>]
-type SearchService(parser : IFlexParser, scriptService : IScriptService, computedFunctions : Dictionary<string, IComputedFunction>, fieldFunctions : Dictionary<string, IFieldFunction>, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
-    let getSearchPredicate (writers : IndexWriter, search : SearchQuery) = 
-        maybe { 
-            if not <| String.IsNullOrWhiteSpace(search.QueryName)  then 
-                // Search profile based
-                match writers.Settings.PredefinedQueries.TryGetValue(search.QueryName) with
-                | true, p -> 
-                    let (p', sq) = p
-                    // This is a search profile based query. So copy over essential
-                    // values from Search profile to query. Keep the search query
-                    /// values if override is set to true
-                    if not search.OverridePredefinedQueryOptions then 
-                        search.Columns <- sq.Columns
-                        search.DistinctBy <- sq.DistinctBy
-                        search.Skip <- sq.Skip
-                        search.OrderBy <- sq.OrderBy
-                        search.CutOff <- sq.CutOff
-                        search.Count <- sq.Count
-                    // Check if search profile script is defined. If yes then execute it.
-                    do! if isNotBlank sq.PreSearchScript then 
-                            match scriptService.GetPreSearchScript(sq.PreSearchScript) with
-                            | Ok(script) -> 
-                                try 
-                                    script.Invoke(sq)
-                                    okUnit
-                                with e -> 
-                                    Logger.Log
-                                        ("Predefined Query execution error", e, MessageKeyword.Search, 
-                                         MessageLevel.Warning)
-                                    okUnit
-                            | Fail(err) -> fail <| err
-                        else okUnit
-                    return p'
-                | _ -> return! fail <| UnknownPredefinedQuery(search.IndexName, search.QueryName)
-            else let! predicate = parser.Parse(search.QueryString)
-                 return predicate
-        }
-    
-    let generateSearchQuery (writer : IndexWriter, searchQuery : SearchQuery) = 
-        maybe { 
-            let! predicate = getSearchPredicate (writer, searchQuery)
-            match predicate with
-            | NotPredicate(_) -> return! fail <| PurelyNegativeQueryNotSupported
-            | _ -> 
-                return!
-                  { Fields = writer.Settings.Fields.ReadOnlyDictionary
-                    ComputedFunctions = computedFunctions
-                    FieldFunctions = fieldFunctions
-                    QueryFunctions = queryFunctions }
-                  |> SearchDsl.generateQuery predicate searchQuery
-        }
+type SearchService(parser : IFlexParser, queryFunctions : Dictionary<string, IQueryFunction>, indexService : IIndexService) = 
     
     let searchWrapper (writers, query, searchQuery) = 
         try 
-            ok <| SearchDsl.search (writers, query, searchQuery)
+            ok <| search (writers, query, searchQuery)
         with e -> fail <| SearchError(exceptionPrinter e)
     
-    let search (searchQuery : SearchQuery) = 
-        maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                let! query = generateSearchQuery (writers, searchQuery)
+    let search (searchQuery : SearchQuery) = maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+                                                     let! query = generateQuery writers searchQuery parser 
+                                                                      writers.Settings.Fields.ReadOnlyDictionary 
+                                                                      queryFunctions
                 return! searchWrapper (writers, query, searchQuery) }
-
     interface ISearchService with
         member __.Search(searchQuery : SearchQuery) = search searchQuery
-
         // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
-        member __.GetLuceneQuery(searchQuery: SearchQuery) =
-            maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                    return! generateSearchQuery (writers, searchQuery) }
+        member __.GetLuceneQuery(searchQuery : SearchQuery) = 
+            maybe 
+                { 
+                let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+                return! generateQuery writers searchQuery parser writers.Settings.Fields.ReadOnlyDictionary 
+                            queryFunctions }
 
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 
-    let deleteByQuery searchQuery indexName = 
-        maybe { 
-            let! query = searchService.GetLuceneQuery searchQuery
-            let! writer = indexService.IsIndexOnline indexName
-
-            writer |> IndexWriter.deleteAllDocumentsFromSearch query
-        }
-
+    let deleteByQuery searchQuery indexName = maybe { let! query = searchService.GetLuceneQuery searchQuery
+                                                      let! writer = indexService.IsIndexOnline indexName
+                                                      writer |> IndexWriter.deleteAllDocumentsFromSearch query }
     interface IDocumentService with
 
         /// Returns the total number of documents present in the index
@@ -451,9 +348,9 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
         member __.AddDocument(document) = 
             maybe { 
                 do! validate document
-                if document.TimeStamp > 0L then 
+                if document.ModifyIndex > 0L then 
                     return! fail 
-                            <| IndexingVersionConflict(document.IndexName, document.Id, document.TimeStamp.ToString())
+                            <| IndexingVersionConflict(document.IndexName, document.Id, document.ModifyIndex.ToString())
                 else 
                     let! writer = indexService.IsIndexOnline <| document.IndexName
                     do! writer |> IndexWriter.addDocument document
@@ -474,13 +371,11 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
             maybe {
                 // First run the search query to get the results
                 let! searchResults = searchService.Search(searchQuery)
-
                 // Then delete the documents
                 do! indexName |> deleteByQuery searchQuery   
-
                 // Finally return the search results
-                return searchResults }
-            
+                return searchResults
+            }
 
 /// <summary>
 /// Job service class which will be dynamically injected using IOC.
@@ -540,7 +435,6 @@ type QueueService(documentService : IDocumentService) =
         executionBlockOption.BoundedCapacity <- 100
         executionBlockOption
     
-
     /// <summary>
     /// Add queue processing method
     /// </summary>
@@ -570,6 +464,5 @@ type QueueService(documentService : IDocumentService) =
                 |> Async.Catch
                 |> Async.RunSynchronously
                 |> handleShutdownExceptions
-
             completeQueue addQueue
             completeQueue addOrUpdateQueue

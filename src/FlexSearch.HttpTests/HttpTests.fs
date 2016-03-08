@@ -51,7 +51,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Create response contains the id of the created index`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         let actual = api.CreateIndexWithHttpInfo(index)
         actual |> isCreated
-        actual.Data.Data.Id =? index.IndexName
+        actual.Data.Data.OperationCode =? "Created"
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     member __.``Index cannot be created without IndexName`` ((api : IndicesApi, handler : LoggingHandler)) = 
@@ -162,7 +162,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Newly created index is always offline`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         index.Active <- false
         api.CreateIndexWithHttpInfo(index) |> isCreated
-        let actual = api.GetStatus(index.IndexName)
+        let actual = api.GetIndexStatus(index.IndexName)
         actual |> isSuccessful
         actual.Data.IndexStatus =? IndexStatus.Offline
         handler |> log "get-indices-id-status-1"
@@ -172,20 +172,20 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Set status of an index 'online'`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         index.Active <- false
         api.CreateIndex(index) |> isSuccessful
-        api.UpdateStatus(index.IndexName, "online") |> isSuccessful
-        api.GetStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Online
+        api.UpdateIndexStatus(index.IndexName, "online") |> isSuccessful
+        api.GetIndexStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Online
         handler |> log "put-indices-id-status-1"
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     member __.``Set status of an index 'offline'`` (api : IndicesApi, index : Index) = 
         api.CreateIndex(index) |> isSuccessful
-        api.GetStatus(index.IndexName)
+        api.GetIndexStatus(index.IndexName)
         |> fun r -> r.Data.IndexStatus =? IndexStatus.Online; r
         |> isSuccessful
 
-        api.UpdateStatus(index.IndexName, "offline") |> isSuccessful
+        api.UpdateIndexStatus(index.IndexName, "offline") |> isSuccessful
 
-        api.GetStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Offline
+        api.GetIndexStatus(index.IndexName).Data.IndexStatus =? IndexStatus.Offline
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     [<Example("get-indices-id-exists-1", "")>]
@@ -204,7 +204,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     
     [<Example("get-indices-1", "")>]
     member __.``Get all indices`` ((api : IndicesApi, handler : LoggingHandler)) = 
-        api.GetAllIndex()
+        api.GetAllIndices()
         // Should have at least contact index
         |> fun r -> r.Data.Length >=? 1
         handler |> log "get-indices-1"
@@ -242,7 +242,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         result |> isSuccessful
         // Update the document
         document.Fields.["lastname"] <- "Rajvanshi1"
-        let actual = api.UpdateDocument(document, indexName, document.Id)
+        let actual = api.CreateOrUpdateDocument(document, indexName, document.Id)
         handler |> log "put-indices-id-documents-id-2"
         actual |> isSuccessful
         api.DeleteIndex(indexName) |> isSuccessful
@@ -302,20 +302,20 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Fuzzy Query Test 1`` (api : SearchApi) = api |> query "fuzzy(countryname, 'Iran')" 2 3
     
     [<Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
-    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy2(countryname, 'China')" 3 3
+    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy(countryname, 'China', -slop '2')" 3 3
     
     [<Example("post-indices-search-phrase-1", "Phrase search using exact operator")>]
     member __.``Phrase Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.GovernmentType.Contains("federal parliamentary democracy")).Count()
-        api |> query "exact(governmenttype, 'federal parliamentary democracy')" expected 4
+        api |> query "phrasematch(governmenttype, 'federal parliamentary democracy')" expected 4
     
     [<Example("post-indices-search-phrase-2", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 2`` (api : SearchApi) = 
-        api |> query "upto4wordsapart(governmenttype, 'parliamentary monarchy')" 6 4
+        api |> query "phraseMatch(governmenttype, 'parliamentary monarchy', -slop '4')" 6 4
     
     [<Example("post-indices-search-phrase-3", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 3`` (api : SearchApi) = 
-        api |> query "upto4wordsapart(governmenttype, 'monarchy parliamentary')" 3 4
+        api |> query "phraseMatch(governmenttype, 'monarchy parliamentary', -slop '4')" 3 4
     
     [<Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
     member __.``Wildcard Query Test 1`` (api : SearchApi, indexData : Country list) = 
@@ -370,7 +370,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         query.Highlights <- new HighlightOption(highlight)
         query.Highlights.FragmentsToReturn <- 2
         query.Columns <- [| "country"; "background" |]
-        api.PostSearch(query, query.IndexName)
+        api.Search(query.IndexName, query)
         |> fun r -> r |> isSuccessful; r
         |> fun r -> r.Data.Documents.Length >=? 0
 

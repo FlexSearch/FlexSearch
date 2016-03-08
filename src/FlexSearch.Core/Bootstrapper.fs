@@ -155,8 +155,6 @@ module Main =
         |> registerInstance<EventAggregator> (eventAggregator)
         |> registerInstance<Settings.T> (serverSettings)
         // Interface scanning
-        |> registerInterfaceAssemblies<IComputedFunction>
-        |> registerInterfaceAssemblies<IFieldFunction>
         |> registerInterfaceAssemblies<IQueryFunction>
         |> registerInterfaceAssemblies<IHttpHandler>
         // Register Utilities
@@ -166,7 +164,6 @@ module Main =
         // Register services
         |> registerSingletonWithParam<AnalyzerService, IAnalyzerService> "testMode" testServer
         |> registerSingletonWithParam<IndexService, IIndexService> "testMode" testServer
-        |> registerSingleton<ScriptService, IScriptService>
         |> registerSingleton<DocumentService, IDocumentService>
         |> registerSingleton<QueueService, IQueueService>
         |> registerSingleton<SearchService, ISearchService>
@@ -177,8 +174,6 @@ module Main =
         // Register the services required for shutdown
         |> registerExistingInstanceAs<IRequireNotificationForShutdown>
         // Register the groups/factories of services
-        |> registerGroup<IComputedFunction>
-        |> registerGroup<IFieldFunction>
         |> registerGroup<IQueryFunction>
         |> registerGroup<IHttpHandler>
 

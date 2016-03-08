@@ -58,18 +58,27 @@ type Token = string
 
 type GetAnalyzer = string -> Result<LuceneAnalyzer>
 
-type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
-    
-type PostSearchDeletegate = Func<SearchQuery, string, float32, Dictionary<string, string>, bool * float32>
-    
+type PreIndexDelegate = Action<Document>
+
 type PreSearchDelegate = Action<SearchQuery>
+
+type ComputedDelegate = Func<string, string, IReadOnlyDictionary<string, string>, string [], string>
+
+type PostSearchDelegate = Func<SearchQuery, Document, bool * float32>
 
 type GetScript = string -> Result<ComputedDelegate * string []>
 
 type Compile = CompilationRepresentationAttribute
 
-[<AutoOpen>]
-module Alias =
+type JInt = java.lang.Integer
 
+type JLong = java.lang.Long
+
+type JDouble = java.lang.Double
+
+type JFloat = java.lang.Float
+
+[<AutoOpen>]
+module Alias = 
     [<Literal>]
     let ModuleSuffix = CompilationRepresentationFlags.ModuleSuffix

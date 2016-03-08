@@ -19,20 +19,13 @@ namespace FlexSearch.Core
 
 open FlexSearch.Api.Constants
 open FlexSearch.Api
+open FlexSearch.Api.Model
 open Microsoft.FSharp.Reflection
 open System
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Reflection
 open Microsoft.Extensions.Logging
-
-/// Extrenal representation of messages which will be send to
-/// the end user. 
-[<CLIMutableAttribute>]
-type OperationMessage = 
-    { Properties : array<string * string>
-      Message : string
-      ErrorCode : string }
 
 [<NotForDocumentation>]
 type MessageKeyword =
@@ -58,12 +51,12 @@ type IMessage =
     abstract OperationMessage : unit -> OperationMessage
     abstract LogProperty : unit -> MessageKeyword * MessageLevel
 
-/// Implmentation of IMesage to be used for validation
+/// Implementation of IMesage to be used for validation
 type ValidationMessage(model : IDataTransferObject) =
     interface IMessage with
         member __.OperationMessage() =
             //TODO: Implement properly
-            { Properties = Array.empty; Message = model.ErrorDescription; ErrorCode = ""}
+            new OperationMessage(model.ErrorDescription, "")
         member __.LogProperty() = (MessageKeyword.Node, MessageLevel.Error)
 
 /// Represents the result of a computation.
@@ -96,9 +89,9 @@ module MessageHelpers =
     /// Converts a case to operation message
     let caseToMsg (x : 'a) msg = 
         let (caseName, props) = getCaseInfo (x)
-        { // TODO: Find a more efficient way to generate properties
-          Message = msg
-          Properties = props |> Array.map (fun p -> 
+        let om = new OperationMessage(msg, caseName)
+        // TODO: Find a more efficient way to generate properties
+        for p in props do
             let value = 
                 try
                     let v = p.GetValue(x)
@@ -107,8 +100,8 @@ module MessageHelpers =
                     else
                         v.ToString()
                 with _ -> String.Empty
-            (p.Name, value))
-          ErrorCode = caseName }
+            om.Properties.Add(new KeyValuePair<string, string>(p.Name, value))
+        om
     
     /// Converts an operation message to string
     let msgToString (om : OperationMessage) = sprintf "%A" om
@@ -189,7 +182,7 @@ module BuilderError =
     let private invalidPropertyName = sf2 "Property name is invalid. Expected '%s' but found '%s'"
     let private analyzerIsMandatory = sf1 "Analyzer is mandatory for field '%s'"
     let private duplicateFieldValue = sf2 "A duplicate entry (%s) has been found in the group '%s'"
-    let private scriptNotFound = sf2 "The script '%s' was not found against the field '%s'"
+    let private scriptNotFound = sf1 "The script '%s' was not found"
     let private resourceNotFound = sf2 "The resource '%s' of type %s was not found"
     let private unSupportedSimilarity = sf1 "Unsupported similarity: %s"
     let private unSupportedIndexVersion = sf1 "Unsupported index version: %s"
@@ -202,7 +195,7 @@ module BuilderError =
         | InvalidPropertyName of fieldName : string * value : string
         | AnalyzerIsMandatory of fieldName : string
         | DuplicateFieldValue of groupName : string * fieldName : string
-        | ScriptNotFound of scriptName : string * fieldName : string
+        | ScriptNotFound of scriptName : string
         | ResourceNotFound of resourceName : string * resourceType : string
         | UnSupportedSimilarity of similarityName : string
         | UnSupportedIndexVersion of indexVersion : string
@@ -217,7 +210,7 @@ module BuilderError =
                 | InvalidPropertyName(fn, v) -> sprintf invalidPropertyName fn v
                 | AnalyzerIsMandatory(fn) -> sprintf analyzerIsMandatory fn
                 | DuplicateFieldValue(gn, fn) -> sprintf duplicateFieldValue fn gn
-                | ScriptNotFound(sn, fn) -> sprintf scriptNotFound sn fn
+                | ScriptNotFound(sn) -> sprintf scriptNotFound sn
                 | ResourceNotFound(rn, rt) -> sprintf resourceNotFound rn rt
                 | UnSupportedSimilarity(s) -> sprintf unSupportedSimilarity s
                 | UnSupportedIndexVersion(i) -> sprintf unSupportedIndexVersion i
@@ -240,7 +233,7 @@ type SearchMessage =
     | DataCannotBeParsed of fieldName : string * expectedDataType : string * actualValue : string
     | ExpectingNumericData of fieldName : string
     | ExpectingIntegerData of fieldName : string
-    | QueryOperatorFieldTypeNotSupported of fieldName : string
+    | QueryOperatorFieldTypeNotSupported of fieldName : string * operatorName: string
     | QueryStringParsingError of error : string * queryString : string
     | MethodCallParsingError of error : string
     | UnknownPredefinedQuery of indexName : string * queryName : string
@@ -272,8 +265,8 @@ type SearchMessage =
             | DataCannotBeParsed(f,e,a) -> sprintf "Data cannot be parsed for field '%s'. Expected data type %s. Actual value %s" f e a
             | ExpectingNumericData(f) -> sprintf "Expecting numeric data: %s" f
             | ExpectingIntegerData(f) -> sprintf "Expecting numeric data: %s" f
-            | QueryOperatorFieldTypeNotSupported(f) -> 
-                sprintf "Query operator field type not supported for field '%s'" f
+            | QueryOperatorFieldTypeNotSupported(f, o) -> 
+                sprintf "Query operator : '%s' does not support the field type. Field '%s'" o f
             | QueryStringParsingError(e,q) -> sprintf "Query string parsing error: \n%s\n\nQuery String:\n%s" e q
             | MethodCallParsingError(e) -> sprintf "Unable to parse the method call: \n%s" e
             | UnknownPredefinedQuery(i, p) -> sprintf "Unknown search profile '%s' for index '%s'" p i
@@ -328,7 +321,7 @@ type IndexingMessage =
             | DocumentIdNotFound(idx, id) -> sprintf "Document ID '%s' not found on index '%s'" id idx
             | IndexFieldDeletionNotAllowed(i,o,a) -> sprintf "Deleting a field from an index (%s) is not allowed. Original field count: %d. Actual field count: %d." i o a
             | IndexingVersionConflict(idx, id, v) -> 
-                sprintf "Indexing version conflict for index '%s': given ID is %s, but the exising version is %s" idx id 
+                sprintf "Indexing version conflict for index '%s': given ID is %s, but the existing version is %s" idx id 
                     v
             | PredefinedQueryHasNoName(i,c) -> sprintf "The provided Predefined Query for the index '%s' doesn't have a name. %s" i c
             |> caseToMsg this

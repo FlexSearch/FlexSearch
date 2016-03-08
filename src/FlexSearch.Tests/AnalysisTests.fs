@@ -43,5 +43,6 @@ type FlexAnalyzerBuilderTests() =
         let result = Analysis.buildFromAnalyzerDto sut
         test <@ succeeded <| result @>
         let analyzer = extract <| result
-        let output = parseTextUsingAnalyzer(analyzer, "test", "easy")
+        let output = new System.Collections.Generic.List<string>() 
+        parseTextUsingAnalyzer(analyzer, "test", "easy", output)
         test <@ output.ToArray() = [| "easy"; "simple"; "clear" |] @>

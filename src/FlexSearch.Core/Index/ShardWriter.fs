@@ -46,9 +46,8 @@ module ShardWriter =
             let ctx = r.Leaves().get(i) :?> LeafReaderContext
             let reader = ctx.Reader()
             let nDocs = reader.GetNumericDocValues(ModifyIndexField.Name)
-            let liveDocs = reader.GetLiveDocs()
             for j = 0 to reader.MaxDoc() do
-                if (isNotNull liveDocs && liveDocs.Get(j)) then max <- Math.Max(max, nDocs.Get(j))
+                max <- Math.Max(max, nDocs.Get(j))
         max
     
     /// Commits all pending changes (added & deleted documents, segment merges, added indexes, etc.) to the index, 

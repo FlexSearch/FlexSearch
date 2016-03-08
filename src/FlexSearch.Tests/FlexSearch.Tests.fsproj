@@ -63,10 +63,13 @@
     <Compile Include="Helpers\IntegrationHelper.fs" />
     <Compile Include="Helpers\Helpers.fs" />
     <Compile Include="Index\FieldSchemaTests.fs" />
-    <Compile Include="Index\IndexTests.fs" />
+    <Compile Include="Index\TxWriterTests.fs" />
+    <Compile Include="Index\CommitTests.fs" />
+    <Compile Include="Index\IndexServiceTests.fs" />
+    <Compile Include="Index\VersioningTests.fs" />
+    <Compile Include="Index\DocumentServiceTests.fs" />
     <Compile Include="Search\SearchTests.fs" />
-    <Compile Include="Search\QueryFunctionTests.fs" />
-    <Compile Include="Search\AllOfTests.fs" />
+    <Compile Include="Search\QueryTests.fs" />
     <Compile Include="InfrastructureTests.fs" />
     <Compile Include="DomainTests.fs" />
     <Compile Include="ServiceTests.fs" />
@@ -303,14 +306,6 @@
       <HintPath>..\packages\Microsoft.AspNet.WebUtilities.1.0.0-rc2-16106\lib\net451\Microsoft.AspNet.WebUtilities.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.Common.1.1.1\lib\net45\Microsoft.CodeAnalysis.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>..\packages\Microsoft.CodeAnalysis.CSharp.1.1.1\lib\net45\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Dnx.Compilation.Abstractions">
       <HintPath>..\packages\Microsoft.Dnx.Compilation.Abstractions.1.0.0-rc1-final\lib\net451\Microsoft.Dnx.Compilation.Abstractions.dll</HintPath>
@@ -445,6 +440,11 @@
     <ProjectReference Include="..\FlexSearch.Api\FlexSearch.Api.csproj">
       <Name>FlexSearch.Api</Name>
       <Project>{87b212a4-3565-4f73-91a4-bd9bae3ae6dd}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\FlexSearch.Assets\FlexSearch.Assets.csproj">
+      <Name>FlexSearch.Assets</Name>
+      <Project>{5e795f60-4faa-47a4-ba1b-18fdc95e1dac}</Project>
       <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\FlexSearch.Core\FlexSearch.Core.fsproj">

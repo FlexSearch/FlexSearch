@@ -100,10 +100,11 @@ module IndexSettingBuilder =
               IndexAnalyzer = Unchecked.defaultof<_>
               SearchAnalyzer = Unchecked.defaultof<_>
               Fields = Unchecked.defaultof<_>
-              //FieldsLookup = Unchecked.defaultof<_>
+              Scripts = Unchecked.defaultof<_>
               PredefinedQueries = Unchecked.defaultof<_>
               IndexConfiguration = Unchecked.defaultof<_>
               BaseFolder = path
+              SettingsFolder = Constants.ConfFolder +/ "indices" +/ indexName
               ShardConfiguration = Unchecked.defaultof<_> }
         { Setting = setting }
     
@@ -119,14 +120,14 @@ module IndexSettingBuilder =
         analyzer.BuildAnalyzer(fields, isIndexAnalyzer)
         analyzer
     
-    let withFields (fields : Field [], analyzerService : GetAnalyzer, scriptService : GetScript) (build) = 
+    let withFields (fields : Field [], analyzerService : GetAnalyzer) (build) = 
         let ic = build.Setting.IndexConfiguration
         let resultLookup = new Dictionary<string, FieldSchema>(StringComparer.OrdinalIgnoreCase)
         let result = new FieldCollection()
         // Add system fields
         FieldSchema.getMetaSchemaFields |> Seq.iter (fun x -> result.Add(x))
         for field in fields do
-            let fieldObject = returnOrFail <| FieldSchema.build field analyzerService scriptService
+            let fieldObject = returnOrFail <| FieldSchema.build field analyzerService
             resultLookup.Add(field.FieldName, fieldObject)
             result.Add(fieldObject)
         // Perf: Intern all the field names in the string pool. This is done as the field names will be
@@ -147,6 +148,14 @@ module IndexSettingBuilder =
             result.Add(profile.QueryName, (predicate, profile))
         { build with Setting = { build.Setting with PredefinedQueries = result } }
     
+    /// Build the script present in the configuration directory
+    let withScripts (build : BuilderObject) = 
+        let scripts =
+            if File.Exists(build.Setting.SettingsFolder +/ "script.fsx") then 
+                returnOrFail <| FSharpCompiler.compile (build.Setting.SettingsFolder +/ "script.fsx")
+            else Scripts.Default
+        { build with Setting = { build.Setting with Scripts = scripts } }
+
     /// Build the final index setting object
     let build (build) = 
         assert (notNull build.Setting.PredefinedQueries)

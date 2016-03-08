@@ -33,6 +33,7 @@ type IntegrationHelper =
       DocumentService : IDocumentService
       JobService : IJobService
       QueueService : IQueueService }
+    member this.IndexName = this.Index.IndexName
     interface IDisposable with
         member this.Dispose() = 
             // Delete index if it exists otherwise we don't care
@@ -50,24 +51,27 @@ module DataHelpers =
     
     let rootFolder = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
     let testData = """
-id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1
-1,t,20101010,20101010101010,100,1000,1000,1000,1000,aaron,aaron,hewitt,aaaaa
-2,T,20111201,20111201111213,100,1000,1000,1000,1000,AAron,AAron,Garner,bbbbb
-3,f,20101210,20101210070611,-100,-1000,-1000,-1000,-1000,Fred,Fred,hewitt,ccccc
-4,F,20151201,20151201010159,150,1500,1500,1500,1500,fred,fred,Garner,ddddd
-5,true,20101101,20101101131312,-150,-1500,-1500,-1500,-1500,aaron,aaron,johnson,eeeee
-6,false,20130211,20130211070809,200,2000,2000,2000,2000,airen,airen,johnson,fffff
-7,True,20111201,20111201091011,250,2500,2500,2500,2500,aaron,aaron,Garner,ggggg
-8,False,20161217,20161217151618,300,3000,3000,3000,3000,ford,ford,johnson,hhhhh
-9,TRUE,20111111,20101111111111,-300,-3000,-3000,-3000,-3000,erik,erik,hendrick,iiiii
-10,FALSE,20100310,20100310111213,400,4000,4000,4000,4000,aren,aren,Hewitt,jjjjj
+id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1,t3
+1,t,20101010,20101010101010,100,1000,1000,1000,1000,aaron,aaron,hewitt,aaaaa,federal parliamentary democracy and a Commonwealth realm
+2,T,20111201,20111201111213,100,1000,1000,1000,1000,AAron,AAron,Garner,bbbbb,federal parliamentary democracy under a constitutional monarchy
+3,f,20101210,20101210070611,-100,-1000,-1000,-1000,-1000,Fred,Fred,hewitt,ccccc,parliamentary monarchy
+4,F,20151201,20151201010159,150,1500,1500,1500,1500,fred,fred,Garner,ddddd,parliamentary constitutional monarchy
+5,true,20101101,20101101131312,-150,-1500,-1500,-1500,-1500,aaron,aaron,johnson,eeeee,parliamentary democracy within a constitutional monarchy
+6,false,20130211,20130211070809,200,2000,2000,2000,2000,airen,airen,johnson,fffff,constitutional monarchy with a parliamentary system of government and a Commonwealth realm
+7,True,20111201,20111201091011,250,2500,2500,2500,2500,aaron,aaron,Garner,ggggg,Islamic republic
+8,False,20161217,20161217151618,300,3000,3000,3000,3000,ford,ford,johnson,hhhhh,republic; multiparty presidential regime
+9,TRUE,20111111,20101111111111,-300,-3000,-3000,-3000,-3000,erik,erik,hendrick,iiiii,republic
+10,FALSE,20100310,20100310111213,400,4000,4000,4000,4000,aren,aren,Hewitt,jjjjj,monarchy parliamentary
 """
     
     /// Basic test index with all field types
     let getTestIndex() = 
         let index = new Index(IndexName = Guid.NewGuid().ToString("N"))
-        index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, 
-                                                           AutoRefresh = false)
+        index.IndexConfiguration <- new IndexConfiguration()
+        index.IndexConfiguration.AutoCommit <- false
+        index.IndexConfiguration.AutoRefresh <- false
+        index.IndexConfiguration.CommitOnClose <- false
+        index.IndexConfiguration.DeleteLogsOnClose <- false
         index.Active <- true
         index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.MemoryMapped
         index.Fields <- [| new Field("b1", Constants.FieldType.Bool)
@@ -79,9 +83,11 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1
                            new Field("db1", Constants.FieldType.Double, AllowSort = true)
                            new Field("f1", Constants.FieldType.Float, AllowSort = true)
                            new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
+                           new Field("et2", Constants.FieldType.ExactText, AllowSort = true)
                            new Field("t1", Constants.FieldType.Text)
                            new Field("t2", Constants.FieldType.Text)
-                           new Field("s1", Constants.FieldType.Stored) |]
+                           new Field("s1", Constants.FieldType.Stored)
+                           new Field("t3", Constants.FieldType.Text) |]
         index
     
     /// Utility method to add data to an index
@@ -113,18 +119,52 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1
 module TestHelper = 
     // Runs a test against the given result and checks if it succeeded
     let (?) r = test <@ succeeded r @>
+    let testSuccess r = test <@ succeeded r @>
+    let testFail (reason) (r : Result<_>) = test <@ r = fail reason @>
     // ----------------------------------------------------------------------------
     // Index service wrappers
     // ----------------------------------------------------------------------------    
-    let addIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.AddIndex(ih.Index) @>
-    let closeIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.CloseIndex(ih.Index.IndexName) @>
-    let refreshIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Refresh(ih.Index.IndexName) @>
-    let commitIndex (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Commit(ih.Index.IndexName) @>
+    let addIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.AddIndex(ih.Index) @>
+    let addIndexFail reason (ih : IntegrationHelper) = test <@ ih.IndexService.AddIndex(ih.Index) = fail (reason) @>
+    let closeIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.CloseIndex(ih.Index.IndexName) @>
+    let closeIndexFail (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.CloseIndex(ih.Index.IndexName) = fail (IndexIsAlreadyOffline(ih.Index.IndexName)) @>
+    let openIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.OpenIndex(ih.Index.IndexName) @>
+    let openIndexFail (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.OpenIndex(ih.Index.IndexName) = fail (IndexIsAlreadyOnline(ih.Index.IndexName)) @>
+    let refreshIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Refresh(ih.Index.IndexName) @>
+    let commitIndexPass (ih : IntegrationHelper) = test <@ succeeded <| ih.IndexService.Commit(ih.Index.IndexName) @>
+    let testIndexOnline (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok (IndexStatus.Online) @>
+    let testIndexOffline (ih : IntegrationHelper) = 
+        test <@ ih.IndexService.GetIndexState(ih.Index.IndexName) = ok (IndexStatus.Offline) @>
     // ----------------------------------------------------------------------------
     // Document service wrappers
     // ----------------------------------------------------------------------------
-    let totalDocs (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
-    let getDoc id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
+    let createDocument id indexName = new Document(id, indexName)
+    
+    let withModifyIndex (index) (doc : Document) = 
+        doc.ModifyIndex <- index
+        doc
+    
+    let withField fieldName fieldValue (doc : Document) = 
+        doc.Fields.Add(fieldName, fieldValue)
+        doc
+    
+    let addDocument (doc : Document) (ih : IntegrationHelper) = ih.DocumentService.AddDocument(doc)
+    let addOrUpdateDocument (doc : Document) (ih : IntegrationHelper) = ih.DocumentService.AddOrUpdateDocument(doc)
+    let totalDocsExt (ih : IntegrationHelper) = extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName)
+    let totalDocs (count : int) (ih : IntegrationHelper) = 
+        test <@ extract <| ih.DocumentService.TotalDocumentCount(ih.Index.IndexName) = count @>
+    let getDocExt id (ih : IntegrationHelper) = extract <| ih.DocumentService.GetDocument(ih.Index.IndexName, id)
+    let getDocPass id (ih : IntegrationHelper) = 
+        test <@ succeeded <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
+    let getDocsFail id (ih : IntegrationHelper) = 
+        test <@ failed <| ih.DocumentService.GetDocument(ih.Index.IndexName, id) @>
+    let addDocByIdPass (id : string) (ih : IntegrationHelper) = 
+        test <@ succeeded <| ih.DocumentService.AddDocument(new Document(id, ih.Index.IndexName)) @>
+    let deleteDocByIdPass id (ih : IntegrationHelper) = 
+        test <@ succeeded <| ih.DocumentService.DeleteDocument(ih.Index.IndexName, "1") @>
 
 [<AutoOpen>]
 module SearchHelpers = 
@@ -215,28 +255,30 @@ module SearchHelpers =
         test <@ result.Documents.[0].Fields.ContainsKey(expected) @>
     
     let getResult (queryString : string) (ih : IntegrationHelper) = 
-        getQuery (ih.Index.IndexName, queryString) 
-        |> withColumns [| "*" |] 
+        getQuery (ih.Index.IndexName, queryString)
+        |> withColumns [| "*" |]
         |> searchAndExtract ih.SearchService
-
+    
     /// This is a helper method to combine searching and asserting on returned document count 
     let verifyResultCount (expectedCount : int) (queryString : string) (ih : IntegrationHelper) = 
-        getResult queryString ih
-        |> assertReturnedDocsCount expectedCount
+        getResult queryString ih |> assertReturnedDocsCount expectedCount
     
     let storedFieldCannotBeSearched (queryString : string) (ih : IntegrationHelper) = 
         let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
         match result with
         | Fail(f) -> 
-            if f.OperationMessage().ErrorCode <> "StoredFieldCannotBeSearched" then 
+            if f.OperationMessage().OperationCode <> "StoredFieldCannotBeSearched" then 
                 failwithf "Expecting Stored field cannot be searched error."
         | _ -> failwithf "Expecting Stored field cannot be searched error."
-
-    let verifyScore (expectedScore : int) (queryString : string) (ih : IntegrationHelper) =
-        getResult queryString ih
-        |> fun r -> test <@ r.BestScore = float32 expectedScore @>
-
-    let getScore (queryString : string) (ih : IntegrationHelper) =
-        getResult queryString ih
-        |> fun r -> r.BestScore
-
+    
+    let fieldTypeNotSupported (queryString : string) (ih : IntegrationHelper) = 
+        let result = getQuery (ih.Index.IndexName, queryString) |> ih.SearchService.Search
+        match result with
+        | Fail(f) -> 
+            if f.OperationMessage().OperationCode <> "QueryOperatorFieldTypeNotSupported" then 
+                failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
+        | _ -> failwithf "Expecting QueryOperatorFieldTypeNotSupported error."
+    
+    let verifyScore (expectedScore : int) (queryString : string) (ih : IntegrationHelper) = 
+        getResult queryString ih |> fun r -> test <@ r.BestScore = float32 expectedScore @>
+    let getScore (queryString : string) (ih : IntegrationHelper) = getResult queryString ih |> fun r -> r.BestScore
