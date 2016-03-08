@@ -11,18 +11,18 @@
       "type": "object",
       "properties": {
         "properties": {
-          "description": "The list of key value pairs holding the data of the error",
+          "description": "The list of key value pairs providing information about the operation.",
           "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         },
         "message": {
-          "description": "Operation message",
+          "description": "The actual message returned by the operation.",
           "type": "string"
         },
         "operationCode": {
-          "description": "Operation Code",
+          "description": "Operation Code associated with the message.",
           "type": "string"
         }
       },
@@ -33,7 +33,7 @@
       "type": "object",
       "properties": {
         "indexName": {
-          "description": "Name of the index",
+          "description": "<<Index Name>>",
           "type": "string"
         },
         "hasHeaderRecord": {
@@ -54,7 +54,7 @@
       "required": [ "indexName", "hasHeaderRecord", "path" ]
     },
     "sqlIndexingRequest": {
-      "description": "Represents a request which can be sent to Sql connector to index SQL data",
+      "description": "Represents a request which can be sent to SQL connector to index SQL data",
       "type": "object",
       "properties": {
         "indexName": {
@@ -62,7 +62,7 @@
           "type": "string"
         },
         "query": {
-          "description": "The query to be used to fetch data from Sql server",
+          "description": "The query to be used to fetch data from SQL server",
           "type": "string"
         },
         "connectionString": {
@@ -75,7 +75,7 @@
           "default": true
         },
         "createJob": {
-          "description": "Signifies if the connector should create a job for the task and return a jobId which can be used\nto check the status of the job.",
+          "description": "Signifies if the connector should create a job for the task and return a jobId which can be used to check the status of the job.",
           "type": "boolean",
           "default": false
         }
@@ -87,7 +87,7 @@
       "type": "object",
       "properties": {
         "selectionQuery": {
-          "description": "The query that filters the records to include in the deduplication",
+          "description": "The query that filters the records to include in the duplicate detection",
           "type": "string"
         },
         "fileName": {
@@ -99,25 +99,25 @@
           "type": "string"
         },
         "threadCount": {
-          "description": "The number of threads on which to run the deduplication.",
+          "description": "The number of threads on which to run the duplicate detection.",
           "type": "integer",
           "default": 1
         },
         "indexName": {
-          "description": "The name of the index on which to run the session",
+          "description": "<<Index Name>>",
           "type": "string"
         },
         "predefinedQueryName": {
-          "description": "The name of the query used for deduplication.",
+          "description": "The name of the query used for duplication detection.",
           "type": "string"
         },
         "maxRecordsToScan": {
-          "description": "The maxmimum number of records to scan for deduplication",
+          "description": "The maximum number of records to scan for duplication detection",
           "type": "integer",
           "default": 500000
         },
         "duplicatesCount": {
-          "description": "The maxmimum number of duplicates to include in the result",
+          "description": "The maximum number of duplicates to include in the result",
           "type": "integer",
           "default": 500000
         }
@@ -137,7 +137,7 @@
       "required": [ "fields" ]
     },
     "indexStatusResponse": {
-      "description": "Represents the response of an Index status request - tells whether an index is online, offline, opening, etc.",
+      "description": "Represents the response of an Index status request - tells whether an index is online, off-line, opening, etc.",
       "type": "object",
       "properties": {
         "indexStatus": {
@@ -176,7 +176,7 @@
           "type": "string"
         },
         "parameters": {
-          "description": "",
+          "description": "<<parameters>>",
           "type": "object",
           "additionalProperties": {
             "type": "string"
@@ -206,7 +206,7 @@
       }
     },
     "shardConfiguration": {
-      "description": "Allows to control various Index Shards related settings.",
+      "description": "<<Shard Configuration>>",
       "type": "object",
       "properties": {
         "shardCount": {
@@ -290,12 +290,12 @@
           "default": "FlexSearch_1B"
         },
         "allowReads": {
-          "description": "",
+          "description": "Signifies if the index supports reading back of indexed data.",
           "type": "boolean",
           "default": true
         },
         "allowWrites": {
-          "description": "",
+          "description": "Signifies if the index supports modification of data.",
           "type": "boolean",
           "default": true
         }
@@ -307,7 +307,7 @@
       "required": [ "fieldName" ],
       "properties": {
         "allowSort": {
-          "description": "",
+          "description": "Enable sorting for the field",
           "type": "boolean",
           "default": false
         },
@@ -316,18 +316,18 @@
           "type": "string"
         },
         "fieldType": {
-          "description": "",
+          "description": "Type of the field",
           "type": "string",
           "enum": [ "Int", "Double", "Float", "ExactText", "Text", "Bool", "Date", "DateTime", "Stored", "Long" ],
           "default": "Text"
         },
         "indexAnalyzer": {
-          "description": "",
+          "description": "Analyzer to be used during indexing",
           "type": "string",
           "default": "standard"
         },
         "searchAnalyzer": {
-          "description": "",
+          "description": "Analyzer to be used during searching",
           "type": "string",
           "default": "standard"
         },
@@ -435,11 +435,6 @@
           "type": "boolean",
           "default": true
         },
-        "predefinedQuery": {
-          "description": "Predefined Query to be used when searching based on a template.",
-          "type": "string",
-          "default": ""
-        },
         "preSearchScript": {
           "description": "Script that is executed before submitting the search to Lucene. It can be used to modify the incoming Variables",
           "type": "string",
@@ -463,142 +458,147 @@
       }
     },
     "document": {
-      "description": "",
+      "description": "<<document>>",
       "type": "object",
       "required": [ "indexName", "id" ],
       "properties": {
         "fields": {
-          "description": "",
+          "description": "<<fields>>",
           "type": "object",
           "additionalProperties": {
             "type": "string"
           }
         },
         "id": {
-          "description": "",
+          "description": "The unique id of the document",
           "type": "string",
           "minLength": 0
         },
         "indexName": {
-          "description": "",
+          "description": "<<Index Name>>",
           "type": "string"
         },
         "timeStamp": {
-          "description": "",
+          "description": "Represents the time at which the document was last indexed.",
           "type": "integer",
           "format": "int64"
         },
         "modifyIndex": {
-          "description": "",
+          "description": "<<ModifyIndex>>",
           "type": "integer",
           "format": "int64"
         },
         "highlights": {
-          "description": "",
+          "description": "Returns any highlighted segments of the document. This will only be returned as a part of Search result.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "score": {
-          "description": "",
+          "description": "The score associated with the document. This will only be used when documents are returned from a Search Query.",
           "type": "number",
           "format": "double"
         }
       }
     },
     "index": {
-      "description": "",
+      "description": "<<index>>",
       "type": "object",
       "required": [ "indexName" ],
       "properties": {
         "indexName": {
-          "description": "",
+          "description": "<<Index Name>>",
           "type": "string",
           "minLength": 1
         },
         "fields": {
-          "description": "",
+          "description": "<<fields>>",
           "type": "array",
           "items": {
             "$ref": "#/definitions/field"
           }
         },
         "predefinedQueries": {
-          "description": "",
+          "description": "Array of Predefined Queries",
           "type": "array",
           "items": {
             "$ref": "#/definitions/searchQuery"
           }
         },
         "shardConfiguration": {
+          "description":  "<<Shard Configuration>>",
           "$ref": "#/definitions/shardConfiguration"
         },
         "indexConfiguration": {
+          "description" :  "<<Index Configuration>>"
           "$ref": "#/definitions/indexConfiguration"
         },
         "active": {
-          "description": "",
+          "description": "Represents if an Index is active or not?",
           "type": "boolean",
           "default": true
         }
       }
     },
     "searchResults": {
-      "description": "",
+      "description": "Represents the output of a Search Query",
       "type": "object",
       "properties": {
         "documents": {
+          "description":  "Array of Documents",
           "type": "array",
           "items": {
             "$ref": "#/definitions/document"
           }
         },
         "recordsReturned": {
+          "description":  "Total number of records returned as part of the Search Query",
           "type": "integer",
           "format": "int32"
         },
         "bestScore": {
+          "description": "The highest score returned by any document as part of the search result.",
           "type": "number",
           "format": "float"
         },
         "totalAvailable": {
-          "description": "",
+          "description": "The total number of documents available as part of the search query. Note the actual records returned could be lower than the total available in the index.",
           "type": "integer",
           "format": "int32"
         }
       }
     },
     "job": {
-      "description": "",
+      "description": "Represents a job which can be scheduled or executed on the server",
       "type": "object",
       "properties": {
         "jobId": {
-          "description": "",
+          "description": "The unique ID associated with the Job",
           "type": "string"
         },
         "totalItems": {
-          "description": "",
+          "description": "The total number of items to be processed as part of the job.",
           "type": "integer",
           "format": "int32"
         },
         "processedItems": {
-          "description": "",
+          "description": "The total number of items processed so far.",
           "type": "integer",
           "format": "int32"
         },
         "failedItems": {
-          "description": "",
+          "description": "The total number of items which have failed.",
           "type": "integer",
           "format": "int32"
         },
         "jobStatus": {
-          "description": "",
+          "description": "The current status of the job.",
           "type": "string",
           "enum": [ "Initializing", "Initialized", "InProgress", "Completed", "CompletedWithErrors" ]
         },
         "message": {
-          "description": "",
+          "description": "Any operation message associated with the  job.",
           "type": "string"
         }
       }
@@ -615,11 +615,11 @@
       }
     },
     "indexExists": {
-      "description": "",
+      "description": "Signifies if an index exists on the server or not?",
       "type": "object",
       "properties": {
         "exists": {
-          "description": "",
+          "description": "Status signifying if the index exists.",
           "type": "boolean"
         }
       }

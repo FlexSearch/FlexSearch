@@ -44,12 +44,15 @@ ahead to consider multiple tokens at once, although this is less common.
 # Analyzer
 An analyzer examines the text of fields and generates a token stream.
 
+# Fields
+Represents a group of fields.
+
 # Field
 A field is a section of a Document. 
 
 Fields can contain different kinds of data. A name field, for example, 
 is text (character data). A shoe size field might be a floating point number 
-so that it could contain memberues like 6 and 9.5. Obviously, the definition of 
+so that it could contain members like 6 and 9.5. Obviously, the definition of 
 fields is flexible (you could define a shoe size field as a text field rather
 than a floating point number, for example), but if you define your fields correctly, 
 FlexSearch will be able to interpret them correctly and your users will get better 
@@ -88,3 +91,17 @@ Fields in an index to make any use of it.
 By default a newly created index stays off-line. This is by design to force the 
 user to enable an index before using it.
 
+# Index Name
+The name of the index on which the operation is to be performed.
+
+# ModifyIndex
+Represents the operation number associated with the operation in the global order 
+of the operations. This allows causal ordering of the events. A documents with a lower
+ModifyIndex can be assumed to be modified before another with a higher number. ModifyIndex
+is used for optimistic concurrency control.
+
+# Shard Configuration
+Allows to control various Index Shards related settings.
+
+# Index Configuration
+Allows to control various Index related settings.
