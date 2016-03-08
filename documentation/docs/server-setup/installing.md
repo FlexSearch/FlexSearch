@@ -1,4 +1,3 @@
-# Installing FlexSearch
 ## Requirements
 
 * .net Runtime Environment version 4.6 or higher
@@ -29,10 +28,10 @@ example `c:\flexsearch`.
 * Open command prompt and navigate to the root of FlexSearch install directory
 and type `FlexSearch-Server.exe --install`.  
 
-<div class="important">
+@alert important
 The command prompt should be run under administrator privileges, otherwise the
 install will fail with insufficient permissions.
-</div>
+@end
 
 Failing to start the command prompt in administrator mode will result in the
 below error:
@@ -162,25 +161,25 @@ While updating FlexSearch if you receive the below warning, you can safely ignor
 **** Warning: Publisher {a80d9e07-f298-55c2-6b8b-f15c4a504ca3} is installed on the system. Only new values would be added. If you want to update previous settings, uninstall the manifest first.
 ```
 
-<div class="note">
+@alert info
 We will make utmost effort to never update an existing value. Reinstalling an manifest can corrupt the existing logged data if the existing manifest values are modified.
-</div>
+@end
 
-<div class="note">
+@alert tip
 `Failed to open metadata for publisher <EventProviderName>. Access denied.` error usually indicate that there is an issue in accessing the path. Make sure that the executing user has necessary permissions over the path.
-</div>
+@end
 
-<div class="tip">
-'Use `wevtutil gp <EventProviderName>` to get more information about a manifest.
-</div>
+@alert tip
+Use `wevtutil gp <EventProviderName>` to get more information about a manifest.
+@end
 
-<div class="tip">
+@alert tip
 If you don\'t want to use an administrator account to configure the manifest then use an account which is a member of `Event Log Readers`.'
-</div>
+@end
 
-<div class="tip">
+@alert tip
 Installing FlexSearch at the root of the drive can help in circumventing some folder specific access issues.
-</div>
+@end
 
 ### Adding URL reservation manually
 

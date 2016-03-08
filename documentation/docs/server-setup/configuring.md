@@ -1,5 +1,3 @@
-# Configuring FlexSearch
-
 ## Directory Structure
 FlexSearch follow a specific directory structure, understanding this will help you in troubleshooting issues with FlexSearch. This will also help you in understanding the folders which needs to be backed up when taking an on-site or offsite backup.
 

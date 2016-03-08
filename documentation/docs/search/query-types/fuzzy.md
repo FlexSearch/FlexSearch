@@ -1,6 +1,7 @@
-# Fuzzy operator
 
-{% include 'partials/data_notice.md' %}
+@alert info
+@@include(data_notice.html) 
+@end
 
 Implements the fuzzy search query. The similarity measurement is based on the Damerau-Levenshtein (optimal string alignment) algorithm. At most, this query will match terms up to 2 edits. Higher distances, are generally not useful and will match a significant amount of the term dictionary. If you really want this, consider using an n-gram indexing technique (such as the SpellChecker in the suggest module) instead.
 
@@ -9,9 +10,9 @@ Parameter |Default |Type |Description
 `prefixlength` |0 |int |Length of common (non-fuzzy) prefix.
 `slop` |1 |int |The number of allowed edits
 
-<div class="tip">
+@alert tip
 Fuzzy supports both <code>fuzzy</code> and <code>~=</code> operator.'
-</div>
+@end
 
 ## Query Examples
 The following search query returns all documents containing `Iran` and all documents containing `Iran` with 1 character difference, in the `countryname` field.
