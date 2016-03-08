@@ -289,9 +289,9 @@ module AstParser =
                             okUnit
                     | _ -> fail <| ScriptNotFound(sq.PreSearchScript)
                 else okUnit
-            if isNotBlank sq.PredefinedQuery then 
+            if isNotBlank sq.QueryName then 
                 // Search profile based
-                match writers.Settings.PredefinedQueries.TryGetValue(sq.PredefinedQuery) with
+                match writers.Settings.PredefinedQueries.TryGetValue(sq.QueryName) with
                 | true, p -> 
                     let (predicate, preDefinedQuery) = p
                     // This is a search profile based query. So copy over essential
@@ -305,7 +305,7 @@ module AstParser =
                         sq.CutOff <- preDefinedQuery.CutOff
                         sq.Count <- preDefinedQuery.Count
                     return predicate
-                | _ -> return! fail <| UnknownPredefinedQuery(sq.IndexName, sq.PredefinedQuery)
+                | _ -> return! fail <| UnknownPredefinedQuery(sq.IndexName, sq.QueryName)
             else let! predicate = parser.Parse(sq.QueryString)
                  return predicate
         }
