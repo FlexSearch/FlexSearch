@@ -173,7 +173,7 @@ module flexportal {
       
       // Get the available indices
       $scope.mainProgressBar = true;
-      indicesApi.getAllIndexHandled()
+      indicesApi.getAllIndicesHandled()
       .then(response => {
         $scope.Indices = response.data.map(i => {
           var idx = new SearchIndex();
@@ -221,7 +221,7 @@ module flexportal {
             
             console.log("SearchQuery: ", sq);
             
-            flexQuery = searchApi.postSearchHandled(sq, index.Name); 
+            flexQuery = searchApi.searchHandled(index.Name, sq); 
         }
         // Plain Search test
         else {
@@ -240,11 +240,11 @@ module flexportal {
                 orderBy: $scope.OrderBy,
                 orderByDirection: $scope.OrderByDirection && $scope.OrderByDirection.indexOf("esc") > 0 ? API.Client.SearchQuery.OrderByDirectionEnum.Descending : API.Client.SearchQuery.OrderByDirectionEnum.Ascending
             };
-            flexQuery = searchApi.postSearchHandled(sReq, index.Name);
+            flexQuery = searchApi.searchHandled(index.Name, sReq);
         }
          // Get the response of the query
          flexQuery  
-           .then((result : API.Client.SearchResultsResponse) => {
+           .then((result : API.Client.SearchResponse) => {
              var r = new SearchResponse();
              var fieldNamesPopulated = false;
              r.RecordsReturned = result.data.recordsReturned;

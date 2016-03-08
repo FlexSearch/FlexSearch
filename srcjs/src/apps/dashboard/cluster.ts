@@ -139,7 +139,7 @@ module flexportal {
 
     private GetIndicesData($scope: IClusterScope, $q: any) {
       $scope.showProgress = true;
-      return this.indicesApi.getAllIndexHandled()
+      return this.indicesApi.getAllIndicesHandled()
         .then(response => $scope.Indices = <IndexDetailedResult[]>response.data)
         
         // Display the pretty scrollbar for the list of indices
@@ -147,7 +147,7 @@ module flexportal {
         
         // Get the status of each index
         .then(() => $q.all(
-            $scope.Indices.map(i => this.indicesApi.getStatusHandled(i.indexName))))
+            $scope.Indices.map(i => this.indicesApi.getIndexStatusHandled(i.indexName))))
         // Store the indexes on the main index
         .then(statuses => {
           $scope.Indices.forEach((idx, i) => idx.StatusReason = (<API.Client.GetStatusResponse>statuses[i]).data.indexStatus.toString());
@@ -169,7 +169,7 @@ module flexportal {
         .then(() => $q.all(
           $scope.Indices.map(i => this.indicesApi.getIndexSizeHandled(i.indexName))))
         // Store the disk size of the indices
-        .then((sizes : API.Client.IndexSizeResponse[]) => {
+        .then((sizes : API.Client.GetIndexSizeResponse[]) => {
           $scope.Indices.forEach((idx, i) => idx.DiskSize = sizes[i].data);
           $scope.ChartsDataStore['disk'] = {
             Data: $scope.Indices.map(i => i.DiskSize),
@@ -178,7 +178,7 @@ module flexportal {
         })
         
         // Get the memory details
-        .then(() => this.serverApi.getMemoryDetailsHandled())
+        .then(() => this.serverApi.getServerMemoryDetailsHandled())
         // Store the memory details
         .then(mem => {
           $scope.MemoryDetails = mem.data;

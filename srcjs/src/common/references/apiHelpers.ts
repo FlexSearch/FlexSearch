@@ -46,7 +46,7 @@ module apiHelpers {
         FlexSearchId: string
     }
 
-    function getFirstDocumentFromSearch(sr: API.Client.SearchResultsResponse) {
+    function getFirstDocumentFromSearch(sr: API.Client.SearchResponse) {
         return sr.data.recordsReturned > 0 ? sr.data.documents[0] : null;
     }
 
@@ -67,7 +67,7 @@ module apiHelpers {
             targetrecords: JSON.stringify(duplicate.Targets)
         };
 
-        return commonApi.updateDocumentHandled({
+        return commonApi.createOrUpdateDocumentHandled({
             fields: fields,
             id: duplicate.FlexSearchId,
             indexName: "duplicates"
@@ -76,11 +76,11 @@ module apiHelpers {
     
     // Get the duplicate that needs to be displayed
     export function getDuplicateBySourceId(sessionId, sourceId, commonApi: API.Client.CommonApi) {
-        return commonApi.postSearchHandled({
+        return commonApi.searchHandled("duplicates", {
             queryString: "allof(type, 'source') and allof(sessionid, '" + sessionId + "') and allof(sourceid, '" + sourceId + "')",
             columns: ["*"],
             indexName: "duplicates"
-        }, "duplicates")
+        })
             .then(getFirstDocumentFromSearch);
     }
 
@@ -88,25 +88,25 @@ module apiHelpers {
         var idStr = ids
             .reduce(function(acc, val) { return acc + ",'" + val + "'" }, "")
             .substr(1);
-        return commonApi.postSearchHandled({
+        return commonApi.searchHandled(indexName, {
             queryString: "anyof(_id, " + idStr + ")",
             columns: ["*"],
             indexName: indexName
-        }, indexName)
+        })
             .then(r => r.data.documents);
     }
 
     export function getSessionBySessionId(sessionId, commonApi: API.Client.CommonApi) {
-        return commonApi.postSearchHandled({
+        return commonApi.searchHandled("duplicates", {
             queryString: "allof(type, 'session') and allof(sessionid, '" + sessionId + "')",
             columns: ["*"],
             indexName: "duplicates"
-        }, "duplicates")
+        })
             .then(getFirstDocumentFromSearch);
     }
 
     export function getDuplicatesFromSession(sessionId, count, skip, commonApi: API.Client.CommonApi, sortby?, sortDirection?) {
-        return commonApi.postSearchHandled({
+        return commonApi.searchHandled("duplicates", {
             queryString: "allof(type, 'source') and allof(sessionid, '" + sessionId + "')",
             columns: ["*"],
             count: count,
@@ -114,12 +114,12 @@ module apiHelpers {
             orderBy: sortby,
             orderByDirection: getOrderByDirection(sortDirection),
             indexName: "duplicates"
-        }, "duplicates")
+        })
             .then(r => r.data);
     }
 
     export function getSessions(count, skip, commonApi: API.Client.CommonApi, sortby?, sortDirection?) {
-        return commonApi.postSearchHandled({
+        return commonApi.searchHandled("duplicates", {
             queryString: "allof(type, 'session')",
             columns: ["*"],
             count: count,
@@ -127,7 +127,7 @@ module apiHelpers {
             orderBy: sortby,
             orderByDirection: getOrderByDirection(sortDirection),
             indexName: "duplicates"
-        }, "duplicates")
+        })
             .then(r => r.data);
     }
 

@@ -4,7 +4,7 @@ module flexportal {
     'use strict';
 
     import Analyzer = API.Client.Analyzer;
-    import analysisRequest = API.Client.AnalysisRequest
+    import analysisRequest = API.Client.AnalyzeText
 
     interface IAnalyzerTestScope extends ng.IScope, IMainScope {
         Analyzers: Analyzer[]
@@ -19,16 +19,16 @@ module flexportal {
         /* @ngInject */
         constructor($scope: IAnalyzerTestScope, analyzerApi: API.Client.AnalyzerApi) {
             // Get the available analyzers from FlexSearch
-            analyzerApi.getAllAnalyzer()
-                .then(result => $scope.Analyzers = result.data.data);          
+            analyzerApi.getAllAnalyzersHandled()
+                .then(result => $scope.Analyzers = result.data);          
 
             $scope.runTest = function() {
                 $scope.showProgress = true;
 
                 var req : analysisRequest = { text : $scope.TextToAnalyze, analyzerName : $scope.AnalyzerName}
-                analyzerApi.analyzeText(req, $scope.AnalyzerName)
+                analyzerApi.analyzeTextHandled(req, $scope.AnalyzerName)
                     .then(response => {
-                        $scope.Results = response.data.data;
+                        $scope.Results = response.data;
                         $scope.showProgress = false;
                     });
             }
