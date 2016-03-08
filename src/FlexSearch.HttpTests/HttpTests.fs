@@ -374,6 +374,11 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         |> fun r -> r |> isSuccessful; r
         |> fun r -> r.Data.Documents.Length >=? 0
 
+    member __.``Analyzing some text should return success`` (analyzerApi : AnalyzerApi) = 
+        analyzerApi.AnalyzeText(new AnalyzeText("text to analyze", "standard"), "standard") 
+        |> fun r -> r |> isSuccessful; r
+        |> fun r -> r.Data.Length =? 2
+        
     interface IDisposable with
         member __.Dispose() = 
             indicesApi.DeleteIndex("country") |> isSuccessful

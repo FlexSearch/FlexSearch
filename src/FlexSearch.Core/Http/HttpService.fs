@@ -233,7 +233,7 @@ type GetAllAnalyzerHandler(analyzerService : IAnalyzerService) =
 /// <uri>/analyzers/:analyzerName/analyze</uri>
 /// <resource>analyzer</resource>
 /// <id>get-analyze-text</id>
-[<Name("POST-/analyzers/:id/analyze")>]
+[<Name("POST-/analyzers/:id/analyzetext")>]
 [<Sealed>]
 type AnalyzeTextHandler(analyzerService : IAnalyzerService) = 
     inherit HttpHandlerBase<AnalyzeText, string []>()
