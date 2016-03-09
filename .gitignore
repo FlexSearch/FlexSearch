@@ -234,13 +234,11 @@ src/FlexSearch.Server/AssemblyInfo.fs
 src/.vs/
 */.fake
 swagger-ui
-documentation/swagger*
 _book
 bower_components
 node_modules
 dto
 data
-/documentation/F# Interactive
 src/TestResult.xml
 src/FlexSearch.Api/Model
 src/FlexSearch.Api/Api
@@ -250,5 +248,3 @@ Tools
 client
 spec/swagger-full.json
 scripts/obj.Test
-documentation/_partials/api.html
-documentation/_partials/index.html

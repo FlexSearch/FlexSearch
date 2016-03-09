@@ -229,7 +229,7 @@ module JavaScript =
 
 module Html =
     let tempHtmlDir = scriptDir <!!> @"obj\src"
-    let targetHtmlDir = rootDir <!!> @"documentation\_partials"
+    let targetHtmlDir = rootDir <!!> @"documentation"
 
     let generateHtmlModel() =
         !>> "Cleaning Models directory"    
