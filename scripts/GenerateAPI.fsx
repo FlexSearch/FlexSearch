@@ -272,4 +272,11 @@ let generateModel() =
     TypeScript.generateTypeScript()
     JavaScript.generateJavaScript()
     Html.generateHtml()
+
+// Initialize the git submodule containing the CodeFormatter if it's not there
+if File.Exists(toolsDir <!!> "CodeFormatter/CodeFormatter.exe") |> not then
+    !> "Downloading the CodeFormatter application..."
+    exec("git", "submodule init")
+    exec("git", "submodule update")
+
 generateModel()
