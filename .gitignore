@@ -232,9 +232,8 @@ src/FlexSearch.Core/AssemblyInfo.fs
 src/FlexSearch.Logging/Properties/AssemblyInfo.cs
 src/FlexSearch.Server/AssemblyInfo.fs
 src/.vs/
-src/.fake
+*/.fake
 swagger-ui
-documentation/.fake/
 documentation/swagger*
 _book
 bower_components

@@ -144,7 +144,7 @@ Target "BuildPortal" <| fun _ ->
 
     runPsScript <| File.ReadAllText "build.ps1"
 
-    FileUtils.cd @"..\src"
+    FileUtils.cd @"..\"
 
 Target "MovePortal" <| fun _ ->
     trace "Moving Portal"
