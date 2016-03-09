@@ -161,11 +161,10 @@ module AstParser =
     // Gets a variable value from the search query.
     // Empty/blank values are considered an error
     let getVariable (name : VariableName) (variables : Variables) = 
-        match variables.TryGetValue <| name.ToLower() with
-        | true, value -> 
-            if isNotBlank value then ok value
-            else fail <| MissingVariableValue name
-        | _ -> fail <| MissingVariableValue name
+        variables
+        |> Seq.tryFind (fun kvp -> kvp.Key.ToLowerInvariant() = name.ToLowerInvariant())
+        |> fun x -> if x.IsSome then x.Value.Value |> Some
+                    else None
     
     /// Checks if there is a need to generate query or not? In case there are no tokens then
     /// the main query could be replaced with match all or match none queries.
@@ -209,13 +208,12 @@ module AstParser =
                         // Makes the search case insensitive
                         tokens.Segments.Add(c.ToLowerInvariant())
                 | Variable(v) -> 
-                    match searchQuery.Variables.TryGetValue <| v.ToLower() with
-                    | true, value -> 
-                        if isNotBlank value then 
-                            if func.UseAnalyzer then fieldSchema |> FieldSchema.getTokens (value, tokens.Segments)
-                            else 
-                                // Makes the search case insensitive
-                                tokens.Segments.Add(value.ToLowerInvariant())
+                    match searchQuery.Variables |> getVariable v with
+                    | Some(value) when value |> isNotBlank -> 
+                        if func.UseAnalyzer then fieldSchema |> FieldSchema.getTokens (value, tokens.Segments)
+                        else 
+                            // Makes the search case insensitive
+                            tokens.Segments.Add(value.ToLowerInvariant())
                     | _ -> ()
                 | _ -> ()
                 if pos <> tokens.Segments.Count then 

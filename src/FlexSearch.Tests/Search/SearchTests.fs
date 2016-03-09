@@ -381,6 +381,12 @@ id,et1,et2,i1,i2
         |> searchAndExtract ih.SearchService
         |> assertReturnedDocsCount 1
 
+    member __.``Variable names should be case insensitive``() =
+        getQuery (indexName, "allof(et1, @caseInsensitiveVARIABLE)")
+        |> withVariables [ ("caseInSENSITIVEvariable", "d") ]
+        |> searchAndExtract ih.SearchService
+        |> assertReturnedDocsCount 1
+
 type ``DistinctBy Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
 id,et1,t1,i1,s1
