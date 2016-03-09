@@ -1,7 +1,7 @@
 {
     "Name": "FlexSearch",
     "Source": ".",
-    "Destination": "..\\build",
+    "Destination": "..\\..\\build",
     "Theme": "Default",
 	"DefaultExtension": "html",
     "Pages": {
