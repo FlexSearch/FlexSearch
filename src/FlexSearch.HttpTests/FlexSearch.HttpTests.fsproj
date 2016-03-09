@@ -435,8 +435,8 @@
     </Reference>
   </ItemGroup>
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc2-16236\runtimes\win7-x86\native\libuv.dll" "$(ProjectDir)\bin\Debug" /Y
-xcopy "$(SolutionDir)packages\System.Numerics.Vectors.4.1.1-rc2-23623\lib\net46\System.Numerics.Vectors.dll" "$(ProjectDir)\bin\Debug" /Y</PostBuildEvent>
+    <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel.1.0.0-rc2-16236\runtimes\win7-x86\native\libuv.dll" "$(ProjectDir)\bin\Debug\" /Y
+xcopy "$(SolutionDir)packages\System.Numerics.Vectors.4.1.1-rc2-23623\lib\net46\System.Numerics.Vectors.dll" "$(ProjectDir)\bin\Debug\" /Y</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
