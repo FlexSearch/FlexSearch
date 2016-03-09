@@ -51,6 +51,7 @@ module ResponseLogging =
         member val Description = Unchecked.defaultof<string> with get, set
 
     type RequestDetails() = 
+        member val RequestNumber = 1 with get, set
         member val HttpRequest = Unchecked.defaultof<HttpRequestMessage> with get, set
         member val RequestBody = Unchecked.defaultof<string> with get, set
         member val HttpResponse = Unchecked.defaultof<HttpResponseMessage> with get, set
@@ -65,32 +66,44 @@ module ResponseLogging =
         let log = new StringBuilder()
         let requestLog = new RequestDetails()
         let mutable statusCode = System.Net.HttpStatusCode.OK
+        let append(msg) =
+            if requestLog.RequestNumber = 1 then
+                log.AppendLine(msg) |> ignore
+
         member this.Log() = log
         member this.RequestLog() = requestLog
         member this.StatusCode() = statusCode
         override this.SendAsync(request : HttpRequestMessage, cancellationToken) = 
             let log (work : Task<HttpResponseMessage>) = 
                 task { 
+                    append("```html")
                     requestLog.HttpRequest <- request
-                    log.AppendLine("Request") |> ignore
-                    log.Append(request.Method.ToString() + " ") |> ignore
-                    log.AppendLine(request.RequestUri.ToString()) |> ignore
+                    append(request.Method.ToString() + " " + request.RequestUri.ToString() + " HTTP " + request.Version.ToString())
+                    append("Content-Type: application/json; charset=utf-8")
                     // Add body here
-                    if request.Content <> null then 
+                    if not <| isNull request.Content then 
                         let! requestBody = request.Content.ReadAsStringAsync()
+                        append("Content-Length: " + requestBody.Length.ToString())
+                        append("")
                         requestLog.RequestBody <- requestBody
-                        log.AppendLine(requestBody) |> ignore
-                    log.AppendLine("----------------------------------") |> ignore
-                    log.AppendLine("Response") |> ignore
+                        let parsedJson = JsonConvert.DeserializeObject(requestBody)
+                        append(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
+                    else
+                        append("Content-Length: 0")
+                    append("")    
+                    append("-----------------------------")
                     let! response = work
                     statusCode <- response.StatusCode
                     let! responseBody = response.Content.ReadAsStringAsync()
                     requestLog.HttpResponse <- response
                     requestLog.ResponseBody <- responseBody
-                    log.AppendLine(responseBody) |> ignore
+                    let parsedJson = JsonConvert.DeserializeObject(responseBody)
+                    append(JsonConvert.SerializeObject(parsedJson, Formatting.Indented)) |> ignore
+                    append("```")
+                    requestLog.RequestNumber <- requestLog.RequestNumber + 1
                     return response
                 }
-        
+
             let work = base.SendAsync(request, cancellationToken)
             log (work)
 
