@@ -34,3 +34,15 @@ button.refresh-btn.md-button {
 div.variables {
     min-height: 250px !important;
 }
+
+md-content.list-items {
+    padding-left: 10px;
+}
+
+#session-sidebar {
+    z-index: 2;
+}
+
+div.editor {
+    z-index: 1;
+}
