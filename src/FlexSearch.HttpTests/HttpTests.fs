@@ -11,6 +11,7 @@ open Swensen.Unquote
 open System.Net
 open System
 open System.Linq
+open System.Reflection
 
 // An alias so that we avoid opening FlexSearch.Core
 type Country = FlexSearch.Core.Country
@@ -30,7 +31,8 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         let result = api.CreateDocument(document, indexName)
         (result, document)
 
-    do serverApi.SetupDemo() |> isSuccessful
+    do  mockIndexSettings() |> ignore
+        serverApi.SetupDemo() |> isSuccessful
 
     [<Example("post-indices-id-1", "Creating an index without any data")>]
     member __.``Creating an index without any parameters should return 200`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) = 
@@ -278,49 +280,49 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Term Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
-        api |> query "allof(agriproducts, 'rice') and allof(agriproducts, 'wheat')" expected 1
+        api |> query "allof(agriproducts, 'rice') and allof(agriproducts, 'wheat')" expected 1 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-term-2", "Term search using multiple words")>]
     member __.``Term Query Test 2`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") && x.AgriProducts.Contains("wheat")).Count()
-        api |> query "allof(agriproducts, 'rice wheat')" expected 1
+        api |> query "allof(agriproducts, 'rice wheat')" expected 1 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-term-3", "Term search using 'allOf' operator")>]
     member __.``Term Query Test 3`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
-        api |> query "allof(agriproducts, 'rice') or allof(agriproducts, 'wheat')" expected 1
+        api |> query "allof(agriproducts, 'rice') or allof(agriproducts, 'wheat')" expected 1 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-term-4", "Term search using 'anyOf' operator")>]
     member __.``Term Query Test 4`` (api : SearchApi, indexData : Country list) = 
         let expected = 
             indexData.Where(fun x -> x.AgriProducts.Contains("rice") || x.AgriProducts.Contains("wheat")).Count()
-        api |> query "anyOf(agriproducts, 'rice wheat')" expected 1
+        api |> query "anyOf(agriproducts, 'rice wheat')" expected 1 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-fuzzy-1", "Fuzzy search using 'fuzzy' operator")>]
-    member __.``Fuzzy Query Test 1`` (api : SearchApi) = api |> query "fuzzy(countryname, 'Iran')" 2 3
+    member __.``Fuzzy Query Test 1`` (api : SearchApi) = api |> query "fuzzy(countryname, 'Iran')" 2 3 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-fuzzy-3", "Fuzzy search using slop parameter")>]
-    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy(countryname, 'China', -slop '2')" 3 3
+    member __.``Fuzzy Query Test 2`` (api : SearchApi) = api |> query "fuzzy(countryname, 'China', -slop '2')" 3 3 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-phrase-1", "Phrase search using exact operator")>]
     member __.``Phrase Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.GovernmentType.Contains("federal parliamentary democracy")).Count()
-        api |> query "phrasematch(governmenttype, 'federal parliamentary democracy')" expected 4
+        api |> query "phrasematch(governmenttype, 'federal parliamentary democracy')" expected 4 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-phrase-2", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 2`` (api : SearchApi) = 
-        api |> query "phraseMatch(governmenttype, 'parliamentary monarchy', -slop '4')" 6 4
+        api |> query "phraseMatch(governmenttype, 'parliamentary monarchy', -slop '4')" 6 4 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-phrase-3", "Phrase search with slop of 4")>]
     member __.``Phrase Query Test 3`` (api : SearchApi) = 
-        api |> query "phraseMatch(governmenttype, 'monarchy parliamentary', -slop '4')" 3 4
+        api |> query "phraseMatch(governmenttype, 'monarchy parliamentary', -slop '4')" 3 4 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-wildcard-1", "Wildcard search using 'like' operator")>]
     member __.``Wildcard Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.CountryName.ToLowerInvariant().Contains("uni"))
-        api |> query "like(countryname, '*uni*')" (expected.Count()) 3
+        api |> query "like(countryname, '*uni*')" (expected.Count()) 3 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-wildcard-3", "Wildcard search with single character operator")>]
     member __.``Wildcard Query Test 2`` (api : SearchApi, indexData : Country list) = 
@@ -328,7 +330,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
             indexData.Where(fun x -> 
                      System.Text.RegularExpressions.Regex.Match(x.CountryName.ToLowerInvariant(), "unit[a-z]?d").Success)
                      .Count()
-        api |> query "like(countryname, 'Unit?d')" expected 1
+        api |> query "like(countryname, 'Unit?d')" expected 1 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-regex-1", "Regex search using regex operator")>]
     member __.``Regex Query Test 1`` (api : SearchApi, indexData : Country list) = 
@@ -336,32 +338,32 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
             indexData.Where(fun x -> 
                      System.Text.RegularExpressions.Regex.Match(x.AgriProducts.ToLowerInvariant(), "[ms]ilk").Success)
                      .Count()
-        api |> query "regex(agriproducts, '[ms]ilk')" expected 3
+        api |> query "regex(agriproducts, '[ms]ilk')" expected 3 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-matchall-1", "Match all search using 'matchall' operator")>]
     member __.``Matchall Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Count()
-        api |> query "matchall(countryname, '*')" expected 50
+        api |> query "matchall(countryname, '*')" expected 50 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-range-1", "Greater than 'gt' operator")>]
     member __.``NumericRange Query Test 1`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population > 1000000L).Count()
-        api |> query "gt(population, '1000000')" expected 48
+        api |> query "gt(population, '1000000')" expected 48 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-range-2", "Greater than or equal to 'ge' operator")>]
     member __.``NumericRange Query Test 2`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population >= 1000000L).Count()
-        api |> query "ge(population, '1000000')" expected 48
+        api |> query "ge(population, '1000000')" expected 48 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-range-3", "Smaller than 'lt' operator")>]
     member __.``NumericRange Query Test 3`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population < 1000000L).Count()
-        api |> query "lt(population, '1000000')" expected 48
+        api |> query "lt(population, '1000000')" expected 48 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-range-4", "Smaller than or equal to 'le' operator")>]
     member __.``NumericRange Query Test 4`` (api : SearchApi, indexData : Country list) = 
         let expected = indexData.Where(fun x -> x.Population <= 1000000L).Count()
-        api |> query "le(population, '1000000')" expected 48
+        api |> query "le(population, '1000000')" expected 48 (MethodBase.GetCurrentMethod())
     
     [<Example("post-indices-search-highlighting-1", "Text highlighting example")>]
     member __.``Search Highlight Feature Test1`` (api : SearchApi) = 

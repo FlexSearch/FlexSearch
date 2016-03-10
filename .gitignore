@@ -239,7 +239,7 @@ bower_components
 node_modules
 dto
 data
-src/TestResult.xml
+TestResult.xml
 src/FlexSearch.Api/Model
 src/FlexSearch.Api/Api
 src/FlexSearch.Api/Client

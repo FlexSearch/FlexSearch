@@ -19,13 +19,12 @@ open FlexSearch.Api.Client
 open FlexSearch.Api.Model
 open FSharpx.Task
 open Newtonsoft.Json
+open FlexSearch.Core.Helpers
 
 module Global =
     open Microsoft.AspNet.TestHost
-    open FlexSearch.Core.Helpers
 
-    let mutable RequestLogPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase +/ "../../../../documentation/_partials/data"
-    createDir RequestLogPath
+    let mutable RequestLogPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase +/ "../../../../documentation/docs/data"
     let server = 
         let serverBuilder = 
             let settings = FlexSearch.Core.Settings.T.GetDefault()
@@ -128,6 +127,7 @@ module TestCommandHelpers =
     let newIndex indexName = new Index(IndexName = indexName)
     let formatter = new FlexSearch.Core.NewtonsoftJsonFormatter() :> FlexSearch.Core.IFormatter
 
+
     /// Write the request details to the specified folder
     /// Force the JIT to not inline this method otherwise Stack frame will return the wrong method name
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
@@ -139,7 +139,7 @@ module TestCommandHelpers =
     
     /// Force the JIT to not inline this method otherwise Stack frame will return the wrong method name
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
-    let query (queryString : string) (recordsReturned : int) (available : int) (api : SearchApi) = 
+    let query (queryString : string) (recordsReturned : int) (available : int) (meth : MethodBase) (api : SearchApi) = 
         let searchQuery = new SearchQuery("country", queryString)
         searchQuery.Count <- 10
         searchQuery.Columns <- [| "countryname"; "agriproducts"; "governmenttype"; "population" |]
@@ -148,9 +148,6 @@ module TestCommandHelpers =
         response.Data.TotalAvailable =? recordsReturned
         /// Log the result if log path is defined
         if Global.RequestLogPath <> String.Empty && Directory.Exists(Global.RequestLogPath) then 
-            let frame = new System.Diagnostics.StackFrame(1)
-            
-            let meth = frame.GetMethod()
             match meth.CustomAttributes |> Seq.tryFind (fun x -> x.AttributeType = typeof<ExampleAttribute>) with
             | Some(attr) -> 
                 let fileName = attr.ConstructorArguments.[0].ToString().Replace('"', ' ').Trim()
@@ -200,7 +197,7 @@ module FixtureSetup =
     let catchAllLoggingHandler = new LoggingHandler(httpMessageHandler)
     let flexClient = new ApiClient(catchAllLoggingHandler)
 
-    let mockIndexSettings = 
+    let mockIndexSettings() = 
         let index = new Index()
         index.IndexName <- "contact"
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
@@ -286,6 +283,8 @@ type SingleInstancePerClassConvention() as self =
         printfn "RequestLogPath: %A" self.Options.["requestlogpath"]
         if self.Options.["requestlogpath"].Count = 1 then
             Global.RequestLogPath <- self.Options.["requestlogpath"].[0]
+
+        if isNotBlank Global.RequestLogPath then createDir Global.RequestLogPath
 
         self.Classes.NameEndsWith([| "Tests"; "Test"; "test"; "tests" |]) |> ignore
         // Temporarily ignore parametric tests because Fixie doesn't handle them in VS 2015

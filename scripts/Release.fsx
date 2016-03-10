@@ -110,16 +110,28 @@ let runPsScript scriptText =
         ps.Streams.Error |> Seq.iter (sprintf "%A" >> trace)
 
 // Targets
-Target "Clean" (fun _ -> CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web"; deployDir ])
-Target "BuildApp" (fun _ -> 
+Target "Clean" <| fun _ -> 
+    CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web"; deployDir ]
+Target "BuildApp" <| fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
     AssemblyInfoCSharp "FlexSearch.API" "FlexSearch API Library"
     MSBuildRelease buildDir "Build" [ @"src\FlexSearch.sln" ] |> Log "BuildApp-Output: "
     // Copy the files from build to build-test necessary for Testing
-    FileHelper.CopyRecursive buildDir testDir true |> ignore)
-Target "Test" (fun _ -> 
+    FileHelper.CopyRecursive buildDir testDir true |> ignore
+Target "Test" <| fun _ -> 
     !! (testDir @@ "FlexSearch.Tests.dll") 
+    |> (fun includes ->
+            try FixieHelper.Fixie 
+                    (fun p -> { p with CustomOptions = [ "xUnitXml", "TestResult.xml" :> obj 
+                                                         "requestlogpath", dataDir <!!> "..\nonHttpTests" :> obj ] })
+                    includes
+            // Upload test results to Appveyor even if tests failed
+            finally AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__
+                    trace "Uploaded to AppVeyor")
+
+Target "HttpTests" <| fun _ ->
+    !! (testDir @@ "FlexSearch.HttpTests.dll") 
     |> (fun includes ->
             try FixieHelper.Fixie 
                     (fun p -> { p with CustomOptions = [ "xUnitXml", "TestResult.xml" :> obj 
@@ -127,7 +139,7 @@ Target "Test" (fun _ ->
                     includes
             // Upload test results to Appveyor even if tests failed
             finally AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__
-                    trace "Uploaded to AppVeyor"))
+                    trace "Uploaded HttpTests to AppVeyor")
             
 Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
