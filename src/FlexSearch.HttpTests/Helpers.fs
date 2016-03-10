@@ -178,19 +178,7 @@ module FixtureSetup =
         index.IndexConfiguration <- new IndexConfiguration(CommitOnClose = false, AutoCommit = false, AutoRefresh = false)
         index.Active <- true
         index.IndexConfiguration.DirectoryType <- Constants.DirectoryType.MemoryMapped
-        index.Fields <- [| new Field("b1", Constants.FieldType.Bool)
-                           new Field("b2", Constants.FieldType.Bool)
-                           new Field("d1", Constants.FieldType.Date)
-                           new Field("dt1", Constants.FieldType.DateTime)
-                           new Field("db1", Constants.FieldType.Double)
-                           new Field("et1", Constants.FieldType.ExactText, AllowSort = true)
-                           new Field("h1", Constants.FieldType.Text)
-                           new Field("i1", Constants.FieldType.Int)
-                           new Field("i2", Constants.FieldType.Int, AllowSort = true)
-                           new Field("l1", Constants.FieldType.Long)
-                           new Field("t1", Constants.FieldType.Text)
-                           new Field("t2", Constants.FieldType.Text)
-                           new Field("s1", Constants.FieldType.Stored) |]
+        index.Fields <- [| new Field("name", Constants.FieldType.Text) |]
         index
 
     let httpMessageHandler = Global.server.CreateHandler()
