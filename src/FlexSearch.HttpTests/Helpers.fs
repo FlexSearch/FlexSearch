@@ -52,9 +52,9 @@ module ResponseLogging =
     type RequestDetails() = 
         member val RequestNumber = 1 with get, set
         member val HttpRequest = Unchecked.defaultof<HttpRequestMessage> with get, set
-        member val RequestBody = Unchecked.defaultof<string> with get, set
+        member val RequestBody = Unchecked.defaultof<obj> with get, set
         member val HttpResponse = Unchecked.defaultof<HttpResponseMessage> with get, set
-        member val ResponseBody = Unchecked.defaultof<string> with get, set
+        member val ResponseBody = Unchecked.defaultof<obj> with get, set
 
     /// <summary>
     /// Simple request logging handler. This is not thread safe. Only use
@@ -84,7 +84,7 @@ module ResponseLogging =
                         let! requestBody = request.Content.ReadAsStringAsync()
                         append("Content-Length: " + requestBody.Length.ToString())
                         append("")
-                        requestLog.RequestBody <- requestBody
+                        requestLog.RequestBody <- JsonConvert.DeserializeObject(requestBody)
                         let parsedJson = JsonConvert.DeserializeObject(requestBody)
                         append(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
                     else
@@ -95,7 +95,7 @@ module ResponseLogging =
                     statusCode <- response.StatusCode
                     let! responseBody = response.Content.ReadAsStringAsync()
                     requestLog.HttpResponse <- response
-                    requestLog.ResponseBody <- responseBody
+                    requestLog.ResponseBody <- JsonConvert.DeserializeObject(responseBody)
                     let parsedJson = JsonConvert.DeserializeObject(responseBody)
                     append(JsonConvert.SerializeObject(parsedJson, Formatting.Indented)) |> ignore
                     append("```")
