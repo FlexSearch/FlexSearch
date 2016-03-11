@@ -62,44 +62,51 @@ module ResponseLogging =
     /// </summary>
     type LoggingHandler(innerHandler : HttpMessageHandler) = 
         inherit DelegatingHandler(innerHandler)
-        let log = new StringBuilder()
-        let requestLog = new RequestDetails()
-        let mutable statusCode = System.Net.HttpStatusCode.OK
-        let append(msg) =
-            if requestLog.RequestNumber = 1 then
-                log.AppendLine(msg) |> ignore
+        
+        let markdownLogs = new List<string>()
+        let requestDetailsLogs = new List<RequestDetails>()
 
-        member this.Log() = log
-        member this.RequestLog() = requestLog
-        member this.StatusCode() = statusCode
+        member this.MarkdownLogs() = markdownLogs
+        member this.RequestDetailsLogs() = requestDetailsLogs
+        member val RequestNumber = 1 with get, set
+
         override this.SendAsync(request : HttpRequestMessage, cancellationToken) = 
             let log (work : Task<HttpResponseMessage>) = 
-                task { 
-                    append("```html")
+                task {
+                    let msg = new StringBuilder()
+                    let requestLog = new RequestDetails()
+
+                    msg.AppendLine("```html") |> ignore
                     requestLog.HttpRequest <- request
-                    append(request.Method.ToString() + " " + request.RequestUri.ToString() + " HTTP " + request.Version.ToString())
-                    append("Content-Type: application/json; charset=utf-8")
+                    msg.AppendLine(request.Method.ToString() + " " + request.RequestUri.ToString() + " HTTP " + request.Version.ToString())
+                       .AppendLine("Content-Type: application/json; charset=utf-8")
+                       |> ignore
+
                     // Add body here
                     if not <| isNull request.Content then 
                         let! requestBody = request.Content.ReadAsStringAsync()
-                        append("Content-Length: " + requestBody.Length.ToString())
-                        append("")
+                        msg.AppendLine("Content-Length: " + requestBody.Length.ToString())
+                           .AppendLine("") |> ignore
                         requestLog.RequestBody <- JsonConvert.DeserializeObject(requestBody)
                         let parsedJson = JsonConvert.DeserializeObject(requestBody)
-                        append(JsonConvert.SerializeObject(parsedJson, Formatting.Indented))
+                        msg.AppendLine(JsonConvert.SerializeObject(parsedJson, Formatting.Indented)) |> ignore
                     else
-                        append("Content-Length: 0")
-                    append("")    
-                    append("-----------------------------")
+                        msg.AppendLine("Content-Length: 0") |> ignore
+                    msg.AppendLine("")    
+                       .AppendLine("-----------------------------") |> ignore
                     let! response = work
-                    statusCode <- response.StatusCode
                     let! responseBody = response.Content.ReadAsStringAsync()
                     requestLog.HttpResponse <- response
                     requestLog.ResponseBody <- JsonConvert.DeserializeObject(responseBody)
                     let parsedJson = JsonConvert.DeserializeObject(responseBody)
-                    append(JsonConvert.SerializeObject(parsedJson, Formatting.Indented)) |> ignore
-                    append("```")
-                    requestLog.RequestNumber <- requestLog.RequestNumber + 1
+                    msg.AppendLine(JsonConvert.SerializeObject(parsedJson, Formatting.Indented)) |> ignore
+                    msg.AppendLine("```") |> ignore
+                    requestLog.RequestNumber <- this.RequestNumber
+
+                    msg.ToString() |> markdownLogs.Add
+                    requestLog |> requestDetailsLogs.Add
+                    this.RequestNumber <- this.RequestNumber + 1
+
                     return response
                 }
 
@@ -131,12 +138,12 @@ module TestCommandHelpers =
     /// Write the request details to the specified folder
     /// Force the JIT to not inline this method otherwise Stack frame will return the wrong method name
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
-    let log (id : string) (client : LoggingHandler) = 
+    let log (id : string) (requestNumber : int) (client : LoggingHandler) = 
         if Global.RequestLogPath <> String.Empty && Directory.Exists(Global.RequestLogPath) then 
             let frame = new System.Diagnostics.StackFrame(1)
             let desc = frame.GetMethod().Name
-            File.WriteAllText(Global.RequestLogPath +/ id + ".http", client.Log().ToString())
-            File.WriteAllText(Global.RequestLogPath +/ id + ".json", JsonConvert.SerializeObject(client.RequestLog()))
+            File.WriteAllText(Global.RequestLogPath +/ id + ".http", client.MarkdownLogs().[requestNumber].ToString())
+            File.WriteAllText(Global.RequestLogPath +/ id + ".json", JsonConvert.SerializeObject(client.RequestDetailsLogs().[requestNumber]))
     
     /// Force the JIT to not inline this method otherwise Stack frame will return the wrong method name
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
