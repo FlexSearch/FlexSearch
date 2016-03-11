@@ -136,6 +136,7 @@ module TestCommandHelpers =
             let frame = new System.Diagnostics.StackFrame(1)
             let desc = frame.GetMethod().Name
             File.WriteAllText(Global.RequestLogPath +/ id + ".http", client.Log().ToString())
+            File.WriteAllText(Global.RequestLogPath +/ id + ".json", JsonConvert.SerializeObject(client.RequestLog()))
     
     /// Force the JIT to not inline this method otherwise Stack frame will return the wrong method name
     [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
