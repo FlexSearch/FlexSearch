@@ -228,13 +228,12 @@ module JavaScript =
         !> "JavaScript Model generation finished"
 
 module Html =
-    let tempHtmlDir = scriptDir <!!> @"obj\src"
     let targetHtmlDir = rootDir <!!> @"documentation"
 
     let generateHtmlModel() =
         !>> "Cleaning Models directory"    
-        [tempHtmlDir; targetHtmlDir] |> Seq.iter (ensureDir >> ignore)
-        [tempHtmlDir;] |> Seq.iter emptyDir
+        targetHtmlDir |> (ensureDir >> ignore)
+        targetHtmlDir |> emptyDir
         javaExec <| sprintf """-jar %s generate -i %s -l html -t %s -o %s""" (toolsDir <!!> "swagger-codegen-cli.jar") (specDir <!!> "swagger-full.json") (specDir <!!> "html-template") targetHtmlDir
         let generatedFiles = File.Exists(targetHtmlDir <!!> "index.html")
         if generatedFiles then
@@ -248,19 +247,10 @@ module Html =
             !> "Swagger code generation failed." 
             brk()
     
-    let copy() =
-        // Copy the files
-        copyFiles tempHtmlDir targetHtmlDir
-        // Copy the directories
-        loopDir tempHtmlDir
-        |> Seq.iter (fun src -> copyDir src targetHtmlDir)
-    
     let generateHtml() =
         brk()
         !> "Generating HTML API models"
         generateHtmlModel()
-        !>> "Copying the files to the API directory"
-        copy()
         brk()
         !> "HTML Model generation finished"
 

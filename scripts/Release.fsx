@@ -111,7 +111,10 @@ let runPsScript scriptText =
 
 // Targets
 Target "Clean" <| fun _ -> 
-    CleanDirs [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web"; deployDir ]
+    [ buildDir; testDir; @"build\Conf"; @"build\Data"; @"build\Plugins"; @"build\Lib"; @"build\Web"; ]
+    |> CleanDirs
+    !! (deployDir @@ "*.zip")
+    |> DeleteFiles
 Target "BuildApp" <| fun _ -> 
     AssemblyInfo "FlexSearch.Server" "FlexSearch Server"
     AssemblyInfo "FlexSearch.Core" "FlexSearch Core Library"
