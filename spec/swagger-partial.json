@@ -890,7 +890,7 @@
         }
       }
     },
-    "/analyzers/{id}": {
+    "/analyzers/{analyzerName}": {
       "get": {
         "tags": [ "analyzer" ],
         "summary": "Get analyzer",
@@ -898,7 +898,7 @@
         "operationId": "getAnalyzer",
         "parameters": [
           {
-            "name": "id",
+            "name": "analyzerName",
             "in": "path",
             "description": "Analyzer name",
             "required": true,
@@ -929,7 +929,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "analyzerName",
             "in": "path",
             "description": "Analyzer name",
             "required": true,
@@ -954,7 +954,7 @@
         "operationId": "deleteAnalyzer",
         "parameters": [
           {
-            "name": "id",
+            "name": "analyzerName",
             "in": "path",
             "description": "Analyzer name",
             "required": true,
@@ -973,7 +973,7 @@
         }
       }
     },
-    "/analyzers/{id}/analyzetext": {
+    "/analyzers/{analyzerName}/analyzetext": {
       "post": {
         "tags": [ "analyzer" ],
         "summary": "Analyze input text",
@@ -988,7 +988,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "analyzerName",
             "in": "path",
             "description": "Analyzer name",
             "required": true,
@@ -1007,7 +1007,7 @@
         }
       }
     },
-    "/indices/{id}/documents": {
+    "/indices/{indexName}/documents": {
       "get": {
         "tags": [ "documents" ],
         "summary": "Returns top 10 document from the index",
@@ -1015,7 +1015,7 @@
         "operationId": "getDocuments",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1050,7 +1050,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1079,7 +1079,7 @@
         "operationId": "deleteAllDocuments",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1338,7 +1338,7 @@
         }
       }
     },
-    "/indices/{id}": {
+    "/indices/{indexName}": {
       "get": {
         "tags": [ "indices" ],
         "summary": "Get an index",
@@ -1346,7 +1346,7 @@
         "operationId": "getIndex",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1375,7 +1375,7 @@
         "operationId": "deleteIndex",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1440,7 +1440,7 @@
         }
       }
     },
-    "/indices/{id}/exists": {
+    "/indices/{indexName}/exists": {
       "get": {
         "tags": [ "indices" ],
         "summary": "Check if an index exists",
@@ -1448,7 +1448,7 @@
         "operationId": "indexExists",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1467,7 +1467,7 @@
         }
       }
     },
-    "/indices/{id}/size": {
+    "/indices/{indexName}/size": {
       "get": {
         "tags": [ "indices" ],
         "summary": "Returns the size of an index",
@@ -1475,7 +1475,7 @@
         "operationId": "getIndexSize",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index name",
             "required": true,
@@ -1494,7 +1494,7 @@
         }
       }
     },
-    "/indices/{id}/status": {
+    "/indices/{indexName}/status": {
       "get": {
         "tags": [ "indices" ],
         "summary": "Returns the status of an index",
@@ -1502,7 +1502,7 @@
         "operationId": "getIndexStatus",
         "parameters": [
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1555,7 +1555,7 @@
         }
       }
     },
-    "/indices/{id}/configuration": {
+    "/indices/{indexName}/configuration": {
       "put": {
         "tags": [ "indices" ],
         "summary": "Update the configuration of an index",
@@ -1569,7 +1569,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1588,7 +1588,7 @@
         }
       }
     },
-    "/indices/{id}/fields": {
+    "/indices/{indexName}/fields": {
       "put": {
         "tags": [ "indices" ],
         "summary": "Update the Index Fields",
@@ -1602,7 +1602,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1621,7 +1621,7 @@
         }
       }
     },
-    "/indices/{id}/predefinedQuery": {
+    "/indices/{indexName}/predefinedQuery": {
       "put": {
         "tags": [ "indices" ],
         "summary": "Adds or updates a predefined query for the given index",
@@ -1635,7 +1635,7 @@
             "required": true
           },
           {
-            "name": "id",
+            "name": "indexName",
             "in": "path",
             "description": "Index Name",
             "required": true,
@@ -1694,7 +1694,7 @@
         }
       }
     },
-    "/jobs/{id}": {
+    "/jobs/{jobId}": {
       "get": {
         "tags": [ "jobs" ],
         "summary": "Returns job information",
@@ -1702,7 +1702,7 @@
         "operationId": "getJob",
         "parameters": [
           {
-            "name": "id",
+            "name": "jobId",
             "in": "path",
             "description": "Job ID",
             "required": true,
