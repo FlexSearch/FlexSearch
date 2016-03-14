@@ -73,6 +73,8 @@ module flexportal {
     }
     
     private static createChart(type, canvas, chartVar, data, options?) {
+      if (data.datasets.length == 0) return;
+      
       // Create the chart
       switch (type.toLowerCase()) {
         case "radar": 

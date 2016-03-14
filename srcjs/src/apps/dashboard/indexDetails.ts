@@ -1,4 +1,5 @@
 /// <reference path="../../common/references/references.d.ts" />
+/// <reference path="cluster.ts" />
 
 module flexportal {
   'use strict';
