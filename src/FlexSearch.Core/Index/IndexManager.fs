@@ -217,7 +217,7 @@ module IndexManager =
             do! t.ThreadSafeFileWriter.DeleteFile(path +/ indexName +/ "index")
             // Data might not be present for this index
             if (Directory.Exists(DataFolder +/ indexName)) then delDir (DataFolder +/ indexName)
-            delDir <| path +/ "indexName"
+            delDir <| path +/ indexName
         }
     
     /// Create a new 
