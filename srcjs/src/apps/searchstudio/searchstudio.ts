@@ -269,12 +269,14 @@ module flexportal {
              $scope.GridApi.core.notifyDataChange('column');
              $scope.GridOptions.data = r.Documents;
              console.debug("Received data:", r);
-           }, () => $scope.mainProgressBar = false)
-           .then(() => {
+             
+             // Update current page
              $scope.PageCount = Math.ceil($scope.Response.RecordsReturned / $scope.PageSize);
              $scope.getPage(1);
-           })
-           .then(() => $scope.mainProgressBar = false);
+             
+             // Close main progress bar
+             $scope.mainProgressBar = false;
+           }, () => $scope.mainProgressBar = false);
       };
     }
   }

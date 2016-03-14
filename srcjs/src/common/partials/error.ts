@@ -9,8 +9,8 @@ module flexportal {
     
     if (typeof e == "string")
       message = e;
-    else if (e.data != undefined && e.data.error != undefined && e.data.error.errorCode != undefined) {
-      errorCode = e.data.error.errorCode;
+    else if (e.data != undefined && e.data.error != undefined && e.data.error.operationCode != undefined) {
+      errorCode = e.data.error.operationCode;
       errorMessage = e.data.error.message;
       errorProperties = e.data.error.properties;
     }
