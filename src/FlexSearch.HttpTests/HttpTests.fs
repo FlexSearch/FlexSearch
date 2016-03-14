@@ -34,6 +34,11 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     do  mockIndexSettings() |> ignore
         serverApi.SetupDemo() |> isSuccessful
 
+    member __.``Calling ping should return success``((api : ServerApi, handler : LoggingHandler)) =
+        api.Ping()
+        |> fun r -> r |> isSuccessful; r
+        |> fun r -> r.Data =? true
+
     [<Example("post-indices-id-1", "Creating an index without any data")>]
     member __.``Creating an index without any parameters should return 200`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) = 
         api.CreateIndexWithHttpInfo(newIndex indexName) |> isCreated
@@ -44,16 +49,17 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Duplicate index cannot be created`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         api.CreateIndex(index) |> isSuccessful
         api.CreateIndexWithHttpInfo(index)
+        |> fun r -> r.Data.Data =? false; r
         |> hasStatusCode HttpStatusCode.Conflict
         |> hasApiErrorCode "IndexAlreadyExists"
         |> ignore
         handler |> log "post-indices-id-2" 1
         api.DeleteIndex(index.IndexName) |> isSuccessful
         
-    member __.``Create response contains the id of the created index`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
+    member __.``Create index response returns true`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
         let actual = api.CreateIndexWithHttpInfo(index)
         actual |> isCreated
-        actual.Data.Data.OperationCode =? "Created"
+        actual.Data.Data =? true
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
     member __.``Index cannot be created without IndexName`` ((api : IndicesApi, handler : LoggingHandler)) = 
@@ -105,7 +111,9 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.CreateIndexWithHttpInfo(index) |> isCreated
         index.Fields.[0].FieldName <- "modified"
         let fields = new FieldsUpdateRequest(Fields = index.Fields)
-        api.UpdateIndexFields(fields, index.IndexName) |> isSuccessful
+        api.UpdateIndexFields(fields, index.IndexName) 
+        |> fun r -> r |> isSuccessful; r
+        |> fun r -> r.Data =? true
         handler |> log "put-indices-id-2" 1
         api.DeleteIndex(index.IndexName) |> isSuccessful
     
@@ -135,6 +143,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     [<Example("delete-indices-id-2", "")>]
     member __.``Trying to delete an non existing index will return error`` ((api : IndicesApi, handler : LoggingHandler), indexName : string) = 
         api.DeleteIndexWithHttpInfo(indexName)
+        |> fun r -> r.Data.Data =? false; r
         |> hasApiErrorCode "IndexNotFound"
         |> hasStatusCode HttpStatusCode.BadRequest
         |> ignore

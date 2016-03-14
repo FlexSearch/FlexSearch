@@ -527,11 +527,11 @@
           }
         },
         "shardConfiguration": {
-          "description":  "<<Shard Configuration>>",
+          "description": "<<Shard Configuration>>",
           "$ref": "#/definitions/shardConfiguration"
         },
         "indexConfiguration": {
-          "description" :  "<<Index Configuration>>",
+          "description": "<<Index Configuration>>",
           "$ref": "#/definitions/indexConfiguration"
         },
         "active": {
@@ -546,14 +546,14 @@
       "type": "object",
       "properties": {
         "documents": {
-          "description":  "Array of Documents",
+          "description": "Array of Documents",
           "type": "array",
           "items": {
             "$ref": "#/definitions/document"
           }
         },
         "recordsReturned": {
-          "description":  "Total number of records returned as part of the Search Query",
+          "description": "Total number of records returned as part of the Search Query",
           "type": "integer",
           "format": "int32"
         },
@@ -669,14 +669,14 @@
     "createOrUpdateAnalyzerResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
     "deleteAnalyzerResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
@@ -714,14 +714,14 @@
     "createOrUpdateDocumentResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
     "deleteDocumentResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
@@ -742,7 +742,7 @@
     "deleteAllDocumentsResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
@@ -763,7 +763,7 @@
     "deleteIndexResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
@@ -780,7 +780,7 @@
     "createIndexResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
@@ -808,28 +808,28 @@
     "updateIndexStatusResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
     "updateIndexConfigurationResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
     "updateIndexFieldsResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
     "updateIndexPredefinedQueryResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
@@ -850,14 +850,14 @@
     "pingResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
     "setupDemoResponse": {
       "type": "object",
       "properties": {
-        "data": { "$ref": "#/definitions/operationMessage" },
+        "data": { "type": "boolean" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },

@@ -23,6 +23,7 @@ open Microsoft.Extensions.Primitives
 open System.Net
 open System.IO
 
+[<AutoOpen>]
 module ServiceHelpers =
     
     /// Gets a search query from an Owin request using the optional body
@@ -50,12 +51,17 @@ module ServiceHelpers =
         query.IndexName <- request.ResId.Value
         query
 
+    let toBoolResult (r : Result<_>) =
+        match r with
+        | Ok(_) -> ok true
+        | Fail(e) -> fail e
+
 /// Returns OK status
 [<Sealed>]
 [<Name("GET-/ping")>]
 type PingHandler() = 
-    inherit HttpHandlerBase<NoBody, unit>()
-    override __.Process(_, _) = SuccessResponse((), Ok)
+    inherit HttpHandlerBase<NoBody, bool>()
+    override __.Process(_, _) = SuccessResponse(true, Ok)
 
 /// Returns the homepage
 [<Name("GET-/")>]
@@ -107,10 +113,10 @@ type GetIndexByIdHandler(indexService : IIndexService) =
 [<Name("POST-/indices")>]
 [<Sealed>]
 type PostIndexByIdHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<Index, CreationId>()
+    inherit HttpHandlerBase<Index, bool>()
     override __.Process(_, body) = 
         match indexService.AddIndex(body.Value) with
-        | Ok(response) -> SuccessResponse(response, Created)
+        | Ok(response) -> SuccessResponse(true, Created)
         | Fail(error) -> 
             if error.OperationMessage().OperationCode = "IndexAlreadyExists" then FailureResponse(error, Conflict)
             else FailureResponse(error, BadRequest)
@@ -119,37 +125,38 @@ type PostIndexByIdHandler(indexService : IIndexService) =
 [<Name("DELETE-/indices/:id")>]
 [<Sealed>]
 type DeleteIndexByIdHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<NoBody, unit>()
-    override __.Process(request, _) = SomeResponse(indexService.DeleteIndex(request.ResId.Value), Ok, BadRequest)
+    inherit HttpHandlerBase<NoBody, bool>()
+    override __.Process(request, _) = 
+        SomeResponse(indexService.DeleteIndex(request.ResId.Value) |> toBoolResult, Ok, BadRequest)
 
 
 /// Update the Index Fields
 [<Name("PUT-/indices/:id/fields")>]
 [<Sealed>]
 type PutIndexFieldsHandler(indexService : IIndexService) =
-    inherit HttpHandlerBase<FieldsUpdateRequest, unit>()
+    inherit HttpHandlerBase<FieldsUpdateRequest, bool>()
     override __.Process(request, body) = 
-        SomeResponse(indexService.UpdateIndexFields(request.ResId.Value, body.Value.Fields), Ok, Conflict)
+        SomeResponse(indexService.UpdateIndexFields(request.ResId.Value, body.Value.Fields) |> toBoolResult, Ok, Conflict)
 
 [<Name("PUT-/indices/:id/predefinedquery")>]
 [<Sealed>]
 type PutIndexPredefinedQueryHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<SearchQuery, unit>()
+    inherit HttpHandlerBase<SearchQuery, bool>()
     override __.Process(request, body) =
-        SomeResponse(indexService.AddOrUpdatePredefinedQuery(request.ResId.Value, body.Value), Ok, Conflict)
+        SomeResponse(indexService.AddOrUpdatePredefinedQuery(request.ResId.Value, body.Value) |> toBoolResult, Ok, Conflict)
 
 [<Name("PUT-/indices/:id/configuration")>]
 [<Sealed>]
 type PutIndexConfigurationHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<IndexConfiguration, unit>()
+    inherit HttpHandlerBase<IndexConfiguration, bool>()
     override __.Process(request, body) =
-        SomeResponse(indexService.UpdateIndexConfiguration(request.ResId.Value, body.Value), Ok, Conflict)
+        SomeResponse(indexService.UpdateIndexConfiguration(request.ResId.Value, body.Value) |> toBoolResult, Ok, Conflict)
 
 ///// Update an index
 //[<Name("PUT-/indices/:id")>]
 //[<Sealed>]
 //type PutIndexByIdHandler(indexService : IIndexService) = 
-//    inherit HttpHandlerBase<Index.Dto, unit>()
+//    inherit HttpHandlerBase<Index.Dto, bool>()
 //    override __.Process(request, body) = 
 //        // Index name passed in URL takes precedence
 //        body.Value.IndexName <- request.ResId.Value
@@ -171,11 +178,11 @@ type GetStatusHandler(indexService : IIndexService) =
 [<Name("PUT-/indices/:id/status/:id")>]
 [<Sealed>]
 type PutStatusHandler(indexService : IIndexService) = 
-    inherit HttpHandlerBase<NoBody, unit>()
+    inherit HttpHandlerBase<NoBody, bool>()
     override __.Process(request, _) = 
         match request.SubResId.Value with
-        | InvariantEqual "online" -> SomeResponse(indexService.OpenIndex(request.ResId.Value), Ok, BadRequest)
-        | InvariantEqual "offline" -> SomeResponse(indexService.CloseIndex(request.ResId.Value), Ok, BadRequest)
+        | InvariantEqual "online" -> SomeResponse(indexService.OpenIndex(request.ResId.Value) |> toBoolResult, Ok, BadRequest)
+        | InvariantEqual "offline" -> SomeResponse(indexService.CloseIndex(request.ResId.Value) |> toBoolResult, Ok, BadRequest)
         | _ -> FailureResponse(HttpNotSupported, BadRequest)
 
 /// Check if an index exists
@@ -250,8 +257,9 @@ type AnalyzeTextHandler(analyzerService : IAnalyzerService) =
 [<Name("DELETE-/analyzers/:id")>]
 [<Sealed>]
 type DeleteAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<NoBody, unit>()
-    override __.Process(request, _) = SomeResponse(analyzerService.DeleteAnalyzer(request.ResId.Value), Ok, BadRequest)
+    inherit HttpHandlerBase<NoBody, bool>()
+    override __.Process(request, _) = 
+        SomeResponse(analyzerService.DeleteAnalyzer(request.ResId.Value) |> toBoolResult, Ok, BadRequest)
 
 /// <summary>
 ///  Create or update an analyzer
@@ -263,10 +271,10 @@ type DeleteAnalyzerByIdHandler(analyzerService : IAnalyzerService) =
 [<Name("PUT-/analyzers/:id")>]
 [<Sealed>]
 type CreateOrUpdateAnalyzerByIdHandler(analyzerService : IAnalyzerService) = 
-    inherit HttpHandlerBase<Analyzer, unit>()
+    inherit HttpHandlerBase<Analyzer, bool>()
     override __.Process(request, body) = 
         body.Value.AnalyzerName <- request.ResId.Value
-        SomeResponse(analyzerService.UpdateAnalyzer(body.Value), Ok, BadRequest)
+        SomeResponse(analyzerService.UpdateAnalyzer(body.Value) |> toBoolResult, Ok, BadRequest)
 
 // -------------------------- //
 // -------------------------- //
@@ -348,9 +356,9 @@ type PostDocumentByIdHandler(documentService : IDocumentService) =
 [<Name("DELETE-/indices/:id/documents")>]
 [<Sealed>]
 type DeleteDocumentsHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<NoBody, unit>()
+    inherit HttpHandlerBase<NoBody, bool>()
     override __.Process(request, _) = 
-        SomeResponse(documentService.DeleteAllDocuments(request.ResId.Value), Ok, BadRequest)
+        SomeResponse(documentService.DeleteAllDocuments(request.ResId.Value) |> toBoolResult, Ok, BadRequest)
 
 /// <summary>
 ///  Delete a document
@@ -365,9 +373,9 @@ type DeleteDocumentsHandler(documentService : IDocumentService) =
 [<Name("DELETE-/indices/:id/documents/:id")>]
 [<Sealed>]
 type DeleteDocumentByIdHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<NoBody, unit>()
+    inherit HttpHandlerBase<NoBody, bool>()
     override __.Process(request, _) = 
-        SomeResponse(documentService.DeleteDocument(request.ResId.Value, request.SubResId.Value), Ok, BadRequest)
+        SomeResponse(documentService.DeleteDocument(request.ResId.Value, request.SubResId.Value) |> toBoolResult, Ok, BadRequest)
 
 /// <summary>
 ///  Create or update a document
@@ -384,8 +392,9 @@ type DeleteDocumentByIdHandler(documentService : IDocumentService) =
 [<Name("PUT-/indices/:id/documents/:id")>]
 [<Sealed>]
 type PutDocumentByIdHandler(documentService : IDocumentService) = 
-    inherit HttpHandlerBase<Document, unit>()
-    override __.Process(_, body) = SomeResponse(documentService.AddOrUpdateDocument(body.Value), Ok, BadRequest)
+    inherit HttpHandlerBase<Document, bool>()
+    override __.Process(_, body) = 
+        SomeResponse(documentService.AddOrUpdateDocument(body.Value) |> toBoolResult, Ok, BadRequest)
 
 // -------------------------- //
 // -------------------------- //
@@ -402,8 +411,8 @@ type PutDocumentByIdHandler(documentService : IDocumentService) =
 [<Name("PUT-/setupdemo")>]
 [<Sealed>]
 type SetupDemoHandler(service : DemoIndexService) = 
-    inherit HttpHandlerBase<NoBody, unit>()
-    override __.Process(_, _) = SomeResponse(service.Setup(), Ok, BadRequest)
+    inherit HttpHandlerBase<NoBody, bool>()
+    override __.Process(_, _) = SomeResponse(service.Setup() |> toBoolResult, Ok, BadRequest)
 
 [<Name("GET-/jobs/:id")>]
 [<Sealed>]
