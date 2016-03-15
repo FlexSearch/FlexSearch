@@ -77,6 +77,10 @@ let packageFiles() =
     for file in Directory.GetFiles(src) do
         let fileName = Path.GetFileName(file)
         if filesToMove.Contains(fileName) then File.Move(file, Path.Combine(src, "Plugins", fileName))
+    // Copy libuv and System.Numerics.Vectors.dll into lib
+    CopyFile (buildDir @@ "lib\libuv.dll") (debugDir @@ "libuv.dll") 
+    CopyFile (buildDir @@ "lib\system.numerics.vectors.dll") (debugDir @@ "System.Numerics.Vectors.dll") 
+
 
 let AssemblyInfo path title = 
     CreateFSharpAssemblyInfo (sprintf @".\src\%s\AssemblyInfo.fs" path) [ Attribute.Title title
@@ -144,7 +148,6 @@ Target "HttpTests" <| fun _ ->
             finally AppVeyor.UploadTestResultsXml AppVeyor.TestResultsType.Xunit __SOURCE_DIRECTORY__
                     trace "Uploaded HttpTests to AppVeyor")
             
-Target "Default" (fun _ -> trace "FlexSearch Compilation")
 Target "MoveFiles" (fun _ -> packageFiles())
 Target "Zip" 
     (fun _ -> 
@@ -223,7 +226,6 @@ Target "DeployCSharpClient" <| fun _ ->
 "Clean" 
 ==> "RestorePackages" 
 ==> "BuildApp" 
-==> "Default" 
 ==> "MoveFiles" 
 ==> "MovePortal"
 ==> "DeployTypeScriptClient"
