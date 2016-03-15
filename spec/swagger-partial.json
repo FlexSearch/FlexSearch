@@ -867,6 +867,20 @@
         "data": { "type": "string" },
         "error": { "$ref": "#/definitions/operationMessage" }
       }
+    },
+    "csvIndexingResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "string" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
+    "sqlIndexingResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "string" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
     }
   },
   "host": "localhost:9800",
@@ -1764,6 +1778,73 @@
           "400": {
             "description": "OK",
             "schema": { "$ref": "#/definitions/setupDemoResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/csv": {
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Connector for importing CSV file data into the system.\n",
+        "description": "",
+        "operationId": "csv",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/csvIndexingRequest" },
+            "name": "CsvIndexingRequest",
+            "required": true
+          },
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/csvIndexingResponse" }
+          },
+          "400": {
+            "description": "Failure",
+            "schema": { "$ref": "#/definitions/csvIndexingResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/sql": {
+      "post": {
+        "tags": [ "common" ],
+        "summary": "Connector for importing data from Microsoft SQL into the system.\n",
+        "description": "",
+        "operationId": "sql",
+        "parameters": [
+          {
+            "in": "body",
+            "schema": { "$ref": "#/definitions/sqlIndexingRequest" },
+            "name": "SqlIndexingRequest",
+            "description": "The SQL request",
+            "required": true
+          },
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index Name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/sqlIndexingResponse" }
+          },
+          "400": {
+            "description": "Failure",
+            "schema": { "$ref": "#/definitions/sqlIndexingResponse" }
           }
         }
       }
