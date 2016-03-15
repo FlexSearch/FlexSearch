@@ -113,6 +113,7 @@ module Helpers =
     open Microsoft.FSharp.Core.Printf
     open Microsoft.FSharp.Reflection
     open System.Collections.Generic
+    open Microsoft.Extensions.ObjectPool
     
     let (+/) (path1 : string) (path2 : string) = Path.Combine([| path1; path2 |])
     let loopDir (dir : string) = 
@@ -239,6 +240,11 @@ module Helpers =
             |> Seq.sum
             |> (+) (dir.EnumerateDirectories() |> Seq.sumBy (getFolderSizeRec sum))
         getFolderSizeRec 0 (new DirectoryInfo(path))
+
+    let getPooledObjects (op : ObjectPool<'T>) =
+        op.GetType().GetFields(BindingFlags.NonPublic ||| BindingFlags.Instance) 
+        |> Seq.find (fun f -> f.FieldType = typeof<'T []>)
+        |> fun f -> f.GetValue(op) :?> 'T []
 
 // ----------------------------------------------------------------------------
 // Contains various data type validation related functions and active patterns

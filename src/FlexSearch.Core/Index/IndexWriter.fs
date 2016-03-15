@@ -75,6 +75,11 @@ module IndexWriter =
     let close (writer : IndexWriter) = 
         writer.Token.Cancel()
         writer.ShardWriters |> Array.iter ShardWriter.close
+        // Release the locks on the transaction log files
+        writer.TxWriterPool 
+        |> getPooledObjects
+        |> Seq.where isNotNull
+        |> Seq.iter (fun txw -> (txw :> IDisposable).Dispose())
         // Make sure all the files are removed from TxLog otherwise the index will
         // go into unnecessary recovery mode.
         if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
