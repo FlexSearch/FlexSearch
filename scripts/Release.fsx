@@ -204,6 +204,12 @@ Target "DeployJavaScriptClient" <| fun _ ->
     emptyDir target
     FileHelper.CopyRecursive (scriptDir <!!> @"obj\src") target true |> ignore
 
+Target "DeployCSharpClient" <| fun _ ->
+    let target = deployDir <!!> "clients\\cs"
+    ensureDirectory target
+    emptyDir target
+    !! (buildDir <!!> "FlexSearch.Api.dll*") |> CopyFiles target
+
 // Documentation related
 //Target "GenerateSwagger" <| fun _ ->
 //    trace "Generating Swagger"
@@ -222,6 +228,7 @@ Target "DeployJavaScriptClient" <| fun _ ->
 ==> "MovePortal"
 ==> "DeployTypeScriptClient"
 ==> "DeployJavaScriptClient"
+==> "DeployCSharpClient"
 ==> "Zip"
 ==> "Test"
 
