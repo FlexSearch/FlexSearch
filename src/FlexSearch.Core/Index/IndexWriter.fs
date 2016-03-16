@@ -125,10 +125,21 @@ module IndexWriter =
                 s.TxWriterPool.Return(txWriter)
             // Release the dictionary back to the pool so that it could be recycled
             dictionaryPool.Return(document.Fields)
-            s.Template.Return(template)
+
             s.ShardWriters.[shardNo] 
             |> if create then ShardWriter.addDocument doc
                else ShardWriter.updateDocument (document.Id, (s.GetSchemaName(IdField.Name)), doc)
+
+            /// !!!! Important !!!!
+            /// The DocumentTemplate should only be returned to the pool at this point in the code.
+            /// This is because even though the `template` variable is no longer used, references
+            /// to fields within the variable are being used by the `doc` variable. It turns out that
+            /// LuceneDocument (`doc` variable) doesn't make a copy of the field, it just keeps the 
+            /// reference you've given it. And those references were coming from the `template` 
+            /// variable. Returning the template to the pool any earlier would cause duplicate
+            /// documents being created in the index.
+            /// !!!! Important !!!!
+            s.Template.Return(template)
         }
     
     /// Add a document to the index
