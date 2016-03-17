@@ -93,7 +93,7 @@ type ClauseProperties =
                             let constantValue = pFloat 1.0f v
                             if constantValue <> 1.0f then constantScore <- Some constantValue
                     | None -> ()
-                | InvariantEqual "Filter" -> filter <- true
+                | InvariantEqual "NoScore" -> filter <- true
                 | _ -> switches.Add(s)
             | _ -> ()
         { MatchRule = matchRule

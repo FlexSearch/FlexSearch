@@ -20,7 +20,7 @@ type FunctionName = string
 
 /// A switch is a configurable parameter that can be passed to
 /// a query to fine tune its behavior. It supports two formats:
-/// Simple switch without a value like: -UseDefault -Filter etc.
+/// Simple switch without a value like: -UseDefault -noscore etc.
 /// Switch with a value like: -ConstantScore '32'
 type Switch = 
     { Name : string
@@ -30,7 +30,7 @@ type Switch =
 type FunctionParameter = 
     | Variable of VariableName // e.g. @IGNORE, @firstname
     | Constant of string // e.g. 'Vladimir', '26'
-    | Switch of Switch // e.g. -UseDefault, -Filter, -ConstantScore: '32'
+    | Switch of Switch // e.g. -UseDefault, -noscore, -ConstantScore: '32'
 
 /// Acceptable Predicates for a query
 type Predicate = 

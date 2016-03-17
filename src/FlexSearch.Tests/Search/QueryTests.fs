@@ -22,7 +22,7 @@ type ``Operator: 'allOf' Tests``(ih : IntegrationHelper) =
     override __.``Works with And clause``() = ih |> verifyResultCount 1 "allof(et1, 'fred') AND allof(l1, '1500')"
     override __.``Works with Or clause``() = ih |> verifyResultCount 2 "allof(et1, 'erik') OR allof(l1, '4000')"
     override __.``Works with Not clause``() = ih |> verifyResultCount 2 "allof(et1, 'aaron') AND NOT allof(l1, '1000')"
-    override __.``Filter query``() = ("allof(et1, 'aaron')", "allof(et1, 'aaron') and allof(et1, 'aaron', -filter)")
+    override __.``Filter query``() = ("allof(et1, 'aaron')", "allof(et1, 'aaron') and allof(et1, 'aaron', -noscore)")
     override __.``Works with AndOr clause``() = 
         ih |> verifyResultCount 3 "allof(t1, 'aaron') and (allof(t2, 'johnson') or allof(t2, 'Garner'))"
     override __.``Works with Multiple params``() = ih |> verifyResultCount 0 "allof(et1, 'aaron', 'erik')"
@@ -85,7 +85,7 @@ type AnyOfTestsBase(ih : IntegrationHelper, operator : string, supportsNumericTy
         ih |> verifyResultCount 2 (sprintf "%s(et1, 'aaron') AND NOT anyOf(l1, '1000')" operator)
     override __.``Filter query``() = 
         ((sprintf "%s(et1, 'aaron')" operator), 
-         (sprintf "%s(et1, 'aaron') and %s(et1, 'aaron', -filter)" operator operator))
+         (sprintf "%s(et1, 'aaron') and %s(et1, 'aaron', -noscore)" operator operator))
     override __.``Works with AndOr clause``() = 
         ih 
         |> verifyResultCount 3 
@@ -135,7 +135,7 @@ type ``Operator: 'phraseMatch' Tests``(ih : IntegrationHelper) =
     override __.``Works with Not clause``() = 
         ih |> verifyResultCount 2 "phraseMatch(et1, 'aaron') AND NOT anyof(l1, '1000')"
     override __.``Filter query``() = 
-        ("phraseMatch(et1, 'aaron')", "phraseMatch(et1, 'aaron') and phraseMatch(et1, 'aaron', -filter)")
+        ("phraseMatch(et1, 'aaron')", "phraseMatch(et1, 'aaron') and phraseMatch(et1, 'aaron', -noscore)")
     override __.``Works with AndOr clause``() = 
         ih 
         |> verifyResultCount 3 "phraseMatch(t1, 'aaron') and (phraseMatch(t2, 'johnson') or phraseMatch(t2, 'Garner'))"
@@ -229,7 +229,7 @@ type NumericTestsBase(ih : IntegrationHelper, operator : string) =
 
 type ``Operator: 'gt' Tests``(ih : IntegrationHelper) = 
     inherit NumericTestsBase(ih, "gt")
-    override __.``Filter query``() = ("gt(i2, '3000')", "gt(i2, '3000') and gt(i2, '3000', -filter)")
+    override __.``Filter query``() = ("gt(i2, '3000')", "gt(i2, '3000') and gt(i2, '3000', -noscore)")
     override __.``Works with And clause``() = ih |> verifyResultCount 2 "gt(i2, '999') and allof(i1, '100')"
     override __.``Works with Or clause``() = ih |> verifyResultCount 7 "gt(i2, '999') or allof(i1, '100')"
     override __.``Works with Not clause``() = ih |> verifyResultCount 5 "gt(i2, '999') and not allof(i1, '100')"
@@ -241,7 +241,7 @@ type ``Operator: 'gt' Tests``(ih : IntegrationHelper) =
 
 type ``Operator: 'ge' Tests``(ih : IntegrationHelper) = 
     inherit NumericTestsBase(ih, "ge")
-    override __.``Filter query``() = ("ge(i2, '3000')", "ge(i2, '3000') and ge(i2, '3000', -filter)")
+    override __.``Filter query``() = ("ge(i2, '3000')", "ge(i2, '3000') and ge(i2, '3000', -noscore)")
     override __.``Works with And clause``() = ih |> verifyResultCount 2 "ge(i2, '1000') and allof(i1, '100')"
     override __.``Works with Or clause``() = ih |> verifyResultCount 7 "ge(i2, '1000') or allof(i1, '100')"
     override __.``Works with Not clause``() = ih |> verifyResultCount 5 "ge(i2, '1000') and not allof(i1, '100')"
@@ -253,7 +253,7 @@ type ``Operator: 'ge' Tests``(ih : IntegrationHelper) =
 
 type ``Operator: 'lt' Tests``(ih : IntegrationHelper) = 
     inherit NumericTestsBase(ih, "lt")
-    override __.``Filter query``() = ("lt(i2, '3000')", "lt(i2, '3000') and lt(i2, '3000', -filter)")
+    override __.``Filter query``() = ("lt(i2, '3000')", "lt(i2, '3000') and lt(i2, '3000', -noscore)")
     override __.``Works with And clause``() = ih |> verifyResultCount 2 "lt(i2, '1001') and allof(i1, '100')"
     override __.``Works with Or clause``() = ih |> verifyResultCount 5 "lt(i2, '1001') or allof(i1, '100')"
     override __.``Works with Not clause``() = ih |> verifyResultCount 3 "lt(i2, '1001') and not allof(i1, '100')"
@@ -265,7 +265,7 @@ type ``Operator: 'lt' Tests``(ih : IntegrationHelper) =
 
 type ``Operator: 'le' Tests``(ih : IntegrationHelper) = 
     inherit NumericTestsBase(ih, "le")
-    override __.``Filter query``() = ("le(i2, '3000')", "le(i2, '3000') and le(i2, '3000', -filter)")
+    override __.``Filter query``() = ("le(i2, '3000')", "le(i2, '3000') and le(i2, '3000', -noscore)")
     override __.``Works with And clause``() = ih |> verifyResultCount 2 "le(i2, '1000') and allof(i1, '100')"
     override __.``Works with Or clause``() = ih |> verifyResultCount 5 "le(i2, '1000') or allof(i1, '100')"
     override __.``Works with Not clause``() = ih |> verifyResultCount 3 "le(i2, '1000') and not allof(i1, '100')"
