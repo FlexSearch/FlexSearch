@@ -283,7 +283,7 @@ module AstParser =
                             okUnit
                         with e -> 
                             Logger.Log
-                                ("Predefined Query execution error", e, MessageKeyword.Search, MessageLevel.Warning)
+                                ("PreSearch script execution error", e, MessageKeyword.Search, MessageLevel.Warning)
                             okUnit
                     | _ -> fail <| ScriptNotFound(sq.PreSearchScript)
                 else okUnit
