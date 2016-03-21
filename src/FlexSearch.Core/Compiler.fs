@@ -80,21 +80,24 @@ module FSharpCompiler =
         let mutable preIndexScript = None
         match dynAssembly with
         | Some(asm) -> 
-            let t = asm.GetType("Script")
-            if isNull t then 
+            // Get all the types named Script. Because of F#, the single fsx `Script` module 
+            // actually generates 3 types.
+            let types = asm.DefinedTypes |> Seq.where (fun t -> t.Name = "Script")
+            if types |> Seq.isEmpty then 
                 fail << Logger.LogR 
                 <| ScriptCannotBeCompiled(filePath, "Script does not contain mandatory 'Script' module.")
             else 
-                for m in t.GetMethods() do
-                    match generateDelegate m with
-                    | Some(scriptType) -> 
-                        match scriptType with
-                        | PreIndexScript(d) -> preIndexScript <- Some d
-                        | PreSearchScript(d) -> 
-                            let scriptName = m.Name.Replace("preSearch", "")
-                            preSearchScripts.Add(scriptName, d)
+                for t in types do
+                    for m in t.GetMethods() do
+                        match generateDelegate m with
+                        | Some(scriptType) -> 
+                            match scriptType with
+                            | PreIndexScript(d) -> preIndexScript <- Some d
+                            | PreSearchScript(d) -> 
+                                let scriptName = m.Name.Replace("preSearch", "")
+                                preSearchScripts.Add(scriptName, d)
+                            | _ -> ()
                         | _ -> ()
-                    | _ -> ()
                 ok <| { PreIndexScript = preIndexScript
                         PreSearchScripts = preSearchScripts
                         PostSearchScripts = new Dictionary<string, PostSearchDelegate>() }
