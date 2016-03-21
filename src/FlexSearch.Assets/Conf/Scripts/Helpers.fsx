@@ -16,7 +16,7 @@ module Helpers =
 
         /// Get a field value from the document. Returns an empty string
         /// in case the value does not exist
-        member this.Get(fieldName : string, fieldValue : string) =
+        member this.Get(fieldName : string) =
             match this.Fields.TryGetValue(fieldName) with
             | true, value -> value
             | _ -> String.Empty
