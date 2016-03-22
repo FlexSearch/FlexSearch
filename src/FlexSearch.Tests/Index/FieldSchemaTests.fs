@@ -57,7 +57,7 @@ type SchemaTest() =
         test <@ FieldSchema.isNumericField schema @>
 
     member __.IdFieldTest() = 
-        let schema = getSchema(IdField.Instance.LuceneFieldType, false, FieldType.ExactText) 
+        let schema = getSchema(IdField.Instance.LuceneFieldType, false, FieldType.Keyword) 
         test <@ FieldSchema.isStored schema @>
         test <@ not <| FieldSchema.hasDocValues schema @>
         test <@ not <| FieldSchema.allowSorting schema @>
@@ -65,7 +65,7 @@ type SchemaTest() =
         test <@ not <| FieldSchema.isNumericField schema @>
 
     member __.ExactFieldTest() = 
-        let schema = getSchema(ExactTextField.Instance.LuceneFieldType, true, FieldType.ExactText) 
+        let schema = getSchema(ExactTextField.Instance.LuceneFieldType, true, FieldType.Keyword) 
         test <@ FieldSchema.isStored schema @>
         test <@ FieldSchema.hasDocValues schema @>
         test <@ FieldSchema.allowSorting schema @>

@@ -183,7 +183,7 @@ module FieldSchema =
             | FieldType.DateTime -> DateTimeField.Instance
             | FieldType.Long -> LongField.Instance
             | FieldType.Stored -> StoredField.Instance
-            | FieldType.ExactText -> ExactTextField.Instance
+            | FieldType.Keyword -> ExactTextField.Instance
             | FieldType.Text -> TextField.Instance
             | _ -> failwithf "Internal error: Unsupported FieldType"
         

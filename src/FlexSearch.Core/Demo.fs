@@ -126,9 +126,9 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
                            new Field("economy")
                            new Field("governmenttype")
                            new Field("memberof")
-                           new Field("countrycode", Constants.FieldType.ExactText)
+                           new Field("countrycode", Constants.FieldType.Keyword)
                            new Field("nationality")
-                           new Field("coordinates", Constants.FieldType.ExactText) |]
+                           new Field("coordinates", Constants.FieldType.Keyword) |]
         index.PredefinedQueries <- 
             [| new SearchQuery("country", "allof(agriproducts, 'wheat', 'corn', 'grapes') AND like(countryname, @countryName, -matchall)", 
                                QueryName = "agriSearch",

@@ -202,9 +202,9 @@ module FixtureSetup =
         index.Fields <- 
          [| new Field("firstname", Constants.FieldType.Text)
             new Field("lastname", Constants.FieldType.Text)
-            new Field("email", Constants.FieldType.ExactText)
+            new Field("email", Constants.FieldType.Keyword)
             new Field("country", Constants.FieldType.Text)
-            new Field("ipaddress", Constants.FieldType.ExactText)
+            new Field("ipaddress", Constants.FieldType.Keyword)
             new Field("cvv2", Constants.FieldType.Int)
             new Field("description", Constants.FieldType.Text)
             new Field("fullname", Constants.FieldType.Text) |]
