@@ -256,3 +256,8 @@ NUGET
     System.Threading (4.0.11-rc2-23623)
       System.Runtime (>= 4.0.0) - framework: dnxcore50
       System.Threading.Tasks (>= 4.0.0) - framework: dnxcore50
+GITHUB
+  remote: fsharp/FAKE
+  specs:
+    modules/Octokit/Octokit.fsx (998ddffae27ce0add0d7b8634a02fb43a9f96409)
+      Octokit

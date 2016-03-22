@@ -250,3 +250,4 @@ spec/swagger-full.json
 scripts/obj.Test
 documentation/*
 */paket.exe
+*/paket-files/*
