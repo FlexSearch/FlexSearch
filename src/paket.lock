@@ -236,7 +236,7 @@ NUGET
     System.Reflection.Emit (4.0.1-rc2-23623) - framework: >= net46
     System.Reflection.Extensions (4.0.1-rc2-23623) - framework: >= net46
     System.Reflection.Metadata (1.2.0-rc2-23623) - framework: >= net46
-      System.Collections.Immutable (>= 1.1.37) - framework: >= net45, dnxcore50, monoandroid, monotouch, portable-net45+win80, xamarinios, xamarinmac, winv4.5, wpv8.1
+      System.Collections.Immutable (>= 1.1.37) - framework: >= net45, dnxcore50, monoandroid, monotouch, portable-net45+win80, xamarinios, xamarinmac, winv4.5
     System.Reflection.Primitives (4.0.1-rc2-23623) - framework: >= net46
     System.Resources.ResourceManager (4.0.1-rc2-23623)
       System.Globalization (>= 4.0.0) - framework: dnxcore50
