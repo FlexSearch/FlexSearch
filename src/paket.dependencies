@@ -1,0 +1,97 @@
+redirects: on
+source https://www.myget.org/F/aspnetvnext/api/v3/index.json
+source https://www.nuget.org/api/v2/
+
+nuget NuGet.CommandLine
+nuget Autofac 4.0.0-rc1-177 framework: >= net46
+nuget Autofac.Extensions.DependencyInjection 4.0.0-rc1-177 framework: >= net46
+nuget Autofac.Extras.AttributeMetadata 4.0.0 framework: >= net46
+nuget Autofac.Mef 4.0.0 framework: >= net46
+nuget AutoFixture 3.37.3 framework: >= net46
+nuget Fixie 1.0.0.41 framework: >= net46
+nuget FlexLucene 5.4.0.0 framework: >= net46
+nuget FParsec 1.0.2 framework: >= net46
+nuget FsCheck 2.2.4 framework: >= net46
+nuget FSharp.Compiler.Service 2.0.0.6 framework: >= net46
+nuget FSharp.Control.AsyncSeq 2.0.3 framework: >= net46
+nuget FSharp.Core 4.0.0.1 framework: >= net452
+nuget FSharpx.Async 1.12.0 framework: >= net452
+nuget FSharpx.Collections 1.13.4 framework: >= net46
+nuget FSharpx.Extras 1.10.3 framework: >= net46
+nuget IKVM 8.1.5717.0 framework: >= net46
+nuget Microsoft.AspNet.Cors 6.0.0-rc2-16110 framework: >= net46
+nuget Microsoft.AspNet.FileProviders.Abstractions 1.0.0-rc2-15922 framework: >= net46
+nuget Microsoft.AspNet.FileProviders.Physical 1.0.0-rc2-15922 framework: >= net46
+nuget Microsoft.AspNet.Hosting 1.0.0-rc2-16161 framework: >= net46
+nuget Microsoft.AspNet.Hosting.Abstractions 1.0.0-rc2-16161 framework: >= net46
+nuget Microsoft.AspNet.Hosting.Server.Abstractions 1.0.0-rc2-16161 framework: >= net46
+nuget Microsoft.AspNet.Http 1.0.0-rc2-16106 framework: >= net46
+nuget Microsoft.AspNet.Http.Abstractions 1.0.0-rc2-16106 framework: >= net46
+nuget Microsoft.AspNet.Http.Extensions 1.0.0-rc2-16106 framework: >= net46
+nuget Microsoft.AspNet.Http.Features 1.0.0-rc2-16106 framework: >= net46
+nuget Microsoft.AspNet.Server.Kestrel 1.0.0-rc2-16236 framework: >= net46
+nuget Microsoft.AspNet.Server.WebListener 1.0.0-rc2-16104 framework: >= net46
+nuget Microsoft.AspNet.StaticFiles 1.0.0-rc2-16107 framework: >= net46
+nuget Microsoft.AspNet.TestHost 1.0.0-rc2-16161 framework: >= net46
+nuget Microsoft.AspNet.WebUtilities 1.0.0-rc2-16106 framework: >= net46
+nuget Microsoft.Bcl 1.1.10 framework: >= net46
+nuget Microsoft.Bcl.Build 1.0.14 framework: >= net46
+nuget Microsoft.Dnx.Compilation.Abstractions 1.0.0-rc1-final framework: >= net46
+nuget Microsoft.Extensions.Configuration 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.Abstractions 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.Binder 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.CommandLine 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.EnvironmentVariables 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.FileExtensions 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.Ini 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.Configuration.Json 1.0.0-rc2-15952 framework: >= net46
+nuget Microsoft.Extensions.DependencyInjection 1.0.0-rc2-15921 framework: >= net46
+nuget Microsoft.Extensions.DependencyInjection.Abstractions 1.0.0-rc2-15921 framework: >= net46
+nuget Microsoft.Extensions.Logging 1.0.0-rc2-15958 framework: >= net46
+nuget Microsoft.Extensions.Logging.Abstractions 1.0.0-rc2-15958 framework: >= net46
+nuget Microsoft.Extensions.Logging.Console 1.0.0-rc2-15958 framework: >= net46
+nuget Microsoft.Extensions.Logging.EventLog 1.0.0-rc2-15958 framework: >= net46
+nuget Microsoft.Extensions.Logging.TraceSource 1.0.0-rc2-15958 framework: >= net46
+nuget Microsoft.Extensions.ObjectPool 1.0.0-rc2-15967 framework: >= net46
+nuget Microsoft.Extensions.Options 1.0.0-rc2-15942 framework: >= net46
+nuget Microsoft.Extensions.OptionsModel 1.0.0-rc2-15914 framework: >= net46
+nuget Microsoft.Extensions.PlatformAbstractions 1.0.0-rc2-16530 framework: >= net46
+nuget Microsoft.Extensions.Primitives 1.0.0-rc2-15967 framework: >= net46
+nuget Microsoft.Extensions.WebEncoders 1.0.0-rc2-16105 framework: >= net46
+nuget Microsoft.Extensions.WebEncoders.Core 1.0.0-rc1-final framework: >= net46
+nuget Microsoft.IO.RecyclableMemoryStream 1.1.0.0 framework: >= net452
+nuget Microsoft.Net.Http 2.2.29 framework: >= net46
+nuget Microsoft.Net.Http.Headers 1.0.0-rc2-16106 framework: >= net46
+nuget Microsoft.Net.Http.Server 1.0.0-rc2-16104 framework: >= net46
+nuget Microsoft.Net.WebSockets 1.0.0-rc2-16008 framework: >= net46
+nuget Microsoft.Tpl.Dataflow 4.5.24 framework: >= net452
+nuget MsgPack.Cli 0.7.0-alpha1 framework: >= net46
+nuget Newtonsoft.Json 8.0.1-beta4 framework: >= net46
+nuget PerfUtil 0.1.8 framework: >= net452
+nuget protobuf-net 2.1.0-alpha-1 framework: >= net46
+nuget System.Collections 4.0.11-rc2-23623
+nuget System.Collections.Immutable 1.2.0-rc2-23623
+nuget System.ComponentModel 4.0.1-rc2-23623 framework: >= net46
+nuget System.Diagnostics.Debug 4.0.11-rc2-23623
+nuget System.Diagnostics.DiagnosticSource 4.0.0-rc2-23623 framework: >= net46
+nuget System.Globalization 4.0.11-rc2-23623
+nuget System.IO 4.0.11-rc2-23623 framework: >= net46
+nuget System.Linq 4.0.1-rc2-23623
+nuget System.Numerics.Vectors 4.1.1-rc2-23623 framework: >= net46
+nuget System.Reflection 4.1.0-rc2-23623 framework: >= net46
+nuget System.Reflection.Emit 4.0.1-rc2-23623 framework: >= net46
+nuget System.Reflection.Extensions 4.0.1-rc2-23623 framework: >= net46
+nuget System.Reflection.Metadata 1.2.0-rc2-23623 framework: >= net46
+nuget System.Reflection.Primitives 4.0.1-rc2-23623 framework: >= net46
+nuget System.Resources.ResourceManager 4.0.1-rc2-23623
+nuget System.Runtime 4.0.21-rc2-23623
+nuget System.Runtime.Extensions 4.0.11-rc2-23623
+nuget System.Runtime.InteropServices 4.0.21-rc2-23623 framework: >= net46
+nuget System.Text.Encoding 4.0.11-rc2-23623 framework: >= net46
+nuget System.Text.Encoding.Extensions 4.0.11-rc2-23623 framework: >= net46
+nuget System.Text.Encodings.Web 4.0.0-rc2-23623 framework: >= net46
+nuget System.Threading 4.0.11-rc2-23623
+nuget Topshelf 3.3.1 framework: >= net46
+nuget UnionArgParser 0.9.0 framework: >= net46
+nuget Unquote 2.2.2 framework: >= net452
+nuget FAKE

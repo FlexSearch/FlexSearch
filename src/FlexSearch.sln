@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{527581E3-C4E4-447D-918D-675C7D7FB9E5}"
 EndProject
@@ -22,6 +22,8 @@ EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FlexSearch.HttpTests", "FlexSearch.HttpTests\FlexSearch.HttpTests.fsproj", "{7F186B8A-0296-408B-92BE-BF3563D22354}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlexSearch.Assets", "FlexSearch.Assets\FlexSearch.Assets.csproj", "{5E795F60-4FAA-47A4-BA1B-18FDC95E1DAC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{870680FD-899F-4D47-9449-4FC9ECE8BE1D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
