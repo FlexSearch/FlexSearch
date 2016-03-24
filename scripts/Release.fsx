@@ -11,6 +11,7 @@ open System
 open System.Diagnostics
 open System.Management.Automation
 open Helpers
+open Fake.ReleaseNotesHelper
 
 //TraceEnvironmentVariables()
 
@@ -25,15 +26,20 @@ Target "RestorePackages" (fun _ ->
 if buildServer = BuildServer.AppVeyor then 
     MSBuildLoggers <- @"""C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll""" :: MSBuildLoggers
 
+
 // Version information
-let majorVersion = 0
-let minorVersion = 5
-let patchLevel = 1
+let release = LoadReleaseNotes "RELEASE_NOTES.md"
+let majorVersion = release.SemVer.Major
+let minorVersion = release.SemVer.Minor
+let patchLevel = release.SemVer.Patch
+let beta = match release.SemVer.PreRelease with
+           | Some(pr) -> "-" + pr.Name
+           | None -> ""
 let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
-let version = sprintf "%i.%i.%i-alpha+%s" majorVersion minorVersion patchLevel buildVersion
+let version = sprintf "%i.%i.%i%s+%s" majorVersion minorVersion patchLevel beta buildVersion
 let productName = "FlexSearch"
 let copyright = sprintf "Copyright (C) 2010 - %i - FlexSearch" DateTime.Now.Year
-
+printfn "%A" release
 
 // Create necessary directories if they don't exist
 Directory.CreateDirectory(buildDir)
@@ -214,6 +220,52 @@ Target "DeployCSharpClient" <| fun _ ->
     ensureDirectory target
     emptyDir target
     !! (buildDir <!!> "FlexSearch.Api.dll*") |> CopyFiles target
+
+#load "../src/paket-files/fsharp/FAKE/modules/Octokit/Octokit.fsx"
+open Octokit
+open Fake.Git
+
+Target "Release" <| fun _ ->
+    let releaseFiles = 
+        [ sprintf "FlexSearch.%s.zip" version;
+          sprintf "FlexSearch.Clients.%s.zip" version ]
+        |> Seq.map (fun name -> deployDir @@ name)
+
+    // First check if the deployment package has been built
+    if releaseFiles|> Seq.exists (not << fileExists)
+    then failwith "Deployment package hasn't been built. Please run ./build"
+
+    let gitHome = "https://github.com/FlexSearch/FlexSearch.git"
+    let gitOwner = "FlexSearch"
+    let gitName = "FlexSearch"
+    let user = 
+        match getBuildParam "github-user" with
+        | s when not (String.IsNullOrWhiteSpace s) -> s
+        | _ -> getUserInput "Username: "
+    let pw =
+        match getBuildParam "github-pw" with
+        | s when not (String.IsNullOrWhiteSpace s) -> s
+        | _ -> getUserPassword "Password: "
+    let remote =
+        Git.CommandHelper.getGitResult "" "remote -v"
+        |> Seq.filter (fun (s: string) -> s.EndsWith("(push)"))
+        |> Seq.tryFind (fun (s: string) -> s.Contains(gitOwner + "/" + gitName))
+        |> function None -> gitHome + "/" + gitName | Some (s: string) -> s.Split().[0]
+
+    StageAll ""
+    Git.Commit.Commit "" (sprintf "Bump version to %s" release.NugetVersion)
+    Branches.pushBranch "" remote (Information.getBranchName "")
+
+    Branches.tag "" release.NugetVersion
+    Branches.pushTag "" remote release.NugetVersion
+
+    // release on github
+    createClient user pw
+    |> createDraft gitOwner gitName release.NugetVersion (release.SemVer.PreRelease <> None) release.Notes
+    |> fun draft -> releaseFiles 
+                    |> Seq.fold (fun acc value -> acc |> uploadFile value) draft
+    |> releaseDraft
+    |> Async.RunSynchronously
 
 // Documentation related
 //Target "GenerateSwagger" <| fun _ ->
