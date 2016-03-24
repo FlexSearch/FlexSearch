@@ -227,13 +227,11 @@ open Fake.Git
 
 Target "Release" <| fun _ ->
     let releaseFiles = 
-        [ sprintf "FlexSearch.%s.zip" version;
-          sprintf "FlexSearch.Clients.%s.zip" version ]
-        |> Seq.map (fun name -> deployDir @@ name)
+        !! (deployDir @@ "FlexSearch.*.zip")
 
     // First check if the deployment package has been built
-    if releaseFiles|> Seq.exists (not << fileExists)
-    then failwith "Deployment package hasn't been built. Please run ./build"
+    if releaseFiles |> Seq.length <> 2
+    then failwithf "Couldn't find the 2 deployment files to be included in the release: %A. Please run ./build" releaseFiles
 
     let gitHome = "https://github.com/FlexSearch/FlexSearch.git"
     let gitOwner = "FlexSearch"
