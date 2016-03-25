@@ -188,7 +188,8 @@ type IndexSetting =
 /// Wrapper around SearcherManager to expose .net IDisposable functionality
 type RealTimeSearcher(searchManger : SearcherManager) = 
     let indexSearcher = searchManger.Acquire() :?> IndexSearcher
-    
+    let mutable disposeSignaled = 0
+
     /// Dispose method which will be called automatically through Fody inter-leaving 
     member __.DisposeManaged() = searchManger.Release(indexSearcher)
     
@@ -200,4 +201,6 @@ type RealTimeSearcher(searchManger : SearcherManager) =
     member __.IndexReader = indexSearcher.GetIndexReader()
     
     interface IDisposable with
-        member __.Dispose() : unit = ()
+        member __.Dispose() : unit =
+            if Interlocked.Exchange(ref disposeSignaled, 1) = 0
+            then __.DisposeManaged()
