@@ -1,4 +1,7 @@
-### 0.6.2-beta - FlexSearch 0.6.2-beta
+### 0.6.3-beta - FlexSearch 0.6.3-beta
+* Implement IDisposable for RealTimeSearcher
+
+#### 0.6.2-beta - FlexSearch 0.6.2-beta
 * Move from Nuget to Paket
 * Remove Fody
 * Automate github release
