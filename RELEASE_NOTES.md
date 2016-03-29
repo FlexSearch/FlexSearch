@@ -1,4 +1,8 @@
-### 0.6.3-beta - FlexSearch 0.6.3-beta
+### 0.6.4-beta - FlexSearch 0.6.4-beta
+* Update NOTICE and LICENSE files
+* Run paket simplify
+
+#### 0.6.3-beta - FlexSearch 0.6.3-beta
 * Implement IDisposable for RealTimeSearcher
 
 #### 0.6.2-beta - FlexSearch 0.6.2-beta
