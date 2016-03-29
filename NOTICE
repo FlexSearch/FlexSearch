@@ -3,3 +3,41 @@ Copyright 2010-2016 FlexSearch
 
 This product includes software developed by The Apache Software
 Foundation (http://www.apache.org/).
+
+This software contains code from the Autofac.Extensions.DependencyInjection project under the MIT License.
+This software contains code from the Autofac.Extras.AttributeMetadata project under the MIT License.
+This software contains code from the Autofixture project under the MIT License.
+This software contains code from the FAKE project under the Apache License.
+This software contains code from the Fixie project under the MIT License.
+This software contains code from the FlexLucene project under the Apache License.
+This software contains code from the FParsec project under the Simplified BSD License.
+This software contains code from the FsCheck project under the Apache License.
+This software contains code from the FSharp.Compiler.Service project under the Apache License.
+This software contains code from the FSharpx.Extras project under the Apache License.
+This software contains code from the IKVM project under the GPL with Classpath exception License.
+This software contains code from the Microsoft.AspNet.Cors project under the Microsoft Software License.
+This software contains code from the Microsoft.AspNet.Server.Kestrel project under the Microsoft Software License.
+This software contains code from the Microsoft.AspNet.Server.WebListener project under the Microsoft Software License.
+This software contains code from the Microsoft.AspNet.StaticFiles project under the Microsoft Software License.
+This software contains code from the Microsoft.AspNet.TestHost project under the Microsoft Software License.
+This software contains code from the Microsoft.Dnx.Compilation.Abstractions project under the Microsoft Software License.
+This software contains code from the Micrsofot.Extensions.Configuration.Binder project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.Configuration.Ini project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.Logging.Console project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.Logging.EventLog project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.Logging.TraceSource project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.ObjectPool project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.OptionsModel project under the Microsoft Software License.
+This software contains code from the Microsoft.Extensions.WebEncoders.Core project under the Microsoft Software License.
+This software contains code from the Microsoft.IO.RecyclableMemoryStream project under the Microsoft Software License.
+This software contains code from the Microsoft.Net.Http project under the Microsoft Software License.
+This software contains code from the Microsoft.Net.WebSockets project under the Microsoft Software License.
+This software contains code from the Microsoft.Tpl.Dataflow project under the Microsoft Software License.
+This software contains code from the MsgPack.Cli project under the Apache License.
+This software contains code from the PerfUtil project under the Apache License.
+This software contains code from the protobuf-net project under the BSD License.
+This software contains code from the System.ComponentModel project under the Microsoft Software License.
+This software contains code from the System.Reflection.Metadata project under the Microsoft Software License.
+This software contains code from the TopShelf project under the Apache License.
+This software contains code from the UnionArgParser project under the MIT License.
+This software contains code from the Unquote project under the Apache License.
