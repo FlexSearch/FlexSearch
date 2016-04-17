@@ -3,7 +3,7 @@ source https://www.myget.org/F/aspnetvnext/api/v3/index.json
 source https://www.nuget.org/api/v2/
 
 nuget NuGet.CommandLine
-nuget Autofac.Extensions.DependencyInjection 4.0.0-rc1-177 framework: >= net46
+nuget Autofac.Extensions.DependencyInjection ~> 4.0 framework: >= net46
 nuget Autofac.Extras.AttributeMetadata 4.0.0 framework: >= net46
 nuget AutoFixture 3.37.3 framework: >= net46
 nuget Fixie 1.0.0.41 framework: >= net46
@@ -17,23 +17,23 @@ nuget Microsoft.AspNet.Server.Kestrel 1.0.0-rc2-16236 framework: >= net46
 nuget Microsoft.AspNet.Server.WebListener 1.0.0-rc2-16104 framework: >= net46
 nuget Microsoft.AspNet.StaticFiles 1.0.0-rc2-16107 framework: >= net46
 nuget Microsoft.AspNet.TestHost 1.0.0-rc2-16161 framework: >= net46
-nuget Microsoft.Dnx.Compilation.Abstractions 1.0.0-rc1-final framework: >= net46
-nuget Microsoft.Extensions.Configuration.Binder 1.0.0-rc2-15952 framework: >= net46
-nuget Microsoft.Extensions.Configuration.Ini 1.0.0-rc2-15952 framework: >= net46
-nuget Microsoft.Extensions.Logging.Console 1.0.0-rc2-15958 framework: >= net46
-nuget Microsoft.Extensions.Logging.EventLog 1.0.0-rc2-15958 framework: >= net46
-nuget Microsoft.Extensions.Logging.TraceSource 1.0.0-rc2-15958 framework: >= net46
-nuget Microsoft.Extensions.ObjectPool 1.0.0-rc2-15967 framework: >= net46
-nuget Microsoft.Extensions.OptionsModel 1.0.0-rc2-15914 framework: >= net46
-nuget Microsoft.Extensions.WebEncoders.Core 1.0.0-rc1-final framework: >= net46
+nuget Microsoft.Dnx.Compilation.Abstractions ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.Configuration.Binder ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.Configuration.Ini ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.Logging.Console ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.Logging.EventLog ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.Logging.TraceSource ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.ObjectPool ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.OptionsModel ~> 1.0.0 framework: >= net46
+nuget Microsoft.Extensions.WebEncoders.Core ~> 1.0.0 framework: >= net46
 nuget Microsoft.IO.RecyclableMemoryStream 1.1.0.0 framework: >= net452
 nuget Microsoft.Net.Http 2.2.29 framework: >= net46
 nuget Microsoft.Net.WebSockets 1.0.0-rc2-16008 framework: >= net46
 nuget Microsoft.Tpl.Dataflow 4.5.24 framework: >= net452
-nuget MsgPack.Cli 0.7.0-alpha1 framework: >= net46
+nuget MsgPack.Cli ~> 0.7.0 framework: >= net46
 nuget PerfUtil 0.1.8 framework: >= net452
 nuget protobuf-net 2.1.0-alpha-1 framework: >= net46
-nuget System.ComponentModel 4.0.1-rc2-23623 framework: >= net46
+nuget System.ComponentModel ~> 4.0 prerelease framework: >= net46
 nuget System.Reflection.Metadata 1.2.0-rc2-23623 framework: >= net46
 nuget Topshelf 3.3.1 framework: >= net46
 nuget UnionArgParser 0.9.0 framework: >= net46

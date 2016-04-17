@@ -6,85 +6,52 @@ NUGET
     Autofac.Extensions.DependencyInjection (4.0.0-rc1-177) - framework: >= net46
       Autofac (>= 4.0.0-rc1-177) - framework: >= net451, dnxcore50
       Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-    Autofac.Extras.AttributeMetadata (4.0.0) - framework: >= net46
-      Autofac (>= 3.4.0 < 5.0.0)
-      Autofac.Mef (>= 4.0.0 < 5.0.0)
-    Autofac.Mef (4.0.0) - framework: >= net46
-      Autofac (>= 3.3.1 < 5.0.0)
+    Autofac.Extras.AttributeMetadata (4.0) - framework: >= net46
+      Autofac (>= 3.4 < 5.0)
+      Autofac.Mef (>= 4.0 < 5.0)
+    Autofac.Mef (4.0) - framework: >= net46
+      Autofac (>= 3.3.1 < 5.0)
     AutoFixture (3.37.3) - framework: >= net46
-    FAKE (4.22.6)
+    FAKE (4.25.4)
     Fixie (1.0.0.41) - framework: >= net46
-    FlexLucene (5.4.0) - framework: >= net46
+    FlexLucene (5.4) - framework: >= net46
       IKVM (>= 8.1.5717) - framework: >= net40
     FParsec (1.0.2) - framework: >= net46
     FsCheck (2.2.4) - framework: >= net46
       FSharp.Core (>= 3.1.2.5)
     FSharp.Compiler.Service (2.0.0.6) - framework: >= net46
-    FSharp.Control.AsyncSeq (2.0.3) - framework: >= net452
-    FSharp.Core (4.0.0.1) - framework: >= net452
-    FSharpx.Async (1.12.0) - framework: >= net452
+    FSharp.Control.AsyncSeq (2.0.8) - framework: >= net46
+    FSharp.Core (4.0.0.1) - framework: >= net46
+    FSharpx.Async (1.12) - framework: >= net46
       FSharp.Control.AsyncSeq
-    FSharpx.Collections (1.13.4) - framework: >= net46
-      FSharp.Core (>= 3.0.0)
+    FSharpx.Collections (1.14) - framework: >= net46
+      FSharp.Core (>= 3.0)
     FSharpx.Extras (1.10.3) - framework: >= net46
       FSharpx.Async (>= 1.12)
       FSharpx.Collections (>= 1.10.1)
     IKVM (8.1.5717) - framework: >= net46
     Microsoft.Bcl (1.1.10) - framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
       Microsoft.Bcl.Build (>= 1.0.14)
-    Microsoft.Bcl.Build (1.0.14) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
+    Microsoft.Bcl.Build (1.0.21) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
     Microsoft.Dnx.Compilation.Abstractions (1.0.0-rc1-final) - framework: >= net46
       Microsoft.Extensions.PlatformAbstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
     Microsoft.Extensions.WebEncoders.Core (1.0.0-rc1-final) - framework: >= net46
-    Microsoft.IO.RecyclableMemoryStream (1.1.0) - framework: >= net452
+    Microsoft.IO.RecyclableMemoryStream (1.1) - framework: >= net452
     Microsoft.Net.Http (2.2.29) - framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
       Microsoft.Bcl (>= 1.1.10)
       Microsoft.Bcl.Build (>= 1.0.14)
     Microsoft.Tpl.Dataflow (4.5.24) - framework: >= net452
-    MsgPack.Cli (0.7.0-alpha1) - framework: >= net46
-      System.Collections (>= 4.0.10)
-      System.Collections.Concurrent (>= 4.0.10)
-      System.Collections.Specialized (>= 4.0.0)
-      System.Data.Common (>= 4.0.0)
-      System.Diagnostics.Debug (>= 4.0.10)
-      System.Globalization (>= 4.0.10)
-      System.IO (>= 4.0.10)
-      System.Linq (>= 4.0.0)
-      System.Linq.Expressions (>= 4.0.10)
-      System.ObjectModel (>= 4.0.10)
-      System.Reflection (>= 4.0.10)
-      System.Reflection.Emit (>= 4.0.0)
-      System.Reflection.Emit.ILGeneration (>= 4.0.0)
-      System.Reflection.Extensions (>= 4.0.0)
-      System.Reflection.Primitives (>= 4.0.0)
-      System.Resources.ResourceManager (>= 4.0.0)
-      System.Runtime (>= 4.0.20)
-      System.Runtime.Extensions (>= 4.0.10)
-      System.Runtime.InteropServices (>= 4.0.20)
-      System.Runtime.Numerics (>= 4.0.0)
-      System.Runtime.Serialization.Primitives (>= 4.0.10)
-      System.Text.Encoding (>= 4.0.10)
-      System.Text.Encoding.Extensions (>= 4.0.10)
-      System.Threading (>= 4.0.10)
-      System.Threading.Tasks (>= 4.0.10)
-    Newtonsoft.Json (8.0.1-beta4) - framework: >= net46
-    NuGet.CommandLine (3.3.0)
-    Octokit (0.19.0)
+    MsgPack.Cli (0.7.0-alpha2) - framework: >= net46
+    Newtonsoft.Json (8.0.3) - framework: >= net46
+    NuGet.CommandLine (3.3)
+    Octokit (0.19)
       Microsoft.Net.Http  - framework: net10, net11, net20, net30, net35, net40, net40-full
     PerfUtil (0.1.8) - framework: >= net452
     protobuf-net (2.1.0-alpha-1) - framework: >= net46
       System.Reflection.Emit (>= 4.0.1-beta-23516) - framework: >= net45, dnx451, dnxcore50
-    System.Collections.Concurrent (4.0.10) - framework: >= net46
-    System.Collections.Specialized (4.0.0) - framework: >= net46
-    System.Data.Common (4.0.0) - framework: >= net46
-    System.Linq.Expressions (4.0.10) - framework: >= net46
-    System.ObjectModel (4.0.10) - framework: >= net46
-    System.Reflection.Emit.ILGeneration (4.0.0) - framework: >= net46
-    System.Runtime.Numerics (4.0.0) - framework: >= net46
-    System.Runtime.Serialization.Primitives (4.0.10) - framework: >= net46
-    System.Threading.Tasks (4.0.10) - framework: >= net46, dnxcore50
+    System.Collections.Immutable (1.1.37) - framework: >= net46
     Topshelf (3.3.1) - framework: >= net46
-    UnionArgParser (0.9.0) - framework: >= net46
+    UnionArgParser (0.9) - framework: >= net46
     Unquote (2.2.2) - framework: >= net452
   remote: https://www.myget.org/F/aspnetvnext
   specs:
@@ -149,117 +116,143 @@ NUGET
     Microsoft.AspNet.WebUtilities (1.0.0-rc2-16106) - framework: >= net46
       Microsoft.Extensions.Primitives (>= 1.0.0-rc2-15967) - framework: >= net451, dnxcore50
       System.Text.Encodings.Web (>= 4.0.0-rc2-23623) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.Abstractions (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Primitives (>= 1.0.0-rc2-15967) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.Binder (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.CommandLine (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.EnvironmentVariables (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.FileExtensions (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.Ini (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Configuration.FileExtensions (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Configuration.Json (1.0.0-rc2-15952) - framework: >= net46
-      Microsoft.Extensions.Configuration (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Configuration.FileExtensions (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-      Newtonsoft.Json (>= 6.0.6) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.DependencyInjection (1.0.0-rc2-15921) - framework: >= net46
-      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc2-15921) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.DependencyInjection.Abstractions (1.0.0-rc2-15921) - framework: >= net46
-    Microsoft.Extensions.Logging (1.0.0-rc2-15958) - framework: >= net46
-      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc2-15921) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc2-15958) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Logging.Abstractions (1.0.0-rc2-15958) - framework: >= net46
-    Microsoft.Extensions.Logging.Console (1.0.0-rc2-15958) - framework: >= net46
-      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc2-15952) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc2-15958) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.PlatformAbstractions (>= 1.0.0-rc2-16530) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.Logging.EventLog (1.0.0-rc2-15958) - framework: >= net46
-      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc2-15958) - framework: >= net451
-    Microsoft.Extensions.Logging.TraceSource (1.0.0-rc2-15958) - framework: >= net46
-      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc2-15958) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.ObjectPool (1.0.0-rc2-15967) - framework: >= net46
-    Microsoft.Extensions.Options (1.0.0-rc2-15942) - framework: >= net46
-      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc2-15921) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Primitives (>= 1.0.0-rc2-15967) - framework: >= net451, dnxcore50
+    Microsoft.Extensions.Configuration (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc3-20550)
+      System.Collections (>= 4.0.11-rc2-24008)
+      System.Diagnostics.Debug (>= 4.0.11-rc2-24008)
+      System.IO (>= 4.1.0-rc2-24008)
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+      System.Runtime.Extensions (>= 4.1.0-rc2-24008)
+      System.Runtime.InteropServices (>= 4.1.0-rc2-24008)
+      System.Threading (>= 4.0.11-rc2-24008)
+    Microsoft.Extensions.Configuration.Abstractions (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Primitives (>= 1.0.0-rc3-20550)
+      System.Linq (>= 4.1.0-rc2-24008)
+    Microsoft.Extensions.Configuration.Binder (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration (>= 1.0.0-rc3-20550)
+      System.ComponentModel.TypeConverter (>= 4.0.1-rc2-24008)
+    Microsoft.Extensions.Configuration.CommandLine (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.Configuration.EnvironmentVariables (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.Configuration.FileExtensions (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.FileProviders.Physical (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.Configuration.Ini (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.Configuration.FileExtensions (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.Configuration.Json (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.Configuration.FileExtensions (>= 1.0.0-rc3-20550)
+      Newtonsoft.Json (>= 8.0.3)
+    Microsoft.Extensions.DependencyInjection (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc3-20550)
+      System.Collections (>= 4.0.11-rc2-24008)
+      System.Collections.Concurrent (>= 4.0.12-rc2-24008)
+      System.Runtime.Extensions (>= 4.1.0-rc2-24008)
+      System.Threading (>= 4.0.11-rc2-24008)
+      System.Threading.Tasks (>= 4.0.11-rc2-24008)
+    Microsoft.Extensions.DependencyInjection.Abstractions (1.0.0-rc3-20550) - framework: >= net46
+      System.ComponentModel (>= 4.0.1-rc2-24008)
+      System.Diagnostics.Debug (>= 4.0.11-rc2-24008)
+      System.Globalization (>= 4.0.11-rc2-24008)
+      System.Linq (>= 4.1.0-rc2-24008)
+      System.Linq.Expressions (>= 4.0.11-rc2-24008)
+      System.Reflection (>= 4.1.0-rc2-24008)
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+    Microsoft.Extensions.FileProviders.Abstractions (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Primitives (>= 1.0.0-rc3-20550)
+      System.IO (>= 4.1.0-rc2-24008)
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+    Microsoft.Extensions.FileProviders.Physical (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.FileProviders.Abstractions (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.Logging (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc3-20550)
+      System.Threading (>= 4.0.11-rc2-24008)
+    Microsoft.Extensions.Logging.Abstractions (1.0.0-rc3-20550) - framework: >= net46
+      System.Collections (>= 4.0.11-rc2-24008)
+      System.Collections.Concurrent (>= 4.0.12-rc2-24008)
+      System.Globalization (>= 4.0.11-rc2-24008)
+      System.Linq (>= 4.1.0-rc2-24008)
+      System.Reflection (>= 4.1.0-rc2-24008)
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+      System.Runtime.Extensions (>= 4.1.0-rc2-24008)
+      System.Runtime.InteropServices (>= 4.1.0-rc2-24008)
+    Microsoft.Extensions.Logging.Console (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.PlatformAbstractions (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.Logging.EventLog (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc3-20550) - framework: >= net451
+    Microsoft.Extensions.Logging.TraceSource (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc3-20550)
+    Microsoft.Extensions.ObjectPool (1.0.0-rc3-20550) - framework: >= net46
+    Microsoft.Extensions.Options (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.Primitives (>= 1.0.0-rc3-20550)
+      System.ComponentModel (>= 4.0.1-rc2-24008)
+      System.Diagnostics.Debug (>= 4.0.11-rc2-24008)
+      System.Globalization (>= 4.0.11-rc2-24008)
+      System.Linq (>= 4.1.0-rc2-24008)
+      System.Linq.Expressions (>= 4.0.11-rc2-24008)
+      System.Reflection (>= 4.1.0-rc2-24008)
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+      System.Runtime.Extensions (>= 4.1.0-rc2-24008)
+      System.Threading (>= 4.0.11-rc2-24008)
     Microsoft.Extensions.OptionsModel (1.0.0-rc2-15914) - framework: >= net46
       Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc2-15901) - framework: >= net451, dnxcore50
       Microsoft.Extensions.Primitives (>= 1.0.0-rc2-15947) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.PlatformAbstractions (1.0.0-rc2-16530) - framework: >= net46
-    Microsoft.Extensions.Primitives (1.0.0-rc2-15967) - framework: >= net46
-    Microsoft.Extensions.WebEncoders (1.0.0-rc2-16105) - framework: >= net46
-      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc2-15921) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Options (>= 1.0.0-rc2-15942) - framework: >= net451, dnxcore50
-      System.Text.Encodings.Web (>= 4.0.0-rc2-23623) - framework: >= net451, dnxcore50
-    Microsoft.Net.Http.Headers (1.0.0-rc2-16106) - framework: >= net46
+    Microsoft.Extensions.PlatformAbstractions (1.0.0-rc3-20550) - framework: >= net46
+    Microsoft.Extensions.Primitives (1.0.0-rc3-20550) - framework: >= net46
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+      System.Runtime (>= 4.1.0-rc2-24008)
+    Microsoft.Extensions.WebEncoders (1.0.0-rc3-20550) - framework: >= net46
+      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc3-20550)
+      Microsoft.Extensions.Options (>= 1.0.0-rc3-20550)
+      System.Text.Encodings.Web (>= 4.0.0-rc2-24008)
+    Microsoft.Net.Http.Headers (1.0.0-rc3-20550) - framework: >= net46
+      System.Buffers (>= 4.0.0-rc2-24008)
+      System.Collections (>= 4.0.11-rc2-24008)
+      System.Diagnostics.Contracts (>= 4.0.1-rc2-24008)
+      System.Globalization (>= 4.0.11-rc2-24008)
+      System.Linq (>= 4.1.0-rc2-24008)
+      System.Resources.ResourceManager (>= 4.0.1-rc2-24008)
+      System.Runtime.Extensions (>= 4.1.0-rc2-24008)
+      System.Text.Encoding (>= 4.0.11-rc2-24008)
     Microsoft.Net.Http.Server (1.0.0-rc2-16104) - framework: >= net46
       Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc2-15958) - framework: >= net451, dnxcore50
       Microsoft.Extensions.Primitives (>= 1.0.0-rc2-15967) - framework: >= net451, dnxcore50
     Microsoft.Net.WebSockets (1.0.0-rc2-16008) - framework: >= net46
-    System.Collections (4.0.11-rc2-23623)
-      System.Diagnostics.Debug (>= 4.0.0) - framework: dnxcore50
-      System.Resources.ResourceManager (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.21-rc2-23623) - framework: dnxcore50
-      System.Runtime.Extensions (>= 4.0.0) - framework: dnxcore50
-      System.Threading (>= 4.0.0) - framework: dnxcore50
-    System.Collections.Immutable (1.2.0-rc2-23623)
-      System.Collections (>= 4.0.0) - framework: dnxcore50
-      System.Diagnostics.Debug (>= 4.0.0) - framework: dnxcore50
-      System.Globalization (>= 4.0.0) - framework: dnxcore50
-      System.Linq (>= 4.0.0) - framework: dnxcore50
-      System.Resources.ResourceManager (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-      System.Runtime.Extensions (>= 4.0.0) - framework: dnxcore50
-      System.Threading (>= 4.0.0) - framework: dnxcore50
-    System.ComponentModel (4.0.1-rc2-23623) - framework: >= net46
-    System.Diagnostics.Debug (4.0.11-rc2-23623)
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-    System.Diagnostics.DiagnosticSource (4.0.0-rc2-23623) - framework: >= net46
-    System.Globalization (4.0.11-rc2-23623)
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-    System.IO (4.0.11-rc2-23623) - framework: >= net46
-    System.Linq (4.0.1-rc2-23623)
-      System.Collections (>= 4.0.0) - framework: dnxcore50
-      System.Collections (>= 4.0.10) - framework: dnxcore50
-      System.Diagnostics.Debug (>= 4.0.10) - framework: dnxcore50
-      System.Resources.ResourceManager (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.20) - framework: dnxcore50
-      System.Runtime.Extensions (>= 4.0.10) - framework: dnxcore50
-    System.Numerics.Vectors (4.1.1-rc2-23623) - framework: >= net46
-    System.Private.Uri (4.0.1-rc2-23826) - framework: dnxcore50
-    System.Reflection (4.1.0-rc2-23623) - framework: >= net46, dnxcore50
-    System.Reflection.Emit (4.0.1-rc2-23623) - framework: >= net46
-    System.Reflection.Extensions (4.0.1-rc2-23623) - framework: >= net46
+    System.Buffers (4.0.0-rc2-24008) - framework: >= net46
+    System.Collections (4.0.11-rc2-24008) - framework: >= net46
+    System.Collections.Concurrent (4.0.12-rc2-24008) - framework: >= net46
+    System.ComponentModel (4.0.1-rc2-24008) - framework: >= net46
+    System.ComponentModel.Primitives (4.0.1-rc2-24008) - framework: >= net46
+    System.ComponentModel.TypeConverter (4.0.1-rc2-24008) - framework: >= net46
+      System.ComponentModel.Primitives (>= 4.0.1-rc2-24008) - framework: >= net45, winv4.5, wpv8.0, wpav8.1
+    System.Diagnostics.Contracts (4.0.1-rc2-24008) - framework: >= net46
+    System.Diagnostics.Debug (4.0.11-rc2-24008) - framework: >= net46
+    System.Diagnostics.DiagnosticSource (4.0.0-rc2-24008) - framework: >= net46
+    System.Globalization (4.0.11-rc2-24008) - framework: >= net46
+    System.IO (4.1.0-rc2-24008) - framework: >= net46
+    System.Linq (4.1.0-rc2-24008) - framework: >= net46
+    System.Linq.Expressions (4.0.11-rc2-24008) - framework: >= net46
+    System.Numerics.Vectors (4.1.1-rc2-24008) - framework: >= net46
+    System.Reflection (4.1.0-rc2-24008) - framework: >= net46
+    System.Reflection.Emit (4.0.1-rc2-24008) - framework: >= net46
     System.Reflection.Metadata (1.2.0-rc2-23623) - framework: >= net46
-      System.Collections.Immutable (>= 1.1.37) - framework: >= net45, dnxcore50, monoandroid, monotouch, portable-net45+win80, xamarinios, xamarinmac, winv4.5, wpv8.1
-    System.Reflection.Primitives (4.0.1-rc2-23623) - framework: >= net46
-    System.Resources.ResourceManager (4.0.1-rc2-23623)
-      System.Globalization (>= 4.0.0) - framework: dnxcore50
-      System.Reflection (>= 4.0.0) - framework: dnxcore50
-      System.Reflection (>= 4.0.10) - framework: dnxcore50
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.20) - framework: dnxcore50
-    System.Runtime (4.0.21-rc2-23623)
-      System.Private.Uri (>= 4.0.1-rc2-23623) - framework: dnxcore50
-    System.Runtime.Extensions (4.0.11-rc2-23623)
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-      System.Runtime (>= 4.0.20) - framework: dnxcore50
-    System.Runtime.InteropServices (4.0.21-rc2-23623) - framework: >= net46
-    System.Text.Encoding (4.0.11-rc2-23623) - framework: >= net46
-    System.Text.Encoding.Extensions (4.0.11-rc2-23623) - framework: >= net46
-    System.Text.Encodings.Web (4.0.0-rc2-23623) - framework: >= net46
-    System.Threading (4.0.11-rc2-23623)
-      System.Runtime (>= 4.0.0) - framework: dnxcore50
-      System.Threading.Tasks (>= 4.0.0) - framework: dnxcore50
+      System.Collections.Immutable (>= 1.1.37) - framework: >= net45, dnxcore50, monoandroid, monotouch, portable-net45+win80, xamarinios, xamarinmac, winv4.5, wpav8.1
+    System.Resources.ResourceManager (4.0.1-rc2-24008) - framework: >= net46
+    System.Runtime (4.1.0-rc2-24008) - framework: >= net46
+    System.Runtime.Extensions (4.1.0-rc2-24008) - framework: >= net46
+    System.Runtime.InteropServices (4.1.0-rc2-24008) - framework: >= net46
+    System.Text.Encoding (4.0.11-rc2-24008) - framework: >= net46
+    System.Text.Encodings.Web (4.0.0-rc2-24008) - framework: >= net46
+    System.Threading (4.0.11-rc2-24008) - framework: >= net46
+    System.Threading.Tasks (4.0.11-rc2-24008) - framework: >= net46
 GITHUB
   remote: fsharp/FAKE
   specs:
-    modules/Octokit/Octokit.fsx (3c2f89312b7b5a2048cb8eab991c7d1708136cc8)
+    modules/Octokit/Octokit.fsx (3bf706bd6058733a1a034755741076b3953aaf09)
       Octokit
