@@ -269,4 +269,5 @@ if File.Exists(toolsDir <!!> "CodeFormatter/CodeFormatter.exe") |> not then
     exec("git", "submodule init")
     exec("git", "submodule update")
 
-generateModel()
+if Directory.Exists javaHome then generateModel()
+else failwith "Couldn't find the JAVA_HOME system environment variable. Most probably you don't have Java installed on your system."
