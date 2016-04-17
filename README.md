@@ -11,10 +11,13 @@ More information is available at http://www.flexsearch.net/
 
 ### Build FlexSearch
 
+#### Prerequisites
+- Windows machines only
+- Visual Studio 2015
+- Java installed on your machine. Make sure the `JAVA_HOME` system environment variable is set up.
+
 In order to build FlexSearch you need to run the following commands:
 ```
-git submodule init
-git submodule update
 .\build
 ```
 
