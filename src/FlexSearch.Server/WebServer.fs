@@ -111,7 +111,9 @@ type WebServerBuilder(settings : Settings.T) =
         name
     
     /// Port on which server should start (Defaults to 9800)
-    let port = settings.ConfigurationSource.Get<string>(Settings.ServerKey + ":" + Settings.HttpPort, "9800")
+    let port = 
+        let conf = settings.ConfigurationSource.[Settings.ServerKey + ":" + Settings.HttpPort]
+        if conf = null then "9800" else conf
     
     let webHostBuilder =
         let config = settings.ConfigurationSource

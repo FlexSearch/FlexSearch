@@ -18,3 +18,4 @@ Microsoft.Net.WebSockets
 MsgPack.Cli
 System.Reflection.Metadata
 Unquote
+System.Diagnostics.DiagnosticSource

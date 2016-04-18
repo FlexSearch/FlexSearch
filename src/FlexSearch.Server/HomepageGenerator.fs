@@ -39,7 +39,7 @@ module HomepageGenerator =
             ok conf
 
     let private injectConfiguration (info : IConfigurationRoot) (confKey : string)  (moduleFolder : string) (cardTemplate : string) =
-        let conf = info.Get<string>(key = confKey)
+        let conf = info.[confKey]
         if isNull conf then fail <| FileReadError(moduleFolder, sprintf "Couldn't find the '%s' property in the info.json file" confKey)
         else cardTemplate.Replace("{{" + confKey + "}}", conf) |> ok
 
