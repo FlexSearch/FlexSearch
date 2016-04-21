@@ -98,3 +98,25 @@ type DocumentServiceTests() =
         ih |> refreshIndexPass
         // Now we should only have 6 docs left
         ih |> totalDocs 6
+
+    member __.``Should be able to update a document with a very long key`` (ih : IntegrationHelper) = 
+        let longKey = "l0ng5tr1ng_" |> String.replicate 100
+        let document = new Document(longKey, ih.IndexName)
+        document.Fields.Add("i1", "333")
+
+        ih |> addIndexPass
+        ih |> addDocument document |> testSuccess
+        ih |> refreshIndexPass
+        let docResp = ih.DocumentService.GetDocument(ih.IndexName, longKey)
+        docResp |> testSuccess
+        test<@ (extract docResp).Fields.["i1"] = "333" @>
+
+        document.Fields.["i1"] <- "666"
+        ih.DocumentService.AddOrUpdateDocument(document) |> testSuccess
+        ih |> refreshIndexPass
+        let updatedDocResp = ih.DocumentService.GetDocument(ih.IndexName, longKey)
+        updatedDocResp |> testSuccess
+        test<@ (extract updatedDocResp).Fields.["i1"] = "666" @>
+
+
+        
