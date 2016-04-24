@@ -54,6 +54,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="HttpTests.fs" />
+    <Compile Include="HttpQueryTypesTests.fs" />
     <Content Include="paket.references" />
     <Content Include="app.config" />
   </ItemGroup>

@@ -145,33 +145,37 @@ module TestCommandHelpers =
             File.WriteAllText(Global.RequestLogPath +/ id + ".http", client.MarkdownLogs().[requestNumber].ToString())
             File.WriteAllText(Global.RequestLogPath +/ id + ".json", JsonConvert.SerializeObject(client.RequestDetailsLogs().[requestNumber]))
     
-    /// Force the JIT to not inline this method otherwise Stack frame will return the wrong method name
-    [<System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)>]
-    let query (queryString : string) (recordsReturned : int) (available : int) (meth : MethodBase) (api : SearchApi) = 
+    let countryList = JsonConvert.DeserializeObject<List<FlexSearch.Core.Country>>(Resources.DemoIndexData) |> Seq.toList
+    
+    type SearchCondition = 
+        | Predicate of predicate : (FlexSearch.Core.Country -> bool)
+        | Expected of expected : int
+    
+    let inline queryTest (queryString : string) (cond : SearchCondition) (desc : string) (api : SearchApi) = 
+        let expected = 
+            match cond with
+            | Predicate predicate -> 
+                countryList
+                |> List.where predicate
+                |> List.length
+            | Expected e -> e
+        
         let searchQuery = new SearchQuery("country", queryString)
-        searchQuery.Count <- 10
+        searchQuery.Count <- 200
         searchQuery.Columns <- [| "countryname"; "agriproducts"; "governmenttype"; "population" |]
         let response = api.Search("country", searchQuery)
         response |> isSuccessful
-        response.Data.TotalAvailable =? recordsReturned
+        response.Data.TotalAvailable =? expected
         /// Log the result if log path is defined
         if Global.RequestLogPath <> String.Empty && Directory.Exists(Global.RequestLogPath) then 
-            match meth.CustomAttributes |> Seq.tryFind (fun x -> x.AttributeType = typeof<ExampleAttribute>) with
-            | Some(attr) -> 
-                let fileName = attr.ConstructorArguments.[0].ToString().Replace('"', ' ').Trim()
-
-                let desc = 
-                    if not <| String.IsNullOrWhiteSpace(attr.ConstructorArguments.[1].ToString()) then 
-                        attr.ConstructorArguments.[1].ToString().Replace('"', ' ').Trim()
-                    else meth.Name
-                
-                let result = new ResultLog()
-                result.Query <- searchQuery
-                result.Result <- response.Data
-                result.Description <- desc
-                File.WriteAllText(Global.RequestLogPath +/ fileName + ".json", JsonConvert.SerializeObject(result, Formatting.Indented))
-            | None -> ()
-
+            let fileName = "search-" + MethodBase.GetCurrentMethod().Name.ToLowerInvariant()
+            
+            let result = new ResultLog()
+            result.Query <- searchQuery
+            result.Result <- response.Data
+            result.Description <- desc
+            File.WriteAllText
+                (Global.RequestLogPath +/ fileName + ".json", JsonConvert.SerializeObject(result, Formatting.Indented))
     
 
 [<AutoOpen>]
@@ -213,9 +217,7 @@ module FixtureSetup =
         if not <| api.IndexExists("contact").Data.Exists
         then api.CreateIndex(index) |> isSuccessful
         index
-
-    let countryList = JsonConvert.DeserializeObject<List<FlexSearch.Core.Country>>(Resources.DemoIndexData)
-
+    
     let apiGenerator (ctor : ApiClient -> 'T) = 
         let handler = new LoggingHandler(httpMessageHandler)
         let api = new ApiClient(handler)
@@ -242,7 +244,7 @@ module FixtureSetup =
         fixture.Register<AnalyzerApi * LoggingHandler>(fun _ -> apiGenerator AnalyzerApi)
         fixture.Register<JobsApi * LoggingHandler>(fun _ -> apiGenerator JobsApi)
         fixture.Register<SearchApi * LoggingHandler>(fun _ -> apiGenerator SearchApi)
-        fixture.Inject<FlexSearch.Core.Country list>(countryList |> Seq.toList)
+        fixture.Inject<FlexSearch.Core.Country list>(countryList)
         fixture
 
 // ----------------------------------------------------------------------------
