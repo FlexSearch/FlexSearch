@@ -143,6 +143,10 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
     let CreateIndex() = 
         maybe { 
             let index = GetDemoIndexInfo()
+            // See if the folder is already there in which case delete it before creating the
+            // index again
+            if Directory.Exists(Constants.DataFolder +/ index.IndexName) then
+                delDir (Constants.DataFolder +/ index.IndexName)
             // Custom analyzer for food synonym
             let foodsynonymsanalyzer = new Analyzer(AnalyzerName = "foodsynonymsanalyzer")
             foodsynonymsanalyzer.Tokenizer <- new Tokenizer(TokenizerName = "standard")
