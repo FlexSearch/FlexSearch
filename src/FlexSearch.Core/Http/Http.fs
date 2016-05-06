@@ -32,17 +32,16 @@ open System.Threading
 open System.Threading.Tasks
 open System.Runtime.Versioning
 open System.ComponentModel.Composition
-open Microsoft.AspNet.Hosting
-open Microsoft.AspNet.Hosting.Internal
-open Microsoft.AspNet.Builder
+open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.Hosting.Internal
+open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.Configuration
-open Microsoft.AspNet.StaticFiles
-open Microsoft.AspNet.Http
-open Microsoft.AspNet.Cors
+open Microsoft.AspNetCore.StaticFiles
+open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Cors
 open Microsoft.Extensions.Primitives
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.PlatformAbstractions
-open Microsoft.AspNet.FileProviders
 open Microsoft.Net.Http.Server
 open Microsoft.Extensions.Logging
 

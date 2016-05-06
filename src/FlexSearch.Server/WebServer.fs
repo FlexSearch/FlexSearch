@@ -3,12 +3,12 @@ open Autofac
 open FlexSearch.Core
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
-open Microsoft.AspNet.Hosting
-open Microsoft.AspNet.Hosting.Internal
-open Microsoft.AspNet.Http
-open Microsoft.AspNet.Builder
-open Microsoft.AspNet.StaticFiles
-open Microsoft.AspNet.FileProviders
+open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.Hosting.Internal
+open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.StaticFiles
+open Microsoft.Extensions.FileProviders
 open Microsoft.Extensions.PlatformAbstractions
 open Microsoft.Net.Http.Server
 open System
@@ -68,7 +68,7 @@ type WebServer(configuration : IConfiguration) =
         services.AddCors() |> ignore
 
         // Add the instance of the Hosting environment
-        services.AddSingleton<IApplicationEnvironment>(new DefaultApplicationEnvironment()) |> ignore
+        services.AddSingleton<IHostingEnvironment>(new HostingEnvironment()) |> ignore
         services |> setupContainerForAsp
 
     // Use this method to configure the HTTP request pipeline.
@@ -100,13 +100,12 @@ type WebServer(configuration : IConfiguration) =
 
 [<Sealed>]
 type WebServerBuilder(settings : Settings.T) =
-    let mutable engine = Unchecked.defaultof<IWebApplication>
-    let mutable server = Unchecked.defaultof<IDisposable>
+    let mutable engine = Unchecked.defaultof<IWebHost>
     let mutable thread = Unchecked.defaultof<Task>
     
     /// Name of the HTTP server to be used
     let serverAssemblyName = 
-        let name = "Microsoft.AspNet.Server." + settings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
+        let name = "Microsoft.AspNetCore.Server." + settings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
         Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
         name
     
@@ -117,9 +116,9 @@ type WebServerBuilder(settings : Settings.T) =
     
     let webHostBuilder =
         let config = settings.ConfigurationSource
-        let webAppBuilder = new WebApplicationBuilder()
+        let webAppBuilder = new WebHostBuilder()
         webAppBuilder.UseConfiguration(config)
-                     .UseServerFactory(serverAssemblyName)
+                     .UseServer(serverAssemblyName)
                      .ConfigureServices(fun s -> s.AddSingleton<IConfiguration>(config) |> ignore)
                      .UseStartup<WebServer>()
     
@@ -133,15 +132,12 @@ type WebServerBuilder(settings : Settings.T) =
                                          |> Async.Catch
                                          |> Async.RunSynchronously
                                          |> handleShutdownExceptions)
-        server.Dispose()
+        engine.Dispose()
 
     member __.Start() =
         let startServer() = 
             try 
-                engine <- webHostBuilder.Build()
-                let addresses = engine.GetAddresses()
-                addresses.Add(sprintf "http://localhost:%s" port)
-                server <- engine.Start()
+                engine <- webHostBuilder.Start(sprintf "http://localhost:%s" port)
             with 
                 | :? ReflectionTypeLoadException as e -> 
                     let loaderExceptions = e.LoaderExceptions 

@@ -251,7 +251,7 @@ module Helpers =
 // ----------------------------------------------------------------------------
 [<AutoOpen>]
 module DataType = 
-    open Microsoft.AspNet.Http
+    open Microsoft.AspNetCore.Http
     open Microsoft.Extensions.Primitives
     
     let (|InvariantEqual|_|) (str : string) arg = 

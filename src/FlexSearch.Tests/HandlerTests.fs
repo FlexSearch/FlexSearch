@@ -6,7 +6,7 @@ open FlexSearch.Core
 open Swensen.Unquote
 
 module CsvHandlerTests = 
-    open Microsoft.AspNet.Http
+    open Microsoft.AspNetCore.Http
     open System.Diagnostics
 
     type ImportCsvTests() = 

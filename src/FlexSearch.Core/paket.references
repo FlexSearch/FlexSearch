@@ -4,10 +4,10 @@ FlexLucene
 FParsec
 FSharp.Compiler.Service
 FSharpx.Extras
-Microsoft.AspNet.Cors
-Microsoft.AspNet.Server.Kestrel
-Microsoft.AspNet.Server.WebListener
-Microsoft.AspNet.StaticFiles
+Microsoft.AspNetCore.Cors
+Microsoft.AspNetCore.Server.Kestrel
+Microsoft.AspNetCore.Server.WebListener
+Microsoft.AspNetCore.StaticFiles
 Microsoft.Dnx.Compilation.Abstractions
 Microsoft.Extensions.Configuration.Binder
 Microsoft.Extensions.Configuration.Ini
@@ -25,3 +25,5 @@ PerfUtil
 protobuf-net
 System.ComponentModel
 System.Reflection.Metadata
+Newtonsoft.Json
+System.Reflection

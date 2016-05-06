@@ -23,6 +23,7 @@ open FlexSearch.Core
 open FlexSearch.Core.Helpers
 open Newtonsoft.Json
 open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Configuration.Json
 
 module HomepageGenerator =
     let getDirName dir = (new DirectoryInfo(dir)).Name
