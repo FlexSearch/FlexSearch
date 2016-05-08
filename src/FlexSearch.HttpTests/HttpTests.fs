@@ -314,6 +314,13 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         |> fun r -> r |> isSuccessful; r
         |> fun r -> r.Data.Length =? 2
         
+    member __.``Should handle SearchQuery DTO errors gracefully`` (api : SearchApi) =
+        let query = new SearchQuery("country", null)
+        api.GetSearchWithHttpInfo("country", query)
+        |> fun r -> r.Data.Error <>? null
+                    r.StatusCode <>? int HttpStatusCode.InternalServerError
+                    r.Data.Error.OperationCode.ToLower() =? "fieldvalidationfailed"
+
     interface IDisposable with
         member __.Dispose() = 
             indicesApi.DeleteIndex("country") |> isSuccessful

@@ -455,8 +455,8 @@ type GetSearchHandler(searchService : ISearchService) =
 
     override __.Process(request, body) = 
         let query = ServiceHelpers.getQueryFromRequest request body
-            
-        match searchService.Search(query) with
+
+        match validate query >>= fun _ -> searchService.Search query with
         | Ok(result) -> SuccessResponse(result, Ok)
         | Fail(error) -> FailureResponse(error, BadRequest)
 
