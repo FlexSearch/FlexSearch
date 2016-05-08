@@ -91,7 +91,7 @@
     <Reference Include="System.ServiceModel.Web" />
   </ItemGroup>
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel\runtimes\win7-x86\native\libuv.dll" "$(ProjectDir)\bin\Debug\" /Y
+    <PostBuildEvent>xcopy "$(SolutionDir)packages\Libuv\runtimes\win7-x86\native\libuv.dll" "$(ProjectDir)\bin\Debug\" /Y
 xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.Vectors.dll" "$(ProjectDir)\bin\Debug\" /Y
 xcopy "$(SolutionDir)packages\System.Reflection\lib\net462\System.Reflection.dll" "$(ProjectDir)\bin\Debug\" /Y
 </PostBuildEvent>

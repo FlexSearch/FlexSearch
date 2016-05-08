@@ -156,7 +156,7 @@
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
-    <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel\runtimes\win7-x64\native\libuv.dll" "$(SolutionDir)..\build-debug\" /Y
+    <PostBuildEvent>xcopy "$(SolutionDir)packages\Libuv\runtimes\win7-x64\native\libuv.dll" "$(SolutionDir)..\build-debug\" /Y
 xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.Vectors.dll" "$(SolutionDir)..\build-debug\" /Y
 xcopy "$(SolutionDir)packages\System.Text.Encodings.Web\lib\netstandard1.0\System.Text.Encodings.Web.dll" "$(SolutionDir)..\build-debug\" /Y
 xcopy "$(SolutionDir)packages\System.Reflection\lib\net462\System.Reflection.dll" "$(SolutionDir)..\build-debug\" /Y</PostBuildEvent>
