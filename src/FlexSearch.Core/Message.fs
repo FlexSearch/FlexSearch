@@ -26,6 +26,7 @@ open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Reflection
 open Microsoft.Extensions.Logging
+open System.Linq
 
 [<NotForDocumentation>]
 type MessageKeyword =
@@ -55,8 +56,13 @@ type IMessage =
 type ValidationMessage(model : IDataTransferObject) =
     interface IMessage with
         member __.OperationMessage() =
-            //TODO: Implement properly
-            new OperationMessage(model.ErrorDescription, "")
+            if model.ErrorField |> isNotBlank
+            then new OperationMessage(model.ErrorDescription + "\r\nField name: " + model.ErrorField, 
+                                      "FieldValidationFailed")
+            else new OperationMessage(model.ErrorDescription, "DTOValidationFailed")
+            |> fun om -> om.Properties <- [ new KeyValuePair<string,string>("fieldName", model.ErrorField) ].ToList()
+                         om
+
         member __.LogProperty() = (MessageKeyword.Node, MessageLevel.Error)
 
 /// Represents the result of a computation.

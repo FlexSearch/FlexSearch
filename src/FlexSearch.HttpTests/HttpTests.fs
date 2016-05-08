@@ -220,6 +220,16 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         |> fun r -> r.Data.Length >=? 1
         handler |> log "get-indices-1" 0
 
+    [<Example("error-details", "Field validation error message should mention missing field")>]
+    member __.``Field validation error message should mention missing field`` ((api : IndicesApi, handler : LoggingHandler), index : Index) = 
+        index.IndexName <- "a"   // Shouldn't be able to create an index with a name with less than 2 characters
+        api.CreateIndexWithHttpInfo(index)
+        |> fun r -> r.Data.Error <>? null
+                    r.Data.Error.Message.ToLower().Contains("indexname") =? true
+                    r.Data.Error.Properties |> Seq.exists (fun kv -> kv.Key.ToLower() = "fieldname"
+                                                                     && kv.Value.ToLower() = "indexname")
+                                            =? true
+
 //type ``Document Tests``(demoApi : ServerApi) = 
 
     [<Example("get-indices-id-documents-1", "")>]
