@@ -23,6 +23,7 @@ open FlexSearch.Core
 open FlexSearch.Core.Helpers
 open Newtonsoft.Json
 open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Configuration.Json
 
 module HomepageGenerator =
     let getDirName dir = (new DirectoryInfo(dir)).Name
@@ -34,12 +35,14 @@ module HomepageGenerator =
         if not <| File.Exists path then fail <| FileNotFound(path)
         else 
             let configBuilder = new ConfigurationBuilder()
-            let conf = configBuilder.AddJsonFile(path).Build() 
+            let conf = configBuilder.SetBasePath(IO.Path.GetDirectoryName path)
+                                    .AddJsonFile(IO.Path.GetFileName path)
+                                    .Build() 
             conf.Item "basePath" <- getBasePath <| getDirName moduleFolder
             ok conf
 
     let private injectConfiguration (info : IConfigurationRoot) (confKey : string)  (moduleFolder : string) (cardTemplate : string) =
-        let conf = info.Get<string>(key = confKey)
+        let conf = info.[confKey]
         if isNull conf then fail <| FileReadError(moduleFolder, sprintf "Couldn't find the '%s' property in the info.json file" confKey)
         else cardTemplate.Replace("{{" + confKey + "}}", conf) |> ok
 

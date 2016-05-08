@@ -18,6 +18,7 @@
 namespace FlexSearch.Core
 
 open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.FileProviders
 
 open System
 open System.Text
@@ -41,7 +42,12 @@ module Settings =
     /// Create settings from the path 
     let create (path : string) = 
         let configBuilder = new ConfigurationBuilder()
-        configBuilder.AddIniFile(path, false) |> ignore
+        // We have to set the base path to use the indicated directory because
+        // FileProvider implementation doesn't allow for absolute paths when getting a file.
+        configBuilder.SetBasePath(IO.Path.GetDirectoryName path)
+                     .AddIniFile(IO.Path.GetFileName path, false) 
+                     |> ignore
+        
         try 
             ok <| configBuilder.Build()
         with e -> fail <| UnableToParseConfig(path, exceptionPrinter e)

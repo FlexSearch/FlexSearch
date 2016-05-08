@@ -1,21 +1,19 @@
 @echo OFF
 cls
 
-ECHO [INFO] Checking if FAKE was downloaded from Nuget
-IF NOT EXIST %~dp0\src\packages\FAKE\tools\FAKE.exe (
-	ECHO [INFO] Downloading FAKE from Nuget
-	cd src
-	.paket\paket.bootstrapper.exe
-	if errorlevel 1 (
-		exit /b %errorlevel%
-	)
-
-	.paket\paket.exe restore
-	if errorlevel 1 (
-		exit /b %errorlevel%
-	)
-	cd ../
+ECHO [INFO] Restoring the Paket packages
+cd src
+.paket\paket.bootstrapper.exe
+if errorlevel 1 (
+	exit /b %errorlevel%
 )
+
+.paket\paket.exe restore
+if errorlevel 1 (
+	exit /b %errorlevel%
+)
+cd ../
+
 
 IF "%1"=="api" (
 	CALL :API

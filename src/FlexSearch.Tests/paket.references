@@ -5,10 +5,10 @@ FlexLucene
 FParsec
 FsCheck
 FSharpx.Extras
-Microsoft.AspNet.Cors
-Microsoft.AspNet.Server.Kestrel
-Microsoft.AspNet.Server.WebListener
-Microsoft.AspNet.TestHost
+Microsoft.AspNetCore.Cors
+Microsoft.AspNetCore.Server.Kestrel
+Microsoft.AspNetCore.Server.WebListener
+Microsoft.AspNetCore.TestHost
 Microsoft.Dnx.Compilation.Abstractions
 Microsoft.Extensions.Configuration.Binder
 Microsoft.Extensions.ObjectPool

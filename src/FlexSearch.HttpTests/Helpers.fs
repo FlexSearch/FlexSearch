@@ -22,7 +22,7 @@ open Newtonsoft.Json
 open FlexSearch.Core.Helpers
 
 module Global =
-    open Microsoft.AspNet.TestHost
+    open Microsoft.AspNetCore.TestHost
 
     let mutable RequestLogPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase +/ "../../../../documentation/docs/data"
     let server = 
