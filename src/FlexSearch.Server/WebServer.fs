@@ -65,9 +65,8 @@ type WebServer(configuration : IConfiguration) =
     // Use this method to add services to the container.
     // NOTE: This method name/signature cannot be changed as ASP.net expects it.
     member __.ConfigureServices(services : IServiceCollection) : IServiceProvider =
-        services.AddCors() |> ignore
-
-        services |> setupContainerForAsp
+        services.AddCors()
+        |> setupContainerForAsp
 
     // Use this method to configure the HTTP request pipeline.
     // NOTE: This method name/signature cannot be changed as ASP.net expects it.

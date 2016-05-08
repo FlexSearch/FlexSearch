@@ -35,7 +35,9 @@ module HomepageGenerator =
         if not <| File.Exists path then fail <| FileNotFound(path)
         else 
             let configBuilder = new ConfigurationBuilder()
-            let conf = configBuilder.AddJsonFile(path).Build() 
+            let conf = configBuilder.SetBasePath(IO.Path.GetDirectoryName path)
+                                    .AddJsonFile(IO.Path.GetFileName path)
+                                    .Build() 
             conf.Item "basePath" <- getBasePath <| getDirName moduleFolder
             ok conf
 

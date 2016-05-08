@@ -42,9 +42,9 @@ module Settings =
     /// Create settings from the path 
     let create (path : string) = 
         let configBuilder = new ConfigurationBuilder()
-        // We have to set the file provider to use the indicated directory because
+        // We have to set the base path to use the indicated directory because
         // FileProvider implementation doesn't allow for absolute paths when getting a file.
-        configBuilder.SetFileProvider(new PhysicalFileProvider(IO.Path.GetDirectoryName path))
+        configBuilder.SetBasePath(IO.Path.GetDirectoryName path)
                      .AddIniFile(IO.Path.GetFileName path, false) 
                      |> ignore
         
