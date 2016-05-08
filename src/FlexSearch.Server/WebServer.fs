@@ -67,8 +67,6 @@ type WebServer(configuration : IConfiguration) =
     member __.ConfigureServices(services : IServiceCollection) : IServiceProvider =
         services.AddCors() |> ignore
 
-        // Add the instance of the Hosting environment
-        services.AddSingleton<IHostingEnvironment>(new HostingEnvironment()) |> ignore
         services |> setupContainerForAsp
 
     // Use this method to configure the HTTP request pipeline.

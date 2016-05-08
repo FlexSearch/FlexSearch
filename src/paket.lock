@@ -30,14 +30,14 @@ NUGET
       FSharpx.Async (>= 1.12)
       FSharpx.Collections (>= 1.10.1)
     IKVM (8.1.5717) - framework: >= net46
-    Microsoft.Bcl (1.1.10) - framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
+    Microsoft.Bcl (1.1.10) - framework: net10, net11, net20, net30, net35, net40, net40-full
       Microsoft.Bcl.Build (>= 1.0.14)
-    Microsoft.Bcl.Build (1.0.21) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
+    Microsoft.Bcl.Build (1.0.21) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full
     Microsoft.Dnx.Compilation.Abstractions (1.0.0-rc1-final) - framework: >= net46
       Microsoft.Extensions.PlatformAbstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
     Microsoft.Extensions.WebEncoders.Core (1.0.0-rc1-final) - framework: >= net46
     Microsoft.IO.RecyclableMemoryStream (1.1) - framework: >= net452
-    Microsoft.Net.Http (2.2.29) - framework: net10, net11, net20, net30, net35, net40, net40-full, >= net46
+    Microsoft.Net.Http (2.2.29) - framework: net10, net11, net20, net30, net35, net40, net40-full
       Microsoft.Bcl (>= 1.1.10)
       Microsoft.Bcl.Build (>= 1.0.14)
     Microsoft.Tpl.Dataflow (4.5.24) - framework: >= net452
@@ -58,6 +58,7 @@ NUGET
       System.Runtime (>= 4.0) - framework: dnxcore50
       System.Runtime.Extensions (>= 4.0) - framework: dnxcore50
       System.Threading (>= 4.0) - framework: dnxcore50
+    System.Net.Http (4.0) - framework: >= net46
     Topshelf (3.3.1) - framework: >= net46
     UnionArgParser (0.9) - framework: >= net46
     Unquote (2.2.2) - framework: >= net452

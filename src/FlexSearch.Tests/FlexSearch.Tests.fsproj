@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>FlexSearch.Tests</RootNamespace>
     <AssemblyName>FlexSearch.Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <Name>FlexSearch.Tests</Name>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
