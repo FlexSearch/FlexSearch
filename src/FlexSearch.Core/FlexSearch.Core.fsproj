@@ -158,7 +158,8 @@
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(SolutionDir)packages\Microsoft.AspNet.Server.Kestrel\runtimes\win7-x64\native\libuv.dll" "$(SolutionDir)..\build-debug\" /Y
 xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.Vectors.dll" "$(SolutionDir)..\build-debug\" /Y
-xcopy "$(SolutionDir)packages\System.Text.Encodings.Web\lib\netstandard1.0\System.Text.Encodings.Web.dll" "$(SolutionDir)..\build-debug\" /Y</PostBuildEvent>
+xcopy "$(SolutionDir)packages\System.Text.Encodings.Web\lib\netstandard1.0\System.Text.Encodings.Web.dll" "$(SolutionDir)..\build-debug\" /Y
+xcopy "$(SolutionDir)packages\System.Reflection\lib\net462\System.Reflection.dll" "$(SolutionDir)..\build-debug\" /Y</PostBuildEvent>
   </PropertyGroup>
   <!--<Import Project="..\packages\FSharpLint.0.2.6\build\FSharpLint.targets" Condition="Exists('..\packages\FSharpLint.0.2.6\build\FSharpLint.targets')" />-->
   <!--<Import Project="..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets" Condition="Exists('..\packages\Microsoft.Diagnostics.Tracing.EventRegister.1.0.26\build\Microsoft.Diagnostics.Tracing.EventRegister.targets')" />-->
