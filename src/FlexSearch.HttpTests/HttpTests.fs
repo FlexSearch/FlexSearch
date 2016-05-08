@@ -275,6 +275,14 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         handler |> log "get-indices-id-documents-id-2" 1
         api.DeleteIndex(indexName) |> isSuccessful
 
+    member __.``CreateDocument request should use indexName from request path url`` (docApi : DocumentsApi, indexApi : IndicesApi : IndicesApi, indexName : string) =
+        indicesApi.CreateIndexWithHttpInfo(testIndex indexName) |> isCreated
+        let document = new Document(indexName = null, id = "1")
+        document.Fields.Add("firstname", "Seemant")
+        document.Fields.Add("lastname", "Rajvanshi")
+
+        docApi.CreateDocument(document, indexName) |> isSuccessful
+
 //type ``Demo index Test``() = 
     member __.``Setting up the demo index creates the country index`` (serverApi : ServerApi, (indicesApi : IndicesApi, handler : LoggingHandler)) = 
         serverApi.SetupDemo() |> isSuccessful

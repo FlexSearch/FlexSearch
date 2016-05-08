@@ -336,7 +336,9 @@ type GetDocumentByIdHandler(documentService : IDocumentService) =
 [<Sealed>]
 type PostDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<Document, CreationId>()
-    override __.Process(_, body) = 
+    override __.Process(reqCtxt, body) = 
+        // override document's indexName with the one in the url
+        body.Value.IndexName <- reqCtxt.ResId.Value
         match documentService.AddDocument(body.Value) with
         | Ok(response) -> SuccessResponse(response, Created)
         | Fail(error) -> 
@@ -393,7 +395,9 @@ type DeleteDocumentByIdHandler(documentService : IDocumentService) =
 [<Sealed>]
 type PutDocumentByIdHandler(documentService : IDocumentService) = 
     inherit HttpHandlerBase<Document, bool>()
-    override __.Process(_, body) = 
+    override __.Process(reqCtxt, body) = 
+        // override document's indexName with the one in the url
+        body.Value.IndexName <- reqCtxt.ResId.Value
         SomeResponse(documentService.AddOrUpdateDocument(body.Value) |> toBoolResult, Ok, BadRequest)
 
 // -------------------------- //
