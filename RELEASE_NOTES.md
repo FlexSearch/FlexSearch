@@ -1,4 +1,17 @@
-### 0.6.4-beta - FlexSearch 0.6.4-beta
+### 0.6.5-beta - FlexSearch 0.6.5-beta
+* Copy libuv.dll from new package path
+* Handle SearchQuery validation gracefully
+* Field validation error message should mention missing field
+* Include System.Reflection in build folder
+* Don't require IndexName in DTO when creating documents
+* Update to latest aspnet packages, including changing from Microsoft.AspNet.* to Microsoft.AspNetCore.*
+* Check for JAVA_HOME existance during build
+* Don't commit paket.exe
+* Add new icon for flexsearch-server.exe
+* Delete country index folder in case it already exists
+* Rationalize all existing tests and add missing tests for phrase query
+
+#### 0.6.4-beta - FlexSearch 0.6.4-beta
 * Update NOTICE and LICENSE files
 * Run paket simplify
 
