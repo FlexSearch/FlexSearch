@@ -42,6 +42,6 @@ nuget Topshelf 3.3.1 framework: >= net46
 nuget UnionArgParser 0.9.0 framework: >= net46
 nuget Unquote 2.2.2 framework: >= net452
 nuget FAKE
-nuget Newtonsoft.Json ~> 8.0.0
+nuget Newtonsoft.Json ~> 8.0.0 redirects: force
 
 github fsharp/FAKE modules/Octokit/Octokit.fsx

@@ -42,7 +42,7 @@ NUGET
       Microsoft.Bcl.Build (>= 1.0.14)
     Microsoft.Tpl.Dataflow (4.5.24) - framework: >= net452
     MsgPack.Cli (0.7.0-alpha2) - framework: >= net46
-    Newtonsoft.Json (8.0.3)
+    Newtonsoft.Json (8.0.3) - redirects: force
     NuGet.CommandLine (3.4.3)
     Octokit (0.19)
       Microsoft.Net.Http  - framework: net10, net11, net20, net30, net35, net40, net40-full
