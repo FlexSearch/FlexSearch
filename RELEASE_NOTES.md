@@ -1,4 +1,7 @@
-### 0.6.5-beta - FlexSearch 0.6.5-beta
+### 0.6.6-beta - FlexSeach 0.6.6-beta
+* Redirect Newtonsoft.Json to version 8.0.0.0
+
+#### 0.6.5-beta - FlexSearch 0.6.5-beta
 * Copy libuv.dll from new package path
 * Handle SearchQuery validation gracefully
 * Field validation error message should mention missing field
