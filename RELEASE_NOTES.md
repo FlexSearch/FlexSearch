@@ -1,4 +1,7 @@
-### 0.6.6-beta - FlexSeach 0.6.6-beta
+### 0.6.7-beta - FlexSeach 0.6.7-beta
+* Include System.Reflection.dll into the final build package
+
+#### 0.6.6-beta - FlexSeach 0.6.6-beta
 * Redirect Newtonsoft.Json to version 8.0.0.0
 
 #### 0.6.5-beta - FlexSearch 0.6.5-beta
