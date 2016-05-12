@@ -243,7 +243,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
     member __.``Add a document to an index`` ((api : CommonApi, handler : LoggingHandler), indexName : string) = 
         let actual = createDocument api indexName
         actual |> fst |> isSuccessful
-        handler |> log "post-indices-id-documents-id-2" 0
+        handler |> log "post-indices-id-documents-id-2" 1
         (actual |> fst).Data.Id =? "1"
         api.DeleteIndex(indexName) |> isSuccessful
     
