@@ -1,4 +1,7 @@
-### 0.6.7-beta - FlexSeach 0.6.7-beta
+### 0.6.8-beta - FLexSearch 0.6.8-beta
+* Move packages to aspnet RC2
+
+#### 0.6.7-beta - FlexSeach 0.6.7-beta
 * Include System.Reflection.dll into the final build package
 
 #### 0.6.6-beta - FlexSeach 0.6.6-beta
