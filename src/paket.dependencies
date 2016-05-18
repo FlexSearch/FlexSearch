@@ -1,6 +1,5 @@
 redirects: on
-source https://www.myget.org/F/aspnetrc2/api/v3/index.json
-source https://www.nuget.org/api/v2/
+source https://api.nuget.org/v3/index.json
 
 nuget NuGet.CommandLine
 nuget Autofac.Extensions.DependencyInjection ~> 4.0 framework: >= net46

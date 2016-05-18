@@ -1,6 +1,6 @@
 REDIRECTS: ON
 NUGET
-  remote: https://www.nuget.org/api/v2
+  remote: http://api.nuget.org/v3/index.json
   specs:
     Autofac (4.0.0-rc1-177) - framework: >= net46
     Autofac.Extensions.DependencyInjection (4.0.0-rc1-177) - framework: >= net46
@@ -30,49 +30,6 @@ NUGET
       FSharpx.Async (>= 1.12)
       FSharpx.Collections (>= 1.10.1)
     IKVM (8.1.5717) - framework: >= net46
-    Microsoft.Bcl (1.1.10) - framework: net10, net11, net20, net30, net35, net40, net40-full
-      Microsoft.Bcl.Build (>= 1.0.14)
-    Microsoft.Bcl.Build (1.0.21) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full
-    Microsoft.Dnx.Compilation.Abstractions (1.0.0-rc1-final) - framework: >= net46
-      Microsoft.Extensions.PlatformAbstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.OptionsModel (1.0.0-rc1-final) - framework: >= net46
-      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Configuration.Binder (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-    Microsoft.Extensions.WebEncoders.Core (1.0.0-rc1-final) - framework: >= net46
-    Microsoft.IO.RecyclableMemoryStream (1.1) - framework: >= net452
-    Microsoft.Net.Http (2.2.29) - framework: net10, net11, net20, net30, net35, net40, net40-full
-      Microsoft.Bcl (>= 1.1.10)
-      Microsoft.Bcl.Build (>= 1.0.14)
-    Microsoft.Net.Http.Server (1.0.0-rc1-final) - framework: >= net46
-      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-      Microsoft.Extensions.Primitives (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-      Microsoft.Net.WebSockets (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
-    Microsoft.Net.WebSockets (1.0.0-rc1-final) - framework: >= net46
-    Microsoft.Tpl.Dataflow (4.5.24) - framework: >= net452
-    MsgPack.Cli (0.7.0-alpha2) - framework: >= net46
-    Newtonsoft.Json (8.0.3) - redirects: force
-    NuGet.CommandLine (3.4.3)
-    Octokit (0.19)
-      Microsoft.Net.Http  - framework: net10, net11, net20, net30, net35, net40, net40-full
-    PerfUtil (0.1.8) - framework: >= net452
-    protobuf-net (2.1.0-alpha-1) - framework: >= net46
-      System.Reflection.Emit (>= 4.0.1-beta-23516) - framework: >= net45, dnx451, dnxcore50
-    System.Collections.Immutable (1.1.37) - framework: portable-profile7
-      System.Collections (>= 4.0) - framework: dnxcore50
-      System.Diagnostics.Debug (>= 4.0) - framework: dnxcore50
-      System.Globalization (>= 4.0) - framework: dnxcore50
-      System.Linq (>= 4.0) - framework: dnxcore50
-      System.Resources.ResourceManager (>= 4.0) - framework: dnxcore50
-      System.Runtime (>= 4.0) - framework: dnxcore50
-      System.Runtime.Extensions (>= 4.0) - framework: dnxcore50
-      System.Threading (>= 4.0) - framework: dnxcore50
-    System.Net.Http (4.0) - framework: >= net46
-    Topshelf (3.3.1) - framework: >= net46
-    UnionArgParser (0.9) - framework: >= net46
-    Unquote (2.2.2) - framework: >= net452
-  remote: https://www.myget.org/F/aspnetrc2
-  specs:
     Libuv (1.9.0-rc2-20896) - framework: >= net46
     Microsoft.AspNetCore.Cors (1.0.0-rc2-final) - framework: >= net46
       Microsoft.AspNetCore.Http.Extensions (>= 1.0.0-rc2-final) - framework: >= net451, >= netstandard13
@@ -142,6 +99,11 @@ NUGET
       Microsoft.Extensions.Primitives (>= 1.0.0-rc2-final) - framework: >= net451, >= netstandard13
       System.Buffers (>= 4.0.0-rc2-24027) - framework: >= net451, >= netstandard13
       System.Text.Encodings.Web (>= 4.0.0-rc2-24027) - framework: >= net451, >= netstandard13
+    Microsoft.Bcl (1.1.10) - framework: net10, net11, net20, net30, net35, net40, net40-full
+      Microsoft.Bcl.Build (>= 1.0.14)
+    Microsoft.Bcl.Build (1.0.21) - import_targets: false, framework: net10, net11, net20, net30, net35, net40, net40-full
+    Microsoft.Dnx.Compilation.Abstractions (1.0.0-rc1-final) - framework: >= net46
+      Microsoft.Extensions.PlatformAbstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
     Microsoft.Extensions.Configuration (1.0.0-rc2-final) - framework: >= net46
     Microsoft.Extensions.Configuration.Abstractions (1.0.0-rc2-final) - framework: >= net46
     Microsoft.Extensions.Configuration.Binder (1.0.0-rc2-final) - framework: >= net46
@@ -174,13 +136,45 @@ NUGET
       Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc2-final) - framework: >= net451, >= netstandard13
     Microsoft.Extensions.ObjectPool (1.0.0-rc2-final) - framework: >= net46
     Microsoft.Extensions.Options (1.0.0-rc2-final) - framework: >= net46
+    Microsoft.Extensions.OptionsModel (1.0.0-rc1-final) - framework: >= net46
+      Microsoft.Extensions.Configuration.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
+      Microsoft.Extensions.Configuration.Binder (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
+      Microsoft.Extensions.DependencyInjection.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
     Microsoft.Extensions.PlatformAbstractions (1.0.0-rc2-final) - framework: >= net46
     Microsoft.Extensions.Primitives (1.0.0-rc2-final) - framework: >= net46
     Microsoft.Extensions.WebEncoders (1.0.0-rc2-final) - framework: >= net46
+    Microsoft.Extensions.WebEncoders.Core (1.0.0-rc1-final) - framework: >= net46
+    Microsoft.IO.RecyclableMemoryStream (1.1) - framework: >= net452
+    Microsoft.Net.Http (2.2.29) - framework: net10, net11, net20, net30, net35, net40, net40-full
+      Microsoft.Bcl (>= 1.1.10)
+      Microsoft.Bcl.Build (>= 1.0.14)
     Microsoft.Net.Http.Headers (1.0.0-rc2-final) - framework: >= net46
+    Microsoft.Net.Http.Server (1.0.0-rc1-final) - framework: >= net46
+      Microsoft.Extensions.Logging.Abstractions (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
+      Microsoft.Extensions.Primitives (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
+      Microsoft.Net.WebSockets (>= 1.0.0-rc1-final) - framework: >= net451, dnxcore50
+    Microsoft.Net.WebSockets (1.0.0-rc1-final) - framework: >= net46
+    Microsoft.Tpl.Dataflow (4.5.24) - framework: >= net452
+    MsgPack.Cli (0.7.0-alpha2) - framework: >= net46
+    Newtonsoft.Json (8.0.3) - redirects: force
+    NuGet.CommandLine (3.4.3)
+    Octokit (0.19)
+      Microsoft.Net.Http  - framework: net10, net11, net20, net30, net35, net40, net40-full
+    PerfUtil (0.1.8) - framework: >= net452
+    protobuf-net (2.1.0-alpha-1) - framework: >= net46
+      System.Reflection.Emit (>= 4.0.1-beta-23516) - framework: >= net45, dnx451, dnxcore50
     System.Buffers (4.0.0-rc2-24027) - framework: >= net46
     System.Collections (4.0.11-rc2-24027)
       System.Runtime (>= 4.1.0-rc2-24027) - framework: dnxcore50, netstandard10, >= netstandard13
+    System.Collections.Immutable (1.1.37) - framework: portable-net45+win8
+      System.Collections (>= 4.0) - framework: dnxcore50
+      System.Diagnostics.Debug (>= 4.0) - framework: dnxcore50
+      System.Globalization (>= 4.0) - framework: dnxcore50
+      System.Linq (>= 4.0) - framework: dnxcore50
+      System.Resources.ResourceManager (>= 4.0) - framework: dnxcore50
+      System.Runtime (>= 4.0) - framework: dnxcore50
+      System.Runtime.Extensions (>= 4.0) - framework: dnxcore50
+      System.Threading (>= 4.0) - framework: dnxcore50
     System.ComponentModel (4.0.1-rc2-24027) - framework: >= net46
     System.Diagnostics.Debug (4.0.11-rc2-24027)
       System.Runtime (>= 4.1.0-rc2-24027) - framework: dnxcore50, netstandard10, >= netstandard13
@@ -197,6 +191,7 @@ NUGET
       System.Resources.ResourceManager (>= 4.0.1-rc2-24027) - framework: dnxcore50, >= netstandard15
       System.Runtime (>= 4.1.0-rc2-24027) - framework: dnxcore50, netstandard10, >= netstandard15
       System.Runtime.Extensions (>= 4.1.0-rc2-24027) - framework: dnxcore50, >= netstandard15
+    System.Net.Http (4.0) - framework: >= net46
     System.Numerics.Vectors (4.1.1-rc2-24027) - framework: >= net46
     System.Reflection (4.1.0-rc2-24027)
       System.IO (>= 4.1.0-rc2-24027) - framework: dnxcore50, netstandard10, netstandard13, >= netstandard15
@@ -208,7 +203,7 @@ NUGET
       System.Runtime (>= 4.1.0-rc2-24027) - framework: dnxcore50, >= netstandard10
     System.Reflection.Metadata (1.3.0-rc2-24027)
       System.Collections (>= 4.0.11-rc2-24027) - framework: >= netstandard11
-      System.Collections.Immutable (>= 1.1.37) - framework: portable-profile7
+      System.Collections.Immutable (>= 1.1.37) - framework: portable-net45+win8
       System.Collections.Immutable (>= 1.2.0-rc2-24027) - framework: >= net45, >= netstandard11, monoandroid, monotouch, xamarinios, xamarinmac, winv4.5, wpav8.1
       System.Diagnostics.Debug (>= 4.0.11-rc2-24027) - framework: >= netstandard11
       System.IO (>= 4.1.0-rc2-24027) - framework: >= netstandard11
@@ -255,6 +250,9 @@ NUGET
     System.Threading.Tasks (4.0.11-rc2-24027) - framework: dnxcore50, netstandard10, >= netstandard13
       System.Runtime (>= 4.1.0-rc2-24027) - framework: dnxcore50, netstandard10, >= netstandard13
     System.Threading.Tasks.Extensions (4.0.0-rc2-24027) - framework: >= net46
+    Topshelf (3.3.1) - framework: >= net46
+    UnionArgParser (0.9) - framework: >= net46
+    Unquote (2.2.2) - framework: >= net452
 GITHUB
   remote: fsharp/FAKE
   specs:
