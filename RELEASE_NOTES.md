@@ -1,4 +1,7 @@
-### 0.6.8-beta - FLexSearch 0.6.8-beta
+### 0.6.9-beta - FlexSeach 0.6.9-beta
+* Switch to only using the Nuget package source v3
+
+#### 0.6.8-beta - FLexSearch 0.6.8-beta
 * Move packages to aspnet RC2
 
 #### 0.6.7-beta - FlexSeach 0.6.7-beta
