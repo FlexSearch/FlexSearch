@@ -1,10 +1,10 @@
-﻿<h1>{{{appName}}}</h1>
+﻿<h3>{{{appName}}}</h3>
 <p>{{{appDescription}}}</p>
 
-<h2><a name="__Methods">Methods</a></h2>
+<h3><a name="__Methods">Methods</a></h3>
 [ Jump to <a href="#__Models">Models</a> ]
 
-<h2>List of Operations </h2>
+<h3>List of Operations </h3>
 <div class="method-summary">{{access}}</div>
 {{#apiInfo}}
 <ul>
@@ -115,9 +115,9 @@
 {{/operations}}
 {{/apis}}
 {{/apiInfo}}
-<h2><a name="__Models">Models</a></h2>
+<h3><a name="__Models">Models</a></h3>
 [ Jump to <a href="#__Methods">Methods</a> ]
-<h2>List of Models</h2>
+<h3>List of Models</h3>
 <p>
     <ul>
         {{#models}}
@@ -158,6 +158,7 @@
                     {{/isContainer}}
                     {{name}} : <a href='#{{complexType}}'><code>{{datatype}}</code></a>
                 </p>
+            </td>
             <td>
                 <p>
                     {{unescapedDescription}}
@@ -165,7 +166,7 @@
                     The property is an enum which has the following valid values:
                     <ul>
                         {{#_enum}}
-                        <li><code>{{this}}</code></>{{/_enum}}</li>
+                        <li><code>{{this}}</code></li>{{/_enum}}
                     </ul>
                     {{/isEnum}}
                 </p>
@@ -178,7 +179,7 @@
 <hr />
 {{/model}}
 {{/models}}
-<h2>DataTypes</h2>
+<h3>DataTypes</h3>
 <table class="table table-bordered table-condensed table-striped">
     <tbody>
         <tr>
@@ -215,5 +216,3 @@
         </tr>
     </tbody>
 </table>
-<!--</body>
-</html>-->
