@@ -299,7 +299,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         indicesApi.GetIndex("country") |> isSuccessful
     
     [<Example("post-indices-search-highlighting-1", "Text highlighting example")>]
-    member __.``Search Highlight Feature Test1`` (api : SearchApi) = 
+    member __.``Search Highlight Feature Test1`` ((api : SearchApi, handler : LoggingHandler)) = 
         let query = new SearchQuery("country", "anyOf(background, 'most prosperous countries')")
         let highlight = [| "background" |]
         query.Highlights <- new HighlightOption(highlight)
@@ -308,6 +308,7 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
         api.Search(query.IndexName, query)
         |> fun r -> r |> isSuccessful; r
         |> fun r -> r.Data.Documents.Length >=? 0
+        handler |> log "post-indices-search-highlighting-1" 0
 
     member __.``Analyzing some text should return success`` (analyzerApi : AnalyzerApi) = 
         analyzerApi.AnalyzeText(new AnalyzeText("text to analyze", "standard"), "standard") 
