@@ -1,6 +1,8 @@
+#r @"..\src\packages\FAKE\tools\FakeLib.dll"
 #load "Helpers.fsx"
 #load "SwaggerInjector.fsx"
 
+open Fake
 open Helpers
 open SwaggerInjector
 open System
@@ -188,7 +190,10 @@ module TypeScript =
         !>> "Cleaning up the generated files"
         cleanup()
         !>> "Copying the files to the API directory"
-        copy()
+        FileHelper.CopyRecursive tempTsDir targetTsDir true |> ignore
+        ensureDir (deployDir <!!> "clients\\ts") |> ignore
+        FileHelper.CopyRecursive tempTsDir (deployDir <!!> "clients\\ts") true |> ignore
+
         brk()
         !> "TypeScript Model generation finished"
 
@@ -223,13 +228,12 @@ module JavaScript =
         !> "Generating TypeScript API models"
         generateJavaScriptModel()
         !>> "Copying the files to the API directory"
-        copy()
+        FileHelper.CopyRecursive tempJsDir targetJsDir true |> ignore
         brk()
         !> "JavaScript Model generation finished"
 
 module Html =
-    let targetHtmlDir = rootDir <!!> @"documentation"
-
+    let targetHtmlDir = deployDir <!!> @"clients\html"
     let generateHtmlModel() =
         !>> "Cleaning Models directory"    
         targetHtmlDir |> (ensureDir >> ignore)
@@ -254,14 +258,14 @@ module Html =
         brk()
         !> "HTML Model generation finished"
 
-/// Generate API model from the swagger definition
-let generateModel() =
-    // First generate the full swagger file according to the glossary
-    injectSwagger()
-    CSharp.generateCSharp()
-    TypeScript.generateTypeScript()
-    JavaScript.generateJavaScript()
-    Html.generateHtml()
+///// Generate API model from the swagger definition
+//let generateModel() =
+//    // First generate the full swagger file according to the glossary
+//    injectSwagger()
+//    CSharp.generateCSharp()
+//    TypeScript.generateTypeScript()
+//    JavaScript.generateJavaScript()
+//    Html.generateHtml()
 
 // Initialize the git submodule containing the CodeFormatter if it's not there
 if File.Exists(toolsDir <!!> "CodeFormatter/CodeFormatter.exe") |> not then
@@ -269,5 +273,5 @@ if File.Exists(toolsDir <!!> "CodeFormatter/CodeFormatter.exe") |> not then
     exec("git", "submodule init")
     exec("git", "submodule update")
 
-if Directory.Exists javaHome then generateModel()
-else failwith "Couldn't find the JAVA_HOME system environment variable. Most probably you don't have Java installed on your system."
+//if Directory.Exists javaHome then generateModel()
+//else failwith "Couldn't find the JAVA_HOME system environment variable. Most probably you don't have Java installed on your system."
