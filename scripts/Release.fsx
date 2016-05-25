@@ -362,7 +362,7 @@ let releaseToGithub() =
 Target "Release" releaseToGithub
 "ReleaseNoteGenerator" ==> "Release"
 /// Dependencies to build the whole ecosystem
-"AllClients" ==> "MovePortal" ==> "AllTests" ==> "MoveFiles" ==> "DeployCsClient" ==> "Zip"
+"AllClients" ==> "MovePortal" ==> "Test" ==> "MoveFiles" ==> "DeployCsClient" ==> "Zip"
 "Zip" ==> "Release"
 Target "Help" <| fun _ -> 
     trace ""

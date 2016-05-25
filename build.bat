@@ -20,4 +20,3 @@ IF "%~1"=="" (
     "src\packages\FAKE\tools\Fake.exe" scripts\Release.fsx target=%*
 )
 
-EXIT /B 0
