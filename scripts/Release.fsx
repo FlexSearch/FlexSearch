@@ -135,8 +135,16 @@ let httpTests() = !!(testDir <!!> "FlexSearch.HttpTests.dll") |> fixie dataDir
 
 Target "HttpTests" httpTests
 "BuildApp" ==> "HttpTests"
-Target "AllTests" TargetHelper.DoNothing
-"Test" ==> "HttpTests" ==> "AllTests"
+//Target "AllTests" TargetHelper.DoNothing
+//"Test" ==> "HttpTests" ==> "AllTests"
+
+(*
+ 
+FlexSearch website related target
+
+*)
+Target "Website" TargetHelper.DoNothing
+"AllClients" ==> "HttpTests" ==> "Website"
 
 (*
  
