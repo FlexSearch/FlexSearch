@@ -206,8 +206,6 @@ FlexSearch Portal build Section
 
 *)
 Target "BuildPortal" <| fun _ -> 
-    // Clean common client folder
-    CleanDir(portalDir <!!> "common/client")
     FileUtils.cd portalDir
     Shell.Exec "build.bat" |> ignore
     FileUtils.cd @"..\"
