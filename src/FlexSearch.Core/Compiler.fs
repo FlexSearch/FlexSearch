@@ -66,15 +66,43 @@ module FSharpCompiler =
         let scs = SimpleSourceCodeServices()
         
         let errors, exitCode, dynAssembly = 
-            scs.CompileToDynamicAssembly([| "-o"
-                                            Path.GetTempFileName()
-                                            "-a"
-                                            helpersFile
-                                            filePath
-                                            "-r"
-                                            "System.Runtime"
-                                            "-r"
-                                            apiDllPath |], execute = None)
+            let libFolder = if Directory.Exists <| Constants.rootFolder +/ "Lib"
+                            then Constants.rootFolder +/ "Lib"
+                            else Constants.rootFolder
+
+            let flags =
+                [|  yield "--out:" + Path.GetTempFileName()
+                    yield "--target:library"
+                    yield "--noframework"
+                    yield "--simpleresolution"
+                    yield "--optimize-"
+                    yield "--fullpaths"
+                    yield "--lib:" + libFolder
+                    yield helpersFile
+                    yield filePath
+                    
+                    let references =
+                        [   yield "System.Runtime"
+                            yield apiDllPath
+                            yield typeof<System.Object>.Assembly.Location; // mscorlib
+                            yield typeof<System.Console>.Assembly.Location; // System.Console
+                            yield typeof<System.ComponentModel.DefaultValueAttribute>.Assembly.Location; // System.Runtime
+                            yield typeof<System.ComponentModel.PropertyChangedEventArgs>.Assembly.Location; // System.ObjectModel             
+                            yield typeof<System.IO.BufferedStream>.Assembly.Location; // System.IO
+                            yield typeof<System.Linq.Enumerable>.Assembly.Location; // System.Linq
+                            yield typeof<System.Xml.Linq.XDocument>.Assembly.Location; // System.Xml.Linq
+                            yield typeof<System.Net.WebRequest>.Assembly.Location; // System.Net.Requests
+                            yield typeof<System.Numerics.BigInteger>.Assembly.Location; // System.Runtime.Numerics
+                            yield typeof<System.Threading.Tasks.TaskExtensions>.Assembly.Location; // System.Threading.Tasks
+                            //yield typeof<Microsoft.FSharp.Core.MeasureAttribute>.Assembly.Location; // FSharp.Core
+                            // The reason why I am not taking this FSharp.Core from GAC is that the sigdata and opdata files are not present
+                        ]
+
+                    for r in references do
+                        yield "-r:" + r
+                |]
+                 
+            scs.CompileToDynamicAssembly(flags, execute = None)
         
         let preSearchScripts = new Dictionary<string, PreSearchDelegate>(StringComparer.InvariantCultureIgnoreCase)
         let mutable preIndexScript = None
