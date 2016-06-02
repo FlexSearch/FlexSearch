@@ -72,7 +72,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             documentService.AddDocument(indexDocument) |> ignore
         indexService.Refresh(indexName) |> ignore
     
-    let GetJsonData() = lazy (JsonConvert.DeserializeObject<List<Country>>(Resources.DemoIndexData))
+    let GetJsonData() = lazy (JsonConvert.DeserializeObject<System.Collections.Generic.List<Country>>(Resources.DemoIndexData))
     
     let IndexJsonData(data : List<Country>) = 
         for record in data do
@@ -168,7 +168,7 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
             // Index data
             //let testData = File.ReadAllText(Path.Combine(settings.ConfFolder, "demo.csv"))
             //AddTestDataToIndex(index, testData)
-            IndexJsonData(GetJsonData().Value)
+            IndexJsonData(GetJsonData().Value |> Seq.toList)
         }
     
     member this.DemoData() = GetJsonData()
