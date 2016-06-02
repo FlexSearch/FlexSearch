@@ -1,6 +1,5 @@
-/// <reference path="../../../typings/tsd.d.ts" />
+/// <reference path="../../../typings/index.d.ts" />
 /// <reference path="../client/api.d.ts" />
-/// <reference path="../../../typings/ui-grid/ui-grid.d.ts" />
 
 /*
  * Contains helper methods for the generated typescript API
@@ -73,7 +72,7 @@ module apiHelpers {
             indexName: "duplicates"
         }, "duplicates", duplicate.FlexSearchId);
     }
-    
+
     // Get the duplicate that needs to be displayed
     export function getDuplicateBySourceId(sessionId, sourceId, commonApi: API.Client.CommonApi) {
         return commonApi.searchHandled("duplicates", {

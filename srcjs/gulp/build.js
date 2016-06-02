@@ -94,12 +94,12 @@ module.exports = function (options) {
             .pipe(gulp.dest(options.dist + '/scripts'))
     });
 
-    gulp.task('clean-' + options.name, ['tsd:purge'], function (done) {
+    gulp.task('clean-' + options.name, function (done) {
         $.del([options.dist + '/', options.tmp + '/'], done);
     });
 
     gulp.task('swagger-' + options.name, function () {
-        // Swagger file is only needed for the swagger module 
+        // Swagger file is only needed for the swagger module
         if (options.name == 'swagger') {
             return gulp.src(swaggerDir + "swagger-full.json")
                 .pipe($.rename('swagger.json'))

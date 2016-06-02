@@ -4,13 +4,13 @@ var gulp = require('gulp');
 var gutil = require('gulp-util');
 
 var path = require('path');
-var tsd = require('tsd');
+var typings = require('typings');
 
-var tsdJson = 'tsd.json';
-var tsdApi = new tsd.getAPI(tsdJson);
+var typingsJson = 'typings.json';
+var typingsApi = new typings.getAPI(typingsJson);
 
 module.exports = function() {
-  gulp.task('tsd:install', function () {
+  gulp.task('typings:install', function () {
     var bower = require(path.join(process.cwd(), 'bower.json'));
 
     var dependencies = [].concat(
@@ -18,22 +18,22 @@ module.exports = function() {
       Object.keys(bower.devDependencies)
     );
 
-    var query = new tsd.Query();
+    var query = new typings.Query();
     dependencies.forEach(function (dependency) {
       query.addNamePattern(dependency);
     });
 
-    var options = new tsd.Options();
+    var options = new typings.Options();
     options.resolveDependencies = true;
     options.overwriteFiles = true;
     options.saveBundle = true;
 
-    return tsdApi.readConfig()
+    return typingsApi.readConfig()
       .then(function () {
-        return tsdApi.select(query, options);
+        return typingsApi.select(query, options);
       })
       .then(function (selection) {
-        return tsdApi.install(selection, options);
+        return typingsApi.install(selection, options);
       })
       .then(function (installResult) {
         var written = Object.keys(installResult.written.dict);
@@ -54,9 +54,9 @@ module.exports = function() {
       });
   });
 
-  gulp.task('tsd:purge', function () {
-    return tsdApi.purge(true, true);
+  gulp.task('typings:purge', function () {
+    return typingsApi.purge(true, true);
   });
 
-  gulp.task('tsd', ['tsd:install']);
+  gulp.task('typings', ['typings:install']);
 };

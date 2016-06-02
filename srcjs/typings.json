@@ -1,0 +1,12 @@
+{
+  "name": "flexportal",
+  "globalDependencies": {
+    "angular": "github:DefinitelyTyped/DefinitelyTyped/angularjs/angular.d.ts#6766ed1d0faf02ede9e2edf2e66bbb2388c825ec",
+    "angular-material": "registry:dt/angular-material#1.0.0-rc5.0+20160526141345",
+    "angular-ui-router": "github:DefinitelyTyped/DefinitelyTyped/angular-ui-router/angular-ui-router.d.ts#6766ed1d0faf02ede9e2edf2e66bbb2388c825ec",
+    "chart": "github:DefinitelyTyped/DefinitelyTyped/chartjs/chart.d.ts#6766ed1d0faf02ede9e2edf2e66bbb2388c825ec",
+    "jquery": "registry:dt/jquery#1.10.0+20160417213236",
+    "ui-grid": "github:DefinitelyTyped/DefinitelyTyped/ui-grid/ui-grid.d.ts#6766ed1d0faf02ede9e2edf2e66bbb2388c825ec",
+    "underscore": "github:DefinitelyTyped/DefinitelyTyped/underscore/underscore.d.ts#6766ed1d0faf02ede9e2edf2e66bbb2388c825ec"
+  }
+}
