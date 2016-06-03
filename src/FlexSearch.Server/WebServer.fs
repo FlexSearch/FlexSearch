@@ -4,13 +4,12 @@ open FlexSearch.Core
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Hosting.Internal
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.Server.Kestrel
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.FileProviders
 open Microsoft.Extensions.PlatformAbstractions
-open Microsoft.Net.Http.Server
 open System
 open System.Collections.Generic
 open System.Threading.Tasks
@@ -99,13 +98,7 @@ type WebServer(configuration : IConfiguration) =
 type WebServerBuilder(settings : Settings.T) =
     let mutable engine = Unchecked.defaultof<IWebHost>
     let mutable thread = Unchecked.defaultof<Task>
-    
-    /// Name of the HTTP server to be used
-    let serverAssemblyName = 
-        let name = "Microsoft.AspNetCore.Server." + settings.Get(Settings.ServerKey, Settings.ServerType, "Kestrel")
-        Logger.Log("Using server " + name, MessageKeyword.Startup, MessageLevel.Verbose)
-        name
-    
+        
     /// Port on which server should start (Defaults to 9800)
     let port = 
         let conf = settings.ConfigurationSource.[Settings.ServerKey + ":" + Settings.HttpPort]
@@ -115,7 +108,7 @@ type WebServerBuilder(settings : Settings.T) =
         let config = settings.ConfigurationSource
         let webAppBuilder = new WebHostBuilder()
         webAppBuilder.UseConfiguration(config)
-                     .UseServer(serverAssemblyName)
+                     .UseKestrel()
                      .ConfigureServices(fun s -> s.AddSingleton<IConfiguration>(config) |> ignore)
                      .UseStartup<WebServer>()
     
@@ -144,13 +137,6 @@ type WebServerBuilder(settings : Settings.T) =
                                     <| exceptionPrinter e
                                     <| loaderExceptions
                     Logger.Log(message, MessageKeyword.Startup, MessageLevel.Critical);
-                    reraise()
-                | :? WebListenerException as e -> 
-                    if e.ErrorCode = 5 then // Access Denied
-                        Logger.Log("FlexSearch can only be run as an administrator when using WebListener server",
-                                    MessageKeyword.Node,
-                                    MessageLevel.Critical)
-                    else Logger.Log(e, MessageKeyword.Startup, MessageLevel.Critical)
                     reraise()
                 | e when e.InnerException |> (isNull >> not) ->
                     if e.InnerException :? HttpListenerException then

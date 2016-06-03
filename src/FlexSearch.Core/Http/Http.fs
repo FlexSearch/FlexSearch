@@ -42,7 +42,6 @@ open Microsoft.AspNetCore.Cors
 open Microsoft.Extensions.Primitives
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.PlatformAbstractions
-open Microsoft.Net.Http.Server
 open Microsoft.Extensions.Logging
 
 [<AutoOpenAttribute>]
