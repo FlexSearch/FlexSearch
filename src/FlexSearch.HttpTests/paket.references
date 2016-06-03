@@ -7,15 +7,11 @@ FsCheck
 FSharpx.Extras
 Microsoft.AspNetCore.Cors
 Microsoft.AspNetCore.Server.Kestrel
-Microsoft.AspNetCore.Server.WebListener
 Microsoft.AspNetCore.TestHost
-Microsoft.Dnx.Compilation.Abstractions
 Microsoft.Extensions.Configuration.Binder
 Microsoft.Extensions.ObjectPool
-Microsoft.Extensions.OptionsModel
-Microsoft.Extensions.WebEncoders.Core
-Microsoft.Net.WebSockets
-MsgPack.Cli
+Microsoft.Extensions.Options
 Unquote
 System.Diagnostics.DiagnosticSource
 Newtonsoft.Json
+Microsoft.AspNet.WebApi.Client
