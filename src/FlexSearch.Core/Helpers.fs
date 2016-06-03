@@ -454,15 +454,6 @@ type NewtonsoftJsonFormatter() =
             [| "application/json"; "text/json"; "application/json;charset=utf-8"; "application/json; charset=utf-8"; 
                "application/javascript"; "text/html" |]
 
-[<Sealed>]
-type ProtoBufferFormatter() = 
-    let serialize (body : obj, stream : Stream) = ProtoBuf.Serializer.Serialize(stream, body)
-    interface IFormatter with
-        member __.SerializeToString(_ : obj) = failwith "Not implemented yet"
-        member __.DeSerialize<'T>(stream : Stream) = ProtoBuf.Serializer.Deserialize<'T>(stream)
-        member __.Serialize(body : obj, stream : Stream) : unit = serialize (body, stream)
-        member __.SupportedHeaders = [| "application/x-protobuf"; "application/octet-stream" |]
-
 [<AutoOpenAttribute>]
 module Debug = 
     open System.Diagnostics

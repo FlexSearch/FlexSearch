@@ -85,10 +85,8 @@ module Http =
               Error = error.OperationMessage() }
     
     let private Formatters = new ConcurrentDictionary<string, IFormatter>(StringComparer.OrdinalIgnoreCase)
-    let protoFormatter = new ProtoBufferFormatter() :> IFormatter
     let jsonFormatter = new NewtonsoftJsonFormatter() :> IFormatter
     
-    protoFormatter.SupportedHeaders |> Array.iter (fun x -> Formatters.TryAdd(x, protoFormatter) |> ignore)
     jsonFormatter.SupportedHeaders |> Array.iter (fun x -> Formatters.TryAdd(x, jsonFormatter) |> ignore)
     
     /// Get request format from the request object
