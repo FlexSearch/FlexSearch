@@ -1,2 +1,3 @@
 System.Net.Http
 Newtonsoft.Json
+Microsoft.AspNet.WebApi.Client
