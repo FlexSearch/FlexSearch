@@ -15,3 +15,4 @@ Unquote
 System.Diagnostics.DiagnosticSource
 Newtonsoft.Json
 Microsoft.AspNet.WebApi.Client
+MsgPack.Cli
