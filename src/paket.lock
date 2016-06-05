@@ -143,6 +143,7 @@ NUGET
     System.Diagnostics.DiagnosticSource (4.0.0-rc2-24027)
     System.Net.Http (4.0.1-rc2-24027)
     System.Numerics.Vectors (4.1.1-rc2-24027)
+    System.Reflection (4.1.0-rc2-24027)
     System.Text.Encodings.Web (4.0.0-rc2-24027)
     System.Threading.Tasks.Extensions (4.0.0-rc2-24027)
     Topshelf (3.3.1)

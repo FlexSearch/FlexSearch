@@ -101,7 +101,7 @@ let buildApp() =
     assemblyInfoCSharp "FlexSearch.API" "FlexSearch API Library"
     MSBuildRelease buildDir "Build" [ @"src\FlexSearch.sln" ] |> Log "BuildApp-Output: "
     [ // Copy over dlls that are not included in project references
-      "libuv.dll"; "System.Numerics.Vectors.dll"; "System.Text.Encodings.Web.dll" ] 
+      "libuv.dll"; "System.Numerics.Vectors.dll"; "System.Reflection.dll" ] 
     |> Seq.iter (fun name -> CopyFile (buildDir @@ name) (debugDir @@ name))
     // Copy the files from build to build-test necessary for Testing
     FileHelper.CopyRecursive buildDir testDir true |> ignore
@@ -130,6 +130,9 @@ let test() = !!(testDir <!!> "FlexSearch.Tests.dll") |> fixie (dataDir <!!> "non
 
 Target "Test" test
 "BuildApp" ==> "Test"
+
+Target "UnitTest" test
+"BuildApp" ==> "UnitTest"
 
 let httpTests() = !!(testDir <!!> "FlexSearch.HttpTests.dll") |> fixie dataDir
 
