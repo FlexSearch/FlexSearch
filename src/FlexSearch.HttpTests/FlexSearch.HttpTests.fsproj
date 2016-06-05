@@ -95,7 +95,6 @@
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(SolutionDir)packages\Libuv\runtimes\win7-x86\native\libuv.dll" "$(ProjectDir)\bin\Debug\" /Y
 xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.Vectors.dll" "$(ProjectDir)\bin\Debug\" /Y
-xcopy "$(SolutionDir)packages\System.Reflection\lib\net462\System.Reflection.dll" "$(ProjectDir)\bin\Debug\" /Y
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
