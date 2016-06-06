@@ -175,11 +175,11 @@ module AstParser =
             // Check if there is a configured behaviour for the missing value
             match properties.MatchRule with
             | ClauseMatchRule.All -> 
-                getMatchAllDocsQuery()
+                Query.matchAllDocsQuery()
                 |> Some
                 |> Ok
             | ClauseMatchRule.None -> 
-                getMatchNoDocsQuery()
+                Query.matchNoDocsQuery()
                 |> Some
                 |> Ok
             | ClauseMatchRule.FieldDefault -> 
@@ -236,10 +236,13 @@ module AstParser =
                 match q with
                 | Ok(q') -> 
                     let mutable q'' = q'
-                    if properties.Boost.IsSome then q'' <- getBoostQuery (q', properties.Boost.Value)
+                    if properties.Boost.IsSome then q'' <- Query.boostQuery q' properties.Boost.Value
                     if properties.ConstantScore.IsSome then 
-                        q'' <- getConstantScoreQuery (q'', properties.ConstantScore.Value)
-                    if properties.Filter then q'' <- getBooleanQuery() |> addFilterClause q'' :> Query
+                        q'' <- Query.constantScoreQuery q'' properties.ConstantScore.Value
+                    if properties.Filter then 
+                        q'' <- BooleanQuery.builder() 
+                               |> BooleanQuery.addFilterClause q'' 
+                               |> BooleanQuery.build
                     return q''
                 | _ -> return! q
         }
@@ -251,23 +254,26 @@ module AstParser =
             match predicate with
             | NotPredicate(pr) -> 
                 let! notQuery = generateLuceneQuery pr searchQuery fields queryFuncs
-                return getBooleanQuery()
-                       |> addMustNotClause notQuery
-                       |> addMatchAllClause :> Query
+                return BooleanQuery.builder()
+                       |> BooleanQuery.addMustNotClause notQuery
+                       |> BooleanQuery.addMatchAllClause
+                       |> BooleanQuery.build
             | Clause(funcName, fieldName, parameters) -> 
                 return! getClause (funcName, fieldName, parameters) searchQuery fields queryFuncs
             | OrPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateLuceneQuery lhs searchQuery fields queryFuncs
                 let! rhsQuery = generateLuceneQuery rhs searchQuery fields queryFuncs
-                return getBooleanQuery()
-                       |> addShouldClause lhsQuery
-                       |> addShouldClause rhsQuery :> Query
+                return BooleanQuery.builder()
+                       |> BooleanQuery.addShouldClause lhsQuery
+                       |> BooleanQuery.addShouldClause rhsQuery
+                       |> BooleanQuery.build
             | AndPredidate(lhs, rhs) -> 
                 let! lhsQuery = generateLuceneQuery lhs searchQuery fields queryFuncs
                 let! rhsQuery = generateLuceneQuery rhs searchQuery fields queryFuncs
-                return getBooleanQuery()
-                       |> addMustClause lhsQuery
-                       |> addMustClause rhsQuery :> Query
+                return BooleanQuery.builder()
+                       |> BooleanQuery.addMustClause lhsQuery
+                       |> BooleanQuery.addMustClause rhsQuery
+                       |> BooleanQuery.build
         }
     
     /// Generates a predicate using query parser. This predicate can be fed to LuceneQueryGenerator

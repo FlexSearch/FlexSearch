@@ -14,7 +14,7 @@ NUGET
     AutoFixture (3.37.3)
     FAKE (4.28)
     Fixie (1.0.1)
-    FlexLucene (5.4)
+    FlexLucene (6.0.2)
       IKVM (>= 8.1.5717)
     FParsec (1.0.2)
     FsCheck (2.2.4)

@@ -93,7 +93,7 @@ module VersionCache =
             let termsEnum = terms.Iterator()
             match termsEnum.SeekExact(term.Bytes()) with
             | true -> 
-                let docsEnums = termsEnum.Docs(null, null, 0)
+                let docsEnums = termsEnum.Postings(null, 0)
                 let nDocs = reader.GetNumericDocValues(cache.ModifyIndexFieldName)
                 nDocs.Get(docsEnums.DocID())
             | false -> 

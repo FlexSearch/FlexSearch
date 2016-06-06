@@ -161,13 +161,13 @@ module FieldSchema =
         if fieldType.StoreTermVectorPayloads() then properties.Add(StoreTermPayloads)
         if field.AllowSort then properties.Add(DocValues)
         let numericType = fieldType.NumericType()
-        if numericType = FieldTypeNumericType.DOUBLE then
+        if numericType = FieldTypeLegacyNumericType.DOUBLE then
             properties.Add(Double)
-        else if numericType = FieldTypeNumericType.FLOAT then
+        else if numericType = FieldTypeLegacyNumericType.FLOAT then
             properties.Add(Float)
-        else if numericType = FieldTypeNumericType.INT then
+        else if numericType = FieldTypeLegacyNumericType.INT then
             properties.Add(Int)
-        else if numericType = FieldTypeNumericType.LONG then
+        else if numericType = FieldTypeLegacyNumericType.LONG then
             properties.Add(Long)
         properties.ToArray() |> generateIdentity
     

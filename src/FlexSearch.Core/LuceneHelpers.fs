@@ -61,7 +61,7 @@ module JavaHelpers =
     let javaDouble (value : double) = new java.lang.Double(value)
     let javaLong (value : int64) = new java.lang.Long(value)
     let javaFloat (value : float32) = new java.lang.Float(value)
-
+    
     /// Get a new Java hashmap
     let hashMap() = new HashMap()
     
@@ -94,16 +94,18 @@ module JavaHelpers =
     let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) 
         (parse : string -> (bool * 'T)) (converter : 'T -> 'U) = 
         if number = Constants.Infinite then ok <| infiniteValue
-        else
+        else 
             match parse number with
             | true, v -> ok <| converter v
             | _ -> fail <| DataCannotBeParsed(schemaName, dataType, number)
-            
-    let rec getItemAt n (iterator : java.util.Iterator) =
+    
+    let rec getItemAt n (iterator : java.util.Iterator) = 
         if n = 0 then iterator.next()
-        else if iterator.hasNext() 
-             then iterator.next() |> ignore; getItemAt (n-1) iterator
-             else null
+        else if iterator.hasNext() then 
+            iterator.next() |> ignore
+            getItemAt (n - 1) iterator
+        else null
+    
     let parseDouble (schemaName) (number : string) (infiniteValue : JDouble) = 
         parseNumber<Double, JDouble> (schemaName, "Double") number infiniteValue Double.TryParse javaDouble
     let parseFloat (schemaName) (number : string) (infiniteValue : JFloat) = 
@@ -121,35 +123,38 @@ module QueryHelpers =
         /// Get term for the given field
         member this.Term(fld : string) = new Term(fld, this)
     
+module Query = 
     /// Get term for the given fieldname and value
     let inline getTerm (fieldName : string) (text : string) = new Term(fieldName, text)
-
-    // ----------------------------------------------------------------------------
-    // Queries
-    // ----------------------------------------------------------------------------
-    let inline getMatchAllDocsQuery() = new MatchAllDocsQuery() :> Query
-    let inline getMatchNoDocsQuery() = new MatchNoDocsQuery() :> Query
-    let inline getBoostQuery (subQuery : Query, boost) = new BoostQuery(subQuery, boost) :> Query
     
-    let inline getConstantScoreQuery (subQuery : Query, score) = 
-        let q = new ConstantScoreQuery(subQuery) :> Query
-        q.SetBoost(score)
-        q
-    
-    let inline getBooleanQuery() = new BooleanQuery()
-    let inline getTermQuery fieldName text = new TermQuery(getTerm fieldName text) :> Query
-    let inline getFuzzyQuery fieldName slop prefixLength text = 
+    let inline termQuery fieldName text = new TermQuery(getTerm fieldName text) :> Query
+    let inline fuzzyQuery fieldName slop prefixLength text = 
         new FuzzyQuery((getTerm fieldName text), slop, prefixLength) :> Query
-    let inline getPhraseQuery slop = 
-        let p = new PhraseQuery()
-        p.SetSlop(slop)
-        p
-    let inline getWildCardQuery fieldName text = new WildcardQuery(getTerm fieldName text) :> Query
-    let inline getRegexpQuery fieldName text = new RegexpQuery(getTerm fieldName text) :> Query
+    let inline wildCardQuery fieldName text = new WildcardQuery(getTerm fieldName text) :> Query
+    let inline regexpQuery fieldName text = new RegexpQuery(getTerm fieldName text) :> Query
+    let inline matchAllDocsQuery() = new MatchAllDocsQuery() :> Query
+    let inline matchNoDocsQuery() = new MatchNoDocsQuery() :> Query
+    let inline boostQuery (subQuery : Query) boost = new BoostQuery(subQuery, boost) :> Query
+    let inline constantScoreQueryDefault (subQuery : Query) = new ConstantScoreQuery(subQuery) :> Query
+    let inline constantScoreQuery (subQuery : Query) score = 
+        boostQuery (new ConstantScoreQuery(subQuery) :> Query) score
+        
+
+module PhraseQuery = 
+    let inline builder() = new PhraseQueryBuilder()
+    let inline setSlop slop (builder : PhraseQueryBuilder) = builder.SetSlop(slop)
+    let inline add (fieldName) value (builder : PhraseQueryBuilder) = builder.Add(Query.getTerm fieldName value)
+    let inline build (builder : PhraseQueryBuilder) = builder.Build()
+
+module MultiPhraseQuery = 
+    let inline builder() = new MultiPhraseQueryBuilder()
+    let inline setSlop slop (builder : MultiPhraseQueryBuilder) = builder.SetSlop(slop)
+    let inline add (fieldName) value (builder : MultiPhraseQueryBuilder) = builder.Add(Query.getTerm fieldName value)
+    let inline build (builder : MultiPhraseQueryBuilder) = builder.Build()
     
-    // ----------------------------------------------------------------------------
-    // Clauses
-    // ----------------------------------------------------------------------------
+module BooleanQuery = 
+    let inline builder() = new BooleanQueryBuilder()
+    
     let inline getBooleanClause (parameters : Dictionary<string, string> option) = 
         match parameters with
         | Some(p) -> 
@@ -161,26 +166,16 @@ module QueryHelpers =
             | _ -> BooleanClauseOccur.MUST
         | _ -> BooleanClauseOccur.MUST
     
-    let inline addBooleanClause inheritedQuery occur (baseQuery : BooleanQuery) = 
+    let inline addBooleanClause inheritedQuery occur (baseQuery : BooleanQueryBuilder) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, occur))
-        baseQuery
-    
-    let inline addMustClause inheritedQuery (baseQuery : BooleanQuery) = 
+    let inline addMustClause inheritedQuery (baseQuery : BooleanQueryBuilder) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.MUST))
-        baseQuery
-    
-    let inline addMustNotClause inheritedQuery (baseQuery : BooleanQuery) = 
+    let inline addMustNotClause inheritedQuery (baseQuery : BooleanQueryBuilder) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.MUST_NOT))
-        baseQuery
-    
-    let inline addShouldClause inheritedQuery (baseQuery : BooleanQuery) = 
+    let inline addShouldClause inheritedQuery (baseQuery : BooleanQueryBuilder) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.SHOULD))
-        baseQuery
-    
-    let inline addMatchAllClause (baseQuery : BooleanQuery) = 
-        baseQuery.Add(new BooleanClause(getMatchAllDocsQuery(), BooleanClauseOccur.SHOULD))
-        baseQuery
-
-    let inline addFilterClause inheritedQuery (baseQuery : BooleanQuery) = 
+    let inline addMatchAllClause (baseQuery : BooleanQueryBuilder) = 
+        baseQuery.Add(new BooleanClause(Query.matchAllDocsQuery(), BooleanClauseOccur.SHOULD))
+    let inline addFilterClause inheritedQuery (baseQuery : BooleanQueryBuilder) = 
         baseQuery.Add(new BooleanClause(inheritedQuery, BooleanClauseOccur.FILTER))
-        baseQuery
+    let inline build (baseQuery : BooleanQueryBuilder) = baseQuery.Build() :> Query

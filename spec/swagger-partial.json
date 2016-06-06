@@ -286,8 +286,8 @@
         "indexVersion": {
           "description": "Corresponds to Lucene Index version. There will always be a default codec associated with each index version.",
           "type": "string",
-          "enum": [ "FlexSearch_1A", "FlexSearch_1B" ],
-          "default": "FlexSearch_1B"
+          "enum": [ "FlexSearch_1A", "FlexSearch_1B", "FlexSearch_2A" ],
+          "default": "FlexSearch_2A"
         },
         "allowReads": {
           "description": "Signifies if the index supports reading back of indexed data.",
@@ -335,7 +335,7 @@
           "description": "<<similarity>>",
           "type": "string",
           "enum": [ "BM25", "TFIDF" ],
-          "default": "TFIDF"
+          "default": "BM25"
         }
       }
     },

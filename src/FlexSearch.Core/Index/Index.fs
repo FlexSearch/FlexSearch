@@ -157,11 +157,10 @@ type AnalyzerWrapper(?defaultAnalyzer0 : LuceneAnalyzer) =
         | _ -> defaultAnalyzer
 
 module Codec = 
+    open FlexLucene.Codecs.Lucene60
     open FlexLucene.Codecs.Lucene53
     open FlexLucene.Codecs.Lucene54
     open FlexLucene.Codecs.Lucene50
-    open FlexLucene.Codecs.Lucene410
-    open FlexLucene.Codecs.Lucene41
     open FlexLucene.Codecs
     
     /// Get the default codec associated with the index version
@@ -169,6 +168,7 @@ module Codec =
         match version with
         | IndexVersion.FlexSearch_1A -> new Lucene53Codec() :> Codec |> ok
         | IndexVersion.FlexSearch_1B -> new Lucene54Codec() :> Codec |> ok
+        | IndexVersion.FlexSearch_2A -> new Lucene60Codec() :> Codec |> ok
         | unknown -> fail (UnSupportedIndexVersion(unknown.ToString()))
 
 /// General index settings

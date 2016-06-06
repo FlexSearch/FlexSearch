@@ -55,20 +55,20 @@ module Common =
     // Query generators
     // ----------------------------------------------------------------------------
     let getBoolQueryFromTerms boolClauseType innerQueryProvider terms = 
-        let boolQuery = getBooleanQuery()
+        let boolQuery = BooleanQuery.builder()
         terms |> Seq.iter (fun term -> 
                      let innerQuery = innerQueryProvider term
                      boolQuery
-                     |> addBooleanClause innerQuery boolClauseType
+                     |> BooleanQuery.addBooleanClause innerQuery boolClauseType
                      |> ignore)
-        boolQuery :> Query
+        boolQuery.Build() :> Query
     
     /// Generates simple or boolean query depending upon the number of tokens.
     /// NOTE: This should only be used when generated query is term based with
     /// no positional relevance
     let zeroOneOrManyQuery (tokens : Tokens) innerQueryProvider boolClause = 
         match tokens.Segments.Count with
-        | 0 -> getMatchAllDocsQuery()
+        | 0 -> Query.matchAllDocsQuery()
         | 1 -> innerQueryProvider (tokens.Segments.[0])
         | _ -> getBoolQueryFromTerms boolClause innerQueryProvider tokens.Segments
         |> ok
@@ -78,29 +78,34 @@ module Common =
         match tokens.Count() with
         | 0 -> failwithf "Query should never be called with 0 tokens"
         | 1 -> 
-            let p = getPhraseQuery slop
+            let p = 
+                PhraseQuery.builder()
+                |> PhraseQuery.setSlop slop
             for t in tokens.Segments do
-                p.Add(getTerm fieldSchema.SchemaName t)
-            ok <| (p :> Query)
+                p |> PhraseQuery.add fieldSchema.SchemaName t |> ignore
+            ok <| (p.Build() :> Query)
         | _ -> 
-            let q = getBooleanQuery()
+            let q = BooleanQuery.builder()
             for (startPos, len) in tokens.Positions do
-                let p = getPhraseQuery slop
+                let p =
+                    PhraseQuery.builder()
+                    |> PhraseQuery.setSlop slop
                 for i = startPos to startPos + len - 1 do
-                    p.Add(getTerm fieldSchema.SchemaName tokens.Segments.[i])
-                addBooleanClause p BooleanClauseOccur.SHOULD q |> ignore
-            ok <| (q :> Query)
+                    p |> PhraseQuery.add fieldSchema.SchemaName tokens.Segments.[i] |> ignore
+                BooleanQuery.addShouldClause (PhraseQuery.build p) q |> ignore
+            ok <| BooleanQuery.build q
     
     let multiPhraseMatch (slop) (fieldSchema : FieldSchema) (tokens : Tokens) = 
         assert (tokens.Count() > 0)
-        let q = new MultiPhraseQuery()
-        q.SetSlop slop
+        let q = 
+            MultiPhraseQuery.builder()
+            |> MultiPhraseQuery.setSlop slop
         for (startPos, len) in tokens.Positions do
             let terms = new List<Term>()
             for i = startPos to startPos + len - 1 do
-                terms.Add(getTerm fieldSchema.SchemaName tokens.Segments.[i])
-            q.Add(terms.ToArray())
-        ok <| (q :> Query)
+                terms.Add(Query.getTerm fieldSchema.SchemaName tokens.Segments.[i])
+            q.Add(terms.ToArray()) |> ignore
+        ok <| (MultiPhraseQuery.build q :> Query)
 
 /// AllOf Query is useful for matching all terms in the input
 /// in any order
@@ -111,7 +116,7 @@ type AllOfQuery() =
         member __.GetNumericQuery(fieldSchema, tokens, parameters) = 
             fieldSchema.FieldType.GetNumericBooleanQuery fieldSchema.SchemaName tokens.Segments BooleanClauseOccur.MUST
         member __.GetQuery(fieldSchema, tokens, parameters) = 
-            zeroOneOrManyQuery tokens (getTermQuery fieldSchema.SchemaName) BooleanClauseOccur.MUST
+            zeroOneOrManyQuery tokens (Query.termQuery fieldSchema.SchemaName) BooleanClauseOccur.MUST
 
 /// AnyOf Query is useful for matching any number terms in the input
 /// in any order
@@ -123,7 +128,7 @@ type AnyOfQuery() =
             fieldSchema.FieldType.GetNumericBooleanQuery fieldSchema.SchemaName tokens.Segments 
                 BooleanClauseOccur.SHOULD
         member __.GetQuery(fieldSchema, tokens, parameters) = 
-            zeroOneOrManyQuery tokens (getTermQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
+            zeroOneOrManyQuery tokens (Query.termQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
 
 /// Fuzzy Query is useful for fuzzy matching any number of terms in the input
 /// in any order
@@ -136,23 +141,23 @@ type FuzzyQuery() =
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             let slop = parameters |> intFromParameters "slop" 1
             let prefixLength = parameters |> intFromParameters "prefixLength" 0
-            zeroOneOrManyQuery tokens (getFuzzyQuery fieldSchema.SchemaName slop prefixLength) BooleanClauseOccur.SHOULD
+            zeroOneOrManyQuery tokens (Query.fuzzyQuery fieldSchema.SchemaName slop prefixLength) BooleanClauseOccur.SHOULD
 
 /// Match all Query
 [<Name("matchall"); Sealed>]
 type MatchAllQuery() = 
     interface IQueryFunction with
         member __.UseAnalyzer = false
-        member __.GetNumericQuery(_, _, _) = ok <| getMatchAllDocsQuery()
-        member __.GetQuery(_, _, _) = ok <| getMatchAllDocsQuery()
+        member __.GetNumericQuery(_, _, _) = ok <| Query.matchAllDocsQuery()
+        member __.GetQuery(_, _, _) = ok <| Query.matchAllDocsQuery()
 
 /// Match none Query
 [<Name("matchnone"); Sealed>]
 type MatchNoneQuery() = 
     interface IQueryFunction with
         member __.UseAnalyzer = false
-        member __.GetNumericQuery(_, _, _) = ok <| getMatchNoDocsQuery()
-        member __.GetQuery(_, _, _) = ok <| getMatchNoDocsQuery()
+        member __.GetNumericQuery(_, _, _) = ok <| Query.matchNoDocsQuery()
+        member __.GetQuery(_, _, _) = ok <| Query.matchNoDocsQuery()
 
 /// Phrase match query which allows positional match of tokens.
 /// It also supports multi phrase query which allows multiple
@@ -178,7 +183,7 @@ type WildcardQuery() =
         member __.GetNumericQuery(fieldSchema, _, _) = 
             fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "like")
         member __.GetQuery(fieldSchema, tokens, parameters) = 
-            zeroOneOrManyQuery tokens (getWildCardQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
+            zeroOneOrManyQuery tokens (Query.wildCardQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
 
 /// Regex Query
 [<Name("regex"); Sealed>]
@@ -188,7 +193,7 @@ type RegexQuery() =
         member __.GetNumericQuery(fieldSchema, _, _) = 
             fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "regex")
         member __.GetQuery(fieldSchema, tokens, parameters) = 
-            zeroOneOrManyQuery tokens (getRegexpQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
+            zeroOneOrManyQuery tokens (Query.regexpQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
 
 //// ----------------------------------------------------------------------------
 //// Range Queries

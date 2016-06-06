@@ -95,11 +95,11 @@ type FieldBase(luceneFieldType, sortFieldType, defaultFieldName : string option)
         maybe { 
             if values.Count = 1 then return! this.GetNumericQuery schemaName values.[0]
             else 
-                let main = getBooleanQuery()
+                let main = BooleanQuery.builder()
                 for value in values do
                     let! q = this.GetNumericQuery schemaName value
-                    addBooleanClause q occur main |> ignore
-                return main :> Query
+                    BooleanQuery.addBooleanClause q occur main |> ignore
+                return BooleanQuery.build main :> Query
         }
 
 /// Information needed to represent a field in FlexSearch document
@@ -142,13 +142,13 @@ module CreateField =
     /// 'body' field, that contains the bulk of a document's text.
     let text fieldName = new TextField(fieldName, Constants.StringDefaultValue, FieldStore.YES) :> LuceneField
     
-    let long fieldName = new LongField(fieldName, 0L, FieldStore.YES) :> LuceneField
+    let long fieldName = new LegacyLongField(fieldName, 0L, FieldStore.YES) :> LuceneField
     let longDV fieldName = new NumericDocValuesField(fieldName, 0L) :> LuceneField
-    let int fieldName = new IntField(fieldName, 0, FieldStore.YES) :> LuceneField
+    let int fieldName = new LegacyIntField(fieldName, 0, FieldStore.YES) :> LuceneField
     let intDV fieldName = new NumericDocValuesField(fieldName, 0L) :> LuceneField
-    let double fieldName = new DoubleField(fieldName, 0.0, FieldStore.YES) :> LuceneField
+    let double fieldName = new LegacyDoubleField(fieldName, 0.0, FieldStore.YES) :> LuceneField
     let doubleDV fieldName = new DoubleDocValuesField(fieldName, 0.0) :> LuceneField
-    let float fieldName = new FloatField(fieldName, float32 0.0, FieldStore.YES) :> LuceneField
+    let float fieldName = new LegacyFloatField(fieldName, float32 0.0, FieldStore.YES) :> LuceneField
     let floatDV fieldName = new FloatDocValuesField(fieldName, float32 0.0) :> LuceneField
     let stored fieldName = new StoredField(fieldName, Constants.StringDefaultValue) :> LuceneField
     let binary fieldName = new StoredField(fieldName, [||]) :> LuceneField
@@ -158,7 +158,7 @@ module CreateField =
 
 /// Field that indexes integer values for efficient range filtering and sorting.
 type IntField() = 
-    inherit FieldBase<int32>(IntField.TYPE_STORED, SortFieldType.INT, 0, None)
+    inherit FieldBase<int32>(LegacyIntField.TYPE_STORED, SortFieldType.INT, 0, None)
     static member Instance = new IntField() :> FieldBase
     
     override this.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
@@ -179,11 +179,11 @@ type IntField() =
             { 
             let! lower = parseInt schemaName lowerRange JavaIntMin
             let! upper = parseInt schemaName upperRange JavaIntMax
-            return NumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
+            return LegacyNumericRangeQuery.NewIntRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes double values for efficient range filtering and sorting.
 type DoubleField() = 
-    inherit FieldBase<double>(DoubleField.TYPE_STORED, SortFieldType.DOUBLE, 0.0, None)
+    inherit FieldBase<double>(LegacyDoubleField.TYPE_STORED, SortFieldType.DOUBLE, 0.0, None)
     static member Instance = new DoubleField() :> FieldBase
     override this.Validate(value : string) = pDouble this.DefaultValue value
     
@@ -202,11 +202,11 @@ type DoubleField() =
             { 
             let! lower = parseDouble schemaName lowerRange JavaDoubleMin
             let! upper = parseDouble schemaName upperRange JavaDoubleMax
-            return NumericRangeQuery.NewDoubleRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
+            return LegacyNumericRangeQuery.NewDoubleRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes float values for efficient range filtering and sorting.
 type FloatField() as self = 
-    inherit FieldBase<float32>(FloatField.TYPE_STORED, SortFieldType.FLOAT, float32 0.0, None)
+    inherit FieldBase<float32>(LegacyFloatField.TYPE_STORED, SortFieldType.FLOAT, float32 0.0, None)
     static member Instance = new FloatField() :> FieldBase
     override __.Validate(value : string) = pFloat self.DefaultValue value
     
@@ -225,11 +225,11 @@ type FloatField() as self =
             { 
             let! lower = parseFloat schemaName lowerRange JavaFloatMin
             let! upper = parseFloat schemaName upperRange JavaFloatMax
-            return NumericRangeQuery.NewFloatRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
+            return LegacyNumericRangeQuery.NewFloatRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes long values for efficient range filtering and sorting.
 type LongField(defaultValue : int64, ?defaultFieldName) as self = 
-    inherit FieldBase<int64>(LongField.TYPE_STORED, SortFieldType.LONG, defaultValue, defaultFieldName)
+    inherit FieldBase<int64>(LegacyLongField.TYPE_STORED, SortFieldType.LONG, defaultValue, defaultFieldName)
     static member Instance = new LongField(0L) :> FieldBase
     override __.Validate(value : string) = pLong self.DefaultValue value
     
@@ -248,7 +248,7 @@ type LongField(defaultValue : int64, ?defaultFieldName) as self =
             { 
             let! lower = parseLong schemaName lowerRange JavaLongMin
             let! upper = parseLong schemaName upperRange JavaLongMax
-            return NumericRangeQuery.NewLongRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
+            return LegacyNumericRangeQuery.NewLongRange(schemaName, lower, upper, inclusiveMinimum, inclusiveMaximum) :> Query }
 
 /// Field that indexes date time values for efficient range filtering and sorting.
 /// It only supports a fixed YYYYMMDDHHMMSS format.

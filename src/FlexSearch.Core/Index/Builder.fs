@@ -46,7 +46,7 @@ module FieldSimilarity =
     /// Converts the enum similarity to Lucene Similarity
     let getLuceneT = 
         function 
-        | Similarity.TFIDF -> ok (new DefaultSimilarity() :> Similarity)
+        | Similarity.TFIDF -> ok (new ClassicSimilarity() :> Similarity)
         | Similarity.BM25 -> ok (new BM25Similarity() :> Similarity)
         | unknown -> fail (UnSupportedSimilarity(unknown.ToString()))
     
