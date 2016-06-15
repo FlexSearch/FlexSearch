@@ -1,0 +1,102 @@
+/* Rules for sizing the icon. */
+
+.material-icons.md-18 {
+  font-size: 18px;
+}
+.material-icons.md-24 {
+  font-size: 24px;
+}
+.material-icons.md-36 {
+  font-size: 36px;
+}
+.material-icons.md-48 {
+  font-size: 48px;
+}
+
+/* Rules for using icons as black on a light background. */
+
+.material-icons.md-dark {
+  color: rgba(0, 0, 0, 0.54);
+}
+.material-icons.md-dark.md-inactive {
+  color: rgba(0, 0, 0, 0.26);
+}
+
+/* Rules for using icons as white on a dark background. */
+
+.material-icons.md-light {
+  color: rgba(255, 255, 255, 1);
+}
+.material-icons.md-light.md-inactive {
+  color: rgba(255, 255, 255, 0.3);
+}
+md-card-title-text {
+  padding-left: 20px;
+}
+md-card-title {
+  border-bottom: 1px solid #e0e0e0;
+}
+.index-content {
+  padding-top: 15px;
+}
+.stat {
+  color: rgb(255, 255, 255);
+  min-width: 150px;
+  margin: 5px;
+  border-radius: 2px;
+}
+.stat div span:first-of-type {
+  font-weight: 100;
+  font-size: 56px;
+  letter-spacing: -.005em;
+  line-height: 56px;
+  font-family: RobotoDraft, Roboto, 'Helvetica Neue', sans-serif;
+  text-align: center;
+}
+.stat.title div span:first-of-type {
+  font-size: 36px;
+}
+.stat div span:nth-of-type(2) {
+  font-size: 14px;
+  font-weight: 500;
+  font-family: RobotoDraft, Roboto, 'Helvetica Neue', sans-serif;
+  letter-spacing: 0.14px;
+  line-height: 24px;
+  text-align: right;
+  opacity: 0.6;
+}
+.index {
+  padding: 20px;
+}
+.index .stat:nth-child(1) {
+  border-color: rgb(255, 87, 34);
+  background-color: rgb(255, 87, 34);
+}
+.index .stat:nth-child(2) {
+  border-color: rgb(0, 188, 212);
+  background-color: rgb(0, 188, 212);
+}
+.index .stat:nth-child(3) {
+  border-color: rgb(63, 81, 181);
+  background-color: rgb(63, 81, 181);
+}
+.index .stat:nth-child(4) {
+  border-color: rgb(0, 150, 136);
+  background-color: rgb(0, 150, 136);
+}
+.index .stat:nth-child(5) {
+  border-color: rgb(0, 151, 167);
+  background-color: rgb(0, 151, 167);
+}
+.index .stat:nth-child(6) {
+  border-color: #b388ff;
+  background-color: #b388ff;
+}
+
+.add-index {
+  background-color: rgb(255, 87, 34)!important;
+  color: white!important;
+  position: fixed;
+  bottom: 30px;
+  right: 50px;
+}

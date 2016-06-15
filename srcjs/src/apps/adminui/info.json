@@ -1,0 +1,7 @@
+{
+    "title": "Index Management UI",
+    "description": "Create, delete, modify, change status and refresh indices.",
+    "version": 0.5,
+    "url": "adminui",
+    "imgSrc": "assets/images/material/mb-bg-fb-01.jpg"
+}

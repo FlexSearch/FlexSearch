@@ -1,0 +1,47 @@
+  <div flex="noshrink" layout="row" layout-align="center center" layout-padding md-whiteframe="5" class="stat title">
+    <div flex layout="column">
+      <span>{{index.indexName}}</span>
+      <span>{{index.statusReason}}</span>
+    </div>
+  </div>
+
+  <div flex="noshrink" layout="row" layout-align="center center" layout-padding class="stat" md-whiteframe="5">
+    <i class="material-icons md-48 md-light md-inactive">library_books</i>
+    <div flex layout="column">
+      <span>{{index.docsCount}}</span>
+      <span>docs</span>
+    </div>
+  </div>
+
+  <div flex="noshrink" layout="row" layout-align="center center" layout-padding class="stat" md-whiteframe="5">
+    <i class="material-icons md-48 md-light md-inactive">sd_storage</i>
+    <div flex layout="column">
+      <span>{{numberPart(prettysize(index.diskSize))}}</span>
+      <span>size ({{symbolPart(prettysize(index.diskSize))}})</span>
+    </div>
+  </div>
+
+  <div flex="noshrink" layout="row" layout-align="center center" layout-padding class="stat" md-whiteframe="5">
+    <i class="material-icons md-48 md-light md-inactive">view_column</i>
+    <div flex layout="column">
+      <span>{{index.fields.length}}</span>
+      <span>fields</span>
+    </div>
+  </div>
+
+  <div flex="noshrink" layout="row" layout-align="center center" layout-padding class="stat" md-whiteframe="5">
+    <i class="material-icons md-48 md-light md-inactive">refresh</i>
+    <div flex layout="column">
+      <span>{{index.indexConfiguration.refreshTimeMilliseconds}}</span>
+      <span>refresh interval (ms)</span>
+    </div>
+  </div>
+
+  <div flex="noshrink" layout="row" layout-align="center center" layout-padding class="stat" md-whiteframe="5">
+    <i class="material-icons md-48 md-light md-inactive">save</i>
+    <div flex layout="column">
+      <span>{{index.indexConfiguration.commitTimeSeconds}}</span>
+      <span>commit interval (s)</span>
+    </div>
+  </div>
+</div>
