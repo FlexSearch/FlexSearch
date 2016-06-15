@@ -13,7 +13,8 @@
         "removeComments": true,
         "noLib": false,
         "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true
+        "suppressImplicitAnyIndexErrors": true,
+        "outDir": ".tmp"
     },
     "exclude": [
         "node_modules",
@@ -24,5 +25,6 @@
     "buildOnSave": false,
     "atom": {
         "rewriteTsconfig": false
-    }
+    },
+    "outDir": ".tmp"
 }

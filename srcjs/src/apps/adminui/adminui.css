@@ -16,19 +16,19 @@
 /* Rules for using icons as black on a light background. */
 
 .material-icons.md-dark {
-  color: rgba(0, 0, 0, 0.54);
+  color: rgba(0, 0, 0, 0.54) !important;
 }
 .material-icons.md-dark.md-inactive {
-  color: rgba(0, 0, 0, 0.26);
+  color: rgba(0, 0, 0, 0.26) !important;
 }
 
 /* Rules for using icons as white on a dark background. */
 
 .material-icons.md-light {
-  color: rgba(255, 255, 255, 1);
+  color: rgba(255, 255, 255, 1) !important;
 }
 .material-icons.md-light.md-inactive {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.3) !important;
 }
 md-card-title-text {
   padding-left: 20px;
@@ -99,4 +99,8 @@ md-card-title {
   position: fixed;
   bottom: 30px;
   right: 50px;
+}
+
+md-sidenav form {
+  padding-top: 60px;
 }

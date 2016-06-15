@@ -7,7 +7,14 @@
         ng-include="'indexOverview.html'">
       </div>
   </div>
-  <md-button class="md-fab add-index" aria-label="Add Index">
+  <md-button class="md-fab add-index" aria-label="Add Index"
+    ng-click="toggleRight()" ui-sref="admin-indices.new">
       <i class="material-icons md-24">add</i>
   </md-button>
 </md-content>
+
+<md-sidenav style="width: 500px !important;"
+  class="md-sidenav-right"
+  md-whiteframe="4"
+  md-component-id="right" ui-view>
+</md-sidenav>
