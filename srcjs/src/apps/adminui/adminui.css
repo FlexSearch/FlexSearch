@@ -104,3 +104,22 @@ md-card-title {
 md-sidenav form {
   padding-top: 60px;
 }
+
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  opacity: 0.8;
+}
+
+/*
+  Index Details page
+*/
+
+.index-details span.spacer {
+  width: 10px;
+}
+
+.index-details .md-toolbar-tools h2 {
+  text-align: center;
+}

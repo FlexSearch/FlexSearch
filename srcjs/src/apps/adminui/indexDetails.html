@@ -1,0 +1,26 @@
+<div class="index-details">
+  <md-toolbar class="md-hue-1">
+    <div class="md-toolbar-tools">
+      <md-button class="md-icon-button" aria-label="Back" ui-sref="admin-indices">
+        <md-icon class="material-icons">arrow_back</md-icon>
+        <md-tooltip>Go Back</md-tooltip>
+      </md-button>
+      <h2 flex>
+        <span>{{indexName}} index</span>
+      </h2>
+      <md-button class="md-fab md-mini" aria-label="Refresh" ng-click="refreshIndex()">
+        <md-icon class="material-icons">refresh</md-icon>
+        <md-tooltip>Refresh index</md-tooltip>
+      </md-button>
+      <md-button class="md-fab md-mini" aria-label="Open/Close">
+        <md-icon class="material-icons">power_settings_new</md-icon>
+        <md-tooltip>Open or close index</md-tooltip>
+      </md-button>
+      <md-button class="md-fab md-mini" aria-label="Delete" ng-click="deleteIndex()">
+        <md-icon class="material-icons">delete_forever</md-icon>
+        <md-tooltip>Delete index</md-tooltip>
+      </md-button>
+      <span class="spacer"></span>
+    </div>
+  </md-toolbar>
+</div>
