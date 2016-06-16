@@ -798,6 +798,13 @@
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
+    "refreshIndexResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "type": "boolean" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
     "getStatusResponse": {
       "type": "object",
       "properties": {
@@ -1504,6 +1511,33 @@
           "400": {
             "description": "Bad Request",
             "schema": { "$ref": "#/definitions/getIndexSizeResponse" }
+          }
+        }
+      }
+    },
+    "/indices/{indexName}/refresh": {
+      "put": {
+        "tags": [ "indices" ],
+        "summary": "Refreshes an index",
+        "description": "Refreshes an index so that committed data can be visible when searching.",
+        "operationId": "refreshIndex",
+        "parameters": [
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/refreshIndexResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/refreshIndexResponse" }
           }
         }
       }

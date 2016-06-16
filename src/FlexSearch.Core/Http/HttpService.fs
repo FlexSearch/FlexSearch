@@ -202,6 +202,14 @@ type GetIndexSizeHandler(indexService : IIndexService) =
     override __.Process(request, _) = 
         SomeResponse(indexService.GetDiskUsage request.ResId.Value, Ok, BadRequest)
 
+/// Refresh an index
+[<Name("PUT-/indices/:id/refresh")>]
+[<Sealed>]
+type RefreshIndex(indexService : IIndexService) = 
+    inherit HttpHandlerBase<NoBody, bool>()
+    override __.Process(request, _) = 
+        SomeResponse(indexService.Refresh(request.ResId.Value) |> toBoolResult, Ok, BadRequest)
+
 // -------------------------- //
 // -------------------------- //
 // Analysis Handlers          //  
