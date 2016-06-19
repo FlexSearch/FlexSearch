@@ -38,7 +38,7 @@
                 <span class="md-title">Fields</span>
                 <span class="md-subhead"># {{index.fields.length}}</span>
               </div>
-              <md-button class="md-fab md-mini" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.new-field">
+              <md-button class="md-fab md-mini" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.edit-field">
                 <md-icon>add</md-icon>
               </md-button>
             </md-card-header-text>
@@ -47,16 +47,16 @@
           <md-card-content class="fields">
             <md-content class="scrollable" style="max-height: 500px;">
               <md-list>
-                <md-subheader class="md-no-sticky" ng-repeat-start="fieldType in fieldTypes" ng-show="hasFieldsOfType(fieldType)">
+                <md-subheader class="md-no-sticky" ng-repeat-start="fieldType in fieldTypes" ng-if="hasFieldsOfType(fieldType)">
                   {{fieldType}} fields
                 </md-subheader>
                 <md-list-item ng-repeat="field in index.fields | filter: {fieldType: fieldType}">
                   <p>{{field.fieldName}}</p>
-                  <md-button class="md-icon-button md-mini" aria-label="Edit field" ng-click="editField(field.fieldName)">
+                  <md-button class="md-icon-button md-mini" aria-label="Edit field" ui-sref="indexDetails.edit-field({fieldName: field.fieldName})" ng-click="toggleRight()">
                     <md-icon>edit</md-icon>
                   </md-button>
                 </md-list-item>
-                <md-divider ng-repeat-end ng-show="hasFieldsOfType(fieldType)"></md-divider>
+                <md-divider ng-repeat-end ng-if="hasFieldsOfType(fieldType)"></md-divider>
               </md-list>
             </md-content>
           </md-card-content>

@@ -149,6 +149,9 @@ md-sidenav form {
 .index-details> div> md-content {
   background: none;
 }
+.index-details md-sidenav form {
+  padding-top: 0px;
+}
 md-card-avatar md-icon {
   height: auto;
   width: auto;
@@ -163,4 +166,17 @@ md-card-content.fields md-list-item p {
 }
 md-card-content.fields .md-subheader-inner {
   padding-left: 0px;
+}
+md-input-container .hint {
+  /* Position the hint */
+  position: absolute;
+  left: 2px;
+  right: auto;
+  bottom: 7px;
+  /* Copy styles from ng-messages */
+  font-size: 12px;
+  line-height: 14px;
+  transition: all 0.3s cubic-bezier(0.55, 0, 0.55, 0.2);
+  /* Set our own color */
+  color: grey;
 }
