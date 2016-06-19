@@ -108,6 +108,15 @@ id,et1,et2,i1,i2
             test <@ result.TotalAvailable = 1 @>
             test <@ result.Documents.[0].Id = "2" @>
 
+        member __.``Should not be able to update an index to have 2 fields with the same name``
+                  ( indexService: IIndexService,
+                    index: Index ) =
+            index.Active <- true
+            indexService.AddIndex(index) |> (?)
+            index.Fields <- [| index.Fields.[2] |] |> Array.append index.Fields
+            indexService.UpdateIndexFields(index.IndexName, index.Fields)
+            |> testFail (DuplicateFieldNamesNotAllowed(index.IndexName))
+
         member __.``Should be able to access old documents after adding new predefined query``
                   ( indexService : IIndexService, 
                     index : Index,

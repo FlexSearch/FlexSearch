@@ -21,7 +21,7 @@ type AddIndexTests() =
         ih |> testIndexOnline
         ih |> openIndexFail
     
-    member __.``It is not possible to close an closed index`` (ih : IntegrationHelper) = 
+    member __.``It is not possible to close a closed index`` (ih : IntegrationHelper) = 
         ih.Index.Active <- false
         ih |> addIndexPass
         ih |> testIndexOffline

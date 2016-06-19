@@ -307,6 +307,7 @@ type IndexingMessage =
     | DocumentIdNotFound of indexName : string * id : string
     | IndexingVersionConflict of indexName : string * id : string * existingVersion : string
     | IndexFieldDeletionNotAllowed of indexName : string * originalFieldCount : int * actualFieldCount : int
+    | DuplicateFieldNamesNotAllowed of indexName : string
     | PredefinedQueryHasNoName of indexName : string * context : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Index, MessageLevel.Info)
@@ -326,6 +327,7 @@ type IndexingMessage =
             | DocumentIdAlreadyExists(idx, id) -> sprintf "Document ID '%s' already exists for index '%s'" id idx
             | DocumentIdNotFound(idx, id) -> sprintf "Document ID '%s' not found on index '%s'" id idx
             | IndexFieldDeletionNotAllowed(i,o,a) -> sprintf "Deleting a field from an index (%s) is not allowed. Original field count: %d. Actual field count: %d." i o a
+            | DuplicateFieldNamesNotAllowed(i) -> sprintf "Found duplicate field names on index %s." i
             | IndexingVersionConflict(idx, id, v) -> 
                 sprintf "Indexing version conflict for index '%s': given ID is %s, but the existing version is %s" idx id 
                     v
