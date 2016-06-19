@@ -21,7 +21,7 @@ type AddIndexTests() =
         ih |> testIndexOnline
         ih |> openIndexFail
     
-    member __.``It is not possible to close an closed index`` (ih : IntegrationHelper) = 
+    member __.``It is not possible to close a closed index`` (ih : IntegrationHelper) = 
         ih.Index.Active <- false
         ih |> addIndexPass
         ih |> testIndexOffline
@@ -41,4 +41,11 @@ type AddIndexTests() =
         ih.Index.Active <- true
         ih |> addIndexPass
         ih |> closeIndexPass
+        ih |> testIndexOffline
+
+    member __.``Adding an index with erroneous settings should keep the index closed`` (ih : IntegrationHelper) =
+        ih.Index.Active <- true
+        // Duplicate field names => error
+        ih.Index.Fields <- [| ih.Index.Fields.[1] |] |> Array.append ih.Index.Fields
+        ih.IndexService.AddIndex ih.Index |> hasFailed
         ih |> testIndexOffline

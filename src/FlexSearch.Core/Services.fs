@@ -233,12 +233,14 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
         
         member __.UpdateIndexFields(indexName : string, fields : Field []) = 
             match im.Store.TryGetValue(indexName) with
-            | true, state -> 
-                if fields.Length < state.IndexDto.Fields.Length
-                then fail <| IndexFieldDeletionNotAllowed(indexName, state.IndexDto.Fields.Length, fields.Length)
-                else let index = state.IndexDto
-                     index.Fields <- fields
-                     im |> IndexManager.updateIndex index
+            | true, state when fields.Length < state.IndexDto.Fields.Length -> 
+                fail <| IndexFieldDeletionNotAllowed(indexName, state.IndexDto.Fields.Length, fields.Length)
+            | true, state when fields |> Seq.distinctBy (fun f -> f.FieldName) |> Seq.length <> fields.Length ->
+                fail <| DuplicateFieldNamesNotAllowed(indexName)
+            | true, state ->
+                let index = state.IndexDto
+                index.Fields <- fields
+                im |> IndexManager.updateIndex index
             | _ -> fail <| IndexNotFound indexName
 
         member __.AddOrUpdatePredefinedQuery(indexName : string, profile : SearchQuery) = 

@@ -111,9 +111,14 @@ module IndexManager =
         maybe { 
             do! t |> updateState (createIndexState (dto, IndexStatus.Opening))
             if dto.Active then 
-                let! setting = IndexWriter.createIndexSetting (dto, t.GetAnalyzer)
-                let indexWriter = IndexWriter.create (setting)
-                do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
+                match IndexWriter.createIndexSetting (dto, t.GetAnalyzer) with
+                | Ok(setting) -> 
+                    let indexWriter = IndexWriter.create setting
+                    do! t |> updateState (createIndexStateWithWriter (dto, IndexStatus.Online, indexWriter))
+                | Fail(e) -> 
+                    // Keep the index offline if it's in an erroneous state
+                    do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
+                    return! fail e
             else do! t |> updateState (createIndexState (dto, IndexStatus.Offline))
         }
     

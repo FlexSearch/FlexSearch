@@ -121,6 +121,7 @@ module TestHelper =
     let (?) r = test <@ succeeded r @>
     let testSuccess r = test <@ succeeded r @>
     let testFail (reason) (r : Result<_>) = test <@ r = fail reason @>
+    let hasFailed (r : Result<_>) = test <@ r |> failed @>
     // ----------------------------------------------------------------------------
     // Index service wrappers
     // ----------------------------------------------------------------------------    
