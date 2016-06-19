@@ -30,6 +30,14 @@
 .material-icons.md-light.md-inactive {
   color: rgba(255, 255, 255, 0.3) !important;
 }
+
+/*
+  General
+*/
+
+.full-height {
+  height: 100%;
+}
 md-card-title-text {
   padding-left: 20px;
 }
@@ -92,7 +100,6 @@ md-card-title {
   border-color: #b388ff;
   background-color: #b388ff;
 }
-
 .add-index {
   background-color: rgb(255, 87, 34)!important;
   color: white!important;
@@ -100,26 +107,60 @@ md-card-title {
   bottom: 30px;
   right: 50px;
 }
-
 md-sidenav form {
   padding-top: 60px;
 }
-
 .clickable {
   cursor: pointer;
 }
 .clickable:hover {
   opacity: 0.8;
 }
+.index .stat.offline {
+  background-color: rgba(0, 0, 0, 0.12);
+  color: black;
+}
 
 /*
   Index Details page
 */
 
+.index-details, .index-details md-content {
+  background: none;
+}
 .index-details span.spacer {
   width: 10px;
 }
-
 .index-details .md-toolbar-tools h2 {
   text-align: center;
+}
+.index-details button.offline {
+  background-color: lightpink;
+}
+.index-details button.offline:hover {
+  background-color: #fd94a4 !important;
+}
+.index-details button.online {
+  background-color: lightgreen;
+}
+.index-details button.online:hover {
+  background-color: #6aef6a !important;
+}
+.index-details> div> md-content {
+  background: none;
+}
+md-card-avatar md-icon {
+  height: auto;
+  width: auto;
+}
+md-card-content.fields {
+  padding-top: 0px;
+}
+md-card-content.fields md-list-item p {
+  padding-right: 40px;
+  padding-left: 10px;
+  overflow: hidden;
+}
+md-card-content.fields .md-subheader-inner {
+  padding-left: 0px;
 }

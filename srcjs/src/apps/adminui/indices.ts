@@ -9,6 +9,15 @@ module flexportal {
     statusReason: string
   }
 
+  export function buildToggler(navID : string, $mdUtil: any, $mdSidenav : any) {
+    var debounceFn = $mdUtil.debounce(function() {
+      $mdSidenav(navID)
+        .toggle();
+    }, 300);
+    return debounceFn;
+  }
+
+// Handler for toggling the sidenav
   export interface IIndicesScope extends ng.IScope, IMainScope {
     showProgress: boolean
     indices: Index[]
@@ -35,15 +44,7 @@ module flexportal {
 
       this.GetIndicesData($scope, indicesApi, documentsApi, $q);
 
-      // Handler for toggling the sidenav
-      function buildToggler(navID) {
-        var debounceFn = $mdUtil.debounce(function() {
-          $mdSidenav(navID)
-            .toggle();
-        }, 300);
-        return debounceFn;
-      }
-      $scope.toggleRight = buildToggler('right');
+      $scope.toggleRight = buildToggler('right', $mdUtil, $mdSidenav);
       $scope.closeSidenav = function() {
         $mdSidenav("right").close();
       };
@@ -117,10 +118,16 @@ module flexportal {
 
         // Get the number of documents in each index
         .then(() => $q.all(
-          $scope.indices.map(i => documentsApi.getDocumentsHandled(i.indexName)
-            .then(result => result.data.totalAvailable))))
+          $scope.indices.map(i => {
+            if (i.statusReason == "Online")
+              return documentsApi.getDocumentsHandled(i.indexName)
+                .then(result => result.data.totalAvailable);
+            else
+              return $q(function(resolve, reject) { resolve(-1); });
+          })))
         // Store the number of documents for each index
-        .then(docCounts => $scope.indices.forEach((idx, i) => idx.docsCount = docCounts[i]))
+        .then(docCounts =>
+          $scope.indices.forEach((idx, i) => idx.docsCount = docCounts[i]))
 
         // Get the indices disk size
         .then(() => $q.all(
@@ -128,13 +135,6 @@ module flexportal {
         // Store the disk size of the indices
         .then((sizes: API.Client.GetIndexSizeResponse[]) =>
           $scope.indices.forEach((idx, i) => idx.diskSize = sizes[i].data))
-
-        .then(() => {
-          $scope.indices.push($scope.indices[0]);
-          $scope.indices.push($scope.indices[0]);
-          $scope.indices.push($scope.indices[0]);
-          $scope.indices.push($scope.indices[0]);
-        })
 
         .then(() => { $scope.showProgress = false; return; });
     }

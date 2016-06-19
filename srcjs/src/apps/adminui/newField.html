@@ -1,7 +1,7 @@
 <form name="form">
   <md-toolbar class="md-theme-light">
     <div class="md-toolbar-tools">
-      <h1>New Index</h1>
+      <h1>New Field</h1>
       <span flex></span>
       <md-button ng-click="closeSidenav(); create()" class="md-primary" type="submit" ng-disabled="form.$invalid">
         <md-icon class="material-icons md-light">add</md-icon>
@@ -12,8 +12,16 @@
   </md-toolbar>
   <md-content layout-padding layout="column">
     <md-input-container>
-      <label for="indexName">Index name</label>
-      <input type="text" id="indexName" ng-model="indexName" md-autofocus required/>
+      <label for="fieldName">Field name</label>
+      <input type="text" id="fieldName" ng-model="fieldName" md-autofocus required/>
+    </md-input-container>
+    <md-input-container>
+      <label for="fieldType">Field type</label>
+      <md-select ng-model="fieldType" required>
+        <md-option ng-repeat="fieldType in fieldTypes" value="{{fieldType}}">
+          {{fieldType}}
+        </md-option>
+      </md-select>
     </md-input-container>
   </md-content>
 </form>

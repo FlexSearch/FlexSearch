@@ -1,4 +1,5 @@
-<div flex="noshrink" layout="row" layout-align="center center" layout-padding md-whiteframe="5" class="stat title clickable" ui-sref="indexDetails({indexName: index.indexName})">
+<div flex="noshrink" layout="row" layout-align="center center" layout-padding md-whiteframe="5" class="stat title clickable"
+    ng-class="index.statusReason == 'Online' ? 'online' : 'offline'"  ui-sref="indexDetails({indexName: index.indexName})">
   <div flex layout="column">
     <span>{{index.indexName}}</span>
     <span>{{index.statusReason}}</span>
@@ -8,7 +9,7 @@
 <div flex="noshrink" layout="row" layout-align="center center" layout-padding class="stat" md-whiteframe="5">
   <i class="material-icons md-48 md-light md-inactive">library_books</i>
   <div flex layout="column">
-    <span>{{index.docsCount}}</span>
+    <span>{{index.docsCount == -1 ? "N/A" : index.docsCount}}</span>
     <span>docs</span>
   </div>
 </div>

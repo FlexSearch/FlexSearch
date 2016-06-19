@@ -4,6 +4,7 @@
 /// <reference path="indices.ts" />
 /// <reference path="newIndex.ts" />
 /// <reference path="indexDetails.ts" />
+/// <reference path="newField.ts"/>
 
 module flexportal {
   'use strict';
@@ -18,6 +19,7 @@ module flexportal {
     .controller('IndicesController', IndicesController)
     .controller('NewIndexController', NewIndexController)
     .controller('IndexDetailsController', IndexDetailsController)
+    .controller('NewFieldController', NewFieldController)
     // Services
     .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
     .service('documentsApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.DocumentsApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
@@ -61,6 +63,12 @@ module flexportal {
           parent: "main",
           templateUrl: "indexDetails.html",
           controller: "IndexDetailsController"
+        })
+
+        .state('indexDetails.new-field', {
+          url: "/new-field",
+          templateUrl: "newField.html",
+          controller: "NewFieldController"
         })
     });
 }
