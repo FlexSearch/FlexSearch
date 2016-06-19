@@ -42,3 +42,10 @@ type AddIndexTests() =
         ih |> addIndexPass
         ih |> closeIndexPass
         ih |> testIndexOffline
+
+    member __.``Adding an index with erroneous settings should keep the index closed`` (ih : IntegrationHelper) =
+        ih.Index.Active <- true
+        // Duplicate field names => error
+        ih.Index.Fields <- [| ih.Index.Fields.[1] |] |> Array.append ih.Index.Fields
+        ih.IndexService.AddIndex ih.Index |> hasFailed
+        ih |> testIndexOffline
