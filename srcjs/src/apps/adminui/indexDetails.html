@@ -1,22 +1,22 @@
 <div class="index-details full-height" layout="column">
   <md-toolbar class="md-hue-1">
     <div class="md-toolbar-tools">
-      <md-button class="md-icon-button" aria-label="Back" ui-sref="admin-indices" ng-disabled="working">
+      <md-button class="md-fab md-mini md-hue-1" aria-label="Back" ui-sref="admin-indices" ng-disabled="working">
         <md-icon class="material-icons">arrow_back</md-icon>
         <md-tooltip>Go Back</md-tooltip>
       </md-button>
       <h2 flex>
         <span>{{indexName}} index</span>
       </h2>
-      <md-button class="md-fab md-mini" aria-label="Refresh" ng-click="refreshIndex()" ng-disabled="working">
+      <md-button class="md-fab md-mini md-hue-1" aria-label="Refresh" ng-click="refreshIndex()" ng-disabled="working">
         <md-icon class="material-icons">refresh</md-icon>
         <md-tooltip>Refresh index</md-tooltip>
       </md-button>
-      <md-button class="md-fab md-mini" ng-class="index.statusReason == 'Online' ? 'online': 'offline'" aria-label="Open/Close" ng-disabled="working" ng-click="toggleIndex()">
+      <md-button class="md-fab md-mini md-hue-1" ng-class="index.statusReason == 'Online' ? 'online': 'offline'" aria-label="Open/Close" ng-disabled="working" ng-click="toggleIndex()">
         <md-icon class="material-icons">power_settings_new</md-icon>
         <md-tooltip>{{index.statusReason == "Online" ? "Close" : "Open"}} the index</md-tooltip>
       </md-button>
-      <md-button class="md-fab md-mini" aria-label="Delete" ng-click="deleteIndex()" ng-disabled="working">
+      <md-button class="md-fab md-mini md-hue-1" aria-label="Delete" ng-click="deleteIndex()" ng-disabled="working">
         <md-icon class="material-icons">delete_forever</md-icon>
         <md-tooltip>Delete index</md-tooltip>
       </md-button>
@@ -24,42 +24,15 @@
     </div>
   </md-toolbar>
   <md-content flex ng-cloak class="scrollable">
-    <md-progress-linear layout-fill md-mode="query" ng-show="working"></md-progress-linear>
+    <md-progress-linear md-mode="query" ng-show="working"></md-progress-linear>
     <link rel="stylesheet" href="//fonts.googleapis.com/css?family=RobotoDraft:100,100italic,300,300italic,400,500,700,900,400italic">
     <md-content layout-padding layout-xs="column" layout="row">
-      <div flex-xs flex-md="50" flex-lg="33" flex-gt-lg="25" layout="column">
-        <md-card>
-          <md-card-header>
-            <md-card-avatar>
-              <md-icon>view_column</md-icon>
-            </md-card-avatar>
-            <md-card-header-text layout="row" layout-align="space-between center">
-              <div layout="column">
-                <span class="md-title">Fields</span>
-                <span class="md-subhead"># {{index.fields.length}}</span>
-              </div>
-              <md-button class="md-fab md-mini" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.edit-field">
-                <md-icon>add</md-icon>
-              </md-button>
-            </md-card-header-text>
-          </md-card-header>
-          <md-divider></md-divider>
-          <md-card-content class="fields">
-            <md-content class="scrollable" style="max-height: 500px;">
-              <md-list>
-                <md-subheader class="md-no-sticky" ng-repeat-start="fieldType in fieldTypes" ng-if="hasFieldsOfType(fieldType)">
-                  {{fieldType}} fields
-                </md-subheader>
-                <md-list-item ng-repeat="field in index.fields | filter: {fieldType: fieldType}">
-                  <p>{{field.fieldName}}</p>
-                  <md-button class="md-icon-button md-mini" aria-label="Edit field" ui-sref="indexDetails.edit-field({fieldName: field.fieldName})" ng-click="toggleRight()">
-                    <md-icon>edit</md-icon>
-                  </md-button>
-                </md-list-item>
-                <md-divider ng-repeat-end ng-if="hasFieldsOfType(fieldType)"></md-divider>
-              </md-list>
-            </md-content>
-          </md-card-content>
+      <div flex-xs flex-sm flex-md="50" flex-lg="33" flex-gt-lg="25" layout="column">
+        <md-card ng-include="'fieldsTemplate.html'">
+        </md-card>
+      </div>
+      <div flex-xs flex-sm flex-md="50" flex-lg="33" flex-gt-lg="25" layout="column">
+        <md-card ng-include="'indexConfigTemplate.html'">
         </md-card>
       </div>
     </md-content>

@@ -1,0 +1,137 @@
+<md-card-header>
+  <md-card-avatar>
+    <md-icon>build</md-icon>
+  </md-card-avatar>
+  <md-card-header-text layout="row" layout-align="space-between center">
+    <div layout="column">
+      <span class="md-title">Index configuration</span>
+    </div>
+    <md-button class="md-fab md-mini md-hue-1" aria-label="Add new field" ng-click="saveIndexConfig()">
+      <md-icon>save</md-icon>
+    </md-button>
+  </md-card-header-text>
+</md-card-header>
+<md-divider></md-divider>
+<md-card-content class="config">
+  <md-content class="scrollable" style="max-height: 500px;">
+    <md-list>
+      <md-subheader class="md-no-sticky">Commit configs</md-subheader>
+      <md-divider></md-divider>
+      <md-list-item>
+        <div layout-align="space-between center" layout-fill layout="row">
+          <span class="md-body-1">Auto-commit: {{ index.indexConfiguration.autoCommit ? "yes" : "no" }}</span>
+          <md-switch ng-model="index.indexConfiguration.autoCommit" aria-label="AutoCommit">
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <div layout-align="space-between center" layout-fill layout="row">
+          <span class="md-body-1">Commit on close: {{ index.indexConfiguration.commitOnClose ? "yes" : "no" }}</span>
+          <md-switch ng-model="index.indexConfiguration.commitOnClose" aria-label="CommitOnClose">
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <md-slider-container ng-disabled="!index.indexConfiguration.autoCommit" layout-fill>
+          <span class="md-body-1">Commit time (s)</span>
+          <md-tooltip>The amount of time in seconds that FlexSearch should wait before committing changes to the disk. This is only used if no commits have happened in the set time period otherwise CommitEveryNFlushes takes care of commits</md-tooltip>
+          <md-slider flex ng-model="index.indexConfiguration.commitTimeSeconds" min="1" max="300" aria-label="Commit Time Seconds" id="commit-time-slider">
+          </md-slider>
+          <md-input-container>
+            <input flex type="number" ng-model="index.indexConfiguration.commitTimeSeconds" aria-label="Commit Time Seconds" aria-controls="commit-time-slider">
+          </md-input-container>
+        </md-slider-container>
+      </md-list-item>
+
+      <md-subheader class="md-no-sticky">Refresh configs</md-subheader>
+      <md-divider></md-divider>
+      <md-list-item>
+        <div layout-align="space-between center" layout-fill layout="row">
+          <span class="md-body-1">Auto-refresh: {{ index.indexConfiguration.autoRefresh ? "yes" : "no" }}</span>
+          <md-switch ng-model="index.indexConfiguration.autoRefresh" aria-label="AutoRefresh">
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <md-slider-container layout-fill ng-disabled="!index.indexConfiguration.autoRefresh">
+          <span class="md-body-1">Refresh time (s)</span>
+          <md-slider flex ng-model="index.indexConfiguration.refreshTimeMilliseconds" min="1" max="10000" aria-label="Refresh Time Seconds" id="refresh-time-slider">
+          </md-slider>
+          <md-input-container>
+            <input flex type="number" ng-model="index.indexConfiguration.refreshTimeMilliseconds" aria-label="Refresh Time Seconds" aria-controls="refresh-time-slider">
+          </md-input-container>
+        </md-slider-container>
+      </md-list-item>
+
+      <md-subheader class="md-no-sticky">Other configs</md-subheader>
+      <md-divider></md-divider>
+      <md-list-item>
+        <div layout-align="space-between center" layout-fill layout="row">
+          <span class="md-body-1">Delete logs on close: {{ index.indexConfiguration.deleteLogsOnClose ? "yes" : "no" }}</span>
+          <md-switch ng-model="index.indexConfiguration.deleteLogsOnClose" aria-label="deleteLogsOnClose">
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <div layout-align="space-between center" layout-fill layout="row">
+          <span class="md-body-1">Allow reads: {{ index.indexConfiguration.allowReads ? "yes" : "no" }}</span>
+          <md-switch ng-model="index.indexConfiguration.allowReads" aria-label="allowReads">
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <div layout-align="space-between center" layout-fill layout="row">
+          <span class="md-body-1">Allow writes: {{ index.indexConfiguration.allowWrites ? "yes" : "no" }}</span>
+          <md-switch ng-model="index.indexConfiguration.allowWrites" aria-label="allowWrites">
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <div layout="row" layout-fill>
+          <md-input-container flex>
+            <label for="directoryType">Directory Type</label>
+            <md-select ng-model="index.indexConfiguration.directoryType">
+              <md-option ng-repeat="d in directoryTypes" value="{{d}}">
+                {{d}}
+              </md-option>
+            </md-select>
+            <md-tooltip>A Directory is a flat list of files. Files may be written once, when they are created. Once a file is created it may only be opened for read, or deleted. Random access is permitted both when reading and writing.</md-tooltip>
+          </md-input-container>
+          <md-input-container flex>
+            <label for="indexVersion">Index version</label>
+            <md-select ng-model="index.indexConfiguration.indexVersion">
+              <md-option ng-repeat="v in indexVersions" value="{{v}}">
+                {{v}}
+              </md-option>
+            </md-select>
+            <md-tooltip>Corresponds to Lucene Index version. There will always be a default codec associated with each index version.</md-tooltip>
+          </md-input-container>
+        </div>
+      </md-list-item>
+      <md-list-item>
+        <md-slider-container layout-fill>
+          <span class="md-body-1">RAM buffer size (Mb)</span>
+          <md-slider flex ng-model="index.indexConfiguration.ramBufferSizeMb" min="1" max="10000" aria-label="ramBufferSizeMb" id="ramBufferSizeMb">
+          </md-slider>
+          <md-input-container>
+            <input flex type="number" ng-model="index.indexConfiguration.ramBufferSizeMb" aria-label="ramBufferSizeMb" aria-controls="ramBufferSizeMb">
+          </md-input-container>
+        </md-slider-container>
+      </md-list-item>
+      <md-list-item>
+        <md-slider-container layout-fill>
+          <span class="md-body-1">Max bufferred docs</span>
+          <md-slider flex ng-model="index.indexConfiguration.maxBufferedDocs" min="1" max="100" aria-label="maxBufferedDocs" id="maxBufferedDocs">
+          </md-slider>
+          <md-input-container>
+            <input flex type="number" ng-model="index.indexConfiguration.maxBufferedDocs" aria-label="maxBufferedDocs" aria-controls="maxBufferedDocs">
+          </md-input-container>
+        </md-slider-container>
+      </md-list-item>
+      <md-list-item>
+        <md-slider-container layout-fill>
+          <span class="md-body-1">Write lock timeout (ms)</span>
+          <md-slider flex ng-model="index.indexConfiguration.defaultWriteLockTimeout" min="1" max="10000" aria-label="defaultWriteLockTimeout" id="defaultWriteLockTimeout">
+          </md-slider>
+          <md-input-container>
+            <input flex type="number" ng-model="index.indexConfiguration.defaultWriteLockTimeout" aria-label="defaultWriteLockTimeout" aria-controls="defaultWriteLockTimeout">
+          </md-input-container>
+        </md-slider-container>
+      </md-list-item>
+    </md-list>
+  </md-content>
+</md-card-content>

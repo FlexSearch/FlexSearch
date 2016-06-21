@@ -29,7 +29,7 @@ module flexportal {
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {
       $mdThemingProvider.theme('default')
         .primaryPalette('blue')
-        .accentPalette('grey');
+        .accentPalette('red');
     })
 
     // Route configuration

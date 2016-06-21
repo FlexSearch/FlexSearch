@@ -1,0 +1,32 @@
+<md-card-header>
+  <md-card-avatar>
+    <md-icon>view_column</md-icon>
+  </md-card-avatar>
+  <md-card-header-text layout="row" layout-align="space-between center">
+    <div layout="column">
+      <span class="md-title">Fields</span>
+      <span class="md-subhead"># {{index.fields.length}}</span>
+    </div>
+    <md-button class="md-fab md-mini md-hue-1" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.edit-field">
+      <md-icon>add</md-icon>
+    </md-button>
+  </md-card-header-text>
+</md-card-header>
+<md-divider></md-divider>
+<md-card-content class="fields">
+  <md-content class="scrollable" style="max-height: 500px;">
+    <md-list>
+      <md-subheader class="md-no-sticky" ng-repeat-start="fieldType in fieldTypes" ng-if="hasFieldsOfType(fieldType)">
+        {{fieldType}} fields
+      </md-subheader>
+      <md-divider ng-if="hasFieldsOfType(fieldType)"></md-divider>
+      <md-list-item ng-repeat="field in index.fields | filter: {fieldType: fieldType}" ng-repeat-end>
+        <p>{{field.fieldName}}</p>
+        <md-button class="md-icon-button md-mini" aria-label="Edit field" ui-sref="indexDetails.edit-field({fieldName: field.fieldName})" ng-click="toggleRight()">
+          <md-icon>edit</md-icon>
+        </md-button>
+      </md-list-item>
+
+    </md-list>
+  </md-content>
+</md-card-content>

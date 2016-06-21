@@ -5,11 +5,15 @@ module flexportal {
   'use strict';
 
   import FieldTypeEnum = API.Client.Field.FieldTypeEnum;
+  import DirectoryTypeEnum = API.Client.IndexConfiguration.DirectoryTypeEnum;
+  import IndexVersionEnum = API.Client.IndexConfiguration.IndexVersionEnum;
 
   export interface IIndexDetailsScope extends ng.IScope, IMainScope {
     indexName: string
     index: Index
     fieldTypes: string[]
+    directoryTypes: string[]
+    indexVersions: string[]
     working: boolean
     deleteIndex(): void
     refreshIndex(): void
@@ -17,6 +21,7 @@ module flexportal {
     hasFieldsOfType(string): boolean
     toggleRight() : void
     closeSidenav() : void
+    saveIndexConfig() : void
   }
 
   export class IndexDetailsController {
@@ -26,11 +31,13 @@ module flexportal {
       $scope.indexName = $stateParams.indexName;
       getIndexData(indicesApi, documentsApi, $scope, $q);
       $scope.fieldTypes = Object.keys(FieldTypeEnum).map(k => FieldTypeEnum[k]).filter(v => typeof v === "string");
+      $scope.directoryTypes = Object.keys(DirectoryTypeEnum).map(k => DirectoryTypeEnum[k]).filter(v => typeof v === "string");
+      $scope.indexVersions = Object.keys(IndexVersionEnum).map(k => IndexVersionEnum[k]).filter(v => typeof v === "string");
       $scope.hasFieldsOfType = function(fieldType) {
         if (!$scope.index) return false;
         return $scope.index.fields.filter(f => f.fieldType.toString() == fieldType).length > 0;
       };
-
+      $scope.saveIndexConfig = function() { saveIndexConfig(indicesApi, $scope, $mdToast); };
       $scope.toggleRight = buildToggler('right', $mdUtil, $mdSidenav);
       $scope.closeSidenav = function() {
         $mdSidenav("right").close();
@@ -102,6 +109,17 @@ module flexportal {
         .textContent(message)
         .position("top right")
         .hideDelay(3000));
+  }
+
+  function saveIndexConfig(indicesApi: API.Client.IndicesApi, $scope: IIndexDetailsScope, $mdToast: any) {
+    $scope.working = true;
+    indicesApi.updateIndexConfigurationHandled($scope.index.indexConfiguration, $scope.index.indexName)
+    .then(r => {
+      if(r.data) {
+        showToast($mdToast, "Index configuration updated successfully");
+        $scope.working = false;
+      }
+    })
   }
 
   function getIndexData(indicesApi: API.Client.IndicesApi, documentsApi: API.Client.DocumentsApi, $scope: IIndexDetailsScope, $q: any) {

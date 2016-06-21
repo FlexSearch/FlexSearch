@@ -134,7 +134,7 @@ md-sidenav form {
 .index-details .md-toolbar-tools h2 {
   text-align: center;
 }
-.index-details button.offline {
+/*.index-details button.offline {
   background-color: lightpink;
 }
 .index-details button.offline:hover {
@@ -145,12 +145,15 @@ md-sidenav form {
 }
 .index-details button.online:hover {
   background-color: #6aef6a !important;
-}
+}*/
 .index-details> div> md-content {
   background: none;
 }
 .index-details md-sidenav form {
   padding-top: 0px;
+}
+.index-details .md-subheader {
+  background: none;
 }
 md-card-avatar md-icon {
   height: auto;
@@ -179,4 +182,21 @@ md-input-container .hint {
   transition: all 0.3s cubic-bezier(0.55, 0, 0.55, 0.2);
   /* Set our own color */
   color: grey;
+}
+
+/*
+  Configuration page
+*/
+.config md-slider-container span {
+  padding-right: 10px;
+  min-width: 100px;
+}
+.config md-list-item > div, .config md-list-item {
+  padding: 0px;
+}
+md-card-content.config {
+  padding-top: 0px;
+}
+.config md-switch {
+  margin: 0px;
 }

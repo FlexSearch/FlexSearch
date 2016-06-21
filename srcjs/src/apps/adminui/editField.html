@@ -4,8 +4,8 @@
       <h1>New Field</h1>
       <span flex></span>
       <md-button ng-click="closeSidenav(); submit()" class="md-primary" type="submit" ng-disabled="form.$invalid">
-        <md-icon class="material-icons md-light">add</md-icon>
-        Create
+        <md-icon class="material-icons md-light">save</md-icon>
+        Save
       </md-button>
     </div>
     <md-progress-linear md-mode="query" ng-show="false"></md-progress-linear>
@@ -13,11 +13,11 @@
   <md-content layout-padding layout="column">
     <div layout="row">
       <md-input-container flex >
-        <label for="fieldName">Field name *</label>
+        <label for="fieldName">Field name</label>
         <input type="text" id="fieldName" ng-disabled="!isNewField" ng-model="fieldName" md-autofocus required/>
       </md-input-container>
       <md-input-container flex>
-        <label for="fieldType">Field type *</label>
+        <label for="fieldType">Field type</label>
         <md-select ng-model="fieldType" required>
           <md-option ng-repeat="fieldType in fieldTypes" value="{{fieldType}}">
             {{fieldType}}
