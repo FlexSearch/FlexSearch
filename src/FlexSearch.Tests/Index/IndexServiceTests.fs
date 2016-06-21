@@ -49,3 +49,10 @@ type AddIndexTests() =
         ih.Index.Fields <- [| ih.Index.Fields.[1] |] |> Array.append ih.Index.Fields
         ih.IndexService.AddIndex ih.Index |> hasFailed
         ih |> testIndexOffline
+
+    member __.``Updating an already closed index should be successful`` (ih : IntegrationHelper) =
+        ih.Index.Active <- false
+        ih |> addIndexPass
+        ih.Index.IndexConfiguration.CommitTimeSeconds <- 50
+        ih.IndexService.UpdateIndexConfiguration (ih.IndexName, ih.Index.IndexConfiguration) |> succeeded
+
