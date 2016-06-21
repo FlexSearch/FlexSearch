@@ -1,0 +1,32 @@
+<md-card-header>
+  <md-card-avatar>
+    <md-icon>folder</md-icon>
+  </md-card-avatar>
+  <md-card-header-text layout="row" layout-align="space-between center">
+    <div layout="column">
+      <span class="md-title">Shard configuration</span>
+    </div>
+  </md-card-header-text>
+</md-card-header>
+<md-divider></md-divider>
+<md-card-content class="shard">
+  <md-content class="scrollable" style="max-height: 500px;">
+    <md-list>
+      <md-list-item>
+        <md-slider-container ng-disabled="true" layout-fill>
+          <span class="md-body-1">Shard count</span>
+          <md-tooltip>Total number of shards to be present in the given index.</md-tooltip>
+          <md-slider flex ng-model="index.shardConfiguration.shardCount" min="0" max="5" aria-label="shardCount" id="shardCount">
+          </md-slider>
+          <md-input-container>
+            <input flex type="number" ng-model="index.shardConfiguration.shardCount" aria-label="shardCount" aria-controls="shardCount">
+          </md-input-container>
+        </md-slider-container>
+      </md-list-item>
+    </md-list>
+    <div layout="row" layout-align="space-between center" layout-padding>
+      <i class="material-icons md-48">info</i>
+      <p>The number of shards cannot be modified after the index has been created. This setting can be modified when you create a new index.</p>
+    </div>
+  </md-content>
+</md-card-content>

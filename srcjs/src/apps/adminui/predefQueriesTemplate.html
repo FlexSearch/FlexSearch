@@ -1,0 +1,24 @@
+<md-card-header>
+  <md-card-avatar>
+    <md-icon>youtube_searched_for</md-icon>
+  </md-card-avatar>
+  <md-card-header-text layout="row" layout-align="space-between center">
+    <div layout="column">
+      <span class="md-title">Predefined queries</span>
+      <span class="md-subhead"># {{index.predefinedQueries.length}}</span>
+    </div>
+    <md-button class="md-fab md-mini md-hue-1" aria-label="Add new predefined query" ng-click="toggleRight()" ui-sref="indexDetails.edit-predefined-query">
+      <md-icon>add</md-icon>
+    </md-button>
+  </md-card-header-text>
+</md-card-header>
+<md-divider></md-divider>
+<md-card-content class="shard">
+  <md-content class="scrollable" style="max-height: 500px;">
+    <md-list>
+      <md-list-item ng-repeat="q in index.predefinedQueries">
+        <p>Predefined Query # {{$index}}
+      </md-list-item>
+    </md-list>
+  </md-content>
+</md-card-content>

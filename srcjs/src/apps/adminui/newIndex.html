@@ -3,7 +3,7 @@
     <div class="md-toolbar-tools">
       <h1>New Index</h1>
       <span flex></span>
-      <md-button ng-click="closeSidenav(); create()" class="md-primary" type="submit" ng-disabled="form.$invalid">
+      <md-button ng-click="closeSidenav(); create()" type="submit" ng-disabled="form.$invalid">
         <md-icon class="material-icons md-light">add</md-icon>
         Create
       </md-button>
@@ -15,5 +15,14 @@
       <label for="indexName">Index name</label>
       <input type="text" id="indexName" ng-model="indexName" md-autofocus required/>
     </md-input-container>
+    <md-slider-container>
+      <span class="md-body-1">Shard count</span>
+      <md-tooltip>Total number of shards to be present in the given index.</md-tooltip>
+      <md-slider flex ng-model="shardCount" min="0" max="5" aria-label="shardCount" id="shardCount">
+      </md-slider>
+      <md-input-container>
+        <input flex type="number" ng-model="shardCount" aria-label="shardCount" aria-controls="shardCount">
+      </md-input-container>
+    </md-slider-container>
   </md-content>
 </form>

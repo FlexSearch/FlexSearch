@@ -7,7 +7,8 @@ module flexportal {
   import Index = API.Client.Index
 
   interface INewIndexScope extends ng.IScope, IMainScope, IIndicesScope {
-    indexName: string,
+    indexName: string
+    shardCount: number
     create(): void
   }
 
@@ -15,6 +16,8 @@ module flexportal {
     /* @ngInject */
     constructor($scope: INewIndexScope, indicesApi: API.Client.IndicesApi, documentsApi: API.Client.DocumentsApi,
       $q: any, $state: any, $mdToast: any, $timeout: any) {
+
+      $scope.shardCount = 1;
 
       $scope.create = function() {
         // Display progress bar
@@ -27,7 +30,12 @@ module flexportal {
             if (response.data.exists) {
               $scope.showError("Index " + $scope.indexName + " already exists on the server.");
             } else {
-              let index: Index = { indexName: $scope.indexName };
+              let index: Index = {
+                indexName: $scope.indexName,
+                shardConfiguration: {
+                  shardCount: $scope.shardCount
+                }
+              };
               indicesApi.createIndexHandled(index)
                 .then(r => {
                   $mdToast.show(
