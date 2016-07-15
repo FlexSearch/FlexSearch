@@ -13,8 +13,16 @@
   </md-card-header-text>
 </md-card-header>
 <md-divider></md-divider>
-<md-card-content class="fields">
-  <md-content class="scrollable" style="max-height: 500px;">
+<md-card-content flex class="fields" ng-class="{empty: index.fields.length == 0}">
+  <md-content class="scrollable" style="height: 500px;">
+    <p ng-show="index.fields.length == 0" class="empty" style="padding-top: 200px">It's lonely in here.</p>
+    <p ng-show="index.fields.length == 0" class="empty">
+      Click
+      <md-button class="md-fab md-mini md-hue-1" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.edit-field">
+        <md-icon>add</md-icon>
+      </md-button>
+      to add a new field.
+    </p>
     <md-list>
       <md-subheader class="md-no-sticky" ng-repeat-start="fieldType in fieldTypes" ng-if="hasFieldsOfType(fieldType)">
         {{fieldType}} fields
@@ -26,7 +34,6 @@
           <md-icon>edit</md-icon>
         </md-button>
       </md-list-item>
-
     </md-list>
   </md-content>
 </md-card-content>

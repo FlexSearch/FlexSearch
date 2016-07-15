@@ -26,7 +26,7 @@
   <md-content flex ng-cloak class="scrollable">
     <md-progress-linear md-mode="query" ng-show="working"></md-progress-linear>
     <link rel="stylesheet" href="//fonts.googleapis.com/css?family=RobotoDraft:100,100italic,300,300italic,400,500,700,900,400italic">
-    <md-content layout-padding layout-xs="column" layout="row">
+    <md-content layout-padding layout-xs="column" layout="row" layout-wrap>
       <div flex-xs flex-sm flex-md="50" flex-lg="33" flex-gt-lg="25" layout="column">
         <md-card ng-include="'fieldsTemplate.html'">
         </md-card>
@@ -44,7 +44,7 @@
         </md-card>
       </div>
     </md-content>
-    <md-sidenav style="width: 500px !important;" class="md-sidenav-right" md-whiteframe="4" md-component-id="right" ui-view>
-    </md-sidenav>
   </md-content>
+  <md-sidenav style="width: 500px !important;" class="md-sidenav-right" md-whiteframe="4" md-component-id="right" ui-view>
+  </md-sidenav>
 </div>

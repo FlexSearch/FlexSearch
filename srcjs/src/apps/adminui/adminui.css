@@ -108,7 +108,7 @@ md-card-title {
   right: 50px;
 }
 md-sidenav form {
-  padding-top: 60px;
+  padding-top: 64px;
 }
 .clickable {
   cursor: pointer;
@@ -119,6 +119,10 @@ md-sidenav form {
 .index .stat.offline {
   background-color: rgba(0, 0, 0, 0.12);
   color: black;
+}
+
+.tight md-input-container {
+    margin: 0px;
 }
 
 /*
@@ -148,9 +152,6 @@ md-sidenav form {
 }*/
 .index-details> div> md-content {
   background: none;
-}
-.index-details md-sidenav form {
-  padding-top: 0px;
 }
 .index-details .md-subheader {
   background: none;
@@ -182,6 +183,17 @@ md-input-container .hint {
   transition: all 0.3s cubic-bezier(0.55, 0, 0.55, 0.2);
   /* Set our own color */
   color: grey;
+}
+.index-details md-card {
+    min-height: 300px;
+}
+.index-details p.empty {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+md-card-content.empty {
+    background: rgba(211, 211, 211, 0.12);
 }
 
 /*

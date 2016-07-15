@@ -4,7 +4,8 @@
 /// <reference path="indices.ts" />
 /// <reference path="newIndex.ts" />
 /// <reference path="indexDetails.ts" />
-/// <reference path="editField.ts"/>
+/// <reference path="editField.ts" />
+/// <reference path="editQuery.ts" />
 
 module flexportal {
   'use strict';
@@ -20,10 +21,11 @@ module flexportal {
     .controller('NewIndexController', NewIndexController)
     .controller('IndexDetailsController', IndexDetailsController)
     .controller('EditFieldController', EditFieldController)
+    .controller('EditQueryController', EditQueryController)
     // Services
     .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
     .service('documentsApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.DocumentsApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
-    .service('analyzerApi', ["$http",  "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.AnalyzerApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
+    .service('analyzerApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.AnalyzerApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
 
     // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {
@@ -70,6 +72,12 @@ module flexportal {
           url: "/edit-field?fieldName",
           templateUrl: "editField.html",
           controller: "EditFieldController"
+        })
+
+        .state('indexDetails.edit-query', {
+          url: "/edit-query?queryName",
+          templateUrl: "editQuery.html",
+          controller: "EditQueryController"
         })
     });
 }

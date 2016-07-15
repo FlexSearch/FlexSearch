@@ -1,0 +1,86 @@
+<form name="form">
+  <md-toolbar class="md-theme-light">
+    <div class="md-toolbar-tools">
+      <h1>Edit Predefined Query</h1>
+      <span flex></span>
+      <md-button ng-click="closeSidenav(); submit()" type="submit" ng-disabled="form.$invalid">
+        <md-icon class="material-icons md-light">save</md-icon>
+        Save
+      </md-button>
+    </div>
+    <md-progress-linear md-mode="query" ng-show="false"></md-progress-linear>
+  </md-toolbar>
+  <md-content layout-padding layout="column" class="tight">
+    <div layout="row">
+      <md-input-container flex>
+        <label for="query">Query Name</label>
+        <input type="text" id="queryName" ng-disabled="!isNewQuery" ng-model="searchQuery.queryName" md-autofocus required/>
+      </md-input-container>
+    </div>
+    <div layout="row">
+      <md-input-container flex>
+        <label for="queryString">Query String</label>
+        <textarea ng-model="searchQuery.queryString" rows="2" md-select-on-focus required></textarea>
+      </md-input-container>
+    </div>
+    <div layout="row">
+      <md-input-container flex>
+        <label for="columns">Columns to return</label>
+        <md-select ng-model="searchQuery.columns" multiple>
+          <md-option ng-value="field.fieldName" ng-repeat="field in index.fields">{{field.fieldName}}</md-option>
+        </md-select>
+      </md-input-container>
+    </div>
+    <div layout="row" style="padding-top: 20px;">
+      <md-input-container flex>
+        <label for="count">Row count</label>
+        <input type="number" name="count" ng-model="searchQuery.count" min="1" max="5000" />
+      </md-input-container>
+      <md-input-container flex>
+        <label for="skip">Skip</label>
+        <input type="number" name="skip" ng-model="searchQuery.skip" min="0" max="5000" />
+      </md-input-container>
+      <md-input-container flex>
+        <label for="cutOff">CutOff</label>
+        <input type="number" name="cutOff" ng-model="searchQuery.cutOff" min="0" max="5000" />
+        <md-tooltip md-direction="bottom">Can be used to remove results lower than a certain threshold. This works in conjunction with the score of the top record as all the other records are filtered using the score set by the top scoring record.</md-tooltip>
+      </md-input-container>
+    </div>
+    <div layout="row">
+      <md-input-container flex>
+        <label for="orderBy">Order by field</label>
+        <md-select ng-model="searchQuery.orderBy">
+          <md-option ng-value="field.fieldName" ng-repeat="field in index.fields">{{field.fieldName}}</md-option>
+        </md-select>
+      </md-input-container>
+      <md-input-container flex>
+        <label for="orderByDirection">Order Direction</label>
+        <md-select ng-model="searchQuery.orderByDirection">
+          <md-option ng-value="direction" ng-repeat="direction in directions">{{direction}}</md-option>
+        </md-select>
+      </md-input-container>
+      <md-input-container flex>
+        <label for="distincyBy">Distinct by field</label>
+        <md-select ng-model="searchQuery.distinctyBy">
+          <md-option ng-value="field.fieldName" ng-repeat="field in index.fields">{{field.fieldName}}</md-option>
+        </md-select>
+      </md-input-container>
+    </div>
+    <div style="padding-top: 20px;">
+      <md-input-container>
+        <label for="preSearchScript">Pre-search script name</label>
+        <input type="text" name="preSearchScript" ng-model="searchQuery.preSearchScript" />
+        <md-tooltip md-direction="bottom">Script that is executed before submitting the search to Lucene. It can be used to modify the incoming Variables</md-tooltip>
+      </md-input-container>
+      <md-switch aria-label="Return score" ng-model="searchQuery.returnScore">
+        Return score
+      </md-switch>
+      <md-switch aria-label="Override predefined query options" ng-model="searchQuery.overridePredefinedQueryOptions">
+        Override predefined query options
+      </md-switch>
+      <md-switch aria-label="Return empty string for null" ng-model="searchQuery.returnEmptyStringForNull">
+        Return empty string for null
+      </md-switch>
+    </div>
+  </md-content>
+</form>
