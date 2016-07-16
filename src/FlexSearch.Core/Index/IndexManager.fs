@@ -203,8 +203,13 @@ module IndexManager =
     /// Update an existing index with the new provided details
     let updateIndex (index : Index) (t : IndexManager) = 
         let wasActive = index.Active
-        t
-        |> closeIndex index.IndexName
+
+        t |> indexState index.IndexName
+        // Ensure the index is offline
+        >>= fun indexState -> 
+            if indexState.IndexStatus = IndexStatus.Offline then okUnit
+            else t |> closeIndex index.IndexName
+        // Load the index again
         >>= fun _ -> 
             index.Active <- wasActive
             t |> loadIndex index
