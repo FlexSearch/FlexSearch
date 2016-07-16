@@ -1,7 +1,7 @@
 redirects: on
 lowest_matching:false
 copy_content_to_output_dir: always
-framework: auto-detect
+framework: net46
 source https://api.nuget.org/v3/index.json
 
 nuget Autofac.Extras.AttributeMetadata ~> 4.0.0
