@@ -1,21 +1,25 @@
 <md-progress-linear layout-fill md-mode="query" ng-show="showProgress"></md-progress-linear>
 <md-content style="height: 100%;" layout-padding flex layout="row">
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=RobotoDraft:100,100italic,300,300italic,400,500,700,900,400italic">
+
   <div flex layout="row" layout-wrap>
-      <div flex="50" flex-lg="33" flex-gt-lg="25" layout="row" class="index"
-        ng-class="{online: index.statusReason == 'online'}"
-        layout-wrap ng-repeat="index in indices track by $index"
-        ng-include="'indexOverview.html'">
-      </div>
+    <div ng-show="indices.length == 0" flex layout="column" layout-align="center center" class="empty">
+      <p class="empty">It's lonely in here.</p>
+      <p class="empty">
+        Click
+        <md-button class="md-fab md-mini" aria-label="Add Index" ng-click="toggleRight()" ui-sref="admin-indices.new">
+          <i class="material-icons md-18" style="line-height: inherit;">add</i>
+        </md-button>
+        to add a new index.
+      </p>
+    </div>
+    <div flex="50" flex-lg="33" flex-gt-lg="25" layout="row" class="index" ng-class="{online: index.statusReason == 'online'}" layout-wrap ng-repeat="index in indices track by $index" ng-include="'indexOverview.html'">
+    </div>
   </div>
-  <md-button class="md-fab add-index" aria-label="Add Index"
-    ng-click="toggleRight()" ui-sref="admin-indices.new">
-      <i class="material-icons md-24">add</i>
+  <md-button class="md-fab add-index" aria-label="Add Index" ng-click="toggleRight()" ui-sref="admin-indices.new">
+    <i class="material-icons md-24">add</i>
   </md-button>
 </md-content>
 
-<md-sidenav style="width: 500px !important;"
-  class="md-sidenav-right"
-  md-whiteframe="4"
-  md-component-id="right" ui-view>
+<md-sidenav style="width: 500px !important;" class="md-sidenav-right" md-whiteframe="4" md-component-id="right" ui-view>
 </md-sidenav>

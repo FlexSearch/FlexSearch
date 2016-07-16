@@ -187,12 +187,12 @@ md-input-container .hint {
 .index-details md-card {
     min-height: 300px;
 }
-.index-details p.empty {
+p.empty {
     text-align: center;
     font-size: 14px;
     font-weight: 500;
 }
-md-card-content.empty {
+md-card-content.empty, div.empty {
     background: rgba(211, 211, 211, 0.12);
 }
 
