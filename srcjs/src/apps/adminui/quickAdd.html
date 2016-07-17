@@ -1,0 +1,35 @@
+<md-card-header>
+  <md-card-avatar>
+    <md-icon>note_add</md-icon>
+  </md-card-avatar>
+  <md-card-header-text layout="row" layout-align="space-between center">
+    <div layout="column">
+      <span class="md-title">Quick add docs</span>
+      <span class="md-subhead"># {{index.docsCount}}</span>
+    </div>
+    <md-button class="md-fab md-mini md-hue-1" aria-label="Add new document" ng-click="addDocument()">
+      <md-icon>add</md-icon>
+    </md-button>
+  </md-card-header-text>
+</md-card-header>
+<md-divider></md-divider>
+<md-card-content flex class="fields" ng-class="{empty: index.fields.length == 0}">
+  <md-content class="scrollable">
+    <p ng-show="index.fields.length == 0" class="empty" style="padding-top: 50px">It's lonely in here.</p>
+    <p ng-show="index.fields.length == 0" class="empty">
+      Click
+      <md-button class="md-fab md-mini md-hue-1" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.edit-field">
+        <md-icon>add</md-icon>
+      </md-button>
+      to add a new field so you can create a new document.
+    </p>
+    <md-input-container ng-if="index.fields.length > 0" class="md-block">
+      <label>Document ID - Keyword</label>
+      <input ng-model="doc.id" type="text" />
+    </md-input-container>
+    <md-input-container ng-repeat="field in index.fields" class="md-block">
+      <label>{{field.fieldName}} - {{field.fieldType}}</label>
+      <input ng-model="doc.fields[field.fieldName]" type="text" />
+    </md-input-container>
+  </md-content>
+</md-card-content>

@@ -7,10 +7,12 @@ module flexportal {
   import FieldTypeEnum = API.Client.Field.FieldTypeEnum;
   import DirectoryTypeEnum = API.Client.IndexConfiguration.DirectoryTypeEnum;
   import IndexVersionEnum = API.Client.IndexConfiguration.IndexVersionEnum;
+  import Document = API.Client.Document;
 
   export interface IIndexDetailsScope extends ng.IScope, IMainScope {
     indexName: string
     index: Index
+    doc: Document
     fieldTypes: string[]
     directoryTypes: string[]
     indexVersions: string[]
@@ -18,17 +20,20 @@ module flexportal {
     deleteIndex(): void
     refreshIndex(): void
     toggleIndex(): void
+    addDocument(): void
     hasFieldsOfType(string): boolean
-    toggleRight() : void
-    closeSidenav() : void
-    saveIndexConfig() : void
+    toggleRight(): void
+    closeSidenav(): void
+    saveIndexConfig(): void
   }
 
   export class IndexDetailsController {
     /* @ngInject */
     constructor($scope: IIndexDetailsScope, indicesApi: API.Client.IndicesApi, documentsApi: API.Client.DocumentsApi,
       $q: any, $state: any, $mdToast: any, $mdDialog: any, $timeout: any, $stateParams: any, $mdUtil, $mdSidenav) {
+
       $scope.indexName = $stateParams.indexName;
+      $scope.doc = <Document>{};
       getIndexData(indicesApi, documentsApi, $scope, $q);
       $scope.fieldTypes = Object.keys(FieldTypeEnum).map(k => FieldTypeEnum[k]).filter(v => typeof v === "string");
       $scope.directoryTypes = Object.keys(DirectoryTypeEnum).map(k => DirectoryTypeEnum[k]).filter(v => typeof v === "string");
@@ -38,6 +43,7 @@ module flexportal {
         return $scope.index.fields.filter(f => f.fieldType.toString() == fieldType).length > 0;
       };
       $scope.saveIndexConfig = function() { saveIndexConfig(indicesApi, $scope, $mdToast); };
+      $scope.addDocument = function() { addDocument(documentsApi, $scope, $mdToast); };
       $scope.toggleRight = buildToggler('right', $mdUtil, $mdSidenav);
       $scope.closeSidenav = function() {
         $mdSidenav("right").close();
@@ -114,12 +120,26 @@ module flexportal {
   function saveIndexConfig(indicesApi: API.Client.IndicesApi, $scope: IIndexDetailsScope, $mdToast: any) {
     $scope.working = true;
     indicesApi.updateIndexConfigurationHandled($scope.index.indexConfiguration, $scope.index.indexName)
-    .then(r => {
-      if(r.data) {
-        showToast($mdToast, "Index configuration updated successfully");
-        $scope.working = false;
-      }
-    })
+      .then(r => {
+        if (r.data) {
+          showToast($mdToast, "Index configuration updated successfully");
+          $scope.working = false;
+        }
+      });
+  }
+
+  function addDocument(documentsApi: API.Client.DocumentsApi, $scope: IIndexDetailsScope, $mdToast: any) {
+    $scope.working = true;
+    $scope.doc.indexName = $scope.indexName;
+    documentsApi.createOrUpdateDocumentHandled($scope.doc, $scope.indexName, $scope.doc.id)
+      .then(r => {
+        if (r.data) {
+          showToast($mdToast, "Document added successfully");
+          $scope.index.docsCount++;
+          $scope.working = false;
+        }
+      })
+      .then(() => $scope.doc = <Document>{});
   }
 
   function getIndexData(indicesApi: API.Client.IndicesApi, documentsApi: API.Client.DocumentsApi, $scope: IIndexDetailsScope, $q: any) {
