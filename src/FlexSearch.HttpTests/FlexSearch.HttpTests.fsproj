@@ -51,6 +51,10 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
+  <UsingTask TaskName="CopyRuntimeDependencies" AssemblyFile="..\.paket\paket.exe" />
+  <Target Name="AfterBuild" Condition="Exists('..\.paket\paket.exe')">
+    <CopyRuntimeDependencies OutputPath="$(OutDir)" TargetFramework="$(TargetFrameworkIdentifier) - $(TargetFrameworkVersion)" ProjectsWithRuntimeLibs="Libuv;System.Runtime.InteropServices.RuntimeInformation" />
+  </Target>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
@@ -82,9 +86,6 @@
     <Reference Include="System.Core" />
     <Reference Include="System.IO" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Http.Formatting">
-      <HintPath>..\packages\Microsoft.AspNet.WebApi.Client\lib\net45\System.Net.Http.Formatting.dll</HintPath>
-    </Reference>
     <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Serialization" />
@@ -109,7 +110,7 @@ xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
       <ItemGroup>
         <Reference Include="Autofac">
-          <HintPath>..\packages\Autofac\lib\netstandard1.1\Autofac.dll</HintPath>
+          <HintPath>..\packages\Autofac\lib\net451\Autofac.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
@@ -402,6 +403,17 @@ xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
       <ItemGroup>
+        <Reference Include="System.Net.Http.Formatting">
+          <HintPath>..\packages\Microsoft.AspNet.WebApi.Client\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
+      <ItemGroup>
         <Reference Include="Microsoft.AspNetCore.Cors">
           <HintPath>..\packages\Microsoft.AspNetCore.Cors\lib\net451\Microsoft.AspNetCore.Cors.dll</HintPath>
           <Private>True</Private>
@@ -547,6 +559,17 @@ xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.
       <ItemGroup>
         <Reference Include="Microsoft.Extensions.Configuration.Binder">
           <HintPath>..\packages\Microsoft.Extensions.Configuration.Binder\lib\netstandard1.1\Microsoft.Extensions.Configuration.Binder.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
+      <ItemGroup>
+        <Reference Include="Microsoft.Extensions.Configuration.EnvironmentVariables">
+          <HintPath>..\packages\Microsoft.Extensions.Configuration.EnvironmentVariables\lib\net451\Microsoft.Extensions.Configuration.EnvironmentVariables.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
@@ -721,6 +744,17 @@ xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.
   <Choose>
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
       <ItemGroup>
+        <Reference Include="System.Collections.Immutable">
+          <HintPath>..\packages\System.Collections.Immutable\lib\netstandard1.0\System.Collections.Immutable.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
+      <ItemGroup>
         <Reference Include="System.Diagnostics.DiagnosticSource">
           <HintPath>..\packages\System.Diagnostics.DiagnosticSource\lib\net46\System.Diagnostics.DiagnosticSource.dll</HintPath>
           <Private>True</Private>
@@ -733,7 +767,29 @@ xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.
     <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
       <ItemGroup>
         <Reference Include="System.Numerics.Vectors">
-          <HintPath>..\packages\System.Numerics.Vectors\lib\net46\System.Numerics.Vectors.dll</HintPath>
+          <HintPath>..\packages\System.Numerics.Vectors\ref\net46\System.Numerics.Vectors.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
+      <ItemGroup>
+        <Reference Include="System.Reflection.Metadata">
+          <HintPath>..\packages\System.Reflection.Metadata\lib\netstandard1.1\System.Reflection.Metadata.dll</HintPath>
+          <Private>True</Private>
+          <Paket>True</Paket>
+        </Reference>
+      </ItemGroup>
+    </When>
+  </Choose>
+  <Choose>
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And $(TargetFrameworkVersion) == 'v4.6'">
+      <ItemGroup>
+        <Reference Include="System.Runtime.InteropServices.RuntimeInformation">
+          <HintPath>..\packages\System.Runtime.InteropServices.RuntimeInformation\ref\netstandard1.1\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
