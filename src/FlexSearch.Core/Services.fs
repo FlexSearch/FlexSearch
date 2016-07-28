@@ -246,11 +246,16 @@ type IndexService(eventAggregrator : EventAggregator, threadSafeWriter : ThreadS
         member __.AddOrUpdatePredefinedQuery(indexName : string, profile : SearchQuery) = 
             match im.Store.TryGetValue(indexName) with
             | true, state when not <| String.IsNullOrEmpty(profile.QueryName) -> 
-                let index = state.IndexDto
-                match index.PredefinedQueries |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
-                | Some(spNo) -> index.PredefinedQueries.[spNo] <- profile
-                | _ -> index.PredefinedQueries <- [| profile |] |> Array.append index.PredefinedQueries
-                im |> IndexManager.updateIndex index
+                // First verify that the new predefined query is valid
+                new FlexParser() :> IFlexParser
+                |> fun parser -> parser.Parse profile.QueryString
+                // Then actually create/update the predefined query
+                >>= fun _ -> 
+                    let index = state.IndexDto
+                    match index.PredefinedQueries |> Array.tryFindIndex (fun sp -> sp.QueryName = profile.QueryName) with
+                    | Some(spNo) -> index.PredefinedQueries.[spNo] <- profile
+                    | _ -> index.PredefinedQueries <- [| profile |] |> Array.append index.PredefinedQueries
+                    im |> IndexManager.updateIndex index
             | true, state when String.IsNullOrEmpty(profile.QueryName) ->
                 fail <| PredefinedQueryHasNoName(indexName, "The provided query string is: " + profile.QueryString)
             | _ -> fail <| IndexNotFound indexName

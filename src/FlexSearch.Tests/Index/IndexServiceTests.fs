@@ -56,3 +56,11 @@ type AddIndexTests() =
         ih.Index.IndexConfiguration.CommitTimeSeconds <- 50
         ih.IndexService.UpdateIndexConfiguration (ih.IndexName, ih.Index.IndexConfiguration) |> succeeded
 
+    member __.``Adding or updating a predefined query shouldn't keep the index closed`` (ih : IntegrationHelper) =
+        ih.Index.Active <- true
+        ih |> addIndexPass
+        let pq = getQuery(ih.IndexName, "allof(fieldName with spaces, '')")
+                 |> withPredefinedQuery "test"
+        ih.IndexService.AddOrUpdatePredefinedQuery(ih.IndexName, pq) |> hasFailed
+        ih |> testIndexOnline
+
