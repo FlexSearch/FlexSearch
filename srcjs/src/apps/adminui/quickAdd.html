@@ -4,7 +4,7 @@
   </md-card-avatar>
   <md-card-header-text layout="row" layout-align="space-between center">
     <div layout="column">
-      <span class="md-title">Quick add docs</span>
+      <span class="md-title">Quick add or update docs</span>
       <span class="md-subhead"># {{index.docsCount}}</span>
     </div>
     <md-button class="md-fab md-mini md-hue-1" aria-label="Add new document" ng-click="addDocument()">
@@ -21,7 +21,7 @@
       <md-button class="md-fab md-mini md-hue-1" aria-label="Add new field" ng-click="toggleRight()" ui-sref="indexDetails.edit-field">
         <md-icon>add</md-icon>
       </md-button>
-      to add a new field so you can create a new document.
+      to create a new field so you can add a document.
     </p>
     <md-input-container ng-if="index.fields.length > 0" class="md-block">
       <label>Document ID - Keyword</label>
