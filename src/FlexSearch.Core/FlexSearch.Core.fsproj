@@ -82,10 +82,6 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
-  <UsingTask TaskName="CopyRuntimeDependencies" AssemblyFile="..\.paket\paket.exe" />
-  <Target Name="AfterBuild" Condition="Exists('..\.paket\paket.exe')">
-    <CopyRuntimeDependencies OutputPath="$(OutDir)" TargetFramework="$(TargetFrameworkIdentifier) - $(TargetFrameworkVersion)" ProjectsWithRuntimeLibs="Libuv;System.Runtime.InteropServices.RuntimeInformation" />
-  </Target>
   <ItemGroup>
     <Compile Include="Resources.fs" />
     <Compile Include="Helpers.fs" />

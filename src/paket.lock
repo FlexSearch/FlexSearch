@@ -3,7 +3,7 @@ COPY-CONTENT-TO-OUTPUT-DIR: ALWAYS
 FRAMEWORK: NET46
 NUGET
   remote: http://api.nuget.org/v3/index.json
-    Autofac (4.0.0-rc3-309)
+    Autofac (4.0.0-rc3-316)
     Autofac.Extensions.DependencyInjection (4.0.0-rc3-309)
     Autofac.Extras.AttributeMetadata (4.0)
       Autofac (>= 3.4 < 5.0)
@@ -11,15 +11,15 @@ NUGET
     Autofac.Mef (4.0)
       Autofac (>= 3.3.1 < 5.0)
     AutoFixture (3.37.3)
-    FAKE (4.31.1)
-    Fixie (1.0.1)
+    FAKE (4.35.1)
+    Fixie (1.0.2)
     FlexLucene (5.4)
       IKVM (>= 8.1.5717)
     FParsec (1.0.2)
     FsCheck (2.2.4)
       FSharp.Core (>= 3.1.2.5)
     FSharp.Compiler.Service (2.0.0.6)
-    FSharp.Control.AsyncSeq (2.0.8)
+    FSharp.Control.AsyncSeq (2.0.9)
     FSharp.Core (4.0.0.1)
     FSharpx.Async (1.12)
       FSharp.Control.AsyncSeq

@@ -51,10 +51,6 @@
     </Otherwise>
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
-  <UsingTask TaskName="CopyRuntimeDependencies" AssemblyFile="..\.paket\paket.exe" />
-  <Target Name="AfterBuild" Condition="Exists('..\.paket\paket.exe')">
-    <CopyRuntimeDependencies OutputPath="$(OutDir)" TargetFramework="$(TargetFrameworkIdentifier) - $(TargetFrameworkVersion)" ProjectsWithRuntimeLibs="Libuv;System.Runtime.InteropServices.RuntimeInformation" />
-  </Target>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Helpers.fs" />
@@ -96,7 +92,7 @@
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(SolutionDir)packages\Libuv\runtimes\win7-x86\native\libuv.dll" "$(ProjectDir)\bin\Debug\" /Y
 xcopy "$(SolutionDir)packages\System.Numerics.Vectors\lib\net46\System.Numerics.Vectors.dll" "$(ProjectDir)\bin\Debug\" /Y
-</PostBuildEvent>
+xcopy "$(SolutionDir)packages\System.Runtime.InteropServices.RuntimeInformation\runtimes\win\lib\net45\System.Runtime.InteropServices.RuntimeInformation.dll" "$(SolutionDir)..\build-debug\" /Y</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
