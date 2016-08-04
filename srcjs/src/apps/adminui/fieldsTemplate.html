@@ -24,13 +24,9 @@
       to add a new field.
     </p>
     <md-list>
-      <md-subheader class="md-no-sticky" ng-repeat-start="fieldType in fieldTypes" ng-if="hasFieldsOfType(fieldType)">
-        {{fieldType}} fields
-      </md-subheader>
-      <md-divider ng-if="hasFieldsOfType(fieldType)"></md-divider>
-      <md-list-item ng-repeat="field in index.fields | filter: {fieldType: fieldType}" ng-repeat-end>
-        <p>{{field.fieldName}}</p>
-        <md-button class="md-icon-button md-mini" aria-label="Edit field" ui-sref="indexDetails.edit-field({fieldName: field.fieldName})" ng-click="toggleRight()">
+      <md-list-item ng-repeat="field in index.fields | filter: {fieldType: fieldType}" ui-sref="indexDetails.edit-field({fieldName: field.fieldName})" ng-click="toggleRight()">
+        <p>{{field.fieldName}} - {{field.fieldType}}</p>
+        <md-button class="md-icon-button md-mini" aria-label="Edit field">
           <md-icon>edit</md-icon>
         </md-button>
       </md-list-item>
