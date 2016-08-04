@@ -5,11 +5,11 @@ using System.Reflection;
 [assembly: AssemblyDescriptionAttribute("FlexSearch API Library")]
 [assembly: AssemblyProductAttribute("FlexSearch")]
 [assembly: AssemblyCopyrightAttribute("Copyright (C) 2010 - 2016 - FlexSearch")]
-[assembly: AssemblyFileVersionAttribute("0.6.10")]
-[assembly: AssemblyVersionAttribute("0.6.10")]
+[assembly: AssemblyFileVersionAttribute("0.7.0")]
+[assembly: AssemblyVersionAttribute("0.7.0")]
 namespace System {
     internal static class AssemblyVersionInformation {
-        internal const string Version = "0.6.10";
-        internal const string InformationalVersion = "0.6.10";
+        internal const string Version = "0.7.0";
+        internal const string InformationalVersion = "0.7.0";
     }
 }
