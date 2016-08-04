@@ -186,6 +186,7 @@ md-input-container .hint {
 }
 .index-details md-card {
     min-height: 300px;
+    min-width: 360px;
 }
 p.empty {
     text-align: center;
