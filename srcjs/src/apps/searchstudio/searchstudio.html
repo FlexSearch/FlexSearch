@@ -18,10 +18,10 @@
                 <div ng-repeat="field in ActiveIndex.Fields" class="search-fields">
                     <md-checkbox class="md-primary" ng-model="field.Show" aria-label="Show in results">{{field.Name}}</md-checkbox>
                 </div>
-                
+
             </md-content>
         </div>
-        
+
         <md-subheader ng-show="ActiveIndex && ProfileMode" class="md-warn vars-subheader">
             <div flex layout="row">
                 <div>
@@ -64,9 +64,9 @@
         <div style="background:#c8c8c8;padding:1em">
             <div layout="row" style="margin-top:0px;padding-top:0px">
                 <md-input-container flex style="margin-top:0px;padding-top:0px" ng-show="ProfileMode">
-                    <label>Search Profiles</label>
+                    <label>Predefined Queries</label>
                     <md-select placeholder="Select a profile" ng-model="spQueryString" md-on-close="updateSearchQuery(spQueryString)">
-                        <md-option ng-repeat="profile in ActiveIndex.SearchProfiles" value="{{profile.QueryString}}">{{profile.Name}}</md-option>
+                        <md-option ng-repeat="profile in ActiveIndex.SearchProfiles" value="{{profile.queryString}}">{{profile.queryName}}</md-option>
                     </md-select>
                 </md-input-container>
                 <md-input-container flex style="margin-top:0px;padding-top:0px">
