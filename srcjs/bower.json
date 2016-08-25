@@ -7,7 +7,6 @@
     "angular-animate": "~1.4.0",
     "angular-chart.js": "~0.7.2",
     "angular-material": "~1.1.0",
-
     "angular-material-icons": "~0.6.0",
     "angular-route": "~1.4.0",
     "angular-sanitize": "~1.4.0",
@@ -21,7 +20,10 @@
     "native-promise-only": "~0.8.0-a",
     "perfect-scrollbar": "~0.6.5",
     "restangular": "~1.4.0",
-    "underscore": "~1.8.3"
+    "underscore": "~1.8.3",
+    "roboto": "https://google-fonts.azurewebsites.net/googleFonts/Roboto?family=Roboto:300,400,500,300,700,400italic",
+    "materialIcons": "https://google-fonts.azurewebsites.net/googleFonts/Material-icons?family=Material+Icons",
+    "robotoDraft": "https://google-fonts.azurewebsites.net/googleFonts/roboto-draft?family=RobotoDraft:100,100italic,300,300italic,400,500,700,900,400italic"
   },
   "devDependencies": {
     "angular-mocks": "~1.4.0",
