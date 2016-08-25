@@ -66,6 +66,7 @@
         </md-select>
       </md-input-container>
     </div>
+
     <div style="padding-top: 20px;">
       <md-input-container>
         <label for="preSearchScript">Pre-search script name</label>
@@ -81,6 +82,34 @@
       <md-switch aria-label="Return empty string for null" ng-model="searchQuery.returnEmptyStringForNull">
         Return empty string for null
       </md-switch>
+    </div>
+    <md-divider></md-divider>
+    <div layout="column">
+      <h3>Highlighting</h3>
+      <div layout="column">
+        <div>
+          <md-input-container flex>
+            <label for="highlightedFields">Highlighted fields</label>
+            <md-select ng-model="searchQuery.highlights.highlightedFields" multiple>
+              <md-option ng-value="field.fieldName" ng-repeat="field in index.fields">{{field.fieldName}}</md-option>
+            </md-select>
+          </md-input-container>
+        </div>
+        <div layout="row" style="padding-top: 20px;">
+          <md-input-container flex>
+            <label for="preTag">Pre Tag</label>
+            <input type="text" id="preTag" ng-model="searchQuery.highlights.preTag" />
+          </md-input-container>
+          <md-input-container flex>
+            <label for="postTag">Post Tag</label>
+            <input type="text" id="postTag" ng-model="searchQuery.highlights.postTag" />
+          </md-input-container>
+          <md-input-container flex>
+            <label for="fragmentsToReturn">Fragments to return</label>
+            <input type="number" name="fragmentsToReturn" ng-model="searchQuery.highlights.fragmentsToReturn" min="1" max="100" />
+          </md-input-container>
+        </div>
+      </div>
     </div>
   </md-content>
 </form>
