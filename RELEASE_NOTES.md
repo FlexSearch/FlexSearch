@@ -1,3 +1,13 @@
+### Release - 0.7.1-beta (26-08-2016)
+
+#### Fix
+* [[66b315c]](https://github.com/flexsearch/flexsearch/commit/66b315ca01671385857ed7ea5efd9eb767523ce6) Remove dependecy on external reference urls
+* [[073c187]](https://github.com/flexsearch/flexsearch/commit/073c1874596d81838a057767153864341f855831) Minor UI improvement to the top bar of portal
+* [[1f0bb27]](https://github.com/flexsearch/flexsearch/commit/1f0bb2733bbc10cc821eb393bf767598efb581ac) Use predef query highlights when searching
+
+#### Feat
+* [[01c2eac]](https://github.com/flexsearch/flexsearch/commit/01c2eacfa5fc2c9128d567c0cdadc119d4a9ade2) Add highlights option to search profile in adminui
+
 ### Release - 0.7.0-beta (04-08-2016)
 
 #### Fix

@@ -24,7 +24,7 @@ Version information
 //let release = LoadReleaseNotes "RELEASE_NOTES.md"
 let majorVersion = 0
 let minorVersion = 7
-let patchLevel = 0
+let patchLevel = 1
 let beta = "beta"
 let nugetVersion = sprintf "%i.%i.%i-%s" majorVersion minorVersion patchLevel beta
 let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
@@ -341,7 +341,7 @@ let releaseToGithub() =
     let gitHome = "https://github.com/FlexSearch/FlexSearch.git"
     let gitOwner = "FlexSearch"
     let gitName = "FlexSearch"
-    let user = "flexsearch-bot"
+    let user = ""
 
     let pw =
         match getBuildParam "github-pw" with
