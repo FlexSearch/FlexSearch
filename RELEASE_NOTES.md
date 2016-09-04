@@ -1,3 +1,8 @@
+### Release - 0.7.2-beta (04-09-2016)
+
+#### Feat
+* [[4e375d0]](https://github.com/flexsearch/flexsearch/commit/4e375d0fb191093003a1005b75cf06abf21a4451) Strongly sign the FlexSearch
+
 ### Release - 0.7.1-beta (26-08-2016)
 
 #### Fix
