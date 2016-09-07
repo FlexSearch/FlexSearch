@@ -15,10 +15,12 @@ More information is available at http://www.flexsearch.net/
 - Windows machines only
 - Visual Studio 2015
 - Java installed on your machine. Make sure the `JAVA_HOME` system environment variable is set up.
+- NodeJS
 
 In order to build FlexSearch you need to run the following commands:
 ```
-.\build
+> git submodule update --init --recursive
+> .\build
 ```
 
 
