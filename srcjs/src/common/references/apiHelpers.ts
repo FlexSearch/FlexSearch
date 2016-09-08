@@ -143,4 +143,10 @@ module apiHelpers {
             duplicatesCount: maxDupsToReturn
         }, indexName, searchProfile);
     }
+
+    export function getBasePath() {
+      var loc = window.location;
+      var portStr = !!loc.port ? (":" + loc.port) : loc.port;
+      return loc.protocol + "//" + loc.hostname + portStr;
+    }
 }

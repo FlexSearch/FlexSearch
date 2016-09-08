@@ -10,6 +10,8 @@
 module flexportal {
   'use strict';
 
+  var basePath = apiHelpers.getBasePath();
+
   angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial',
     'ui.router', 'chart.js', 'jsonFormatter', 'ui.grid', 'ui.grid.selection',
     'ui.grid.pagination', 'ui.grid.exporter', 'ui.ace', 'ui.grid.resizeColumns',
@@ -23,9 +25,9 @@ module flexportal {
     .controller('EditFieldController', EditFieldController)
     .controller('EditQueryController', EditQueryController)
     // Services
-    .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
-    .service('documentsApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.DocumentsApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
-    .service('analyzerApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.AnalyzerApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
+    .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, basePath, $mdBottomSheet, $q, errorHandler); }])
+    .service('documentsApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.DocumentsApi($http, null, basePath, $mdBottomSheet, $q, errorHandler); }])
+    .service('analyzerApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.AnalyzerApi($http, null, basePath, $mdBottomSheet, $q, errorHandler); }])
 
     // Theming
     .config(function($mdThemingProvider: ng.material.IThemingProvider) {

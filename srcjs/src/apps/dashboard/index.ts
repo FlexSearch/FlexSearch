@@ -1,14 +1,14 @@
 /// <reference path="../../../typings/index.d.ts" />
-
 /// <reference path="../../common/partials/main.controller.ts" />
 /// <reference path="../../common/references/references.d.ts" />
-
 
 /// <reference path="cluster.ts" />
 /// <reference path="indexDetails.ts" />
 
 module flexportal {
     'use strict';
+
+    var basePath = apiHelpers.getBasePath();
 
     angular.module('flexportal', ['ngAnimate', 'ngTouch', 'ngSanitize', 'restangular', 'ngMaterial',
         'ui.router', 'chart.js', 'jsonFormatter', 'swaggerUi', 'ui.grid', 'ui.grid.selection',
@@ -20,23 +20,23 @@ module flexportal {
         .controller('ErrorController', ErrorController)
         .controller('IndexDetailsController', ["$scope", "$stateParams", IndexDetailsController])
         // Services
-        .service('serverApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.ServerApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
-        .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
-        .service('documentsApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.DocumentsApi($http, null, null, $mdBottomSheet, $q, errorHandler); }])
-    
+        .service('serverApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.ServerApi($http, null, basePath, $mdBottomSheet, $q, errorHandler); }])
+        .service('indicesApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.IndicesApi($http, null, basePath, $mdBottomSheet, $q, errorHandler); }])
+        .service('documentsApi', ["$http", "$mdBottomSheet", "$q", function($http, $mdBottomSheet, $q) { return new API.Client.DocumentsApi($http, null, basePath, $mdBottomSheet, $q, errorHandler); }])
+
         // Theming
         .config(function($mdThemingProvider: ng.material.IThemingProvider) {
             $mdThemingProvider.theme('default')
                 .primaryPalette('blue')
                 .accentPalette('grey');
         })
-    
+
         // Route configuration
         .config(function($stateProvider: angular.ui.IStateProvider, $urlRouterProvider: angular.ui.IUrlRouterProvider) {
             $urlRouterProvider.otherwise("/dashboard");
 
             $stateProvider
-          
+
                 // Session URLs
                 .state('main', {
                     url: "/main",
