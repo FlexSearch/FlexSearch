@@ -127,7 +127,7 @@ type WebServerBuilder(settings : Settings.T) =
     member __.Start() =
         let startServer() = 
             try 
-                engine <- webHostBuilder.Start(sprintf "http://localhost:%s" port)
+                engine <- webHostBuilder.Start(sprintf "http://*:%s" port)
             with 
                 | :? ReflectionTypeLoadException as e -> 
                     let loaderExceptions = e.LoaderExceptions 
