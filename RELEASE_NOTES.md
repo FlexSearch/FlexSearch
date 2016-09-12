@@ -1,3 +1,9 @@
+### Release - 0.7.3-beta (12-09-2016)
+
+#### Fix
+* [[af42fd3]](https://github.com/flexsearch/flexsearch/commit/af42fd33f1cfa4be49e58d037623b140c4035d07) Use basePath from URL when using FlexSearch client
+* [[b9fa236]](https://github.com/flexsearch/flexsearch/commit/b9fa236ca8cf27a26275e4dbc07921c21bfb312c) Allow server to receive requests from any IP
+
 ### Release - 0.7.2-beta (04-09-2016)
 
 #### Feat
