@@ -302,6 +302,7 @@ module AstParser =
                         sq.OrderBy <- preDefinedQuery.OrderBy
                         sq.CutOff <- preDefinedQuery.CutOff
                         sq.Count <- preDefinedQuery.Count
+                        sq.Highlights <- preDefinedQuery.Highlights
                     return predicate
                 | _ -> return! fail <| UnknownPredefinedQuery(sq.IndexName, sq.QueryName)
             else let! predicate = parser.Parse(sq.QueryString)
