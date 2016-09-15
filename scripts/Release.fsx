@@ -24,7 +24,7 @@ Version information
 //let release = LoadReleaseNotes "RELEASE_NOTES.md"
 let majorVersion = 0
 let minorVersion = 7
-let patchLevel = 3
+let patchLevel = 4
 let beta = "beta"
 let nugetVersion = sprintf "%i.%i.%i-%s" majorVersion minorVersion patchLevel beta
 let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
@@ -101,7 +101,7 @@ let buildApp() =
     assemblyInfoCSharp "FlexSearch.API" "FlexSearch API Library"
     MSBuildRelease buildDir "Build" [ @"src\FlexSearch.sln" ] |> Log "BuildApp-Output: "
     [ // Copy over dlls that are not included in project references
-      "libuv.dll"; "System.Numerics.Vectors.dll"; "System.Reflection.dll"; "System.Runtime.InteropServices.RuntimeInformation.dll" ] 
+      "libuv.dll"; "System.Numerics.Vectors.dll"; "System.Reflection.dll"; "System.Runtime.InteropServices.RuntimeInformation.dll" ]
     |> Seq.iter (fun name -> CopyFile (buildDir @@ name) (debugDir @@ name))
     // Copy the files from build to build-test necessary for Testing
     FileHelper.CopyRecursive buildDir testDir true |> ignore

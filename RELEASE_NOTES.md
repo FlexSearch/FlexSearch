@@ -1,3 +1,10 @@
+### Release - 0.7.4-beta (15-09-2016)
+
+#### Fix
+* [[96c87f1]](https://github.com/flexsearch/flexsearch/commit/96c87f18c07d3ae5f60da5ad457d5c3211ba9d1d) Return a fragment for each highlighted field
+* [[fc28b73]](https://github.com/flexsearch/flexsearch/commit/fc28b73650160c1aac8a986ffe1c0d93d6cfa07a) Include Highlights from predefined query when searching
+* [[654c8a5]](https://github.com/flexsearch/flexsearch/commit/654c8a540e38e6a60ae4ac8a245197df39176af9) Fix Order By feature in search studio
+
 ### Release - 0.7.3-beta (12-09-2016)
 
 #### Fix
