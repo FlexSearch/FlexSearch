@@ -129,10 +129,15 @@ type DemoIndexService(indexService : IIndexService, documentService : IDocumentS
                            new Field("countrycode", Constants.FieldType.Keyword)
                            new Field("nationality")
                            new Field("coordinates", Constants.FieldType.Keyword) |]
+        let highlight = new HighlightOption([|"agriproducts"; "countryname"|])
+        highlight.FragmentsToReturn <- 1
+        highlight.PreTag <- "<b>"
+        highlight.PostTag <- "</b>"
         index.PredefinedQueries <- 
             [| new SearchQuery("country", "allof(agriproducts, 'wheat', 'corn', 'grapes') AND like(countryname, @countryName, -matchall)", 
                                QueryName = "agriSearch",
-                               Columns = [| "countryname"; "agriproducts" |]) |]
+                               Columns = [| "countryname"; "agriproducts" |],
+                               Highlights = highlight) |]
         index
     
     let buildSynonymFile fileName = 

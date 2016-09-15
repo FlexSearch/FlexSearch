@@ -297,9 +297,9 @@ id,et1,t2,i1,i2
 
 type ``Highlighting Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
-id,et1,t1
-1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.
-2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artefacts such as machine code of computer programs.
+id,et1,t1,t2
+1,Computer Science,Computer science (abbreviated CS or CompSci) is the scientific and practical approach to computation and its applications. It is the systematic study of the feasibility structure expression and mechanization of the methodical processes (or algorithms) that underlie the acquisition representation processing storage communication of and access to information whether such information is encoded in bits and bytes in a computer memory or transcribed in genes and protein structures in a human cell. A computer scientist specializes in the theory of computation and the design of computational systems.,computer science is complicated due to
+2,Computer programming,Computer programming (often shortened to programming) is the comprehensive process that leads from an original formulation of a computing problem to executable programs. It involves activities such as analysis understanding and generically solving such problems resulting in an algorithm verification of requirements of the algorithm including its correctness and its resource consumption implementation (or coding) of the algorithm in a target programming language testing debugging and maintaining the source code implementation of the build system and management of derived artefacts such as machine code of computer programs.,this is just some extra text
 """
     do indexTestData (testData, index, indexService, documentService)
     member __.``Searching for abstract match 'practical approach' with orderby topic should return 1 records``() = 
@@ -318,6 +318,25 @@ id,et1,t1
         test <@ result.Documents.[0].Highlights.[0].Contains("approach") @>
         test <@ result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>") @>
         test <@ result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") @>
+
+    member __.``Searching with 2 highlighted fields should return at least 2 highlights``() =
+        let hlighlightOptions = new HighlightOption([| "t1"; "t2" |])
+        hlighlightOptions.FragmentsToReturn <- 1
+        hlighlightOptions.PreTag <- "<imp>"
+        hlighlightOptions.PostTag <- "</imp>"
+        let result = 
+            getQuery (index.IndexName, "allof(t1, 'practical approach') and allof(t2, 'complicated')")
+            |> withColumns [| "*" |]
+            |> withHighlighting hlighlightOptions
+            |> searchAndExtract searchService
+        result |> assertReturnedDocsCount 1
+        test <@ result.Documents.[0].Highlights.Count() = 2 @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("practical") @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("approach") @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("<imp>practical</imp>") @>
+        test <@ result.Documents.[0].Highlights.[0].Contains("<imp>approach</imp>") @>
+        test <@ result.Documents.[0].Highlights.[1].Contains("complicated") @>
+        test <@ result.Documents.[0].Highlights.[1].Contains("<imp>complicated</imp>") @>
 
 type ``Variable Tests``(ih : IntegrationHelper) = 
     let indexName = ih.Index.IndexName

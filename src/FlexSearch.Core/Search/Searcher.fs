@@ -97,17 +97,16 @@ module Searcher =
     /// Returns the highlight related information along with the field schema
     let getHighlightOptions (s : SearcherState) = 
         if notNull s.SearchQuery.Highlights then 
-            match s.SearchQuery.Highlights.HighlightedFields with
-            | x when x.Length = 1 -> 
-                match s.GetField(x.First()) with
+            s.SearchQuery.Highlights.HighlightedFields
+            |> Array.map (fun fieldName -> 
+                match s.GetField(fieldName) with
                 | (true, field) -> 
                     let htmlFormatter = 
                         new SimpleHTMLFormatter(s.SearchQuery.Highlights.PreTag, s.SearchQuery.Highlights.PostTag)
                     Some(field, new Highlighter(htmlFormatter, new QueryScorer(s.Query)))
-                | _ -> None
-            | _ -> None
-        else None
-    
+                | _ -> None)
+        else [||]
+
     /// Returns a highlighter created with the passed highlighter options
     let inline getHighlighter (document : LuceneDocument, shardIndex, doc) 
                (highlighterOptions : option<FieldSchema * Highlighter>) (s : SearcherState) = 
@@ -128,6 +127,12 @@ module Searcher =
             else [||]
         else [||]
     
+    /// Returns the highlighters for all of the fields specified in the query
+    let inline getHighlighters (document, shardIndex, doc) highlighterOptions s =
+        highlighterOptions
+        |> Array.map (fun ho -> getHighlighter (document, shardIndex, doc) ho s)
+        |> Array.concat
+
     /// Returns the settings for distinct by filter
     let inline getDistinctBy (s : SearcherState) = 
         if isNotBlank s.SearchQuery.DistinctBy then 
@@ -173,7 +178,7 @@ module Searcher =
         resultDoc.Fields <- fields
         resultDoc.Score <- if s.SearchQuery.ReturnScore then float (hit.Score)
                            else 0.0
-        resultDoc.Highlights <- s |> getHighlighter (document, hit.ShardIndex, hit.Doc) highlighterOptions
+        resultDoc.Highlights <- s |> getHighlighters (document, hit.ShardIndex, hit.Doc) highlighterOptions
         resultDoc
     
     /// Main search method responsible for searching across shards
