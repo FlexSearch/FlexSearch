@@ -114,7 +114,7 @@ type AllOfQuery() =
     interface IQueryFunction with
         member __.UseAnalyzer = true
         member __.GetNumericQuery(fieldSchema, tokens, parameters) = 
-            fieldSchema.FieldType.GetNumericBooleanQuery fieldSchema.SchemaName tokens.Segments BooleanClauseOccur.MUST
+            fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "allof")
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             zeroOneOrManyQuery tokens (Query.termQuery fieldSchema.SchemaName) BooleanClauseOccur.MUST
 
@@ -125,8 +125,7 @@ type AnyOfQuery() =
     interface IQueryFunction with
         member __.UseAnalyzer = true
         member __.GetNumericQuery(fieldSchema, tokens, parameters) = 
-            fieldSchema.FieldType.GetNumericBooleanQuery fieldSchema.SchemaName tokens.Segments 
-                BooleanClauseOccur.SHOULD
+            fieldSchema.FieldType.SetQuery fieldSchema.SchemaName (tokens.Segments.ToArray())
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             zeroOneOrManyQuery tokens (Query.termQuery fieldSchema.SchemaName) BooleanClauseOccur.SHOULD
 
@@ -203,7 +202,7 @@ type GreaterThanQuery() =
     interface IQueryFunction with
         member __.UseAnalyzer = false
         member __.GetNumericQuery(fieldSchema, tokens, _) = 
-            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite false true
+            fieldSchema.FieldType.RangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite false true
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "gt")
 
@@ -212,7 +211,7 @@ type GreaterThanEqualQuery() =
     interface IQueryFunction with
         member __.UseAnalyzer = false
         member __.GetNumericQuery(fieldSchema, tokens, _) = 
-            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite true true
+            fieldSchema.FieldType.RangeQuery fieldSchema.SchemaName tokens.Segments.[0] Constants.Infinite true true
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "ge")
 
@@ -221,7 +220,7 @@ type LessThanQuery() =
     interface IQueryFunction with
         member __.UseAnalyzer = false
         member __.GetNumericQuery(fieldSchema, tokens, _) = 
-            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true false
+            fieldSchema.FieldType.RangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true false
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "lt")
 
@@ -230,6 +229,6 @@ type LessThanEqualQuery() =
     interface IQueryFunction with
         member __.UseAnalyzer = false
         member __.GetNumericQuery(fieldSchema, tokens, _) = 
-            fieldSchema.FieldType.GetRangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true true
+            fieldSchema.FieldType.RangeQuery fieldSchema.SchemaName Constants.Infinite tokens.Segments.[0] true true
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             fail <| QueryOperatorFieldTypeNotSupported(fieldSchema.FieldName, "le")

@@ -49,14 +49,14 @@ type Infinite =
 [<AutoOpenAttribute>]
 module JavaHelpers = 
     // These are needed to satisfy certain Lucene query requirements
-    let JavaLongMax = java.lang.Long(java.lang.Long.MAX_VALUE)
-    let JavaLongMin = java.lang.Long(java.lang.Long.MIN_VALUE)
-    let JavaDoubleMax = java.lang.Double(java.lang.Double.MAX_VALUE)
-    let JavaDoubleMin = java.lang.Double(java.lang.Double.MIN_VALUE)
-    let JavaFloatMax = java.lang.Float(java.lang.Float.MAX_VALUE)
-    let JavaFloatMin = java.lang.Float(java.lang.Float.MIN_VALUE)
-    let JavaIntMax = java.lang.Integer(java.lang.Integer.MAX_VALUE)
-    let JavaIntMin = java.lang.Integer(java.lang.Integer.MIN_VALUE)
+    let JavaLongMax = java.lang.Long.MAX_VALUE
+    let JavaLongMin = java.lang.Long.MIN_VALUE
+    let JavaDoubleMax = java.lang.Double.MAX_VALUE
+    let JavaDoubleMin = java.lang.Double.MIN_VALUE
+    let JavaFloatMax = java.lang.Float.MAX_VALUE
+    let JavaFloatMin = java.lang.Float.MIN_VALUE
+    let JavaIntMax = java.lang.Integer.MAX_VALUE
+    let JavaIntMin = java.lang.Integer.MIN_VALUE
     let javaInt (value : int) = new java.lang.Integer(value)
     let javaDouble (value : double) = new java.lang.Double(value)
     let javaLong (value : int64) = new java.lang.Long(value)
@@ -73,30 +73,30 @@ module JavaHelpers =
     /// Put an item in the hashmap
     let put (key, value) (hashMap : HashMap) = hashMap.put (key, value) |> ignore
     
-    let inline getJavaDouble infinite (value : float) = 
-        match infinite with
-        | MaxInfinite -> JavaDoubleMax
-        | MinInfinite -> JavaDoubleMin
-        | _ -> java.lang.Double(value)
+//    let inline getJavaDouble infinite (value : float) = 
+//        match infinite with
+//        | MaxInfinite -> JavaDoubleMax
+//        | MinInfinite -> JavaDoubleMin
+//        | _ -> java.lang.Double(value)
+//    
+//    let inline getJavaInt infinite (value : int) = 
+//        match infinite with
+//        | MaxInfinite -> JavaIntMax
+//        | MinInfinite -> JavaIntMin
+//        | _ -> value
+//    
+//    let inline getJavaLong infinite (value : int64) = 
+//        match infinite with
+//        | MaxInfinite -> JavaLongMax
+//        | MinInfinite -> JavaLongMin
+//        | _ -> java.lang.Long(value)
     
-    let inline getJavaInt infinite (value : int) = 
-        match infinite with
-        | MaxInfinite -> JavaIntMax
-        | MinInfinite -> JavaIntMin
-        | _ -> java.lang.Integer(value)
-    
-    let inline getJavaLong infinite (value : int64) = 
-        match infinite with
-        | MaxInfinite -> JavaLongMax
-        | MinInfinite -> JavaLongMin
-        | _ -> java.lang.Long(value)
-    
-    let parseNumber<'T, 'U> (schemaName, dataType) (number : string) (infiniteValue : 'U) 
-        (parse : string -> (bool * 'T)) (converter : 'T -> 'U) = 
-        if number = Constants.Infinite then ok <| infiniteValue
+    let parseNumber<'T> (schemaName, dataType) (number : string) (infiniteValue : 'T) 
+        (parse : string -> (bool * 'T)) = 
+        if number = Constants.Infinite then ok infiniteValue
         else 
             match parse number with
-            | true, v -> ok <| converter v
+            | true, v -> ok v
             | _ -> fail <| DataCannotBeParsed(schemaName, dataType, number)
     
     let rec getItemAt n (iterator : java.util.Iterator) = 
@@ -106,14 +106,14 @@ module JavaHelpers =
             getItemAt (n - 1) iterator
         else null
     
-    let parseDouble (schemaName) (number : string) (infiniteValue : JDouble) = 
-        parseNumber<Double, JDouble> (schemaName, "Double") number infiniteValue Double.TryParse javaDouble
-    let parseFloat (schemaName) (number : string) (infiniteValue : JFloat) = 
-        parseNumber<Single, JFloat> (schemaName, "Float") number infiniteValue Single.TryParse javaFloat
-    let parseInt (schemaName) (number : string) (infiniteValue : JInt) = 
-        parseNumber<int32, JInt> (schemaName, "Integer") number infiniteValue Int32.TryParse javaInt
-    let parseLong (schemaName) (number : string) (infiniteValue : JLong) = 
-        parseNumber<int64, JLong> (schemaName, "Long") number infiniteValue Int64.TryParse javaLong
+    let parseDouble (schemaName) (number : string) (infiniteValue : Double) = 
+        parseNumber<Double> (schemaName, "Double") number infiniteValue Double.TryParse
+    let parseFloat (schemaName) (number : string) (infiniteValue : Single) = 
+        parseNumber<Single> (schemaName, "Float") number infiniteValue Single.TryParse
+    let parseInt (schemaName) (number : string) (infiniteValue : int) = 
+        parseNumber<int32> (schemaName, "Integer") number infiniteValue Int32.TryParse
+    let parseLong (schemaName) (number : string) (infiniteValue : int64) = 
+        parseNumber<int64> (schemaName, "Long") number infiniteValue Int64.TryParse
 
 [<AutoOpenAttribute>]
 module QueryHelpers = 

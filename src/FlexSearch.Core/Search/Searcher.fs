@@ -67,8 +67,8 @@ module Searcher =
         // Return all columns when *
         | _ when s.SearchQuery.Columns.First() = "*" -> 
             for field in s.IndexWriter.Settings.Fields do
-                if [ IdField.Name; TimeStampField.Name; ModifyIndexField.Name; StateField.Name ] 
-                   |> Seq.contains field.FieldName then ()
+                if FieldSchema.metaDataFields 
+                   |> Array.contains field.FieldName then ()
                 else getValue (field)
         // Return only the requested columns
         | _ -> 
@@ -133,7 +133,7 @@ module Searcher =
         if isNotBlank s.SearchQuery.DistinctBy then 
             match s.GetField(s.SearchQuery.DistinctBy) with
             | true, field -> 
-                match field |> FieldSchema.isTokenized with
+                match field.FieldType.SupportsAnalyzer with
                 | false -> Some(field, new HashSet<string>(StringComparer.OrdinalIgnoreCase))
                 | true -> None
             | _ -> None

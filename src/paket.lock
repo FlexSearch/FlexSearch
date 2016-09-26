@@ -139,6 +139,7 @@ NUGET
     Newtonsoft.Json (8.0.3) - redirects: force
     NuGet.CommandLine (3.4.3)
     PerfUtil (0.1.8)
+    Streams (0.4.1)
     System.Buffers (4.0.0-rc2-24027)
     System.Diagnostics.DiagnosticSource (4.0.0-rc2-24027)
     System.Net.Http (4.0.1-rc2-24027)

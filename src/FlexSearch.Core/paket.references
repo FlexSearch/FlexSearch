@@ -19,3 +19,4 @@ Microsoft.Tpl.Dataflow
 MsgPack.Cli
 PerfUtil
 Newtonsoft.Json
+Streams

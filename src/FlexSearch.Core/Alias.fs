@@ -78,6 +78,8 @@ type JDouble = java.lang.Double
 
 type JFloat = java.lang.Float
 
+type FlexField = FlexSearch.Api.Model.Field
+
 [<AutoOpen>]
 module Alias = 
     [<Literal>]

@@ -159,6 +159,12 @@ module Helpers =
     let inline throwIfNull (name) (x) = 
         if isNull (x) then failwithf "Internal Error: %s object cannot be null." name
     
+    let inline strEqual (str1 : string) (str2 : string) =
+        String.Equals(str1, str2, StringComparison.OrdinalIgnoreCase)
+    
+    let inline strStartsWith (startText : string) (str : string) =
+        str.StartsWith(startText, StringComparison.OrdinalIgnoreCase)
+
     /// Returns the string value between starting and ending characters
     let inline between (startingChar : char) (endingChar : char) (input : string) = 
         let startingPos = input.IndexOf(startingChar) + 1
