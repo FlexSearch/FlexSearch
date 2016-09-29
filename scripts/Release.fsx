@@ -24,11 +24,11 @@ Version information
 //let release = LoadReleaseNotes "RELEASE_NOTES.md"
 let majorVersion = 0
 let minorVersion = 7
-let patchLevel = 4
-let beta = "beta"
-let nugetVersion = sprintf "%i.%i.%i-%s" majorVersion minorVersion patchLevel beta
-let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
-let version = sprintf "%i.%i.%i%s+%s" majorVersion minorVersion patchLevel beta buildVersion
+let patchLevel = 5
+let beta = ""
+let nugetVersion = sprintf "%i.%i.%i" majorVersion minorVersion patchLevel
+//let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
+//let version = sprintf "%i.%i.%i+%s" majorVersion minorVersion patchLevel buildVersion
 let productName = "FlexSearch"
 let copyright = sprintf "Copyright (C) 2010 - %i - FlexSearch" DateTime.Now.Year
 (*
@@ -81,8 +81,8 @@ let assemblyInfoAttributes title =
       Attribute.Description title
       Attribute.Product productName
       Attribute.Copyright copyright
-      Attribute.FileVersion version
-      Attribute.Version version ]
+      Attribute.FileVersion nugetVersion
+      Attribute.Version nugetVersion ]
 
 let assemblyInfo path title =
     CreateFSharpAssemblyInfo (sprintf @".\src\%s\AssemblyInfo.fs" path) (assemblyInfoAttributes title)
@@ -199,10 +199,10 @@ Target "DeployCsClient" <| fun _ ->
 Target "Zip"
     (fun _ ->
     // Zip FlexSearch.Core
-    !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir <!!> "FlexSearch." + version + ".zip")
+    !!(buildDir + "/**/*.*") -- "*.zip" |> Zip buildDir (deployDir <!!> "FlexSearch." + nugetVersion + ".zip")
     // Zip clients
     !!(deployDir + "/clients/**/*.*") -- "*.zip"
-    |> Zip deployDir (deployDir <!!> "FlexSearch.Clients." + version + ".zip"))
+    |> Zip deployDir (deployDir <!!> "FlexSearch.Clients." + nugetVersion + ".zip"))
 (*
 
 FlexSearch Portal build Section
