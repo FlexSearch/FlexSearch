@@ -1,3 +1,8 @@
+### Release - 0.7.6 (07-11-2016)
+
+#### Feat
+* [[b79c6b7]](https://github.com/flexsearch/flexsearch/commit/b79c6b774cffb056c21311d41882bdbaedc6a05e) Add DeleteDocumentsBySearch API method
+
 ### Release - 0.7.5 (29-09-2016)
 
 ### Release - 0.7.4-beta (15-09-2016)
