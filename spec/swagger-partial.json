@@ -725,6 +725,13 @@
         "error": { "$ref": "#/definitions/operationMessage" }
       }
     },
+    "deleteDocumentsBySearchResponse": {
+      "type": "object",
+      "properties": {
+        "data": { "$ref": "#/definitions/searchResults" },
+        "error": { "$ref": "#/definitions/operationMessage" }
+      }
+    },
     "getDocumentsResponse": {
       "type": "object",
       "properties": {
@@ -1357,6 +1364,62 @@
             "schema": { "$ref": "#/definitions/searchResponse" }
           }
         }
+      },
+      "delete": {
+        "tags": [ "documents", "search" ],
+        "summary": "Delete all documents returned by search query",
+        "description": "Deletes all the documents returned by the given search query, then executes a Commit. Returns the documents found by the search query.",
+        "operationId": "deleteDocumentsBySearch",
+        "parameters": [
+          {
+            "name": "indexName",
+            "in": "path",
+            "description": "Index name",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Short hand for 'QueryString'.",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "description": "Count parameter. Refer to 'Search Query' properties.",
+            "type": "integer"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "Skip parameter. Refer to 'Search Query' properties.",
+            "type": "integer"
+          },
+          {
+            "name": "orderby",
+            "in": "query",
+            "description": "Order by parameter. Refer to 'Search Query' properties.",
+            "type": "string"
+          },
+          {
+            "name": "orderbydirection",
+            "in": "query",
+            "description": "Order by Direction parameter. Refer to 'Search Query' properties.",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/deleteDocumentsBySearchResponse" }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": { "$ref": "#/definitions/deleteDocumentsBySearchResponse" }
+          }
+        }
       }
     },
     "/indices/{indexName}": {
@@ -1803,7 +1866,7 @@
         "summary": "Setup a demo index",
         "description": "This endpoint if useful for setting up a demo index which can be used to explore\nthe capabilities of FlexSearch. This is an in memory index which gets wiped out\non server restart.\n",
         "operationId": "setupDemo",
-        "parameters": [ ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "OK",

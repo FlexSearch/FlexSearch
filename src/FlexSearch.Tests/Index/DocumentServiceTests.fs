@@ -74,8 +74,6 @@ type DocumentServiceTests() =
         ih |> openIndexPass
         test <@ (extract <| ih.DocumentService.GetDocument(ih.IndexName, "1")).Fields.Count = ih.Index.Fields.Length @>
     
-    //TODO: Delete by query needs further testing. Also we will have to enforce a commit every time
-    // we delete by query    
     member __.``Should be able to delete documents returned by search query`` (ih : IntegrationHelper) = 
         ih |> addIndexPass
         [ 1..10 ] |> Seq.iter (fun i -> 

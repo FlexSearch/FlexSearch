@@ -379,7 +379,9 @@ type DocumentService(searchService : ISearchService, indexService : IIndexServic
                 // First run the search query to get the results
                 let! searchResults = searchService.Search(searchQuery)
                 // Then delete the documents
-                do! indexName |> deleteByQuery searchQuery   
+                do! indexName |> deleteByQuery searchQuery
+                // Execute a commit so that we don't have to write the deleted documents to TxLog
+                do! indexService.Commit indexName
                 // Finally return the search results
                 return searchResults
             }

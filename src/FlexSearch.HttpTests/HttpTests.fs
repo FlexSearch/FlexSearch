@@ -322,6 +322,20 @@ type ``All Tests``(serverApi : ServerApi, indicesApi : IndicesApi) =
                     r.StatusCode <>? int HttpStatusCode.InternalServerError
                     r.Data.Error.OperationCode.ToLower() =? "fieldvalidationfailed"
 
+    member __.``Deleting documents by search should delete all documents returned by query``
+        ((documentsApi: DocumentsApi, handler: LoggingHandler),
+         commonApi: CommonApi,
+         indexApi: IndicesApi,
+         indexName : string) =
+        createDocument commonApi indexName |> fst |> isSuccessful
+        documentsApi.DeleteDocumentsBySearch(indexName, "anyof(firstname, 'Seemant')") |> isSuccessful
+        handler |> log "delete-documents-by-search" 0
+        indexApi.RefreshIndex indexName |> isSuccessful
+        documentsApi.GetDocuments indexName
+        |> fun r -> r |> isSuccessful; r
+        |> fun r -> r.Data.RecordsReturned =? 0
+        commonApi.DeleteIndex indexName
+
     interface IDisposable with
         member __.Dispose() = 
             indicesApi.DeleteIndex("country") |> isSuccessful
