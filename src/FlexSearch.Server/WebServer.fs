@@ -104,11 +104,18 @@ type WebServerBuilder(settings : Settings.T) =
         let conf = settings.ConfigurationSource.[Settings.ServerKey + ":" + Settings.HttpPort]
         if conf = null then "9800" else conf
     
+    /// Indicates if FlexSearch should run over HTTPS or not.
+    let useHttps = settings.GetBool(Settings.SecurityKey, Settings.UseHttps, false)
+
     let webHostBuilder =
         let config = settings.ConfigurationSource
         let webAppBuilder = new WebHostBuilder()
         webAppBuilder.UseConfiguration(config)
-                     .UseKestrel()
+                     .UseKestrel(fun o -> 
+                        if useHttps then 
+                            let certPath = settings.Get(Settings.SecurityKey, Settings.HttpsCertificatePath, "")
+                            let certPass = settings.GetPassword(Settings.HttpsCertificatePassword)
+                            o.UseHttps(certPath, certPass) |> ignore)
                      .ConfigureServices(fun s -> s.AddSingleton<IConfiguration>(config) |> ignore)
                      .UseStartup<WebServer>()
     
@@ -127,7 +134,8 @@ type WebServerBuilder(settings : Settings.T) =
     member __.Start() =
         let startServer() = 
             try 
-                engine <- webHostBuilder.Start(sprintf "http://*:%s" port)
+                let protocol = if useHttps then "https" else "http"
+                engine <- webHostBuilder.Start(sprintf "%s://*:%s" protocol port)
             with 
                 | :? ReflectionTypeLoadException as e -> 
                     let loaderExceptions = e.LoaderExceptions 

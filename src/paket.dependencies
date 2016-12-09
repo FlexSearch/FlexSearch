@@ -25,6 +25,7 @@ nuget Autofac ~> 4.0.0 prerelease
 nuget Autofac.Extensions.DependencyInjection ~> 4.0.0 prerelease
 nuget Microsoft.AspNetCore.Cors ~> 1.0.0 prerelease 
 nuget Microsoft.AspNetCore.Server.Kestrel ~> 1.0.0 prerelease 
+nuget Microsoft.AspNetCore.Server.Kestrel.Https ~> 1.0.0 prerelease
 nuget Microsoft.AspNetCore.StaticFiles ~> 1.0.0 prerelease
 nuget Microsoft.AspNetCore.Hosting ~> 1.0.0 prerelease
 nuget Microsoft.AspNetCore.TestHost ~> 1.0.0 prerelease

@@ -3,6 +3,7 @@ FlexLucene
 FSharpx.Extras
 Microsoft.AspNetCore.Cors
 Microsoft.AspNetCore.Server.Kestrel
+Microsoft.AspNetCore.Server.Kestrel.Https
 Microsoft.AspNetCore.StaticFiles
 Microsoft.AspNetCore.Hosting
 Microsoft.Extensions.Configuration.Binder
