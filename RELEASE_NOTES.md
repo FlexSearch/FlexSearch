@@ -1,3 +1,9 @@
+### Release - 0.8.0 (15-12-2016)
+
+#### Feat
+* [[3afb19e]](https://github.com/flexsearch/flexsearch/commit/3afb19e2f7988904833f88c1b24048169b8b5153) Encrypt certificate password when using https
+* [[4105d58]](https://github.com/flexsearch/flexsearch/commit/4105d58d159e9a6518b427854cd33bba41490d1c) Add option of running over HTTPS
+
 ### Release - 0.7.6 (07-11-2016)
 
 #### Feat
