@@ -117,6 +117,7 @@ type CLIArguments =
     | Start
     | Stop
     | SystemInfo
+    | [<AltCommandLine("-ic")>] InstallCertificate
     interface IArgParserTemplate with
         member this.Usage = 
             match this with
@@ -125,6 +126,7 @@ type CLIArguments =
             | Start -> "Starts the service if it is not already running"
             | Stop -> "Stops the service if it is running"
             | SystemInfo -> "Print basic information about the running system"
+            | InstallCertificate -> "Installs the provided .pfx certificate"
 
 /// Standard text to prefix before the help statement
 let prefixUsageText = """
@@ -138,9 +140,10 @@ let printUsage() =
     loadTopShelf <- false
     printfn "%s" (parser.Usage(prefixUsageText))
 
+
+
 [<EntryPoint>]
 let main argv = 
-    
     printfn "%s" Startup.headerText
 
     // The reason we need to reset the performance counters is that sometimes 
@@ -165,6 +168,9 @@ let main argv =
             | SystemInfo -> 
                 loadTopShelf <- false
                 printf "%s" (Management.printSystemInfo())
+            | InstallCertificate -> 
+                loadTopShelf <- false
+                installCertificate()
         with e -> printUsage()
     let result = runService()
     if Startup.isInteractive then 

@@ -45,12 +45,6 @@ module Settings =
     [<Literal>]
     let UseHttps = "UseHttps"
 
-    [<Literal>]
-    let HttpsCertificatePath = "HttpsCertificatePath"
-
-    [<Literal>]
-    let HttpsCertificatePassword = "HttpsCertificatePassword"
-    
     /// Create settings from the path 
     let create (path : string) = 
         let configBuilder = new ConfigurationBuilder()
@@ -58,7 +52,6 @@ module Settings =
         // FileProvider implementation doesn't allow for absolute paths when getting a file.
         configBuilder.SetBasePath(IO.Path.GetDirectoryName path)
                      .AddIniFile(IO.Path.GetFileName path, false)
-                     .AddEnvironmentVariables("FS_")
                      |> ignore
         
         try 
@@ -99,16 +92,6 @@ module Settings =
                 | v -> v
             Helpers.generateAbsolutePath path
         
-        /// Gets the Base64 UTF8 encoded password from the environment variable
-        /// and decodes it.
-        member __.GetPassword(environmentVariableName) =
-            try
-                source.GetValue<string>(environmentVariableName)
-                |> Convert.FromBase64String
-                |> Encoding.UTF8.GetString
-            with _ -> 
-                failwithf "Could not parse the password from the variable %s. Make sure it is Base64 encoded." environmentVariableName
-
         static member GetDefault() = 
             let configBuilder = new ConfigurationBuilder()
             configBuilder.AddInMemoryCollection() |> ignore

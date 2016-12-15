@@ -77,6 +77,12 @@ module Constants =
     
     /// Flex web files folder
     let WebFolder = rootFolder +/ "Web" |> createDir
+
+    /// .pfx Certificate path
+    let CertificatePath = ConfFolder +/ "certificate.pfx"
+
+    /// Certificate Password file path
+    let CertificatePassPath = ConfFolder +/ "certificatePass.txt"
     
     /// Resources folder to be used for saving analyzer resource files
     let ResourcesFolder = ConfFolder +/ "Resources" |> createDir
@@ -625,3 +631,62 @@ type EventAggregator() =
     let event = new Event<EventType>()
     member __.Event() = event.Publish
     member __.Push(e : EventType) = event.Trigger(e)
+
+[<AutoOpen>]
+module CertificateManagement =
+    open System.Text
+    open System.Security.Cryptography
+
+    let rsaKeyProvider = 
+        let cspp = new CspParameters()
+        cspp.KeyContainerName <- "FlexSearch"
+        new RSACryptoServiceProvider(cspp)
+
+    let rsaPrivateKey = rsaKeyProvider.ExportParameters(true)
+    let rsaPublicKey = rsaKeyProvider.ExportParameters(false)
+
+    /// Reads a password from the Console
+    let rec readPassFromCli (pass: string) = 
+        let key = Console.ReadKey(true)
+        match key.Key with
+        | ConsoleKey.Backspace when pass.Length > 0 -> pass.Substring(0, pass.Length - 1) |> readPassFromCli
+        | ConsoleKey.Backspace -> readPassFromCli pass
+        | ConsoleKey.Enter -> pass
+        | _ -> pass + string key.KeyChar |> readPassFromCli
+
+    /// Encrypts or decrypts a string
+    let crypt (stringData : string) (direction : string) =
+        let byteConverter = new UnicodeEncoding()
+        let dataToEncrypt = stringData |> byteConverter.GetBytes
+        
+        use rsaProvider = new RSACryptoServiceProvider()
+        match direction with
+        | "en" -> 
+            rsaProvider.ImportParameters(rsaPublicKey)
+            rsaProvider.Encrypt(dataToEncrypt, false)
+        | "de" -> 
+            rsaProvider.ImportParameters(rsaPrivateKey)
+            rsaProvider.Decrypt(dataToEncrypt, false)
+        | _ -> failwithf "Cannot '%scrypt'. Only _en_crypt or _de_crypt." direction
+        |> byteConverter.GetString
+
+    let encrypt data = "en" |> crypt data
+    let decrypt data = "de" |> crypt data
+        
+    /// Copies a provided .pfx certificate and stores the encrypted password
+    let installCertificate() =
+        try
+            printfn "Please provide the path to the .pfx certificate"
+            let certificatePath = Console.ReadLine()
+            // Copy the certificate to the FlexSearch folder
+            File.Copy(certificatePath, Constants.CertificatePath, true)
+
+            printfn "Please enter the certificate password"
+            let certificatePass = readPassFromCli ""
+
+            // Store the encrypted certificate pass in a file
+            File.WriteAllText(Constants.CertificatePassPath, encrypt certificatePass)
+
+            printfn "Certificate installed successfully"
+        with e ->
+            Console.WriteLine("Couldn't install the certificate:\r\n" + exceptionPrinter e)

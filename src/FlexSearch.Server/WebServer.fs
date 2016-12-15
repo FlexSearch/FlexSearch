@@ -16,6 +16,7 @@ open System.Threading.Tasks
 open System.Reflection
 open System.Runtime.Versioning
 open System.Net
+open System.IO
 
 module Messages =
     let accessDenied = """
@@ -113,9 +114,10 @@ type WebServerBuilder(settings : Settings.T) =
         webAppBuilder.UseConfiguration(config)
                      .UseKestrel(fun o -> 
                         if useHttps then 
-                            let certPath = settings.Get(Settings.SecurityKey, Settings.HttpsCertificatePath, "")
-                            let certPass = settings.GetPassword(Settings.HttpsCertificatePassword)
-                            o.UseHttps(certPath, certPass) |> ignore)
+                            let certPass = Constants.CertificatePassPath
+                                           |> File.ReadAllText 
+                                           |> decrypt
+                            o.UseHttps(Constants.CertificatePath, certPass) |> ignore)
                      .ConfigureServices(fun s -> s.AddSingleton<IConfiguration>(config) |> ignore)
                      .UseStartup<WebServer>()
     
