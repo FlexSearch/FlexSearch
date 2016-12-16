@@ -82,7 +82,7 @@ module IndexWriter =
         |> Seq.iter (fun txw -> (txw :> IDisposable).Dispose())
         // Make sure all the files are removed from TxLog otherwise the index will
         // go into unnecessary recovery mode.
-        if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ "txlogs"
+        if writer.Settings.IndexConfiguration.DeleteLogsOnClose then emptyDir <| writer.Settings.BaseFolder +/ Constants.TxLogsSuffix
     
     /// Refresh the index    
     let refresh (s : IndexWriter) = s.ShardWriters |> Array.iter ShardWriter.refresh
@@ -94,10 +94,11 @@ module IndexWriter =
         let newGen = s.Generation.Increment()
         s.ShardWriters |> Array.iter (ShardWriter.commit forceCommit)
         // Delete all the Tx files which are older than two generation
-        loopDir (s.Settings.BaseFolder +/ "txlog") |> Seq.iter (fun filePath -> 
-                                                          let (success, gen) = 
-                                                              Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
-                                                          if success && (newGen - 2L) <= gen then File.Delete(filePath))
+        loopFiles (s.Settings.BaseFolder +/ Constants.TxLogsSuffix) 
+        |> Seq.iter (fun filePath -> 
+                let (success, gen) = 
+                    Int64.TryParse(Path.GetFileNameWithoutExtension filePath)
+                if success && (newGen - 2L) >= gen then File.Delete(filePath))
     
     /// Add or update a document
     let addOrUpdateDocument (document : Document, create : bool, addToTxLog : bool) (s : IndexWriter) = 
@@ -209,7 +210,15 @@ module IndexWriter =
             // Read logs for the generation 1 higher than the last committed generation as
             // these represents the records which are not committed
             // TODO: Find a more memory efficient way of sorting the transaction log file
-            let logEntries = TxWriter.ReadLog(path) |> Seq.sortBy (fun l -> l.ModifyIndex)
+            let logEntries = 
+                TxWriter.ReadLog(path) 
+                // Exclude corrupted log entries
+                |> Seq.filter (fun l -> if isNotNull l then true
+                                        else Logger.Log("There was a corrupted Transaction Log entry in the following file " + path,
+                                                        MessageKeyword.Index,
+                                                        MessageLevel.Warning)
+                                             false)
+                |> Seq.sortBy (fun l -> l.ModifyIndex)
             for entry in logEntries do
                 let shardNo = entry.Id |> mapToShard indexWriter.ShardWriters.Length
                 match entry.Operation with
@@ -225,8 +234,19 @@ module IndexWriter =
                 | _ -> ()
             // Force commit after iterating through each file
             indexWriter |> commit true
-        indexWriter.Settings.BaseFolder +/ "txlogs"
+
+            // Delete the current transaction log file
+            // The reason we are doing it here, as opposed to letting the commit handle the deletion,
+            // is because the TxLog generation will almost always be higher than the current 
+            // generation. Generation counting restarts every time FlexSearch starts.
+            File.Delete path
+        indexWriter.Settings.BaseFolder +/ Constants.TxLogsSuffix
         |> loopFiles
+        /// Sort the files by generation number so that we execute them in order
+        |> Seq.sortBy (fun path -> let (success, gen) = Int64.TryParse <| Path.GetFileNameWithoutExtension path
+                                   if success then gen 
+                                   else (!>) "Couldn't get the generation number of TxLog %s" path
+                                        Int64.MaxValue)
         |> Seq.iter replayShardTransaction
         // Just refresh the index so that the changes are picked up
         // in subsequent searches. We can also commit here but it will
@@ -239,7 +259,7 @@ module IndexWriter =
         let factory = fun _ -> DocumentTemplate.create (settings)
         let policy = new ObjectPoolPolicy<DocumentTemplate>(factory, fun _ -> true)
         // Intitialize TxWriter pool
-        let txPath = settings.BaseFolder +/ "txlogs" |> createDir
+        let txPath = settings.BaseFolder +/ Constants.TxLogsSuffix |> createDir
         let txFactory = fun _ -> new TxWriter(0L, txPath)
         let txPolicy = new ObjectPoolPolicy<TxWriter>(txFactory, fun _ -> true)
         

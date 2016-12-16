@@ -54,7 +54,11 @@ type TransactionEntry =
     
     static member MsgPackSerializer = SerializationContext.Default.GetSerializer<TransactionEntry>()
     static member Serializer(stream, entry : TransactionEntry) = TransactionEntry.MsgPackSerializer.Pack(stream, entry)
-    static member DeSerializer(stream) = TransactionEntry.MsgPackSerializer.Unpack(stream)
+    static member DeSerializer(stream) = 
+        try TransactionEntry.MsgPackSerializer.Unpack(stream) 
+        with e -> 
+            Logger.Log("Couldn't deserialize an entry from the transaction log", e, MessageKeyword.Default, MessageLevel.Warning)
+            Unchecked.defaultof<TransactionEntry>
 
 /// TxWriter is used for writing transaction entries to a text file using MessagePack serializer.
 /// NOTE: This is not thread safe and should be used as a pooled resource for performance.
@@ -97,7 +101,7 @@ type TxWriter(gen : int64, ?folderPath : string, ?filePath : string) =
                 seq {
                     use fs = new FileStream(localPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite) 
                     while fs.Position <> fs.Length do
-                        yield TransactionEntry.MsgPackSerializer.Unpack(fs)
+                        yield TransactionEntry.DeSerializer(fs)
                 }
             with e -> 
                 Logger.Log <| TransactionLogReadFailure(localPath, exceptionPrinter e)

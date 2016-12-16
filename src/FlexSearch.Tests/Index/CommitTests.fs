@@ -57,9 +57,9 @@ type CommitTests() =
         let writer = extract <| indexService.IsIndexOnline(index.IndexName)
         for i = 1 to 10 do
             test <@ succeeded <| documentService.AddDocument(new Document(indexName = index.IndexName, id = "1")) @>
-            let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ "txlogs").Count()
-            let olderTxFile = writer.Settings.BaseFolder +/ "txlogs" +/ writer.Generation.Value.ToString()
+            let beforeCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ Constants.TxLogsSuffix).Count()
+            let olderTxFile = writer.Settings.BaseFolder +/ Constants.TxLogsSuffix +/ writer.Generation.Value.ToString()
             test <@ File.Exists(olderTxFile) @>
             test <@ succeeded <| indexService.ForceCommit(index.IndexName) @>
-            let afterCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ "txlogs").Count()
+            let afterCommitTotalNoFiles = Directory.EnumerateFiles(writer.Settings.BaseFolder +/ Constants.TxLogsSuffix).Count()
             test <@ afterCommitTotalNoFiles <= beforeCommitTotalNoFiles @>

@@ -78,6 +78,9 @@ module Constants =
     /// Flex web files folder
     let WebFolder = rootFolder +/ "Web" |> createDir
 
+    /// The (suffix) name of the folder that will hold the transaction logs
+    let TxLogsSuffix = "txlogs"
+
     /// .pfx Certificate path
     let CertificatePath = ConfFolder +/ "certificate.pfx"
 
