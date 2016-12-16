@@ -24,7 +24,7 @@ Version information
 //let release = LoadReleaseNotes "RELEASE_NOTES.md"
 let majorVersion = 0
 let minorVersion = 8
-let patchLevel = 0
+let patchLevel = 1
 let beta = ""
 let nugetVersion = sprintf "%i.%i.%i" majorVersion minorVersion patchLevel
 //let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")
@@ -346,7 +346,7 @@ let releaseToGithub() =
     let pw =
         match getBuildParam "github-pw" with
         | s when not (String.IsNullOrWhiteSpace s) -> s
-        | _ -> getUserPassword <| "Please enter the GitHub password for the account " + user
+        | _ -> getUserPassword <| "Please enter the GitHub password for the account " + user + ": "
 
     let remote =
         Git.CommandHelper.getGitResult "" "remote -v"

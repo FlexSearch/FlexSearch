@@ -1,3 +1,8 @@
+### Release - 0.8.1 (16-12-2016)
+
+#### Fix
+* [[ea65332]](https://github.com/flexsearch/flexsearch/commit/ea6533285a8f6676f4e17c8b28678ae76bb9790e) Fix transaction log replaying
+
 ### Release - 0.8.0 (15-12-2016)
 
 #### Feat
