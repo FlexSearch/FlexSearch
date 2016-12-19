@@ -115,7 +115,7 @@ type WebServerBuilder(settings : Settings.T) =
                      .UseKestrel(fun o -> 
                         if useHttps then 
                             let certPass = Constants.CertificatePassPath
-                                           |> File.ReadAllText 
+                                           |> File.ReadAllBytes 
                                            |> decrypt
                             o.UseHttps(Constants.CertificatePath, certPass) |> ignore)
                      .ConfigureServices(fun s -> s.AddSingleton<IConfiguration>(config) |> ignore)

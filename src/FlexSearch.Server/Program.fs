@@ -80,6 +80,22 @@ module Installers =
         try exec "lodctr" "/r" false
         with e -> printfn "Failed to reset performance counters: %s" e.Message
 
+    let assignKeyContainerToUser() =
+        let user = sprintf "%s\\%s" Environment.UserDomainName Environment.UserName
+        printfn "Assigning the '%s' RSA Key container to the user %s" Constants.RsaKeyContainerName user
+
+        try
+            let frameworkV4 = loopDir "C:\\Windows\\Microsoft.NET\\Framework"
+                              |> Seq.find(fun d -> d.Contains("v4.0"))
+
+            let aspnet_regiis = (frameworkV4 +/ "aspnet_regiis") 
+
+            // Assign the key to the user
+            exec aspnet_regiis
+            <| sprintf "-pa \"%s\" \"%s\"" Constants.RsaKeyContainerName user
+            <| true
+        with e -> printfn "Failed to assign the key: %s" <| exceptionPrinter e
+
     /// Gets executed after the service is installed by TopShelf
     let afterInstall (settings : Settings.T) = 
         new Action(fun _ -> 
@@ -171,7 +187,9 @@ let main argv =
             | InstallCertificate -> 
                 loadTopShelf <- false
                 installCertificate()
+                Installers.assignKeyContainerToUser()
         with e -> printUsage()
+
     let result = runService()
     if Startup.isInteractive then 
         printfn "Press any key to continue . . ."

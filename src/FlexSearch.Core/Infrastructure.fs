@@ -86,6 +86,9 @@ module Constants =
 
     /// Certificate Password file path
     let CertificatePassPath = ConfFolder +/ "certificatePass.txt"
+
+    /// The name of the RSA Key container
+    let RsaKeyContainerName = "FlexSearch"
     
     /// Resources folder to be used for saving analyzer resource files
     let ResourcesFolder = ConfFolder +/ "Resources" |> createDir
@@ -642,11 +645,11 @@ module CertificateManagement =
 
     let rsaKeyProvider = 
         let cspp = new CspParameters()
-        cspp.KeyContainerName <- "FlexSearch"
+        cspp.KeyContainerName <- RsaKeyContainerName
+        cspp.Flags <- CspProviderFlags.UseMachineKeyStore
         new RSACryptoServiceProvider(cspp)
 
-    let rsaPrivateKey = rsaKeyProvider.ExportParameters(true)
-    let rsaPublicKey = rsaKeyProvider.ExportParameters(false)
+    let byteConverter = new UnicodeEncoding()
 
     /// Reads a password from the Console
     let rec readPassFromCli (pass: string) = 
@@ -658,23 +661,17 @@ module CertificateManagement =
         | _ -> pass + string key.KeyChar |> readPassFromCli
 
     /// Encrypts or decrypts a string
-    let crypt (stringData : string) (direction : string) =
-        let byteConverter = new UnicodeEncoding()
-        let dataToEncrypt = stringData |> byteConverter.GetBytes
-        
-        use rsaProvider = new RSACryptoServiceProvider()
+    let crypt (data : byte[]) (direction : string) =
+        use rsaProvider = rsaKeyProvider
         match direction with
         | "en" -> 
-            rsaProvider.ImportParameters(rsaPublicKey)
-            rsaProvider.Encrypt(dataToEncrypt, false)
+            rsaProvider.Encrypt(data, false)
         | "de" -> 
-            rsaProvider.ImportParameters(rsaPrivateKey)
-            rsaProvider.Decrypt(dataToEncrypt, false)
+            rsaProvider.Decrypt(data, false)
         | _ -> failwithf "Cannot '%scrypt'. Only _en_crypt or _de_crypt." direction
-        |> byteConverter.GetString
 
-    let encrypt data = "en" |> crypt data
-    let decrypt data = "de" |> crypt data
+    let encrypt (stringData : string) = "en" |> crypt (byteConverter.GetBytes stringData)
+    let decrypt (data : byte[]) = "de" |> crypt data |> byteConverter.GetString
         
     /// Copies a provided .pfx certificate and stores the encrypted password
     let installCertificate() =
@@ -688,7 +685,7 @@ module CertificateManagement =
             let certificatePass = readPassFromCli ""
 
             // Store the encrypted certificate pass in a file
-            File.WriteAllText(Constants.CertificatePassPath, encrypt certificatePass)
+            File.WriteAllBytes(Constants.CertificatePassPath, encrypt certificatePass)
 
             printfn "Certificate installed successfully"
         with e ->
