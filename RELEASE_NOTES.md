@@ -1,3 +1,8 @@
+### Release - 0.8.2 (19-12-2016)
+
+#### Feat
+* [[f238138]](https://github.com/flexsearch/flexsearch/commit/f238138189d61f517b302bf22712f31911678d75) Assign RSA key container to current user
+
 ### Release - 0.8.1 (16-12-2016)
 
 #### Fix
