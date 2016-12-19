@@ -150,14 +150,14 @@ namespace {{packageName}}.Client
                 var req = new HttpRequestMessage();
                 req.Method = httpMethod;
                 req.RequestUri = new Uri(path, UriKind.Relative);
-                response = await this.SendAsync(req);
+                response = await this.SendAsync(req).ConfigureAwait(false);
             }
             else if (httpMethod == HttpMethod.Post)
-                response = await this.PostAsync<T>(path, postBody, mediaTypeFormatters[0]);
+                response = await this.PostAsync<T>(path, postBody, mediaTypeFormatters[0]).ConfigureAwait(false);
             else if (httpMethod == HttpMethod.Put)
-                response = await this.PutAsync<T>(path, postBody, mediaTypeFormatters[0]);
+                response = await this.PutAsync<T>(path, postBody, mediaTypeFormatters[0]).ConfigureAwait(false);
 
-            var content = await response.Content.ReadAsAsync<U>(mediaTypeFormatters);
+            var content = await response.Content.ReadAsAsync<U>(mediaTypeFormatters).ConfigureAwait(false);
 
             return new ApiResponse<U>((int)response.StatusCode,
                 response.Headers.ToDictionary(x => x.Key, x => String.Join(";", x.Value)),
