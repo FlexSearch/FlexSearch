@@ -73,7 +73,10 @@ module IndexWriter =
     
     /// Close the index    
     let close (writer : IndexWriter) = 
-        writer.Token.Cancel()
+        // Try cancelling the token. Ignore Object disposed exceptions
+        try writer.Token.Cancel()
+        with | :? ObjectDisposedException -> ()
+
         writer.ShardWriters |> Array.iter ShardWriter.close
         // Release the locks on the transaction log files
         writer.TxWriterPool 
