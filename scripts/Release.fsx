@@ -24,7 +24,7 @@ Version information
 //let release = LoadReleaseNotes "RELEASE_NOTES.md"
 let majorVersion = 0
 let minorVersion = 8
-let patchLevel = 2
+let patchLevel = 3
 let beta = ""
 let nugetVersion = sprintf "%i.%i.%i" majorVersion minorVersion patchLevel
 //let buildVersion = System.DateTime.UtcNow.ToString("yyyyMMddhhmm")

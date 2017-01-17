@@ -1,3 +1,12 @@
+### Release - 0.8.3 (17-01-2017)
+
+#### Feat
+* [[7a3594c]](https://github.com/flexsearch/flexsearch/commit/7a3594caef911469cce2ecd2e2461a5175fc8ff9) Add includeAll switch for fuzzy operator
+
+#### Fix
+* [[28b6933]](https://github.com/flexsearch/flexsearch/commit/28b6933c42024a0a5c92458201e678c35896750c) Ignore ObjectDisposedException when closing indices
+* [[65ebc16]](https://github.com/flexsearch/flexsearch/commit/65ebc1655d7257c0ffb16b30a883b556bb566c14) Prevent deadlock when calling API methods synchronously
+
 ### Release - 0.8.2 (19-12-2016)
 
 #### Feat

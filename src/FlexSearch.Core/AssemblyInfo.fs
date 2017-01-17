@@ -4,11 +4,11 @@ open System.Reflection
 [<assembly: AssemblyTitleAttribute("FlexSearch Core Library")>]
 [<assembly: AssemblyDescriptionAttribute("FlexSearch Core Library")>]
 [<assembly: AssemblyProductAttribute("FlexSearch")>]
-[<assembly: AssemblyCopyrightAttribute("Copyright (C) 2010 - 2016 - FlexSearch")>]
-[<assembly: AssemblyFileVersionAttribute("0.8.2")>]
-[<assembly: AssemblyVersionAttribute("0.8.2")>]
+[<assembly: AssemblyCopyrightAttribute("Copyright (C) 2010 - 2017 - FlexSearch")>]
+[<assembly: AssemblyFileVersionAttribute("0.8.3")>]
+[<assembly: AssemblyVersionAttribute("0.8.3")>]
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] Version = "0.8.2"
-    let [<Literal>] InformationalVersion = "0.8.2"
+    let [<Literal>] Version = "0.8.3"
+    let [<Literal>] InformationalVersion = "0.8.3"
