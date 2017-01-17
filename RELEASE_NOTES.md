@@ -1,3 +1,8 @@
+### Release - 0.8.4 (17-01-2017)
+
+#### Fix
+* [[4c8bf7e]](https://github.com/flexsearch/flexsearch/commit/4c8bf7e45b9ee3afb59bdd440c62c9b9f2ca65fc) Ignore error when last record might be corrupt
+
 ### Release - 0.8.3 (17-01-2017)
 
 #### Feat
