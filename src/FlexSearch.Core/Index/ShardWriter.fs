@@ -47,7 +47,10 @@ module ShardWriter =
             let reader = ctx.Reader()
             let nDocs = reader.GetNumericDocValues(ModifyIndexField.Name)
             for j = 0 to reader.MaxDoc() do
-                max <- Math.Max(max, nDocs.Get(j))
+                // The last document in the index might have got corrupted, so just try getting the maximum.
+                // Values that were corrupted will get overridden.
+                try max <- Math.Max(max, nDocs.Get(j))
+                with | :? java.lang.IndexOutOfBoundsException -> ()
         max
     
     /// Commits all pending changes (added & deleted documents, segment merges, added indexes, etc.) to the index, 
