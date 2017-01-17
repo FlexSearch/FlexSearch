@@ -43,6 +43,16 @@ module Common =
             | None -> defaultValue
         else defaultValue
     
+    let inline boolFromParameters key defaultValue (parameters : ClauseProperties) =
+        let switch = parameters.Switches
+                     |> Seq.tryFind (fun x -> String.Equals(x.Name, key, StringComparison.InvariantCultureIgnoreCase))
+        match switch with
+        | Some(s) when s.Value.IsSome -> 
+            match s.Value.Value.ToLower() with
+            | "true" | "yes" | "1" -> true
+            | _ -> false
+        | _ -> defaultValue
+
     /// Checks if a given switch exists    
     let inline switchExists key (parameters : ClauseProperties) = 
         let f = 
@@ -136,7 +146,12 @@ type FuzzyQuery() =
         member __.GetQuery(fieldSchema, tokens, parameters) = 
             let slop = parameters |> intFromParameters "slop" 1
             let prefixLength = parameters |> intFromParameters "prefixLength" 0
-            zeroOneOrManyQuery tokens (getFuzzyQuery fieldSchema.SchemaName slop prefixLength) BooleanClauseOccur.SHOULD
+            let booleanClause = 
+                if parameters |> boolFromParameters "includeAll" false
+                then BooleanClauseOccur.MUST
+                else BooleanClauseOccur.SHOULD
+
+            zeroOneOrManyQuery tokens (getFuzzyQuery fieldSchema.SchemaName slop prefixLength) booleanClause
 
 /// Match all Query
 [<Name("matchall"); Sealed>]

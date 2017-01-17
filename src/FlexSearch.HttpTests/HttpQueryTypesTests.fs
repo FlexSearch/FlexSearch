@@ -29,6 +29,7 @@ type HttpQueryTypeTests(s : SearchApi, serverApi : ServerApi, indexData : Countr
         queryTest "anyOf(agriproducts, 'rice', 'wheat')" riceOrWheatPredicate "AnyOf single clause with 2 tokens" s
     member __.FuzzyTest1() = queryTest "fuzzy(countryname, 'Iran')" (Expected 2) "Fuzzy with default slop of 1" s
     member __.FuzzyTest2() = queryTest "fuzzy(countryname, 'China', -slop '2')" (Expected 3) "Fuzzy with slop of 2" s
+    member __.FuzzyTest3() = queryTest "fuzzy(governmenttype, 'parlamentary monarchy', -slop '1', -includeAll 'true')" (Expected 6) "Fuzzy with slop of 1 and MUST clause" s
     member __.PhraseTest1() = 
         queryTest "phraseMatch(governmenttype, 'federal parliamentary democracy')" 
             (Predicate(fun x -> x.GovernmentType.Contains("federal parliamentary democracy"))) 

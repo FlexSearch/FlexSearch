@@ -195,6 +195,8 @@ type ``Operator: 'fuzzy' Tests``(ih : IntegrationHelper) =
     member __.QueryTest2() = ih |> verifyResultCount 5 "fuzzy(t1, 'aron', -slop '1')"
     member __.QueryTest3() = ih |> verifyResultCount 6 "fuzzy(t1, 'aron', -slop '2')"
     member __.``Matching is case in-sensitive``() = ih |> verifyResultCount 5 "fuzzy(t1, 'ARoN')"
+    member __.``Matching multiple tokens uses SHOULD clause by default``() = ih |> verifyResultCount 7 "fuzzy(t3, 'parlamentary monarchy', -slop '1')"
+    member __.``Can match multiple tokens using MUST clause``() = ih |> verifyResultCount 6 "fuzzy(t3, 'parlamentary monarchy', -slop '1', -includeAll 'true')"
 
 type ``Operator: 'regex' Tests``(ih : IntegrationHelper) = 
     inherit AnyOfTestsBase(ih, "regex", false)
