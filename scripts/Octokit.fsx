@@ -2,6 +2,7 @@
 #I __SOURCE_DIRECTORY__
 #I @"../../../../../packages/Octokit/lib/net45"
 #I @"../../packages/Octokit/lib/net45"
+#I @"../src/packages/Octokit/lib/net45"
 #I @"../../../../../../packages/build/Octokit/lib/net45"
 #I @"../lib"
 #r "System.Net.Http"
@@ -174,7 +175,7 @@ let getLastRelease owner project (client : Async<GitHubClient>) =
             DraftRelease = draft }
     }
 
-let getReleaseByTag owner project tag (client : Async<GitHubClient>) =
+let getReleaseByTag (owner:string) (project:string) tag (client : Async<GitHubClient>) =
     retryWithArg 5 client <| fun client' -> async {
         let! drafts = Async.AwaitTask <| client'.Repository.Release.GetAll(owner, project)
         let matches = drafts |> Seq.filter (fun (r: Release) -> r.TagName = tag)

@@ -251,3 +251,4 @@ scripts/obj.Test
 documentation/*
 */.paket/paket.exe
 */paket-files/*
+src/*/any/

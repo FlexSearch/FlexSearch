@@ -9,7 +9,11 @@ using System.Reflection;
 [assembly: AssemblyVersionAttribute("0.8.4")]
 namespace System {
     internal static class AssemblyVersionInformation {
-        internal const string Version = "0.8.4";
-        internal const string InformationalVersion = "0.8.4";
+        internal const System.String AssemblyTitle = "FlexSearch API Library";
+        internal const System.String AssemblyDescription = "FlexSearch API Library";
+        internal const System.String AssemblyProduct = "FlexSearch";
+        internal const System.String AssemblyCopyright = "Copyright (C) 2010 - 2017 - FlexSearch";
+        internal const System.String AssemblyFileVersion = "0.8.4";
+        internal const System.String AssemblyVersion = "0.8.4";
     }
 }

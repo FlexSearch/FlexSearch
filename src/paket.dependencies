@@ -4,7 +4,7 @@ copy_content_to_output_dir: always
 framework: net46
 source https://api.nuget.org/v3/index.json
 
-nuget Autofac.Extras.AttributeMetadata ~> 4.0.0
+nuget Autofac.Extras.AttributeMetadata ~> 4.0
 nuget FlexLucene 5.4.0.0 
 nuget FParsec 1.0.2 
 nuget FSharp.Compiler.Service ~> 2.0.0 
@@ -15,30 +15,30 @@ nuget MsgPack.Cli ~> 0.6.8
 nuget PerfUtil 0.1.8
 nuget Topshelf 3.3.1 
 nuget UnionArgParser 0.9.0 
-nuget Newtonsoft.Json ~> 8.0.0 redirects: force
+nuget Newtonsoft.Json ~> 9.0.0 redirects: force
 nuget Microsoft.AspNet.WebApi.Client ~> 5.2.0
         
 # Aspnetcore
-nuget System.Net.Http ~> 4.0.0 prerelease
+nuget System.Net.Http ~> 4.0 prerelease
 nuget System.Reflection ~> 4.1.0 prerelease
-nuget Autofac ~> 4.0.0 prerelease
-nuget Autofac.Extensions.DependencyInjection ~> 4.0.0 prerelease
-nuget Microsoft.AspNetCore.Cors ~> 1.0.0 prerelease 
-nuget Microsoft.AspNetCore.Server.Kestrel ~> 1.0.0 prerelease 
-nuget Microsoft.AspNetCore.Server.Kestrel.Https ~> 1.0.0 prerelease
-nuget Microsoft.AspNetCore.StaticFiles ~> 1.0.0 prerelease
-nuget Microsoft.AspNetCore.Hosting ~> 1.0.0 prerelease
-nuget Microsoft.AspNetCore.TestHost ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Configuration.Binder ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Configuration.Ini ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Configuration.Json ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.FileProviders.Physical ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Logging ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Logging.Console ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Logging.EventLog ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Logging.TraceSource ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.ObjectPool ~> 1.0.0 prerelease
-nuget Microsoft.Extensions.Options ~> 1.0.0 prerelease
+nuget Autofac ~> 4.0 prerelease
+nuget Autofac.Extensions.DependencyInjection ~> 4.0 prerelease
+nuget Microsoft.AspNetCore.Cors ~> 1.0 prerelease 
+nuget Microsoft.AspNetCore.Server.Kestrel ~> 1.0 prerelease 
+nuget Microsoft.AspNetCore.Server.Kestrel.Https ~> 1.0 prerelease
+nuget Microsoft.AspNetCore.StaticFiles ~> 1.0 prerelease
+nuget Microsoft.AspNetCore.Hosting ~> 1.0 prerelease
+nuget Microsoft.AspNetCore.TestHost ~> 1.0 prerelease
+nuget Microsoft.Extensions.Configuration.Binder ~> 1.0 prerelease
+nuget Microsoft.Extensions.Configuration.Ini ~> 1.0 prerelease
+nuget Microsoft.Extensions.Configuration.Json ~> 1.0 prerelease
+nuget Microsoft.Extensions.FileProviders.Physical ~> 1.0 prerelease
+nuget Microsoft.Extensions.Logging ~> 1.0 prerelease
+nuget Microsoft.Extensions.Logging.Console ~> 1.0 prerelease
+nuget Microsoft.Extensions.Logging.EventLog ~> 1.0 prerelease
+nuget Microsoft.Extensions.Logging.TraceSource ~> 1.0 prerelease
+nuget Microsoft.Extensions.ObjectPool ~> 1.0 prerelease
+nuget Microsoft.Extensions.Options ~> 1.0 prerelease
 
 # Tests and build
 nuget Unquote 2.2.2
@@ -46,4 +46,5 @@ nuget FAKE
 nuget NuGet.CommandLine
 nuget AutoFixture ~> 3.37.3 
 nuget Fixie ~> 1.0.0 
-nuget FsCheck 2.2.4 
+nuget FsCheck 2.2.4
+nuget Octokit
