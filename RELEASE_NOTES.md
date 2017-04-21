@@ -1,3 +1,8 @@
+### Release - 0.8.5 (21-04-2017)
+
+#### Feat
+* [[0102e2d]](https://github.com/flexsearch/flexsearch/commit/0102e2dcb72deb0dbc360d7b4d9803a326639c52) Add support for a search
+
 ### Release - 0.8.4 (17-01-2017)
 
 #### Fix
