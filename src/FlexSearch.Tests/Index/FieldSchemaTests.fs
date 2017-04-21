@@ -88,3 +88,11 @@ type SchemaTest() =
         test <@ not <| FieldSchema.isSearchable schema @>
         test <@ not <| FieldSchema.isNumericField schema @>
 
+    member __.SearchOnlyFieldTest() =
+        let schema = getSchema(SearchOnlyField.Instance.LuceneFieldType, false, FieldType.SearchOnly) 
+        test <@ not <| FieldSchema.isStored schema @>
+        test <@ not <| FieldSchema.hasDocValues schema @>
+        test <@ not <| FieldSchema.allowSorting schema @>
+        test <@ FieldSchema.isSearchable schema @>
+        test <@ not <| FieldSchema.isNumericField schema @>
+

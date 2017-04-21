@@ -71,12 +71,12 @@ type OperatorTestsBase(ih : IntegrationHelper) =
 
 type ``Column Tests``(index : Index, searchService : ISearchService, indexService : IIndexService, documentService : IDocumentService) = 
     let testData = """
-id,et1,t1,i1,s1
-1,a,johnson,1,test1
-2,c,hewitt,1,test2
-3,b,Garner,1,test3
-4,e,Garner,1,test4
-5,d,johnson,1,test5"""
+id,et1,t1,i1,s1,so1
+1,a,johnson,1,test1,1 a johnson 1 test1
+2,c,hewitt,1,test2,2 c hewitt 1 test2
+3,b,Garner,1,test3,3 b Garner 1 test3
+4,e,Garner,1,test4,4 e Garner 1 test4
+5,d,johnson,1,test5,5 d johnson 1 test5"""
     do indexTestData (testData, index, indexService, documentService)
     
     member __.``Searching with no columns specified will return no additional columns``() = 
@@ -148,6 +148,33 @@ id,et1,t1,i1,s1
             |> withColumns [| "s1" |]
             |> searchAndExtract searchService
         result |> assertFieldPresent "s1"
+
+    member __.``SearchOnly fields can be searched`` () =
+        let result = 
+            getQuery (index.IndexName, "allof(so1, 'garner')")
+            |> withColumns [| "et1" |]
+            |> searchAndExtract searchService
+        test <@ result.Documents.Length = 2 @>
+
+    member __.``SearchOnly fields are case insensitive`` () =
+        let result = 
+            getQuery (index.IndexName, "allof(so1, 'GarnER')")
+            |> withColumns [| "et1" |]
+            |> searchAndExtract searchService
+        test <@ result.Documents.Length = 2 @>
+
+    member __.``SearchOnly fields cannot be retrieved``() =
+        let query = 
+            getQuery (index.IndexName, "allof(i1, '1')")
+            |> withColumns [| "so1" |]
+        test <@ searchService.Search(query) = fail (SearchOnlyFieldCannotBeRetrieved("so1")) @>
+
+    member __.``Text fields are case insensitive by default``() =
+        let result = 
+            getQuery (index.IndexName, "allof(t1, 'GaRNer')")
+            |> withColumns [| "et1" |]
+            |> searchAndExtract searchService
+        test <@ result.Documents.Length = 2 @> 
 
     interface IDisposable with
         member __.Dispose() = test <@ indexService.DeleteIndex index.IndexName |> succeeded @>

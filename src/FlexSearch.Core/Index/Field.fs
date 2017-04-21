@@ -141,7 +141,7 @@ module CreateField =
     /// A field that is indexed and tokenized, without term vectors. For example this would be used on a 
     /// 'body' field, that contains the bulk of a document's text.
     let text fieldName = new TextField(fieldName, Constants.StringDefaultValue, FieldStore.YES) :> LuceneField
-    
+    let searchOnly fieldName = new TextField(fieldName, Constants.StringDefaultValue, FieldStore.NO) :> LuceneField
     let long fieldName = new LongField(fieldName, 0L, FieldStore.YES) :> LuceneField
     let longDV fieldName = new NumericDocValuesField(fieldName, 0L) :> LuceneField
     let int fieldName = new IntField(fieldName, 0, FieldStore.YES) :> LuceneField
@@ -355,6 +355,29 @@ type StoredField() as self =
     override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
         fail <| StoredFieldCannotBeSearched(schemaName)
 
+
+// A field which can only be searched, but it's not stored
+type SearchOnlyField() as self =
+    inherit FieldBase<string>(TextField.TYPE_NOT_STORED, SortFieldType.STRING, "null", None)
+    static member Instance = new SearchOnlyField() :> FieldBase
+
+    override this.Validate(value : string) = 
+        if String.IsNullOrWhiteSpace value then this.DefaultValue
+        else value
+
+    override this.CreateFieldTemplate (schemaName : string) (generateDV : bool) = 
+        { Fields = [| CreateField.searchOnly <| self.GetSchemaName schemaName |]
+          DocValues = None }
+
+    override this.UpdateFieldTemplate (template : FieldTemplate) (value : string) = 
+        template.Fields.[0].SetStringValue(value)
+
+    override this.GetRangeQuery schemaName lowerRange upperRange inclusiveMinimum inclusiveMaximum = 
+        (new TermRangeQuery(schemaName, new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes lowerRange), 
+                               new FlexLucene.Util.BytesRef(Encoding.UTF8.GetBytes upperRange), inclusiveMinimum, 
+                               inclusiveMaximum) :> Query)
+        |> ok
+        
 /// ----------------------------------------------------------------------
 /// Extended field types
 /// ----------------------------------------------------------------------

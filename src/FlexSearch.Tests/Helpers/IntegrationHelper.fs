@@ -87,7 +87,8 @@ id,b1,d1,dt1,i1,i2,l1,db1,f1,et1,t1,t2,s1,t3
                            new Field("t1", Constants.FieldType.Text)
                            new Field("t2", Constants.FieldType.Text)
                            new Field("s1", Constants.FieldType.Stored)
-                           new Field("t3", Constants.FieldType.Text) |]
+                           new Field("t3", Constants.FieldType.Text)
+                           new Field("so1", Constants.FieldType.SearchOnly) |]
         index
     
     /// Utility method to add data to an index

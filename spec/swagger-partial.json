@@ -318,7 +318,7 @@
         "fieldType": {
           "description": "Type of the field",
           "type": "string",
-          "enum": [ "Int", "Double", "Float", "Keyword", "Text", "Bool", "Date", "DateTime", "Stored", "Long" ],
+          "enum": [ "Int", "Double", "Float", "Keyword", "Text", "Bool", "Date", "DateTime", "Stored", "Long", "SearchOnly" ],
           "default": "Text"
         },
         "indexAnalyzer": {

@@ -62,14 +62,6 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
-    <Content Include="any\netstandard1.6\FSharp.Core.optdata">
-      <Paket>True</Paket>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="any\netstandard1.6\FSharp.Core.sigdata">
-      <Paket>True</Paket>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Compile Include="AssemblyInfo.fs" />
     <None Include="App.config" />
     <Content Include="paket.references" />

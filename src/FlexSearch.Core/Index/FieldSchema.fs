@@ -185,12 +185,13 @@ module FieldSchema =
             | FieldType.Stored -> StoredField.Instance
             | FieldType.Keyword -> ExactTextField.Instance
             | FieldType.Text -> TextField.Instance
+            | FieldType.SearchOnly -> SearchOnlyField.Instance
             | _ -> failwithf "Internal error: Unsupported FieldType"
         
         let getAnalyzers (field : FlexField) = 
             maybe { 
                 // These are the only two field types which support custom analyzer
-                if field.FieldType = FieldType.Text then 
+                if [FieldType.Text; FieldType.SearchOnly] |> Seq.contains field.FieldType then 
                     let! searchAnalyzer = getAnalyzer field.SearchAnalyzer
                     let! indexAnalyzer = getAnalyzer field.IndexAnalyzer
                     return Some <| { IndexAnalyzer = indexAnalyzer

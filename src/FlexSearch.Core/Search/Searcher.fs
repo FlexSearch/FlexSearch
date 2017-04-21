@@ -51,6 +51,18 @@ module Searcher =
             member this.Dispose() = 
                 if isNotNull this.IndexSearchers then this.IndexSearchers |> Array.iter (fun i -> i.DisposeManaged())
     
+    /// Checks that each of the given columns is Stored
+    let rec checkColumnsAreStored (indexWriter : IndexWriter) (columns : string seq) =
+        match columns |> Seq.toList with
+        | []
+        | "*" :: _ -> okUnit
+        | colName :: rest -> 
+            match indexWriter.Settings.Fields.TryGetValue colName with
+            | (true, field) -> if field |> FieldSchema.isStored 
+                               then checkColumnsAreStored indexWriter rest
+                               else fail <| (SearchOnlyFieldCannotBeRetrieved colName)
+            | _ -> fail <| fieldNotFound colName
+
     /// Returns a document from the index
     let getDocument (document : LuceneDocument) (s : SearcherState) = 
         let fields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -61,6 +73,9 @@ module Searcher =
                 if value = Constants.StringDefaultValue && s.SearchQuery.ReturnEmptyStringForNull then 
                     fields.Add(field.FieldName, String.Empty)
                 else fields.Add(field.FieldName, value)
+            if field |> FieldSchema.isStored |> not
+            then fields.Add(field.FieldName, "Error: Fields that are not stored cannot be retrieved")
+
         match s.SearchQuery.Columns with
         // Return no other columns when nothing is passed
         | _ when s.SearchQuery.Columns.Length = 0 -> ()

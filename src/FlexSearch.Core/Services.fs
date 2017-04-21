@@ -294,20 +294,20 @@ type SearchService(parser : IFlexParser, queryFunctions : Dictionary<string, IQu
             ok <| search (writers, query, searchQuery)
         with e -> fail <| SearchError(exceptionPrinter e)
     
-    let search (searchQuery : SearchQuery) = maybe { let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                                                     let! query = generateQuery writers searchQuery parser 
-                                                                      writers.Settings.Fields.ReadOnlyDictionary 
-                                                                      queryFunctions
-                return! searchWrapper (writers, query, searchQuery) }
+    let search (searchQuery : SearchQuery) = maybe { 
+        let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+        do! checkColumnsAreStored writers searchQuery.Columns
+        let! query = generateQuery writers searchQuery parser 
+                        writers.Settings.Fields.ReadOnlyDictionary 
+                        queryFunctions
+        return! searchWrapper (writers, query, searchQuery) }
     interface ISearchService with
         member __.Search(searchQuery : SearchQuery) = search searchQuery
         // Expose a member that generates a Lucene Query from a given FlexSearch SearchQuery
-        member __.GetLuceneQuery(searchQuery : SearchQuery) = 
-            maybe 
-                { 
-                let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
-                return! generateQuery writers searchQuery parser writers.Settings.Fields.ReadOnlyDictionary 
-                            queryFunctions }
+        member __.GetLuceneQuery(searchQuery : SearchQuery) = maybe { 
+            let! writers = indexService.IsIndexOnline <| searchQuery.IndexName
+            return! generateQuery writers searchQuery parser writers.Settings.Fields.ReadOnlyDictionary 
+                        queryFunctions }
 
 [<Sealed>]
 type DocumentService(searchService : ISearchService, indexService : IIndexService) = 

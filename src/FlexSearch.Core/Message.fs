@@ -255,6 +255,7 @@ type SearchMessage =
     | RhsValueNotSupported of functionName : string
     | ArgumentNotSupplied of functionName : string * argumentNumber : int
     | ExpectedAtLeastNParamsMismatch of functionName : string * atLeast : int * actual : int
+    | SearchOnlyFieldCannotBeRetrieved of fieldName : string
     interface IMessage with
         member this.LogProperty() = (MessageKeyword.Search, MessageLevel.Nothing)
         
@@ -289,6 +290,7 @@ type SearchMessage =
             | RhsValueNotSupported(fn) -> sprintf "Function %s does not support conditions with an operator" fn
             | ArgumentNotSupplied(fn, n) -> sprintf "Argument number %d cannot be empty for function %s" n fn
             | ExpectedAtLeastNParamsMismatch(fn,al,a) -> sprintf "Expected at least %d arguments for the function %s, but found %d" al fn a
+            | SearchOnlyFieldCannotBeRetrieved(fn) -> sprintf "Fields that are not stored cannot be retrieved: %s" fn
             |> caseToMsg this
 
 type IndexingMessage = 
