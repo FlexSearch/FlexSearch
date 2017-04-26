@@ -52,6 +52,14 @@
   </Choose>
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
+    <Content Include="any\netstandard1.6\FSharp.Core.optdata">
+      <Paket>True</Paket>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="any\netstandard1.6\FSharp.Core.sigdata">
+      <Paket>True</Paket>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Compile Include="Helpers\IntegrationHelper.fs" />
     <Compile Include="Helpers\Helpers.fs" />
     <Compile Include="Index\FieldSchemaTests.fs" />

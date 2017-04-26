@@ -39,6 +39,7 @@ nuget Microsoft.Extensions.Logging.EventLog ~> 1.0 prerelease
 nuget Microsoft.Extensions.Logging.TraceSource ~> 1.0 prerelease
 nuget Microsoft.Extensions.ObjectPool ~> 1.0 prerelease
 nuget Microsoft.Extensions.Options ~> 1.0 prerelease
+nuget System.Runtime.CompilerServices.Unsafe ~> 4.0
 
 # Tests and build
 nuget Unquote 2.2.2
