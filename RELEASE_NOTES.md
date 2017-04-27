@@ -1,3 +1,9 @@
+### Release - 0.8.6 (27-04-2017)
+
+#### Fix
+* [[23084a5]](https://github.com/flexsearch/flexsearch/commit/23084a54be5436e32e7d347df8e195f4ae78e3ce) Fix dependencies in the web portal
+* [[9e00b61]](https://github.com/flexsearch/flexsearch/commit/9e00b613d65ee0b4f8d93004fde01cd84ac73999) Add missing CompilerServices
+
 ### Release - 0.8.5 (21-04-2017)
 
 #### Feat

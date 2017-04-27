@@ -6,8 +6,8 @@ open System.Reflection
 [<assembly: AssemblyDescriptionAttribute("FlexSearch Server")>]
 [<assembly: AssemblyProductAttribute("FlexSearch")>]
 [<assembly: AssemblyCopyrightAttribute("Copyright (C) 2010 - 2017 - FlexSearch")>]
-[<assembly: AssemblyFileVersionAttribute("0.8.5")>]
-[<assembly: AssemblyVersionAttribute("0.8.5")>]
+[<assembly: AssemblyFileVersionAttribute("0.8.6")>]
+[<assembly: AssemblyVersionAttribute("0.8.6")>]
 do ()
 
 module internal AssemblyVersionInformation =
@@ -15,5 +15,5 @@ module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyDescription = "FlexSearch Server"
     let [<Literal>] AssemblyProduct = "FlexSearch"
     let [<Literal>] AssemblyCopyright = "Copyright (C) 2010 - 2017 - FlexSearch"
-    let [<Literal>] AssemblyFileVersion = "0.8.5"
-    let [<Literal>] AssemblyVersion = "0.8.5"
+    let [<Literal>] AssemblyFileVersion = "0.8.6"
+    let [<Literal>] AssemblyVersion = "0.8.6"
