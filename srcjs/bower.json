@@ -3,8 +3,10 @@
   "version": "0.0.0",
   "dependencies": {
     "ag-grid": "~1.13.0",
-    "angular": "~1.4.0",
-    "angular-animate": "~1.4.0",
+    "angular": "1.4.8",
+    "angular-aria": "1.4.8",
+    "angular-messages": "1.4.8",
+    "angular-animate": "1.4.8",
     "angular-chart.js": "~0.7.2",
     "angular-material": "~1.1.0",
     "angular-material-icons": "~0.6.0",
@@ -13,12 +15,12 @@
     "angular-swagger-ui": "~0.1.6",
     "angular-touch": "~1.4.0",
     "angular-ui-ace": "bower",
-    "angular-ui-grid": "~3.0.5",
     "angular-ui-router": "~0.2.15",
+    "angular-ui-grid": "~3.0.5",
     "jquery": "~2.1.1",
     "json-formatter": "~0.3.0",
     "native-promise-only": "~0.8.0-a",
-    "perfect-scrollbar": "~0.6.5",
+    "perfect-scrollbar": "0.6.5",
     "restangular": "~1.4.0",
     "underscore": "~1.8.3",
     "roboto": "https://google-fonts.azurewebsites.net/googleFonts/Roboto?family=Roboto:300,400,500,300,700,400italic",
@@ -28,10 +30,6 @@
   "devDependencies": {
     "angular-mocks": "~1.4.0",
     "material-shadows": "~2.0.1"
-  },
-  "resolutions": {
-    "angular-material": "~0.10.1",
-    "angular": "~1.4.0"
   },
   "overrides": {
     "ace-builds": {
@@ -46,5 +44,8 @@
         "lib/npo.src.js"
       ]
     }
+  },
+  "resolutions": {
+    "angular": "1.4.8"
   }
 }
