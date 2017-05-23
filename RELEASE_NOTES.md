@@ -1,3 +1,8 @@
+### Release - 0.8.7 (23-05-2017)
+
+#### Feat
+* [[887ef5e]](https://github.com/flexsearch/flexsearch/commit/887ef5eeeb2e578d2f62b9866594595fb3e40b9c) Allow deciding if performance counters should be reset
+
 ### Release - 0.8.6 (27-04-2017)
 
 #### Fix
