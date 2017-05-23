@@ -45,6 +45,9 @@ module Settings =
     [<Literal>]
     let UseHttps = "UseHttps"
 
+    [<Literal>]
+    let ResetPerformanceCounters = "ResetPerformanceCounters"
+
     /// Create settings from the path 
     let create (path : string) = 
         let configBuilder = new ConfigurationBuilder()

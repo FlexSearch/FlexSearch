@@ -99,7 +99,7 @@ type WebServer(configuration : IConfiguration) =
 type WebServerBuilder(settings : Settings.T) =
     let mutable engine = Unchecked.defaultof<IWebHost>
     let mutable thread = Unchecked.defaultof<Task>
-        
+    
     /// Port on which server should start (Defaults to 9800)
     let port = 
         let conf = settings.ConfigurationSource.[Settings.ServerKey + ":" + Settings.HttpPort]
@@ -132,6 +132,14 @@ type WebServerBuilder(settings : Settings.T) =
                                          |> Async.RunSynchronously
                                          |> handleShutdownExceptions)
         engine.Dispose()
+
+    do
+        // The reason we need to reset the performance counters is that sometimes 
+        // the counters cache in the registry becomes corrupted.
+        // http://stackoverflow.com/questions/17980178/cannot-load-counter-name-data-because-an-invalid-index-exception
+        // The performance counters are used for the /memory endpoint.
+        if settings.GetBool(Settings.ServerKey, Settings.ResetPerformanceCounters, true)
+        then Installers.resetPerformanceCounters()
 
     member __.Start() =
         let startServer() = 
